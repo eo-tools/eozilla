@@ -1,0 +1,11 @@
+package:
+  name: eozilla
+  version: "0.0.1"
+
+build:
+  noarch: python
+  script: python -c "print('placeholder')"
+
+requirements:
+  run:
+    - python
