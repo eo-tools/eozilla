@@ -82,7 +82,7 @@ class ClientConfig(BaseModel):
     def from_env(cls) -> Optional["ClientConfig"]:
         config_dict: dict[str, Any] = {}
         for field_name, _field_info in ClientConfig.model_fields.items():
-            env_var_name = "S2GOS_" + field_name.upper()
+            env_var_name = "EOZILLA_" + field_name.upper()
             if env_var_name in os.environ:
                 config_dict[field_name] = os.environ[env_var_name]
         return ClientConfig(**config_dict) if config_dict else None

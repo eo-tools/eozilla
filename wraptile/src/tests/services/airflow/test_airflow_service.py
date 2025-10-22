@@ -37,7 +37,7 @@ class AirflowServiceTest(IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.app = app
         self.restore_env = set_env(
-            S2GOS_SERVICE="wraptile.services.airflow:service",
+            EOZILLA_SERVICE="wraptile.services.airflow:service",
         )
         ServiceProvider._service = None
         self.service = get_service()
@@ -47,7 +47,7 @@ class AirflowServiceTest(IsolatedAsyncioTestCase):
     async def asyncTearDown(self):
         self.restore_env()
         # comment out to check generated DAGs
-        # shutil.rmtree(S2GOS_AIRFLOW_DAGS_FOLDER, ignore_errors=True)
+        # shutil.rmtree(EOZILLA_AIRFLOW_DAGS_FOLDER, ignore_errors=True)
 
     def get_request(self) -> fastapi.Request:
         return fastapi.Request({"type": "http", "app": self.app, "headers": {}})

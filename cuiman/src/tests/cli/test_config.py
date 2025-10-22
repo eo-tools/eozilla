@@ -23,7 +23,7 @@ DEFAULT_CONFIG_BACKUP_PATH = DEFAULT_CONFIG_PATH.parent / (
 class ReadConfigTest(unittest.TestCase):
     def setUp(self):
         self.restore_env = set_env(
-            **{k: None for k, v in os.environ.items() if k.startswith("S2GOS_")}
+            **{k: None for k, v in os.environ.items() if k.startswith("EOZILLA_")}
         )
         self.must_restore_config = False
         # If a config backup exists, delete it
@@ -104,9 +104,9 @@ class ReadConfigTest(unittest.TestCase):
     def test_configure_client_use_defaults(self, mock_prompt):
         # Simulate sequential responses to typer.prompt
         with set_env_cm(
-            S2GOS_USER_NAME="bibo",
-            S2GOS_ACCESS_TOKEN="9823hc",
-            S2GOS_SERVER_URL="http://localhorst:2357",
+            EOZILLA_USER_NAME="bibo",
+            EOZILLA_ACCESS_TOKEN="9823hc",
+            EOZILLA_SERVER_URL="http://localhorst:2357",
         ):
             mock_prompt.side_effect = ["bibo", "*****", "http://localhorst:2357"]
             custom_config_path = Path("test.cfg")

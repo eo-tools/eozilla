@@ -72,7 +72,7 @@ class LocalServiceTest(IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.app = app
         self.restore_env = set_env(
-            S2GOS_SERVICE="wraptile.services.local.testing:service"
+            EOZILLA_SERVICE="wraptile.services.local.testing:service"
         )
         ServiceProvider._service = None
         self.service = get_service()

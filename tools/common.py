@@ -11,7 +11,7 @@ from typing import Any, Final
 from .openapi import OAMethod
 
 THIS_DIR = Path(__file__).parent.resolve()
-S2GOS_PATH: Final = THIS_DIR.parent
+EOZILLA_PATH: Final = THIS_DIR.parent
 OPEN_API_PATH: Final = THIS_DIR / "openapi.yaml"
 
 C_TAB: Final = "    "

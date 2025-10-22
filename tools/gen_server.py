@@ -8,7 +8,7 @@ from typing import Literal
 from tools.common import (
     C_TAB,
     OPEN_API_PATH,
-    S2GOS_PATH,
+    EOZILLA_PATH,
     camel_to_snake,
     parse_responses,
     to_py_type,
@@ -18,8 +18,8 @@ from tools.openapi import OAMethod, OASchema, load_openapi_schema
 
 GENERATOR_NAME = str(Path(__file__).name)
 
-ROUTES_PATH = S2GOS_PATH / "wraptile/src/wraptile/routes.py"
-SERVICE_PATH = S2GOS_PATH / "gavicore/src/gavicore/service.py"
+ROUTES_PATH = EOZILLA_PATH / "wraptile/src/wraptile/routes.py"
+SERVICE_PATH = EOZILLA_PATH / "gavicore/src/gavicore/service.py"
 
 magic_param_list = [
     ("request", "fastapi.Request"),

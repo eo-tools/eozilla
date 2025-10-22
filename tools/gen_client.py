@@ -10,7 +10,7 @@ from tools.common import (
     C_TAB,
     D_TAB,
     OPEN_API_PATH,
-    S2GOS_PATH,
+    EOZILLA_PATH,
     camel_to_snake,
     parse_responses,
     to_py_type,
@@ -20,8 +20,8 @@ from tools.openapi import OAMethod, OASchema, load_openapi_schema
 
 GENERATOR_NAME = str(Path(__file__).name)
 
-SYNC_CLIENT_PATH = S2GOS_PATH / "cuiman/src/cuiman/api/client.py"
-ASYNC_CLIENT_PATH = S2GOS_PATH / "cuiman/src/cuiman/api/async_client.py"
+SYNC_CLIENT_PATH = EOZILLA_PATH / "cuiman/src/cuiman/api/client.py"
+ASYNC_CLIENT_PATH = EOZILLA_PATH / "cuiman/src/cuiman/api/async_client.py"
 
 
 code_header = """
