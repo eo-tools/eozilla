@@ -397,6 +397,7 @@ environments:
       - pypi: ./cuiman
       - pypi: ./eozilla-app-ex
       - pypi: ./gavicore
+      - pypi: ./procodile
       - pypi: ./wraptile
       osx-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_2.conda
@@ -776,6 +777,7 @@ environments:
       - pypi: ./cuiman
       - pypi: ./eozilla-app-ex
       - pypi: ./gavicore
+      - pypi: ./procodile
       - pypi: ./wraptile
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/win-64/_openmp_mutex-4.5-2_gnu.conda
@@ -1144,6 +1146,7 @@ environments:
       - pypi: ./cuiman
       - pypi: ./eozilla-app-ex
       - pypi: ./gavicore
+      - pypi: ./procodile
       - pypi: ./wraptile
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
@@ -3160,7 +3163,7 @@ packages:
 - pypi: ./eozilla-app-ex
   name: eozilla-app-ex
   version: 0.0.0
-  sha256: ec2cb85c7ec19e2437a92dabce7e466f02726b12ed8c6dd7cc7af25e1924df21
+  sha256: 4c0e899307628d72f971a36b097a548b981cf104302e413af43c2bc42f8e762c
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.0-pyhd8ed1ab_0.conda
@@ -8031,6 +8034,16 @@ packages:
   - pkg:pypi/pluggy?source=compressed-mapping
   size: 24246
   timestamp: 1747339794916
+- pypi: ./procodile
+  name: procodile
+  version: 0.0.5.dev0
+  sha256: 6f09677a0d90d4317760947b0c3311e5cedcf7e60748b83c4ba58bd10a30aa42
+  requires_dist:
+  - pydantic
+  - typer
+  - gavicore>=0.0.0
+  requires_python: '>=3.10'
+  editable: true
 - conda: https://conda.anaconda.org/conda-forge/linux-64/prometheus-cpp-1.3.0-ha5d0236_0.conda
   sha256: 013669433eb447548f21c3c6b16b2ed64356f726b5f77c1b39d5ba17a8a4b8bc
   md5: a83f6a2fdc079e643237887a37460668
@@ -10262,7 +10275,7 @@ packages:
 - pypi: ./wraptile
   name: wraptile
   version: 0.0.5.dev0
-  sha256: c89b7f99fd285581b7973c9cf669f381561bde3ab30635ab6f0e517ca5436aa5
+  sha256: f39bd6db520e5b6ef52ea52f4be7523b8a9801f09a434377a87cdc56c11d8d2a
   requires_dist:
   - fastapi
   - pydantic
@@ -10270,6 +10283,7 @@ packages:
   - typer
   - uvicorn
   - gavicore>=0.0.0
+  - procodile>=0.0.0
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2025.6.1-pyhd8ed1ab_1.conda

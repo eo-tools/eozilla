@@ -88,7 +88,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         self.assertIs(f1, process.function)
         proc_desc = process.description
         self.assertIsInstance(proc_desc, ProcessDescription)
-        self.assertEqual("tests.process.test_process:f1", proc_desc.id)
+        self.assertEqual("tests.test_process:f1", proc_desc.id)
         self.assertEqual("0.0.0", proc_desc.version)
         self.assertEqual(None, proc_desc.title)
         self.assertEqual("This is f1.", proc_desc.description)
@@ -161,7 +161,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         self.assertEqual(None, process.job_ctx_arg)
         proc_desc = process.description
         self.assertIsInstance(proc_desc, ProcessDescription)
-        self.assertEqual("tests.process.test_process:f2", proc_desc.id)
+        self.assertEqual("tests.test_process:f2", proc_desc.id)
         self.assertEqual("0.0.0", proc_desc.version)
         self.assertEqual(None, proc_desc.title)
         self.assertEqual("This is f2.", proc_desc.description)
@@ -214,7 +214,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         self.assertIs(f2, process.function)
         proc_desc = process.description
         self.assertIsInstance(proc_desc, ProcessDescription)
-        self.assertEqual("tests.process.test_process:f2", proc_desc.id)
+        self.assertEqual("tests.test_process:f2", proc_desc.id)
         self.assertEqual("0.0.0", proc_desc.version)
         self.assertEqual(None, proc_desc.title)
         self.assertEqual("This is f2.", proc_desc.description)
@@ -249,7 +249,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         self.assertIs(f2, process.function)
         proc_desc = process.description
         self.assertIsInstance(proc_desc, ProcessDescription)
-        self.assertEqual("tests.process.test_process:f2", proc_desc.id)
+        self.assertEqual("tests.test_process:f2", proc_desc.id)
         self.assertEqual("0.0.0", proc_desc.version)
         self.assertEqual(None, proc_desc.title)
         self.assertEqual("This is f2.", proc_desc.description)
@@ -279,7 +279,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         with pytest.raises(
             TypeError,
             match=(
-                r"function 'tests\.process\.test_process:f1': "
+                r"function 'tests\.test_process:f1': "
                 r"return type must be tuple\[\] with arguments"
             ),
         ):
@@ -296,7 +296,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         with pytest.raises(
             ValueError,
             match=(
-                r"function 'tests\.process\.test_process:f1': "
+                r"function 'tests\.test_process:f1': "
                 r"all input names must have corresponding parameter names; "
                 r"invalid input name\(s\)\: 'u', 'v'"
             ),
@@ -316,7 +316,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         with pytest.raises(
             ValueError,
             match=(
-                r"function 'tests\.process\.test_process:f2': "
+                r"function 'tests\.test_process:f2': "
                 r"number of outputs must match number of tuple\[\] arguments"
             ),
         ):

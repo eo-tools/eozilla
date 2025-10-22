@@ -15,7 +15,7 @@ from s2gos_common.models import (
     ProcessList,
     ProcessSummary,
 )
-from s2gos_common.process.request import ExecutionRequest
+from s2gos_common.util.request import ExecutionRequest
 
 
 class OutputTest(TestCase):

@@ -18,7 +18,7 @@ from s2gos_common.models import (
     ProcessList,
     ProcessRequest,
 )
-from s2gos_common.process import ExecutionRequest
+from s2gos_common.util.request import ExecutionRequest
 
 
 class AsyncClientTest(IsolatedAsyncioTestCase):

@@ -11,9 +11,9 @@ from procodile import (
     Job,
     JobCancelledException,
     JobContext,
-    NullJobContext,
     Process,
 )
+from procodile.job import NullJobContext
 from s2gos_common.models import JobResults, JobStatus, ProcessRequest, Subscriber
 
 from .test_process import f1

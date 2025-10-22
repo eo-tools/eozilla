@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 from urllib import error
 
-from procodile import CallbackReporter
+from procodile.reporter import CallbackReporter
 
 
 class CallbackReporterTest(unittest.TestCase):
