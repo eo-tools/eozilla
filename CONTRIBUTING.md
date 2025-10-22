@@ -1,6 +1,6 @@
 # How to contribute
 
-The S2GOS client welcomes contributions of any form
+The Eozilla project welcomes contributions of any form
 as long as you respect our [code of conduct](CODE_OF_CONDUCT.md) and stay 
 in line with the following instructions and guidelines.
 
@@ -34,7 +34,7 @@ checklist are addressed in your PR.
 
 ## Code style
 
-The code style of the S2GOS client equals the default settings 
+The code style used in Eozilla equals the default settings 
 of [black](https://black.readthedocs.io/). Since black is 
 un-opinionated regarding the order of imports, we group and 
 sort imports statements according to the default settings of 
