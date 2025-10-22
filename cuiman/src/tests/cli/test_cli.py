@@ -8,8 +8,8 @@ from unittest import TestCase
 import typer.testing
 from tests.helpers import MockTransport
 
-from s2gos_client import Client, ClientConfig, __version__
-from s2gos_client.cli.cli import cli
+from cuiman import Client, ClientConfig, __version__
+from cuiman.cli.cli import cli
 
 
 def invoke_cli(*args: str) -> typer.testing.Result:

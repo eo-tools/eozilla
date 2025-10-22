@@ -84,7 +84,7 @@ mkdocs-mermaid2-plugin = "*"
 skip = [".idea", ".github", ".pixi", "htmlcov", "site"]
 profile = "black"
 line_length = 88
-known_first_party = ["appligator", "procodile", "gavicore", "s2gos_client", "wraptile", "s2gos_app_ex"]
+known_first_party = ["appligator", "procodile", "gavicore", "cuiman", "wraptile", "s2gos_app_ex"]
 
 [tool.black]
 line-length = 88
@@ -110,7 +110,7 @@ select = ["I", "F", "E"]
 [tool.coverage.report]
 omit = [
     "eozilla-app-ex/src/s2gos_app_ex/**/*",
-    "cuiman/src/s2gos_client/gui/**/*",
+    "cuiman/src/cuiman/gui/**/*",
     "wraptile/src/wraptile/services/airflow/**/*",
 ]
 
@@ -191,7 +191,7 @@ cmd = "pytest --cov gavicore/src/gavicore --cov-report= --cov-append gavicore/sr
 cmd = "pytest --cov wraptile/src/wraptile --cov-report= --cov-append wraptile/src/tests"
 
 [tool.pixi.tasks.cov-cuiman]
-cmd = "pytest --cov cuiman/src/s2gos_client --cov-report= --cov-append cuiman/src/tests"
+cmd = "pytest --cov cuiman/src/cuiman --cov-report= --cov-append cuiman/src/tests"
 
 [tool.pixi.tasks.cov-procodile]
 cmd = "pytest --cov procodile/src/procodile --cov-report= --cov-append procodile/src/tests"

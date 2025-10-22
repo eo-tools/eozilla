@@ -6,8 +6,8 @@ from unittest import TestCase
 
 from tests.helpers import MockTransport
 
-from s2gos_client import ClientConfig
-from s2gos_client.api.client import Client
+from cuiman import ClientConfig
+from cuiman.api.client import Client
 from gavicore.models import (
     Capabilities,
     ConformanceDeclaration,

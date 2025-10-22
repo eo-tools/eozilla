@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from s2gos_client.api.exceptions import ClientError
+from cuiman.api.exceptions import ClientError
 from gavicore.models import ApiError
 
 from .args import TransportArgs

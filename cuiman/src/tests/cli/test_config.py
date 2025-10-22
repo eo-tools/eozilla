@@ -10,9 +10,9 @@ from unittest.mock import patch
 import click
 import pytest
 
-from s2gos_client import ClientConfig
-from s2gos_client.api.defaults import DEFAULT_CONFIG_PATH
-from s2gos_client.cli.config import configure_client, get_config
+from cuiman import ClientConfig
+from cuiman.api.defaults import DEFAULT_CONFIG_PATH
+from cuiman.cli.config import configure_client, get_config
 from gavicore.util.testing import set_env, set_env_cm
 
 DEFAULT_CONFIG_BACKUP_PATH = DEFAULT_CONFIG_PATH.parent / (

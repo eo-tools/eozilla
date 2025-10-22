@@ -7,7 +7,7 @@ from unittest import TestCase
 import panel as pn
 import pytest
 
-from s2gos_client.gui.component import Component, JsonDateCodec, WidgetComponent
+from cuiman.gui.component import Component, JsonDateCodec, WidgetComponent
 
 
 class ComponentTest(TestCase):

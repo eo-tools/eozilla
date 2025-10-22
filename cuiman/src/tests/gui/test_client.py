@@ -5,10 +5,10 @@
 from typing import Any
 from unittest import TestCase
 
-from s2gos_client.api.transport import Transport, TransportArgs
-from s2gos_client.gui import Client as GuiClient
-from s2gos_client.gui.jobs_panel import JobsPanel
-from s2gos_client.gui.main_panel import MainPanel
+from cuiman.api.transport import Transport, TransportArgs
+from cuiman.gui import Client as GuiClient
+from cuiman.gui.jobs_panel import JobsPanel
+from cuiman.gui.main_panel import MainPanel
 from gavicore.models import JobList, ProcessList
 
 

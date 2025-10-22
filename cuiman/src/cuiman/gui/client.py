@@ -6,9 +6,9 @@ import threading
 import time
 from typing import Optional
 
-from s2gos_client.api.client import Client as ApiClient
-from s2gos_client.api.exceptions import ClientError
-from s2gos_client.api.transport import Transport
+from cuiman.api.client import Client as ApiClient
+from cuiman.api.exceptions import ClientError
+from cuiman.api.transport import Transport
 from gavicore.models import JobInfo, ProcessList
 
 from .job_info_panel import JobInfoPanel

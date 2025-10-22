@@ -6,8 +6,8 @@ from unittest import TestCase
 
 from panel.layout import Panel
 
-from s2gos_client.gui.jobs_observer import JobsObserver
-from s2gos_client.gui.jobs_panel import JobsPanel
+from cuiman.gui.jobs_observer import JobsObserver
+from cuiman.gui.jobs_panel import JobsPanel
 from gavicore.models import JobInfo, JobList, JobStatus, JobType
 
 

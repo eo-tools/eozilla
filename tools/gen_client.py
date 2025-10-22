@@ -20,8 +20,8 @@ from tools.openapi import OAMethod, OASchema, load_openapi_schema
 
 GENERATOR_NAME = str(Path(__file__).name)
 
-SYNC_CLIENT_PATH = S2GOS_PATH / "cuiman/src/s2gos_client/api/client.py"
-ASYNC_CLIENT_PATH = S2GOS_PATH / "cuiman/src/s2gos_client/api/async_client.py"
+SYNC_CLIENT_PATH = S2GOS_PATH / "cuiman/src/cuiman/api/client.py"
+ASYNC_CLIENT_PATH = S2GOS_PATH / "cuiman/src/cuiman/api/async_client.py"
 
 
 code_header = """

@@ -4,7 +4,7 @@
 
 from unittest import TestCase
 
-from s2gos_client.cli.output import OutputFormat, OutputRenderer, get_renderer
+from cuiman.cli.output import OutputFormat, OutputRenderer, get_renderer
 from gavicore.models import (
     JobInfo,
     JobList,
