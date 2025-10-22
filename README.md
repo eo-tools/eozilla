@@ -10,5 +10,5 @@ A suite of tools around workflow orchestration systems and the OGC API - Process
 
 _Note, this project and its documentation is still in an early development stage._
 
-Large parts of the work in the Eozilla project has been made possible the 
+Large parts of the work in the Eozilla project has been made possible by the 
 [ESA DTE-S2GOS project](https://dte-s2gos.rayference.eu/about/).

@@ -1,6 +1,10 @@
 ## Changes in version 0.0.5 (in development)
 
-- Renamed environment variable name prefix `S2GOS_` into `EOZILLA_`.
+- `cuiman` clients persist configuration  
+  in `~/.eozilla` rather than `./s2gos`.
+- `cuiman` clients read configuration from 
+  environment variables names 
+  starting with `EOZILLA_` rather than `S2GOS_`.
 - Python package name changes:
     - renamed `s2gos_common` into `gavicore` 
     - renamed `s2gos_client` into `cuiman` 
