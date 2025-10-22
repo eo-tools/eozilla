@@ -226,7 +226,7 @@ def validate_request(
     The `process_id` argument and any given `--input` options will override
     settings with the same name found in the given request file or `stdin`, if any.
     """
-    from s2gos_common.process.request import ExecutionRequest
+    from s2gos_common.util.request import ExecutionRequest
 
     from .output import get_renderer, output
 
@@ -262,7 +262,7 @@ def execute_process(
     The `process_id` argument and any given `--input` options will override
     settings with same name found in the given request file or `stdin`, if any.
     """
-    from s2gos_common.process.request import ExecutionRequest
+    from s2gos_common.util.request import ExecutionRequest
 
     from .client import use_client
     from .output import get_renderer, output

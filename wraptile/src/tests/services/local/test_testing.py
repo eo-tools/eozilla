@@ -12,7 +12,7 @@ from s2gos_common.models import (
     ProcessList,
     ProcessRequest,
 )
-from s2gos_common.process import Job, Process
+from procodile import Job, Process
 from s2gos_server.services.local.testing import SceneSpec
 from s2gos_server.services.local.testing import service as testing_service
 

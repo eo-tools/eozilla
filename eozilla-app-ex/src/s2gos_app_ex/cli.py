@@ -2,7 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from s2gos_common.process import get_cli
+from procodile.cli import get_cli
 
 # The CLI with a basic set of commands.
 # The `cli` is a Typer application of type `typer.Typer()`,

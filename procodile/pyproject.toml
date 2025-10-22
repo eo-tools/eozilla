@@ -3,9 +3,9 @@
 #  https://opensource.org/license/apache-2-0.
 
 [project]
-name = "wraptile"
+name = "procodile"
 version = "0.0.5.dev"
-description = "Python server for the ESA DTE-S2GOS synthetic scene generator service"
+description = "A light-weight processor development framework"
 readme = "README.md"
 authors = [
   {name = "Norman Fomferra (Brockmann Consult GmbH)"},
@@ -38,18 +38,11 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-  "fastapi",
   "pydantic",
-  "pyyaml",
   "typer",
-  "uvicorn",
   # local dependency
-  "gavicore >=0.0.0",
-  "procodile >=0.0.0",
+  "gavicore>=0.0.0",
 ]
-
-[project.scripts]
-wraptile = "s2gos_server.cli:cli"
 
 [project.urls]
 Documentation = "https://eo-tools.github.io/eozilla"
@@ -63,10 +56,11 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build]
 sources = ["src"]
+exclude = ["src/tests/**/*"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src/wraptile/**/*",
+  "src/procodile/**/*",
   "pyproject.toml",
   "README.md",
   "LICENSE",
@@ -74,5 +68,5 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 include = [
-  "src/wraptile/**/*"
+  "src/procodile/**/*"
 ]

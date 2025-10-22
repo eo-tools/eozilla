@@ -18,7 +18,7 @@ from s2gos_common.util.cli.parameters import (
 )
 
 if TYPE_CHECKING:  # pragma: no cover
-    from s2gos_common.process import ProcessRegistry
+    from procodile import ProcessRegistry
 
 
 PROCESS_REGISTRY_GETTER_KEY = "get_process_registry"
@@ -74,7 +74,7 @@ def get_cli(
     if isinstance(process_registry, str):
 
         def get_process_registry():
-            from s2gos_common.process import ProcessRegistry
+            from procodile import ProcessRegistry
             from s2gos_common.util.dynimp import import_value
 
             return import_value(
@@ -121,8 +121,8 @@ def execute_process(
     The `process_id` argument and any given `--input` options will override
     settings with same name found in the given request file or `stdin`, if any.
     """
-    from s2gos_common.process import Job
-    from s2gos_common.process.request import ExecutionRequest
+    from procodile import Job
+    from procodile import ExecutionRequest
 
     process_registry = _get_process_registry(ctx)
     execution_request = ExecutionRequest.create(
@@ -193,7 +193,7 @@ def get_process(
 
 
 def _get_process_registry(ctx: typer.Context) -> "ProcessRegistry":
-    from s2gos_common.process import ProcessRegistry
+    from procodile import ProcessRegistry
 
     process_registry_getter = ctx.obj.get(PROCESS_REGISTRY_GETTER_KEY)
     assert process_registry_getter is not None and callable(process_registry_getter)

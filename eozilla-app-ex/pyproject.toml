@@ -52,6 +52,7 @@ pydantic = ">=2.11.7,<3"
 
 [tool.pixi.pypi-dependencies]
 gavicore = { path = "../gavicore", editable = true }
+procodile = { path = "../procodile", editable = true }
 eozilla-app-ex = { path = ".", editable = true }
 
 [tool.pixi.feature.dev.dependencies]

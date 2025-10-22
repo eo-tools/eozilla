@@ -20,7 +20,7 @@ from s2gos_common.models import (
     ProcessList,
     ProcessRequest,
 )
-from s2gos_common.process import Process
+from procodile import Process
 from s2gos_common.util.testing import set_env
 from s2gos_server.exceptions import ServiceException
 from s2gos_server.main import app

@@ -14,7 +14,7 @@ from s2gos_common.models import (
     ProcessDescription,
 )
 
-from .schema import create_json_schema, create_schema_instance
+from s2gos_common.util.schema import create_json_schema, create_schema_instance
 
 
 @dataclass
@@ -24,7 +24,7 @@ class Process:
     in form of a Python function.
 
     Instances of this class are be managed by the
-    [ProcessRegistry][s2gos_common.process.ProcessRegistry].
+    [ProcessRegistry][procodile.process.ProcessRegistry].
 
     Attributes:
         function: The user's Python function.

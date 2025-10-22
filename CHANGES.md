@@ -1,5 +1,6 @@
 ## Changes in version 0.0.5 (in development)
 
+- Extracted new package "procodile" from "gavicore"
 - Initial folder name changes:
     - renamed "s2gos-dev" GH org references into "eo-tools"
     - renamed "s2gos-controller" GH org references "eozilla"

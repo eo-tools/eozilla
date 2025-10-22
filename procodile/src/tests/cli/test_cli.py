@@ -6,8 +6,8 @@ from unittest import TestCase
 
 import typer.testing
 
-from s2gos_common.process import ProcessRegistry
-from s2gos_common.process.cli.cli import get_cli
+from procodile import ProcessRegistry
+from procodile.cli import get_cli
 
 registry = ProcessRegistry()
 
@@ -174,7 +174,7 @@ class CliRegistryTest(CliTestMixin, TestCase):
 class CliRegistryRefTest(CliTestMixin, TestCase):
     @classmethod
     def get_cli(cls):
-        return get_cli("tests.process.cli.test_cli:registry")
+        return get_cli("tests.cli.test_cli:registry")
 
 
 class CliRegistryGetterTest(CliTestMixin, TestCase):

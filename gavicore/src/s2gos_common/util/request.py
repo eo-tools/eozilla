@@ -12,7 +12,7 @@ import pydantic
 from pydantic import Field
 
 from s2gos_common.models import ProcessDescription, ProcessRequest
-from s2gos_common.util.obj import flatten_obj, nest_dict
+from .obj import flatten_obj, nest_dict
 
 SUBSCRIBER_EVENTS = {
     "success": "successUri",
@@ -38,10 +38,10 @@ class ExecutionRequest(ProcessRequest):
             Values may be of any JSON-serializable type accepted by
             the given process.
         outputs: Optional process outputs given as key-value mapping.
-            Values are of type [Output][s2gos_common.models.Output]
+            Values are of type [Output][procodile.models.Output]
             supported by the given process.
         subscriber: Optional subscriber of type
-            [Subscriber][s2gos_common.models.Subscriber] comprising callback
+            [Subscriber][procodile.models.Subscriber] comprising callback
             URLs that are informed about process status changes
             while the processing takes place.
     """

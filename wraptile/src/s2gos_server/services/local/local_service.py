@@ -19,7 +19,7 @@ from s2gos_common.models import (
     ProcessRequest,
     ProcessSummary,
 )
-from s2gos_common.process import Job, Process, ProcessRegistry
+from procodile import Job, Process, ProcessRegistry
 from s2gos_server.exceptions import ServiceException
 from s2gos_server.services.base import ServiceBase
 
