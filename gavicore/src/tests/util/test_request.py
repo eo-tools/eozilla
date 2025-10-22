@@ -10,14 +10,14 @@ from unittest.mock import patch
 import click
 import pytest
 
-from s2gos_common.models import (
+from gavicore.models import (
     InputDescription,
     ProcessDescription,
     ProcessRequest,
     Schema,
     Subscriber,
 )
-from s2gos_common.util.request import ExecutionRequest
+from gavicore.util.request import ExecutionRequest
 
 REQUEST_PATH = "test-request.yaml"
 

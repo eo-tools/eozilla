@@ -6,13 +6,11 @@ import datamodel_code_generator as dcg
 
 from tools.common import OPEN_API_PATH, S2GOS_PATH
 
-MODELS_PATH = S2GOS_PATH / "gavicore/src/s2gos_common/models.py"
+MODELS_PATH = S2GOS_PATH / "gavicore/src/gavicore/models.py"
 
 
 def main():
-    assert not bool(dcg), (
-        "NO ERROR: see s2gos_common.models.QualifiedValue, then uncomment"
-    )
+    assert not bool(dcg), "NO ERROR: see gavicore.models.QualifiedValue, then uncomment"
     dcg.generate(
         input_=OPEN_API_PATH,
         input_file_type=dcg.InputFileType.OpenAPI,

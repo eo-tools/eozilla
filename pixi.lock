@@ -1289,12 +1289,12 @@ packages:
 - pypi: ./appligator
   name: appligator
   version: 0.0.5.dev0
-  sha256: 1edefa4b82939cd15ab5201e80b1edebc3f57bfd5f60b0ad2fc5edad311122eb
+  sha256: e9e6088dd7b884d6949b55b59b39dc60b04ed772bb67be99a568a92aafd01811
   requires_dist:
   - pydantic
   - typer
-  - gavicore>=0.0.0
-  - procodile>=0.0.0
+  - gavicore>=0.0.4
+  - procodile>=0.0.4
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/appnope-0.1.4-pyhd8ed1ab_1.conda
@@ -2840,7 +2840,7 @@ packages:
 - pypi: ./cuiman
   name: cuiman
   version: 0.0.5.dev0
-  sha256: 746c6e31c941d257c7c406f4defb779cce34dc0218c154c802bb9de2b454450c
+  sha256: 0a6f2a6c63caec101f0b7de55c9c1b63a7e71700ed22de8c1d666e68ee83410a
   requires_dist:
   - click
   - pydantic
@@ -2848,7 +2848,7 @@ packages:
   - typer
   - uri-template
   - httpx
-  - gavicore>=0.0.0
+  - gavicore>=0.0.4
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/linux-64/cytoolz-1.0.1-py313h536fd9c_0.conda
@@ -3272,7 +3272,7 @@ packages:
 - pypi: ./gavicore
   name: gavicore
   version: 0.0.5.dev0
-  sha256: df29bcf1ff63e6286baff081860d5f50836a849ec65cf6c82c0a0a5cdba3f50d
+  sha256: 9dd7cd17d5cdd14403c701884ea84314428b4f973c62e01a4032f452f76510ea
   requires_dist:
   - pydantic
   - typer
@@ -8051,11 +8051,11 @@ packages:
 - pypi: ./procodile
   name: procodile
   version: 0.0.5.dev0
-  sha256: 66225dcfe608ae9f3eb539cc6121a43db51a40654569066fc3e9c5c8c075fd35
+  sha256: 77f7c31e8462b99ef4af7cbfb57d53901545016bf873799c54925cb1afd82b02
   requires_dist:
   - pydantic
   - typer
-  - gavicore>=0.0.0
+  - gavicore>=0.0.4
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/linux-64/prometheus-cpp-1.3.0-ha5d0236_0.conda

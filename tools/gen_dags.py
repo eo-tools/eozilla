@@ -8,7 +8,7 @@ from typing import Any
 
 import typer
 
-from s2gos_common.process import Process
+from gavicore.process import Process
 from s2gos_server.services.local import LocalService
 from tools.common import S2GOS_PATH, write_file
 

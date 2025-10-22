@@ -7,7 +7,7 @@ import unittest
 import click
 import pytest
 
-from s2gos_common.util.cli.group import AliasedGroup
+from gavicore.util.cli.group import AliasedGroup
 
 
 class AliasedGroupTest(unittest.TestCase):

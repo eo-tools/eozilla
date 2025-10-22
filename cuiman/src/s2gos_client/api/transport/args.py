@@ -12,7 +12,7 @@ import uri_template
 from pydantic import BaseModel
 
 from s2gos_client.api.exceptions import ClientError
-from s2gos_common.models import ApiError
+from gavicore.models import ApiError
 
 
 @dataclass

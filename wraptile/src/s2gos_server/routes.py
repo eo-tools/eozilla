@@ -4,10 +4,10 @@
 
 import fastapi
 
-from s2gos_common.models import (
+from gavicore.models import (
     ProcessRequest,
 )
-from s2gos_common.service import Service
+from gavicore.service import Service
 
 from .app import app
 from .provider import get_service

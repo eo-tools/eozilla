@@ -5,7 +5,7 @@
 import inspect
 from unittest import TestCase
 
-from s2gos_common.service import Service
+from gavicore.service import Service
 
 REQUIRED_METHODS = {
     "dismiss_job",

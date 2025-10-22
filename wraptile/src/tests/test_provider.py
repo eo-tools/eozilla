@@ -6,7 +6,7 @@ from unittest import TestCase
 
 import pytest
 
-from s2gos_common.util.testing import set_env_cm
+from gavicore.util.testing import set_env_cm
 from s2gos_server.exceptions import ServiceConfigException
 from s2gos_server.provider import ServiceProvider, get_service
 from s2gos_server.services.local import LocalService

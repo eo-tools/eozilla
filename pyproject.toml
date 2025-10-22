@@ -1,6 +1,6 @@
 [project]
 name = "eozilla"
-version = "0.0.5.dev"
+version = "0.0.5.dev0"
 description = "S2GOS control layer comprising a server and client"
 requires-python = ">=3.10"
 
@@ -62,19 +62,18 @@ nbformat = "*"
 pymdown-extensions = "*"
 anaconda-client = ">=1.13.0,<2"
 
-
 [tool.pixi.pypi-dependencies]
 # For PyPI builds (maybe replace by some pixi-friendly tool)
 build = ">=1.3.0,<2"
 # I wished we could have "no-deps=true" here,
 # or even better "[tool.pixi.workspaces]".
 # See https://github.com/prefix-dev/pixi/issues/1417.
-cuiman = { path = "cuiman", editable = true }
-gavicore = { path = "gavicore", editable = true }
-wraptile = { path = "wraptile", editable = true }
-procodile = { path = "procodile", editable = true }
-appligator = { path = "appligator", editable = true }
-eozilla-app-ex = { path = "eozilla-app-ex", editable = true }
+gavicore = { path = "./gavicore", editable = true }
+wraptile = { path = "./wraptile", editable = true }
+cuiman = { path = "./cuiman", editable = true }
+procodile = { path = "./procodile", editable = true }
+appligator = { path = "./appligator", editable = true }
+eozilla-app-ex = { path = "./eozilla-app-ex", editable = true }
 # Airflow is only available on PyPI
 apache-airflow-client = "==3.0.2"
 # Documentation
@@ -85,7 +84,7 @@ mkdocs-mermaid2-plugin = "*"
 skip = [".idea", ".github", ".pixi", "htmlcov", "site"]
 profile = "black"
 line_length = 88
-known_first_party = ["appligator", "procodile", "s2gos_common", "s2gos_client", "s2gos_server", "s2gos_app_ex"]
+known_first_party = ["appligator", "procodile", "gavicore", "s2gos_client", "s2gos_server", "s2gos_app_ex"]
 
 [tool.black]
 line-length = 88
@@ -131,7 +130,7 @@ exclude = [
     "_pkg_reservations",
 ]
 [[tool.mypy.overrides]]
-module = "s2gos_common.models"
+module = "gavicore.models"
 disable_error_code = ["valid-type"]
 
 ########################## Tasks ###############################
@@ -186,7 +185,7 @@ cmd = "coverage html -d .cov-report && coverage report"
 cmd = "coverage xml -o coverage.xml && coverage report"
 
 [tool.pixi.tasks.cov-gavicore]
-cmd = "pytest --cov gavicore/src/s2gos_common --cov-report= --cov-append gavicore/src/tests"
+cmd = "pytest --cov gavicore/src/gavicore --cov-report= --cov-append gavicore/src/tests"
 
 [tool.pixi.tasks.cov-wraptile]
 cmd = "pytest --cov wraptile/src/s2gos_server --cov-report= --cov-append wraptile/src/tests"

@@ -7,7 +7,7 @@ from importlib.metadata import version
 
 __version__ = version("procodile")
 
-from s2gos_common.util.request import ExecutionRequest
+from gavicore.util.request import ExecutionRequest
 from .job import Job, JobCancelledException, JobContext
 from .process import Process
 from .registry import ProcessRegistry

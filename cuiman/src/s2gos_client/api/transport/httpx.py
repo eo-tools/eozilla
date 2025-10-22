@@ -8,7 +8,7 @@ from typing import Any
 import httpx
 
 from s2gos_client.api.exceptions import ClientError
-from s2gos_common.models import ApiError
+from gavicore.models import ApiError
 
 from .args import TransportArgs
 from .transport import AsyncTransport, Transport, TransportError

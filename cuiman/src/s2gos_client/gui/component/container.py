@@ -8,7 +8,7 @@ from typing import Any, Callable, Literal, TypeAlias
 
 import param
 
-from s2gos_common.models import InputDescription, Schema
+from gavicore.models import InputDescription, Schema
 
 from .component import Component
 from .impl import register_all

@@ -4,7 +4,7 @@
 
 [project]
 name = "cuiman"
-version = "0.0.5.dev"
+version = "0.0.5.dev0"
 description = "Python client for the ESA DTE-S2GOS synthetic scene generator service"
 readme = "README.md"
 authors = [
@@ -45,7 +45,7 @@ dependencies = [
   "uri-template",
   "httpx",
   # local dependency
-  "gavicore>=0.0.0",
+  "gavicore>=0.0.4",
 ]
 
 [project.scripts]

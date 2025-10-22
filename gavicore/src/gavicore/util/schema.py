@@ -8,7 +8,7 @@ from typing import Any
 
 import pydantic
 
-from s2gos_common.models import Schema
+from gavicore.models import Schema
 
 
 def create_schema_instance(name: str, schema: dict[str, Any]) -> Schema:

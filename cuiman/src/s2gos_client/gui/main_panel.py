@@ -8,14 +8,14 @@ import panel as pn
 import param
 
 from s2gos_client.api.exceptions import ClientError
-from s2gos_common.models import (
+from gavicore.models import (
     JobInfo,
     JobList,
     ProcessDescription,
     ProcessList,
     ProcessRequest,
 )
-from s2gos_common.util.request import ExecutionRequest
+from gavicore.util.request import ExecutionRequest
 
 from .component.container import ComponentContainer
 from .job_info_panel import JobInfoPanel

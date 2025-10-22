@@ -4,7 +4,7 @@
 
 [project]
 name = "gavicore"
-version = "0.0.5.dev"
+version = "0.0.5.dev0"
 description = "Python data models for the ESA DTE-S2GOS synthetic scene generator service"
 readme = "README.md"
 authors = [
@@ -58,7 +58,7 @@ exclude = ["src/tests/**/*"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src/s2gos_common/**/*",
+  "src/gavicore/**/*",
   "pyproject.toml",
   "README.md",
   "LICENSE",
@@ -66,5 +66,5 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 include = [
-  "src/s2gos_common/**/*"
+  "src/gavicore/**/*"
 ]

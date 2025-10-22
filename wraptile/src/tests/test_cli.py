@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import typer
 from typer.testing import CliRunner
 
-from s2gos_common.util.testing import set_env_cm
+from gavicore.util.testing import set_env_cm
 from s2gos_server import __version__
 from s2gos_server.cli import cli, parse_cli_service_options
 from s2gos_server.constants import ENV_VAR_SERVICE

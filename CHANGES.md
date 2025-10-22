@@ -1,5 +1,7 @@
 ## Changes in version 0.0.5 (in development)
 
+- Python package name changes:
+    - renamed `s2gos_common` into `gavicore` 
 - Created empty package `appligator` as starting point
 - Extracted new package `procodile` from `gavicore`
 - Initial folder name changes:

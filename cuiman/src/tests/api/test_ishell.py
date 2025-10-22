@@ -8,7 +8,7 @@ from IPython.core.interactiveshell import InteractiveShell
 
 from s2gos_client import ClientError
 from s2gos_client.api.ishell import exception_handler, has_ishell
-from s2gos_common.models import ApiError
+from gavicore.models import ApiError
 
 
 class IShellTest(TestCase):

@@ -8,7 +8,7 @@ from typing import Optional
 
 from fastapi import HTTPException
 
-from s2gos_common.models import ApiError
+from gavicore.models import ApiError
 
 
 class ServiceException(HTTPException):

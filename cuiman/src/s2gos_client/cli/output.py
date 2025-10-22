@@ -9,14 +9,14 @@ from typing import Any, Callable, Literal
 import pydantic
 import typer
 
-from s2gos_common.models import (
+from gavicore.models import (
     JobInfo,
     JobList,
     JobResults,
     ProcessDescription,
     ProcessList,
 )
-from s2gos_common.util.request import ExecutionRequest
+from gavicore.util.request import ExecutionRequest
 
 
 class OutputFormat(str, Enum):

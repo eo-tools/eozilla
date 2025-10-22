@@ -20,7 +20,7 @@ direction LR
         class gui.Client
         class cli
     }
-    namespace s2gos_common {
+    namespace gavicore {
         class models
         class service.Service
     }
@@ -50,8 +50,8 @@ direction LR
 
 Given here is the design used in package `s2gos_client.gui.component`.
 The package contains the code to generate widgets and panels from the 
-JSON schema `s2gos_common.models.InputDescription` instances contained in
-a `s2gos_common.models.ProcessDescription` instance.
+JSON schema `gavicore.models.InputDescription` instances contained in
+a `gavicore.models.ProcessDescription` instance.
 
 The `ComponentContainer` maps every `InputDescription` to a visual 
 `Component` that is created for a given JSON schema.  
@@ -148,7 +148,7 @@ direction TB
 
 ## S2GOS Common
 
-Given here is the design used in package `s2gos_common.service`.
+Given here is the design used in package `gavicore.service`.
 
 ```mermaid
 classDiagram
@@ -220,8 +220,8 @@ flowchart LR
     openapi@{ shape: lean-r, label: "OpenAPI.yaml" }
     sync_client@{ shape: stadium, label: "s2gos_client.api.Client" }
     async_client@{ shape: stadium, label: "s2gos_client.api.AsyncClient" }
-    models@{ shape: stadium, label: "s2gos_common.models.*" }
-    service@{ shape: stadium, label: "s2gos_common.service.Service" }
+    models@{ shape: stadium, label: "gavicore.models.*" }
+    service@{ shape: stadium, label: "gavicore.service.Service" }
     routes@{ shape: stadium, label: "s2gos_server.routes" }
     openapi --> generate
     generate --> gen-client

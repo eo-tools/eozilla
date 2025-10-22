@@ -11,7 +11,7 @@ import pydantic
 from pydantic import Field
 
 from procodile import JobContext
-from s2gos_common.models import Link
+from gavicore.models import Link
 from s2gos_server.services.local import LocalService
 
 service = LocalService(

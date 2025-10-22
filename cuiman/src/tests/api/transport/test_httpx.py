@@ -12,7 +12,7 @@ import pytest
 from s2gos_client.api.exceptions import ClientError
 from s2gos_client.api.transport import TransportArgs, TransportError
 from s2gos_client.api.transport.httpx import HttpxTransport
-from s2gos_common.models import ApiError, ConformanceDeclaration
+from gavicore.models import ApiError, ConformanceDeclaration
 
 
 def make_mocked_transport(

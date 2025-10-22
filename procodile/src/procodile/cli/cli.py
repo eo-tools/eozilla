@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Annotated, Callable, Optional, Union
 import click
 import typer
 
-from s2gos_common.util.cli.group import AliasedGroup
-from s2gos_common.util.cli.parameters import (
+from gavicore.util.cli.group import AliasedGroup
+from gavicore.util.cli.parameters import (
     DOT_PATH_OPTION,
     PROCESS_ID_ARGUMENT,
     REQUEST_FILE_OPTION,
@@ -75,7 +75,7 @@ def get_cli(
 
         def get_process_registry():
             from procodile import ProcessRegistry
-            from s2gos_common.util.dynimp import import_value
+            from gavicore.util.dynimp import import_value
 
             return import_value(
                 process_registry, name="process registry", type=ProcessRegistry

@@ -10,14 +10,14 @@ import pytest
 from pydantic import BaseModel, Field
 
 from procodile import JobContext, Process
-from s2gos_common.models import (
+from gavicore.models import (
     DataType,
     InputDescription,
     OutputDescription,
     ProcessDescription,
     Schema,
 )
-from s2gos_common.util.testing import BaseModelMixin
+from gavicore.util.testing import BaseModelMixin
 
 
 def f1(x: float, y: float) -> float:

@@ -8,7 +8,7 @@ from panel.layout import Panel
 
 from s2gos_client.gui.jobs_observer import JobsObserver
 from s2gos_client.gui.jobs_panel import JobsPanel
-from s2gos_common.models import JobInfo, JobList, JobStatus, JobType
+from gavicore.models import JobInfo, JobList, JobStatus, JobType
 
 
 class JobsFormTest(TestCase):

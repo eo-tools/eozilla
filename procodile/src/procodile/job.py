@@ -13,7 +13,7 @@ from typing import Any, Optional
 
 import pydantic
 
-from s2gos_common.models import (
+from gavicore.models import (
     JobInfo,
     JobResults,
     JobStatus,

@@ -5,7 +5,7 @@
 import pytest
 
 # noinspection PyProtectedMember
-from s2gos_common.util.obj import _nest_one, flatten_obj, nest_dict, nest_obj
+from gavicore.util.obj import _nest_one, flatten_obj, nest_dict, nest_obj
 
 
 def test_flatten_and_nest_dict_1():
