@@ -247,7 +247,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/94/72/c5fd70742126cab7403126a1719b4161a81b816d83a2fdb78b390d8ecc47/zarr-3.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2e/54/647ade08bf0db230bfea292f893923872fd20be6ac6f53b2b936ba839d75/zipp-3.23.0-py3-none-any.whl
       - pypi: ../gavicore
-      - pypi: ../s2gos-server
+      - pypi: ../wraptile
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
   sha256: fe51de6107f9edc7aa4f786a70f4a883943bc9d39b3bb7307c04c41410990726
@@ -3163,8 +3163,8 @@ packages:
   - typer
   requires_python: '>=3.10'
   editable: true
-- pypi: ../s2gos-server
-  name: s2gos-server
+- pypi: ../wraptile
+  name: wraptile
   version: 0.0.4.dev0
   sha256: 0df582a16e02468403e2181e136b294dbcfcd062adc4fb7290ffaa97691ee391
   requires_dist:

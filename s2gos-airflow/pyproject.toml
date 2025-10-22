@@ -23,7 +23,7 @@ python = "3.12.*"
 apache-airflow = "==3.0.2"
 # S2GOS service implementation
 gavicore = { path = "../gavicore", editable = true }
-s2gos-server = { path = "../s2gos-server", editable = true }
+wraptile = { path = "../wraptile", editable = true }
 fastapi = "*"
 pydantic = "*"
 pyyaml = "*"

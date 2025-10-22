@@ -397,7 +397,7 @@ environments:
       - pypi: ./cuiman
       - pypi: ./gavicore
       - pypi: ./s2gos-app-ex
-      - pypi: ./s2gos-server
+      - pypi: ./wraptile
       osx-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/anaconda-cli-base-0.5.2-pyhd8ed1ab_0.conda
@@ -776,7 +776,7 @@ environments:
       - pypi: ./cuiman
       - pypi: ./gavicore
       - pypi: ./s2gos-app-ex
-      - pypi: ./s2gos-server
+      - pypi: ./wraptile
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/win-64/_openmp_mutex-4.5-2_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_2.conda
@@ -1144,7 +1144,7 @@ environments:
       - pypi: ./cuiman
       - pypi: ./gavicore
       - pypi: ./s2gos-app-ex
-      - pypi: ./s2gos-server
+      - pypi: ./wraptile
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
   sha256: fe51de6107f9edc7aa4f786a70f4a883943bc9d39b3bb7307c04c41410990726
@@ -9184,19 +9184,6 @@ packages:
   sha256: bcdfad38d7d952c09cd54f8e79747598bdc87940e224b5e9ed2e1ca74b6697f5
   requires_python: '>=3.10'
   editable: true
-- pypi: ./s2gos-server
-  name: s2gos-server
-  version: 0.0.5.dev0
-  sha256: e3d142e06e1cc51f0c97da770826368c0e21b25c7d17d7c246eba8bcb9115403
-  requires_dist:
-  - fastapi
-  - pydantic
-  - pyyaml
-  - typer
-  - uvicorn
-  - gavicore>=0.0.0
-  requires_python: '>=3.10'
-  editable: true
 - conda: https://conda.anaconda.org/conda-forge/linux-64/s2n-1.5.21-h7ab7c64_0.conda
   sha256: c8b252398b502a5cc6ea506fd2fafe7e102e7c9e2ef48b7813566e8a72ce2205
   md5: 28b5a7895024a754249b2ad7de372faa
@@ -10272,6 +10259,19 @@ packages:
   - pkg:pypi/wrapt?source=hash-mapping
   size: 62824
   timestamp: 1736870265811
+- pypi: ./wraptile
+  name: wraptile
+  version: 0.0.5.dev0
+  sha256: c89b7f99fd285581b7973c9cf669f381561bde3ab30635ab6f0e517ca5436aa5
+  requires_dist:
+  - fastapi
+  - pydantic
+  - pyyaml
+  - typer
+  - uvicorn
+  - gavicore>=0.0.0
+  requires_python: '>=3.10'
+  editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2025.6.1-pyhd8ed1ab_1.conda
   sha256: e27b45ca791cfbcad37d64b8615d0672d94aafa00b014826fcbca2ce18bd1cc0
   md5: 145c6f2ac90174d9ad1a2a51b9d7c1dd

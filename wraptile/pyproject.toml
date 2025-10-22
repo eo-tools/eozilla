@@ -3,7 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 [project]
-name = "s2gos-server"
+name = "wraptile"
 version = "0.0.5.dev"
 description = "Python server for the ESA DTE-S2GOS synthetic scene generator service"
 readme = "README.md"
@@ -48,7 +48,7 @@ dependencies = [
 ]
 
 [project.scripts]
-s2gos-server = "s2gos_server.cli:cli"
+wraptile = "s2gos_server.cli:cli"
 
 [project.urls]
 Documentation = "https://eo-tools.github.io/eozilla"

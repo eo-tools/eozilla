@@ -70,7 +70,7 @@ anaconda-client = ">=1.13.0,<2"
 # See https://github.com/prefix-dev/pixi/issues/1417.
 cuiman = { path = "cuiman", editable = true }
 gavicore = { path = "gavicore", editable = true }
-s2gos-server = { path = "s2gos-server", editable = true }
+wraptile = { path = "wraptile", editable = true }
 s2gos-app-ex = { path = "s2gos-app-ex", editable = true }
 # Airflow is only available on PyPI
 apache-airflow-client = "==3.0.2"
@@ -91,7 +91,7 @@ line-length = 88
 include = [
     "notebooks/**/*.py",
     "gavicore/src/**/*.py",
-    "s2gos-server/src/**/*.py",
+    "wraptile/src/**/*.py",
     "cuiman/src/**/*.py",
     "s2gos-app-ex/src/**/*.py",
     "tools/**/*.py",
@@ -107,7 +107,7 @@ select = ["I", "F", "E"]
 omit = [
     "s2gos-app-ex/src/s2gos_app_ex/**/*",
     "cuiman/src/s2gos_client/gui/**/*",
-    "s2gos-server/src/s2gos_server/services/airflow/**/*",
+    "wraptile/src/s2gos_server/services/airflow/**/*",
 ]
 
 [tool.mypy]
@@ -119,7 +119,7 @@ exclude = [
     "s2gos-app-ex/src/test",
     "cuiman/src/test",
     "gavicore/src/test",
-    "s2gos-server/src/test",
+    "wraptile/src/test",
     "tools",
     "_pkg_reservations",
 ]
@@ -138,7 +138,7 @@ depends-on = ["test-common", "test-server", "test-client"]
 cmd = "pytest gavicore/src/tests"
 
 [tool.pixi.tasks.test-server]
-cmd = "pytest s2gos-server/src/tests"
+cmd = "pytest wraptile/src/tests"
 
 [tool.pixi.tasks.test-client]
 cmd = "pytest cuiman/src/tests"
@@ -161,7 +161,7 @@ cmd = "coverage xml -o coverage.xml && coverage report"
 cmd = "pytest --cov gavicore/src/s2gos_common --cov-report= --cov-append gavicore/src/tests"
 
 [tool.pixi.tasks.cov-server]
-cmd = "pytest --cov s2gos-server/src/s2gos_server --cov-report= --cov-append s2gos-server/src/tests"
+cmd = "pytest --cov wraptile/src/s2gos_server --cov-report= --cov-append wraptile/src/tests"
 
 [tool.pixi.tasks.cov-client]
 cmd = "pytest --cov cuiman/src/s2gos_client --cov-report= --cov-append cuiman/src/tests"
@@ -175,7 +175,7 @@ depends-on = ["check-common", "check-server", "check-client", "typecheck"]
 cmd = "ruff check gavicore/src"
 
 [tool.pixi.tasks.check-server]
-cmd = "ruff check s2gos-server/src"
+cmd = "ruff check wraptile/src"
 
 [tool.pixi.tasks.check-client]
 cmd = "ruff check cuiman/src"
