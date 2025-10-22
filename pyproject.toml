@@ -73,6 +73,7 @@ cuiman = { path = "cuiman", editable = true }
 gavicore = { path = "gavicore", editable = true }
 wraptile = { path = "wraptile", editable = true }
 procodile = { path = "procodile", editable = true }
+appligator = { path = "appligator", editable = true }
 eozilla-app-ex = { path = "eozilla-app-ex", editable = true }
 # Airflow is only available on PyPI
 apache-airflow-client = "==3.0.2"
@@ -84,7 +85,7 @@ mkdocs-mermaid2-plugin = "*"
 skip = [".idea", ".github", ".pixi", "htmlcov", "site"]
 profile = "black"
 line_length = 88
-known_first_party = ["procodile", "s2gos_common", "s2gos_client", "s2gos_server", "s2gos_app_ex"]
+known_first_party = ["appligator", "procodile", "s2gos_common", "s2gos_client", "s2gos_server", "s2gos_app_ex"]
 
 [tool.black]
 line-length = 88
@@ -96,6 +97,7 @@ include = [
     "wraptile/src/**/*.py",
     "cuiman/src/**/*.py",
     "procodile/src/**/*.py",
+    "appligator/src/**/*.py",
     "eozilla-app-ex/src/**/*.py",
     "tools/**/*.py",
 ]
@@ -124,6 +126,7 @@ exclude = [
     "wraptile/src/test",
     "cuiman/src/test",
     "procodile/src/test",
+    "appligator/src/test",
     "tools",
     "_pkg_reservations",
 ]
@@ -136,7 +139,13 @@ disable_error_code = ["valid-type"]
 # pixi run test
 
 [tool.pixi.tasks.test]
-depends-on = ["test-gavicore", "test-wraptile", "test-cuiman", "test-procodile"]
+depends-on = [
+    "test-gavicore",
+    "test-wraptile",
+    "test-cuiman",
+    "test-procodile",
+    "test-appligator"
+]
 
 [tool.pixi.tasks.test-gavicore]
 cmd = "pytest gavicore/src/tests"
@@ -150,13 +159,25 @@ cmd = "pytest cuiman/src/tests"
 [tool.pixi.tasks.test-procodile]
 cmd = "pytest procodile/src/tests"
 
+[tool.pixi.tasks.test-appligator]
+cmd = "pytest appligator/src/tests"
+
 # pixi run coverage / coverage-ci
 
 [tool.pixi.tasks.coverage]
-depends-on = ["cov-gavicore", "cov-wraptile", "cov-cuiman", "cov-procodile", "cov-report-html"]
+depends-on = ["cov-modules", "cov-report-html"]
 
 [tool.pixi.tasks.coverage-ci]
-depends-on = ["cov-gavicore", "cov-wraptile", "cov-cuiman", "cov-procodile", "cov-report-xml"]
+depends-on = ["cov-modules", "cov-report-xml"]
+
+[tool.pixi.tasks.cov-modules]
+depends-on = [
+    "cov-gavicore",
+    "cov-wraptile",
+    "cov-cuiman",
+    "cov-procodile",
+    "cov-appligator",
+]
 
 [tool.pixi.tasks.cov-report-html]
 cmd = "coverage html -d .cov-report && coverage report"
@@ -176,10 +197,20 @@ cmd = "pytest --cov cuiman/src/s2gos_client --cov-report= --cov-append cuiman/sr
 [tool.pixi.tasks.cov-procodile]
 cmd = "pytest --cov procodile/src/procodile --cov-report= --cov-append procodile/src/tests"
 
+[tool.pixi.tasks.cov-appligator]
+cmd = "pytest --cov appligator/src/appligator --cov-report= --cov-append appligator/src/tests"
+
 # pixi run check
 
 [tool.pixi.tasks.check]
-depends-on = ["check-gavicore", "check-wraptile", "check-cuiman", "check-procodile", "typecheck"]
+depends-on = [
+    "check-gavicore",
+    "check-wraptile",
+    "check-cuiman",
+    "check-procodile",
+    "check-appligator",
+    "typecheck"
+]
 
 [tool.pixi.tasks.check-gavicore]
 cmd = "ruff check gavicore/src"
@@ -193,13 +224,21 @@ cmd = "ruff check cuiman/src"
 [tool.pixi.tasks.check-procodile]
 cmd = "ruff check procodile/src"
 
+[tool.pixi.tasks.check-appligator]
+cmd = "ruff check appligator/src"
+
 [tool.pixi.tasks.typecheck]
 cmd = "mypy ."
 
 # pixi run generate
 
 [tool.pixi.tasks.generate]
-depends-on = ["gen-models", "gen-server", "gen-client", "gen-client-docs"]
+depends-on = [
+    "gen-models",
+    "gen-server",
+    "gen-client",
+    "gen-client-docs",
+]
 
 [tool.pixi.tasks.gen-models]
 cmd = "python -m tools.gen_models"

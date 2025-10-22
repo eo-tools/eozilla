@@ -12,10 +12,10 @@ authors = [
   {name = "Tejas Morbagal Harish (Brockmann Consult GmbH)"}
 ]
 keywords = [
-  "synthetic scene generation",
+  "eo",
   "esa",
-  "eRadiate",
-  "zarr"
+  "data processing",
+  "ogc",
 ]
 license = {text = "Apache-2.0"}
 classifiers = [
