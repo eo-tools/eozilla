@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 from urllib import error
 
-from s2gos_common.process.reporter import CallbackReporter
+from procodile import CallbackReporter
 
 
 class CallbackReporterTest(unittest.TestCase):

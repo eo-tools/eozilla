@@ -58,7 +58,7 @@ exclude = ["src/tests/**/*"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src/s2gos_common/**/*",
+  "src/gavicore/**/*",
   "pyproject.toml",
   "README.md",
   "LICENSE",
@@ -66,5 +66,5 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 include = [
-  "src/s2gos_common/**/*"
+  "src/gavicore/**/*"
 ]

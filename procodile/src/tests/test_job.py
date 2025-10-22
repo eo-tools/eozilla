@@ -7,14 +7,14 @@ from unittest import TestCase
 import pydantic
 import pytest
 
-from s2gos_common.models import JobResults, JobStatus, ProcessRequest, Subscriber
-from s2gos_common.process import Process
-from s2gos_common.process.job import (
+from procodile import (
     Job,
     JobCancelledException,
     JobContext,
     NullJobContext,
+    Process,
 )
+from s2gos_common.models import JobResults, JobStatus, ProcessRequest, Subscriber
 
 from .test_process import f1
 

@@ -71,6 +71,7 @@ anaconda-client = ">=1.13.0,<2"
 cuiman = { path = "cuiman", editable = true }
 gavicore = { path = "gavicore", editable = true }
 wraptile = { path = "wraptile", editable = true }
+procodile = { path = "procodile", editable = true }
 eozilla-app-ex = { path = "eozilla-app-ex", editable = true }
 # Airflow is only available on PyPI
 apache-airflow-client = "==3.0.2"
@@ -82,7 +83,7 @@ mkdocs-mermaid2-plugin = "*"
 skip = [".idea", ".github", ".pixi", "htmlcov", "site"]
 profile = "black"
 line_length = 88
-known_first_party = ["s2gos_common", "s2gos_client", "s2gos_server", "s2gos_app_ex"]
+known_first_party = ["procodile", ""s2gos_common", "s2gos_client", "s2gos_server", "s2gos_app_ex"]
 
 [tool.black]
 line-length = 88
@@ -93,6 +94,7 @@ include = [
     "gavicore/src/**/*.py",
     "wraptile/src/**/*.py",
     "cuiman/src/**/*.py",
+    "procodile/src/**/*.py",
     "eozilla-app-ex/src/**/*.py",
     "tools/**/*.py",
 ]
@@ -119,6 +121,7 @@ exclude = [
     "eozilla-app-ex/src/test",
     "cuiman/src/test",
     "gavicore/src/test",
+    "procodile/src/test",
     "wraptile/src/test",
     "tools",
     "_pkg_reservations",
@@ -132,16 +135,22 @@ disable_error_code = ["valid-type"]
 # pixi run test
 
 [tool.pixi.tasks.test]
-depends-on = ["test-common", "test-server", "test-client"]
+depends-on = ["test-gavicore", "test-cuiman", "test-procodile", "test-wraptile"]
 
-[tool.pixi.tasks.test-common]
+[tool.pixi.tasks.test-cuiman]
+cmd = "pytest cuiman/src/tests"
+
+[tool.pixi.tasks.test-gavicore]
 cmd = "pytest gavicore/src/tests"
 
-[tool.pixi.tasks.test-server]
+[tool.pixi.tasks.test-wraptile]
 cmd = "pytest wraptile/src/tests"
 
-[tool.pixi.tasks.test-client]
-cmd = "pytest cuiman/src/tests"
+[tool.pixi.tasks.test-procodile]
+cmd = "pytest procodile/src/tests"
+
+[tool.pixi.tasks.test-wraptile]
+cmd = "pytest wraptile/src/tests"
 
 # pixi run coverage / coverage-ci
 

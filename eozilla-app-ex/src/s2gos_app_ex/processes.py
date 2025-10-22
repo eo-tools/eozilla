@@ -6,7 +6,7 @@ from typing import Annotated
 
 from pydantic import Field
 
-from s2gos_common.process import JobContext, ProcessRegistry
+from procodile import JobContext, ProcessRegistry
 
 registry = ProcessRegistry()
 

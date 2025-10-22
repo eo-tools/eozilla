@@ -17,7 +17,7 @@ from s2gos_common.models import (
     Schema,
     Subscriber,
 )
-from s2gos_common.process.request import ExecutionRequest
+from s2gos_common.util.request import ExecutionRequest
 
 REQUEST_PATH = "test-request.yaml"
 

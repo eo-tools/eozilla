@@ -17,7 +17,7 @@ class ProcessRegistry(Mapping[str, Process]):
     Processes are Python functions with extra metadata.
 
     Represents a read-only mapping from process identifiers to
-    [Process][s2gos_common.process.Process] instances.
+    [Process][procodile.process.Process] instances.
     """
 
     def __init__(self):

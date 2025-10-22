@@ -4,7 +4,7 @@
 
 from unittest import TestCase
 
-from s2gos_common.process import Process, ProcessRegistry
+from procodile import Process, ProcessRegistry
 from s2gos_common.util.testing import BaseModelMixin
 
 from .test_process import f1, f2, f3

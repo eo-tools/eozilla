@@ -9,6 +9,7 @@ import pydantic
 import pytest
 from pydantic import BaseModel, Field
 
+from procodile import JobContext, Process
 from s2gos_common.models import (
     DataType,
     InputDescription,
@@ -16,7 +17,6 @@ from s2gos_common.models import (
     ProcessDescription,
     Schema,
 )
-from s2gos_common.process import JobContext, Process
 from s2gos_common.util.testing import BaseModelMixin
 
 
