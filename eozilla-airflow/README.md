@@ -1,6 +1,6 @@
-# DTE-S2GOS controller Airflow
+# Eozilla Airflow   
 
-Airflow DAGs for the ESA DTE-S2GOS synthetic scene generator service
+Testing Airflow DAGs with Eozilla's Cuiman client and Wraptile server. 
 
 ## Setup
 

@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by ESA DTE-S2GOS team and contributors
+#  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -24,7 +24,7 @@ class CliTest(TestCase):
     def test_help(self):
         result = invoke_cli("--help")
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
-        self.assertIn("tool for the S2GOS service.", result.output)
+        self.assertIn("tool.", result.output)
 
     def test_version(self):
         result = invoke_cli("--version")

@@ -4,8 +4,11 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v0.json)](https://github.com/charliermarsh/ruff)
 [![License](https://img.shields.io/github/license/eo-tools/eozilla)](https://github.com/eo-tools/eozilla)
 
-# eozilla
+# Eozilla
 
-Python control layer for ESA DTE-S2GOS synthetic scene generator service
+A suite of tools around workflow orchestration systems and the OGC API - Processes.
 
 _Note, this project and its documentation is still in an early development stage._
+
+Large parts of the work in the Eozilla project has been made possible the 
+[ESA DTE-S2GOS project](https://dte-s2gos.rayference.eu/about/).

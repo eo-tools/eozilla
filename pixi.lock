@@ -1289,7 +1289,7 @@ packages:
 - pypi: ./appligator
   name: appligator
   version: 0.0.5.dev0
-  sha256: e9e6088dd7b884d6949b55b59b39dc60b04ed772bb67be99a568a92aafd01811
+  sha256: 9060194a43edb4b97c8745cf969deafd6aa05788ab2aca4a56d84e87a46c0220
   requires_dist:
   - pydantic
   - typer
@@ -2840,7 +2840,7 @@ packages:
 - pypi: ./cuiman
   name: cuiman
   version: 0.0.5.dev0
-  sha256: cfdcaf9989ab6137550b4f40ca0d73c73a8fad3faed888ee0ef9febcb7a00757
+  sha256: b04162ad7096881e549ec2603a390abf4dce85c1151267826beb665712333a43
   requires_dist:
   - click
   - pydantic
@@ -3266,7 +3266,7 @@ packages:
 - pypi: ./gavicore
   name: gavicore
   version: 0.0.5.dev0
-  sha256: 9dd7cd17d5cdd14403c701884ea84314428b4f973c62e01a4032f452f76510ea
+  sha256: bd8b52a114fcaf93b422bd6a10135c592525295bb93fb2499ce71eea2c88db05
   requires_dist:
   - pydantic
   - typer
@@ -8045,7 +8045,7 @@ packages:
 - pypi: ./procodile
   name: procodile
   version: 0.0.5.dev0
-  sha256: 77f7c31e8462b99ef4af7cbfb57d53901545016bf873799c54925cb1afd82b02
+  sha256: 6dda4206ed6ba28ee1b273107d85da1a457c2a2f2b34f12fdaa5184a58c09556
   requires_dist:
   - pydantic
   - typer
@@ -8055,7 +8055,7 @@ packages:
 - pypi: ./procodile-example
   name: procodile-example
   version: 0.0.0
-  sha256: d17da0084570c00f7d15f89dc3390829d3fc491375663835dfac40df6e54835e
+  sha256: 9a47e3f619809f883d5631c9cf19f52b74a4489bb56a73b505ad80783b129626
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/linux-64/prometheus-cpp-1.3.0-ha5d0236_0.conda
@@ -10289,7 +10289,7 @@ packages:
 - pypi: ./wraptile
   name: wraptile
   version: 0.0.5.dev0
-  sha256: 9ba53f4e2792cce229c3d39b8c5155ed580c79369ce648e5aebfe95ca80cd6b6
+  sha256: da2a103b4df0d4215ea4aacd4b48cb96fbad81e6a7fa0a04ae89fe478b8c5d51
   requires_dist:
   - fastapi
   - pydantic

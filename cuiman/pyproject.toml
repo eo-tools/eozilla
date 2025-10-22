@@ -1,11 +1,11 @@
-#  Copyright (c) 2025 by ESA DTE-S2GOS team and contributors
+#  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
 [project]
 name = "cuiman"
 version = "0.0.5.dev0"
-description = "Python client for the ESA DTE-S2GOS synthetic scene generator service"
+description = "Provides a client Python API, GUI, and CLI for servers compliant with OGC API - Processes"
 readme = "README.md"
 authors = [
   {name = "Norman Fomferra (Brockmann Consult GmbH)"},

@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by ESA DTE-S2GOS team and contributors
+#  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -16,11 +16,11 @@ from gavicore.util.cli.parameters import (
     REQUEST_SUBSCRIBER_OPTION,
 )
 
-SERVICE_NAME = "S2GOS service"
 
 CLI_NAME = "cuiman"
 CLI_HELP = """
-`{app_name}` is the client shell tool for the {service_name}.
+The command-line interface `{app_name}` is the shell client for servers 
+compliant with OGC API - Processes.
 
 The tool can be used to get the available processes, get process details,
 execute processes, and manage the jobs originating from the latter. 
@@ -39,7 +39,7 @@ The tool's exit codes are as follows:
 If the --traceback flag is set, the original Python exception traceback
 will be shown and the exit code will always be `1`. 
 Otherwise, only the error message is shown. 
-""".format(app_name=CLI_NAME, service_name=SERVICE_NAME)
+""".format(app_name=CLI_NAME)
 
 DEFAULT_OUTPUT_FORMAT: Final = OutputFormat.yaml
 
@@ -136,7 +136,7 @@ def configure(
         None,
         "--server",
         "-s",
-        help=f"The {SERVICE_NAME} API URL.",
+        help="The URL of a service complying to the OGC API - Processes.",
     ),
     config_file: Annotated[Optional[str], CONFIG_OPTION] = None,
 ):

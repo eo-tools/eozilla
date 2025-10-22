@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by ESA DTE-S2GOS team and contributors
+#  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -10,12 +10,12 @@ import typer
 
 from gavicore.process import Process
 from wraptile.services.local import LocalService
-from tools.common import S2GOS_PATH, write_file
+from tools.common import EOZILLA_PATH, write_file
 
 GENERATOR_NAME = str(Path(__file__).name)
 
 SERVICE_SPEC = "wraptile.services.local.testing:service"
-DAGS_FOLDER = S2GOS_PATH / "eozilla-airflow/dags"
+DAGS_FOLDER = EOZILLA_PATH / "eozilla-airflow/dags"
 
 
 def main(service_spec: str = SERVICE_SPEC, dags_folder: Path = DAGS_FOLDER):

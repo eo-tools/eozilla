@@ -1,13 +1,11 @@
-# DTE-S2GOS Controller
+# Eozilla
 
-![logo.svg](assets/logo.svg){ .centered-logo width="300"}
+A suite of tools around workflow orchestration systems and the OGC API - Processes.
 
-<br>
-<br>
-The Python control layer for the ESA DTE-S2GOS synthetic scene generator service.
 **Note, this project and its documentation is still in an early development stage.**
-<br>
-<br>
 
-[The Project](https://dte-s2gos.rayference.eu/about/){ .md-button .md-button--primary }
-[Get Started](client-cli){ .md-button .md-button--primary }
+Large parts of the work in the Eozilla project has been made possible the 
+[ESA DTE-S2GOS project](https://dte-s2gos.rayference.eu/about/).
+
+
+

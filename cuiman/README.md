@@ -1,4 +1,4 @@
-# DTE-S2GOS controller client
+# Eozilla Cuiman
 
-Python client for the ESA DTE-S2GOS synthetic scene generator service
-
+The Cuiman package provides a client Python API, GUI, and CLI 
+for servers compliant with OGC API - Processes.

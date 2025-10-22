@@ -1,6 +1,7 @@
 # Client CLI Reference
 
-`cuiman` is the client shell tool for the S2GOS service.
+The command-line interface `cuiman` is the shell client for servers 
+compliant with OGC API - Processes.
 
 The tool can be used to get the available processes, get process details,
 execute processes, and manage the jobs originating from the latter. 
@@ -61,7 +62,7 @@ $ cuiman configure [OPTIONS]
 
 * `-u, --user TEXT`: Your user name.
 * `-t, --token TEXT`: Your personal access token.
-* `-s, --server TEXT`: The S2GOS service API URL.
+* `-s, --server TEXT`: The URL of a service complying to the OGC API - Processes.
 * `-c, --config PATH`: Client configuration file.
 * `--help`: Show this message and exit.
 

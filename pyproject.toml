@@ -1,7 +1,7 @@
 [project]
 name = "eozilla"
 version = "0.0.5.dev0"
-description = "S2GOS control layer comprising a server and client"
+description = "A suite of tools around workflow orchestration systems and the OGC API - Processes"
 requires-python = ">=3.10"
 
 [tool.pixi.workspace]

@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by ESA DTE-S2GOS team and contributors
+#  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -11,7 +11,7 @@ from typing import Any, Final
 from .openapi import OAMethod
 
 THIS_DIR = Path(__file__).parent.resolve()
-S2GOS_PATH: Final = THIS_DIR.parent
+EOZILLA_PATH: Final = THIS_DIR.parent
 OPEN_API_PATH: Final = THIS_DIR / "openapi.yaml"
 
 C_TAB: Final = "    "

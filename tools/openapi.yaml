@@ -3,9 +3,8 @@ info:
   title: "Eozilla/wraptile Server"
   description: "Eozilla/wraptile API conforming to version 1.0.0 of the [OGC API - Processes - Part 1: Core](https://docs.ogc.org/is/18-062r2/18-062r2.html) Standard.\n\n  Copyright (c) 2021 Open Geospatial Consortium.\n\n  To obtain additional rights of use, visit http://www.opengeospatial.org/legal/ \n\n  This document is an API definition document provided alongside the  OGC API - Processes standard. The OGC API - Processes Standard specifies a processing  interface to communicate over a RESTful protocol using JavaScript Object Notation  (JSON) encodings. The specification allows for the wrapping of computational tasks  into executable processes that can be offered by a server and be invoked by a  client application."
   contact:
-    name: S2GOS development team
+    name: Eozilla development team
     url: https://eo-tools.github.io
-    # email: s2gos-team@eradiate.eu
   license:
     name: Apache 2.0 license
     url: http://www.apache.org/licenses/LICENSE-2.0

@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by ESA DTE-S2GOS team and contributors
+#  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -25,13 +25,13 @@ class ServiceProviderTest(TestCase):
 
     # noinspection PyMethodMayBeStatic
     def test_set_from_env_var(self):
-        with set_env_cm(S2GOS_SERVICE="wraptile.services.local.testing:service"):
+        with set_env_cm(EOZILLA_SERVICE="wraptile.services.local.testing:service"):
             self.assertIs(test_service, ServiceProvider.get_instance())
             self.assertIs(test_service, get_service())
 
     # noinspection PyMethodMayBeStatic
     def test_not_set(self):
-        with set_env_cm(S2GOS_SERVICE=None):
+        with set_env_cm(EOZILLA_SERVICE=None):
             with pytest.raises(
                 ServiceConfigException,
                 match=(

@@ -1,4 +1,7 @@
-# DTE-S2GOS application example
+# Eozilla Procodile Example
+
+An application example that demonstrates the usage of the 
+Eozilla Procodile framework.
 
 Build and run the image
 

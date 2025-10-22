@@ -1,12 +1,12 @@
-#  Copyright (c) 2025 by ESA DTE-S2GOS team and contributors
+#  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
 import datamodel_code_generator as dcg
 
-from tools.common import OPEN_API_PATH, S2GOS_PATH
+from tools.common import OPEN_API_PATH, EOZILLA_PATH
 
-MODELS_PATH = S2GOS_PATH / "gavicore/src/gavicore/models.py"
+MODELS_PATH = EOZILLA_PATH / "gavicore/src/gavicore/models.py"
 
 
 def main():
