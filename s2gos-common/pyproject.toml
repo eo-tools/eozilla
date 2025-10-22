@@ -3,7 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 [project]
-name = "s2gos-common"
+name = "gavicore"
 version = "0.0.5.dev"
 description = "Python data models for the ESA DTE-S2GOS synthetic scene generator service"
 readme = "README.md"

@@ -44,7 +44,7 @@ dependencies = [
   "typer",
   "uvicorn",
   # local dependency
-  "s2gos-common>=0.0.0",
+  "gavicore>=0.0.0",
 ]
 
 [project.scripts]

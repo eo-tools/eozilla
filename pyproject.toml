@@ -69,7 +69,7 @@ anaconda-client = ">=1.13.0,<2"
 # or even better "[tool.pixi.workspaces]".
 # See https://github.com/prefix-dev/pixi/issues/1417.
 s2gos-client = { path = "s2gos-client", editable = true }
-s2gos-common = { path = "s2gos-common", editable = true }
+gavicore = { path = "gavicore", editable = true }
 s2gos-server = { path = "s2gos-server", editable = true }
 s2gos-app-ex = { path = "s2gos-app-ex", editable = true }
 # Airflow is only available on PyPI
@@ -90,7 +90,7 @@ line-length = 88
 [tool.ruff]
 include = [
     "notebooks/**/*.py",
-    "s2gos-common/src/**/*.py",
+    "gavicore/src/**/*.py",
     "s2gos-server/src/**/*.py",
     "s2gos-client/src/**/*.py",
     "s2gos-app-ex/src/**/*.py",
@@ -118,7 +118,7 @@ exclude = [
     "s2gos-airflow",
     "s2gos-app-ex/src/test",
     "s2gos-client/src/test",
-    "s2gos-common/src/test",
+    "gavicore/src/test",
     "s2gos-server/src/test",
     "tools",
     "_pkg_reservations",
@@ -135,7 +135,7 @@ disable_error_code = ["valid-type"]
 depends-on = ["test-common", "test-server", "test-client"]
 
 [tool.pixi.tasks.test-common]
-cmd = "pytest s2gos-common/src/tests"
+cmd = "pytest gavicore/src/tests"
 
 [tool.pixi.tasks.test-server]
 cmd = "pytest s2gos-server/src/tests"
@@ -158,7 +158,7 @@ cmd = "coverage html -d .cov-report && coverage report"
 cmd = "coverage xml -o coverage.xml && coverage report"
 
 [tool.pixi.tasks.cov-common]
-cmd = "pytest --cov s2gos-common/src/s2gos_common --cov-report= --cov-append s2gos-common/src/tests"
+cmd = "pytest --cov gavicore/src/s2gos_common --cov-report= --cov-append gavicore/src/tests"
 
 [tool.pixi.tasks.cov-server]
 cmd = "pytest --cov s2gos-server/src/s2gos_server --cov-report= --cov-append s2gos-server/src/tests"
@@ -172,7 +172,7 @@ cmd = "pytest --cov s2gos-client/src/s2gos_client --cov-report= --cov-append s2g
 depends-on = ["check-common", "check-server", "check-client", "typecheck"]
 
 [tool.pixi.tasks.check-common]
-cmd = "ruff check s2gos-common/src"
+cmd = "ruff check gavicore/src"
 
 [tool.pixi.tasks.check-server]
 cmd = "ruff check s2gos-server/src"

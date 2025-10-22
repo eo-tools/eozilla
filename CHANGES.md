@@ -37,7 +37,7 @@
 - Moved process registry stuff from `s2gos_server.services.local` into 
   `s2gos_common.process` so it can be easier reused.
 - Introduced `--dotpath` / `-d` flag in the CLI commands `validate-request` 
-  and `execute-process` of `s2gos-client` and `s2gos-common`. 
+  and `execute-process` of `s2gos-client` and `gavicore`. 
   If set, allows for passing input names using a dot-path notion
   to encode nested values (e.g., `-i scene.colors.bg=red`).
 - Added high level overview of various DevOps tools which will be used in the 
@@ -90,7 +90,7 @@
   - Now using `fastapi.Depends()` feature
   - Renamed test process `create_datacube` into `simulate_scene`.
 
-- `s2gos-common` package:
+- `gavicore` package:
   - Updated `tools/openapi.yaml` to rename some unintuitive names.
     Regenerated and adjusted remaining code for following classes 
     renamed in `s2gos_common.models`:

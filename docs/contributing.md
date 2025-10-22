@@ -121,7 +121,7 @@ pixi run generate
 
 This will generate S2GOS'
 
-- [pydantic](https://docs.pydantic.dev/) models in `s2gos-common/src/s2gos_common/models.py` 
+- [pydantic](https://docs.pydantic.dev/) models in `gavicore/src/s2gos_common/models.py` 
 (uses [datamodel-code-generator](https://koxudaxi.github.io/datamodel-code-generator/))
 - client implementation in `s2gos-client/src/s2gos_client/client.py` and CLI documentation `docs/cli.md`
 - server routes in `s2gos-server/src/s2gos_server/routes.py` and the 
