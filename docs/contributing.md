@@ -50,13 +50,13 @@ pixi shell
 Run local test server
 
 ```commandline
-wraptile run -- s2gos_server.services.local.testing:service
+wraptile run -- wraptile.services.local.testing:service
 ```
 
 The dev mode is useful if you are changing server code:
 
 ```commandline
-wraptile dev s2gos_server.services.local.testing:service
+wraptile dev wraptile.services.local.testing:service
 ```
 
 Run client API
@@ -124,8 +124,8 @@ This will generate S2GOS'
 - [pydantic](https://docs.pydantic.dev/) models in `gavicore/src/gavicore/models.py` 
 (uses [datamodel-code-generator](https://koxudaxi.github.io/datamodel-code-generator/))
 - client implementation in `cuiman/src/s2gos_client/client.py` and CLI documentation `docs/cli.md`
-- server routes in `wraptile/src/s2gos_server/routes.py` and the 
-  service interface in `wraptile/src/s2gos_server/service.py`
+- server routes in `wraptile/src/wraptile/routes.py` and the 
+  service interface in `wraptile/src/wraptile/service.py`
 
 ### Documentation
 

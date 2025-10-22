@@ -10289,7 +10289,7 @@ packages:
 - pypi: ./wraptile
   name: wraptile
   version: 0.0.5.dev0
-  sha256: a4e395e3bec57074ecbba0e94ca74cb73cd91dbf8f1aafa5a78e5f970187f090
+  sha256: 9ba53f4e2792cce229c3d39b8c5155ed580c79369ce648e5aebfe95ca80cd6b6
   requires_dist:
   - fastapi
   - pydantic

@@ -9,12 +9,12 @@ from typing import Any
 import typer
 
 from gavicore.process import Process
-from s2gos_server.services.local import LocalService
+from wraptile.services.local import LocalService
 from tools.common import S2GOS_PATH, write_file
 
 GENERATOR_NAME = str(Path(__file__).name)
 
-SERVICE_SPEC = "s2gos_server.services.local.testing:service"
+SERVICE_SPEC = "wraptile.services.local.testing:service"
 DAGS_FOLDER = S2GOS_PATH / "eozilla-airflow/dags"
 
 

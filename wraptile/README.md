@@ -16,7 +16,7 @@ the local Airflow webserver runs on http://localhost:8080):
 
 ```commandline
 pixi shell
-wraptile run -- s2gos_server.services.airflow:service --airflow-password=a8e7f4bb230
+wraptile run -- wraptile.services.airflow:service --airflow-password=a8e7f4bb230
 ```
 
 The possible options are
@@ -35,7 +35,7 @@ Running the S2GOS gateway server with a local service:
 
 ```commandline
 pixi shell
-wraptile run -- s2gos_server.services.local.testing:service --processes --max-workers=5
+wraptile run -- wraptile.services.local.testing:service --processes --max-workers=5
 ```
 
 The possible options are

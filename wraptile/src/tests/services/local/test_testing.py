@@ -13,8 +13,8 @@ from gavicore.models import (
     ProcessRequest,
 )
 from procodile import Job, Process
-from s2gos_server.services.local.testing import SceneSpec
-from s2gos_server.services.local.testing import service as testing_service
+from wraptile.services.local.testing import SceneSpec
+from wraptile.services.local.testing import service as testing_service
 
 
 class TestingFunctionsTest(TestCase):

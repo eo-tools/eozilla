@@ -24,7 +24,7 @@ direction LR
         class models
         class service.Service
     }
-    namespace s2gos_server {
+    namespace wraptile {
         class server
         class routes
         class services.local.LocalService
@@ -222,7 +222,7 @@ flowchart LR
     async_client@{ shape: stadium, label: "s2gos_client.api.AsyncClient" }
     models@{ shape: stadium, label: "gavicore.models.*" }
     service@{ shape: stadium, label: "gavicore.service.Service" }
-    routes@{ shape: stadium, label: "s2gos_server.routes" }
+    routes@{ shape: stadium, label: "wraptile.routes" }
     openapi --> generate
     generate --> gen-client
     generate --> gen-common
@@ -243,7 +243,7 @@ config:
   theme: default
 ---
 flowchart LR
-    local_service@{ shape: stadium, label: "s2gos_server.services.local.testing:service" }
+    local_service@{ shape: stadium, label: "wraptile.services.local.testing:service" }
     dags@{ shape: stadium, label: "s2gos_airflow/dags" }
     local_service --> gen-dags
     gen-dags --> dags

@@ -36,8 +36,8 @@ from gavicore.models import (
     ProcessRequest,
     ProcessSummary,
 )
-from s2gos_server.exceptions import ServiceException
-from s2gos_server.services.base import ServiceBase
+from wraptile.exceptions import ServiceException
+from wraptile.services.base import ServiceBase
 
 DEFAULT_AIRFLOW_BASE_URL = "http://localhost:8080"
 

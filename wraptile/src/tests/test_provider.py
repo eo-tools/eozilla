@@ -7,10 +7,10 @@ from unittest import TestCase
 import pytest
 
 from gavicore.util.testing import set_env_cm
-from s2gos_server.exceptions import ServiceConfigException
-from s2gos_server.provider import ServiceProvider, get_service
-from s2gos_server.services.local import LocalService
-from s2gos_server.services.local.testing import service as test_service
+from wraptile.exceptions import ServiceConfigException
+from wraptile.provider import ServiceProvider, get_service
+from wraptile.services.local import LocalService
+from wraptile.services.local.testing import service as test_service
 
 
 class ServiceProviderTest(TestCase):
@@ -25,7 +25,7 @@ class ServiceProviderTest(TestCase):
 
     # noinspection PyMethodMayBeStatic
     def test_set_from_env_var(self):
-        with set_env_cm(S2GOS_SERVICE="s2gos_server.services.local.testing:service"):
+        with set_env_cm(S2GOS_SERVICE="wraptile.services.local.testing:service"):
             self.assertIs(test_service, ServiceProvider.get_instance())
             self.assertIs(test_service, get_service())
 

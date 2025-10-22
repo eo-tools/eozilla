@@ -7,10 +7,10 @@ from unittest import TestCase
 
 from fastapi.testclient import TestClient
 
-from s2gos_server.logging import LogMessageFilter
-from s2gos_server.main import app
-from s2gos_server.provider import ServiceProvider
-from s2gos_server.services.local.testing import service
+from wraptile.logging import LogMessageFilter
+from wraptile.main import app
+from wraptile.provider import ServiceProvider
+from wraptile.services.local.testing import service
 
 client = TestClient(app)
 

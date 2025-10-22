@@ -16,9 +16,9 @@ from gavicore.models import (
     ProcessRequest,
 )
 from gavicore.util.testing import set_env_cm
-from s2gos_server.constants import ENV_VAR_SERVICE
-from s2gos_server.exceptions import ServiceConfigException
-from s2gos_server.services.base import ServiceBase
+from wraptile.constants import ENV_VAR_SERVICE
+from wraptile.exceptions import ServiceConfigException
+from wraptile.services.base import ServiceBase
 
 
 class MyService(ServiceBase):

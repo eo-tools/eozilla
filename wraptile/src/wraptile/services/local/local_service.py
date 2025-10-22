@@ -20,8 +20,8 @@ from gavicore.models import (
     ProcessSummary,
 )
 from procodile import Job, Process, ProcessRegistry
-from s2gos_server.exceptions import ServiceException
-from s2gos_server.services.base import ServiceBase
+from wraptile.exceptions import ServiceException
+from wraptile.services.base import ServiceBase
 
 
 class LocalService(ServiceBase):
