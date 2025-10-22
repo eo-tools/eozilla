@@ -4,7 +4,7 @@
     - renamed `s2gos_common` into `gavicore` 
     - renamed `s2gos_client` into `cuiman` 
     - renamed `s2gos_server` into `wraptile` 
-    - renamed `procodile_example` into `procodile_example` 
+    - renamed `s2gos_app_ex` into `procodile_example` 
 - Created empty package `appligator` as starting point
 - Extracted new package `procodile` from `gavicore`
 - Initial folder name changes:
