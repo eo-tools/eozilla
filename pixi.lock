@@ -394,6 +394,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/2d/14/1c65fccf8413d5f5c6e8425f84675169654395098000d8bddc4e9d3390e1/jsbeautifier-1.15.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/24/ce/c8a41cb0f3044990c8afbdc20c853845a9e940995d4e0cffecafbb5e927b/mkdocs_mermaid2_plugin-1.2.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
+      - pypi: ./appligator
       - pypi: ./cuiman
       - pypi: ./eozilla-app-ex
       - pypi: ./gavicore
@@ -774,6 +775,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/2d/14/1c65fccf8413d5f5c6e8425f84675169654395098000d8bddc4e9d3390e1/jsbeautifier-1.15.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/24/ce/c8a41cb0f3044990c8afbdc20c853845a9e940995d4e0cffecafbb5e927b/mkdocs_mermaid2_plugin-1.2.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
+      - pypi: ./appligator
       - pypi: ./cuiman
       - pypi: ./eozilla-app-ex
       - pypi: ./gavicore
@@ -1143,6 +1145,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/2d/14/1c65fccf8413d5f5c6e8425f84675169654395098000d8bddc4e9d3390e1/jsbeautifier-1.15.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/24/ce/c8a41cb0f3044990c8afbdc20c853845a9e940995d4e0cffecafbb5e927b/mkdocs_mermaid2_plugin-1.2.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
+      - pypi: ./appligator
       - pypi: ./cuiman
       - pypi: ./eozilla-app-ex
       - pypi: ./gavicore
@@ -1283,6 +1286,17 @@ packages:
   - python-dateutil
   - urllib3>=2.1.0
   requires_python: ~=3.9
+- pypi: ./appligator
+  name: appligator
+  version: 0.0.5.dev0
+  sha256: 1edefa4b82939cd15ab5201e80b1edebc3f57bfd5f60b0ad2fc5edad311122eb
+  requires_dist:
+  - pydantic
+  - typer
+  - gavicore>=0.0.0
+  - procodile>=0.0.0
+  requires_python: '>=3.10'
+  editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/appnope-0.1.4-pyhd8ed1ab_1.conda
   sha256: 8f032b140ea4159806e4969a68b4a3c0a7cab1ad936eb958a2b5ffe5335e19bf
   md5: 54898d0f524c9dee622d44bbb081a8ab
@@ -2826,7 +2840,7 @@ packages:
 - pypi: ./cuiman
   name: cuiman
   version: 0.0.5.dev0
-  sha256: 1785cc79cc8c2239a01b71548295f4fd20ee47054d2a615791dccbc08969c527
+  sha256: 746c6e31c941d257c7c406f4defb779cce34dc0218c154c802bb9de2b454450c
   requires_dist:
   - click
   - pydantic
@@ -3163,7 +3177,7 @@ packages:
 - pypi: ./eozilla-app-ex
   name: eozilla-app-ex
   version: 0.0.0
-  sha256: 4c0e899307628d72f971a36b097a548b981cf104302e413af43c2bc42f8e762c
+  sha256: f0226942aba414b4b0b1881a9b7fc63754ddc5a3d22ed3bee3cdd802ff4a26e3
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.0-pyhd8ed1ab_0.conda
@@ -3258,7 +3272,7 @@ packages:
 - pypi: ./gavicore
   name: gavicore
   version: 0.0.5.dev0
-  sha256: 98912e8749d17f2f2a3d8e99b8457526a123751baf2a81a1fd819f081edbae88
+  sha256: df29bcf1ff63e6286baff081860d5f50836a849ec65cf6c82c0a0a5cdba3f50d
   requires_dist:
   - pydantic
   - typer
@@ -8037,7 +8051,7 @@ packages:
 - pypi: ./procodile
   name: procodile
   version: 0.0.5.dev0
-  sha256: 6f09677a0d90d4317760947b0c3311e5cedcf7e60748b83c4ba58bd10a30aa42
+  sha256: 66225dcfe608ae9f3eb539cc6121a43db51a40654569066fc3e9c5c8c075fd35
   requires_dist:
   - pydantic
   - typer
@@ -10275,7 +10289,7 @@ packages:
 - pypi: ./wraptile
   name: wraptile
   version: 0.0.5.dev0
-  sha256: f39bd6db520e5b6ef52ea52f4be7523b8a9801f09a434377a87cdc56c11d8d2a
+  sha256: a4e395e3bec57074ecbba0e94ca74cb73cd91dbf8f1aafa5a78e5f970187f090
   requires_dist:
   - fastapi
   - pydantic

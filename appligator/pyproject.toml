@@ -3,9 +3,9 @@
 #  https://opensource.org/license/apache-2-0.
 
 [project]
-name = "cuiman"
+name = "appligator"
 version = "0.0.5.dev"
-description = "Python client for the ESA DTE-S2GOS synthetic scene generator service"
+description = "An application package bundler"
 readme = "README.md"
 authors = [
   {name = "Norman Fomferra (Brockmann Consult GmbH)"},
@@ -38,18 +38,12 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-  "click",
   "pydantic",
-  "pyyaml",
   "typer",
-  "uri-template",
-  "httpx",
   # local dependency
-  "gavicore>=0.0.0",
+  "gavicore >=0.0.0",
+  "procodile >=0.0.0",
 ]
-
-[project.scripts]
-cuiman = "s2gos_client.cli:cli"
 
 [project.urls]
 Documentation = "https://eo-tools.github.io/eozilla"
@@ -63,10 +57,11 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build]
 sources = ["src"]
+exclude = ["src/tests/**/*"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src/s2gos_client/**/*",
+  "src/appligator/**/*",
   "pyproject.toml",
   "README.md",
   "LICENSE",
@@ -74,5 +69,5 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 include = [
-  "src/s2gos_client/**/*"
+  "src/appligator/**/*"
 ]
