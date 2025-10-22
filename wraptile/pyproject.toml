@@ -49,7 +49,7 @@ dependencies = [
 ]
 
 [project.scripts]
-wraptile = "s2gos_server.cli:cli"
+wraptile = "wraptile.cli:cli"
 
 [project.urls]
 Documentation = "https://eo-tools.github.io/eozilla"

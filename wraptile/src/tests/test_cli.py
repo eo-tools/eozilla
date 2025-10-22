@@ -9,9 +9,9 @@ import typer
 from typer.testing import CliRunner
 
 from gavicore.util.testing import set_env_cm
-from s2gos_server import __version__
-from s2gos_server.cli import cli, parse_cli_service_options
-from s2gos_server.constants import ENV_VAR_SERVICE
+from wraptile import __version__
+from wraptile.cli import cli, parse_cli_service_options
+from wraptile.constants import ENV_VAR_SERVICE
 
 runner = CliRunner()
 
@@ -54,14 +54,14 @@ class CliTest(TestCase):
             [
                 "run",
                 "--",
-                "s2gos_server.services.local.testing:service",
+                "wraptile.services.local.testing:service",
                 "--processes",
                 "--max-workers=4",
             ],
         )
         self.assertEqual(0, result.exit_code)
         mock.assert_called_with(
-            "s2gos_server.main:app", host="127.0.0.1", port=8008, reload=False
+            "wraptile.main:app", host="127.0.0.1", port=8008, reload=False
         )
 
     @patch("uvicorn.run")
@@ -71,12 +71,12 @@ class CliTest(TestCase):
             [
                 "dev",
                 "--",
-                "s2gos_server.services.local.testing:service",
+                "wraptile.services.local.testing:service",
                 "--no-processes",
                 "--max-workers=4",
             ],
         )
         self.assertEqual(0, result.exit_code)
         mock.assert_called_with(
-            "s2gos_server.main:app", host="127.0.0.1", port=8008, reload=True
+            "wraptile.main:app", host="127.0.0.1", port=8008, reload=True
         )

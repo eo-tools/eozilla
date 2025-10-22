@@ -4,7 +4,7 @@
 
 from airflow.sdk import Param, dag, task
 
-from s2gos_server.services.local.testing import sleep_a_while
+from wraptile.services.local.testing import sleep_a_while
 
 
 @dag(

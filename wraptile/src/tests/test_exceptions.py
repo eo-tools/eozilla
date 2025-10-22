@@ -5,7 +5,7 @@
 from unittest import TestCase
 
 from gavicore.models import ApiError
-from s2gos_server.exceptions import ServiceException
+from wraptile.exceptions import ServiceException
 
 
 class JSONContentExceptionTest(TestCase):

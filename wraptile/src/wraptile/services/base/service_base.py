@@ -19,8 +19,8 @@ from gavicore.models import (
 )
 from gavicore.service import Service
 from gavicore.util.dynimp import import_value
-from s2gos_server.constants import ENV_VAR_SERVICE
-from s2gos_server.exceptions import ServiceConfigException
+from wraptile.constants import ENV_VAR_SERVICE
+from wraptile.exceptions import ServiceConfigException
 
 DEFAULT_CONFORMS_TO = [
     "http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/core",

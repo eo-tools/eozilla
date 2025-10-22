@@ -16,9 +16,9 @@ from gavicore.models import (
     ProcessList,
 )
 from gavicore.util.testing import set_env
-from s2gos_server.main import app
-from s2gos_server.provider import ServiceProvider, get_service
-from s2gos_server.services.airflow import DEFAULT_AIRFLOW_BASE_URL, AirflowService
+from wraptile.main import app
+from wraptile.provider import ServiceProvider, get_service
+from wraptile.services.airflow import DEFAULT_AIRFLOW_BASE_URL, AirflowService
 
 
 def is_airflow_running(url: str, timeout: float = 1.0) -> bool:
@@ -37,7 +37,7 @@ class AirflowServiceTest(IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.app = app
         self.restore_env = set_env(
-            S2GOS_SERVICE="s2gos_server.services.airflow:service",
+            S2GOS_SERVICE="wraptile.services.airflow:service",
         )
         ServiceProvider._service = None
         self.service = get_service()

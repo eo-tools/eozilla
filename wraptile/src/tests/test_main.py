@@ -6,7 +6,7 @@ from unittest import TestCase
 
 from fastapi import FastAPI
 
-from s2gos_server.main import app
+from wraptile.main import app
 
 
 class MainTest(TestCase):

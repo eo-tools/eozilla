@@ -12,7 +12,7 @@ from pydantic import Field
 
 from procodile import JobContext
 from gavicore.models import Link
-from s2gos_server.services.local import LocalService
+from wraptile.services.local import LocalService
 
 service = LocalService(
     title="S2GOS API Server (local dummy for testing)",

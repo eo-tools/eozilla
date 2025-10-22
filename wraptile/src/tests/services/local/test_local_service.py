@@ -22,10 +22,10 @@ from gavicore.models import (
 )
 from procodile import Process
 from gavicore.util.testing import set_env
-from s2gos_server.exceptions import ServiceException
-from s2gos_server.main import app
-from s2gos_server.provider import ServiceProvider, get_service
-from s2gos_server.services.local import LocalService
+from wraptile.exceptions import ServiceException
+from wraptile.main import app
+from wraptile.provider import ServiceProvider, get_service
+from wraptile.services.local import LocalService
 
 
 class LocalServiceSetupTest(TestCase):
@@ -72,7 +72,7 @@ class LocalServiceTest(IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.app = app
         self.restore_env = set_env(
-            S2GOS_SERVICE="s2gos_server.services.local.testing:service"
+            S2GOS_SERVICE="wraptile.services.local.testing:service"
         )
         ServiceProvider._service = None
         self.service = get_service()

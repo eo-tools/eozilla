@@ -4,7 +4,7 @@
 
 from airflow.sdk import Param, dag, task
 
-from s2gos_server.services.local.testing import primes_between
+from wraptile.services.local.testing import primes_between
 
 
 @dag(
