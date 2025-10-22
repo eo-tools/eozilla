@@ -1,4 +1,4 @@
-# DTE-S2GOS controller processor development framework
+# Eozilla Procodile
 
 A light-weight, non-intrusive, unopinionated processor 
 development framework
@@ -8,4 +8,4 @@ development framework
 - to query and execute the workflow entry points via a Python API 
   and CLI using YAML and JSON formats based on the interfaces and 
   models defined by OGC API - Processes.
-- to herewith expose your workflows to appligator.
+- to herewith expose your workflows to  _Eozilla Appligator_.

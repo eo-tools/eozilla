@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by ESA DTE-S2GOS team and contributors
+#  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -6,7 +6,7 @@ site_name: Eozilla
 repo_url: https://github.com/eo-tools/eozilla
 repo_name: eo-tools/eozilla
 
-copyright: Copyright &copy; 2025 ESA DTE-S2GOS Team
+copyright: Copyright &copy; 2025 Eozilla Team
 
 nav:
   - Overview: index.md
@@ -66,7 +66,7 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/eo-tools/eozilla
     - icon: fontawesome/brands/python
-      link: https://pypi.org/project/s2gos/
+      link: https://pypi.org/project/eozilla/
 
 plugins:
   - search

@@ -13,7 +13,7 @@ a malfunction or error, then please
 
 ## Contributions
 
-The S2GOS client project welcomes contributions of any form as long as you 
+The Eozilla project welcomes contributions of any form as long as you 
 respect our 
 [code of conduct](https://github.com/eo-tools/eozilla/blob/main/CODE_OF_CONDUCT.md)
 and follow our 
@@ -45,7 +45,7 @@ pixi install
 pixi shell
 ```
 
-### Running the S2GOS controller tools
+### Running the Eozilla server with a local test service
 
 Run local test server
 
@@ -59,7 +59,7 @@ The dev mode is useful if you are changing server code:
 wraptile dev wraptile.services.local.testing:service
 ```
 
-Run client API
+Run the Eozilla client Python API
 
 ```python
 from cuiman import Client
@@ -69,7 +69,7 @@ client.get_processes()
 client.get_jobs()
 ```
 
-Run client GUI (in Jupyter notebooks)
+Run Eozilla client GUI (in Jupyter notebooks)
 
 ```python
 from cuiman.gui import Client
@@ -79,7 +79,7 @@ client.show()
 client.show_jobs()
 ```
 
-Run client CLI
+Run Eozilla client CLI
 
 ```commandline
 $ cuiman --help
@@ -119,7 +119,7 @@ If this file is changed, code need to be regenerated:
 pixi run generate
 ```
 
-This will generate S2GOS'
+This will generate Eozilla's
 
 - [pydantic](https://docs.pydantic.dev/) models in `gavicore/src/gavicore/models.py` 
 (uses [datamodel-code-generator](https://koxudaxi.github.io/datamodel-code-generator/))
@@ -129,7 +129,7 @@ This will generate S2GOS'
 
 ### Documentation
 
-The S2GOS client's documentation is built using the 
+The Eozilla documentation is built using the 
 [mkdocs](https://www.mkdocs.org/) tool.
 
 With repository root as current working directory:
@@ -149,5 +149,5 @@ pixi run gen-client
 
 ## License
 
-The S2GOS client is open source made available under the terms and conditions of the 
-[Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0.html).
+The Eozilla project is open source made available under the terms and 
+conditions of the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0.html).

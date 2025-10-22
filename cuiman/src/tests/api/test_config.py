@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by ESA DTE-S2GOS team and contributors
+#  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -44,7 +44,7 @@ class ClientConfigTest(TestCase):
     def test_create_from_env(self):
         os.environ.update(
             dict(
-                EOZILLA_SERVER_URL="https://s2gos.test.api",
+                EOZILLA_SERVER_URL="https://eozilla.test.api",
                 EOZILLA_USER_NAME="pippo",
                 EOZILLA_ACCESS_TOKEN="0f8915a4",
             )
@@ -53,36 +53,38 @@ class ClientConfigTest(TestCase):
             config_path = Path(tmp_dir_name) / "config"
             config = ClientConfig.create(config_path=config_path)
             self.assertIsInstance(config, ClientConfig)
-            self.assertEqual("https://s2gos.test.api", config.server_url)
+            self.assertEqual("https://eozilla.test.api", config.server_url)
             self.assertEqual("pippo", config.user_name)
             self.assertEqual("0f8915a4", config.access_token)
 
     def test_create_from_file(self):
         config = ClientConfig(
-            server_url="https://s2gos.test2.api", user_name="bibo", access_token="981b"
+            server_url="https://eozilla.test2.api",
+            user_name="bibo",
+            access_token="981b",
         )
         with tempfile.TemporaryDirectory() as tmp_dir_name:
             config_path = Path(tmp_dir_name) / "config"
             config.write(config_path=config_path)
             config = ClientConfig.create(config_path=config_path)
-            self.assertEqual("https://s2gos.test2.api", config.server_url)
+            self.assertEqual("https://eozilla.test2.api", config.server_url)
             self.assertEqual("bibo", config.user_name)
             self.assertEqual("981b", config.access_token)
 
     def test_create_from_file_and_env(self):
         os.environ.update(
             dict(
-                EOZILLA_SERVER_URL="https://s2gos.test.api",
+                EOZILLA_SERVER_URL="https://eozilla.test.api",
                 EOZILLA_USER_NAME="pippo",
                 EOZILLA_ACCESS_TOKEN="0f8915a4",
             )
         )
-        config = ClientConfig(server_url="https://s2gos.test2.api", user_name="bibi")
+        config = ClientConfig(server_url="https://eozilla.test2.api", user_name="bibi")
         with tempfile.TemporaryDirectory() as tmp_dir_name:
             config_path = Path(tmp_dir_name) / "config"
             config.write(config_path=config_path)
             config = ClientConfig.create(config_path=config_path)
-            self.assertEqual("https://s2gos.test.api", config.server_url)
+            self.assertEqual("https://eozilla.test.api", config.server_url)
             self.assertEqual("pippo", config.user_name)
             self.assertEqual("0f8915a4", config.access_token)
 

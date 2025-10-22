@@ -46,7 +46,7 @@ direction LR
     note for gui.Client "will later inherit from AsyncClient"
 ```
 
-## S2GOS Client - GUI
+## Eozilla Cuiman Client - GUI
 
 Given here is the design used in package `cuiman.gui.component`.
 The package contains the code to generate widgets and panels from the 
@@ -146,7 +146,7 @@ direction TB
     ComponentFactoryBase <|-- BboxCF
 ```
 
-## S2GOS Common
+## Eozilla Gavicore
 
 Given here is the design used in package `gavicore.service`.
 
@@ -244,7 +244,7 @@ config:
 ---
 flowchart LR
     local_service@{ shape: stadium, label: "wraptile.services.local.testing:service" }
-    dags@{ shape: stadium, label: "s2gos_airflow/dags" }
+    dags@{ shape: stadium, label: "eozilla-airflow/dags" }
     local_service --> gen-dags
     gen-dags --> dags
 ```

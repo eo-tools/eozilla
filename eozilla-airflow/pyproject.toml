@@ -1,7 +1,7 @@
 [project]
 name = "eozilla-airflow"
 version = "0.0.0"
-description = "Airflow DAGs for the ESA DTE-S2GOS synthetic scene generator service"
+description = "Testing Airflow DAGs with Eozilla's Cuiman client and Wraptile server"
 requires-python = "==3.12"
 
 #### pixi ###################
@@ -21,7 +21,7 @@ python = "3.12.*"
 [tool.pixi.pypi-dependencies]
 # Airflow
 apache-airflow = "==3.0.2"
-# S2GOS service implementation
+# Eozilla server dependencies
 gavicore = { path = "../gavicore", editable = true }
 wraptile = { path = "../wraptile", editable = true }
 fastapi = "*"

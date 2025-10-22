@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by ESA DTE-S2GOS team and contributors
+#  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -16,9 +16,12 @@ class ClientConfig(BaseModel):
     """Client configuration.
 
     Args:
-        user_name: name of the registered S2GOS user
-        access_token: API access token
-        server_url: server API URL
+        user_name: name of a user of the service
+            provided by the given `server_url`
+        access_token: API access token valid for the user
+            given by `user_name`
+        server_url: a URL for a server compliant with the
+            OCG API - Processes.
     """
 
     user_name: Optional[str] = None

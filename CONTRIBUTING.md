@@ -24,10 +24,10 @@ checklist are addressed in your PR.
   default settings: `ruff format` and `ruff check`. See also section 
   [code style](#code-style) below.
 * Your change shall not break existing unit tests.
-  `pytest` must run without errors.
+  `pixi run test` must run without errors.
 * Add unit tests for any new code not yet covered by tests.
 * Make sure test coverage stays close to 100% for any change.
-  Use `pytest --cov=s2gos --cov-report=html` to verify.
+  Use `pixi run coverage` to verify.
 * If your change affects the current project documentation,
   please adjust it and include the change in the PR.
   Run `mkdocs serve` to verify. 
@@ -44,7 +44,7 @@ sort imports statements according to the default settings of
 1. Python standard library imports, e.g., `os`, `typing`, etc
 2. 3rd-party imports, e.g., `xarray`, `zarr`, etc
 3. 1st-party library module imports using absolute paths, 
-   e.g., `from s2gos.a.b.c import d`. 
+   e.g., `from wraptile.a.b.c import d`. 
 4. 1st-party library module imports from local modules: 
    Relative imports such as `from .c import d` are ok
    while `..c import d` are not ok.

@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by ESA DTE-S2GOS team and contributors
+#  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -17,9 +17,8 @@ from wraptile.constants import (
 from wraptile.logging import LogMessageFilter
 
 CLI_HELP = """
-Server for the ESA synthetic scene generator service DTE-S2GOS.
-
-The server provides a restful API that should be almost compliant
+Wraptile is a server made for wrapping workflow orchestration 
+systems with a unified restful API that should be almost compliant
 with the OGC API - Processes - Part 1: Core Standard.
 
 For details see https://ogcapi.ogc.org/processes/.

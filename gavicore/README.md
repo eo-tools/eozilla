@@ -1,4 +1,4 @@
-# DTE-S2GOS controller data models
+# Eozilla Gavicore
 
-Python data models for the ESA DTE-S2GOS synthetic scene generator service
+Pydantic data models and common utilities for other Eozilla packages
 

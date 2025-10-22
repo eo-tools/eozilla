@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by ESA DTE-S2GOS team and contributors
+#  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -15,7 +15,7 @@ from gavicore.models import Link
 from wraptile.services.local import LocalService
 
 service = LocalService(
-    title="S2GOS API Server (local dummy for testing)",
+    title="Eozilla API Server (local dummy for testing)",
     description="Local test server implementing the OGC API - Processes 1.0 Standard",
 )
 

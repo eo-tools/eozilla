@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by ESA DTE-S2GOS team and contributors
+#  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -20,7 +20,9 @@ class CliTest(TestCase):
     def test_help(self):
         result = runner.invoke(cli, ["--help"])
         self.assertEqual(0, result.exit_code)
-        self.assertIn("Server for the ESA synthetic", result.output)
+        self.assertIn(
+            "a server made for wrapping workflow orchestration", result.output
+        )
 
     def test_version(self):
         result = runner.invoke(cli, ["--version"])
