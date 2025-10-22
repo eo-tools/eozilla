@@ -121,6 +121,7 @@ exclude = [
     "s2gos-common/src/test",
     "s2gos-server/src/test",
     "tools",
+    "_pkg_reservations",
 ]
 [[tool.mypy.overrides]]
 module = "s2gos_common.models"
