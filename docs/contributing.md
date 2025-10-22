@@ -82,7 +82,7 @@ client.show_jobs()
 Run client CLI
 
 ```commandline
-$ s2gos-client --help
+$ cuiman --help
 ```
 
 ### Formatting & Linting
@@ -123,7 +123,7 @@ This will generate S2GOS'
 
 - [pydantic](https://docs.pydantic.dev/) models in `gavicore/src/s2gos_common/models.py` 
 (uses [datamodel-code-generator](https://koxudaxi.github.io/datamodel-code-generator/))
-- client implementation in `s2gos-client/src/s2gos_client/client.py` and CLI documentation `docs/cli.md`
+- client implementation in `cuiman/src/s2gos_client/client.py` and CLI documentation `docs/cli.md`
 - server routes in `s2gos-server/src/s2gos_server/routes.py` and the 
   service interface in `s2gos-server/src/s2gos_server/service.py`
 

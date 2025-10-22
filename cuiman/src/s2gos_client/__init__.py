@@ -9,7 +9,7 @@ from .api.client import Client
 from .api.config import ClientConfig
 from .api.exceptions import ClientError
 
-__version__ = version("s2gos-client")
+__version__ = version("cuiman")
 
 __all__ = [
     "AsyncClient",

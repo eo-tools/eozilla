@@ -68,7 +68,7 @@ anaconda-client = ">=1.13.0,<2"
 # I wished we could have "no-deps=true" here,
 # or even better "[tool.pixi.workspaces]".
 # See https://github.com/prefix-dev/pixi/issues/1417.
-s2gos-client = { path = "s2gos-client", editable = true }
+cuiman = { path = "cuiman", editable = true }
 gavicore = { path = "gavicore", editable = true }
 s2gos-server = { path = "s2gos-server", editable = true }
 s2gos-app-ex = { path = "s2gos-app-ex", editable = true }
@@ -92,7 +92,7 @@ include = [
     "notebooks/**/*.py",
     "gavicore/src/**/*.py",
     "s2gos-server/src/**/*.py",
-    "s2gos-client/src/**/*.py",
+    "cuiman/src/**/*.py",
     "s2gos-app-ex/src/**/*.py",
     "tools/**/*.py",
 ]
@@ -106,7 +106,7 @@ select = ["I", "F", "E"]
 [tool.coverage.report]
 omit = [
     "s2gos-app-ex/src/s2gos_app_ex/**/*",
-    "s2gos-client/src/s2gos_client/gui/**/*",
+    "cuiman/src/s2gos_client/gui/**/*",
     "s2gos-server/src/s2gos_server/services/airflow/**/*",
 ]
 
@@ -117,7 +117,7 @@ disable_error_code = ["valid-type", "import-untyped"]
 exclude = [
     "s2gos-airflow",
     "s2gos-app-ex/src/test",
-    "s2gos-client/src/test",
+    "cuiman/src/test",
     "gavicore/src/test",
     "s2gos-server/src/test",
     "tools",
@@ -141,7 +141,7 @@ cmd = "pytest gavicore/src/tests"
 cmd = "pytest s2gos-server/src/tests"
 
 [tool.pixi.tasks.test-client]
-cmd = "pytest s2gos-client/src/tests"
+cmd = "pytest cuiman/src/tests"
 
 # pixi run coverage / coverage-ci
 
@@ -164,7 +164,7 @@ cmd = "pytest --cov gavicore/src/s2gos_common --cov-report= --cov-append gavicor
 cmd = "pytest --cov s2gos-server/src/s2gos_server --cov-report= --cov-append s2gos-server/src/tests"
 
 [tool.pixi.tasks.cov-client]
-cmd = "pytest --cov s2gos-client/src/s2gos_client --cov-report= --cov-append s2gos-client/src/tests"
+cmd = "pytest --cov cuiman/src/s2gos_client --cov-report= --cov-append cuiman/src/tests"
 
 # pixi run check
 
@@ -178,7 +178,7 @@ cmd = "ruff check gavicore/src"
 cmd = "ruff check s2gos-server/src"
 
 [tool.pixi.tasks.check-client]
-cmd = "ruff check s2gos-client/src"
+cmd = "ruff check cuiman/src"
 
 [tool.pixi.tasks.typecheck]
 cmd = "mypy ."

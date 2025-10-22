@@ -1,6 +1,6 @@
 # Client CLI Reference
 
-`s2gos-client` is the client shell tool for the S2GOS service.
+`cuiman` is the client shell tool for the S2GOS service.
 
 The tool can be used to get the available processes, get process details,
 execute processes, and manage the jobs originating from the latter. 
@@ -23,7 +23,7 @@ Otherwise, only the error message is shown.
 **Usage**:
 
 ```console
-$ s2gos-client [OPTIONS] COMMAND [ARGS]...
+$ cuiman [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options**:
@@ -47,14 +47,14 @@ $ s2gos-client [OPTIONS] COMMAND [ARGS]...
 * `dismiss-job`: Cancel a running or delete a finished job.
 * `get-job-results`: Get job results.
 
-## `s2gos-client configure`
+## `cuiman configure`
 
 Configure the client tool.
 
 **Usage**:
 
 ```console
-$ s2gos-client configure [OPTIONS]
+$ cuiman configure [OPTIONS]
 ```
 
 **Options**:
@@ -65,14 +65,14 @@ $ s2gos-client configure [OPTIONS]
 * `-c, --config PATH`: Client configuration file.
 * `--help`: Show this message and exit.
 
-## `s2gos-client list-processes`
+## `cuiman list-processes`
 
 List available processes.
 
 **Usage**:
 
 ```console
-$ s2gos-client list-processes [OPTIONS]
+$ cuiman list-processes [OPTIONS]
 ```
 
 **Options**:
@@ -81,14 +81,14 @@ $ s2gos-client list-processes [OPTIONS]
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
 * `--help`: Show this message and exit.
 
-## `s2gos-client get-process`
+## `cuiman get-process`
 
 Get process details.
 
 **Usage**:
 
 ```console
-$ s2gos-client get-process [OPTIONS] PROCESS_ID
+$ cuiman get-process [OPTIONS] PROCESS_ID
 ```
 
 **Arguments**:
@@ -101,7 +101,7 @@ $ s2gos-client get-process [OPTIONS] PROCESS_ID
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
 * `--help`: Show this message and exit.
 
-## `s2gos-client create-request`
+## `cuiman create-request`
 
 Create an execution request (template) for a given process.
 
@@ -113,7 +113,7 @@ valid execution request.
 **Usage**:
 
 ```console
-$ s2gos-client create-request [OPTIONS] [PROCESS_ID]
+$ cuiman create-request [OPTIONS] [PROCESS_ID]
 ```
 
 **Arguments**:
@@ -127,7 +127,7 @@ $ s2gos-client create-request [OPTIONS] [PROCESS_ID]
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
 * `--help`: Show this message and exit.
 
-## `s2gos-client validate-request`
+## `cuiman validate-request`
 
 Validate a process execution request.
 
@@ -141,7 +141,7 @@ settings with the same name found in the given request file or `stdin`, if any.
 **Usage**:
 
 ```console
-$ s2gos-client validate-request [OPTIONS] [PROCESS_ID]
+$ cuiman validate-request [OPTIONS] [PROCESS_ID]
 ```
 
 **Arguments**:
@@ -156,7 +156,7 @@ $ s2gos-client validate-request [OPTIONS] [PROCESS_ID]
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
 * `--help`: Show this message and exit.
 
-## `s2gos-client execute-process`
+## `cuiman execute-process`
 
 Execute a process in asynchronous mode.
 
@@ -170,7 +170,7 @@ settings with same name found in the given request file or `stdin`, if any.
 **Usage**:
 
 ```console
-$ s2gos-client execute-process [OPTIONS] [PROCESS_ID]
+$ cuiman execute-process [OPTIONS] [PROCESS_ID]
 ```
 
 **Arguments**:
@@ -187,14 +187,14 @@ $ s2gos-client execute-process [OPTIONS] [PROCESS_ID]
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
 * `--help`: Show this message and exit.
 
-## `s2gos-client list-jobs`
+## `cuiman list-jobs`
 
 List all jobs.
 
 **Usage**:
 
 ```console
-$ s2gos-client list-jobs [OPTIONS]
+$ cuiman list-jobs [OPTIONS]
 ```
 
 **Options**:
@@ -203,14 +203,14 @@ $ s2gos-client list-jobs [OPTIONS]
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
 * `--help`: Show this message and exit.
 
-## `s2gos-client get-job`
+## `cuiman get-job`
 
 Get job details.
 
 **Usage**:
 
 ```console
-$ s2gos-client get-job [OPTIONS] JOB_ID
+$ cuiman get-job [OPTIONS] JOB_ID
 ```
 
 **Arguments**:
@@ -223,14 +223,14 @@ $ s2gos-client get-job [OPTIONS] JOB_ID
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
 * `--help`: Show this message and exit.
 
-## `s2gos-client dismiss-job`
+## `cuiman dismiss-job`
 
 Cancel a running or delete a finished job.
 
 **Usage**:
 
 ```console
-$ s2gos-client dismiss-job [OPTIONS] JOB_ID
+$ cuiman dismiss-job [OPTIONS] JOB_ID
 ```
 
 **Arguments**:
@@ -243,14 +243,14 @@ $ s2gos-client dismiss-job [OPTIONS] JOB_ID
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
 * `--help`: Show this message and exit.
 
-## `s2gos-client get-job-results`
+## `cuiman get-job-results`
 
 Get job results.
 
 **Usage**:
 
 ```console
-$ s2gos-client get-job-results [OPTIONS] JOB_ID
+$ cuiman get-job-results [OPTIONS] JOB_ID
 ```
 
 **Arguments**:

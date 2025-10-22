@@ -18,7 +18,7 @@ from s2gos_common.util.cli.parameters import (
 
 SERVICE_NAME = "S2GOS service"
 
-CLI_NAME = "s2gos-client"
+CLI_NAME = "cuiman"
 CLI_HELP = """
 `{app_name}` is the client shell tool for the {service_name}.
 
@@ -94,7 +94,7 @@ def main(
     if version_:
         from importlib.metadata import version
 
-        typer.echo(version("s2gos-client"))
+        typer.echo(version("cuiman"))
         return
 
     def get_client(config_path: str | None):
