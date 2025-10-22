@@ -4,12 +4,12 @@
 
 import typer
 
-# See also cuiman/src/s2gos_client/cli/cli.py
+# See also cuiman/src/cuiman/cli/cli.py
 PROCESS_ID_ARGUMENT = typer.Argument(
     help="Process identifier.",
 )
 
-# See also cuiman/src/s2gos_client/cli/cli.py
+# See also cuiman/src/cuiman/cli/cli.py
 REQUEST_INPUT_OPTION = typer.Option(
     "--input",
     "-i",
@@ -17,7 +17,7 @@ REQUEST_INPUT_OPTION = typer.Option(
     metavar="[NAME=VALUE]...",
 )
 
-# See also cuiman/src/s2gos_client/cli/cli.py
+# See also cuiman/src/cuiman/cli/cli.py
 REQUEST_SUBSCRIBER_OPTION = typer.Option(
     "--subscriber",
     "-s",
@@ -33,7 +33,7 @@ DOT_PATH_OPTION = typer.Option(
     help="Input names use dot-path notion to encode nested values, e.g., `-i scene.colors.bg=red`.",
 )
 
-# See also cuiman/src/s2gos_client/cli/cli.py
+# See also cuiman/src/cuiman/cli/cli.py
 REQUEST_FILE_OPTION = typer.Option(
     ...,
     "--request",

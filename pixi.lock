@@ -2840,7 +2840,7 @@ packages:
 - pypi: ./cuiman
   name: cuiman
   version: 0.0.5.dev0
-  sha256: 0a6f2a6c63caec101f0b7de55c9c1b63a7e71700ed22de8c1d666e68ee83410a
+  sha256: cfdcaf9989ab6137550b4f40ca0d73c73a8fad3faed888ee0ef9febcb7a00757
   requires_dist:
   - click
   - pydantic

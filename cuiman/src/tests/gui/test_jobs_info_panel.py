@@ -6,8 +6,8 @@ from unittest import TestCase
 
 from panel.layout import Panel
 
-from s2gos_client.gui.job_info_panel import JobInfoPanel
-from s2gos_client.gui.jobs_observer import JobsObserver
+from cuiman.gui.job_info_panel import JobInfoPanel
+from cuiman.gui.jobs_observer import JobsObserver
 
 
 class JobInfoPanelTest(TestCase):

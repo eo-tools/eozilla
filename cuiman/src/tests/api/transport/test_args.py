@@ -4,8 +4,8 @@
 
 from unittest import TestCase
 
-from s2gos_client.api.exceptions import ClientError
-from s2gos_client.api.transport import TransportArgs
+from cuiman.api.exceptions import ClientError
+from cuiman.api.transport import TransportArgs
 from gavicore.models import ApiError
 
 

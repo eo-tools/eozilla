@@ -6,8 +6,8 @@ from unittest import TestCase
 
 from IPython.core.interactiveshell import InteractiveShell
 
-from s2gos_client import ClientError
-from s2gos_client.api.ishell import exception_handler, has_ishell
+from cuiman import ClientError
+from cuiman.api.ishell import exception_handler, has_ishell
 from gavicore.models import ApiError
 
 

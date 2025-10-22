@@ -7,7 +7,7 @@ from typing import Any, Callable, TypeAlias
 import panel as pn
 import param
 
-from s2gos_client.api.exceptions import ClientError
+from cuiman.api.exceptions import ClientError
 from gavicore.models import (
     JobInfo,
     JobList,

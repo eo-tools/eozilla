@@ -6,7 +6,7 @@ from typing import Annotated, Final, Optional
 
 import typer.core
 
-from s2gos_client.cli.output import OutputFormat
+from cuiman.cli.output import OutputFormat
 from gavicore.util.cli.group import AliasedGroup
 from gavicore.util.cli.parameters import (
     DOT_PATH_OPTION,
@@ -99,8 +99,8 @@ def main(
 
     def get_client(config_path: str | None):
         # defer importing
-        from s2gos_client import Client
-        from s2gos_client.cli.config import get_config
+        from cuiman import Client
+        from cuiman.cli.config import get_config
 
         config = get_config(config_path)
         return Client(config=config)

@@ -8,11 +8,11 @@ import click
 import pytest
 import typer
 
-from s2gos_client import ClientError
-from s2gos_client.api.client import Client
-from s2gos_client.api.transport import TransportError
-from s2gos_client.cli.cli import cli
-from s2gos_client.cli.client import use_client
+from cuiman import ClientError
+from cuiman.api.client import Client
+from cuiman.api.transport import TransportError
+from cuiman.cli.cli import cli
+from cuiman.cli.client import use_client
 from gavicore.models import ApiError
 
 

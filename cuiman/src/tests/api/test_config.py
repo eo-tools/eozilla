@@ -7,8 +7,8 @@ import tempfile
 from pathlib import Path
 from unittest import TestCase
 
-from s2gos_client.api.config import ClientConfig
-from s2gos_client.api.defaults import DEFAULT_CONFIG_PATH
+from cuiman.api.config import ClientConfig
+from cuiman.api.defaults import DEFAULT_CONFIG_PATH
 
 
 class ClientConfigTest(TestCase):

@@ -6,8 +6,8 @@ from unittest import IsolatedAsyncioTestCase
 
 from tests.helpers import MockTransport
 
-from s2gos_client import ClientConfig
-from s2gos_client.api.async_client import AsyncClient
+from cuiman import ClientConfig
+from cuiman.api.async_client import AsyncClient
 from gavicore.models import (
     Capabilities,
     ConformanceDeclaration,

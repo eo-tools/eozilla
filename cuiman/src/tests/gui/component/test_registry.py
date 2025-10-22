@@ -6,7 +6,7 @@ from unittest import TestCase
 
 import panel as pn
 
-from s2gos_client.gui.component import (
+from cuiman.gui.component import (
     Component,
     ComponentFactoryBase,
     ComponentFactoryRegistry,

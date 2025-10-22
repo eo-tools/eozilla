@@ -2,6 +2,7 @@
 
 - Python package name changes:
     - renamed `s2gos_common` into `gavicore` 
+    - renamed `s2gos_client` into `cuiman` 
     - renamed `s2gos_server` into `wraptile` 
 - Created empty package `appligator` as starting point
 - Extracted new package `procodile` from `gavicore`

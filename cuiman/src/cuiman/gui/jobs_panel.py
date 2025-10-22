@@ -8,7 +8,7 @@ import pandas as pd
 import panel as pn
 from pydantic import BaseModel
 
-from s2gos_client.api.exceptions import ClientError
+from cuiman.api.exceptions import ClientError
 from gavicore.models import JobInfo, JobList, JobResults, JobStatus
 
 from .jobs_observer import JobsObserver

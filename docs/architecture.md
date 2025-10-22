@@ -14,7 +14,7 @@ config:
 ---
 classDiagram
 direction LR
-    namespace s2gos_client {
+    namespace cuiman {
         class api.AsyncClient
         class api.Client
         class gui.Client
@@ -48,7 +48,7 @@ direction LR
 
 ## S2GOS Client - GUI
 
-Given here is the design used in package `s2gos_client.gui.component`.
+Given here is the design used in package `cuiman.gui.component`.
 The package contains the code to generate widgets and panels from the 
 JSON schema `gavicore.models.InputDescription` instances contained in
 a `gavicore.models.ProcessDescription` instance.
@@ -218,8 +218,8 @@ config:
 ---
 flowchart LR
     openapi@{ shape: lean-r, label: "OpenAPI.yaml" }
-    sync_client@{ shape: stadium, label: "s2gos_client.api.Client" }
-    async_client@{ shape: stadium, label: "s2gos_client.api.AsyncClient" }
+    sync_client@{ shape: stadium, label: "cuiman.api.Client" }
+    async_client@{ shape: stadium, label: "cuiman.api.AsyncClient" }
     models@{ shape: stadium, label: "gavicore.models.*" }
     service@{ shape: stadium, label: "gavicore.service.Service" }
     routes@{ shape: stadium, label: "wraptile.routes" }

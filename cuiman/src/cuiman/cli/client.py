@@ -7,9 +7,9 @@ from typing import Callable, Literal, Optional, TypeAlias
 
 import typer
 
-from s2gos_client.api.client import Client
-from s2gos_client.api.exceptions import ClientError
-from s2gos_client.api.transport import TransportError
+from cuiman.api.client import Client
+from cuiman.api.exceptions import ClientError
+from cuiman.api.transport import TransportError
 
 GetClient: TypeAlias = Callable[[str | None], Client]
 

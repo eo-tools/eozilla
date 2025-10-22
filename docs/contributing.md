@@ -62,7 +62,7 @@ wraptile dev wraptile.services.local.testing:service
 Run client API
 
 ```python
-from s2gos_client import Client
+from cuiman import Client
 
 client = Client()
 client.get_processes()
@@ -72,7 +72,7 @@ client.get_jobs()
 Run client GUI (in Jupyter notebooks)
 
 ```python
-from s2gos_client.gui import Client
+from cuiman.gui import Client
 
 client = Client()
 client.show()
@@ -123,7 +123,7 @@ This will generate S2GOS'
 
 - [pydantic](https://docs.pydantic.dev/) models in `gavicore/src/gavicore/models.py` 
 (uses [datamodel-code-generator](https://koxudaxi.github.io/datamodel-code-generator/))
-- client implementation in `cuiman/src/s2gos_client/client.py` and CLI documentation `docs/cli.md`
+- client implementation in `cuiman/src/cuiman/client.py` and CLI documentation `docs/cli.md`
 - server routes in `wraptile/src/wraptile/routes.py` and the 
   service interface in `wraptile/src/wraptile/service.py`
 

@@ -49,7 +49,7 @@ dependencies = [
 ]
 
 [project.scripts]
-cuiman = "s2gos_client.cli:cli"
+cuiman = "cuiman.cli:cli"
 
 [project.urls]
 Documentation = "https://eo-tools.github.io/eozilla"
@@ -66,7 +66,7 @@ sources = ["src"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src/s2gos_client/**/*",
+  "src/cuiman/**/*",
   "pyproject.toml",
   "README.md",
   "LICENSE",
@@ -74,5 +74,5 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 include = [
-  "src/s2gos_client/**/*"
+  "src/cuiman/**/*"
 ]

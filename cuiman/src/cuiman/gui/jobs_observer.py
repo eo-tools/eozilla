@@ -4,7 +4,7 @@
 
 from abc import ABC, abstractmethod
 
-from s2gos_client import ClientError
+from cuiman import ClientError
 from gavicore.models import JobInfo, JobList
 
 

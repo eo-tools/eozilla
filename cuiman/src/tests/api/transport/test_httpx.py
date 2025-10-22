@@ -9,9 +9,9 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 
-from s2gos_client.api.exceptions import ClientError
-from s2gos_client.api.transport import TransportArgs, TransportError
-from s2gos_client.api.transport.httpx import HttpxTransport
+from cuiman.api.exceptions import ClientError
+from cuiman.api.transport import TransportArgs, TransportError
+from cuiman.api.transport.httpx import HttpxTransport
 from gavicore.models import ApiError, ConformanceDeclaration
 
 
