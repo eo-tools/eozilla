@@ -7,7 +7,7 @@ from procodile.cli import get_cli
 # The CLI with a basic set of commands.
 # The `cli` is a Typer application of type `typer.Typer()`,
 # so can use the instance to register your own commands.
-cli = get_cli("s2gos_app_ex.processes:registry")
+cli = get_cli("procodile_example.processes:registry")
 
 
 __all__ = ["cli"]

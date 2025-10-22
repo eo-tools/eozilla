@@ -73,7 +73,7 @@ wraptile = { path = "./wraptile", editable = true }
 cuiman = { path = "./cuiman", editable = true }
 procodile = { path = "./procodile", editable = true }
 appligator = { path = "./appligator", editable = true }
-eozilla-app-ex = { path = "./eozilla-app-ex", editable = true }
+procodile-example = { path = "./procodile-example", editable = true }
 # Airflow is only available on PyPI
 apache-airflow-client = "==3.0.2"
 # Documentation
@@ -84,7 +84,7 @@ mkdocs-mermaid2-plugin = "*"
 skip = [".idea", ".github", ".pixi", "htmlcov", "site"]
 profile = "black"
 line_length = 88
-known_first_party = ["appligator", "procodile", "gavicore", "cuiman", "wraptile", "s2gos_app_ex"]
+known_first_party = ["appligator", "procodile", "gavicore", "cuiman", "wraptile", "procodile_example"]
 
 [tool.black]
 line-length = 88
@@ -97,7 +97,7 @@ include = [
     "cuiman/src/**/*.py",
     "procodile/src/**/*.py",
     "appligator/src/**/*.py",
-    "eozilla-app-ex/src/**/*.py",
+    "procodile-example/src/**/*.py",
     "tools/**/*.py",
 ]
 
@@ -109,7 +109,7 @@ select = ["I", "F", "E"]
 
 [tool.coverage.report]
 omit = [
-    "eozilla-app-ex/src/s2gos_app_ex/**/*",
+    "procodile-example/src/procodile_example/**/*",
     "cuiman/src/cuiman/gui/**/*",
     "wraptile/src/wraptile/services/airflow/**/*",
 ]
@@ -120,7 +120,7 @@ check_untyped_defs = true
 disable_error_code = ["valid-type", "import-untyped"]
 exclude = [
     "eozilla-airflow",
-    "eozilla-app-ex/src/test",
+    "procodile-example/src/test",
     "gavicore/src/test",
     "wraptile/src/test",
     "cuiman/src/test",
