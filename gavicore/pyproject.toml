@@ -3,9 +3,9 @@
 #  https://opensource.org/license/apache-2-0.
 
 [project]
-name = "s2gos-client"
+name = "gavicore"
 version = "0.0.5.dev"
-description = "Python client for the ESA DTE-S2GOS synthetic scene generator service"
+description = "Python data models for the ESA DTE-S2GOS synthetic scene generator service"
 readme = "README.md"
 authors = [
   {name = "Norman Fomferra (Brockmann Consult GmbH)"},
@@ -38,24 +38,15 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-  "click",
   "pydantic",
-  "pyyaml",
   "typer",
-  "uri-template",
-  "httpx",
-  # local dependency
-  "s2gos-common>=0.0.0",
 ]
 
-[project.scripts]
-s2gos-client = "s2gos_client.cli:cli"
-
 [project.urls]
-Documentation = "https://s2gos-dev.github.io/s2gos-controller"
-Repository = "https://github.com/s2gos-dev/s2gos-controller"
-Changelog = "https://github.com/s2gos-dev/s2gos-controller/blob/main/CHANGES.md"
-Issues = "https://github.com/s2gos-dev/s2gos-controller/issues"
+Documentation = "https://eo-tools.github.io/eozilla"
+Repository = "https://github.com/eo-tools/eozilla"
+Changelog = "https://github.com/eo-tools/eozilla/blob/main/CHANGES.md"
+Issues = "https://github.com/eo-tools/eozilla/issues"
 
 [build-system]
 requires = ["hatch"]
@@ -63,10 +54,11 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build]
 sources = ["src"]
+exclude = ["src/tests/**/*"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src/s2gos_client/**/*",
+  "src/s2gos_common/**/*",
   "pyproject.toml",
   "README.md",
   "LICENSE",
@@ -74,5 +66,5 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 include = [
-  "src/s2gos_client/**/*"
+  "src/s2gos_common/**/*"
 ]

@@ -4,6 +4,6 @@
 
 from importlib.metadata import version
 
-__version__ = version("s2gos-server")
+__version__ = version("wraptile")
 
 __all__ = ["__version__"]

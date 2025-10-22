@@ -3,9 +3,9 @@
 #  https://opensource.org/license/apache-2-0.
 
 [project]
-name = "s2gos-server"
-version = "0.0.5.dev"
-description = "Python server for the ESA DTE-S2GOS synthetic scene generator service"
+name = "eozilla-app-ex"
+version = "0.0.0"
+description = "Application example for the ESA DTE-S2GOS synthetic scene generator service"
 readme = "README.md"
 authors = [
   {name = "Norman Fomferra (Brockmann Consult GmbH)"},
@@ -37,24 +37,39 @@ classifiers = [
   "Operating System :: MacOS",
 ]
 requires-python = ">=3.10"
-dependencies = [
-  "fastapi",
-  "pydantic",
-  "pyyaml",
-  "typer",
-  "uvicorn",
-  # local dependency
-  "s2gos-common>=0.0.0",
-]
 
 [project.scripts]
-s2gos-server = "s2gos_server.cli:cli"
+eozilla-app-ex = "s2gos_app_ex.cli:cli"
 
-[project.urls]
-Documentation = "https://s2gos-dev.github.io/s2gos-controller"
-Repository = "https://github.com/s2gos-dev/s2gos-controller"
-Changelog = "https://github.com/s2gos-dev/s2gos-controller/blob/main/CHANGES.md"
-Issues = "https://github.com/s2gos-dev/s2gos-controller/issues"
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["linux-64", "win-64"]
+
+[tool.pixi.dependencies]
+python = "3.12.*"
+typer = ">=0.16.0,<0.17"
+pydantic = ">=2.11.7,<3"
+
+[tool.pixi.pypi-dependencies]
+gavicore = { path = "../gavicore", editable = true }
+eozilla-app-ex = { path = ".", editable = true }
+
+[tool.pixi.feature.dev.dependencies]
+pytest = "*"
+pytest-cov = "*"
+ruff = "*"
+isort = "*"
+mypy = "*"
+
+[tool.pixi.environments]
+production = { solve-group = "prod" }
+default = { features = ["dev"], solve-group = "prod" }
+
+[tool.isort]
+skip = [".idea", ".github", ".pixi", "htmlcov", "site"]
+profile = "black"
+line_length = 88
+known_first_party = ["s2gos_app_ex"]
 
 [build-system]
 requires = ["hatch"]
@@ -65,7 +80,7 @@ sources = ["src"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src/s2gos_server/**/*",
+  "src/s2gos_app_ex/**/*",
   "pyproject.toml",
   "README.md",
   "LICENSE",
@@ -73,5 +88,5 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 include = [
-  "src/s2gos_server/**/*"
+  "src/s2gos_app_ex/**/*"
 ]

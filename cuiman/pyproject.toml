@@ -3,9 +3,9 @@
 #  https://opensource.org/license/apache-2-0.
 
 [project]
-name = "s2gos-app-ex"
-version = "0.0.0"
-description = "Application example for the ESA DTE-S2GOS synthetic scene generator service"
+name = "cuiman"
+version = "0.0.5.dev"
+description = "Python client for the ESA DTE-S2GOS synthetic scene generator service"
 readme = "README.md"
 authors = [
   {name = "Norman Fomferra (Brockmann Consult GmbH)"},
@@ -37,39 +37,25 @@ classifiers = [
   "Operating System :: MacOS",
 ]
 requires-python = ">=3.10"
+dependencies = [
+  "click",
+  "pydantic",
+  "pyyaml",
+  "typer",
+  "uri-template",
+  "httpx",
+  # local dependency
+  "gavicore>=0.0.0",
+]
 
 [project.scripts]
-s2gos-app-ex = "s2gos_app_ex.cli:cli"
+cuiman = "s2gos_client.cli:cli"
 
-[tool.pixi.project]
-channels = ["conda-forge"]
-platforms = ["linux-64", "win-64"]
-
-[tool.pixi.dependencies]
-python = "3.12.*"
-typer = ">=0.16.0,<0.17"
-pydantic = ">=2.11.7,<3"
-
-[tool.pixi.pypi-dependencies]
-s2gos-common = { path = "../s2gos-common", editable = true }
-s2gos-app-ex = { path = ".", editable = true }
-
-[tool.pixi.feature.dev.dependencies]
-pytest = "*"
-pytest-cov = "*"
-ruff = "*"
-isort = "*"
-mypy = "*"
-
-[tool.pixi.environments]
-production = { solve-group = "prod" }
-default = { features = ["dev"], solve-group = "prod" }
-
-[tool.isort]
-skip = [".idea", ".github", ".pixi", "htmlcov", "site"]
-profile = "black"
-line_length = 88
-known_first_party = ["s2gos_app_ex"]
+[project.urls]
+Documentation = "https://eo-tools.github.io/eozilla"
+Repository = "https://github.com/eo-tools/eozilla"
+Changelog = "https://github.com/eo-tools/eozilla/blob/main/CHANGES.md"
+Issues = "https://github.com/eo-tools/eozilla/issues"
 
 [build-system]
 requires = ["hatch"]
@@ -80,7 +66,7 @@ sources = ["src"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src/s2gos_app_ex/**/*",
+  "src/s2gos_client/**/*",
   "pyproject.toml",
   "README.md",
   "LICENSE",
@@ -88,5 +74,5 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 include = [
-  "src/s2gos_app_ex/**/*"
+  "src/s2gos_client/**/*"
 ]

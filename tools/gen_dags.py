@@ -15,7 +15,7 @@ from tools.common import S2GOS_PATH, write_file
 GENERATOR_NAME = str(Path(__file__).name)
 
 SERVICE_SPEC = "s2gos_server.services.local.testing:service"
-DAGS_FOLDER = S2GOS_PATH / "s2gos-airflow/dags"
+DAGS_FOLDER = S2GOS_PATH / "eozilla-airflow/dags"
 
 
 def main(service_spec: str = SERVICE_SPEC, dags_folder: Path = DAGS_FOLDER):

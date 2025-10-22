@@ -6,7 +6,7 @@ Python gateway server for the ESA DTE-S2GOS synthetic scene generator service.
 
 Start by running a local Airflow instance with some test DAGs:
 ```commandline
-cd s2gos-airflow
+cd eozilla-airflow
 pixi install
 pixi run airflow standalone
 ```
@@ -16,7 +16,7 @@ the local Airflow webserver runs on http://localhost:8080):
 
 ```commandline
 pixi shell
-s2gos-server run -- s2gos_server.services.airflow:service --airflow-password=a8e7f4bb230
+wraptile run -- s2gos_server.services.airflow:service --airflow-password=a8e7f4bb230
 ```
 
 The possible options are
@@ -35,7 +35,7 @@ Running the S2GOS gateway server with a local service:
 
 ```commandline
 pixi shell
-s2gos-server run -- s2gos_server.services.local.testing:service --processes --max-workers=5
+wraptile run -- s2gos_server.services.local.testing:service --processes --max-workers=5
 ```
 
 The possible options are

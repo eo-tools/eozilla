@@ -17,8 +17,8 @@ using Ubuntu 24.04.2 LTS. Airflow has no official Windows support.
 
 ```bash
 cd projects
-git clone https://github.com/s2gos-dev/s2gos-controller.git
-cd s2gos-controller/s2gos-airflow 
+git clone https://github.com/eo-tools/eozilla.git
+cd eozilla/eozilla-airflow 
 ```
 
 ```bash

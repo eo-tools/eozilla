@@ -18,7 +18,7 @@ A clear and concise description of what you expected to happen.
 
 **Python Environment**
  - operating system:
- - S2GOS package version, output of CLI `s2gos version`:
+ - package version, output of CLI `s2gos-client --version`:
  - optional: packages and their versions, output of `pip list` or `conda list`: 
 
 **Additional context**

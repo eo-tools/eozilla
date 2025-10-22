@@ -9,7 +9,7 @@ from tools.common import S2GOS_PATH
 
 DOCS_PATH: Final = S2GOS_PATH / "docs"
 CLI_APP_SOURCE: Final = (
-    S2GOS_PATH / "s2gos-client" / "src" / "s2gos_client" / "cli" / "cli.py"
+    S2GOS_PATH / "cuiman" / "src" / "s2gos_client" / "cli" / "cli.py"
 )
 OUTPUT_FILE: Final = DOCS_PATH / "client-cli.md"
 

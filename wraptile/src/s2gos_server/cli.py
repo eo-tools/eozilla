@@ -48,7 +48,7 @@ def parse_cli_service_options(
     return kwargs
 
 
-cli = typer.Typer(name="s2gos-server", help=CLI_HELP, invoke_without_command=True)
+cli = typer.Typer(name="wraptile", help=CLI_HELP, invoke_without_command=True)
 
 cli_host_option = typer.Option(
     envvar=ENV_VAR_SERVER_HOST,
@@ -80,7 +80,7 @@ def main(
     if version_:
         from importlib.metadata import version
 
-        typer.echo(version("s2gos-server"))
+        typer.echo(version("wraptile"))
         raise typer.Exit()
 
 

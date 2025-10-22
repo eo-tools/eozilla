@@ -1,5 +1,5 @@
 [project]
-name = "s2gos-airflow"
+name = "eozilla-airflow"
 version = "0.0.0"
 description = "Airflow DAGs for the ESA DTE-S2GOS synthetic scene generator service"
 requires-python = "==3.12"
@@ -22,8 +22,8 @@ python = "3.12.*"
 # Airflow
 apache-airflow = "==3.0.2"
 # S2GOS service implementation
-s2gos-common = { path = "../s2gos-common", editable = true }
-s2gos-server = { path = "../s2gos-server", editable = true }
+gavicore = { path = "../gavicore", editable = true }
+wraptile = { path = "../wraptile", editable = true }
 fastapi = "*"
 pydantic = "*"
 pyyaml = "*"

@@ -1,16 +1,16 @@
 # How to contribute
 
-The S2GOS client welcomes contributions of any form
+The Eozilla project welcomes contributions of any form
 as long as you respect our [code of conduct](CODE_OF_CONDUCT.md) and stay 
 in line with the following instructions and guidelines.
 
 If you have suggestions, ideas, feature requests, or if you have identified
 a malfunction or error, then please 
-[post an issue](https://github.com/s2gos-dev/s2gos-client/issues). 
+[post an issue](https://github.com/eo-tools/cuiman/issues). 
 
 If you'd like to submit code or documentation changes, we ask you to provide a 
 pull request (PR) 
-[here](https://github.com/s2gos-dev/s2gos-client/pulls). 
+[here](https://github.com/eo-tools/cuiman/pulls). 
 For code and configuration changes, your PR must be linked to a 
 corresponding issue. 
 
@@ -34,7 +34,7 @@ checklist are addressed in your PR.
 
 ## Code style
 
-The code style of the S2GOS client equals the default settings 
+The code style used in Eozilla equals the default settings 
 of [black](https://black.readthedocs.io/). Since black is 
 un-opinionated regarding the order of imports, we group and 
 sort imports statements according to the default settings of 

@@ -18,8 +18,8 @@ from tools.openapi import OAMethod, OASchema, load_openapi_schema
 
 GENERATOR_NAME = str(Path(__file__).name)
 
-ROUTES_PATH = S2GOS_PATH / "s2gos-server/src/s2gos_server/routes.py"
-SERVICE_PATH = S2GOS_PATH / "s2gos-common/src/s2gos_common/service.py"
+ROUTES_PATH = S2GOS_PATH / "wraptile/src/s2gos_server/routes.py"
+SERVICE_PATH = S2GOS_PATH / "gavicore/src/s2gos_common/service.py"
 
 magic_param_list = [
     ("request", "fastapi.Request"),

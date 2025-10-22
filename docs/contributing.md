@@ -3,25 +3,25 @@
 ## Changelog
 
 You can find the complete changelog 
-[here](https://github.com/s2gos-dev/s2gos-controller/blob/main/CHANGES.md). 
+[here](https://github.com/eo-tools/eozilla/blob/main/CHANGES.md). 
 
 ## Reporting
 
 If you have suggestions, ideas, feature requests, or if you have identified
 a malfunction or error, then please 
-[post an issue](https://github.com/s2gos-dev/s2gos-controller/issues). 
+[post an issue](https://github.com/eo-tools/eozilla/issues). 
 
 ## Contributions
 
 The S2GOS client project welcomes contributions of any form as long as you 
 respect our 
-[code of conduct](https://github.com/s2gos-dev/s2gos-controller/blob/main/CODE_OF_CONDUCT.md)
+[code of conduct](https://github.com/eo-tools/eozilla/blob/main/CODE_OF_CONDUCT.md)
 and follow our 
-[contribution guide](https://github.com/s2gos-dev/s2gos-controller/blob/main/CONTRIBUTING.md).
+[contribution guide](https://github.com/eo-tools/eozilla/blob/main/CONTRIBUTING.md).
 
 If you'd like to submit code or documentation changes, we ask you to provide a 
 pull request (PR) 
-[here](https://github.com/s2gos-dev/s2gos-controller/pulls). 
+[here](https://github.com/eo-tools/eozilla/pulls). 
 For code and configuration changes, your PR must be linked to a 
 corresponding issue. 
 
@@ -34,8 +34,8 @@ Before you start, make sure you have [pixi](https://pixi.sh) installed.
 Checkout sources
 
 ```commandline
-git clone https://github.com/s2gos-dev/s2gos-controller.git
-cd ./s2gos-controller
+git clone https://github.com/eo-tools/eozilla.git
+cd ./eozilla
 ```
 
 Create a new Python environment and activate it:
@@ -50,13 +50,13 @@ pixi shell
 Run local test server
 
 ```commandline
-s2gos-server run -- s2gos_server.services.local.testing:service
+wraptile run -- s2gos_server.services.local.testing:service
 ```
 
 The dev mode is useful if you are changing server code:
 
 ```commandline
-s2gos-server dev s2gos_server.services.local.testing:service
+wraptile dev s2gos_server.services.local.testing:service
 ```
 
 Run client API
@@ -82,7 +82,7 @@ client.show_jobs()
 Run client CLI
 
 ```commandline
-$ s2gos-client --help
+$ cuiman --help
 ```
 
 ### Formatting & Linting
@@ -121,11 +121,11 @@ pixi run generate
 
 This will generate S2GOS'
 
-- [pydantic](https://docs.pydantic.dev/) models in `s2gos-common/src/s2gos_common/models.py` 
+- [pydantic](https://docs.pydantic.dev/) models in `gavicore/src/s2gos_common/models.py` 
 (uses [datamodel-code-generator](https://koxudaxi.github.io/datamodel-code-generator/))
-- client implementation in `s2gos-client/src/s2gos_client/client.py` and CLI documentation `docs/cli.md`
-- server routes in `s2gos-server/src/s2gos_server/routes.py` and the 
-  service interface in `s2gos-server/src/s2gos_server/service.py`
+- client implementation in `cuiman/src/s2gos_client/client.py` and CLI documentation `docs/cli.md`
+- server routes in `wraptile/src/s2gos_server/routes.py` and the 
+  service interface in `wraptile/src/s2gos_server/service.py`
 
 ### Documentation
 

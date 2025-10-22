@@ -1,5 +1,5 @@
 [project]
-name = "s2gos-controller"
+name = "eozilla"
 version = "0.0.5.dev"
 description = "S2GOS control layer comprising a server and client"
 requires-python = ">=3.10"
@@ -68,10 +68,10 @@ anaconda-client = ">=1.13.0,<2"
 # I wished we could have "no-deps=true" here,
 # or even better "[tool.pixi.workspaces]".
 # See https://github.com/prefix-dev/pixi/issues/1417.
-s2gos-client = { path = "s2gos-client", editable = true }
-s2gos-common = { path = "s2gos-common", editable = true }
-s2gos-server = { path = "s2gos-server", editable = true }
-s2gos-app-ex = { path = "s2gos-app-ex", editable = true }
+cuiman = { path = "cuiman", editable = true }
+gavicore = { path = "gavicore", editable = true }
+wraptile = { path = "wraptile", editable = true }
+eozilla-app-ex = { path = "eozilla-app-ex", editable = true }
 # Airflow is only available on PyPI
 apache-airflow-client = "==3.0.2"
 # Documentation
@@ -90,10 +90,10 @@ line-length = 88
 [tool.ruff]
 include = [
     "notebooks/**/*.py",
-    "s2gos-common/src/**/*.py",
-    "s2gos-server/src/**/*.py",
-    "s2gos-client/src/**/*.py",
-    "s2gos-app-ex/src/**/*.py",
+    "gavicore/src/**/*.py",
+    "wraptile/src/**/*.py",
+    "cuiman/src/**/*.py",
+    "eozilla-app-ex/src/**/*.py",
     "tools/**/*.py",
 ]
 
@@ -105,9 +105,9 @@ select = ["I", "F", "E"]
 
 [tool.coverage.report]
 omit = [
-    "s2gos-app-ex/src/s2gos_app_ex/**/*",
-    "s2gos-client/src/s2gos_client/gui/**/*",
-    "s2gos-server/src/s2gos_server/services/airflow/**/*",
+    "eozilla-app-ex/src/s2gos_app_ex/**/*",
+    "cuiman/src/s2gos_client/gui/**/*",
+    "wraptile/src/s2gos_server/services/airflow/**/*",
 ]
 
 [tool.mypy]
@@ -115,12 +115,13 @@ python_version = "3.10"
 check_untyped_defs = true
 disable_error_code = ["valid-type", "import-untyped"]
 exclude = [
-    "s2gos-airflow",
-    "s2gos-app-ex/src/test",
-    "s2gos-client/src/test",
-    "s2gos-common/src/test",
-    "s2gos-server/src/test",
+    "eozilla-airflow",
+    "eozilla-app-ex/src/test",
+    "cuiman/src/test",
+    "gavicore/src/test",
+    "wraptile/src/test",
     "tools",
+    "_pkg_reservations",
 ]
 [[tool.mypy.overrides]]
 module = "s2gos_common.models"
@@ -134,13 +135,13 @@ disable_error_code = ["valid-type"]
 depends-on = ["test-common", "test-server", "test-client"]
 
 [tool.pixi.tasks.test-common]
-cmd = "pytest s2gos-common/src/tests"
+cmd = "pytest gavicore/src/tests"
 
 [tool.pixi.tasks.test-server]
-cmd = "pytest s2gos-server/src/tests"
+cmd = "pytest wraptile/src/tests"
 
 [tool.pixi.tasks.test-client]
-cmd = "pytest s2gos-client/src/tests"
+cmd = "pytest cuiman/src/tests"
 
 # pixi run coverage / coverage-ci
 
@@ -157,13 +158,13 @@ cmd = "coverage html -d .cov-report && coverage report"
 cmd = "coverage xml -o coverage.xml && coverage report"
 
 [tool.pixi.tasks.cov-common]
-cmd = "pytest --cov s2gos-common/src/s2gos_common --cov-report= --cov-append s2gos-common/src/tests"
+cmd = "pytest --cov gavicore/src/s2gos_common --cov-report= --cov-append gavicore/src/tests"
 
 [tool.pixi.tasks.cov-server]
-cmd = "pytest --cov s2gos-server/src/s2gos_server --cov-report= --cov-append s2gos-server/src/tests"
+cmd = "pytest --cov wraptile/src/s2gos_server --cov-report= --cov-append wraptile/src/tests"
 
 [tool.pixi.tasks.cov-client]
-cmd = "pytest --cov s2gos-client/src/s2gos_client --cov-report= --cov-append s2gos-client/src/tests"
+cmd = "pytest --cov cuiman/src/s2gos_client --cov-report= --cov-append cuiman/src/tests"
 
 # pixi run check
 
@@ -171,13 +172,13 @@ cmd = "pytest --cov s2gos-client/src/s2gos_client --cov-report= --cov-append s2g
 depends-on = ["check-common", "check-server", "check-client", "typecheck"]
 
 [tool.pixi.tasks.check-common]
-cmd = "ruff check s2gos-common/src"
+cmd = "ruff check gavicore/src"
 
 [tool.pixi.tasks.check-server]
-cmd = "ruff check s2gos-server/src"
+cmd = "ruff check wraptile/src"
 
 [tool.pixi.tasks.check-client]
-cmd = "ruff check s2gos-client/src"
+cmd = "ruff check cuiman/src"
 
 [tool.pixi.tasks.typecheck]
 cmd = "mypy ."

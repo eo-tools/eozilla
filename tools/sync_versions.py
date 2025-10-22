@@ -8,7 +8,7 @@ from typing import Any
 import tomlkit
 
 # List of workspaces to update
-workspace_names = ["s2gos-common", "s2gos-server", "s2gos-client"]
+workspace_names = ["gavicore", "wraptile", "cuiman"]
 
 
 def main():

@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from . import models, service
 
-__version__ = version("s2gos-common")
+__version__ = version("gavicore")
 
 __all__ = [
     "__version__",

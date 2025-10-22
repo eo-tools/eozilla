@@ -94,7 +94,7 @@ The output of `generators/gen_models` is not satisfying:
     - One repository with all three packages in `src`
     - One repository with three subdirectories  <-- This is the one!
     - Three repositories 
-* **DONE**: Align `ruff` settings with other [S2GOS repos](https://github.com/s2gos-dev).
+* **DONE**: Align `ruff` settings with other [S2GOS repos](https://github.com/eo-tools).
 
 ### General design
 
