@@ -51,10 +51,10 @@ dependencies = [
 s2gos-server = "s2gos_server.cli:cli"
 
 [project.urls]
-Documentation = "https://s2gos-dev.github.io/s2gos-controller"
-Repository = "https://github.com/s2gos-dev/s2gos-controller"
-Changelog = "https://github.com/s2gos-dev/s2gos-controller/blob/main/CHANGES.md"
-Issues = "https://github.com/s2gos-dev/s2gos-controller/issues"
+Documentation = "https://eo-tools.github.io/eozilla"
+Repository = "https://github.com/eo-tools/eozilla"
+Changelog = "https://github.com/eo-tools/eozilla/blob/main/CHANGES.md"
+Issues = "https://github.com/eo-tools/eozilla/issues"
 
 [build-system]
 requires = ["hatch"]

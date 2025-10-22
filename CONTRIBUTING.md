@@ -6,11 +6,11 @@ in line with the following instructions and guidelines.
 
 If you have suggestions, ideas, feature requests, or if you have identified
 a malfunction or error, then please 
-[post an issue](https://github.com/s2gos-dev/s2gos-client/issues). 
+[post an issue](https://github.com/eo-tools/s2gos-client/issues). 
 
 If you'd like to submit code or documentation changes, we ask you to provide a 
 pull request (PR) 
-[here](https://github.com/s2gos-dev/s2gos-client/pulls). 
+[here](https://github.com/eo-tools/s2gos-client/pulls). 
 For code and configuration changes, your PR must be linked to a 
 corresponding issue. 
 

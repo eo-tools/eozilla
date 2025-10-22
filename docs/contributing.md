@@ -3,25 +3,25 @@
 ## Changelog
 
 You can find the complete changelog 
-[here](https://github.com/s2gos-dev/s2gos-controller/blob/main/CHANGES.md). 
+[here](https://github.com/eo-tools/eozilla/blob/main/CHANGES.md). 
 
 ## Reporting
 
 If you have suggestions, ideas, feature requests, or if you have identified
 a malfunction or error, then please 
-[post an issue](https://github.com/s2gos-dev/s2gos-controller/issues). 
+[post an issue](https://github.com/eo-tools/eozilla/issues). 
 
 ## Contributions
 
 The S2GOS client project welcomes contributions of any form as long as you 
 respect our 
-[code of conduct](https://github.com/s2gos-dev/s2gos-controller/blob/main/CODE_OF_CONDUCT.md)
+[code of conduct](https://github.com/eo-tools/eozilla/blob/main/CODE_OF_CONDUCT.md)
 and follow our 
-[contribution guide](https://github.com/s2gos-dev/s2gos-controller/blob/main/CONTRIBUTING.md).
+[contribution guide](https://github.com/eo-tools/eozilla/blob/main/CONTRIBUTING.md).
 
 If you'd like to submit code or documentation changes, we ask you to provide a 
 pull request (PR) 
-[here](https://github.com/s2gos-dev/s2gos-controller/pulls). 
+[here](https://github.com/eo-tools/eozilla/pulls). 
 For code and configuration changes, your PR must be linked to a 
 corresponding issue. 
 
@@ -34,8 +34,8 @@ Before you start, make sure you have [pixi](https://pixi.sh) installed.
 Checkout sources
 
 ```commandline
-git clone https://github.com/s2gos-dev/s2gos-controller.git
-cd ./s2gos-controller
+git clone https://github.com/eo-tools/eozilla.git
+cd ./eozilla
 ```
 
 Create a new Python environment and activate it:

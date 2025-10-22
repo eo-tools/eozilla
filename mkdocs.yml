@@ -3,8 +3,8 @@
 #  https://opensource.org/license/apache-2-0.
 
 site_name: ESA DTE-S2GOS Controller
-repo_url: https://github.com/s2gos-dev/s2gos-controller
-repo_name: s2gos-dev/s2gos-controller
+repo_url: https://github.com/eo-tools/eozilla
+repo_name: eo-tools/eozilla
 
 copyright: Copyright &copy; 2025 ESA DTE-S2GOS Team
 
@@ -64,7 +64,7 @@ extra:
   mermaid: true
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/s2gos-dev/s2gos-controller
+      link: https://github.com/eo-tools/eozilla
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/s2gos/
 

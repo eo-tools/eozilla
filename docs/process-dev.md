@@ -143,7 +143,7 @@ you can run your CLI as an executable and `my-tool --help` will output:
 ### Example project setup
 
 An application example that can serve as a starting point is provided in the workspace 
-[s2gos-app-ex](https://github.com/s2gos-dev/s2gos-controller/tree/main/s2gos-app-ex). Please check out its `README.md` to install and run it.
+[s2gos-app-ex](https://github.com/eo-tools/eozilla/tree/main/s2gos-app-ex). Please check out its `README.md` to install and run it.
 
 The application's primary user interface is its simple, generated CLI 
 (you can extend it, if you like). For the above application example the CLI tool

@@ -1,5 +1,5 @@
 [project]
-name = "s2gos-controller"
+name = "eozilla"
 version = "0.0.5.dev"
 description = "S2GOS control layer comprising a server and client"
 requires-python = ">=3.10"
