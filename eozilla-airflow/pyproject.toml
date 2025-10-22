@@ -1,5 +1,5 @@
 [project]
-name = "s2gos-airflow"
+name = "eozilla-airflow"
 version = "0.0.0"
 description = "Airflow DAGs for the ESA DTE-S2GOS synthetic scene generator service"
 requires-python = "==3.12"

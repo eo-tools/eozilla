@@ -115,7 +115,7 @@ python_version = "3.10"
 check_untyped_defs = true
 disable_error_code = ["valid-type", "import-untyped"]
 exclude = [
-    "s2gos-airflow",
+    "eozilla-airflow",
     "s2gos-app-ex/src/test",
     "cuiman/src/test",
     "gavicore/src/test",

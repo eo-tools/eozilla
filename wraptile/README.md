@@ -6,7 +6,7 @@ Python gateway server for the ESA DTE-S2GOS synthetic scene generator service.
 
 Start by running a local Airflow instance with some test DAGs:
 ```commandline
-cd s2gos-airflow
+cd eozilla-airflow
 pixi install
 pixi run airflow standalone
 ```
