@@ -991,7 +991,7 @@ packages:
   size: 10858681
   timestamp: 1753906142349
 - pypi: ./
-  name: s2gos-app-ex
+  name: eozilla-app-ex
   version: 0.0.0
   sha256: bcf9b35cf8dde8c393c51de92d933cf68c3f7e57765e239c71fadf6e0da497fa
   requires_python: '>=3.10'

@@ -396,7 +396,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
       - pypi: ./cuiman
       - pypi: ./gavicore
-      - pypi: ./s2gos-app-ex
+      - pypi: ./eozilla-app-ex
       - pypi: ./wraptile
       osx-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_2.conda
@@ -775,7 +775,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
       - pypi: ./cuiman
       - pypi: ./gavicore
-      - pypi: ./s2gos-app-ex
+      - pypi: ./eozilla-app-ex
       - pypi: ./wraptile
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/win-64/_openmp_mutex-4.5-2_gnu.conda
@@ -1143,7 +1143,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
       - pypi: ./cuiman
       - pypi: ./gavicore
-      - pypi: ./s2gos-app-ex
+      - pypi: ./eozilla-app-ex
       - pypi: ./wraptile
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
@@ -9178,8 +9178,8 @@ packages:
   - pkg:pypi/ruff?source=hash-mapping
   size: 8291919
   timestamp: 1750189141795
-- pypi: ./s2gos-app-ex
-  name: s2gos-app-ex
+- pypi: ./eozilla-app-ex
+  name: eozilla-app-ex
   version: 0.0.0
   sha256: bcdfad38d7d952c09cd54f8e79747598bdc87940e224b5e9ed2e1ca74b6697f5
   requires_python: '>=3.10'

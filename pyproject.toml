@@ -71,7 +71,7 @@ anaconda-client = ">=1.13.0,<2"
 cuiman = { path = "cuiman", editable = true }
 gavicore = { path = "gavicore", editable = true }
 wraptile = { path = "wraptile", editable = true }
-s2gos-app-ex = { path = "s2gos-app-ex", editable = true }
+eozilla-app-ex = { path = "eozilla-app-ex", editable = true }
 # Airflow is only available on PyPI
 apache-airflow-client = "==3.0.2"
 # Documentation
@@ -93,7 +93,7 @@ include = [
     "gavicore/src/**/*.py",
     "wraptile/src/**/*.py",
     "cuiman/src/**/*.py",
-    "s2gos-app-ex/src/**/*.py",
+    "eozilla-app-ex/src/**/*.py",
     "tools/**/*.py",
 ]
 
@@ -105,7 +105,7 @@ select = ["I", "F", "E"]
 
 [tool.coverage.report]
 omit = [
-    "s2gos-app-ex/src/s2gos_app_ex/**/*",
+    "eozilla-app-ex/src/s2gos_app_ex/**/*",
     "cuiman/src/s2gos_client/gui/**/*",
     "wraptile/src/s2gos_server/services/airflow/**/*",
 ]
@@ -116,7 +116,7 @@ check_untyped_defs = true
 disable_error_code = ["valid-type", "import-untyped"]
 exclude = [
     "eozilla-airflow",
-    "s2gos-app-ex/src/test",
+    "eozilla-app-ex/src/test",
     "cuiman/src/test",
     "gavicore/src/test",
     "wraptile/src/test",

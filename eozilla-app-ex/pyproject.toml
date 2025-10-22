@@ -3,7 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 [project]
-name = "s2gos-app-ex"
+name = "eozilla-app-ex"
 version = "0.0.0"
 description = "Application example for the ESA DTE-S2GOS synthetic scene generator service"
 readme = "README.md"
@@ -39,7 +39,7 @@ classifiers = [
 requires-python = ">=3.10"
 
 [project.scripts]
-s2gos-app-ex = "s2gos_app_ex.cli:cli"
+eozilla-app-ex = "s2gos_app_ex.cli:cli"
 
 [tool.pixi.project]
 channels = ["conda-forge"]
@@ -52,7 +52,7 @@ pydantic = ">=2.11.7,<3"
 
 [tool.pixi.pypi-dependencies]
 gavicore = { path = "../gavicore", editable = true }
-s2gos-app-ex = { path = ".", editable = true }
+eozilla-app-ex = { path = ".", editable = true }
 
 [tool.pixi.feature.dev.dependencies]
 pytest = "*"
