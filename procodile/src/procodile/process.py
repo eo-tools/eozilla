@@ -8,13 +8,13 @@ from typing import Any, Callable, Literal, Optional, get_args, get_origin
 
 import pydantic
 
-from s2gos_common.models import (
+from gavicore.models import (
     InputDescription,
     OutputDescription,
     ProcessDescription,
 )
 
-from s2gos_common.util.schema import create_json_schema, create_schema_instance
+from gavicore.util.schema import create_json_schema, create_schema_instance
 
 
 @dataclass

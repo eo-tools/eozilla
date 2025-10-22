@@ -9,7 +9,7 @@ from s2gos_client.api.transport import Transport, TransportArgs
 from s2gos_client.gui import Client as GuiClient
 from s2gos_client.gui.jobs_panel import JobsPanel
 from s2gos_client.gui.main_panel import MainPanel
-from s2gos_common.models import JobList, ProcessList
+from gavicore.models import JobList, ProcessList
 
 
 class ClientTest(TestCase):

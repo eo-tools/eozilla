@@ -11,7 +11,7 @@ import click
 import pydantic
 from pydantic import Field
 
-from s2gos_common.models import ProcessDescription, ProcessRequest
+from gavicore.models import ProcessDescription, ProcessRequest
 from .obj import flatten_obj, nest_dict
 
 SUBSCRIBER_EVENTS = {

@@ -1,6 +1,6 @@
 # Process Development
 
-The package `s2gos_common` provides a simple **processor development framework** that
+The package `gavicore` provides a simple **processor development framework** that
 
   - supports registration of processes from Python functions,  
   - supports progress reporting by subscriber callback URLs, and
@@ -10,14 +10,14 @@ The package `s2gos_common` provides a simple **processor development framework**
 Processor packages developed using the provided CLI can later on be used to
 generate Docker images, Airflow DAGs, and optionally OGC Application Packages.
 
-You find the processor framework in the `s2gos_common.processes` package. 
+You find the processor framework in the `gavicore.processes` package. 
 It comprises just a few handy top-level components:
 
-* [class `ProcessRegistry`][s2gos_common.process.ProcessRegistry] - to register your 
+* [class `ProcessRegistry`][gavicore.process.ProcessRegistry] - to register your 
   Python functions as processes in a central collection.
-* [class `JobContext`][s2gos_common.process.JobContext] - used inside your process 
+* [class `JobContext`][gavicore.process.JobContext] - used inside your process 
   implementations to report progress or check for client-side cancellation.  
-* [function `get_cli()`][s2gos_common.process.get_cli] - generates a CLI for the 
+* [function `get_cli()`][gavicore.process.get_cli] - generates a CLI for the 
   processes in the registry.
 
 
@@ -39,7 +39,7 @@ Use the registry's `process` decorator to register your Python functions
 that should be exposed as processes. In `my_package/processes.py`:
 
 ```python
-from s2gos_common.process import JobContext, ProcessRegistry
+from gavicore.process import JobContext, ProcessRegistry
 
 registry = ProcessRegistry()
 
@@ -57,7 +57,7 @@ def my_process_2(ctx: JobContext, path: str, factor: float = 1.0) -> str:
     ...
 ```
 
-The `ctx` object of type [JobContext][s2gos_common.process.JobContext]
+The `ctx` object of type [JobContext][gavicore.process.JobContext]
 can be used to report progress and to check for job cancellation.
 You can get the job context inside the function body via `JobContext.get()` 
 or declare it as a function argument of type `JobContext`.
@@ -66,7 +66,7 @@ Process inputs, such as the arguments `path` or `factor` above,
 can be further specified by 
 [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/) annotations.
 Field annotations for an argument can be provided via the `input_fields` dictionary 
-passed  to the [`process`][s2gos_common.process.ProcessRegistry.process] decorator, 
+passed  to the [`process`][gavicore.process.ProcessRegistry.process] decorator, 
 or preferably as part of the type declaration using the Python `Annotated` 
 special form. An example for the latter is
 `factor: Annotated[float, Field(title="Scaling factor", gt=0., le=10.)] = 1.0`.
@@ -82,7 +82,7 @@ fields as inputs rather than the model class as single input. Conceptually:
 from typing import Annotated
 
 from pydantic import BaseModel, Field
-from s2gos_common.process import JobContext, ProcessRegistry
+from gavicore.process import JobContext, ProcessRegistry
 
 
 class ArgsModel(BaseModel):
@@ -109,7 +109,7 @@ In a second step you define an instance of a common process CLI and pass it
 a reference to your registry instance. In `my_package/cli.py`:
 
 ```python
-from s2gos_common.process.cli.cli import get_cli
+from gavicore.process.cli.cli import get_cli
 
 # The CLI with a basic set of commands.
 # The `cli` is a Typer application of type `typer.Typer()`,
@@ -227,43 +227,43 @@ The process request file format in detail:
     Values may be of any JSON-serializable type accepted by
     the given process.
 - `outputs`: Optional process outputs given as key-value mapping.
-    Values are of type [Output][s2gos_common.models.Output] 
+    Values are of type [Output][gavicore.models.Output] 
     and should be supported by the given process.
 - `subscriber`: Optional object comprising callback
     URLs that are informed about process status changes
     while the processing takes place. The URLs are `successUri`,
     `inProgressUri`, and `failedUri` and none is required.
-    See also [Subscriber][s2gos_common.models.Subscriber].
+    See also [Subscriber][gavicore.models.Subscriber].
 
 
 ## Framework API
 
-::: s2gos_common.process.ProcessRegistry
+::: gavicore.process.ProcessRegistry
     options:
       show_source: false
       heading_level: 3
 
-::: s2gos_common.process.Process
+::: gavicore.process.Process
     options:
       show_source: false
       heading_level: 3
 
-::: s2gos_common.process.JobContext
+::: gavicore.process.JobContext
     options:
       show_source: false
       heading_level: 3
 
-::: s2gos_common.process.JobCancelledException
+::: gavicore.process.JobCancelledException
     options:
       show_source: false
       heading_level: 3
 
-::: s2gos_common.process.get_cli
+::: gavicore.process.get_cli
     options:
       show_source: false
       heading_level: 3
 
-::: s2gos_common.process.ExecutionRequest
+::: gavicore.process.ExecutionRequest
     options:
       show_source: false
       heading_level: 3

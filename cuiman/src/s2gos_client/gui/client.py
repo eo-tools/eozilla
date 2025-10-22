@@ -9,7 +9,7 @@ from typing import Optional
 from s2gos_client.api.client import Client as ApiClient
 from s2gos_client.api.exceptions import ClientError
 from s2gos_client.api.transport import Transport
-from s2gos_common.models import JobInfo, ProcessList
+from gavicore.models import JobInfo, ProcessList
 
 from .job_info_panel import JobInfoPanel
 from .jobs_observer import JobsObserver

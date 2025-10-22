@@ -4,7 +4,7 @@
 
 [project]
 name = "appligator"
-version = "0.0.5.dev"
+version = "0.0.5.dev0"
 description = "An application package bundler"
 readme = "README.md"
 authors = [
@@ -41,8 +41,8 @@ dependencies = [
   "pydantic",
   "typer",
   # local dependency
-  "gavicore >=0.0.0",
-  "procodile >=0.0.0",
+  "gavicore >=0.0.4",
+  "procodile >=0.0.4",
 ]
 
 [project.urls]

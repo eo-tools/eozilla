@@ -8,7 +8,7 @@ from unittest import TestCase
 
 from pydantic import BaseModel
 
-import s2gos_common.models as s2g_models
+import gavicore.models as gc_models
 
 REQUIRED_ENUMS = {
     "CRS",
@@ -42,7 +42,7 @@ class ModelsTest(TestCase):
     def test_enums(self):
         all_enums = set(
             name
-            for name, obj in inspect.getmembers(s2g_models, inspect.isclass)
+            for name, obj in inspect.getmembers(gc_models, inspect.isclass)
             if issubclass(obj, Enum)
         )
         self.assertSetIsOk(REQUIRED_ENUMS, all_enums)
@@ -50,7 +50,7 @@ class ModelsTest(TestCase):
     def test_classes(self):
         all_classes = set(
             name
-            for name, obj in inspect.getmembers(s2g_models, inspect.isclass)
+            for name, obj in inspect.getmembers(gc_models, inspect.isclass)
             if issubclass(obj, BaseModel)
         )
         self.assertSetIsOk(REQUIRED_CLASSES, all_classes)
@@ -60,11 +60,11 @@ class ModelsTest(TestCase):
         self.assertSetEqual(required, contained_items, "contained")
 
     def test_models_have_repr_json(self):
-        for name, obj in inspect.getmembers(s2g_models, inspect.isclass):
+        for name, obj in inspect.getmembers(gc_models, inspect.isclass):
             if name in REQUIRED_CLASSES and issubclass(obj, BaseModel):
                 self.assertTrue(hasattr(obj, "_repr_json_"), msg=f"model {name}")
 
-        obj = s2g_models.Bbox(bbox=[10, 20, 30, 40])
+        obj = gc_models.Bbox(bbox=[10, 20, 30, 40])
         json_repr = obj._repr_json_()
         self.assertEqual(
             (

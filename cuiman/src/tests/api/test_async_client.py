@@ -8,7 +8,7 @@ from tests.helpers import MockTransport
 
 from s2gos_client import ClientConfig
 from s2gos_client.api.async_client import AsyncClient
-from s2gos_common.models import (
+from gavicore.models import (
     Capabilities,
     ConformanceDeclaration,
     JobInfo,
@@ -18,7 +18,7 @@ from s2gos_common.models import (
     ProcessList,
     ProcessRequest,
 )
-from s2gos_common.util.request import ExecutionRequest
+from gavicore.util.request import ExecutionRequest
 
 
 class AsyncClientTest(IsolatedAsyncioTestCase):

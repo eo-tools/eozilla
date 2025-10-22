@@ -7,7 +7,7 @@ from unittest import TestCase
 import panel as pn
 
 from s2gos_client.gui.component import ComponentContainer
-from s2gos_common.models import InputDescription, Schema
+from gavicore.models import InputDescription, Schema
 
 
 class ComponentContainerTest(TestCase):

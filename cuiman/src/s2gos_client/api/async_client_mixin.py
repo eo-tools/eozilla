@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from s2gos_common.models import ProcessDescription
-from s2gos_common.util.request import ExecutionRequest
+from gavicore.models import ProcessDescription
+from gavicore.util.request import ExecutionRequest
 
 
 # noinspection PyShadowingBuiltins

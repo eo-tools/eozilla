@@ -28,7 +28,7 @@ code_header = """
 
 from typing import Any, Optional
 
-from s2gos_common.models import {{ model_imports }}
+from gavicore.models import {{ model_imports }}
 
 from .config import ClientConfig
 from .async_client_mixin import AsyncClientMixin

@@ -9,13 +9,13 @@ from unittest import IsolatedAsyncioTestCase
 import fastapi
 import requests
 
-from s2gos_common.models import (
+from gavicore.models import (
     Capabilities,
     ConformanceDeclaration,
     ProcessDescription,
     ProcessList,
 )
-from s2gos_common.util.testing import set_env
+from gavicore.util.testing import set_env
 from s2gos_server.main import app
 from s2gos_server.provider import ServiceProvider, get_service
 from s2gos_server.services.airflow import DEFAULT_AIRFLOW_BASE_URL, AirflowService

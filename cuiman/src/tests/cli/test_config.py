@@ -13,7 +13,7 @@ import pytest
 from s2gos_client import ClientConfig
 from s2gos_client.api.defaults import DEFAULT_CONFIG_PATH
 from s2gos_client.cli.config import configure_client, get_config
-from s2gos_common.util.testing import set_env, set_env_cm
+from gavicore.util.testing import set_env, set_env_cm
 
 DEFAULT_CONFIG_BACKUP_PATH = DEFAULT_CONFIG_PATH.parent / (
     str(DEFAULT_CONFIG_PATH.name) + ".backup"

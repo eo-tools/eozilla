@@ -7,8 +7,8 @@ from unittest import TestCase
 
 import pytest
 
-from s2gos_common.models import Schema
-from s2gos_common.util.testing import BaseModelMixin, set_env_cm
+from gavicore.models import Schema
+from gavicore.util.testing import BaseModelMixin, set_env_cm
 
 
 class TestingTest(BaseModelMixin, TestCase):

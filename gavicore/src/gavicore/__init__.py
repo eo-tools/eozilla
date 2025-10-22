@@ -2,13 +2,14 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-
 import inspect
 from importlib.metadata import version
 
 from pydantic import BaseModel
 
 from . import models, service
+
+print("Hello 1")
 
 __version__ = version("gavicore")
 
@@ -37,3 +38,5 @@ def _repr_base_model_as_json(self: BaseModel):
 
 
 _patch_models()
+
+print("Hello 2")

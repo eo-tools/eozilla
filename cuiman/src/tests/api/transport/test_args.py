@@ -6,7 +6,7 @@ from unittest import TestCase
 
 from s2gos_client.api.exceptions import ClientError
 from s2gos_client.api.transport import TransportArgs
-from s2gos_common.models import ApiError
+from gavicore.models import ApiError
 
 
 class TransportArgsTest(TestCase):

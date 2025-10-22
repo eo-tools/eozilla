@@ -4,7 +4,7 @@
 
 from unittest import IsolatedAsyncioTestCase, TestCase
 
-from s2gos_common.models import (
+from gavicore.models import (
     InputDescription,
     JobResults,
     Link,

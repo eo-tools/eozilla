@@ -9,7 +9,7 @@ from typing import Callable, Optional
 import fastapi
 import pydantic
 
-from s2gos_common.models import (
+from gavicore.models import (
     JobInfo,
     JobList,
     JobResults,

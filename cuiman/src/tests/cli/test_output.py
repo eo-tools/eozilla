@@ -5,7 +5,7 @@
 from unittest import TestCase
 
 from s2gos_client.cli.output import OutputFormat, OutputRenderer, get_renderer
-from s2gos_common.models import (
+from gavicore.models import (
     JobInfo,
     JobList,
     JobResults,
@@ -15,7 +15,7 @@ from s2gos_common.models import (
     ProcessList,
     ProcessSummary,
 )
-from s2gos_common.util.request import ExecutionRequest
+from gavicore.util.request import ExecutionRequest
 
 
 class OutputTest(TestCase):

@@ -5,7 +5,7 @@
 from unittest import TestCase
 
 from procodile import Process, ProcessRegistry
-from s2gos_common.util.testing import BaseModelMixin
+from gavicore.util.testing import BaseModelMixin
 
 from .test_process import f1, f2, f3
 

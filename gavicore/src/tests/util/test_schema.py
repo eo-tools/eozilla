@@ -8,8 +8,8 @@ from unittest import TestCase
 import pydantic
 import pytest
 
-from s2gos_common.models import Schema
-from s2gos_common.util.schema import (
+from gavicore.models import Schema
+from gavicore.util.schema import (
     create_schema_instance,
     inline_schema_refs,
 )

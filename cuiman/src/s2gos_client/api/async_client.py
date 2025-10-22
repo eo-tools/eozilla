@@ -5,7 +5,7 @@
 
 from typing import Any, Optional
 
-from s2gos_common.models import (
+from gavicore.models import (
     ApiError,
     Capabilities,
     ConformanceDeclaration,

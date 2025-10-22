@@ -4,7 +4,7 @@
 
 from unittest import TestCase
 
-from s2gos_common.models import ApiError
+from gavicore.models import ApiError
 from s2gos_server.exceptions import ServiceException
 
 

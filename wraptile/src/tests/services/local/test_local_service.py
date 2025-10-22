@@ -9,7 +9,7 @@ from unittest import IsolatedAsyncioTestCase, TestCase
 import fastapi
 import pytest
 
-from s2gos_common.models import (
+from gavicore.models import (
     Capabilities,
     ConformanceDeclaration,
     JobInfo,
@@ -21,7 +21,7 @@ from s2gos_common.models import (
     ProcessRequest,
 )
 from procodile import Process
-from s2gos_common.util.testing import set_env
+from gavicore.util.testing import set_env
 from s2gos_server.exceptions import ServiceException
 from s2gos_server.main import app
 from s2gos_server.provider import ServiceProvider, get_service

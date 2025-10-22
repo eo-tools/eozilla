@@ -9,7 +9,7 @@ import panel as pn
 import param
 
 from s2gos_client import ClientError
-from s2gos_common.models import JobInfo, JobList
+from gavicore.models import JobInfo, JobList
 
 from .jobs_observer import JobsObserver
 

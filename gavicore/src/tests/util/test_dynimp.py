@@ -6,7 +6,7 @@ import unittest
 
 import pytest
 
-from s2gos_common.util.dynimp import import_value
+from gavicore.util.dynimp import import_value
 
 my_nice_number = 137
 my_nice_string = "137"

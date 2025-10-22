@@ -4,7 +4,7 @@
 
 import logging
 
-from s2gos_common.service import Service
+from gavicore.service import Service
 
 from .services.base import ServiceBase
 

@@ -13,7 +13,7 @@ from s2gos_client.api.client import Client
 from s2gos_client.api.transport import TransportError
 from s2gos_client.cli.cli import cli
 from s2gos_client.cli.client import use_client
-from s2gos_common.models import ApiError
+from gavicore.models import ApiError
 
 
 class UseClientTest(TestCase):

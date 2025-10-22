@@ -19,7 +19,7 @@ from tools.openapi import OAMethod, OASchema, load_openapi_schema
 GENERATOR_NAME = str(Path(__file__).name)
 
 ROUTES_PATH = S2GOS_PATH / "wraptile/src/s2gos_server/routes.py"
-SERVICE_PATH = S2GOS_PATH / "gavicore/src/s2gos_common/service.py"
+SERVICE_PATH = S2GOS_PATH / "gavicore/src/gavicore/service.py"
 
 magic_param_list = [
     ("request", "fastapi.Request"),
@@ -40,8 +40,8 @@ def main():
         [
             "import fastapi\n",
             "\n",
-            f"from s2gos_common.models import {model_list}\n",
-            "from s2gos_common.service import Service\n",
+            f"from gavicore.models import {model_list}\n",
+            "from gavicore.service import Service\n",
             "from .app import app\n",
             "from .provider import get_service\n",
             "\n",

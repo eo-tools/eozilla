@@ -12,13 +12,13 @@ import fastapi
 import yaml
 from starlette.routing import Route
 
-from s2gos_common.models import (
+from gavicore.models import (
     Capabilities,
     ConformanceDeclaration,
     Link,
 )
-from s2gos_common.service import Service
-from s2gos_common.util.dynimp import import_value
+from gavicore.service import Service
+from gavicore.util.dynimp import import_value
 from s2gos_server.constants import ENV_VAR_SERVICE
 from s2gos_server.exceptions import ServiceConfigException
 
