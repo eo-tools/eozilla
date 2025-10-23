@@ -55,7 +55,7 @@ def import_value(
     partial_spec = module_name
     for i, attr_name in enumerate(attr_ref.split(".")):
         try:
-            value = getattr(value, attr_ref)
+            value = getattr(value, attr_name)
         except AttributeError:
             raise ValueError(
                 f"{'Module' if i == 0 else 'Object'} {partial_spec!r} "

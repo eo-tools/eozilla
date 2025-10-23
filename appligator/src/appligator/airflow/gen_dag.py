@@ -2,37 +2,30 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-import importlib
-from pathlib import Path
 from typing import Any
 
-import typer
-
-from gavicore.process import Process
-from wraptile.services.local import LocalService
-from tools.common import EOZILLA_PATH, write_file
-
-GENERATOR_NAME = str(Path(__file__).name)
-
-SERVICE_SPEC = "wraptile.services.local.testing:service"
-DAGS_FOLDER = EOZILLA_PATH / "eozilla-airflow/dags"
+from gavicore.models import InputDescription, ProcessDescription
+from procodile import Process
 
 
-def main(service_spec: str = SERVICE_SPEC, dags_folder: Path = DAGS_FOLDER):
-    service = load_service(service_spec)
-    dags_folder.mkdir(exist_ok=True)
-    for process_id, process in service.process_registry.items():
-        write_file(
-            GENERATOR_NAME,
-            dags_folder / f"{process_id}.py",
-            [gen_dag(process)],
-        )
+def gen_dag(process: Process | ProcessDescription, function_module: str = "") -> str:
+    if isinstance(process, Process):
+        process_description = process.description
+        # noinspection PyUnresolvedReferences
+        function_module = function_module or process.function.__module__
+    elif isinstance(process, ProcessDescription):
+        process_description = process
+        if not function_module:
+            raise ValueError("function_module argument is required")
+    else:
+        raise TypeError(f"unexpected type for process: {type(process).__name__}")
+
+    return _gen_dag(process_description, function_module)
 
 
-def gen_dag(process: Process) -> str:
-    process_description = process.description
+def _gen_dag(process_description: ProcessDescription, function_module: str) -> str:
     function_name = process_description.id
-    input_descriptions = process_description.inputs
+    input_descriptions = process_description.inputs or {}
 
     param_specs = [
         f"{param_name!r}: Param({get_param_args(input_description)})"
@@ -41,8 +34,6 @@ def gen_dag(process: Process) -> str:
 
     tab = "    "
     num_outputs = len(process_description.outputs or [])
-    # noinspection PyUnresolvedReferences
-    function_module = process.function.__module__
     lines = [
         "from airflow.sdk import Param, dag, task",
         "",
@@ -51,7 +42,7 @@ def gen_dag(process: Process) -> str:
         "",
         "@dag(",
         f"{tab}{function_name!r},",
-        f"{tab}dag_display_name={process.description.title!r},",
+        f"{tab}dag_display_name={process_description.title!r},",
         f"{tab}description={process_description.description!r},",
         f"{tab}params=" + "{",
         *[f"{tab}{tab}{p}," for p in param_specs],
@@ -71,7 +62,7 @@ def gen_dag(process: Process) -> str:
     return "\n".join(lines) + "\n"
 
 
-def get_param_args(input_description):
+def get_param_args(input_description: InputDescription):
     schema = dict(
         input_description.schema_.model_dump(
             mode="json",
@@ -94,15 +85,3 @@ def get_param_args(input_description):
         param_args.append(("description", input_description.description))
     param_args.extend(sorted(schema.items(), key=lambda item: item[0]))
     return ", ".join(f"{sk}={sv!r}" for sk, sv in param_args)
-
-
-def load_service(service_spec: str) -> LocalService:
-    module_name, attr_name = service_spec.rsplit(":", maxsplit=1)
-    module = importlib.import_module(module_name)
-    service = getattr(module, attr_name)
-    assert isinstance(service, LocalService)
-    return service
-
-
-if __name__ == "__main__":
-    typer.run(main)
