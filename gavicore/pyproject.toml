@@ -4,7 +4,7 @@
 
 [project]
 name = "gavicore"
-version = "0.0.5.dev0"
+version = "0.0.5"
 description = "Pydantic data models and common utilities for other Eozilla packages"
 readme = "README.md"
 authors = [

@@ -1291,8 +1291,8 @@ packages:
   requires_python: ~=3.9
 - pypi: ./appligator
   name: appligator
-  version: 0.0.5.dev0
-  sha256: 4a83e1a27637316bcfdd54224e3a61e3ef5867b151c76e746b9bc4d84c6deb77
+  version: 0.0.5
+  sha256: 0428834e84c18701246f33ace8cd6260c4f5eb1fadcc00b3b2d232d761c275eb
   requires_dist:
   - pydantic
   - typer
@@ -2842,8 +2842,8 @@ packages:
   timestamp: 1749539269244
 - pypi: ./cuiman
   name: cuiman
-  version: 0.0.5.dev0
-  sha256: b04162ad7096881e549ec2603a390abf4dce85c1151267826beb665712333a43
+  version: 0.0.5
+  sha256: 067c87c9530129983f7e2b1ec48dfbfd3f020b441c0be0ecddd0077293d1ac78
   requires_dist:
   - click
   - pydantic
@@ -3179,8 +3179,8 @@ packages:
   timestamp: 1733300828176
 - pypi: ./eozilla
   name: eozilla
-  version: 0.0.5.dev0
-  sha256: f2acb0d7796d7cf5d29ea73311c51dce4d4cd7256aff438391a4460022c2da50
+  version: 0.0.5
+  sha256: 418bff746dfeac512df1d6337b431278931da08968850507490299da68da5231
   requires_dist:
   - appligator>=0.0.4
   - cuiman>=0.0.4
@@ -3280,8 +3280,8 @@ packages:
   timestamp: 1748101667956
 - pypi: ./gavicore
   name: gavicore
-  version: 0.0.5.dev0
-  sha256: bd8b52a114fcaf93b422bd6a10135c592525295bb93fb2499ce71eea2c88db05
+  version: 0.0.5
+  sha256: f10baf9f920cac03e7fa12fe157b89219f4543c457bc573ff181dfdb25c5ec1c
   requires_dist:
   - pydantic
   - typer
@@ -8059,8 +8059,8 @@ packages:
   timestamp: 1747339794916
 - pypi: ./procodile
   name: procodile
-  version: 0.0.5.dev0
-  sha256: 6dda4206ed6ba28ee1b273107d85da1a457c2a2f2b34f12fdaa5184a58c09556
+  version: 0.0.5
+  sha256: dc31503b524667242df4b826c3a150cc2127aea03cb3461dbab5bbe66725b17d
   requires_dist:
   - pydantic
   - typer
@@ -10303,8 +10303,8 @@ packages:
   timestamp: 1736870265811
 - pypi: ./wraptile
   name: wraptile
-  version: 0.0.5.dev0
-  sha256: da2a103b4df0d4215ea4aacd4b48cb96fbad81e6a7fa0a04ae89fe478b8c5d51
+  version: 0.0.5
+  sha256: 0f06e77bbbce766f05d696b0303c7101914f0a74f7ee2acd7cb8e9efcd91b6e4
   requires_dist:
   - fastapi
   - pydantic
