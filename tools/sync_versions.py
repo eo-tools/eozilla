@@ -8,7 +8,14 @@ from typing import Any
 import tomlkit
 
 # List of workspaces to update
-workspace_names = ["gavicore", "wraptile", "cuiman", "procodile"]
+workspace_names = [
+    "eozilla",
+    "cuiman",
+    "wraptile",
+    "procodile",
+    "appligator",
+    "gavicore",
+]
 
 
 def main():

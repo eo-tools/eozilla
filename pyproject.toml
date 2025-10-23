@@ -68,12 +68,13 @@ build = ">=1.3.0,<2"
 # I wished we could have "no-deps=true" here,
 # or even better "[tool.pixi.workspaces]".
 # See https://github.com/prefix-dev/pixi/issues/1417.
-gavicore = { path = "./gavicore", editable = true }
-wraptile = { path = "./wraptile", editable = true }
-cuiman = { path = "./cuiman", editable = true }
-procodile = { path = "./procodile", editable = true }
 appligator = { path = "./appligator", editable = true }
+cuiman = { path = "./cuiman", editable = true }
+eozilla = { path = "./eozilla", editable = true }
+gavicore = { path = "./gavicore", editable = true }
+procodile = { path = "./procodile", editable = true }
 procodile-example = { path = "./procodile-example", editable = true }
+wraptile = { path = "./wraptile", editable = true }
 # Airflow is only available on PyPI
 apache-airflow-client = "==3.0.2"
 # Documentation
@@ -84,19 +85,28 @@ mkdocs-mermaid2-plugin = "*"
 skip = [".idea", ".github", ".pixi", "htmlcov", "site"]
 profile = "black"
 line_length = 88
-known_first_party = ["appligator", "procodile", "gavicore", "cuiman", "wraptile", "procodile_example"]
+known_first_party = [
+    "appligator",
+    "cuiman",
+    "eozilla",
+    "gavicore",
+    "procodile",
+    "procodile_example",
+    "wraptile",
+]
 
 [tool.black]
 line-length = 88
 
 [tool.ruff]
 include = [
-    "notebooks/**/*.py",
+    "appligator/src/**/*.py",
+    "cuiman/src/**/*.py",
+    "eozilla/src/**/*.py",
     "gavicore/src/**/*.py",
     "wraptile/src/**/*.py",
-    "cuiman/src/**/*.py",
+    "notebooks/**/*.py",
     "procodile/src/**/*.py",
-    "appligator/src/**/*.py",
     "procodile-example/src/**/*.py",
     "tools/**/*.py",
 ]
@@ -119,13 +129,14 @@ python_version = "3.10"
 check_untyped_defs = true
 disable_error_code = ["valid-type", "import-untyped"]
 exclude = [
+    "appligator/src/test",
+    "cuiman/src/test",
+    "eozilla/src/test",
     "eozilla-airflow",
-    "procodile-example/src/test",
     "gavicore/src/test",
     "wraptile/src/test",
-    "cuiman/src/test",
     "procodile/src/test",
-    "appligator/src/test",
+    "procodile-example/src/test",
     "tools",
     "_pkg_reservations",
 ]
@@ -139,27 +150,32 @@ disable_error_code = ["valid-type"]
 
 [tool.pixi.tasks.test]
 depends-on = [
-    "test-gavicore",
-    "test-wraptile",
+    "test-appligator",
     "test-cuiman",
+    "test-eozilla",
+    "test-gavicore",
     "test-procodile",
-    "test-appligator"
+    "test-wraptile",
 ]
 
-[tool.pixi.tasks.test-gavicore]
-cmd = "pytest gavicore/src/tests"
-
-[tool.pixi.tasks.test-wraptile]
-cmd = "pytest wraptile/src/tests"
+[tool.pixi.tasks.test-appligator]
+cmd = "pytest appligator/src/tests"
 
 [tool.pixi.tasks.test-cuiman]
 cmd = "pytest cuiman/src/tests"
 
+[tool.pixi.tasks.test-eozilla]
+cmd = "pytest eozilla/src/tests"
+
+[tool.pixi.tasks.test-gavicore]
+cmd = "pytest gavicore/src/tests"
+
 [tool.pixi.tasks.test-procodile]
 cmd = "pytest procodile/src/tests"
 
-[tool.pixi.tasks.test-appligator]
-cmd = "pytest appligator/src/tests"
+[tool.pixi.tasks.test-wraptile]
+cmd = "pytest wraptile/src/tests"
+
 
 # pixi run coverage / coverage-ci
 
@@ -171,11 +187,12 @@ depends-on = ["cov-modules", "cov-report-xml"]
 
 [tool.pixi.tasks.cov-modules]
 depends-on = [
+    "cov-appligator",
+    "cov-cuiman",
+    "cov-eozilla",
     "cov-gavicore",
     "cov-wraptile",
-    "cov-cuiman",
     "cov-procodile",
-    "cov-appligator",
 ]
 
 [tool.pixi.tasks.cov-report-html]
@@ -184,47 +201,54 @@ cmd = "coverage html -d .cov-report && coverage report"
 [tool.pixi.tasks.cov-report-xml]
 cmd = "coverage xml -o coverage.xml && coverage report"
 
-[tool.pixi.tasks.cov-gavicore]
-cmd = "pytest --cov gavicore/src/gavicore --cov-report= --cov-append gavicore/src/tests"
-
-[tool.pixi.tasks.cov-wraptile]
-cmd = "pytest --cov wraptile/src/wraptile --cov-report= --cov-append wraptile/src/tests"
+[tool.pixi.tasks.cov-appligator]
+cmd = "pytest --cov appligator/src/appligator --cov-report= --cov-append appligator/src/tests"
 
 [tool.pixi.tasks.cov-cuiman]
 cmd = "pytest --cov cuiman/src/cuiman --cov-report= --cov-append cuiman/src/tests"
 
+[tool.pixi.tasks.cov-eozilla]
+cmd = "pytest --cov eozilla/src/eozilla --cov-report= --cov-append eozilla/src/tests"
+
+[tool.pixi.tasks.cov-gavicore]
+cmd = "pytest --cov gavicore/src/gavicore --cov-report= --cov-append gavicore/src/tests"
+
 [tool.pixi.tasks.cov-procodile]
 cmd = "pytest --cov procodile/src/procodile --cov-report= --cov-append procodile/src/tests"
 
-[tool.pixi.tasks.cov-appligator]
-cmd = "pytest --cov appligator/src/appligator --cov-report= --cov-append appligator/src/tests"
+[tool.pixi.tasks.cov-wraptile]
+cmd = "pytest --cov wraptile/src/wraptile --cov-report= --cov-append wraptile/src/tests"
 
 # pixi run check
 
 [tool.pixi.tasks.check]
 depends-on = [
-    "check-gavicore",
-    "check-wraptile",
-    "check-cuiman",
-    "check-procodile",
     "check-appligator",
+    "check-cuiman",
+    "check-eozilla",
+    "check-gavicore",
+    "check-procodile",
+    "check-wraptile",
     "typecheck"
 ]
 
-[tool.pixi.tasks.check-gavicore]
-cmd = "ruff check gavicore/src"
-
-[tool.pixi.tasks.check-wraptile]
-cmd = "ruff check wraptile/src"
+[tool.pixi.tasks.check-appligator]
+cmd = "ruff check appligator/src"
 
 [tool.pixi.tasks.check-cuiman]
 cmd = "ruff check cuiman/src"
 
+[tool.pixi.tasks.check-eozilla]
+cmd = "ruff check eozilla/src"
+
+[tool.pixi.tasks.check-gavicore]
+cmd = "ruff check gavicore/src"
+
 [tool.pixi.tasks.check-procodile]
 cmd = "ruff check procodile/src"
 
-[tool.pixi.tasks.check-appligator]
-cmd = "ruff check appligator/src"
+[tool.pixi.tasks.check-wraptile]
+cmd = "ruff check wraptile/src"
 
 [tool.pixi.tasks.typecheck]
 cmd = "mypy ."
