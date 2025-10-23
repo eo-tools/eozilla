@@ -1,5 +1,7 @@
 # Client API Reference
 
+The Python client API is provided by the Eozilla `cuiman` package.
+
 The [`Client`](#cuiman.Client) class provides a synchronous API.
 If you want an asynchronous version, use the `AsyncClient` class instead.
 It provides the same interface, but using asynchronous server calls.

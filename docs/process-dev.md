@@ -1,23 +1,31 @@
-# Process Development
+# Process Development 
 
-The package `gavicore` provides a simple **processor development framework** that
+The Eozilla `procodile` package provides a simple Python framework that
+allows for a couple of things:
 
-  - supports registration of processes from Python functions,  
-  - supports progress reporting by subscriber callback URLs, and
-  - provides a command-line interface (CLI) to query and execute 
-    the registered processes.
+- Registering your workflows comprising an entry-point (main) and 
+  steps implemented as Python functions. 
+  (Well, steps are not yet implemented.)
+- Querying and executing the workflow entry points via a dedicated Python API 
+  and CLI.
+- Using YAML and JSON formats based on the interfaces and models 
+  defined by [OGC API - Processes](https://github.com/opengeospatial/ogcapi-processes).
+  
+Herewith it allows later application packaging by Eozilla _Appligator_.
 
 Processor packages developed using the provided CLI can later on be used to
 generate Docker images, Airflow DAGs, and optionally OGC Application Packages.
 
-You find the processor framework in the `gavicore.processes` package. 
-It comprises just a few handy top-level components:
+Currently, `procodile` comprises just a few handy top-level components:
 
-* [class `ProcessRegistry`][gavicore.process.ProcessRegistry] - to register your 
+* [class `ProcessRegistry`][procodile.ProcessRegistry] - to register your 
   Python functions as processes in a central collection.
-* [class `JobContext`][gavicore.process.JobContext] - used inside your process 
+* [class `ExcecutionRequest`][procodile.ExcecutionRequest] - used to 
+  programmatically execute your processes from Python code, for example in 
+  a unit test or in a custom application.  
+* [class `JobContext`][procodile.JobContext] - used inside your process 
   implementations to report progress or check for client-side cancellation.  
-* [function `get_cli()`][gavicore.process.get_cli] - generates a CLI for the 
+* [function `get_cli()`][procodile.cli.get_cli] - generates a CLI for the 
   processes in the registry.
 
 
@@ -39,7 +47,7 @@ Use the registry's `process` decorator to register your Python functions
 that should be exposed as processes. In `my_package/processes.py`:
 
 ```python
-from gavicore.process import JobContext, ProcessRegistry
+from procodile import JobContext, ProcessRegistry
 
 registry = ProcessRegistry()
 
@@ -57,7 +65,7 @@ def my_process_2(ctx: JobContext, path: str, factor: float = 1.0) -> str:
     ...
 ```
 
-The `ctx` object of type [JobContext][gavicore.process.JobContext]
+The `ctx` object of type [JobContext][procodile.JobContext]
 can be used to report progress and to check for job cancellation.
 You can get the job context inside the function body via `JobContext.get()` 
 or declare it as a function argument of type `JobContext`.
@@ -66,7 +74,7 @@ Process inputs, such as the arguments `path` or `factor` above,
 can be further specified by 
 [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/) annotations.
 Field annotations for an argument can be provided via the `input_fields` dictionary 
-passed  to the [`process`][gavicore.process.ProcessRegistry.process] decorator, 
+passed  to the [`process`][procodile.ProcessRegistry.process] decorator, 
 or preferably as part of the type declaration using the Python `Annotated` 
 special form. An example for the latter is
 `factor: Annotated[float, Field(title="Scaling factor", gt=0., le=10.)] = 1.0`.
@@ -82,7 +90,7 @@ fields as inputs rather than the model class as single input. Conceptually:
 from typing import Annotated
 
 from pydantic import BaseModel, Field
-from gavicore.process import JobContext, ProcessRegistry
+from procodile import JobContext, ProcessRegistry
 
 
 class ArgsModel(BaseModel):
@@ -109,7 +117,7 @@ In a second step you define an instance of a common process CLI and pass it
 a reference to your registry instance. In `my_package/cli.py`:
 
 ```python
-from gavicore.process.cli.cli import get_cli
+from procodile.cli import get_cli
 
 # The CLI with a basic set of commands.
 # The `cli` is a Typer application of type `typer.Typer()`,
@@ -238,32 +246,32 @@ The process request file format in detail:
 
 ## Framework API
 
-::: gavicore.process.ProcessRegistry
+::: procodile.ProcessRegistry
     options:
       show_source: false
       heading_level: 3
 
-::: gavicore.process.Process
+::: procodile.Process
     options:
       show_source: false
       heading_level: 3
 
-::: gavicore.process.JobContext
+::: procodile.ExecutionRequest
     options:
       show_source: false
       heading_level: 3
 
-::: gavicore.process.JobCancelledException
+::: procodile.JobContext
     options:
       show_source: false
       heading_level: 3
 
-::: gavicore.process.get_cli
+::: procodile.JobCancelledException
     options:
       show_source: false
       heading_level: 3
 
-::: gavicore.process.ExecutionRequest
+::: procodile.cli.get_cli
     options:
       show_source: false
       heading_level: 3
