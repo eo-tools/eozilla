@@ -4,7 +4,7 @@
 
 [project]
 name = "procodile"
-version = "0.0.5"
+version = "0.0.6"
 description = "A light-weight processor development framework"
 readme = "README.md"
 authors = [
@@ -39,9 +39,10 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
   "pydantic",
+  "pyyaml",
   "typer",
   # local dependency
-  "gavicore>=0.0.4",
+  "gavicore>=0.0.6",
 ]
 
 [project.urls]
@@ -56,7 +57,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build]
 sources = ["src"]
-exclude = ["src/tests/**/*"]
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -67,6 +67,4 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-include = [
-  "src/procodile/**/*"
-]
+package = ["procodile"]

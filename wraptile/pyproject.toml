@@ -4,7 +4,7 @@
 
 [project]
 name = "wraptile"
-version = "0.0.5"
+version = "0.0.6"
 description = "FastAPI server that implements the OGC API - Processes"
 readme = "README.md"
 authors = [
@@ -44,8 +44,8 @@ dependencies = [
   "typer",
   "uvicorn",
   # local dependency
-  "gavicore >=0.0.0",
-  "procodile >=0.0.0",
+  "gavicore >=0.0.6",
+  "procodile >=0.0.6",
 ]
 
 [project.scripts]
@@ -73,6 +73,4 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-include = [
-  "src/wraptile/**/*"
-]
+package = ["wraptile"]
