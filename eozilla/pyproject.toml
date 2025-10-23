@@ -1,0 +1,74 @@
+#  Copyright (c) 2025 by the Eozilla team and contributors
+#  Permissions are hereby granted under the terms of the Apache 2.0 License:
+#  https://opensource.org/license/apache-2-0.
+
+[project]
+name = "eozilla"
+version = "0.0.5.dev0"
+description = "Comprises all packages of the Eozilla suite"
+readme = "README.md"
+authors = [
+  {name = "Norman Fomferra (Brockmann Consult GmbH)"},
+  {name = "Tejas Morbagal Harish (Brockmann Consult GmbH)"}
+]
+keywords = [
+  "eo",
+  "esa",
+  "data processing",
+  "ogc",
+]
+license = {text = "Apache-2.0"}
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development",
+  "Topic :: Scientific/Engineering",
+  "Typing :: Typed",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX",
+  "Operating System :: Unix",
+  "Operating System :: MacOS",
+]
+requires-python = ">=3.10"
+dependencies = [
+  # local dependency
+  "appligator >=0.0.4",
+  "cuiman >=0.0.4",
+  "gavicore >=0.0.4",
+  "procodile >=0.0.4",
+  "wraptile >=0.0.4",
+]
+
+[project.urls]
+Documentation = "https://eo-tools.github.io/eozilla"
+Repository = "https://github.com/eo-tools/eozilla"
+Changelog = "https://github.com/eo-tools/eozilla/blob/main/CHANGES.md"
+Issues = "https://github.com/eo-tools/eozilla/issues"
+
+[build-system]
+requires = ["hatch"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+sources = ["src"]
+exclude = ["src/tests/**/*"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/eozilla/**/*",
+  "pyproject.toml",
+  "README.md",
+  "LICENSE",
+]
+
+[tool.hatch.build.targets.wheel]
+include = [
+  "src/eozilla/**/*"
+]
