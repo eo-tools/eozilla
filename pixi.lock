@@ -1289,7 +1289,7 @@ packages:
 - pypi: ./appligator
   name: appligator
   version: 0.0.5.dev0
-  sha256: 9060194a43edb4b97c8745cf969deafd6aa05788ab2aca4a56d84e87a46c0220
+  sha256: 4a83e1a27637316bcfdd54224e3a61e3ef5867b151c76e746b9bc4d84c6deb77
   requires_dist:
   - pydantic
   - typer

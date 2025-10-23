@@ -51,6 +51,9 @@ Repository = "https://github.com/eo-tools/eozilla"
 Changelog = "https://github.com/eo-tools/eozilla/blob/main/CHANGES.md"
 Issues = "https://github.com/eo-tools/eozilla/issues"
 
+[project.scripts]
+appligator = "appligator.cli:cli"
+
 [build-system]
 requires = ["hatch"]
 build-backend = "hatchling.build"
