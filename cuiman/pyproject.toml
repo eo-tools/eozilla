@@ -4,7 +4,7 @@
 
 [project]
 name = "cuiman"
-version = "0.0.5.dev0"
+version = "0.0.6"
 description = "Provides a client Python API, GUI, and CLI for servers compliant with OGC API - Processes"
 readme = "README.md"
 authors = [
@@ -39,13 +39,14 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
   "click",
+  "panel",
   "pydantic",
   "pyyaml",
   "typer",
   "uri-template",
   "httpx",
   # local dependency
-  "gavicore>=0.0.4",
+  "gavicore>=0.0.6",
 ]
 
 [project.scripts]
@@ -73,6 +74,4 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-include = [
-  "src/cuiman/**/*"
-]
+# packages = ["cuiman"]

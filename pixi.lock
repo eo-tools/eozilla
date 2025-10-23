@@ -1291,13 +1291,14 @@ packages:
   requires_python: ~=3.9
 - pypi: ./appligator
   name: appligator
-  version: 0.0.5.dev0
-  sha256: 4a83e1a27637316bcfdd54224e3a61e3ef5867b151c76e746b9bc4d84c6deb77
+  version: 0.0.6
+  sha256: 5bbc544872e2909e12d59cb022ee03ac18d107caca619e8a1460bca206204ba4
   requires_dist:
   - pydantic
+  - pyyaml
   - typer
-  - gavicore>=0.0.4
-  - procodile>=0.0.4
+  - gavicore>=0.0.6
+  - procodile>=0.0.6
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/appnope-0.1.4-pyhd8ed1ab_1.conda
@@ -2842,16 +2843,17 @@ packages:
   timestamp: 1749539269244
 - pypi: ./cuiman
   name: cuiman
-  version: 0.0.5.dev0
-  sha256: b04162ad7096881e549ec2603a390abf4dce85c1151267826beb665712333a43
+  version: 0.0.6
+  sha256: 6c674370eb8288d61b5cf640f0603bf91b5994649b9b62f1256fc800ba87c0dc
   requires_dist:
   - click
+  - panel
   - pydantic
   - pyyaml
   - typer
   - uri-template
   - httpx
-  - gavicore>=0.0.4
+  - gavicore>=0.0.6
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/linux-64/cytoolz-1.0.1-py313h536fd9c_0.conda
@@ -3179,14 +3181,14 @@ packages:
   timestamp: 1733300828176
 - pypi: ./eozilla
   name: eozilla
-  version: 0.0.5.dev0
-  sha256: f2acb0d7796d7cf5d29ea73311c51dce4d4cd7256aff438391a4460022c2da50
+  version: 0.0.6
+  sha256: b60bbde4d7e8ec27e5e71549e9dfe25c71f0873345553a4e2836b3856551a21f
   requires_dist:
-  - appligator>=0.0.4
-  - cuiman>=0.0.4
-  - gavicore>=0.0.4
-  - procodile>=0.0.4
-  - wraptile>=0.0.4
+  - appligator>=0.0.6
+  - cuiman>=0.0.6
+  - gavicore>=0.0.6
+  - procodile>=0.0.6
+  - wraptile>=0.0.6
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.0-pyhd8ed1ab_0.conda
@@ -3280,8 +3282,8 @@ packages:
   timestamp: 1748101667956
 - pypi: ./gavicore
   name: gavicore
-  version: 0.0.5.dev0
-  sha256: bd8b52a114fcaf93b422bd6a10135c592525295bb93fb2499ce71eea2c88db05
+  version: 0.0.6
+  sha256: c302dfea85ef6ace58af18d183233118b558b26a169345764839f92161705f5c
   requires_dist:
   - pydantic
   - typer
@@ -8059,18 +8061,19 @@ packages:
   timestamp: 1747339794916
 - pypi: ./procodile
   name: procodile
-  version: 0.0.5.dev0
-  sha256: 6dda4206ed6ba28ee1b273107d85da1a457c2a2f2b34f12fdaa5184a58c09556
+  version: 0.0.6
+  sha256: 4aa9c7bf1b8f03a82cd9d92e8e0a2cced136bbc5410632496401c35f6219e1c9
   requires_dist:
   - pydantic
+  - pyyaml
   - typer
-  - gavicore>=0.0.4
+  - gavicore>=0.0.6
   requires_python: '>=3.10'
   editable: true
 - pypi: ./procodile-example
   name: procodile-example
   version: 0.0.0
-  sha256: 9a47e3f619809f883d5631c9cf19f52b74a4489bb56a73b505ad80783b129626
+  sha256: 0390557d504c40c82491e846771ed00a97238e926c9fed324825c9babe954378
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/linux-64/prometheus-cpp-1.3.0-ha5d0236_0.conda
@@ -10303,16 +10306,16 @@ packages:
   timestamp: 1736870265811
 - pypi: ./wraptile
   name: wraptile
-  version: 0.0.5.dev0
-  sha256: da2a103b4df0d4215ea4aacd4b48cb96fbad81e6a7fa0a04ae89fe478b8c5d51
+  version: 0.0.6
+  sha256: f3fb9f27d201bf12e347dd1755abd25b52af988d2650d29f2bc3046aaf1128c3
   requires_dist:
   - fastapi
   - pydantic
   - pyyaml
   - typer
   - uvicorn
-  - gavicore>=0.0.0
-  - procodile>=0.0.0
+  - gavicore>=0.0.6
+  - procodile>=0.0.6
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2025.6.1-pyhd8ed1ab_1.conda

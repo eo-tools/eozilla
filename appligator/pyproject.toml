@@ -4,7 +4,7 @@
 
 [project]
 name = "appligator"
-version = "0.0.5.dev0"
+version = "0.0.6"
 description = "An application package bundler"
 readme = "README.md"
 authors = [
@@ -39,10 +39,11 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
   "pydantic",
+  "pyyaml",
   "typer",
   # local dependency
-  "gavicore >=0.0.4",
-  "procodile >=0.0.4",
+  "gavicore >=0.0.6",
+  "procodile >=0.0.6",
 ]
 
 [project.urls]
@@ -60,7 +61,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build]
 sources = ["src"]
-exclude = ["src/tests/**/*"]
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -71,6 +71,5 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-include = [
-  "src/appligator/**/*"
-]
+# packages = ["appligator"]
+# include = ["src/appligator/**/*"]

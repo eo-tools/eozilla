@@ -43,7 +43,7 @@ theme:
         name: Switch to light mode
   features:
     - navigation.top
-  custom_dir: docs\overrides
+  custom_dir: docs/overrides
 
 markdown_extensions:
   - attr_list
@@ -89,4 +89,4 @@ extra_css:
     - overrides/css/custom.css
 
 hooks:
-    - docs\hooks\notebooks_json_output.py
+    - docs/hooks/notebooks_json_output.py
