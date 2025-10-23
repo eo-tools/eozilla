@@ -67,4 +67,5 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-package = ["procodile"]
+# packages = ["procodile"]
+# include = ["src/procodile/**/*"]

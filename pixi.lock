@@ -1292,7 +1292,7 @@ packages:
 - pypi: ./appligator
   name: appligator
   version: 0.0.6
-  sha256: cfe63afe8c4bde11fdab9cdb9b79f8e767264c228acc96fde84f2ffdefe02f37
+  sha256: 5bbc544872e2909e12d59cb022ee03ac18d107caca619e8a1460bca206204ba4
   requires_dist:
   - pydantic
   - pyyaml
@@ -2844,7 +2844,7 @@ packages:
 - pypi: ./cuiman
   name: cuiman
   version: 0.0.6
-  sha256: 133f3570a5dfd132f00669aaac02abe26900b336c5b08f26e4add813c3ec33f6
+  sha256: 6c674370eb8288d61b5cf640f0603bf91b5994649b9b62f1256fc800ba87c0dc
   requires_dist:
   - click
   - panel
@@ -3182,7 +3182,7 @@ packages:
 - pypi: ./eozilla
   name: eozilla
   version: 0.0.6
-  sha256: 95fa2d43b855a7edbec50308e741f5da2d7005c5c50e6f1a92ea2321175ba5df
+  sha256: b60bbde4d7e8ec27e5e71549e9dfe25c71f0873345553a4e2836b3856551a21f
   requires_dist:
   - appligator>=0.0.6
   - cuiman>=0.0.6
@@ -3283,7 +3283,7 @@ packages:
 - pypi: ./gavicore
   name: gavicore
   version: 0.0.6
-  sha256: de0eab018ea945fa7762bc69642fd7197e7e4be8843776bbc4cb881b4a5187fb
+  sha256: c302dfea85ef6ace58af18d183233118b558b26a169345764839f92161705f5c
   requires_dist:
   - pydantic
   - typer
@@ -8062,7 +8062,7 @@ packages:
 - pypi: ./procodile
   name: procodile
   version: 0.0.6
-  sha256: 61093ad4dbb7a345b43cb472bd4c8f329e5fb5ae58fd0af676ff899b3f4c1444
+  sha256: 4aa9c7bf1b8f03a82cd9d92e8e0a2cced136bbc5410632496401c35f6219e1c9
   requires_dist:
   - pydantic
   - pyyaml
@@ -8073,7 +8073,7 @@ packages:
 - pypi: ./procodile-example
   name: procodile-example
   version: 0.0.0
-  sha256: 9a47e3f619809f883d5631c9cf19f52b74a4489bb56a73b505ad80783b129626
+  sha256: 0390557d504c40c82491e846771ed00a97238e926c9fed324825c9babe954378
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/linux-64/prometheus-cpp-1.3.0-ha5d0236_0.conda
@@ -10307,7 +10307,7 @@ packages:
 - pypi: ./wraptile
   name: wraptile
   version: 0.0.6
-  sha256: 2e8a882ba3399afe4e045d87b643cad818c33703f138e30226ced87dfc2a7897
+  sha256: f3fb9f27d201bf12e347dd1755abd25b52af988d2650d29f2bc3046aaf1128c3
   requires_dist:
   - fastapi
   - pydantic

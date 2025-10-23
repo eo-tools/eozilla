@@ -71,4 +71,5 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-package=["appligator"]
+# packages = ["appligator"]
+# include = ["src/appligator/**/*"]

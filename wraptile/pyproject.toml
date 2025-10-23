@@ -73,4 +73,5 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-package = ["wraptile"]
+# packages = ["wraptile"]
+# include = ["src/wraptile/**/*"]

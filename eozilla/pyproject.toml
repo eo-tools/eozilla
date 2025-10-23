@@ -38,7 +38,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-  # local dependency
+  # local dependencies
   "appligator >=0.0.6",
   "cuiman >=0.0.6",
   "gavicore >=0.0.6",
@@ -68,4 +68,5 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-package = ["eozilla"]
+# packages = ["eozilla"]
+# include = ["src/eozilla/**/*"]

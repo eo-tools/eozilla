@@ -64,4 +64,5 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-package = ["gavicore"]
+# packages = ["gavicore"]
+# include = ["src/gavicore/**/*"]
