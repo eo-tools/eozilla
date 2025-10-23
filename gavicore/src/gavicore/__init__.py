@@ -9,8 +9,6 @@ from pydantic import BaseModel
 
 from . import models, service
 
-print("Hello 1")
-
 __version__ = version("gavicore")
 
 __all__ = [
@@ -38,5 +36,3 @@ def _repr_base_model_as_json(self: BaseModel):
 
 
 _patch_models()
-
-print("Hello 2")

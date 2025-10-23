@@ -252,7 +252,7 @@ cmd = "python -m tools.gen_client"
 cmd = "python -m tools.gen_client_docs"
 
 [tool.pixi.tasks.gen-dags]
-cmd = "python -m tools.gen_dags"
+cmd = "appligator wraptile.services.local.testing:service.process_registry"
 
 # pixi run sync-versions
 
