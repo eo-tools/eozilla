@@ -42,7 +42,7 @@ dependencies = [
   "pyyaml",
   "typer",
   # local dependency
-  "gavicore>=0.0.6",
+  "gavicore>=0.0.7",
 ]
 
 [project.urls]
