@@ -1291,8 +1291,8 @@ packages:
   requires_python: ~=3.9
 - pypi: ./appligator
   name: appligator
-  version: 0.0.6
-  sha256: 5bbc544872e2909e12d59cb022ee03ac18d107caca619e8a1460bca206204ba4
+  version: 0.0.7
+  sha256: 4019779fcbd5f0942f2dba2de0037a1aa8f17a1476b5a63c5909ad4540e8f8ad
   requires_dist:
   - pydantic
   - pyyaml
@@ -2843,8 +2843,8 @@ packages:
   timestamp: 1749539269244
 - pypi: ./cuiman
   name: cuiman
-  version: 0.0.6
-  sha256: 6c674370eb8288d61b5cf640f0603bf91b5994649b9b62f1256fc800ba87c0dc
+  version: 0.0.7
+  sha256: 54711598adf051d3d9cd9831b649c9289b3286cf364ae85ba62aa8546f550863
   requires_dist:
   - click
   - panel
@@ -3181,11 +3181,11 @@ packages:
   timestamp: 1733300828176
 - pypi: ./eozilla
   name: eozilla
-  version: 0.0.6
-  sha256: b60bbde4d7e8ec27e5e71549e9dfe25c71f0873345553a4e2836b3856551a21f
+  version: 0.0.7
+  sha256: 009cf62943a5f2febdf87f0f15950e745dac7cc2d32eb9fa587b14235c56ba14
   requires_dist:
   - appligator>=0.0.6
-  - cuiman>=0.0.6
+  - cuiman>=0.0.7
   - gavicore>=0.0.6
   - procodile>=0.0.6
   - wraptile>=0.0.6
@@ -3282,8 +3282,8 @@ packages:
   timestamp: 1748101667956
 - pypi: ./gavicore
   name: gavicore
-  version: 0.0.6
-  sha256: c302dfea85ef6ace58af18d183233118b558b26a169345764839f92161705f5c
+  version: 0.0.7
+  sha256: eb19e3cae622e81febadc6058a19a75e12f9c3e44951d5f000dc6d6029f682ba
   requires_dist:
   - pydantic
   - typer
@@ -8061,8 +8061,8 @@ packages:
   timestamp: 1747339794916
 - pypi: ./procodile
   name: procodile
-  version: 0.0.6
-  sha256: 4aa9c7bf1b8f03a82cd9d92e8e0a2cced136bbc5410632496401c35f6219e1c9
+  version: 0.0.7
+  sha256: 7675e0c4c62ee470f065c8c5d8f0c07b607884739b4b5b7622ec8f4690c72928
   requires_dist:
   - pydantic
   - pyyaml
@@ -10306,8 +10306,8 @@ packages:
   timestamp: 1736870265811
 - pypi: ./wraptile
   name: wraptile
-  version: 0.0.6
-  sha256: f3fb9f27d201bf12e347dd1755abd25b52af988d2650d29f2bc3046aaf1128c3
+  version: 0.0.7
+  sha256: fcb523d390cafbf0f43d3cdc5d826eff2b55f4ab9eee80de38019e0252b81dc9
   requires_dist:
   - fastapi
   - pydantic
