@@ -9,7 +9,7 @@
 A suite of tools around workflow orchestration systems and the
 [OGC API - Processes](https://github.com/opengeospatial/ogcapi-processes).
 
-Eozilla has been developed to cloudify Satellite data processor applications.
+Eozilla has been developed to cloudify and use cloudified Satellite data processor applications.
 
 _Note, this project and its documentation is still in an early development stage._
 
