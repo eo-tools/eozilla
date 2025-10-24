@@ -24,7 +24,7 @@ class Process:
     in form of a Python function.
 
     Instances of this class are be managed by the
-    [ProcessRegistry][procodile.process.ProcessRegistry].
+    [ProcessRegistry][procodile.ProcessRegistry].
 
     Attributes:
         function: The user's Python function.
