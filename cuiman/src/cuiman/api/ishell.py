@@ -5,13 +5,29 @@
 import importlib.util
 from typing import Any, Callable
 
-has_ishell = importlib.util.find_spec("IPython.core.interactiveshell")
+has_ishell: bool
+"""Whether `IPython.core.interactiveshell` is available."""
+
+
+try:
+    has_ishell = importlib.util.find_spec("IPython.core.interactiveshell") is not None
+except (ImportError, ModuleNotFoundError):
+    has_ishell = False
+
 exception_handler: Callable[[Any, Any, Any, Any], None] | None = None
+"""Custom exception handler for `IPython.core.interactiveshell.InteractiveShell`."""
 
 __all__ = ["has_ishell", "exception_handler"]
 
 
 def _register_exception_handler() -> Callable[[Any, Any, Any, Any], None]:
+    """
+    Register a special exception handler for errors of type `ClientError`
+    in the current `IPython.core.interactiveshell.InteractiveShell` instance.
+
+    The handler will represent the `ClientError` instances as
+    `IPython.display.JSON` instances.
+    """
     from IPython.core.interactiveshell import InteractiveShell
     from IPython.display import JSON, display
 

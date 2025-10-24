@@ -9,6 +9,8 @@ from IPython.core.interactiveshell import InteractiveShell
 from cuiman import ClientError
 from cuiman.api.ishell import exception_handler, has_ishell
 from gavicore.models import ApiError
+import sys
+from unittest.mock import patch
 
 
 class IShellTest(TestCase):
@@ -40,3 +42,31 @@ class IShellTest(TestCase):
             None,
         )
         self.assertEqual(None, result)
+
+
+def test_ishell_without_ipython(monkeypatch):
+    # Remove any cached copy so the top-level code runs again
+
+    sys.modules.pop("cuiman.api.ishell", None)
+
+    # Patch find_spec to simulate missing IPython
+    with patch("importlib.util.find_spec", return_value=None):
+        # Now import the module fresh
+        import cuiman.api.ishell as ishell
+
+        assert ishell.has_ishell is False
+        assert ishell.exception_handler is None
+
+
+def test_ishell_without_interactiveshell(monkeypatch):
+    # Remove any cached copy so the top-level code runs again
+
+    sys.modules.pop("cuiman.api.ishell", None)
+
+    # Patch find_spec to simulate missing IPython
+    with patch("importlib.util.find_spec", side_effect=ModuleNotFoundError):
+        # Now import the module fresh
+        import cuiman.api.ishell as ishell
+
+        assert ishell.has_ishell is False
+        assert ishell.exception_handler is None
