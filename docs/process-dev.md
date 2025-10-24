@@ -20,7 +20,7 @@ Currently, `procodile` comprises just a few handy top-level components:
 
 * [class `ProcessRegistry`][procodile.ProcessRegistry] - to register your 
   Python functions as processes in a central collection.
-* [class `ExcecutionRequest`][procodile.ExcecutionRequest] - used to 
+* [class `ExcecutionRequest`][gavicore.util.request.ExecutionRequest] - used to 
   programmatically execute your processes from Python code, for example in 
   a unit test or in a custom application.  
 * [class `JobContext`][procodile.JobContext] - used inside your process 
@@ -256,7 +256,22 @@ The process request file format in detail:
       show_source: false
       heading_level: 3
 
-::: procodile.ExecutionRequest
+::: gavicore.models.ProcessRequest
+    options:
+      show_source: false
+      heading_level: 3
+
+::: gavicore.models.Subscriber
+    options:
+      show_source: false
+      heading_level: 3
+
+::: gavicore.models.Output
+    options:
+      show_source: false
+      heading_level: 3
+
+::: gavicore.util.request.ExecutionRequest
     options:
       show_source: false
       heading_level: 3

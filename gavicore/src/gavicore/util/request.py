@@ -25,7 +25,7 @@ SUBSCRIBER_EVENTS = {
 class ExecutionRequest(ProcessRequest):
     """
     Process execution request.
-    Extends [ProcessRequest][ProcessRequest]
+    Extends [ProcessRequest][gavicore.models.ProcessRequest]
 
     - to allow the process identifier being part of the request,
     - to allow creating nested object values for input names with dots.
@@ -38,10 +38,10 @@ class ExecutionRequest(ProcessRequest):
             Values may be of any JSON-serializable type accepted by
             the given process.
         outputs: Optional process outputs given as key-value mapping.
-            Values are of type [Output][procodile.models.Output]
+            Values are of type [Output][gavicore.models.Output]
             supported by the given process.
         subscriber: Optional subscriber of type
-            [Subscriber][procodile.models.Subscriber] comprising callback
+            [Subscriber][gavicore.models.Subscriber] comprising callback
             URLs that are informed about process status changes
             while the processing takes place.
     """

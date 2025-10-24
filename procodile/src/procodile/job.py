@@ -37,9 +37,9 @@ class JobContext(ABC):
 
     A process function can retrieve the current job context
 
-    1. via [JobContext.get()][procodile.process.JobContext.get] from
+    1. via [JobContext.get()][procodile.JobContext.get] from
        within a process function, or
-    2. as a function argument of type [JobContext][procodile.process.JobContext].
+    2. as a function argument of type [JobContext][procodile.JobContext].
     """
 
     @classmethod
