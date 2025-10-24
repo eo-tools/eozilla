@@ -6,23 +6,24 @@
 
 # Eozilla
 
-A suite of tools around workflow orchestration systems and the
-[OGC API - Processes](https://github.com/opengeospatial/ogcapi-processes).
+A suite of tools for workflow orchestration systems and
+[OGC API - Processes](https://github.com/opengeospatial/ogcapi-processes)
+implementation.
 
-Eozilla has been developed to cloudify and use cloudified Satellite data processor applications.
+Eozilla has been developed to cloudify satellite data processor applications and run them in the cloud.
 
-_Note, this project and its documentation is still in an early development stage._
+_Note: this project and its documentation are still in an early development stage._
 
 ## Features
 
 The `eozilla` package bundles the Eozilla suite of tools:
 
 * `procodile`: A simple Python framework for registering and executing processes.
-* `appligator`: An EO application bundler and transformer. 
+* `appligator`: An EO application bundler and transformer.
    (Currently limited to generating Airflow DAGs.)
 * `wraptile`: A fast and lightweight HTTP server that implements _OGC API - Processes_
    for various workflow processing backends, such Airflow or a local executor.
-* `cuiman`: A Python client including API, GUI, and CLI for servers 
+* `cuiman`: A Python client including API, GUI, and CLI for servers
    compliant with _OGC API - Processes_.
 * `gavicore`: Common pydantic data models and utilities for the packages above.
 
@@ -34,16 +35,16 @@ The `eozilla` package installs all components of Eozilla.
 pip install eozilla
 ```
 
-However, you may require only individual Eozilla components for your use case. 
-Install just 
+However, your use case might require only a subset of Eozilla components.
+Install just
 
 - `procodile` if you develop processor applications,
 - `appligator` if you deploy your processor applications,
-- `wraptile` if you are a [OGC API - Processes](https://github.com/opengeospatial/ogcapi-processes) service provider,
-- `cuiman` if you need a client to operate with a [OGC API - Processes](https://github.com/opengeospatial/ogcapi-processes) service.
+- `wraptile` if you are an [OGC API - Processes](https://github.com/opengeospatial/ogcapi-processes) service provider,
+- `cuiman` if you need a client to operate with an [OGC API - Processes](https://github.com/opengeospatial/ogcapi-processes) service.
 
 The easiest way to test Eozilla is in a separate Python environment.
-We use the [pixi](https://pixi.sh/) here, but you could do the same with 
+We use the [pixi](https://pixi.sh/) here, but you could do the same with
 `pip`, `conda`, or `mamba`:
 
 ```bash
@@ -62,14 +63,14 @@ appligator --help
 wraptile --help
 ```
 
-We currently provide Eozilla as pip-packages on PyPI only, but
-we work on getting Eozilla provided on `conda-forge` anytime soon.
+We currently package Eozilla only as pip packages distributed via PyPI, but
+we will publish `conda-forge` packages soon.
 
 ## Acknowledgements
 
-Large parts of the work in the Eozilla project has been made possible by the 
+Large parts of the work in the Eozilla project have been made possible by the
 [ESA DTE-S2GOS project](https://dte-s2gos.rayference.eu/about/), where we cloudify a set of EO scene simulator
-applications. The [ESA sen4cap project](https://www.esa-sen4cap.org/), where we
-cloudify various Sentinel-based data processors gave us the impulse to create 
-Eozilla as a self-standing, reusable set of packages.
+applications. The [ESA Sen4CAP project](https://www.esa-sen4cap.org/), where we
+cloudify various Sentinel-based data processors, gave us the impulse to create
+Eozilla as a set of reusable, standalone packages.
 Hopefully Eozilla can support and will be supported by other future projects.
