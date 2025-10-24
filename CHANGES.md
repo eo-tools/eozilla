@@ -1,6 +1,7 @@
 ## Changes in version 0.0.7
 
 - Fixed: `cuiman` cannot be imported if `ìpython` is not installed. (#13)
+- Increased code coverage by a new test.
 
 ## Changes in version 0.0.6
 
