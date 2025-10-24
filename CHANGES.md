@@ -4,6 +4,10 @@
 
 ## Changes in version 0.0.6
 
+First release on PyPI.
+
+## Changes in version 0.0.5
+
 - `cuiman` clients persist configuration  
   in `~/.eozilla` rather than `./s2gos`.
 - `cuiman` clients read configuration from 
