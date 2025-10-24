@@ -1292,13 +1292,13 @@ packages:
 - pypi: ./appligator
   name: appligator
   version: 0.0.7
-  sha256: 4019779fcbd5f0942f2dba2de0037a1aa8f17a1476b5a63c5909ad4540e8f8ad
+  sha256: c948cfbd0aa7fbaa460a2ece866d77ebd3958ed8ca1b0f4f4245adb0cdcc3501
   requires_dist:
   - pydantic
   - pyyaml
   - typer
-  - gavicore>=0.0.6
-  - procodile>=0.0.6
+  - gavicore>=0.0.7
+  - procodile>=0.0.7
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/appnope-0.1.4-pyhd8ed1ab_1.conda
@@ -2844,7 +2844,7 @@ packages:
 - pypi: ./cuiman
   name: cuiman
   version: 0.0.7
-  sha256: 54711598adf051d3d9cd9831b649c9289b3286cf364ae85ba62aa8546f550863
+  sha256: 2efd3e16e863b06f7f8738f978dde7fb847baf1604d019663eb9dda289f760c1
   requires_dist:
   - click
   - panel
@@ -2853,7 +2853,7 @@ packages:
   - typer
   - uri-template
   - httpx
-  - gavicore>=0.0.6
+  - gavicore>=0.0.7
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/linux-64/cytoolz-1.0.1-py313h536fd9c_0.conda
@@ -3182,13 +3182,13 @@ packages:
 - pypi: ./eozilla
   name: eozilla
   version: 0.0.7
-  sha256: 009cf62943a5f2febdf87f0f15950e745dac7cc2d32eb9fa587b14235c56ba14
+  sha256: 2bf02dbd01f305751a01f698846e92821428ef88e18e34c7b18a7be092992084
   requires_dist:
-  - appligator>=0.0.6
+  - appligator>=0.0.7
   - cuiman>=0.0.7
-  - gavicore>=0.0.6
-  - procodile>=0.0.6
-  - wraptile>=0.0.6
+  - gavicore>=0.0.7
+  - procodile>=0.0.7
+  - wraptile>=0.0.7
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.0-pyhd8ed1ab_0.conda
@@ -8062,12 +8062,12 @@ packages:
 - pypi: ./procodile
   name: procodile
   version: 0.0.7
-  sha256: 7675e0c4c62ee470f065c8c5d8f0c07b607884739b4b5b7622ec8f4690c72928
+  sha256: 6431ffa6fec38bec863cb2b5c64f8b63f6a574e835034e74c40d78c2757e08ad
   requires_dist:
   - pydantic
   - pyyaml
   - typer
-  - gavicore>=0.0.6
+  - gavicore>=0.0.7
   requires_python: '>=3.10'
   editable: true
 - pypi: ./procodile-example
@@ -10307,15 +10307,15 @@ packages:
 - pypi: ./wraptile
   name: wraptile
   version: 0.0.7
-  sha256: fcb523d390cafbf0f43d3cdc5d826eff2b55f4ab9eee80de38019e0252b81dc9
+  sha256: fc6098ba04d7e7368ecd54dbf6efdfd6959a34a01457628233bad5a9e3aaa120
   requires_dist:
   - fastapi
   - pydantic
   - pyyaml
   - typer
   - uvicorn
-  - gavicore>=0.0.6
-  - procodile>=0.0.6
+  - gavicore>=0.0.7
+  - procodile>=0.0.7
   requires_python: '>=3.10'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2025.6.1-pyhd8ed1ab_1.conda
