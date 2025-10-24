@@ -278,6 +278,119 @@ cmd = "python -m tools.gen_client_docs"
 [tool.pixi.tasks.gen-dags]
 cmd = "appligator wraptile.services.local.testing:service.process_registry"
 
+# pixi run build
+
+[tool.pixi.tasks.build]
+depends-on = [
+  "build-appligator",
+  "build-cuiman",
+  "build-eozilla",
+  "build-gavicore",
+  "build-procodile",
+  "build-wraptile",
+]
+
+[tool.pixi.tasks.build-appligator]
+cwd = "appligator"
+cmd = "hatch build --clean"
+
+[tool.pixi.tasks.build-cuiman]
+cwd = "cuiman"
+cmd = "hatch build --clean"
+
+[tool.pixi.tasks.build-eozilla]
+cwd = "eozilla"
+cmd = "hatch build --clean"
+
+[tool.pixi.tasks.build-gavicore]
+cwd = "gavicore"
+cmd = "hatch build --clean"
+
+[tool.pixi.tasks.build-procodile]
+cwd = "procodile"
+cmd = "hatch build --clean"
+
+[tool.pixi.tasks.build-wraptile]
+cwd = "wraptile"
+cmd = "hatch build --clean"
+
+# pixi run deploy-check
+
+[tool.pixi.tasks.deploy-check]
+depends-on = [
+  "deploy-check-appligator",
+  "deploy-check-cuiman",
+  "deploy-check-eozilla",
+  "deploy-check-gavicore",
+  "deploy-check-procodile",
+  "deploy-check-wraptile",
+]
+
+[tool.pixi.tasks.deploy-check-appligator]
+cwd = "appligator"
+cmd = "python -m twine check dist/*"
+
+[tool.pixi.tasks.deploy-check-cuiman]
+cwd = "cuiman"
+cmd = "python -m twine check dist/*"
+
+[tool.pixi.tasks.deploy-check-eozilla]
+cwd = "eozilla"
+cmd = "python -m twine check dist/*"
+
+[tool.pixi.tasks.deploy-check-gavicore]
+cwd = "gavicore"
+cmd = "python -m twine check dist/*"
+
+[tool.pixi.tasks.deploy-check-procodile]
+cwd = "procodile"
+cmd = "python -m twine check dist/*"
+
+[tool.pixi.tasks.deploy-check-wraptile]
+cwd = "wraptile"
+cmd = "python -m twine check dist/*"
+
+# pixi run deploy
+# Note: this task requires PyPI credentials to be either provided
+# env var pair or as .pypirc/
+#   TWINE_USERNAME=__twine__
+#   TWINE_PASSWORD=pypi-f34h6dadf2.....
+
+[tool.pixi.tasks.deploy]
+depends-on = [
+  "deploy-appligator",
+  "deploy-cuiman",
+  "deploy-eozilla",
+  "deploy-gavicore",
+  "deploy-procodile",
+  "deploy-wraptile",
+]
+
+[tool.pixi.tasks.deploy-appligator]
+cwd = "appligator"
+cmd = "python -m twine upload dist/*"
+
+[tool.pixi.tasks.deploy-cuiman]
+cwd = "cuiman"
+cmd = "python -m twine upload dist/*"
+
+[tool.pixi.tasks.deploy-eozilla]
+cwd = "eozilla"
+cmd = "python -m twine upload dist/*"
+
+[tool.pixi.tasks.deploy-gavicore]
+cwd = "gavicore"
+cmd = "python -m twine upload dist/*"
+
+[tool.pixi.tasks.deploy-procodile]
+cwd = "procodile"
+cmd = "python -m twine upload dist/*"
+
+[tool.pixi.tasks.deploy-wraptile]
+cwd = "wraptile"
+cmd = "python -m twine upload dist/*"
+
+
 # pixi run sync-versions
 
 [tool.pixi.tasks.sync-versions]
