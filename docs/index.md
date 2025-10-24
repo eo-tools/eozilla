@@ -11,7 +11,7 @@ _Note: this project and its documentation are still in an early development stag
 
 ## Features
 
-Eozilla suite of tools comprises:
+The Eozilla suite of tools comprises:
 
 * `procodile`: A simple Python framework for registering and executing processes.
 * `appligator`: An EO application bundler and transformer.
