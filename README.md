@@ -6,17 +6,18 @@
 
 # Eozilla
 
-A suite of tools for workflow orchestration systems and
+Eozilla is a suite of tools for workflow orchestration systems and
 [OGC API - Processes](https://github.com/opengeospatial/ogcapi-processes)
 implementation.
 
-Eozilla has been developed to cloudify satellite data processor applications and run them in the cloud.
+Eozilla has been developed to cloudify satellite data processor applications and 
+run them in the cloud.
 
 _Note: this project and its documentation are still in an early development stage._
 
 ## Features
 
-The `eozilla` package bundles the Eozilla suite of tools:
+Eozilla suite of tools comprises:
 
 * `procodile`: A simple Python framework for registering and executing processes.
 * `appligator`: An EO application bundler and transformer.
