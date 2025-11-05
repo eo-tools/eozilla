@@ -5,6 +5,38 @@ into the [mermaid](https://www.mermaidchart.com/) editor._
 
 ## Overview
 
+### Eozilla package dependencies
+
+```mermaid
+---
+config:
+    class:
+        hideEmptyMembersBox: false
+    theme: default
+---
+classDiagram
+direction TD
+    class appligator {
+    }
+    class cuiman {
+    }
+    class gavicore {
+    }
+    class procodile {
+    }
+    class wraptile {
+    }
+    cuiman ..> gavicore : uses
+    appligator ..> gavicore : uses
+    appligator ..> procodile : uses (opt.)
+    procodile ..> gavicore : uses
+    wraptile ..> gavicore : uses
+    wraptile ..> procodile : uses (opt.)
+```
+
+
+### Core classes
+
 ```mermaid
 ---
 config:
@@ -13,7 +45,7 @@ config:
     theme: default
 ---
 classDiagram
-direction LR
+    direction TD
     namespace cuiman {
         class api.AsyncClient
         class api.Client
@@ -23,6 +55,8 @@ direction LR
     namespace gavicore {
         class models
         class service.Service
+        class models.ProcessRequest
+        class ExecutionRequest
     }
     namespace wraptile {
         class server
@@ -30,9 +64,19 @@ direction LR
         class services.local.LocalService
         class services.airflow.AirflowService
     }
+    namespace procodile {
+        class JobContext
+        class Process
+        class ProcessRegistry
+        class cli.get_cli
+    }
+    namespace appligator {
+        class airflow.gen_dag
+    }
 
-    cli ..> api.Client : use
-    gui.Client ..|> api.Client : inherits
+    cli ..> api.Client : uses
+    cli ..> ExecutionRequest
+    gui.Client --|> api.Client : inherits
     api.Client ..> service.Service : uses
     api.AsyncClient ..> service.Service : uses
     service.Service ..> models : uses
@@ -42,8 +86,16 @@ direction LR
     server ..> routes : uses
     server ..> services.local.LocalService : can run with
     server ..> services.airflow.AirflowService : can run with
+    services.local.LocalService ..> ProcessRegistry : uses
+    airflow.gen_dag ..> ProcessRegistry : uses
+    ProcessRegistry *--> Process: holds
+    Process ..> JobContext : uses
+    cli.get_cli ..> ExecutionRequest : uses
+    models *-- models.ProcessRequest
+    ExecutionRequest --|> models.ProcessRequest
     
     note for gui.Client "will later inherit from AsyncClient"
+
 ```
 
 ## Eozilla Cuiman Client - GUI

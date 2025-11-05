@@ -1291,8 +1291,8 @@ packages:
   requires_python: ~=3.9
 - pypi: ./appligator
   name: appligator
-  version: 0.0.7
-  sha256: c948cfbd0aa7fbaa460a2ece866d77ebd3958ed8ca1b0f4f4245adb0cdcc3501
+  version: 0.0.8.dev0
+  sha256: 6a4c923c2c6a478fd7d6efd2bf686acef4036328ec7697125e07fc3b77beff23
   requires_dist:
   - pydantic
   - pyyaml
@@ -2843,8 +2843,8 @@ packages:
   timestamp: 1749539269244
 - pypi: ./cuiman
   name: cuiman
-  version: 0.0.7
-  sha256: 2efd3e16e863b06f7f8738f978dde7fb847baf1604d019663eb9dda289f760c1
+  version: 0.0.8.dev0
+  sha256: c2d45f9ba8268315d501434e507801678cc9038cebf78496e83a08a9faeca910
   requires_dist:
   - click
   - panel
@@ -3181,8 +3181,8 @@ packages:
   timestamp: 1733300828176
 - pypi: ./eozilla
   name: eozilla
-  version: 0.0.7
-  sha256: 2bf02dbd01f305751a01f698846e92821428ef88e18e34c7b18a7be092992084
+  version: 0.0.8.dev0
+  sha256: 3347067a970c1285ecb6bad4b8c6ebd7ab41c3138a442f22f1aaea4495092388
   requires_dist:
   - appligator>=0.0.7
   - cuiman>=0.0.7
@@ -3282,9 +3282,10 @@ packages:
   timestamp: 1748101667956
 - pypi: ./gavicore
   name: gavicore
-  version: 0.0.7
-  sha256: eb19e3cae622e81febadc6058a19a75e12f9c3e44951d5f000dc6d6029f682ba
+  version: 0.0.8.dev0
+  sha256: 2f554fb6cb2530441f8a6ef8aa0c639ad7b4f8141ee99e9bec3eb3eb8a417dec
   requires_dist:
+  - click
   - pydantic
   - typer
   requires_python: '>=3.10'
@@ -8061,8 +8062,8 @@ packages:
   timestamp: 1747339794916
 - pypi: ./procodile
   name: procodile
-  version: 0.0.7
-  sha256: 6431ffa6fec38bec863cb2b5c64f8b63f6a574e835034e74c40d78c2757e08ad
+  version: 0.0.8.dev0
+  sha256: bcfc4f38f4679048eb6b9d2896f5780674d18ca03d90b7a8726f300995953996
   requires_dist:
   - pydantic
   - pyyaml
@@ -10306,8 +10307,8 @@ packages:
   timestamp: 1736870265811
 - pypi: ./wraptile
   name: wraptile
-  version: 0.0.7
-  sha256: fc6098ba04d7e7368ecd54dbf6efdfd6959a34a01457628233bad5a9e3aaa120
+  version: 0.0.8.dev0
+  sha256: 18aebc189b21453308d28597524a9585b3d999ab3fa52d90fe8a6e3665ced6bc
   requires_dist:
   - fastapi
   - pydantic

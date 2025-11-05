@@ -1,3 +1,8 @@
+## Changes in version 0.0.8 (in development)
+
+- Updated architecture diagrams in `docs/architecture.md`.
+- Added `click` as dependency to `gavicore` as it is explicitly imported.
+
 ## Changes in version 0.0.7
 
 - Fixed: `cuiman` cannot be imported if `ìpython` is not installed. (#13)

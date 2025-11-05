@@ -4,7 +4,7 @@
 
 [project]
 name = "gavicore"
-version = "0.0.7"
+version = "0.0.8.dev0"
 description = "Pydantic data models and common utilities for other Eozilla packages"
 readme = "README.md"
 authors = [
@@ -38,6 +38,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
+  "click",
   "pydantic",
   "typer",
 ]
