@@ -67,14 +67,18 @@ CLI_SERVICE_ARG = typer.Argument(
 
 
 # noinspection PyShadowingBuiltins
-def get_cli(name: str = DEFAULT_CLI_NAME, help: str | None = None) -> typer.Typer:
+def get_cli(
+    name: str = DEFAULT_CLI_NAME, help: str | None = None, version: str | None = None
+) -> typer.Typer:
     """
     Create a server CLI instance for the given, optional name and help text.
 
     Args:
         name: The name of the CLI application. Defaults to `wraptile`.
-        help: Optional CLI application help text. If not provided, a default help
-            text will be used
+        help: Optional CLI application help text. If not provided, the default
+            `wraptile` help text will be used
+        version: Optional version string. If not provided, the
+            `wraptile` version will be used.
     Return:
         a `typer.Typer` instance
     """
@@ -97,10 +101,13 @@ def get_cli(name: str = DEFAULT_CLI_NAME, help: str | None = None) -> typer.Type
         ] = False,
     ):
         if version_:
-            from importlib.metadata import version
+            from wraptile import __version__ as default_version
 
-            typer.echo(version("wraptile"))
-            raise typer.Exit()
+            if version:
+                typer.echo(f"{version} ({DEFAULT_CLI_NAME} {default_version})")
+            else:
+                typer.echo(default_version)
+            return
 
     @t.command()
     def run(
