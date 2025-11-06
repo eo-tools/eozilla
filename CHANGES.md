@@ -12,6 +12,7 @@
 
 ## Changes in version 0.0.6
 
+
 First release on PyPI.
 
 ## Changes in version 0.0.5
