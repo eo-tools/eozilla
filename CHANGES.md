@@ -1,5 +1,7 @@
 ## Changes in version 0.0.8 (in development)
 
+- Added `get_cli()` to `cuiman.cli` package which allows for creating 
+  a custom CLI given a new CLI name and help.
 - Updated architecture diagrams in `docs/architecture.md`.
 - Added `click` as dependency to `gavicore` as it is explicitly imported.
 
