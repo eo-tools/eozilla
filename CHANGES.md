@@ -1,7 +1,10 @@
 ## Changes in version 0.0.8 (in development)
 
-- Added `get_cli()` to `cuiman.cli` package which allows for creating 
-  a custom CLI given a new CLI name and help.
+- Customization enhancements: 
+  - Added `get_cli()` to `cuiman.cli` package which allows for creating 
+    a custom client CLI given a new CLI name and help text.
+  - Added `get_cli()` to `wraptile.cli` package which allows for creating 
+    a custom server CLI given a new CLI name and help text.
 - Updated architecture diagrams in `docs/architecture.md`.
 - Added `click` as dependency to `gavicore` as it is explicitly imported.
 

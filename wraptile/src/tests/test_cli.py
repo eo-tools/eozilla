@@ -21,7 +21,8 @@ class CliTest(TestCase):
         result = runner.invoke(cli, ["--help"])
         self.assertEqual(0, result.exit_code)
         self.assertIn(
-            "a server made for wrapping workflow orchestration", result.output
+            "`wraptile` is a web server made for wrapping workflow orchestration",
+            result.output,
         )
 
     def test_version(self):

@@ -64,13 +64,22 @@ JOB_ID_ARGUMENT = typer.Argument(
 )
 
 
-def get_cli(
-    cli_name: str = DEFAULT_CLI_NAME, cli_help: str | None = None
-) -> typer.Typer:
+# noinspection PyShadowingBuiltins
+def get_cli(name: str = DEFAULT_CLI_NAME, help: str | None = None) -> typer.Typer:
+    """
+    Create a server CLI instance for the given, optional name and help text.
+
+    Args:
+        name: The name of the CLI application. Defaults to `wraptile`.
+        help: Optional CLI application help text. If not provided, a default help
+            text will be used
+    Return:
+        a `typer.Typer` instance
+    """
     t = typer.Typer(
-        name=cli_name,
+        name=name,
         cls=AliasedGroup,
-        help=cli_help or DEFAULT_CLI_HELP_TEMPLATE.format(cli_name=cli_name),
+        help=help or DEFAULT_CLI_HELP_TEMPLATE.format(cli_name=name),
         invoke_without_command=True,
         context_settings={},
         rich_markup_mode="rich",
@@ -340,7 +349,8 @@ def get_cli(
     return t
 
 
-cli = get_cli()
+cli: typer.Typer = get_cli()
+"""The default CLI instance."""
 
 if __name__ == "__main__":  # pragma: no cover
     cli()
