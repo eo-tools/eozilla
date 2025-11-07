@@ -16,13 +16,13 @@ from gavicore.util.cli.parameters import (
     REQUEST_SUBSCRIBER_OPTION,
 )
 
-DEFAULT_CLI_NAME = "cuiman"
+DEFAULT_NAME = "cuiman"
 
 DEFAULT_SUMMARY = """The `{name}` tool is a shell client for any web services 
 compliant with OGC API - Processes, Part 1: Core Standard.
 """
 
-DEFAULT_CLI_HELP = """{summary}
+DEFAULT_HELP = """{summary}
 
 `{name}` can be used to get the available processes, get process 
 details, execute processes, and manage the jobs originating from the latter. It 
@@ -69,7 +69,7 @@ JOB_ID_ARGUMENT = typer.Argument(
 
 # noinspection PyShadowingBuiltins
 def get_cli(
-    name: str = DEFAULT_CLI_NAME,
+    name: str = DEFAULT_NAME,
     help: str | None = None,
     summary: str | None = None,
     version: str | None = None,
@@ -94,7 +94,7 @@ def get_cli(
         cls=AliasedGroup,
         help=(
             help
-            or DEFAULT_CLI_HELP.format(
+            or DEFAULT_HELP.format(
                 name=name,
                 summary=(summary or DEFAULT_SUMMARY.format(name=name)),
             )
@@ -125,7 +125,7 @@ def get_cli(
             from cuiman import __version__ as default_version
 
             if version:
-                typer.echo(f"{version} ({DEFAULT_CLI_NAME} {default_version})")
+                typer.echo(f"{version} ({DEFAULT_NAME} {default_version})")
             else:
                 typer.echo(default_version)
             return
