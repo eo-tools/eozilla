@@ -16,14 +16,14 @@ from wraptile.constants import (
 )
 from wraptile.logging import LogMessageFilter
 
-DEFAULT_CLI_NAME = "wraptile"
+DEFAULT_NAME = "wraptile"
 
 DEFAULT_SUMMARY = """`{name}` is a web server made for wrapping workflow 
 orchestration systems providing an API compliant with the OGC API - Processes,
 Part 1: Core Standard (https://ogcapi.ogc.org/processes/).
 """
 
-DEFAULT_CLI_HELP = """{summary}
+DEFAULT_HELP = """{summary}
 
 The SERVICE argument may be followed by a `--` to pass one or more 
 service-specific arguments and options.
@@ -69,7 +69,7 @@ CLI_SERVICE_ARG = typer.Argument(
 
 # noinspection PyShadowingBuiltins
 def get_cli(
-    name: str = DEFAULT_CLI_NAME,
+    name: str = DEFAULT_NAME,
     help: str | None = None,
     summary: str | None = None,
     version: str | None = None,
@@ -93,7 +93,7 @@ def get_cli(
         name=name,
         help=(
             help
-            or DEFAULT_CLI_HELP.format(
+            or DEFAULT_HELP.format(
                 name=name,
                 summary=(summary or DEFAULT_SUMMARY.format(name=name)),
                 service_env_var=ENV_VAR_SERVICE,
@@ -114,7 +114,7 @@ def get_cli(
             from wraptile import __version__ as default_version
 
             if version:
-                typer.echo(f"{version} ({DEFAULT_CLI_NAME} {default_version})")
+                typer.echo(f"{version} ({DEFAULT_NAME} {default_version})")
             else:
                 typer.echo(default_version)
             return
