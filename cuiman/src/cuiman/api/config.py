@@ -43,7 +43,8 @@ class ClientConfig(BaseModel):
         user_name: Optional[str] = None,
         access_token: Optional[str] = None,
     ) -> "ClientConfig":
-        config_dict = {"server_url": DEFAULT_SERVER_URL}
+        # 0. from defaults
+        config_dict = cls.get_default().to_dict()
 
         # 1. from file
         file_config = cls.from_file(config_path=config_path)
@@ -88,6 +89,7 @@ class ClientConfig(BaseModel):
             env_var_name = "EOZILLA_" + field_name.upper()
             if env_var_name in os.environ:
                 config_dict[field_name] = os.environ[env_var_name]
+        # noinspection PyArgumentList
         return ClientConfig(**config_dict) if config_dict else None
 
     def write(self, config_path: Optional[str | Path] = None) -> Path:
@@ -115,3 +117,25 @@ class ClientConfig(BaseModel):
             exclude_defaults=True,
             exclude_unset=True,
         )
+
+    @classmethod
+    def get_default(cls) -> "ClientConfig":
+        """Get the configuration default values."""
+        return ClientConfig(**_DEFAULT_CONFIG.to_dict())
+
+    @classmethod
+    def set_default(cls, default_config: "ClientConfig") -> "ClientConfig":
+        """Set the configuration default values.
+
+        Args:
+            default_config: A configuration object providing the defaults.
+        Return:
+            The previous defaults.
+        """
+        global _DEFAULT_CONFIG
+        prev_default_config = _DEFAULT_CONFIG
+        _DEFAULT_CONFIG = ClientConfig(**default_config.to_dict())
+        return prev_default_config
+
+
+_DEFAULT_CONFIG: ClientConfig = ClientConfig(server_url=DEFAULT_SERVER_URL)

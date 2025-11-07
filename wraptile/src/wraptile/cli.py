@@ -17,14 +17,15 @@ from wraptile.constants import (
 from wraptile.logging import LogMessageFilter
 
 DEFAULT_CLI_NAME = "wraptile"
-DEFAULT_CLI_HELP_TEMPLATE = """
-`{cli_name}` is a web server made for wrapping workflow orchestration 
-systems with a unified restful API that should be almost compliant
-with the OGC API - Processes - Part 1: Core Standard.
 
-For details see https://ogcapi.ogc.org/processes/.
+DEFAULT_SUMMARY = """`{name}` is a web server made for wrapping workflow 
+orchestration systems providing an API compliant with the OGC API - Processes,
+Part 1: Core Standard (https://ogcapi.ogc.org/processes/).
+"""
 
-The service instance may be followed by a `--` to pass one or more 
+DEFAULT_CLI_HELP = """{summary}
+
+The SERVICE argument may be followed by a `--` to pass one or more 
 service-specific arguments and options.
 
 Note that the service arguments may also be given by the 
@@ -68,7 +69,10 @@ CLI_SERVICE_ARG = typer.Argument(
 
 # noinspection PyShadowingBuiltins
 def get_cli(
-    name: str = DEFAULT_CLI_NAME, help: str | None = None, version: str | None = None
+    name: str = DEFAULT_CLI_NAME,
+    help: str | None = None,
+    summary: str | None = None,
+    version: str | None = None,
 ) -> typer.Typer:
     """
     Create a server CLI instance for the given, optional name and help text.
@@ -77,6 +81,9 @@ def get_cli(
         name: The name of the CLI application. Defaults to `wraptile`.
         help: Optional CLI application help text. If not provided, the default
             `wraptile` help text will be used
+        summary: A one-sentence human-readable description of the tool that
+            will be used by the default help text. Hence, used only,
+            if `help`is not provided. Should end with a dot '.'.
         version: Optional version string. If not provided, the
             `wraptile` version will be used.
     Return:
@@ -86,10 +93,13 @@ def get_cli(
         name=name,
         help=(
             help
-            or DEFAULT_CLI_HELP_TEMPLATE.format(
-                cli_name=name, service_env_var=ENV_VAR_SERVICE
+            or DEFAULT_CLI_HELP.format(
+                name=name,
+                summary=(summary or DEFAULT_SUMMARY.format(name=name)),
+                service_env_var=ENV_VAR_SERVICE,
             )
         ),
+        rich_markup_mode="rich",
         invoke_without_command=True,
     )
 
@@ -153,6 +163,7 @@ def _run_server(**kwargs):
     # Apply the filter to the uvicorn.access logger
     logging.getLogger("uvicorn.access").addFilter(LogMessageFilter("/jobs"))
 
+    # noinspection PyArgumentList
     uvicorn.run("wraptile.main:app", **kwargs)
 
 

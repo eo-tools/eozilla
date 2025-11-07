@@ -93,3 +93,23 @@ class ClientConfigTest(TestCase):
         self.assertIs(path, ClientConfig.normalize_config_path(path))
         self.assertEqual(path, ClientConfig.normalize_config_path("i/am/a/path"))
         self.assertEqual(DEFAULT_CONFIG_PATH, ClientConfig.normalize_config_path(""))
+
+    def test_get_set_get_default(self):
+        d1 = ClientConfig.get_default()
+        self.assertEqual({"server_url": "http://127.0.0.1:8008"}, d1.to_dict())
+        d2 = ClientConfig.set_default(
+            ClientConfig(
+                server_url="http://pippo.service.org",
+                user_name="test-user",
+                access_token="test-token",
+            )
+        )
+        self.assertEqual(d1, d2)
+        self.assertEqual(
+            dict(
+                server_url="http://pippo.service.org",
+                user_name="test-user",
+                access_token="test-token",
+            ),
+            ClientConfig.get_default().to_dict(),
+        )

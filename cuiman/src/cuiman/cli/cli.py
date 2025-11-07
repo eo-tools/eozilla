@@ -16,15 +16,18 @@ from gavicore.util.cli.parameters import (
     REQUEST_SUBSCRIBER_OPTION,
 )
 
-
 DEFAULT_CLI_NAME = "cuiman"
-DEFAULT_CLI_HELP_TEMPLATE = """
-The command-line interface `{cli_name}` is the shell client for servers 
-compliant with OGC API - Processes.
 
-The tool can be used to get the available processes, get process details,
-execute processes, and manage the jobs originating from the latter. 
-It herewith resembles the functionality of the OGC API Processes - Part 1.
+DEFAULT_SUMMARY = """The `{name}` tool is a shell client for any web services 
+compliant with OGC API - Processes, Part 1: Core Standard.
+"""
+
+DEFAULT_CLI_HELP = """{summary}
+
+`{name}` can be used to get the available processes, get process 
+details, execute processes, and manage the jobs originating from the latter. It 
+herewith resembles the core functionality of the OGC API - Processes, Part 1.
+For details see https://ogcapi.ogc.org/processes/.
 
 You can use shorter command name aliases, e.g., use command name `vr`
 for `validate-request`, or `lp` for `list-processes`.
@@ -36,7 +39,7 @@ The tool's exit codes are as follows:
 • `2` - remote API errors 
 • `3` - local network transport errors
 
-If the --traceback flag is set, the original Python exception traceback
+If the `--traceback` flag is set, the original Python exception traceback
 will be shown and the exit code will always be `1`. 
 Otherwise, only the error message is shown. 
 """
@@ -66,7 +69,10 @@ JOB_ID_ARGUMENT = typer.Argument(
 
 # noinspection PyShadowingBuiltins
 def get_cli(
-    name: str = DEFAULT_CLI_NAME, help: str | None = None, version: str | None = None
+    name: str = DEFAULT_CLI_NAME,
+    help: str | None = None,
+    summary: str | None = None,
+    version: str | None = None,
 ) -> typer.Typer:
     """
     Create a server CLI instance for the given, optional name and help text.
@@ -74,7 +80,10 @@ def get_cli(
     Args:
         name: The name of the CLI application. Defaults to `wraptile`.
         help: Optional CLI application help text. If not provided, the default
-            `cuiman` help text will be used
+            `cuiman` help text will be used.
+        summary: A one-sentence human-readable description of the tool that
+            will be used by the default help text. Hence, used only,
+            if `help`is not provided. Should end with a dot '.'.
         version: Optional version string. If not provided, the
             `cuiman` version will be used.
     Return:
@@ -83,7 +92,13 @@ def get_cli(
     t = typer.Typer(
         name=name,
         cls=AliasedGroup,
-        help=help or DEFAULT_CLI_HELP_TEMPLATE.format(cli_name=name),
+        help=(
+            help
+            or DEFAULT_CLI_HELP.format(
+                name=name,
+                summary=(summary or DEFAULT_SUMMARY.format(name=name)),
+            )
+        ),
         invoke_without_command=True,
         context_settings={},
         rich_markup_mode="rich",
