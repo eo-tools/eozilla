@@ -1,5 +1,11 @@
 ## Changes in version 0.0.8 (in development)
 
+- Added `get_default()` and `set_default()` class methods to 
+  `cuiman.ClientConfig` to allow for customizing the default values  
+  for the client configuration.
+- Added `new_cli()` to both `cuiman.cli` and `wraptile.cli` packages 
+  which allows for creating customized CLIs. 
+  The customization options are `name`, `help`, `summary`, `version`. 
 - Updated architecture diagrams in `docs/architecture.md`.
 - Added `click` as dependency to `gavicore` as it is explicitly imported.
 
@@ -9,6 +15,7 @@
 - Increased code coverage by a new test.
 
 ## Changes in version 0.0.6
+
 
 First release on PyPI.
 

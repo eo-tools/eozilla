@@ -16,21 +16,21 @@ from wraptile.constants import (
 )
 from wraptile.logging import LogMessageFilter
 
-CLI_HELP = """
-Wraptile is a server made for wrapping workflow orchestration 
-systems with a unified restful API that should be almost compliant
-with the OGC API - Processes - Part 1: Core Standard.
+DEFAULT_NAME = "wraptile"
 
-For details see https://ogcapi.ogc.org/processes/.
+DEFAULT_SUMMARY = """`{name}` is a web server made for wrapping workflow 
+orchestration systems providing an API compliant with the OGC API - Processes,
+Part 1: Core Standard (https://ogcapi.ogc.org/processes/).
+"""
 
-The service instance may be followed by a `--` to pass one or more 
+DEFAULT_HELP = """{summary}
+
+The SERVICE argument may be followed by a `--` to pass one or more 
 service-specific arguments and options.
 
 Note that the service arguments may also be given by the 
 environment variable `{service_env_var}`.
-""".format(
-    service_env_var=ENV_VAR_SERVICE,
-)
+"""
 
 
 def parse_cli_service_options(
@@ -47,17 +47,15 @@ def parse_cli_service_options(
     return kwargs
 
 
-cli = typer.Typer(name="wraptile", help=CLI_HELP, invoke_without_command=True)
-
-cli_host_option = typer.Option(
+CLI_HOST_OPTION = typer.Option(
     envvar=ENV_VAR_SERVER_HOST,
     help="Host address.",
 )
-cli_port_option = typer.Option(
+CLI_PORT_OPTION = typer.Option(
     envvar=ENV_VAR_SERVER_PORT,
     help="Port number.",
 )
-cli_service_arg = typer.Argument(
+CLI_SERVICE_ARG = typer.Argument(
     callback=parse_cli_service_options,
     envvar=ENV_VAR_SERVICE,
     help=(
@@ -69,51 +67,91 @@ cli_service_arg = typer.Argument(
 )
 
 
-@cli.callback()
-def main(
-    _ctx: typer.Context,
-    version_: Annotated[
-        bool, typer.Option("--version", help="Show version and exit.")
-    ] = False,
-):
-    if version_:
-        from importlib.metadata import version
+# noinspection PyShadowingBuiltins
+def new_cli(
+    name: str = DEFAULT_NAME,
+    /,
+    help: str | None = None,
+    summary: str | None = None,
+    version: str | None = None,
+) -> typer.Typer:
+    """
+    Create a server CLI instance for the given, optional name and help text.
 
-        typer.echo(version("wraptile"))
-        raise typer.Exit()
-
-
-@cli.command()
-def run(
-    host: Annotated[str, cli_host_option] = DEFAULT_HOST,
-    port: Annotated[int, cli_port_option] = DEFAULT_PORT,
-    service: Annotated[Optional[list[str]], cli_service_arg] = None,
-):
-    """Run server in production mode."""
-    run_server(
-        host=host,
-        port=port,
-        service=service,
-        reload=False,
+    Args:
+        name: The name of the CLI application. Defaults to `wraptile`.
+        help: Optional CLI application help text. If not provided, the default
+            `wraptile` help text will be used
+        summary: A one-sentence human-readable description of the tool that
+            will be used by the default help text. Hence, used only,
+            if `help`is not provided. Should end with a dot '.'.
+        version: Optional version string. If not provided, the
+            `wraptile` version will be used.
+    Return:
+        a `typer.Typer` instance
+    """
+    t = typer.Typer(
+        name=name,
+        help=(
+            help
+            or DEFAULT_HELP.format(
+                name=name,
+                summary=(summary or DEFAULT_SUMMARY.format(name=name)),
+                service_env_var=ENV_VAR_SERVICE,
+            )
+        ),
+        rich_markup_mode="rich",
+        invoke_without_command=True,
     )
 
+    @t.callback()
+    def main(
+        _ctx: typer.Context,
+        version_: Annotated[
+            bool, typer.Option("--version", help="Show version and exit.")
+        ] = False,
+    ):
+        if version_:
+            from wraptile import __version__ as default_version
 
-@cli.command()
-def dev(
-    host: Annotated[str, cli_host_option] = DEFAULT_HOST,
-    port: Annotated[int, cli_port_option] = DEFAULT_PORT,
-    service: Annotated[Optional[list[str]], cli_service_arg] = None,
-):
-    """Run server in development mode."""
-    run_server(
-        host=host,
-        port=port,
-        service=service,
-        reload=True,
-    )
+            if version:
+                typer.echo(f"{version} ({DEFAULT_NAME} {default_version})")
+            else:
+                typer.echo(default_version)
+            return
+
+    @t.command()
+    def run(
+        host: Annotated[str, CLI_HOST_OPTION] = DEFAULT_HOST,
+        port: Annotated[int, CLI_PORT_OPTION] = DEFAULT_PORT,
+        service: Annotated[Optional[list[str]], CLI_SERVICE_ARG] = None,
+    ):
+        """Run server in production mode."""
+        _run_server(
+            host=host,
+            port=port,
+            service=service,
+            reload=False,
+        )
+
+    @t.command()
+    def dev(
+        host: Annotated[str, CLI_HOST_OPTION] = DEFAULT_HOST,
+        port: Annotated[int, CLI_PORT_OPTION] = DEFAULT_PORT,
+        service: Annotated[Optional[list[str]], CLI_SERVICE_ARG] = None,
+    ):
+        """Run server in development mode."""
+        _run_server(
+            host=host,
+            port=port,
+            service=service,
+            reload=True,
+        )
+
+    return t
 
 
-def run_server(**kwargs):
+def _run_server(**kwargs):
     import os
     import shlex
 
@@ -126,8 +164,17 @@ def run_server(**kwargs):
     # Apply the filter to the uvicorn.access logger
     logging.getLogger("uvicorn.access").addFilter(LogMessageFilter("/jobs"))
 
+    # noinspection PyArgumentList
     uvicorn.run("wraptile.main:app", **kwargs)
 
+
+cli: typer.Typer = new_cli()
+"""The default CLI instance."""
+
+__all__ = [
+    "cli",
+    "new_cli",
+]
 
 if __name__ == "__main__":  # pragma: no cover
     cli()
