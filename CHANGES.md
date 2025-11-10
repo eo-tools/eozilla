@@ -8,6 +8,8 @@
   The customization options are `name`, `help`, `summary`, `version`. 
 - Updated architecture diagrams in `docs/architecture.md`.
 - Added `click` as dependency to `gavicore` as it is explicitly imported.
+- `gavicore.util.request.ExecutionRequest` no longer raises 
+  `click.ClickException` but `ValueError`. (#19)
 
 ## Changes in version 0.0.7
 
@@ -15,7 +17,6 @@
 - Increased code coverage by a new test.
 
 ## Changes in version 0.0.6
-
 
 First release on PyPI.
 

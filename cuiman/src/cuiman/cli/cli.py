@@ -259,11 +259,10 @@ def new_cli(
         The `process_id` argument and any given `--input` options will override
         settings with the same name found in the given request file or `stdin`, if any.
         """
-        from gavicore.util.request import ExecutionRequest
-
         from .output import get_renderer, output
+        from .request import create_execution_request
 
-        request = ExecutionRequest.create(
+        request = create_execution_request(
             process_id=process_id,
             dotpath=dotpath,
             inputs=request_inputs,
@@ -294,12 +293,11 @@ def new_cli(
         The `process_id` argument and any given `--input` options will override
         settings with same name found in the given request file or `stdin`, if any.
         """
-        from gavicore.util.request import ExecutionRequest
-
         from .client import use_client
         from .output import get_renderer, output
+        from .request import create_execution_request
 
-        request = ExecutionRequest.create(
+        request = create_execution_request(
             process_id=process_id,
             dotpath=dotpath,
             inputs=request_inputs,

@@ -121,11 +121,11 @@ def execute_process(
     The `process_id` argument and any given `--input` options will override
     settings with same name found in the given request file or `stdin`, if any.
     """
+    from cuiman.cli.request import create_execution_request
     from procodile import Job
-    from procodile import ExecutionRequest
 
     process_registry = _get_process_registry(ctx)
-    execution_request = ExecutionRequest.create(
+    execution_request = create_execution_request(
         process_id=process_id,
         dotpath=dotpath,
         inputs=request_inputs,
