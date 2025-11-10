@@ -12,6 +12,7 @@
 - Added `click` as dependency to `gavicore` as it is explicitly imported.
 - `gavicore.util.request.ExecutionRequest` no longer raises 
   `click.ClickException` but `ValueError`. (#19)
+- Moved all `src/tests` folders one level up.
 
 ## Changes in version 0.0.7
 
