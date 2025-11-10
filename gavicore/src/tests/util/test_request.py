@@ -7,7 +7,6 @@ from io import StringIO
 from unittest import TestCase
 from unittest.mock import patch
 
-import click
 import pytest
 
 from gavicore.models import (
@@ -188,7 +187,7 @@ class ExecutionRequestTest(TestCase):
 
     # noinspection PyMethodMayBeStatic
     def test_create_request_from_nothing(self):
-        with pytest.raises(click.ClickException, match="Execution request is invalid:"):
+        with pytest.raises(ValueError, match="Execution request is invalid:"):
             ExecutionRequest.create()
 
     # noinspection PyMethodMayBeStatic
@@ -196,21 +195,28 @@ class ExecutionRequestTest(TestCase):
         with open(REQUEST_PATH, mode="w") as stream:
             stream.write("42\n")
         with pytest.raises(
-            click.ClickException, match="Request must be an object, but was type int"
+            ValueError, match="Request must be an object, but was type int"
         ):
             ExecutionRequest.create(request_path=REQUEST_PATH)
 
     # noinspection PyMethodMayBeStatic
     def test_create_request_from_invalid_input(self):
-        with pytest.raises(click.ClickException, match="Invalid request NAME: '2x'"):
-            ExecutionRequest.create(process_id="my_func", inputs=["2x=20'"])
+        with pytest.raises(ValueError, match="Missing input name"):
+            ExecutionRequest.create(process_id="my_func", inputs=["=20"])
+
+        with pytest.raises(ValueError, match="Invalid input name: '2x'"):
+            ExecutionRequest.create(process_id="my_func", inputs=["2x=20"])
+
+        with pytest.raises(ValueError, match="Missing input value"):
+            ExecutionRequest.create(process_id="my_func", inputs=["x="])
 
     # noinspection PyMethodMayBeStatic
     def test_create_request_from_invalid_subscription(self):
         with pytest.raises(
-            click.ClickException,
+            ValueError,
             match=(
-                r"Invalid subscriber item: must have form `EVENT=URL`, "
+                r"Invalid subscriber item: must have form "
+                r"`<subscriber-event>=<subscriber-url>`, "
                 r"but was 'success\:http\:\/\/localhost\/success'"
             ),
         ):
@@ -219,10 +225,10 @@ class ExecutionRequestTest(TestCase):
             )
 
         with pytest.raises(
-            click.ClickException,
+            ValueError,
             match=(
-                r"Invalid subscriber EVENT: must be one of "
-                r"\[success\|failed\|progress\], but was 'error'"
+                r"Invalid subscriber event name: "
+                r"must be one of \[success\|failed\|progress\], but was 'error'"
             ),
         ):
             ExecutionRequest.create(
@@ -230,7 +236,7 @@ class ExecutionRequestTest(TestCase):
             )
 
         with pytest.raises(
-            click.ClickException,
+            ValueError,
             match="Invalid subscriber URL: 'localhorst'",
         ):
             ExecutionRequest.create(

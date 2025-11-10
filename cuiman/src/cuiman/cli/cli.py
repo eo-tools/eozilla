@@ -259,7 +259,6 @@ def new_cli(
         settings with the same name found in the given request file or `stdin`, if any.
         """
         from gavicore.util.request import ExecutionRequest
-
         from .output import get_renderer, output
 
         request = ExecutionRequest.create(
@@ -294,7 +293,6 @@ def new_cli(
         settings with same name found in the given request file or `stdin`, if any.
         """
         from gavicore.util.request import ExecutionRequest
-
         from .client import use_client
         from .output import get_renderer, output
 

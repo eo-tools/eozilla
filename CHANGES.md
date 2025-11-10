@@ -10,6 +10,8 @@
   with the `cuiman.cli` and `wraptile.cli` packages. 
 - Updated architecture diagrams in `docs/architecture.md`.
 - Added `click` as dependency to `gavicore` as it is explicitly imported.
+- `gavicore.util.request.ExecutionRequest` no longer raises 
+  `click.ClickException` but `ValueError`. (#19)
 
 ## Changes in version 0.0.7
 
