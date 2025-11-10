@@ -6,7 +6,7 @@ from unittest import TestCase
 
 import typer.testing
 
-from procodile import ProcessRegistry
+from procodile import ProcessRegistry, __version__ as procodile_version
 from procodile.cli import new_cli
 
 registry = ProcessRegistry()
@@ -146,7 +146,7 @@ class CliTestMixin:
     def test_version(self):
         result = self.invoke_cli("--version")
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
-        self.assertEqual("1.0.0 (procodile 0.0.8.dev0)\n", result.output)
+        self.assertEqual(f"1.0.0 (procodile {procodile_version})\n", result.output)
 
     @classmethod
     def get_result_msg(cls, result: typer.testing.Result):
