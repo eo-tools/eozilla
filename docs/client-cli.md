@@ -1,23 +1,25 @@
 # Client CLI Reference
 
-The command-line interface `cuiman` is the shell client for servers 
-compliant with OGC API - Processes.
+The `cuiman` tool is a shell client for any web services 
+compliant with OGC API - Processes, Part 1: Core Standard.
 
-The tool can be used to get the available processes, get process details,
-execute processes, and manage the jobs originating from the latter. 
-It herewith resembles the functionality of the OGC API Processes - Part 1.
+
+`cuiman` can be used to get the available processes, get process 
+details, execute processes, and manage the jobs originating from the latter. It 
+herewith resembles the core functionality of the OGC API - Processes, Part 1.
+For details see https://ogcapi.ogc.org/processes/.
 
 You can use shorter command name aliases, e.g., use command name `vr`
 for `validate-request`, or `lp` for `list-processes`.
 
 The tool&#x27;s exit codes are as follows:
 
-- `0` - normal exit
-- `1` - user errors, argument errors
-- `2` - remote API errors 
-- `3` - local network transport errors
+• `0` - normal exit
+• `1` - user errors, argument errors
+• `2` - remote API errors 
+• `3` - local network transport errors
 
-If the --traceback flag is set, the original Python exception traceback
+If the `--traceback` flag is set, the original Python exception traceback
 will be shown and the exit code will always be `1`. 
 Otherwise, only the error message is shown.
 
