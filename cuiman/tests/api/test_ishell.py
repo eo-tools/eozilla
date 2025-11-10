@@ -2,15 +2,15 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import sys
 from unittest import TestCase
+from unittest.mock import patch
 
 from IPython.core.interactiveshell import InteractiveShell
 
 from cuiman import ClientError
 from cuiman.api.ishell import exception_handler, has_ishell
 from gavicore.models import ApiError
-import sys
-from unittest.mock import patch
 
 
 class IShellTest(TestCase):

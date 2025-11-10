@@ -2,12 +2,10 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from unittest import TestCase
-
-from tests.helpers import MockTransport
+from unittest import IsolatedAsyncioTestCase
 
 from cuiman import ClientConfig
-from cuiman.api.client import Client
+from cuiman.api.async_client import AsyncClient
 from gavicore.models import (
     Capabilities,
     ConformanceDeclaration,
@@ -20,16 +18,19 @@ from gavicore.models import (
 )
 from gavicore.util.request import ExecutionRequest
 
+from ..helpers import MockTransport
 
-class ClientTest(TestCase):
-    def setUp(self):
+
+class AsyncClientTest(IsolatedAsyncioTestCase):
+    # noinspection PyPep8Naming
+    async def asyncSetUp(self):
         self.transport = MockTransport()
-        self.client = Client(config=ClientConfig(), _transport=self.transport)
+        self.client = AsyncClient(_transport=self.transport)
 
-    def test_config(self):
+    async def test_config(self):
         self.assertIsInstance(self.client.config, ClientConfig)
 
-    def test_repr_json(self):
+    async def test_repr_json(self):
         result = self.client._repr_json_()
         self.assertIsInstance(result, tuple)
         self.assertEqual(2, len(result))
@@ -38,38 +39,42 @@ class ClientTest(TestCase):
         self.assertIsInstance(metadata, dict)
         self.assertEqual({"root": "Client configuration:"}, metadata)
 
-    def test_create_execution_request(self):
+    async def test_create_execution_request(self):
+        request = await self.client.create_execution_request(
+            process_id="ID-1",
+        )
         self.assertEqual(
             ExecutionRequest(process_id="ID-1", inputs={}),
-            self.client.create_execution_request(
-                process_id="ID-1",
-            ),
+            request,
         )
 
-    def test_create_execution_request_dotpath(self):
+    async def test_create_execution_request_dotpath(self):
+        request = await self.client.create_execution_request(
+            process_id="ID-1", dotpath=True
+        )
         self.assertEqual(
             ExecutionRequest(process_id="ID-1", inputs={}, dotpath=True),
-            self.client.create_execution_request(process_id="ID-1", dotpath=True),
+            request,
         )
 
-    def test_get_capabilities(self):
-        result = self.client.get_capabilities()
+    async def test_get_capabilities(self):
+        result = await self.client.get_capabilities()
         self.assertIsInstance(result, Capabilities)
 
-    def test_get_conformance(self):
-        result = self.client.get_conformance()
+    async def test_get_conformance(self):
+        result = await self.client.get_conformance()
         self.assertIsInstance(result, ConformanceDeclaration)
 
-    def test_get_processes(self):
-        result = self.client.get_processes()
+    async def test_get_processes(self):
+        result = await self.client.get_processes()
         self.assertIsInstance(result, ProcessList)
 
-    def test_get_process(self):
-        result = self.client.get_process(process_id="gobabeb_1")
+    async def test_get_process(self):
+        result = await self.client.get_process(process_id="gobabeb_1")
         self.assertIsInstance(result, ProcessDescription)
 
-    def test_execute_process(self):
-        result = self.client.execute_process(
+    async def test_execute_process(self):
+        result = await self.client.execute_process(
             process_id="gobabeb_1",
             request=ProcessRequest(
                 inputs={"bbox": [10, 20, 30, 40]},
@@ -78,23 +83,23 @@ class ClientTest(TestCase):
         )
         self.assertIsInstance(result, JobInfo)
 
-    def test_get_jobs(self):
-        result = self.client.get_jobs()
+    async def test_get_jobs(self):
+        result = await self.client.get_jobs()
         self.assertIsInstance(result, JobList)
 
-    def test_dismiss_job(self):
-        result = self.client.dismiss_job("job_12")
+    async def test_dismiss_job(self):
+        result = await self.client.dismiss_job("job_12")
         self.assertIsInstance(result, JobInfo)
 
-    def test_get_job(self):
-        result = self.client.get_job("job_12")
+    async def test_get_job(self):
+        result = await self.client.get_job("job_12")
         self.assertIsInstance(result, JobInfo)
 
-    def test_get_job_results(self):
-        result = self.client.get_job_results("job_12")
+    async def test_get_job_results(self):
+        result = await self.client.get_job_results("job_12")
         self.assertIsInstance(result, JobResults)
 
-    def test_close(self):
+    async def test_close(self):
         self.assertFalse(self.transport.closed)
-        self.client.close()
+        await self.client.close()
         self.assertTrue(self.transport.closed)

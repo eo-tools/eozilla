@@ -6,10 +6,11 @@ from pathlib import Path
 from unittest import TestCase
 
 import typer.testing
-from tests.helpers import MockTransport
 
 from cuiman import Client, ClientConfig, __version__
 from cuiman.cli.cli import cli, new_cli
+
+from ..helpers import MockTransport
 
 
 def invoke_cli(*args: str) -> typer.testing.Result:

@@ -10,7 +10,7 @@ from typer.testing import CliRunner
 
 from gavicore.util.testing import set_env_cm
 from wraptile import __version__
-from wraptile.cli import cli, parse_cli_service_options, new_cli
+from wraptile.cli import cli, new_cli, parse_cli_service_options
 from wraptile.constants import ENV_VAR_SERVICE
 
 runner = CliRunner()

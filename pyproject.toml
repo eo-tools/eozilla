@@ -100,14 +100,14 @@ line-length = 88
 
 [tool.ruff]
 include = [
-    "appligator/src/**/*.py",
-    "cuiman/src/**/*.py",
-    "eozilla/src/**/*.py",
-    "gavicore/src/**/*.py",
-    "wraptile/src/**/*.py",
+    "appligator/**/*.py",
+    "cuiman/**/*.py",
+    "eozilla/**/*.py",
+    "gavicore/**/*.py",
+    "wraptile/**/*.py",
     "notebooks/**/*.py",
-    "procodile/src/**/*.py",
-    "procodile-example/src/**/*.py",
+    "procodile/**/*.py",
+    "procodile-example/**/*.py",
     "tools/**/*.py",
 ]
 
@@ -119,7 +119,7 @@ select = ["I", "F", "E"]
 
 [tool.coverage.report]
 omit = [
-    "procodile-example/src/procodile_example/**/*",
+    "procodile-example/src/**/*",
     "cuiman/src/cuiman/gui/**/*",
     "wraptile/src/wraptile/services/airflow/**/*",
 ]
@@ -129,14 +129,14 @@ python_version = "3.10"
 check_untyped_defs = true
 disable_error_code = ["valid-type", "import-untyped"]
 exclude = [
-    "appligator/src/test",
-    "cuiman/src/test",
-    "eozilla/src/test",
+    "appligator/tests",
+    "cuiman/tests",
+    "eozilla/tests",
     "eozilla-airflow",
-    "gavicore/src/test",
-    "wraptile/src/test",
-    "procodile/src/test",
-    "procodile-example/src/test",
+    "gavicore/tests",
+    "wraptile/tests",
+    "procodile/tests",
+    "procodile-example/tests",
     "tools",
     "_pkg_reservations",
 ]
@@ -159,22 +159,22 @@ depends-on = [
 ]
 
 [tool.pixi.tasks.test-appligator]
-cmd = "pytest appligator/src/tests"
+cmd = "pytest appligator/tests"
 
 [tool.pixi.tasks.test-cuiman]
-cmd = "pytest cuiman/src/tests"
+cmd = "pytest cuiman/tests"
 
 [tool.pixi.tasks.test-eozilla]
-cmd = "pytest eozilla/src/tests"
+cmd = "pytest eozilla/tests"
 
 [tool.pixi.tasks.test-gavicore]
-cmd = "pytest gavicore/src/tests"
+cmd = "pytest gavicore/tests"
 
 [tool.pixi.tasks.test-procodile]
-cmd = "pytest procodile/src/tests"
+cmd = "pytest procodile/tests"
 
 [tool.pixi.tasks.test-wraptile]
-cmd = "pytest wraptile/src/tests"
+cmd = "pytest wraptile/tests"
 
 
 # pixi run coverage / coverage-ci
@@ -202,22 +202,22 @@ cmd = "coverage html -d .cov-report && coverage report"
 cmd = "coverage xml -o coverage.xml && coverage report"
 
 [tool.pixi.tasks.cov-appligator]
-cmd = "pytest --cov appligator/src/appligator --cov-report= --cov-append appligator/src/tests"
+cmd = "pytest --cov appligator/src/appligator --cov-report= --cov-append appligator/tests"
 
 [tool.pixi.tasks.cov-cuiman]
-cmd = "pytest --cov cuiman/src/cuiman --cov-report= --cov-append cuiman/src/tests"
+cmd = "pytest --cov cuiman/src/cuiman --cov-report= --cov-append cuiman/tests"
 
 [tool.pixi.tasks.cov-eozilla]
-cmd = "pytest --cov eozilla/src/eozilla --cov-report= --cov-append eozilla/src/tests"
+cmd = "pytest --cov eozilla/src/eozilla --cov-report= --cov-append eozilla/tests"
 
 [tool.pixi.tasks.cov-gavicore]
-cmd = "pytest --cov gavicore/src/gavicore --cov-report= --cov-append gavicore/src/tests"
+cmd = "pytest --cov gavicore/src/gavicore --cov-report= --cov-append gavicore/tests"
 
 [tool.pixi.tasks.cov-procodile]
-cmd = "pytest --cov procodile/src/procodile --cov-report= --cov-append procodile/src/tests"
+cmd = "pytest --cov procodile/src/procodile --cov-report= --cov-append procodile/tests"
 
 [tool.pixi.tasks.cov-wraptile]
-cmd = "pytest --cov wraptile/src/wraptile --cov-report= --cov-append wraptile/src/tests"
+cmd = "pytest --cov wraptile/src/wraptile --cov-report= --cov-append wraptile/tests"
 
 # pixi run check
 

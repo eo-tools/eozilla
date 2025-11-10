@@ -20,8 +20,8 @@ from gavicore.models import (
     ProcessList,
     ProcessRequest,
 )
-from procodile import Process
 from gavicore.util.testing import set_env
+from procodile import Process
 from wraptile.exceptions import ServiceException
 from wraptile.main import app
 from wraptile.provider import ServiceProvider, get_service
