@@ -10,8 +10,8 @@ from typing import Optional
 import pydantic
 from pydantic import Field
 
-from procodile import JobContext
 from gavicore.models import Link
+from procodile import JobContext
 from wraptile.services.local import LocalService
 
 service = LocalService(
