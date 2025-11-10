@@ -68,8 +68,9 @@ CLI_SERVICE_ARG = typer.Argument(
 
 
 # noinspection PyShadowingBuiltins
-def get_cli(
+def new_cli(
     name: str = DEFAULT_NAME,
+    /,
     help: str | None = None,
     summary: str | None = None,
     version: str | None = None,
@@ -167,8 +168,13 @@ def _run_server(**kwargs):
     uvicorn.run("wraptile.main:app", **kwargs)
 
 
-cli: typer.Typer = get_cli()
+cli: typer.Typer = new_cli()
 """The default CLI instance."""
+
+__all__ = [
+    "cli",
+    "new_cli",
+]
 
 if __name__ == "__main__":  # pragma: no cover
     cli()

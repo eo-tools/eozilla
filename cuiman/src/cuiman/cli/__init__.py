@@ -2,9 +2,9 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from .cli import cli, get_cli
+from .cli import cli, new_cli
 
 __all__ = [
     "cli",
-    "get_cli",
+    "new_cli",
 ]

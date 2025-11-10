@@ -9,7 +9,7 @@ import typer.testing
 from tests.helpers import MockTransport
 
 from cuiman import Client, ClientConfig, __version__
-from cuiman.cli.cli import cli
+from cuiman.cli.cli import cli, new_cli
 
 
 def invoke_cli(*args: str) -> typer.testing.Result:
@@ -132,3 +132,12 @@ class CliWithRealClientTest(TestCase):
         )
         if result.exit_code != 0:
             print(result.output)
+
+
+class CustomizedCliTest(TestCase):
+    def test_version(self):
+        runner = typer.testing.CliRunner()
+        customized_cli = new_cli("foobar", version="1.0.3")
+        result = runner.invoke(customized_cli, ["--version"])
+        self.assertEqual(0, result.exit_code)
+        self.assertEqual(f"1.0.3 (cuiman {__version__})\n", result.output)

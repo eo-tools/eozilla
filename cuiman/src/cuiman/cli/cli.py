@@ -68,8 +68,9 @@ JOB_ID_ARGUMENT = typer.Argument(
 
 
 # noinspection PyShadowingBuiltins
-def get_cli(
+def new_cli(
     name: str = DEFAULT_NAME,
+    /,
     help: str | None = None,
     summary: str | None = None,
     version: str | None = None,
@@ -83,7 +84,7 @@ def get_cli(
             `cuiman` help text will be used.
         summary: A one-sentence human-readable description of the tool that
             will be used by the default help text. Hence, used only,
-            if `help`is not provided. Should end with a dot '.'.
+            if `help` is not provided. Should end with a dot '.'.
         version: Optional version string. If not provided, the
             `cuiman` version will be used.
     Return:
@@ -136,7 +137,9 @@ def get_cli(
             from cuiman.cli.config import get_config
 
             config = get_config(config_path)
-            return Client(config=config)
+            # "pragma: no cover" is here because coverage reports
+            # the next line as uncovered, but that's definitely no true.
+            return Client(config=config)  # pragma: no cover
 
         ctx.ensure_object(dict)
         # ONLY set context values if they haven't already been set,
@@ -371,7 +374,7 @@ def get_cli(
     return t
 
 
-cli: typer.Typer = get_cli()
+cli: typer.Typer = new_cli()
 """The default CLI instance."""
 
 if __name__ == "__main__":  # pragma: no cover

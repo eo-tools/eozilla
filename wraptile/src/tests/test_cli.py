@@ -10,7 +10,7 @@ from typer.testing import CliRunner
 
 from gavicore.util.testing import set_env_cm
 from wraptile import __version__
-from wraptile.cli import cli, parse_cli_service_options
+from wraptile.cli import cli, parse_cli_service_options, new_cli
 from wraptile.constants import ENV_VAR_SERVICE
 
 runner = CliRunner()
@@ -31,6 +31,7 @@ class CliTest(TestCase):
         self.assertEqual(__version__ + "\n", result.output)
 
     def test_parse_cli_service_options(self):
+        # noinspection PyTypeChecker
         ctx = typer.Context(
             cli,
             allow_extra_args=False,
@@ -83,3 +84,11 @@ class CliTest(TestCase):
         mock.assert_called_with(
             "wraptile.main:app", host="127.0.0.1", port=8008, reload=True
         )
+
+
+class CustomizedCliTest(TestCase):
+    def test_version(self):
+        customized_cli = new_cli("foobar", version="1.0.3")
+        result = runner.invoke(customized_cli, ["--version"])
+        self.assertEqual(0, result.exit_code)
+        self.assertEqual(f"1.0.3 (wraptile {__version__})\n", result.output)

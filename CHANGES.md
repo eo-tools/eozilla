@@ -3,9 +3,9 @@
 - Added `get_default()` and `set_default()` class methods to 
   `cuiman.ClientConfig` to allow for customizing the default values  
   for the client configuration.
-- Added `get_cli()` to both `cuiman.cli` and `wraptile.cli` packages 
+- Added `new_cli()` to both `cuiman.cli` and `wraptile.cli` packages 
   which allows for creating customized CLIs. 
-  The customisation options are `name`, `help`, `summary`, `version`. 
+  The customization options are `name`, `help`, `summary`, `version`. 
 - Updated architecture diagrams in `docs/architecture.md`.
 - Added `click` as dependency to `gavicore` as it is explicitly imported.
 
