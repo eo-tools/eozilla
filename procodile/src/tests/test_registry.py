@@ -4,8 +4,8 @@
 
 from unittest import TestCase
 
-from procodile import Process, ProcessRegistry
 from gavicore.util.testing import BaseModelMixin
+from procodile import Process, ProcessRegistry
 
 from .test_process import f1, f2, f3
 

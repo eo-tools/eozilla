@@ -5,6 +5,6 @@
 # No exports here. To avoid unnecessary imports, CLI apps should pick
 # only what they need from dedicated submodules.
 
-from .cli import get_cli
+from .cli import new_cli
 
-__all__ = ["get_cli"]
+__all__ = ["new_cli"]

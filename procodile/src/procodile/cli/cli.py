@@ -3,7 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 import json
-from typing import TYPE_CHECKING, Annotated, Callable, Optional, Union
+from typing import TYPE_CHECKING, Annotated, Any, Callable, Optional, Union
 
 import click
 import typer
@@ -23,25 +23,26 @@ if TYPE_CHECKING:  # pragma: no cover
 
 PROCESS_REGISTRY_GETTER_KEY = "get_process_registry"
 
-CLI_HELP = """Command-line interface for process description and execution.
+DEFAULT_NAME = "procodile"
+
+DEFAULT_SUMMARY = """`{name}` is a command-line tool to describe and execute
+one or more registered processes."""
+
+DEFAULT_HELP = """{summary}
 
 You can use shorter command name aliases, e.g., use command name `ep`
 for `execute-process`, or `lp` for `list-processes`.
 """
 
-cli = typer.Typer(
-    add_completion=False,
-    cls=AliasedGroup,
-    help=CLI_HELP,
-    context_settings={
-        "obj": {PROCESS_REGISTRY_GETTER_KEY: None},
-    },
-)
 
-
-def get_cli(
-    process_registry: Union[str, "ProcessRegistry", Callable[[], "ProcessRegistry"]],
-    **kwargs,
+# noinspection PyShadowingBuiltins
+def new_cli(
+    registry: Union[str, "ProcessRegistry", Callable[[], "ProcessRegistry"]],
+    name: str,
+    version: str,
+    help: str | None = None,
+    summary: str | None = None,
+    context: dict[str, Any] | None = None,
 ) -> typer.Typer:
     """
     Get the CLI instance configured to use the process registry
@@ -65,131 +66,178 @@ def get_cli(
     fail with an `AssertionError`.
 
     Args:
-        process_registry: A registry reference string,
+        name: The name of the CLI application.
+        registry: A registry reference string,
             or a registry instance, or a no-arg
             function that returns a registry instance.
-        kwargs: Additional context values that will be registered in the
+        help: Optional CLI application help text. If not provided, the default
+            `cuiman` help text will be used.
+        summary: A one-sentence human-readable description of the tool that
+            will be used by the default help text. Hence, used only,
+            if `help` is not provided. Should end with a dot '.'.
+        version: Optional version string. If not provided, the
+            `cuiman` version will be used.
+        context: Additional context values that will be registered with the CLI
+            and can be accessed by commands that you add to the
+            returned `typer.Typer` instance.
 
+    Return:
+        a `typer.Typer` instance
     """
+    assert bool(registry), "registry argument must be provided"
+    assert bool(name), "name argument must be provided"
+    assert bool(version), "version argument must be provided"
+
+    t = typer.Typer(
+        cls=AliasedGroup,
+        name=name,
+        help=(
+            help
+            or DEFAULT_HELP.format(summary=summary or DEFAULT_SUMMARY.format(name=name))
+        ),
+        add_completion=False,
+        invoke_without_command=True,
+        context_settings={
+            "obj": {
+                PROCESS_REGISTRY_GETTER_KEY: _parse_process_registry_getter(registry),
+                **(context or {}),
+            },
+        },
+    )
+
+    @t.callback()
+    def main(
+        version_: Annotated[
+            bool, typer.Option("--version", help="Show version and exit.")
+        ] = False,
+    ):
+        if version_:
+            from procodile import __version__ as procodile_version
+
+            typer.echo(f"{version} (procodile {procodile_version})")
+            return
+
+    @t.command("execute-process")
+    def execute_process(
+        ctx: typer.Context,
+        process_id: Annotated[Optional[str], PROCESS_ID_ARGUMENT] = None,
+        dotpath: Annotated[bool, DOT_PATH_OPTION] = False,
+        request_inputs: Annotated[Optional[list[str]], REQUEST_INPUT_OPTION] = None,
+        request_subscribers: Annotated[
+            Optional[list[str]], REQUEST_SUBSCRIBER_OPTION
+        ] = None,
+        request_file: Annotated[Optional[str], REQUEST_FILE_OPTION] = None,
+    ):
+        """
+        Execute a process.
+
+        The process request to be submitted may be read from a file given
+        by `--request`, or from `stdin`, or from the `process_id` argument
+        with zero, one, or more `--input` (or `-i`) options.
+
+        The `process_id` argument and any given `--input` options will override
+        settings with the same name found in the given request file or `stdin`,
+        if any.
+        """
+        from procodile import ExecutionRequest, Job
+
+        registry = _get_process_registry(ctx)
+        execution_request = ExecutionRequest.create(
+            process_id=process_id,
+            dotpath=dotpath,
+            inputs=request_inputs,
+            subscribers=request_subscribers,
+            request_path=request_file,
+        )
+        process_id_ = execution_request.process_id
+        process = registry.get(process_id_)
+        if process is None:
+            raise click.ClickException(f"Process {process_id_!r} not found.")
+
+        job = Job.create(process, request=execution_request.to_process_request())
+        job_results = job.run()
+        if job_results is not None:
+            typer.echo(job_results.model_dump_json(indent=2))
+        else:
+            typer.echo(job.job_info.model_dump_json(indent=2))
+
+    @t.command("list-processes", help="List all processes.")
+    def list_processes(ctx: typer.Context):
+        registry = _get_process_registry(ctx)
+        typer.echo(
+            json.dumps(
+                {
+                    k: v.description.model_dump(
+                        mode="json",
+                        by_alias=True,
+                        exclude_none=True,
+                        exclude_defaults=True,
+                        exclude_unset=True,
+                        exclude={"inputs", "outputs"},
+                    )
+                    for k, v in registry.items()
+                },
+                indent=2,
+            )
+        )
+
+    @t.command("get-process", help="Get details of a process.")
+    def get_process(
+        ctx: typer.Context,
+        process_id: Annotated[str, PROCESS_ID_ARGUMENT],
+    ):
+        import json
+
+        registry = _get_process_registry(ctx)
+        process = registry.get(process_id)
+        if process is None:
+            raise click.ClickException(f"Process {process_id!r} not found.")
+
+        typer.echo(
+            json.dumps(
+                process.description.model_dump(
+                    mode="json",
+                    by_alias=True,
+                    exclude_defaults=True,
+                    exclude_none=True,
+                    exclude_unset=True,
+                ),
+                indent=2,
+            )
+        )
+
+    return t
+
+
+__all__ = [
+    "new_cli",
+]
+
+
+def _parse_process_registry_getter(
+    process_registry: Union[str, "ProcessRegistry", Callable[[], "ProcessRegistry"]],
+) -> Callable[[], "ProcessRegistry"]:
+    process_registry_getter: Callable
     if isinstance(process_registry, str):
 
-        def get_process_registry():
-            from procodile import ProcessRegistry
+        def process_registry_getter():
             from gavicore.util.dynimp import import_value
+            from procodile import ProcessRegistry
 
             return import_value(
                 process_registry, name="process registry", type=ProcessRegistry
             )
 
-        return get_cli(get_process_registry)
+        return process_registry_getter
 
-    elif not callable(process_registry):
-        return get_cli(lambda: process_registry)
-
-    assert callable(process_registry)
-    context_settings = cli.info.context_settings
-    assert isinstance(context_settings, dict)
-    context_obj = context_settings["obj"]
-    assert isinstance(context_obj, dict)
-    context_obj.update({PROCESS_REGISTRY_GETTER_KEY: process_registry, **kwargs})
-    return cli
-
-
-__all__ = [
-    "get_cli",
-]
-
-
-@cli.command("execute-process")
-def execute_process(
-    ctx: typer.Context,
-    process_id: Annotated[Optional[str], PROCESS_ID_ARGUMENT] = None,
-    dotpath: Annotated[bool, DOT_PATH_OPTION] = False,
-    request_inputs: Annotated[Optional[list[str]], REQUEST_INPUT_OPTION] = None,
-    request_subscribers: Annotated[
-        Optional[list[str]], REQUEST_SUBSCRIBER_OPTION
-    ] = None,
-    request_file: Annotated[Optional[str], REQUEST_FILE_OPTION] = None,
-):
-    """
-    Execute a process.
-
-    The process request to be submitted may be read from a file given
-    by `--request`, or from `stdin`, or from the `process_id` argument
-    with zero, one, or more `--input` (or `-i`) options.
-
-    The `process_id` argument and any given `--input` options will override
-    settings with same name found in the given request file or `stdin`, if any.
-    """
-    from procodile import Job
-    from procodile import ExecutionRequest
-
-    process_registry = _get_process_registry(ctx)
-    execution_request = ExecutionRequest.create(
-        process_id=process_id,
-        dotpath=dotpath,
-        inputs=request_inputs,
-        subscribers=request_subscribers,
-        request_path=request_file,
-    )
-    process_id_ = execution_request.process_id
-    process = process_registry.get(process_id_)
-    if process is None:
-        raise click.ClickException(f"Process {process_id_!r} not found.")
-
-    job = Job.create(process, request=execution_request.to_process_request())
-    job_results = job.run()
-    if job_results is not None:
-        typer.echo(job_results.model_dump_json(indent=2))
+    elif callable(process_registry):
+        return process_registry
     else:
-        typer.echo(job.job_info.model_dump_json(indent=2))
 
+        def process_registry_getter():
+            return process_registry
 
-@cli.command("list-processes", help="List all processes.")
-def list_processes(ctx: typer.Context):
-    process_registry = _get_process_registry(ctx)
-    typer.echo(
-        json.dumps(
-            {
-                k: v.description.model_dump(
-                    mode="json",
-                    by_alias=True,
-                    exclude_none=True,
-                    exclude_defaults=True,
-                    exclude_unset=True,
-                    exclude={"inputs", "outputs"},
-                )
-                for k, v in process_registry.items()
-            },
-            indent=2,
-        )
-    )
-
-
-@cli.command("get-process", help="Get details of a process.")
-def get_process(
-    ctx: typer.Context,
-    process_id: Annotated[str, PROCESS_ID_ARGUMENT],
-):
-    import json
-
-    process_registry = _get_process_registry(ctx)
-    process = process_registry.get(process_id)
-    if process is None:
-        raise click.ClickException(f"Process {process_id!r} not found.")
-
-    typer.echo(
-        json.dumps(
-            process.description.model_dump(
-                mode="json",
-                by_alias=True,
-                exclude_defaults=True,
-                exclude_none=True,
-                exclude_unset=True,
-            ),
-            indent=2,
-        )
-    )
+        return process_registry_getter
 
 
 def _get_process_registry(ctx: typer.Context) -> "ProcessRegistry":
