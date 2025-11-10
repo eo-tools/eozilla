@@ -7,7 +7,7 @@ from unittest import TestCase
 import typer.testing
 
 from procodile import ProcessRegistry
-from procodile.cli import get_cli
+from procodile.cli import new_cli
 
 registry = ProcessRegistry()
 
@@ -27,13 +27,13 @@ def f2(x: bool, y: str, z: float) -> tuple:
 # noinspection PyUnresolvedReferences
 class CliTestMixin:
     @classmethod
-    def get_cli(cls) -> typer.Typer:
+    def new_cli(cls) -> typer.Typer:
         raise NotImplementedError
 
     @classmethod
     def invoke_cli(cls, *args: str) -> typer.testing.Result:
         runner = typer.testing.CliRunner()
-        return runner.invoke(cls.get_cli(), args)
+        return runner.invoke(cls.new_cli(), args)
 
     def test_execute_process_f1_success(self):
         result = self.invoke_cli(
@@ -139,9 +139,14 @@ class CliTestMixin:
         result = self.invoke_cli("--help")
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertIn(
-            "Command-line interface for process description and execution",
+            " `foobar` is a command-line tool to describe and execute",
             result.output,
         )
+
+    def test_version(self):
+        result = self.invoke_cli("--version")
+        self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+        self.assertEqual("1.0.0 (procodile 0.0.8.dev0)\n", result.output)
 
     @classmethod
     def get_result_msg(cls, result: typer.testing.Result):
@@ -154,10 +159,10 @@ class CliTestMixin:
 class AppWithRealClientTest(TestCase):
     def test_get_processes(self):
         """Test code in app so that the non-mocked Client is used."""
-        cli = CliRegistryTest.get_cli()
+        cli = CliRegistryTest.new_cli()
         runner = typer.testing.CliRunner()
         result = runner.invoke(cli, ["list-processes"])
-        # May succeed if dev server is running
+        # May succeed if dev-server is running
         self.assertTrue(
             result.exit_code in (0, 1), msg=f"exit code was {result.exit_code}"
         )
@@ -167,20 +172,22 @@ class AppWithRealClientTest(TestCase):
 
 class CliRegistryTest(CliTestMixin, TestCase):
     @classmethod
-    def get_cli(cls):
-        return get_cli(registry)
+    def new_cli(cls):
+        return new_cli(registry=registry, name="foobar", version="1.0.0")
 
 
 class CliRegistryRefTest(CliTestMixin, TestCase):
     @classmethod
-    def get_cli(cls):
-        return get_cli("tests.cli.test_cli:registry")
+    def new_cli(cls):
+        return new_cli(
+            registry="tests.cli.test_cli:registry", name="foobar", version="1.0.0"
+        )
 
 
 class CliRegistryGetterTest(CliTestMixin, TestCase):
     @classmethod
-    def get_cli(cls):
+    def new_cli(cls):
         def get_registry():
             return registry
 
-        return get_cli(get_registry)
+        return new_cli(registry=get_registry, name="foobar", version="1.0.0")

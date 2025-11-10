@@ -25,7 +25,7 @@ Currently, `procodile` comprises just a few handy top-level components:
   a unit test or in a custom application.  
 * [class `JobContext`][procodile.JobContext] - used inside your process 
   implementations to report progress or check for client-side cancellation.  
-* [function `get_cli()`][procodile.cli.get_cli] - generates a CLI for the 
+* [function `new_cli()`][procodile.cli.new_cli] - creates a CLI for the 
   processes in the registry.
 
 
@@ -44,7 +44,7 @@ The steps are explained in more detail in the following.
 
 First, you'll create a process registry object of type `ProcessRegistry`.
 Use the registry's `process` decorator to register your Python functions 
-that should be exposed as processes. In `my_package/processes.py`:
+that should be exposed as processes. In `my_app/processes.py`:
 
 ```python
 from procodile import JobContext, ProcessRegistry
@@ -114,15 +114,15 @@ def my_func(args: ArgsModel) -> MyResult:
 ### 2. Define CLI instance
 
 In a second step you define an instance of a common process CLI and pass it 
-a reference to your registry instance. In `my_package/cli.py`:
+a reference to your registry instance. In `my_app/cli.py`:
 
 ```python
-from procodile.cli import get_cli
+from procodile.cli import new_cli
 
 # The CLI with a basic set of commands.
 # The `cli` is a Typer application of type `typer.Typer()`,
 # so can use the instance to register your own commands.
-cli = get_cli("my_package.processes:registry")
+cli = new_cli(registry="my_app.processes:registry", name="my-app", version="0.5.0")
 ```
 
 You could also pass the imported registry directly, but using a 
@@ -138,11 +138,11 @@ In your `pyproject.toml`:
 
 ```toml
 [project.scripts]
-my-tool = "my_package.cli:cli"
+my-app = "my_app.cli:cli"
 ```
 
-After installing `my_package` in a Python environment using `pip` or `pixi`
-you can run your CLI as an executable and `my-tool --help` will output:
+After installing `my_app` in a Python environment using `pip` or `pixi`
+you can run your CLI as an executable and `my-app --help` will output:
 
 ![process-cli.png](assets/process-cli.png)
 
@@ -286,7 +286,7 @@ The process request file format in detail:
       show_source: false
       heading_level: 3
 
-::: procodile.cli.get_cli
+::: procodile.cli.new_cli
     options:
       show_source: false
       heading_level: 3

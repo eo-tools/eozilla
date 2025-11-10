@@ -68,7 +68,7 @@ classDiagram
         class JobContext
         class Process
         class ProcessRegistry
-        class cli.get_cli
+        class cli.new_cli
     }
     namespace appligator {
         class airflow.gen_dag
@@ -90,7 +90,7 @@ classDiagram
     airflow.gen_dag ..> ProcessRegistry : uses
     ProcessRegistry *--> Process: holds
     Process ..> JobContext : uses
-    cli.get_cli ..> ExecutionRequest : uses
+    cli.new_cli ..> ExecutionRequest : uses
     models *-- models.ProcessRequest
     ExecutionRequest --|> models.ProcessRequest
     

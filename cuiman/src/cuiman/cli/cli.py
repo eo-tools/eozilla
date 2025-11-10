@@ -70,7 +70,6 @@ JOB_ID_ARGUMENT = typer.Argument(
 # noinspection PyShadowingBuiltins
 def new_cli(
     name: str = DEFAULT_NAME,
-    /,
     help: str | None = None,
     summary: str | None = None,
     version: str | None = None,

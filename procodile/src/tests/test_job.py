@@ -7,6 +7,7 @@ from unittest import TestCase
 import pydantic
 import pytest
 
+from gavicore.models import JobResults, JobStatus, ProcessRequest, Subscriber
 from procodile import (
     Job,
     JobCancelledException,
@@ -14,7 +15,6 @@ from procodile import (
     Process,
 )
 from procodile.job import NullJobContext
-from gavicore.models import JobResults, JobStatus, ProcessRequest, Subscriber
 
 from .test_process import f1
 

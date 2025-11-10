@@ -13,7 +13,6 @@ from gavicore.models import (
     OutputDescription,
     ProcessDescription,
 )
-
 from gavicore.util.schema import create_json_schema, create_schema_instance
 
 

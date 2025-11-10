@@ -6,6 +6,8 @@
 - Added `new_cli()` to both `cuiman.cli` and `wraptile.cli` packages 
   which allows for creating customized CLIs. 
   The customization options are `name`, `help`, `summary`, `version`. 
+- Renamed `procodile.cli.get_cli()` into `new_cli()` to make it consistent 
+  with the `cuiman.cli` and `wraptile.cli` packages. 
 - Updated architecture diagrams in `docs/architecture.md`.
 - Added `click` as dependency to `gavicore` as it is explicitly imported.
 - `gavicore.util.request.ExecutionRequest` no longer raises 

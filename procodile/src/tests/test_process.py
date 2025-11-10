@@ -9,7 +9,6 @@ import pydantic
 import pytest
 from pydantic import BaseModel, Field
 
-from procodile import JobContext, Process
 from gavicore.models import (
     DataType,
     InputDescription,
@@ -18,6 +17,7 @@ from gavicore.models import (
     Schema,
 )
 from gavicore.util.testing import BaseModelMixin
+from procodile import JobContext, Process
 
 
 def f1(x: float, y: float) -> float:
