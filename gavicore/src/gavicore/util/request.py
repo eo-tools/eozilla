@@ -7,7 +7,6 @@ from io import StringIO
 from pathlib import Path
 from typing import Annotated, Any
 
-import click
 import pydantic
 from pydantic import Field
 
@@ -75,6 +74,28 @@ class ExecutionRequest(ProcessRequest):
         inputs: list[str] | None = None,
         subscribers: list[str] | None = None,
     ) -> "ExecutionRequest":
+        """
+        A factory method to create an execution request.
+
+        The method is intended to support CLI implementations parsing user inputs
+        and creating validated execution requests.
+
+        Args:
+            process_id: Process identifier
+            dotpath: Whether dots in input names should be used to create
+                nested object values. Defaults to `False`.
+            request_path: Local path to a file that contains an execution request
+                in YAML or JSON format.
+            inputs: Optional process inputs given as a list of "<key>=<value>" strings.
+            subscribers: Optional subscribers given as a list of
+                "<event>=<url>" strings.
+
+        Return:
+            A validated execution request of type `ExecutionRequest`.
+
+        Raise:
+            ValueError: if a validation error occurs.
+        """
         request_dict, _ = _read_execution_request(request_path)
         if process_id:
             request_dict["process_id"] = process_id
@@ -91,7 +112,7 @@ class ExecutionRequest(ProcessRequest):
         try:
             return ExecutionRequest(**request_dict)
         except pydantic.ValidationError as e:
-            raise click.ClickException(f"Execution request is invalid: {e}")
+            raise ValueError(f"Execution request is invalid: {e}") from e
 
     @classmethod
     def from_process_description(
@@ -139,7 +160,7 @@ def _read_execution_request(
         request_dict = yaml.safe_load(StringIO(content))
 
     if not isinstance(request_dict, dict):
-        raise click.ClickException(
+        raise ValueError(
             f"Request must be an object, but was type {type(request_dict).__name__}"
         )
 
@@ -153,22 +174,23 @@ def _parse_inputs(inputs: list[str] | None) -> dict[str, Any]:
 def _parse_inputs_kv(kv: str) -> tuple[str, str]:
     parts = kv.split("=", maxsplit=1)
     key, value = parts if len(parts) == 2 else (parts[0], "true")
-    return _parse_input_name(key), _parse_input_value(value)
+    return _parse_input_key(key), _parse_input_value(value)
 
 
-def _parse_input_name(key: str) -> str:
-    norm_key = key.strip().replace("-", "_")
-
-    property_names = key.split(".")
-    for property_name in property_names:
-        if not property_name.isidentifier():
-            raise click.ClickException(f"Invalid request NAME: {key!r}")
-
-    return norm_key
+def _parse_input_key(key: str) -> str:
+    key = key.strip()
+    if not key:
+        raise ValueError("Missing input name")
+    if not key[0].isalpha():
+        raise ValueError(f"Invalid input name: {key!r}")
+    return key
 
 
 def _parse_input_value(value: str) -> Any:
     import json
+
+    if not value.strip():
+        raise ValueError("Missing input value")
 
     try:
         return json.loads(value)
@@ -184,8 +206,9 @@ def _parse_subscriber_kv(kv: str) -> tuple[str, str]:
     try:
         key, value = kv.split("=", maxsplit=1)
     except ValueError:
-        raise click.ClickException(
-            f"Invalid subscriber item: must have form `EVENT=URL`, but was {kv!r}"
+        raise ValueError(
+            f"Invalid subscriber item: "
+            f"must have form `<subscriber-event>=<subscriber-url>`, but was {kv!r}"
         )
     return _parse_subscriber_event(key), _parse_subscriber_url(value)
 
@@ -193,8 +216,8 @@ def _parse_subscriber_kv(kv: str) -> tuple[str, str]:
 def _parse_subscriber_event(key: str):
     norm_key = SUBSCRIBER_EVENTS.get(key)
     if norm_key is None:
-        raise click.ClickException(
-            "Invalid subscriber EVENT: must be one of "
+        raise ValueError(
+            "Invalid subscriber event name: must be one of "
             f"[{'|'.join(SUBSCRIBER_EVENTS.keys())}], but was {key!r}"
         )
     return norm_key
@@ -205,7 +228,7 @@ def _parse_subscriber_url(value: str):
 
     url = urlparse(value)
     if not all([url.scheme in ("http", "https"), url.netloc]):
-        raise click.ClickException(f"Invalid subscriber URL: {value!r}")
+        raise ValueError(f"Invalid subscriber URL: {value!r}")
     return value
 
 
