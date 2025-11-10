@@ -121,8 +121,8 @@ def execute_process(
     The `process_id` argument and any given `--input` options will override
     settings with same name found in the given request file or `stdin`, if any.
     """
+    from gavicore.util.request import ExecutionRequest
     from procodile import Job
-    from procodile import ExecutionRequest
 
     process_registry = _get_process_registry(ctx)
     execution_request = ExecutionRequest.create(
