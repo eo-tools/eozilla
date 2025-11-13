@@ -1,4 +1,4 @@
-## Changes in version 0.0.8 (in development)
+## Changes in version 0.0.8
 
 - Added `get_default()` and `set_default()` class methods to 
   `cuiman.ClientConfig` to allow for customizing the default values  

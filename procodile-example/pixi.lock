@@ -366,8 +366,8 @@ packages:
   timestamp: 1746947398083
 - pypi: ../gavicore
   name: gavicore
-  version: 0.0.8.dev0
-  sha256: 2f554fb6cb2530441f8a6ef8aa0c639ad7b4f8141ee99e9bec3eb3eb8a417dec
+  version: 0.0.8
+  sha256: 488145ac6c86f4b19f5169523deab4ab235b1edb34422b14242df95c6e9e91e6
   requires_dist:
   - click
   - pydantic
@@ -789,8 +789,8 @@ packages:
   timestamp: 1747339794916
 - pypi: ../procodile
   name: procodile
-  version: 0.0.8.dev0
-  sha256: bcfc4f38f4679048eb6b9d2896f5780674d18ca03d90b7a8726f300995953996
+  version: 0.0.8
+  sha256: 761ceddd0d3ac3b5717e1fa18c73ac7f949c2fd57e621dde38e721aea31d589b
   requires_dist:
   - pydantic
   - pyyaml
