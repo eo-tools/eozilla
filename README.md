@@ -4,7 +4,7 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v0.json)](https://github.com/charliermarsh/ruff)
 [![License](https://img.shields.io/github/license/eo-tools/eozilla)](https://github.com/eo-tools/eozilla)
 
-# Eozilla
+# Eozilla 🦖
 
 Eozilla is a suite of tools for workflow orchestration systems and
 [OGC API - Processes](https://github.com/opengeospatial/ogcapi-processes)
