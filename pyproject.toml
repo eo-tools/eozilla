@@ -221,6 +221,11 @@ cmd = "pytest --cov procodile/src/procodile --cov-report= --cov-append procodile
 [tool.pixi.tasks.cov-wraptile]
 cmd = "pytest --cov wraptile/src/wraptile --cov-report= --cov-append wraptile/tests"
 
+# pixi run format
+
+[tool.pixi.tasks.format]
+cmd = "python tools/format.py"
+
 # pixi run check
 
 [tool.pixi.tasks.check]
