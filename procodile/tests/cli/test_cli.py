@@ -6,7 +6,8 @@ from unittest import TestCase
 
 import typer.testing
 
-from procodile import ProcessRegistry, __version__ as procodile_version
+from procodile import ProcessRegistry
+from procodile import __version__ as procodile_version
 from procodile.cli import new_cli
 
 registry = ProcessRegistry()

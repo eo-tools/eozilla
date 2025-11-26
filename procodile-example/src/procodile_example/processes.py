@@ -4,9 +4,8 @@
 
 from typing import Annotated
 
-from pydantic import Field
-
 from procodile import JobContext, ProcessRegistry
+from pydantic import Field
 
 registry = ProcessRegistry()
 
