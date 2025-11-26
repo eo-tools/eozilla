@@ -71,9 +71,7 @@ class ReadConfigTest(unittest.TestCase):
         config = get_config(None)
         self.assertEqual(
             ClientConfig(
-                user_name="bibo",
-                access_token="ip245",
-                server_url="http://localhorst:9999",
+                api_url="http://localhorst:9999",
             ),
             config,
         )
@@ -81,7 +79,7 @@ class ReadConfigTest(unittest.TestCase):
     @patch("typer.prompt")
     def test_configure_client_custom(self, mock_prompt):
         # Simulate sequential responses to typer.prompt
-        mock_prompt.side_effect = ["bert", "s3cr3t", "http://localhorst:9090"]
+        mock_prompt.side_effect = ["http://localhorst:9090"]
         custom_config_path = Path("test.cfg")
         try:
             actual_config_path = configure_client(config_path=custom_config_path)
@@ -90,9 +88,7 @@ class ReadConfigTest(unittest.TestCase):
             config = get_config(custom_config_path)
             self.assertEqual(
                 ClientConfig(
-                    user_name="bert",
-                    access_token="s3cr3t",
-                    server_url="http://localhorst:9090",
+                    api_url="http://localhorst:9090",
                 ),
                 config,
             )
@@ -119,7 +115,7 @@ class ReadConfigTest(unittest.TestCase):
                     ClientConfig(
                         user_name="bibo",
                         access_token="9823hc",
-                        server_url="http://localhorst:2357",
+                        api_url="http://localhorst:2357",
                     ),
                     config,
                 )

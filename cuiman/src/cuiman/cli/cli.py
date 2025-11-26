@@ -4,8 +4,10 @@
 
 from typing import Annotated, Final, Optional
 
+import click
 import typer.core
 
+from cuiman.api.auth import AuthType
 from cuiman.cli.output import OutputFormat
 from gavicore.util.cli.group import AliasedGroup
 from gavicore.util.cli.parameters import (
@@ -73,6 +75,7 @@ def new_cli(
     help: str | None = None,
     summary: str | None = None,
     version: str | None = None,
+    auth_strategy: AuthType | None = None,
 ) -> typer.Typer:
     """
     Create a server CLI instance for the given, optional name and help text.
@@ -86,6 +89,8 @@ def new_cli(
             if `help` is not provided. Should end with a dot '.'.
         version: Optional version string. If not provided, the
             `cuiman` version will be used.
+        auth_strategy: Optional client authentication strategy.
+            Defaults to no-authentication (`AuthStrategy.NONE`).
     Return:
         a `typer.Typer` instance
     """
@@ -154,33 +159,29 @@ def new_cli(
 
     @t.command()
     def configure(
-        user_name: Optional[str] = typer.Option(
-            None,
-            "--user",
-            "-u",
-            help="Your user name.",
-        ),
-        access_token: Optional[str] = typer.Option(
-            None,
-            "--token",
-            "-t",
-            help="Your personal access token.",
-        ),
-        server_url: Optional[str] = typer.Option(
-            None,
-            "--server",
-            "-s",
-            help="The URL of a service complying to the OGC API - Processes.",
-        ),
-        config_file: Annotated[Optional[str], CONFIG_OPTION] = None,
+        api_url: Annotated[
+            str | None,
+            typer.Option(
+                "--api-url",
+                help="The URL of a service complying to the OGC API - Processes.",
+            ),
+        ] = None,
+        auth_type: Annotated[
+            str,
+            typer.Option(
+                "--auth-type",
+                help="The URL of a service complying to the OGC API - Processes.",
+                choices=click.Choice(AuthType.get_names(lc=True)),
+            ),
+        ] = None,
+        config_file: Annotated[str | None, CONFIG_OPTION] = None,
     ):
         """Configure the client tool."""
         from .config import configure_client
 
         config_path = configure_client(
-            user_name=user_name,
-            access_token=access_token,
-            server_url=server_url,
+            api_url=api_url,
+            auth_type=auth_type,
             config_path=config_file,
         )
         typer.echo(f"Client configuration written to {config_path}")
@@ -369,6 +370,11 @@ def new_cli(
         with use_client(ctx, config_file) as client:
             job_results = client.get_job_results(job_id)
         output(get_renderer(output_format).render_job_results(job_results))
+
+    if auth_strategy is not None and auth_strategy != AuthType.NONE:
+        from .auth import register_login
+
+        register_login(t, auth_strategy)
 
     return t
 

@@ -46,9 +46,8 @@ class {{ uc_async }}Client({{ uc_async }}ClientMixin):
       config: Optional client configuration object. If given,
         other configuration arguments are ignored.
       config_path: Optional path of the configuration file to be loaded
-      server_url: Optional server URL
-      user_name: Optional username
-      access_token: Optional private access token
+      config_kwargs: Configuration settings as keyword arguments.
+      api_url: The service URL of the OGC API - Processes.
     \"\"\"
 
     def __init__(
@@ -56,23 +55,22 @@ class {{ uc_async }}Client({{ uc_async }}ClientMixin):
         *,
         config: Optional[ClientConfig] = None,
         config_path: Optional[str] = None,
-        server_url: Optional[str] = None,
-        user_name: Optional[str] = None,
-        access_token: Optional[str] = None,
+        api_url: Optional[str] = None,
         _debug: bool = False,
         _transport: Optional[{{ uc_async }}Transport] = None,
+        **config_kwargs,
     ):
         self._config = ClientConfig.create(
             config=config,
             config_path=config_path,
-            server_url=server_url,
-            user_name=user_name,
-            access_token=access_token,
+            api_url=api_url,
+            **config_kwargs,
         )
-        assert self._config.server_url is not None
+        if not self._config.api_url:
+            raise ValueError("Required setting 'api_url' not configured")
         self._transport = (
             HttpxTransport(
-                server_url=self._config.server_url, 
+                api_url=self._config.api_url, 
                 debug=_debug,
             )
             if _transport is None

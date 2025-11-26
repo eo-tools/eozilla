@@ -26,8 +26,8 @@ class TransportArgs:
     error_types: dict[str, type | None] = field(default_factory=dict)
     extra_kwargs: dict[str, Any] = field(default_factory=dict)
 
-    def get_url(self, server_url: str) -> str:
-        return urljoin(server_url, uri_template.expand(self.path, **self.path_params))
+    def get_url(self, api_url: str) -> str:
+        return urljoin(api_url, uri_template.expand(self.path, **self.path_params))
 
     def get_json_for_request(self) -> Any:
         request = self.request

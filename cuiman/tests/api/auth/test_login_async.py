@@ -1,15 +1,14 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from yourpkg.auth_login_async import login_and_get_token_async
-from yourpkg.config import AuthStrategy, ClientConfig
+from cuiman.api.auth import login_and_get_token_async, AuthConfig, AuthType
 
 
 @pytest.mark.asyncio
 async def test_login_and_get_token_async_json():
-    cfg = ClientConfig(
-        base_url="http://api",
-        auth_strategy=AuthStrategy.LOGIN,
+    cfg = AuthConfig(
+        type=AuthType.TOKEN,
+        auth_url="https://acme.com/api/auth/login",
         username="u",
         password="p",
     )
@@ -19,6 +18,7 @@ async def test_login_and_get_token_async_json():
     mock_response.json.return_value = {"token": "abc123"}
     mock_response.raise_for_status.return_value = None
 
+    # noinspection PyUnusedLocal
     async def fake_post(url, data):
         return mock_response
 
@@ -31,9 +31,9 @@ async def test_login_and_get_token_async_json():
 
 @pytest.mark.asyncio
 async def test_login_and_get_token_async_plaintext():
-    cfg = ClientConfig(
-        base_url="http://api",
-        auth_strategy=AuthStrategy.LOGIN,
+    cfg = AuthConfig(
+        type=AuthType.TOKEN,
+        auth_url="https://acme.com/api/auth/login",
         username="u",
         password="p",
     )
@@ -43,6 +43,7 @@ async def test_login_and_get_token_async_plaintext():
     mock_response.text = "plaintext-token"
     mock_response.raise_for_status.return_value = None
 
+    # noinspection PyUnusedLocal
     async def fake_post(url, data):
         return mock_response
 
@@ -55,9 +56,9 @@ async def test_login_and_get_token_async_plaintext():
 
 @pytest.mark.asyncio
 async def test_login_and_get_token_async_missing_credentials():
-    cfg = ClientConfig(
-        base_url="http://api",
-        auth_strategy=AuthStrategy.LOGIN,
+    cfg = AuthConfig(
+        type=AuthType.TOKEN,
+        auth_url="https://acme.com/api/auth/login",
         username=None,
         password=None,
     )

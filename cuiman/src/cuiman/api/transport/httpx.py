@@ -17,8 +17,8 @@ from .transport import AsyncTransport, Transport, TransportError
 class HttpxTransport(Transport, AsyncTransport):
     """A concrete web API transport based on the httpx package."""
 
-    def __init__(self, server_url: str, debug: bool = False):
-        self.server_url = server_url
+    def __init__(self, api_url: str, debug: bool = False):
+        self.api_url = api_url
         self.debug = debug
         self.sync_httpx: httpx.Client | None = None
         self.async_httpx: httpx.AsyncClient | None = None
@@ -51,7 +51,7 @@ class HttpxTransport(Transport, AsyncTransport):
     def _get_request_args(
         self, args: TransportArgs
     ) -> tuple[tuple[str, str], dict[str, Any]]:
-        url = args.get_url(self.server_url)
+        url = args.get_url(self.api_url)
         request_json = args.get_json_for_request()
         return (args.method.upper(), url), {
             "params": args.query_params,

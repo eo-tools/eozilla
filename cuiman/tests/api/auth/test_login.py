@@ -1,14 +1,13 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from yourpkg.auth_login import login_and_get_token
-from yourpkg.config import AuthStrategy, ClientConfig
+from cuiman.api.auth import login_and_get_token, AuthConfig, AuthType
 
 
 def test_login_and_get_token_json_response():
-    cfg = ClientConfig(
-        base_url="http://api",
-        auth_strategy=AuthStrategy.LOGIN,
+    cfg = AuthConfig(
+        type=AuthType.TOKEN,
+        auth_url="https://acme.com/api/auth/login",
         username="u",
         password="p",
     )
@@ -25,9 +24,9 @@ def test_login_and_get_token_json_response():
 
 
 def test_login_and_get_token_plaintext_response():
-    cfg = ClientConfig(
-        base_url="http://api",
-        auth_strategy=AuthStrategy.LOGIN,
+    cfg = AuthConfig(
+        type=AuthType.TOKEN,
+        auth_url="https://acme.com/api/auth/login",
         username="u",
         password="p",
     )
@@ -45,9 +44,9 @@ def test_login_and_get_token_plaintext_response():
 
 
 def test_login_and_get_token_missing_user_pass():
-    cfg = ClientConfig(
-        base_url="http://api",
-        auth_strategy=AuthStrategy.LOGIN,
+    cfg = AuthConfig(
+        type=AuthType.TOKEN,
+        auth_url="https://acme.com/api/auth/login",
         username=None,
         password=None,
     )

@@ -4,21 +4,21 @@
 
 from typing import Dict
 
-from .config import AuthConfig
-from .strategy import AuthStrategy
+from .config import AuthConfig, AuthType
 
 
 def get_auth_headers(config: AuthConfig) -> Dict[str, str]:
     """
-    Returns the correct HTTP authentication headers based on the configured auth strategy.
-    Lightweight and fully generic.
+    Returns the HTTP authentication headers for given auth type.
     """
 
-    if config.auth_strategy == AuthStrategy.NONE:
+    auth_type = config.auth_type
+
+    if auth_type == AuthType.NONE:
         return {}
 
     # Static API token
-    if config.auth_strategy == AuthStrategy.TOKEN:
+    if auth_type == AuthType.TOKEN:
         if not config.token:
             raise ValueError("Token must be set for TOKEN auth strategy.")
 
@@ -28,28 +28,26 @@ def get_auth_headers(config: AuthConfig) -> Dict[str, str]:
             return {config.token_header: config.token}
 
     # Username/password login (token acquired earlier)
-    if config.auth_strategy == AuthStrategy.LOGIN:
+    if auth_type == AuthType.LOGIN:
         if not config.token:
-            raise ValueError("Token is missing. Run CLI `login` first.")
+            raise ValueError("Token is missing. Run CLI 'login' first.")
         return {config.token_header: config.token}
 
     # API Key header
-    if config.auth_strategy == AuthStrategy.API_KEY:
+    if auth_type == AuthType.API_KEY:
         if not config.api_key:
             raise ValueError("api_key must be set for API_KEY auth strategy.")
         return {config.api_key_header: config.api_key}
 
     # Basic Auth (username/password)
-    if config.auth_strategy == AuthStrategy.BASIC:
-        if not (config.basic_username and config.basic_password):
-            raise ValueError("basic_username/basic_password required for BASIC auth.")
+    if auth_type == AuthType.BASIC:
+        if not (config.username and config.password):
+            raise ValueError("username/password required for BASIC auth.")
 
         import base64
 
-        creds = f"{config.basic_username}:{config.basic_password}"
+        creds = f"{config.username}:{config.password}"
         encoded = base64.b64encode(creds.encode()).decode()
         return {"Authorization": f"Basic {encoded}"}
 
-    raise NotImplementedError(
-        f"Unknown authentication strategy: {config.auth_strategy}"
-    )
+    raise NotImplementedError(f"Unknown authentication strategy: {auth_type}")

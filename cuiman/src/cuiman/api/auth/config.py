@@ -4,18 +4,55 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from .strategy import AuthStrategy
+from enum import Enum
+
+
+class AuthType(str, Enum):
+    """Authentication type."""
+
+    NONE = "none"
+    """No authentication required."""
+
+    TOKEN = "token"
+    """Static token: X-Auth-Token or Bearer."""
+
+    LOGIN = "login"
+    """username/password -> token."""
+
+    BASIC = "basic"
+    """# HTTP Basic Auth."""
+
+    API_KEY = "api_key"
+    """X-API-Key."""
+
+    def __repr__(self):
+        return str(self)
+
+    @classmethod
+    def get_member(cls, name: str) -> Optional["AuthType"]:
+        name_uc = name.upper()
+        for m in AuthType:
+            if m.value == name_uc:
+                return m
+        return None
+
+    @classmethod
+    def get_names(cls, lc: bool = False) -> tuple[str, ...]:
+        return tuple((m.name.lower() if lc else m.name) for m in AuthType)
 
 
 class AuthConfig(BaseModel):
-    base_url: str = Field(..., description="Base URL of the API")
+    """Authentication configuration."""
 
-    # Auth settings
-    auth_strategy: AuthStrategy = AuthStrategy.NONE
+    # Authentication type
+    auth_type: AuthType | None = None
 
-    # For LOGIN (username/password -> token)
+    # Authentication URL, usually an endpoint called "/auth/login".
+    auth_url: Optional[str] = None
+
+    # For BASIC or LOGIN (username/password -> token)
     username: Optional[str] = None
     password: Optional[str] = None
 
@@ -29,7 +66,3 @@ class AuthConfig(BaseModel):
     # For TOKEN (custom header) or Bearer
     token_header: str = "X-Auth-Token"
     use_bearer: bool = False  # if True → Authorization: Bearer <token>
-
-    # For BASIC
-    basic_username: Optional[str] = None
-    basic_password: Optional[str] = None

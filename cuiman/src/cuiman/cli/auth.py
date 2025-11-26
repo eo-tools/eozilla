@@ -5,35 +5,33 @@
 import typer
 from rich import print
 
-from cuiman.api.auth import login_and_get_token
+from cuiman.api.auth import login_and_get_token, AuthType
 
 from .config import ClientConfig
 
-app = typer.Typer(help="My API client CLI")
-
 
 def save_config(config: ClientConfig):
-    """Stub — implement your own persistence."""
-    # e.g. write JSON to ~/.myclient/config.json
+    # TODO: write to .eozilla
     pass
 
 
-@app.command()
-def login(ctx: typer.Context):
-    """
-    Perform login using username+password and store the returned token.
-    Reads and updates the config stored in the Typer context.
-    """
-    config: ClientConfig = ctx.obj["config"]
+def register_login(t: typer.Typer, auth_strategy: AuthType):
+    @t.command()
+    def login(ctx: typer.Context):
+        """
+        Perform login using username+password and store the returned token.
+        Reads and updates the config stored in the Typer context.
+        """
+        config: ClientConfig = ctx.obj["config"]
 
-    if config.auth_strategy != "login":
-        print("[yellow]Auth strategy is not 'login'. No login needed.[/yellow]")
-        raise typer.Exit(1)
+        if config.auth_type != "login":
+            print("[yellow]Auth strategy is not 'login'. No login needed.[/yellow]")
+            raise typer.Exit(1)
 
-    try:
-        token = login_and_get_token(config)
-        save_config(config)
-        print("[green]Login successful! Token stored.[/green]")
-    except Exception as e:
-        print(f"[red]Login failed: {e}[/red]")
-        raise typer.Exit(1)
+        try:
+            token = login_and_get_token(config.auth_url, config.auth)
+            save_config(config)
+            print("[green]Login successful! Token stored.[/green]")
+        except Exception as e:
+            print(f"[red]Login failed: {e}[/red]")
+            raise typer.Exit(1)
