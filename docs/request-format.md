@@ -1,3 +1,0 @@
-# Execution request format
-
-TODO
