@@ -4,10 +4,10 @@
 
 from typing import Annotated, Final, Optional
 
-import click
 import typer.core
 
 from cuiman.api.auth import AuthType
+from cuiman.api.auth.config import AUTH_TYPE_NAMES
 from cuiman.cli.output import OutputFormat
 from gavicore.util.cli.group import AliasedGroup
 from gavicore.util.cli.parameters import (
@@ -167,11 +167,36 @@ def new_cli(
             ),
         ] = None,
         auth_type: Annotated[
-            str,
+            str | None,
             typer.Option(
                 "--auth-type",
-                help="The URL of a service complying to the OGC API - Processes.",
-                choices=click.Choice(AuthType.get_names(lc=True)),
+                "-a",
+                help="The authorisation method for the API "
+                f"({'|'.join(AUTH_TYPE_NAMES)}).",
+            ),
+        ] = None,
+        username: Annotated[
+            str | None,
+            typer.Option(
+                "--username",
+                "-u",
+                help="Username.",
+            ),
+        ] = None,
+        password: Annotated[
+            str | None,
+            typer.Option(
+                "--password",
+                "-p",
+                help="Password.",
+            ),
+        ] = None,
+        token: Annotated[
+            str | None,
+            typer.Option(
+                "--token",
+                "-t",
+                help="Access token.",
             ),
         ] = None,
         config_file: Annotated[str | None, CONFIG_OPTION] = None,
@@ -179,10 +204,15 @@ def new_cli(
         """Configure the client tool."""
         from .config import configure_client
 
+        # auth_type_ = AuthType.from_name(auth_type)
+
         config_path = configure_client(
+            config_path=config_file,
             api_url=api_url,
             auth_type=auth_type,
-            config_path=config_file,
+            username=username,
+            password=password,
+            token=token,
         )
         typer.echo(f"Client configuration written to {config_path}")
 
@@ -371,7 +401,7 @@ def new_cli(
             job_results = client.get_job_results(job_id)
         output(get_renderer(output_format).render_job_results(job_results))
 
-    if auth_strategy is not None and auth_strategy != AuthType.NONE:
+    if auth_strategy is not None:
         from .auth import register_login
 
         register_login(t, auth_strategy)

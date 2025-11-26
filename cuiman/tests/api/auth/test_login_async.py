@@ -7,7 +7,7 @@ from cuiman.api.auth import login_and_get_token_async, AuthConfig, AuthType
 @pytest.mark.asyncio
 async def test_login_and_get_token_async_json():
     cfg = AuthConfig(
-        type=AuthType.TOKEN,
+        auth_type="login",
         auth_url="https://acme.com/api/auth/login",
         username="u",
         password="p",
@@ -32,7 +32,7 @@ async def test_login_and_get_token_async_json():
 @pytest.mark.asyncio
 async def test_login_and_get_token_async_plaintext():
     cfg = AuthConfig(
-        type=AuthType.TOKEN,
+        auth_type="login",
         auth_url="https://acme.com/api/auth/login",
         username="u",
         password="p",
@@ -57,7 +57,7 @@ async def test_login_and_get_token_async_plaintext():
 @pytest.mark.asyncio
 async def test_login_and_get_token_async_missing_credentials():
     cfg = AuthConfig(
-        type=AuthType.TOKEN,
+        auth_type="login",
         auth_url="https://acme.com/api/auth/login",
         username=None,
         password=None,

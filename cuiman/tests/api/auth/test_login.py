@@ -6,7 +6,7 @@ from cuiman.api.auth import login_and_get_token, AuthConfig, AuthType
 
 def test_login_and_get_token_json_response():
     cfg = AuthConfig(
-        type=AuthType.TOKEN,
+        auth_type="login",
         auth_url="https://acme.com/api/auth/login",
         username="u",
         password="p",
@@ -25,7 +25,7 @@ def test_login_and_get_token_json_response():
 
 def test_login_and_get_token_plaintext_response():
     cfg = AuthConfig(
-        type=AuthType.TOKEN,
+        auth_type="login",
         auth_url="https://acme.com/api/auth/login",
         username="u",
         password="p",
@@ -45,7 +45,7 @@ def test_login_and_get_token_plaintext_response():
 
 def test_login_and_get_token_missing_user_pass():
     cfg = AuthConfig(
-        type=AuthType.TOKEN,
+        auth_type="login",
         auth_url="https://acme.com/api/auth/login",
         username=None,
         password=None,

@@ -4,13 +4,15 @@ from cuiman.api.auth import get_auth_headers, AuthType, AuthConfig
 
 
 def test_auth_headers_none():
-    cfg = AuthConfig(auth_type=AuthType.NONE)
+    cfg = AuthConfig(auth_type=None)
+    assert get_auth_headers(cfg) == {}
+    cfg = AuthConfig(auth_type="none")
     assert get_auth_headers(cfg) == {}
 
 
 def test_auth_headers_token_custom_header():
     cfg = AuthConfig(
-        auth_type=AuthType.TOKEN,
+        auth_type="token",
         token="abc123",
         token_header="X-Auth-Token",
         use_bearer=False,
@@ -20,7 +22,7 @@ def test_auth_headers_token_custom_header():
 
 def test_auth_headers_token_bearer():
     cfg = AuthConfig(
-        auth_type=AuthType.TOKEN,
+        auth_type="token",
         token="abc123",
         use_bearer=True,
     )
@@ -29,7 +31,7 @@ def test_auth_headers_token_bearer():
 
 def test_auth_headers_login_strategy():
     cfg = AuthConfig(
-        auth_type=AuthType.LOGIN,
+        auth_type="login",
         token="xyz",
         token_header="X-Token",
     )
@@ -38,7 +40,7 @@ def test_auth_headers_login_strategy():
 
 def test_auth_headers_api_key():
     cfg = AuthConfig(
-        auth_type=AuthType.API_KEY,
+        auth_type="api-key",
         api_key="mykey",
         api_key_header="X-API-Key",
     )
@@ -47,7 +49,7 @@ def test_auth_headers_api_key():
 
 def test_auth_headers_basic_auth():
     cfg = AuthConfig(
-        auth_type=AuthType.BASIC,
+        auth_type="basic",
         username="user",
         password="pass",
     )

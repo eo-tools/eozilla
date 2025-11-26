@@ -15,7 +15,7 @@ from ..helpers import MockTransport
 
 def invoke_cli(*args: str) -> typer.testing.Result:
     def get_mock_client(_config_path: str | None):
-        return Client(config=ClientConfig(), _transport=MockTransport())
+        return Client(api_url="https://abc.de", _transport=MockTransport())
 
     runner = typer.testing.CliRunner()
     return runner.invoke(cli, args, obj={"get_client": get_mock_client})
@@ -38,12 +38,14 @@ class CliTest(TestCase):
             "configure",
             "-c",
             str(config_path),
-            "-u",
-            "bibo",
-            "-t",
-            "1234",
-            "-s",
+            "--api-url",
             "http://localhorst:2357",
+            "--auth-type",
+            "login",
+            "--username",
+            "bibo",
+            "--password",
+            "1234",
         )
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertTrue(config_path.exists())

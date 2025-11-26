@@ -64,7 +64,7 @@ class ReadConfigTest(unittest.TestCase):
 
     @patch("typer.prompt")
     def test_configure_client_default(self, mock_prompt):
-        mock_prompt.side_effect = ["bibo", "ip245", "http://localhorst:9999"]
+        mock_prompt.side_effect = ["http://localhorst:9999", "login", "bibo", "1234"]
         actual_config_path = configure_client()
         self.assertEqual(DEFAULT_CONFIG_PATH, actual_config_path)
         self.assertTrue(DEFAULT_CONFIG_PATH.exists())
@@ -72,6 +72,9 @@ class ReadConfigTest(unittest.TestCase):
         self.assertEqual(
             ClientConfig(
                 api_url="http://localhorst:9999",
+                auth_type="login",
+                username="bibo",
+                password="1234",
             ),
             config,
         )
@@ -79,7 +82,7 @@ class ReadConfigTest(unittest.TestCase):
     @patch("typer.prompt")
     def test_configure_client_custom(self, mock_prompt):
         # Simulate sequential responses to typer.prompt
-        mock_prompt.side_effect = ["http://localhorst:9090"]
+        mock_prompt.side_effect = ["http://localhorst:9090", "none"]
         custom_config_path = Path("test.cfg")
         try:
             actual_config_path = configure_client(config_path=custom_config_path)
@@ -100,11 +103,17 @@ class ReadConfigTest(unittest.TestCase):
     def test_configure_client_use_defaults(self, mock_prompt):
         # Simulate sequential responses to typer.prompt
         with set_env_cm(
-            EOZILLA_USER_NAME="bibo",
-            EOZILLA_ACCESS_TOKEN="9823hc",
-            EOZILLA_SERVER_URL="http://localhorst:2357",
+            EOZILLA_API_URL="http://localhorst:2357",
+            EOZILLA_AUTH_TYPE="login",
+            EOZILLA_USERNAME="bibo",
+            EOZILLA_PASSWORD="9823hc",
         ):
-            mock_prompt.side_effect = ["bibo", "*****", "http://localhorst:2357"]
+            mock_prompt.side_effect = [
+                "http://localhorst:2357",
+                "login",
+                "bibo",
+                "******",
+            ]
             custom_config_path = Path("test.cfg")
             try:
                 actual_config_path = configure_client(config_path=custom_config_path)
@@ -113,9 +122,10 @@ class ReadConfigTest(unittest.TestCase):
                 config = get_config(custom_config_path)
                 self.assertEqual(
                     ClientConfig(
-                        user_name="bibo",
-                        access_token="9823hc",
+                        auth_type="login",
                         api_url="http://localhorst:2357",
+                        username="bibo",
+                        password="9823hc",
                     ),
                     config,
                 )

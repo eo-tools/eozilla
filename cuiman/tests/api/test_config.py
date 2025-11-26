@@ -53,7 +53,7 @@ class ClientConfigTest(TestCase):
             config = ClientConfig.create(config_path=config_path)
             self.assertIsInstance(config, ClientConfig)
             self.assertEqual("https://eozilla.pippo.api", config.api_url)
-            self.assertEqual(AuthType.NONE, config.auth_type)
+            self.assertEqual("none", config.auth_type)
 
     def test_create_from_env_with_auth(self):
         os.environ.update(
@@ -69,7 +69,7 @@ class ClientConfigTest(TestCase):
         config = ClientConfig()
         self.assertIsInstance(config, ClientConfig)
         self.assertEqual("https://eozilla.pippo.api", config.api_url)
-        self.assertEqual(AuthType.LOGIN, config.auth_type)
+        self.assertEqual("login", config.auth_type)
         self.assertEqual("https://eozilla.pippo.api/auth/login", config.auth_url)
         self.assertEqual("pippo", config.username)
         self.assertEqual("poppi", config.password)

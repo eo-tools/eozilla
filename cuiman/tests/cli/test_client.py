@@ -74,7 +74,9 @@ def new_cli_context(traceback: bool = False):
     return typer.Context(
         cli,
         obj={
-            "get_client": lambda config_path: Client(config_path=config_path),
+            "get_client": lambda config_path: Client(
+                api_url="http://localhost:8083", config_path=config_path
+            ),
             "traceback": traceback,
         },
         # the following have no special meaning for the tests,
