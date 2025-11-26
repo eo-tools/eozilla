@@ -5,7 +5,7 @@
 import typer
 from rich import print
 
-from cuiman.api.auth import login_and_get_token, AuthType
+from cuiman.api.auth import AuthType, login_and_get_token
 
 from .config import ClientConfig
 
@@ -16,6 +16,8 @@ def save_config(config: ClientConfig):
 
 
 def register_login(t: typer.Typer, auth_strategy: AuthType):
+    # TODO: this is still experimental
+
     @t.command()
     def login(ctx: typer.Context):
         """
@@ -29,7 +31,7 @@ def register_login(t: typer.Typer, auth_strategy: AuthType):
             raise typer.Exit(1)
 
         try:
-            token = login_and_get_token(config.auth_url, config.auth)
+            login_and_get_token(config)
             save_config(config)
             print("[green]Login successful! Token stored.[/green]")
         except Exception as e:

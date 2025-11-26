@@ -1,6 +1,6 @@
 import base64
 
-from cuiman.api.auth import get_auth_headers, AuthType, AuthConfig
+from cuiman.api.auth import AuthConfig, AuthType, get_auth_headers
 
 
 def test_auth_headers_none():

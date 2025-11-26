@@ -26,6 +26,7 @@ async def login_and_get_token_async(config: AuthConfig) -> Optional[str]:
     data = {"username": config.username, "password": config.password}
 
     async with httpx.AsyncClient() as client:
+        assert config.auth_url is not None
         r = await client.post(config.auth_url, data=data)
         r.raise_for_status()
 

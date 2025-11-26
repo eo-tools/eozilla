@@ -1,7 +1,8 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from cuiman.api.auth import login_and_get_token, AuthConfig, AuthType
+
+from cuiman.api.auth import AuthConfig, AuthType, login_and_get_token
 
 
 def test_login_and_get_token_json_response():

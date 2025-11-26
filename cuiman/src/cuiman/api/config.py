@@ -10,7 +10,7 @@ import yaml
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .auth import AuthConfig
-from .defaults import DEFAULT_CONFIG_PATH, DEFAULT_API_URL
+from .defaults import DEFAULT_API_URL, DEFAULT_CONFIG_PATH
 
 
 class ClientConfig(AuthConfig, BaseSettings):

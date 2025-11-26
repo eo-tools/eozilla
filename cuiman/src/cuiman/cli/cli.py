@@ -204,12 +204,13 @@ def new_cli(
         """Configure the client tool."""
         from .config import configure_client
 
-        # auth_type_ = AuthType.from_name(auth_type)
+        if auth_type is not None and auth_type not in AUTH_TYPE_NAMES:
+            raise ValueError(f"Invalid authentication type: {auth_type}")
 
         config_path = configure_client(
             config_path=config_file,
             api_url=api_url,
-            auth_type=auth_type,
+            auth_type=auth_type,  # type: ignore[arg-type]
             username=username,
             password=password,
             token=token,

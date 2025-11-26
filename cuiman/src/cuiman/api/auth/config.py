@@ -2,12 +2,9 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Optional, Literal, TypeAlias, get_args
+from typing import Literal, Optional, TypeAlias, get_args
 
 from pydantic import BaseModel
-
-from enum import Enum
-
 
 AuthType: TypeAlias = Literal[
     # No authentication required
