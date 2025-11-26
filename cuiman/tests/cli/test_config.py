@@ -64,7 +64,13 @@ class ReadConfigTest(unittest.TestCase):
 
     @patch("typer.prompt")
     def test_configure_client_default(self, mock_prompt):
-        mock_prompt.side_effect = ["http://localhorst:9999", "login", "bibo", "1234"]
+        mock_prompt.side_effect = [
+            "http://localhorst:9999",
+            "login",
+            "http://localhorst:9999/signon",
+            "bibo",
+            "1234",
+        ]
         actual_config_path = configure_client()
         self.assertEqual(DEFAULT_CONFIG_PATH, actual_config_path)
         self.assertTrue(DEFAULT_CONFIG_PATH.exists())
@@ -73,6 +79,7 @@ class ReadConfigTest(unittest.TestCase):
             ClientConfig(
                 api_url="http://localhorst:9999",
                 auth_type="login",
+                auth_url="http://localhorst:9999/signon",
                 username="bibo",
                 password="1234",
             ),
@@ -82,7 +89,7 @@ class ReadConfigTest(unittest.TestCase):
     @patch("typer.prompt")
     def test_configure_client_custom(self, mock_prompt):
         # Simulate sequential responses to typer.prompt
-        mock_prompt.side_effect = ["http://localhorst:9090", "none"]
+        mock_prompt.side_effect = ["http://localhost:9090", "none"]
         custom_config_path = Path("test.cfg")
         try:
             actual_config_path = configure_client(config_path=custom_config_path)
@@ -90,9 +97,7 @@ class ReadConfigTest(unittest.TestCase):
             self.assertTrue(custom_config_path.exists())
             config = get_config(custom_config_path)
             self.assertEqual(
-                ClientConfig(
-                    api_url="http://localhorst:9090",
-                ),
+                ClientConfig(api_url="http://localhost:9090", auth_type="none"),
                 config,
             )
         finally:
@@ -105,12 +110,14 @@ class ReadConfigTest(unittest.TestCase):
         with set_env_cm(
             EOZILLA_API_URL="http://localhorst:2357",
             EOZILLA_AUTH_TYPE="login",
+            EOZILLA_AUTH_URL="http://localhorst:2357/auth/login",
             EOZILLA_USERNAME="bibo",
             EOZILLA_PASSWORD="9823hc",
         ):
             mock_prompt.side_effect = [
                 "http://localhorst:2357",
                 "login",
+                "http://localhorst:2357/auth/login",
                 "bibo",
                 "******",
             ]

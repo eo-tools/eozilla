@@ -175,6 +175,13 @@ def new_cli(
                 f"({'|'.join(AUTH_TYPE_NAMES)}).",
             ),
         ] = None,
+        auth_url: Annotated[
+            str | None,
+            typer.Option(
+                "--auth-url",
+                help="The URL of the authorisation service for the API ",
+            ),
+        ] = None,
         username: Annotated[
             str | None,
             typer.Option(
@@ -211,6 +218,7 @@ def new_cli(
             config_path=config_file,
             api_url=api_url,
             auth_type=auth_type,  # type: ignore[arg-type]
+            auth_url=auth_url,
             username=username,
             password=password,
             token=token,

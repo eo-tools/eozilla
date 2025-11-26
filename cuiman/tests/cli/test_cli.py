@@ -42,6 +42,8 @@ class CliTest(TestCase):
             "http://localhorst:2357",
             "--auth-type",
             "login",
+            "--auth-url",
+            "http://localhorst:2357/auth/login",
             "--username",
             "bibo",
             "--password",

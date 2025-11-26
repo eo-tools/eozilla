@@ -34,6 +34,7 @@ def configure_client(
     config_path: Path | str | None = None,
     api_url: str | None = None,
     auth_type: AuthType | None = None,
+    auth_url: str | None = None,
     username: str | None = None,
     password: str | None = None,
     token: str | None = None,
@@ -50,11 +51,25 @@ def configure_client(
             f"API authorisation type ({'|'.join(AUTH_TYPE_NAMES)})",
             default=(config and config.auth_type) or DEFAULT_AUTH_TYPE,
         )
+
+    # TODO: refactor me, extract configure_auth()
     auth_config: dict[str, Any] = {}
+    if auth_type is not None:
+        auth_config.update(auth_type=auth_type)
+
+    if auth_type == "login":
+        if auth_url is None:
+            auth_url = typer.prompt(
+                "Authentication URL",
+                default=config and config.auth_url,
+            )
+        auth_config.update(auth_url=auth_url)
+
     if auth_type in ("basic", "login"):
         auth_config.update(auth_type=auth_type)
         # ----------------------
         # username
+        # ----------------------
         if username is None:
             username = typer.prompt(
                 "Username",
@@ -66,6 +81,7 @@ def configure_client(
             auth_config.update(username=username)
         # ----------------------
         # password
+        # ----------------------
         if password is None:
             prev_password = config and config.password
             _password = typer.prompt(
@@ -80,10 +96,14 @@ def configure_client(
                 password = _password
             auth_config.update(password=password)
     if auth_type == "token":
-        token = typer.prompt(
-            "Access token",
-            default=config and config.token,
-        )
-        auth_config.update(token=token)
+        # ----------------------
+        # token
+        # ----------------------
+        if token is None:
+            token = typer.prompt(
+                "Access token",
+                default=config and config.token,
+            )
+            auth_config.update(token=token)
     # TODO: ask for bearer or custom token header
     return ClientConfig(api_url=api_url, **auth_config).write(config_path=config_path)

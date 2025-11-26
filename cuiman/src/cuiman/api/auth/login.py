@@ -17,14 +17,17 @@ def login_and_get_token(config: AuthConfig) -> str | None:
     Returns:
         An access token either as JSON or plain text.
     """
+    if not config.auth_url:
+        raise ValueError("Authentication URL must be set.")
 
     if not config.username or not config.password:
-        raise ValueError("Username and password must be set for LOGIN auth strategy.")
+        raise ValueError(
+            "Username and password must be set for authentication type 'login'."
+        )
 
     data = {"username": config.username, "password": config.password}
 
     with httpx.Client() as client:
-        assert config.auth_url is not None
         r = client.post(config.auth_url, data=data)
         r.raise_for_status()
 
