@@ -4,6 +4,7 @@
 
 from typing import Literal, Optional, TypeAlias, get_args
 
+from pydantic import HttpUrl, field_validator
 from pydantic_settings import BaseSettings
 
 AuthType: TypeAlias = Literal[
@@ -60,6 +61,11 @@ class AuthConfig(BaseSettings):
         Return the HTTP authentication headers for this auth configuration.
         """
         return get_auth_headers(self)
+
+    # noinspection PyMethodParameters
+    @field_validator("auth_url")
+    def validate_auth_url(cls, v: str | None) -> str | None:
+        return None if v is None or v == "" else str(HttpUrl(v))
 
 
 def get_auth_headers(config: AuthConfig) -> dict[str, str]:

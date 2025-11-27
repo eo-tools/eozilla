@@ -69,6 +69,10 @@ def configure_client(
     return config.write(config_path=config_path)
 
 
+# TODO: Refactor _configure_auth() so that we have exactly one code path
+#  for each auth_type. Make reusable prompt_str(), prompt_bool() helpers.
+
+
 def _configure_auth(
     auth_type: str, cli_params: dict[str, Any], prev_config: dict[str, Any]
 ) -> dict[str, Any]:

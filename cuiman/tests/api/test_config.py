@@ -39,7 +39,7 @@ class ClientConfigTest(TestCase):
             config_path = Path(tmp_dir_name) / "config"
             config = ClientConfig.create(config_path=config_path)
             self.assertIsInstance(config, ClientConfig)
-            self.assertEqual("http://127.0.0.1:8008", config.api_url)
+            self.assertEqual("http://127.0.0.1:8008/", config.api_url)
             self.assertEqual(None, config.auth_type)
 
     def test_create_from_env(self):
@@ -53,13 +53,13 @@ class ClientConfigTest(TestCase):
             config_path = Path(tmp_dir_name) / "config"
             config = ClientConfig.create(config_path=config_path)
             self.assertIsInstance(config, ClientConfig)
-            self.assertEqual("https://eozilla.pippo.api", config.api_url)
+            self.assertEqual("https://eozilla.pippo.api/", config.api_url)
             self.assertEqual("none", config.auth_type)
 
     def test_create_from_env_with_auth(self):
         os.environ.update(
             dict(
-                EOZILLA_API_URL="https://eozilla.pippo.api",
+                EOZILLA_API_URL="https://eozilla.pippo.api/processes",
                 EOZILLA_AUTH_TYPE="login",
                 EOZILLA_AUTH_URL="https://eozilla.pippo.api/auth/login",
                 EOZILLA_USERNAME="pippo",
@@ -69,7 +69,7 @@ class ClientConfigTest(TestCase):
         )
         config = ClientConfig()
         self.assertIsInstance(config, ClientConfig)
-        self.assertEqual("https://eozilla.pippo.api", config.api_url)
+        self.assertEqual("https://eozilla.pippo.api/processes", config.api_url)
         self.assertEqual("login", config.auth_type)
         self.assertEqual("https://eozilla.pippo.api/auth/login", config.auth_url)
         self.assertEqual("pippo", config.username)
@@ -84,7 +84,7 @@ class ClientConfigTest(TestCase):
             config_path = Path(tmp_dir_name) / "config"
             config.write(config_path=config_path)
             config = ClientConfig.create(config_path=config_path)
-            self.assertEqual("https://eozilla.pippo.api", config.api_url)
+            self.assertEqual("https://eozilla.pippo.api/", config.api_url)
             self.assertEqual(None, config.auth_type)
 
     def test_create_from_env_and_file(self):
@@ -99,7 +99,7 @@ class ClientConfigTest(TestCase):
             config_path = Path(tmp_dir_name) / "config"
             config.write(config_path=config_path)
             config = ClientConfig.create(config_path=config_path)
-            self.assertEqual("https://eozilla.test.api", config.api_url)
+            self.assertEqual("https://eozilla.test.api/", config.api_url)
             self.assertEqual(None, config.auth_type)
 
     def test_normalize_config_path(self):

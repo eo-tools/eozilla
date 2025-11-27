@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, ClassVar, Optional
 
 import yaml
+from pydantic import HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .auth import AuthConfig
@@ -24,14 +25,6 @@ class ClientConfig(AuthConfig, BaseSettings):
         env_prefix="EOZILLA_",
         extra="forbid",
     )
-
-    # TODO: remove, once we know we don't need it
-    # config_class: ClassVar[type["ClientConfig"]]
-    # """
-    # Default class.
-    # Used to create instances of this class.
-    # Designed to be overridden by library clients.
-    # """
 
     default_config: ClassVar["ClientConfig"]
     """
@@ -129,6 +122,11 @@ class ClientConfig(AuthConfig, BaseSettings):
             exclude_defaults=True,
             exclude_unset=True,
         )
+
+    # noinspection PyMethodParameters
+    @field_validator("api_url")
+    def validate_api_url(cls, v: str | None) -> str | None:
+        return None if v is None or v == "" else str(HttpUrl(v))
 
 
 ClientConfig.default_config = ClientConfig(api_url=DEFAULT_API_URL)
