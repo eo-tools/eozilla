@@ -2,11 +2,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cuiman.api.auth import AuthConfig, AuthType, login_and_get_token_async
+from cuiman.api.auth import AuthConfig, AuthType, login_async
 
 
 @pytest.mark.asyncio
-async def test_login_and_get_token_async_json():
+async def test_login_async_json():
     cfg = AuthConfig(
         auth_type="login",
         auth_url="https://acme.com/api/auth/login",
@@ -24,14 +24,13 @@ async def test_login_and_get_token_async_json():
         return mock_response
 
     with patch("httpx.AsyncClient.post", new=AsyncMock(side_effect=fake_post)):
-        token = await login_and_get_token_async(cfg)
+        token = await login_async(cfg)
 
     assert token == "abc123"
-    assert cfg.token == "abc123"
 
 
 @pytest.mark.asyncio
-async def test_login_and_get_token_async_plaintext():
+async def test_login_async_plaintext():
     cfg = AuthConfig(
         auth_type="login",
         auth_url="https://acme.com/api/auth/login",
@@ -49,14 +48,13 @@ async def test_login_and_get_token_async_plaintext():
         return mock_response
 
     with patch("httpx.AsyncClient.post", new=AsyncMock(side_effect=fake_post)):
-        token = await login_and_get_token_async(cfg)
+        token = await login_async(cfg)
 
     assert token == "plaintext-token"
-    assert cfg.token == "plaintext-token"
 
 
 @pytest.mark.asyncio
-async def test_login_and_get_token_async_missing_credentials():
+async def test_login_async_missing_credentials():
     cfg = AuthConfig(
         auth_type="login",
         auth_url="https://acme.com/api/auth/login",
@@ -65,4 +63,4 @@ async def test_login_and_get_token_async_missing_credentials():
     )
 
     with pytest.raises(ValueError):
-        await login_and_get_token_async(cfg)
+        await login_async(cfg)

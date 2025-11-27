@@ -1,59 +1,59 @@
 import base64
 
-from cuiman.api.auth import AuthConfig, AuthType, get_auth_headers
+from cuiman.api.auth import AuthConfig
 
 
 def test_auth_headers_none():
-    cfg = AuthConfig(auth_type=None)
-    assert get_auth_headers(cfg) == {}
-    cfg = AuthConfig(auth_type="none")
-    assert get_auth_headers(cfg) == {}
+    config = AuthConfig(auth_type=None)
+    assert config.auth_headers == {}
+    config = AuthConfig(auth_type="none")
+    assert config.auth_headers == {}
 
 
 def test_auth_headers_token_custom_header():
-    cfg = AuthConfig(
+    config = AuthConfig(
         auth_type="token",
         token="abc123",
         token_header="X-Auth-Token",
         use_bearer=False,
     )
-    assert get_auth_headers(cfg) == {"X-Auth-Token": "abc123"}
+    assert config.auth_headers == {"X-Auth-Token": "abc123"}
 
 
 def test_auth_headers_token_bearer():
-    cfg = AuthConfig(
+    config = AuthConfig(
         auth_type="token",
         token="abc123",
         use_bearer=True,
     )
-    assert get_auth_headers(cfg) == {"Authorization": "Bearer abc123"}
+    assert config.auth_headers == {"Authorization": "Bearer abc123"}
 
 
 def test_auth_headers_login_strategy():
-    cfg = AuthConfig(
+    config = AuthConfig(
         auth_type="login",
         token="xyz",
         token_header="X-Token",
     )
-    assert get_auth_headers(cfg) == {"X-Token": "xyz"}
+    assert config.auth_headers == {"X-Token": "xyz"}
 
 
 def test_auth_headers_api_key():
-    cfg = AuthConfig(
+    config = AuthConfig(
         auth_type="api-key",
         api_key="mykey",
         api_key_header="X-API-Key",
     )
-    assert get_auth_headers(cfg) == {"X-API-Key": "mykey"}
+    assert config.auth_headers == {"X-API-Key": "mykey"}
 
 
 def test_auth_headers_basic_auth():
-    cfg = AuthConfig(
+    config = AuthConfig(
         auth_type="basic",
         username="user",
         password="pass",
     )
-    headers = get_auth_headers(cfg)
+    headers = config.auth_headers
     assert "Authorization" in headers
 
     expected = base64.b64encode(b"user:pass").decode()

@@ -70,7 +70,8 @@ class {{ uc_async }}Client({{ uc_async }}ClientMixin):
             raise ValueError("Required setting 'api_url' not configured")
         self._transport = (
             HttpxTransport(
-                api_url=self._config.api_url, 
+                api_url=self._config.api_url,
+                headers=self._config.auth_headers,
                 debug=_debug,
             )
             if _transport is None

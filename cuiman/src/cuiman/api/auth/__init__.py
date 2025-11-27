@@ -4,13 +4,13 @@
 
 from cuiman.api.auth.config import AuthConfig, AuthType
 from cuiman.api.auth.headers import get_auth_headers
-from cuiman.api.auth.login import login_and_get_token
-from cuiman.api.auth.login_async import login_and_get_token_async
+from cuiman.api.auth.login import login
+from cuiman.api.auth.login_async import login_async
 
 __all__ = [
     "AuthConfig",
     "AuthType",
     "get_auth_headers",
-    "login_and_get_token",
-    "login_and_get_token_async",
+    "login",
+    "login_async",
 ]

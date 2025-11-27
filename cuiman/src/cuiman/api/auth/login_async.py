@@ -2,42 +2,27 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from typing import Any
+
 import httpx
 
 from .config import AuthConfig
+from .login import prepare_login, process_login_response
 
 
-async def login_and_get_token_async(config: AuthConfig) -> str:
+async def login_async(auth_config: AuthConfig) -> Any:
     """
-    Performs login (username+password → token) and updates config.token in-place.
+    Performs an asynchronous login (username+password → token)
+    and returns a token.
 
     Args:
-        config: authentication configuration.
+        auth_config: authentication configuration.
 
     Returns:
         An access token either as JSON or plain text.
     """
-    if not config.auth_url:
-        raise ValueError("Authentication URL must be set.")
-    if not config.username or not config.password:
-        raise ValueError("Username and password must be set for LOGIN auth strategy.")
-
-    data = {"username": config.username, "password": config.password}
-
+    data = prepare_login(auth_config)
     async with httpx.AsyncClient() as client:
-        assert config.auth_url is not None
-        r = await client.post(config.auth_url, data=data)
-        r.raise_for_status()
-
-        # JSON or plain text token
-        # noinspection PyBroadException
-        try:
-            token = r.json().get("token")
-        except Exception:
-            token = r.text.strip()
-
-        if not token:
-            raise RuntimeError("Login succeeded but no token returned.")
-
-        config.token = token
-        return token
+        assert auth_config.auth_url is not None
+        response = await client.post(auth_config.auth_url, data=data)
+        return process_login_response(response)

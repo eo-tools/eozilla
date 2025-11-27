@@ -4,8 +4,10 @@
 
 from pathlib import Path
 from unittest import TestCase
+from unittest.mock import patch
 
 import typer.testing
+import yaml
 
 from cuiman import Client, ClientConfig, __version__
 from cuiman.cli.cli import cli, new_cli
@@ -32,7 +34,8 @@ class CliTest(TestCase):
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual(__version__ + "\n", result.output)
 
-    def test_configure(self):
+    @patch("cuiman.cli.config.login", return_value="dummy-token")
+    def test_configure(self, mock_login):
         config_path = Path("config.cfg")
         result = invoke_cli(
             "configure",
@@ -49,8 +52,23 @@ class CliTest(TestCase):
             "--password",
             "1234",
         )
+        mock_login.assert_called_once()
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertTrue(config_path.exists())
+        with open(config_path) as f:
+            config = yaml.safe_load(f.read())
+            self.assertEqual(
+                {
+                    "auth_url": "http://localhorst:2357/auth/login",
+                    "username": "bibo",
+                    "password": "1234",
+                    "token": "dummy-token",
+                    "token_header": "X-Auth-Token",
+                    "use_bearer": False,
+                    "api_key_header": "X-API-Key",
+                },
+                config,
+            )
         config_path.unlink()
 
     def test_get_processes(self):

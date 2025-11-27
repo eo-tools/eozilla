@@ -9,9 +9,7 @@ from typing import Any
 import click
 import typer
 
-from cuiman.api.auth import login_and_get_token
-
-# from cuiman.api.auth import AuthType
+from cuiman.api.auth import login
 from cuiman.api.auth.config import AUTH_TYPE_NAMES, AuthConfig
 from cuiman.api.config import ClientConfig
 from cuiman.api.defaults import DEFAULT_API_URL, DEFAULT_AUTH_TYPE
@@ -39,40 +37,41 @@ def configure_client(
     config_path: Path | str | None = None,
     **cli_params: str,
 ) -> Path:
-    prev_config = ClientConfig.create(config_path=config_path).to_dict()
-    curr_config: dict[str, str] = {}
+    prev_params = ClientConfig.create(config_path=config_path).to_dict()
+    curr_params: dict[str, str] = {}
 
     api_url = cli_params.get("api_url")
     if not api_url:
         # TODO: add URL validator
         api_url = typer.prompt(
             "Process API URL",
-            default=prev_config.get("api_url") or DEFAULT_API_URL,
+            default=prev_params.get("api_url") or DEFAULT_API_URL,
         )
-        curr_config.update(api_url=api_url)
+        curr_params.update(api_url=api_url)
 
     auth_type = cli_params.get("auth_type")
     if auth_type is None:
         # TODO: add AuthType validator
         auth_type = typer.prompt(
             f"API authorisation type ({'|'.join(AUTH_TYPE_NAMES)})",
-            default=prev_config.get("auth_type") or DEFAULT_AUTH_TYPE,
+            default=prev_params.get("auth_type") or DEFAULT_AUTH_TYPE,
         )
-        curr_config.update(auth_type=auth_type)
+        curr_params.update(auth_type=auth_type)
 
     assert bool(api_url)
     assert bool(auth_type)
 
     if auth_type != "none":
-        curr_config.update(**_configure_auth(auth_type, cli_params, prev_config))
+        auth_params = _configure_auth(auth_type, cli_params, prev_params)
+        curr_params.update(**auth_params)
 
-    return ClientConfig(**curr_config).write(config_path=config_path)
+    return ClientConfig(**curr_params).write(config_path=config_path)
 
 
 def _configure_auth(
     auth_type: str, cli_params: dict[str, Any], prev_config: dict[str, Any]
 ) -> dict[str, Any]:
-    auth_config: dict[str, Any] = {}
+    auth_params: dict[str, Any] = {}
 
     auth_url: str | None = None
     if auth_type == "login":
@@ -83,11 +82,9 @@ def _configure_auth(
                 "Authentication URL",
                 default=prev_config.get("auth_url"),
             )
-        auth_config.update(auth_url=auth_url)
+    auth_params.update(auth_url=auth_url)
 
     if auth_type in ("basic", "login"):
-        auth_config.update(auth_type=auth_type)
-
         # TODO: add username validator
         username = cli_params.get("username")
         if username is None:
@@ -98,7 +95,7 @@ def _configure_auth(
                     or os.environ.get("USER", os.environ.get("USERNAME"))
                 ),
             )
-            auth_config.update(username=username)
+        auth_params.update(username=username)
 
         password = cli_params.get("password")
         if password is None:
@@ -113,7 +110,7 @@ def _configure_auth(
                 password = prev_password
             else:
                 password = _password
-            auth_config.update(password=password)
+        auth_params.update(password=password)
 
     if auth_type == "token":
         # TODO: add token validator
@@ -123,7 +120,7 @@ def _configure_auth(
                 "Access token",
                 default=prev_config.get("token"),
             )
-            auth_config.update(token=token)
+        auth_params.update(token=token)
 
     if auth_type in ("login", "token"):
         # TODO: ask for bearer or custom token header
@@ -131,8 +128,8 @@ def _configure_auth(
 
     if auth_type == "login":
         assert bool(auth_url)
-        auth_cfg_obj = AuthConfig(**auth_config)
-        token = login_and_get_token(auth_cfg_obj)
-        auth_config.update(token=token)
+        auth_config = AuthConfig(**auth_params)
+        token = login(auth_config)
+        auth_params.update(token=token)
 
-    return auth_config
+    return auth_params

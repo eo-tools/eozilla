@@ -5,7 +5,7 @@
 import os
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import click
 import pytest
@@ -62,8 +62,11 @@ class ReadConfigTest(unittest.TestCase):
         ):
             get_config(None)
 
+    @patch("cuiman.cli.config.login", return_value="dummy-token")
     @patch("typer.prompt")
-    def test_configure_client_default(self, mock_prompt):
+    def test_configure_client_default(
+        self, mock_prompt: MagicMock, mock_login: MagicMock
+    ):
         mock_prompt.side_effect = [
             "http://localhorst:9999",
             "login",
@@ -72,6 +75,8 @@ class ReadConfigTest(unittest.TestCase):
             "1234",
         ]
         actual_config_path = configure_client()
+        mock_login.assert_called_once()
+        self.assertEqual(5, mock_prompt.call_count)
         self.assertEqual(DEFAULT_CONFIG_PATH, actual_config_path)
         self.assertTrue(DEFAULT_CONFIG_PATH.exists())
         config = get_config(None)
@@ -82,17 +87,19 @@ class ReadConfigTest(unittest.TestCase):
                 auth_url="http://localhorst:9999/signon",
                 username="bibo",
                 password="1234",
+                token="dummy-token",
             ),
             config,
         )
 
     @patch("typer.prompt")
-    def test_configure_client_custom(self, mock_prompt):
+    def test_configure_client_custom(self, mock_prompt: MagicMock):
         # Simulate sequential responses to typer.prompt
         mock_prompt.side_effect = ["http://localhost:9090", "none"]
         custom_config_path = Path("test.cfg")
         try:
             actual_config_path = configure_client(config_path=custom_config_path)
+            self.assertEqual(2, mock_prompt.call_count)
             self.assertEqual(custom_config_path, actual_config_path)
             self.assertTrue(custom_config_path.exists())
             config = get_config(custom_config_path)
@@ -104,8 +111,11 @@ class ReadConfigTest(unittest.TestCase):
             if custom_config_path.exists():
                 os.remove(custom_config_path)
 
+    @patch("cuiman.cli.config.login", return_value="dummy-token")
     @patch("typer.prompt")
-    def test_configure_client_use_defaults(self, mock_prompt):
+    def test_configure_client_use_defaults(
+        self, mock_prompt: MagicMock, mock_login: MagicMock
+    ):
         # Simulate sequential responses to typer.prompt
         with set_env_cm(
             EOZILLA_API_URL="http://localhorst:2357",
@@ -122,6 +132,8 @@ class ReadConfigTest(unittest.TestCase):
                 "******",
             ]
             custom_config_path = Path("test.cfg")
+            mock_prompt.assert_not_called()
+            mock_login.assert_not_called()
             try:
                 actual_config_path = configure_client(config_path=custom_config_path)
                 self.assertEqual(custom_config_path, actual_config_path)
@@ -133,6 +145,7 @@ class ReadConfigTest(unittest.TestCase):
                         api_url="http://localhorst:2357",
                         username="bibo",
                         password="9823hc",
+                        token="dummy-token",
                     ),
                     config,
                 )

@@ -410,11 +410,6 @@ def new_cli(
             job_results = client.get_job_results(job_id)
         output(get_renderer(output_format).render_job_results(job_results))
 
-    if auth_strategy is not None:
-        from .auth import register_login
-
-        register_login(t, auth_strategy)
-
     return t
 
 

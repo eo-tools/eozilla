@@ -2,10 +2,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cuiman.api.auth import AuthConfig, AuthType, login_and_get_token
+from cuiman.api.auth import AuthConfig, AuthType, login
 
 
-def test_login_and_get_token_json_response():
+def test_login_json_response():
     cfg = AuthConfig(
         auth_type="login",
         auth_url="https://acme.com/api/auth/login",
@@ -18,13 +18,12 @@ def test_login_and_get_token_json_response():
     mock_response.raise_for_status.return_value = None
 
     with patch("httpx.Client.post", return_value=mock_response):
-        token = login_and_get_token(cfg)
+        token = login(cfg)
 
     assert token == "abc123"
-    assert cfg.token == "abc123"
 
 
-def test_login_and_get_token_plaintext_response():
+def test_login_plaintext_response():
     cfg = AuthConfig(
         auth_type="login",
         auth_url="https://acme.com/api/auth/login",
@@ -38,13 +37,12 @@ def test_login_and_get_token_plaintext_response():
     mock_response.raise_for_status.return_value = None
 
     with patch("httpx.Client.post", return_value=mock_response):
-        token = login_and_get_token(cfg)
+        token = login(cfg)
 
     assert token == "plaintext-token"
-    assert cfg.token == "plaintext-token"
 
 
-def test_login_and_get_token_missing_user_pass():
+def test_login_missing_user_pass():
     cfg = AuthConfig(
         auth_type="login",
         auth_url="https://acme.com/api/auth/login",
@@ -53,4 +51,4 @@ def test_login_and_get_token_missing_user_pass():
     )
 
     with pytest.raises(ValueError):
-        login_and_get_token(cfg)
+        login(cfg)
