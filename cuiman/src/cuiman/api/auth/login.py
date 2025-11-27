@@ -7,7 +7,7 @@ import httpx
 from .config import AuthConfig
 
 
-def login_and_get_token(config: AuthConfig) -> str | None:
+def login_and_get_token(config: AuthConfig) -> str:
     """
     Performs login (username+password → token) and updates config.token in-place.
 

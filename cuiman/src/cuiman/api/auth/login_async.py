@@ -2,14 +2,12 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Optional
-
 import httpx
 
 from .config import AuthConfig
 
 
-async def login_and_get_token_async(config: AuthConfig) -> Optional[str]:
+async def login_and_get_token_async(config: AuthConfig) -> str:
     """
     Performs login (username+password → token) and updates config.token in-place.
 

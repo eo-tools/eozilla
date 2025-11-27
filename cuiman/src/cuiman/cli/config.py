@@ -9,8 +9,10 @@ from typing import Any
 import click
 import typer
 
-from cuiman.api.auth import AuthType
-from cuiman.api.auth.config import AUTH_TYPE_NAMES
+from cuiman.api.auth import login_and_get_token
+
+# from cuiman.api.auth import AuthType
+from cuiman.api.auth.config import AUTH_TYPE_NAMES, AuthConfig
 from cuiman.api.config import ClientConfig
 from cuiman.api.defaults import DEFAULT_API_URL, DEFAULT_AUTH_TYPE
 
@@ -30,80 +32,107 @@ def get_config(config_path: Path | str | None) -> ClientConfig:
     return ClientConfig.create(config=file_config)
 
 
+_HIDDEN_INPUT = 6 * "*"
+
+
 def configure_client(
     config_path: Path | str | None = None,
-    api_url: str | None = None,
-    auth_type: AuthType | None = None,
-    auth_url: str | None = None,
-    username: str | None = None,
-    password: str | None = None,
-    token: str | None = None,
+    **cli_params: str,
 ) -> Path:
-    _hidden_input = 6 * "*"
-    config = ClientConfig.create(config_path=config_path)
+    prev_config = ClientConfig.create(config_path=config_path).to_dict()
+    curr_config: dict[str, str] = {}
+
+    api_url = cli_params.get("api_url")
     if not api_url:
+        # TODO: add URL validator
         api_url = typer.prompt(
             "Process API URL",
-            default=(config and config.api_url) or DEFAULT_API_URL,
+            default=prev_config.get("api_url") or DEFAULT_API_URL,
         )
+        curr_config.update(api_url=api_url)
+
+    auth_type = cli_params.get("auth_type")
     if auth_type is None:
+        # TODO: add AuthType validator
         auth_type = typer.prompt(
             f"API authorisation type ({'|'.join(AUTH_TYPE_NAMES)})",
-            default=(config and config.auth_type) or DEFAULT_AUTH_TYPE,
+            default=prev_config.get("auth_type") or DEFAULT_AUTH_TYPE,
         )
+        curr_config.update(auth_type=auth_type)
 
-    # TODO: refactor me, extract configure_auth()
+    assert bool(api_url)
+    assert bool(auth_type)
+
+    if auth_type != "none":
+        curr_config.update(**_configure_auth(auth_type, cli_params, prev_config))
+
+    return ClientConfig(**curr_config).write(config_path=config_path)
+
+
+def _configure_auth(
+    auth_type: str, cli_params: dict[str, Any], prev_config: dict[str, Any]
+) -> dict[str, Any]:
     auth_config: dict[str, Any] = {}
-    if auth_type is not None:
-        auth_config.update(auth_type=auth_type)
 
+    auth_url: str | None = None
     if auth_type == "login":
+        auth_url = cli_params.get("auth_url")
         if auth_url is None:
+            # TODO: add URL validator
             auth_url = typer.prompt(
                 "Authentication URL",
-                default=config and config.auth_url,
+                default=prev_config.get("auth_url"),
             )
         auth_config.update(auth_url=auth_url)
 
     if auth_type in ("basic", "login"):
         auth_config.update(auth_type=auth_type)
-        # ----------------------
-        # username
-        # ----------------------
+
+        # TODO: add username validator
+        username = cli_params.get("username")
         if username is None:
             username = typer.prompt(
                 "Username",
                 default=(
-                    (config and config.username)
+                    prev_config.get("username")
                     or os.environ.get("USER", os.environ.get("USERNAME"))
                 ),
             )
             auth_config.update(username=username)
-        # ----------------------
-        # password
-        # ----------------------
+
+        password = cli_params.get("password")
         if password is None:
-            prev_password = config and config.password
+            prev_password = prev_config.get("password")
             _password = typer.prompt(
                 "Password",
                 type=str,
                 hide_input=True,
-                default=_hidden_input if prev_password else None,
+                default=_HIDDEN_INPUT if prev_password else None,
             )
-            if _password == _hidden_input and prev_password:
+            if _password == _HIDDEN_INPUT and prev_password:
                 password = prev_password
             else:
                 password = _password
             auth_config.update(password=password)
+
     if auth_type == "token":
-        # ----------------------
-        # token
-        # ----------------------
+        # TODO: add token validator
+        token = cli_params.get("token")
         if token is None:
             token = typer.prompt(
                 "Access token",
-                default=config and config.token,
+                default=prev_config.get("token"),
             )
             auth_config.update(token=token)
-    # TODO: ask for bearer or custom token header
-    return ClientConfig(api_url=api_url, **auth_config).write(config_path=config_path)
+
+    if auth_type in ("login", "token"):
+        # TODO: ask for bearer or custom token header
+        pass
+
+    if auth_type == "login":
+        assert bool(auth_url)
+        auth_cfg_obj = AuthConfig(**auth_config)
+        token = login_and_get_token(auth_cfg_obj)
+        auth_config.update(token=token)
+
+    return auth_config
