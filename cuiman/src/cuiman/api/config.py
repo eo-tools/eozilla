@@ -2,15 +2,14 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 import yaml
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .auth import AuthConfig
-from .defaults import DEFAULT_API_URL, DEFAULT_CONFIG_PATH
+from .defaults import DEFAULT_API_URL
 
 
 class ClientConfig(AuthConfig, BaseSettings):
@@ -25,6 +24,28 @@ class ClientConfig(AuthConfig, BaseSettings):
         env_prefix="EOZILLA_",
         extra="forbid",
     )
+
+    # TODO: remove, once we know we don't need it
+    # config_class: ClassVar[type["ClientConfig"]]
+    # """
+    # Default class.
+    # Used to create instances of this class.
+    # Designed to be overridden by library clients.
+    # """
+
+    default_config: ClassVar["ClientConfig"]
+    """
+    Default instance. 
+    Used to create pre-configured instances of this class.
+    Designed to be overridden by library clients.
+    """
+
+    default_path: ClassVar[Path]
+    """
+    Name of the configuration's . 
+    Used for configuration persistence in `~/.<config_name>/`.
+    Designed to be overridden by library clients.
+    """
 
     api_url: Optional[str] = None
 
@@ -42,7 +63,7 @@ class ClientConfig(AuthConfig, BaseSettings):
         **config_kwargs,
     ) -> "ClientConfig":
         # 0. from defaults
-        config_dict = cls.get_default().to_dict()
+        config_dict = cls.default_config.to_dict()
 
         # 1. from file
         file_config = cls.from_file(config_path=config_path)
@@ -60,7 +81,7 @@ class ClientConfig(AuthConfig, BaseSettings):
         # 4. from kwargs
         config_dict.update(config_kwargs)
 
-        return cls(**config_dict)
+        return cls.new_instance(**config_dict)
 
     @classmethod
     def from_file(
@@ -72,17 +93,7 @@ class ClientConfig(AuthConfig, BaseSettings):
         with config_path_.open("rt") as stream:
             # Note, we may switch TOML
             config_dict = yaml.safe_load(stream)
-        return ClientConfig(**config_dict)
-
-    @classmethod
-    def from_env(cls) -> Optional["ClientConfig"]:
-        config_dict: dict[str, Any] = {}
-        for field_name, _field_info in ClientConfig.model_fields.items():
-            env_var_name = "EOZILLA_" + field_name.upper()
-            if env_var_name in os.environ:
-                config_dict[field_name] = os.environ[env_var_name]
-        # noinspection PyArgumentList
-        return ClientConfig(**config_dict) if config_dict else None
+        return cls.new_instance(**config_dict)
 
     def write(self, config_path: Optional[str | Path] = None) -> Path:
         config_path = self.normalize_config_path(config_path)
@@ -98,8 +109,17 @@ class ClientConfig(AuthConfig, BaseSettings):
         return (
             config_path
             if isinstance(config_path, Path)
-            else (Path(config_path) if config_path else DEFAULT_CONFIG_PATH)
+            else (Path(config_path) if config_path else cls.default_path)
         )
+
+    @classmethod
+    def new_instance(
+        cls,
+        **kwargs: Any,
+    ) -> "ClientConfig":
+        config_cls = type(ClientConfig.default_config)
+        assert issubclass(config_cls, ClientConfig)
+        return config_cls(**kwargs)
 
     def to_dict(self):
         return self.model_dump(
@@ -110,24 +130,6 @@ class ClientConfig(AuthConfig, BaseSettings):
             exclude_unset=True,
         )
 
-    @classmethod
-    def get_default(cls) -> "ClientConfig":
-        """Get the configuration default values."""
-        return ClientConfig(**_DEFAULT_CONFIG.to_dict())
 
-    @classmethod
-    def set_default(cls, default_config: "ClientConfig") -> "ClientConfig":
-        """Set the configuration default values.
-
-        Args:
-            default_config: A configuration object providing the defaults.
-        Return:
-            The previous defaults.
-        """
-        global _DEFAULT_CONFIG
-        prev_default_config = _DEFAULT_CONFIG
-        _DEFAULT_CONFIG = ClientConfig(**default_config.to_dict())
-        return prev_default_config
-
-
-_DEFAULT_CONFIG: ClientConfig = ClientConfig(api_url=DEFAULT_API_URL)
+ClientConfig.default_config = ClientConfig(api_url=DEFAULT_API_URL)
+ClientConfig.default_path = Path("~").expanduser() / ".eozilla" / "config"

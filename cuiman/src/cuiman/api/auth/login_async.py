@@ -21,8 +21,7 @@ async def login_async(auth_config: AuthConfig) -> Any:
     Returns:
         An access token either as JSON or plain text.
     """
-    data = prepare_login(auth_config)
+    url, data = prepare_login(auth_config)
     async with httpx.AsyncClient() as client:
-        assert auth_config.auth_url is not None
-        response = await client.post(auth_config.auth_url, data=data)
+        response = await client.post(url, data=data)
         return process_login_response(response)

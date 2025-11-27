@@ -4,7 +4,7 @@
 
 from typing import Literal, Optional, TypeAlias, get_args
 
-from pydantic import BaseModel
+from pydantic_settings import BaseSettings
 
 AuthType: TypeAlias = Literal[
     # No authentication required
@@ -30,7 +30,7 @@ AUTH_TYPE_NAMES: tuple[str, ...] = get_args(AuthType)
 #  when required by auth_type only.
 
 
-class AuthConfig(BaseModel):
+class AuthConfig(BaseSettings):
     """Authentication configuration."""
 
     # Authentication type

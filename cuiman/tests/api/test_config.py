@@ -4,12 +4,13 @@
 
 import os
 import tempfile
+from email.policy import default
 from pathlib import Path
 from unittest import TestCase
 
 from cuiman.api.auth import AuthType
 from cuiman.api.config import ClientConfig
-from cuiman.api.defaults import DEFAULT_CONFIG_PATH
+from cuiman.api.defaults import DEFAULT_API_URL, DEFAULT_CONFIG_PATH
 
 
 class ClientConfigTest(TestCase):
@@ -105,20 +106,10 @@ class ClientConfigTest(TestCase):
         path = Path("i/am/a/path")
         self.assertIs(path, ClientConfig.normalize_config_path(path))
         self.assertEqual(path, ClientConfig.normalize_config_path("i/am/a/path"))
-        self.assertEqual(DEFAULT_CONFIG_PATH, ClientConfig.normalize_config_path(""))
-
-    def test_get_set_get_default(self):
-        d1 = ClientConfig.get_default()
-        self.assertEqual({"api_url": "http://127.0.0.1:8008"}, d1.to_dict())
-        d2 = ClientConfig.set_default(
-            ClientConfig(
-                api_url="http://pippo.service.org",
-            )
-        )
-        self.assertEqual(d1, d2)
         self.assertEqual(
-            dict(
-                api_url="http://pippo.service.org",
-            ),
-            ClientConfig.get_default().to_dict(),
+            ClientConfig.default_path, ClientConfig.normalize_config_path("")
         )
+
+    def test_default_config(self):
+        self.assertIsInstance(ClientConfig.default_config, ClientConfig)
+        self.assertEqual(DEFAULT_API_URL, ClientConfig.default_config.api_url)

@@ -35,7 +35,7 @@ _HIDDEN_INPUT = 6 * "*"
 
 def configure_client(
     config_path: Path | str | None = None,
-    **cli_params: str,
+    **cli_params: str | None,
 ) -> Path:
     prev_params = ClientConfig.create(config_path=config_path).to_dict()
     curr_params: dict[str, str] = {}
@@ -65,7 +65,8 @@ def configure_client(
         auth_params = _configure_auth(auth_type, cli_params, prev_params)
         curr_params.update(**auth_params)
 
-    return ClientConfig(**curr_params).write(config_path=config_path)
+    config = ClientConfig.new_instance(**curr_params)
+    return config.write(config_path=config_path)
 
 
 def _configure_auth(

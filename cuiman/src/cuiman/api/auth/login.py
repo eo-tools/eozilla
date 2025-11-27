@@ -20,20 +20,20 @@ def login(auth_config: AuthConfig) -> Any:
     Returns:
         An access token either as JSON or plain text.
     """
-    data = prepare_login(auth_config)
+    url, data = prepare_login(auth_config)
     with httpx.Client() as client:
-        r = client.post(auth_config.auth_url, data=data)
-        return process_login_response(r)
+        response = client.post(url, data=data)
+        return process_login_response(response)
 
 
-def prepare_login(config: AuthConfig) -> dict[str, str | None]:
+def prepare_login(config: AuthConfig) -> tuple[str, dict[str, str | None]]:
     if not config.auth_url:
         raise ValueError("Authentication URL must be set.")
     if not config.username or not config.password:
         raise ValueError(
             "Username and password must be set for authentication type 'login'."
         )
-    return {"username": config.username, "password": config.password}
+    return config.auth_url, {"username": config.username, "password": config.password}
 
 
 def process_login_response(response: httpx.Response) -> Any:
