@@ -24,7 +24,9 @@ from ..helpers import MockTransport
 class ClientTest(TestCase):
     def setUp(self):
         self.transport = MockTransport()
-        self.client = Client(config=ClientConfig(), _transport=self.transport)
+        self.client = Client(
+            api_url="https://acme.ogc.org/api", _transport=self.transport
+        )
 
     def test_config(self):
         self.assertIsInstance(self.client.config, ClientConfig)

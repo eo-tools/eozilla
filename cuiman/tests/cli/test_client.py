@@ -15,6 +15,10 @@ from cuiman.cli.cli import cli
 from cuiman.cli.client import use_client
 from gavicore.models import ApiError
 
+# TODO: make tests more robust or independent of the an existing
+#  `~/.eozilla/config`. All tests here may fail if cuiman has been
+#  configured before using "cuiman configure".
+
 
 class UseClientTest(TestCase):
     def test_success(self):
@@ -71,10 +75,13 @@ class UseClientTest(TestCase):
 
 
 def new_cli_context(traceback: bool = False):
+    # noinspection PyTypeChecker
     return typer.Context(
         cli,
         obj={
-            "get_client": lambda config_path: Client(config_path=config_path),
+            "get_client": lambda config_path: Client(
+                api_url="http://localhost:8083", config_path=config_path
+            ),
             "traceback": traceback,
         },
         # the following have no special meaning for the tests,

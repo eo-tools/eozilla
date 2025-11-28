@@ -5,14 +5,14 @@
 import os
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import click
 import pytest
 
 from cuiman import ClientConfig
 from cuiman.api.defaults import DEFAULT_CONFIG_PATH
-from cuiman.cli.config import configure_client, get_config
+from cuiman.cli.config import configure_client_with_prompt, get_config
 from gavicore.util.testing import set_env, set_env_cm
 
 DEFAULT_CONFIG_BACKUP_PATH = DEFAULT_CONFIG_PATH.parent / (
@@ -62,64 +62,110 @@ class ReadConfigTest(unittest.TestCase):
         ):
             get_config(None)
 
+    @patch("cuiman.cli.config.login", return_value="dummy-token")
+    @patch("typer.confirm")
     @patch("typer.prompt")
-    def test_configure_client_default(self, mock_prompt):
-        mock_prompt.side_effect = ["bibo", "ip245", "http://localhorst:9999"]
-        actual_config_path = configure_client()
+    def test_configure_client_default(
+        self, mock_prompt: MagicMock, mock_confirm: MagicMock, mock_login: MagicMock
+    ):
+        mock_prompt.side_effect = [
+            "http://localhorst:9999",
+            "login",
+            "http://localhorst:9999/signin",
+            "bibo",
+            "1234",
+            "X-Auth-Token",
+        ]
+        mock_confirm.side_effect = [
+            False,
+        ]
+        actual_config_path = configure_client_with_prompt()
+        mock_login.assert_called_once()
+        mock_confirm.assert_called_once()
+        self.assertEqual(6, mock_prompt.call_count)
         self.assertEqual(DEFAULT_CONFIG_PATH, actual_config_path)
         self.assertTrue(DEFAULT_CONFIG_PATH.exists())
         config = get_config(None)
         self.assertEqual(
             ClientConfig(
-                user_name="bibo",
-                access_token="ip245",
-                server_url="http://localhorst:9999",
+                api_url="http://localhorst:9999",
+                auth_type="login",
+                auth_url="http://localhorst:9999/signin",
+                username="bibo",
+                password="1234",
+                token="dummy-token",
+                use_bearer=False,
+                token_header="X-Auth-Token",
             ),
             config,
         )
 
     @patch("typer.prompt")
-    def test_configure_client_custom(self, mock_prompt):
+    def test_configure_client_custom(self, mock_prompt: MagicMock):
         # Simulate sequential responses to typer.prompt
-        mock_prompt.side_effect = ["bert", "s3cr3t", "http://localhorst:9090"]
+        mock_prompt.side_effect = ["http://localhost:9090", "none"]
         custom_config_path = Path("test.cfg")
         try:
-            actual_config_path = configure_client(config_path=custom_config_path)
+            actual_config_path = configure_client_with_prompt(
+                config_path=custom_config_path
+            )
+            self.assertEqual(2, mock_prompt.call_count)
             self.assertEqual(custom_config_path, actual_config_path)
             self.assertTrue(custom_config_path.exists())
             config = get_config(custom_config_path)
             self.assertEqual(
-                ClientConfig(
-                    user_name="bert",
-                    access_token="s3cr3t",
-                    server_url="http://localhorst:9090",
-                ),
+                ClientConfig(api_url="http://localhost:9090", auth_type="none"),
                 config,
             )
         finally:
             if custom_config_path.exists():
                 os.remove(custom_config_path)
 
+    @patch("cuiman.cli.config.login", return_value="dummy-token")
+    @patch("typer.confirm")
     @patch("typer.prompt")
-    def test_configure_client_use_defaults(self, mock_prompt):
+    def test_configure_client_use_defaults(
+        self, mock_prompt: MagicMock, mock_confirm: MagicMock, mock_login: MagicMock
+    ):
         # Simulate sequential responses to typer.prompt
         with set_env_cm(
-            EOZILLA_USER_NAME="bibo",
-            EOZILLA_ACCESS_TOKEN="9823hc",
-            EOZILLA_SERVER_URL="http://localhorst:2357",
+            EOZILLA_API_URL="http://localhorst:2357",
+            EOZILLA_AUTH_TYPE="login",
+            EOZILLA_AUTH_URL="http://localhorst:2357/auth/login",
+            EOZILLA_USERNAME="bibo",
+            EOZILLA_PASSWORD="9823hc",
         ):
-            mock_prompt.side_effect = ["bibo", "*****", "http://localhorst:2357"]
+            mock_prompt.side_effect = [
+                "http://localhorst:2357",
+                "login",
+                "http://localhorst:2357/auth/login",
+                "bibo",
+                "******",
+                "bibo",
+                "X-Auth-Token",
+            ]
+            mock_confirm.side_effect = [
+                True,
+            ]
             custom_config_path = Path("test.cfg")
+            mock_prompt.assert_not_called()
+            mock_confirm.assert_not_called()
+            mock_login.assert_not_called()
             try:
-                actual_config_path = configure_client(config_path=custom_config_path)
+                actual_config_path = configure_client_with_prompt(
+                    config_path=custom_config_path
+                )
                 self.assertEqual(custom_config_path, actual_config_path)
                 self.assertTrue(custom_config_path.exists())
                 config = get_config(custom_config_path)
                 self.assertEqual(
                     ClientConfig(
-                        user_name="bibo",
-                        access_token="9823hc",
-                        server_url="http://localhorst:2357",
+                        auth_type="login",
+                        api_url="http://localhorst:2357",
+                        username="bibo",
+                        password="9823hc",
+                        token="dummy-token",
+                        use_bearer=True,
                     ),
                     config,
                 )

@@ -25,7 +25,9 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
     # noinspection PyPep8Naming
     async def asyncSetUp(self):
         self.transport = MockTransport()
-        self.client = AsyncClient(_transport=self.transport)
+        self.client = AsyncClient(
+            api_url="https://acme.ogc.org/api", _transport=self.transport
+        )
 
     async def test_config(self):
         self.assertIsInstance(self.client.config, ClientConfig)

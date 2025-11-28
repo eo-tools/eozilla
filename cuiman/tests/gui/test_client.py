@@ -20,7 +20,7 @@ class ClientTest(TestCase):
                     return ProcessList(processes=[], links=[])
                 return None
 
-        client = GuiClient(_transport=_MockTransport())
+        client = GuiClient(api_url="https://api.ok.ko", _transport=_MockTransport())
         processes_form = client.show()
         self.assertIsInstance(processes_form, MainPanel)
 
@@ -31,6 +31,6 @@ class ClientTest(TestCase):
                     return JobList(jobs=[], links=[])
                 return None
 
-        client = GuiClient(_transport=_MockTransport())
+        client = GuiClient(api_url="https://api.ok.ko", _transport=_MockTransport())
         jobs_form = client.show_jobs()
         self.assertIsInstance(jobs_form, JobsPanel)

@@ -17,8 +17,14 @@ from .transport import AsyncTransport, Transport, TransportError
 class HttpxTransport(Transport, AsyncTransport):
     """A concrete web API transport based on the httpx package."""
 
-    def __init__(self, server_url: str, debug: bool = False):
-        self.server_url = server_url
+    def __init__(
+        self,
+        api_url: str,
+        headers: dict[str, str] | None = None,
+        debug: bool = False,
+    ):
+        self.api_url = api_url
+        self.headers = headers
         self.debug = debug
         self.sync_httpx: httpx.Client | None = None
         self.async_httpx: httpx.AsyncClient | None = None
@@ -51,12 +57,18 @@ class HttpxTransport(Transport, AsyncTransport):
     def _get_request_args(
         self, args: TransportArgs
     ) -> tuple[tuple[str, str], dict[str, Any]]:
-        url = args.get_url(self.server_url)
+        url = args.get_url(self.api_url)
         request_json = args.get_json_for_request()
+        extra_kwargs = args.extra_kwargs
+        if self.headers:
+            extra_kwargs = dict(args.extra_kwargs)
+            headers = dict(self.headers)
+            headers.update(extra_kwargs.pop("headers", {}))
+            extra_kwargs["headers"] = headers
         return (args.method.upper(), url), {
             "params": args.query_params,
             "json": request_json,
-            **args.extra_kwargs,
+            **extra_kwargs,
         }
 
     # noinspection PyMethodMayBeStatic
