@@ -63,9 +63,10 @@ class ReadConfigTest(unittest.TestCase):
             get_config(None)
 
     @patch("cuiman.cli.config.login", return_value="dummy-token")
+    @patch("typer.confirm")
     @patch("typer.prompt")
     def test_configure_client_default(
-        self, mock_prompt: MagicMock, mock_login: MagicMock
+        self, mock_prompt: MagicMock, mock_confirm: MagicMock, mock_login: MagicMock
     ):
         mock_prompt.side_effect = [
             "http://localhorst:9999",
@@ -73,12 +74,15 @@ class ReadConfigTest(unittest.TestCase):
             "http://localhorst:9999/signin",
             "bibo",
             "1234",
-            False,
             "X-Auth-Token",
+        ]
+        mock_confirm.side_effect = [
+            False,
         ]
         actual_config_path = configure_client_with_prompt()
         mock_login.assert_called_once()
-        self.assertEqual(7, mock_prompt.call_count)
+        mock_confirm.assert_called_once()
+        self.assertEqual(6, mock_prompt.call_count)
         self.assertEqual(DEFAULT_CONFIG_PATH, actual_config_path)
         self.assertTrue(DEFAULT_CONFIG_PATH.exists())
         config = get_config(None)
@@ -90,6 +94,8 @@ class ReadConfigTest(unittest.TestCase):
                 username="bibo",
                 password="1234",
                 token="dummy-token",
+                use_bearer=False,
+                token_header="X-Auth-Token",
             ),
             config,
         )
@@ -116,9 +122,10 @@ class ReadConfigTest(unittest.TestCase):
                 os.remove(custom_config_path)
 
     @patch("cuiman.cli.config.login", return_value="dummy-token")
+    @patch("typer.confirm")
     @patch("typer.prompt")
     def test_configure_client_use_defaults(
-        self, mock_prompt: MagicMock, mock_login: MagicMock
+        self, mock_prompt: MagicMock, mock_confirm: MagicMock, mock_login: MagicMock
     ):
         # Simulate sequential responses to typer.prompt
         with set_env_cm(
@@ -134,10 +141,15 @@ class ReadConfigTest(unittest.TestCase):
                 "http://localhorst:2357/auth/login",
                 "bibo",
                 "******",
+                "bibo",
+                "X-Auth-Token",
+            ]
+            mock_confirm.side_effect = [
                 True,
             ]
             custom_config_path = Path("test.cfg")
             mock_prompt.assert_not_called()
+            mock_confirm.assert_not_called()
             mock_login.assert_not_called()
             try:
                 actual_config_path = configure_client_with_prompt(

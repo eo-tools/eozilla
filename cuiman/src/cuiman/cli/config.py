@@ -59,7 +59,7 @@ def configure_client_with_prompt(
         DEFAULT_AUTH_TYPE,
         choice=click.Choice(AUTH_TYPE_NAMES, case_sensitive=False),
     )
-    if auth_type != "none":
+    if auth_type and auth_type != "none":
         _configure_auth_with_prompt(ctx, auth_type)
 
     config = ClientConfig.new_instance(**ctx.curr_params)
@@ -121,10 +121,13 @@ def _prompt_for_str(
 ) -> str:
     value: str | None = ctx.cli_params.get(key)
     if value is None:
-        value = typer.prompt(
-            text,
-            type=choice or str,
-            default=ctx.prev_params.get(key) or default,
+        value = (
+            typer.prompt(
+                text,
+                type=choice or str,
+                default=ctx.prev_params.get(key) or default,
+            )
+            or ""
         )
     ctx.curr_params.update({key: value})
     assert isinstance(value, str)
@@ -159,20 +162,15 @@ def _prompt_for_bool(
     key: str,
     text: str,
     default: bool,
-    true_value: str = "yes",
-    false_value: str = "no",
 ) -> bool:
     value: bool | None = ctx.cli_params.get(key)
     if value is None:
         value = (
-            typer.prompt(
+            typer.confirm(
                 text,
-                type=click.Choice([true_value, false_value], case_sensitive=False),
-                default=true_value
-                if (ctx.prev_params.get(key) or default)
-                else false_value,
-            ).lower()
-            == true_value
+                default=ctx.prev_params.get(key) or default,
+            )
+            is True
         )
     ctx.curr_params.update({key: value})
     assert isinstance(value, bool)
