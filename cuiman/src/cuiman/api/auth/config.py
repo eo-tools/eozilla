@@ -5,7 +5,7 @@
 from typing import Literal, Optional, TypeAlias, get_args
 
 from pydantic import HttpUrl, field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 AuthType: TypeAlias = Literal[
     # No authentication required
@@ -33,6 +33,10 @@ AUTH_TYPE_NAMES: tuple[str, ...] = get_args(AuthType)
 
 class AuthConfig(BaseSettings):
     """Authentication configuration."""
+
+    model_config = SettingsConfigDict(
+        extra="allow",  # allow for extensions
+    )
 
     # Authentication type
     auth_type: Optional[AuthType] = None

@@ -8,6 +8,7 @@ from typing import Any
 
 import click
 import typer
+from pydantic import BaseModel
 
 from cuiman.api.auth import login
 from cuiman.api.auth.config import AUTH_TYPE_NAMES, AuthConfig
@@ -33,108 +34,141 @@ def get_config(config_path: Path | str | None) -> ClientConfig:
 _HIDDEN_INPUT = 6 * "*"
 
 
-def configure_client(
+class _Context(BaseModel):
+    cli_params: dict[str, Any]
+    prev_params: dict[str, Any]
+    curr_params: dict[str, Any]
+
+
+def configure_client_with_prompt(
     config_path: Path | str | None = None,
     **cli_params: str | None,
 ) -> Path:
-    prev_params = ClientConfig.create(config_path=config_path).to_dict()
-    curr_params: dict[str, str] = {}
+    ctx = _Context(
+        cli_params=cli_params,
+        prev_params=ClientConfig.create(config_path=config_path).to_dict(),
+        curr_params={},
+    )
 
-    api_url = cli_params.get("api_url")
-    if not api_url:
-        # TODO: add URL validator
-        api_url = typer.prompt(
-            "Process API URL",
-            default=prev_params.get("api_url") or DEFAULT_API_URL,
-        )
-        curr_params.update(api_url=api_url)
-
-    auth_type = cli_params.get("auth_type")
-    if auth_type is None:
-        # TODO: add AuthType validator
-        auth_type = typer.prompt(
-            f"API authorisation type ({'|'.join(AUTH_TYPE_NAMES)})",
-            default=prev_params.get("auth_type") or DEFAULT_AUTH_TYPE,
-        )
-        curr_params.update(auth_type=auth_type)
-
-    assert bool(api_url)
-    assert bool(auth_type)
-
+    # TODO: add URL validator
+    _prompt_for_str(ctx, "api_url", "Process API URL", DEFAULT_API_URL)
+    auth_type = _prompt_for_str(
+        ctx,
+        "auth_type",
+        f"API authorisation type ({'|'.join(AUTH_TYPE_NAMES)})",
+        DEFAULT_AUTH_TYPE,
+    )
     if auth_type != "none":
-        auth_params = _configure_auth(auth_type, cli_params, prev_params)
-        curr_params.update(**auth_params)
+        _configure_auth_with_prompt(ctx, auth_type)
 
-    config = ClientConfig.new_instance(**curr_params)
+    config = ClientConfig.new_instance(**ctx.curr_params)
     return config.write(config_path=config_path)
 
 
-# TODO: Refactor _configure_auth() so that we have exactly one code path
-#  for each auth_type. Make reusable prompt_str(), prompt_bool() helpers.
+def _configure_auth_with_prompt(ctx: _Context, auth_type: str) -> None:
+    if auth_type == "basic":
+        _configure_basic_auth_with_prompt(ctx)
+    elif auth_type == "login":
+        _configure_login_auth_with_prompt(ctx)
+    elif auth_type == "token":
+        _configure_token_auth_with_prompt(ctx)
+    elif auth_type == "api-key":
+        _configure_api_key_auth_with_prompt(ctx)
 
 
-def _configure_auth(
-    auth_type: str, cli_params: dict[str, Any], prev_config: dict[str, Any]
-) -> dict[str, Any]:
-    auth_params: dict[str, Any] = {}
+def _configure_basic_auth_with_prompt(ctx: _Context) -> None:
+    _configure_username_password_with_prompt(ctx)
 
-    auth_url: str | None = None
-    if auth_type == "login":
-        auth_url = cli_params.get("auth_url")
-        if auth_url is None:
-            # TODO: add URL validator
-            auth_url = typer.prompt(
-                "Authentication URL",
-                default=prev_config.get("auth_url"),
-            )
-    auth_params.update(auth_url=auth_url)
 
-    if auth_type in ("basic", "login"):
-        # TODO: add username validator
-        username = cli_params.get("username")
-        if username is None:
-            username = typer.prompt(
-                "Username",
-                default=(
-                    prev_config.get("username")
-                    or os.environ.get("USER", os.environ.get("USERNAME"))
-                ),
-            )
-        auth_params.update(username=username)
+def _configure_login_auth_with_prompt(ctx: _Context) -> None:
+    # TODO: add URL validator
+    _prompt_for_str(ctx, "auth_url", "Authentication URL", "")
+    _configure_username_password_with_prompt(ctx)
+    auth_config = AuthConfig(**ctx.curr_params)
+    ctx.curr_params["token"] = login(auth_config)
+    _configure_token_type_with_prompt(ctx)
 
-        password = cli_params.get("password")
-        if password is None:
-            prev_password = prev_config.get("password")
-            _password = typer.prompt(
-                "Password",
-                type=str,
-                hide_input=True,
-                default=_HIDDEN_INPUT if prev_password else None,
-            )
-            if _password == _HIDDEN_INPUT and prev_password:
-                password = prev_password
-            else:
-                password = _password
-        auth_params.update(password=password)
 
-    if auth_type == "token":
-        # TODO: add token validator
-        token = cli_params.get("token")
-        if token is None:
-            token = typer.prompt(
-                "Access token",
-                default=prev_config.get("token"),
-            )
-        auth_params.update(token=token)
+def _configure_token_auth_with_prompt(ctx: _Context) -> None:
+    _prompt_for_str(ctx, "token", "API access token", "")
+    _configure_token_type_with_prompt(ctx)
 
-    if auth_type in ("login", "token"):
-        # TODO: ask for bearer or custom token header
-        pass
 
-    if auth_type == "login":
-        assert bool(auth_url)
-        auth_config = AuthConfig(**auth_params)
-        token = login(auth_config)
-        auth_params.update(token=token)
+def _configure_api_key_auth_with_prompt(ctx: _Context) -> None:
+    _prompt_for_str(ctx, "api_key", "API access key", "")
+    _prompt_for_str(ctx, "api_key_header", "Access key header", "X-API-Key")
 
-    return auth_params
+
+def _configure_username_password_with_prompt(ctx: _Context) -> None:
+    _prompt_for_str(
+        ctx,
+        "username",
+        "Username",
+        os.environ.get("USER") or os.environ.get("USERNAME") or "",
+    )
+    _prompt_for_pw(ctx, "password", "Password")
+
+
+def _configure_token_type_with_prompt(ctx: _Context) -> None:
+    use_bearer = _prompt_for_bool(ctx, "use_bearer", "Use bearer token?", False)
+    if not use_bearer:
+        _prompt_for_str(ctx, "token_header", "Access token header", "X-Auth-Token")
+
+
+def _prompt_for_str(
+    ctx: _Context,
+    key: str,
+    text: str,
+    default: str,
+) -> str:
+    value: str | None = ctx.cli_params.get(key)
+    if value is None:
+        value = typer.prompt(
+            text,
+            type=str,
+            default=ctx.prev_params.get(key) or default,
+        )
+    ctx.curr_params.update({key: value})
+    assert isinstance(value, str)
+    return value
+
+
+def _prompt_for_pw(
+    ctx: _Context,
+    key: str,
+    text: str,
+) -> str:
+    pw = ctx.cli_params.get(key)
+    if pw is None:
+        prev_pw: str | None = ctx.prev_params.get(key)
+        new_pw: str = typer.prompt(
+            text,
+            type=str,
+            hide_input=True,
+            default=_HIDDEN_INPUT if prev_pw else None,
+        )
+        if new_pw == _HIDDEN_INPUT and prev_pw:
+            pw = prev_pw
+        else:
+            pw = new_pw
+    ctx.curr_params.update({key: pw})
+    assert isinstance(pw, str)
+    return pw
+
+
+def _prompt_for_bool(
+    ctx: _Context,
+    key: str,
+    text: str,
+    default: bool,
+) -> bool:
+    value: bool | None = ctx.cli_params.get(key)
+    if value is None:
+        value = typer.prompt(
+            text,
+            type=bool,
+            default=ctx.prev_params.get(key) or default,
+        )
+    ctx.curr_params.update({key: value})
+    assert isinstance(value, bool)
+    return value

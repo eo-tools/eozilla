@@ -12,7 +12,7 @@ import pytest
 
 from cuiman import ClientConfig
 from cuiman.api.defaults import DEFAULT_CONFIG_PATH
-from cuiman.cli.config import configure_client, get_config
+from cuiman.cli.config import configure_client_with_prompt, get_config
 from gavicore.util.testing import set_env, set_env_cm
 
 DEFAULT_CONFIG_BACKUP_PATH = DEFAULT_CONFIG_PATH.parent / (
@@ -74,7 +74,7 @@ class ReadConfigTest(unittest.TestCase):
             "bibo",
             "1234",
         ]
-        actual_config_path = configure_client()
+        actual_config_path = configure_client_with_prompt()
         mock_login.assert_called_once()
         self.assertEqual(5, mock_prompt.call_count)
         self.assertEqual(DEFAULT_CONFIG_PATH, actual_config_path)
@@ -98,7 +98,9 @@ class ReadConfigTest(unittest.TestCase):
         mock_prompt.side_effect = ["http://localhost:9090", "none"]
         custom_config_path = Path("test.cfg")
         try:
-            actual_config_path = configure_client(config_path=custom_config_path)
+            actual_config_path = configure_client_with_prompt(
+                config_path=custom_config_path
+            )
             self.assertEqual(2, mock_prompt.call_count)
             self.assertEqual(custom_config_path, actual_config_path)
             self.assertTrue(custom_config_path.exists())
@@ -135,7 +137,9 @@ class ReadConfigTest(unittest.TestCase):
             mock_prompt.assert_not_called()
             mock_login.assert_not_called()
             try:
-                actual_config_path = configure_client(config_path=custom_config_path)
+                actual_config_path = configure_client_with_prompt(
+                    config_path=custom_config_path
+                )
                 self.assertEqual(custom_config_path, actual_config_path)
                 self.assertTrue(custom_config_path.exists())
                 config = get_config(custom_config_path)
