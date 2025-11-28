@@ -70,13 +70,15 @@ class ReadConfigTest(unittest.TestCase):
         mock_prompt.side_effect = [
             "http://localhorst:9999",
             "login",
-            "http://localhorst:9999/signon",
+            "http://localhorst:9999/signin",
             "bibo",
             "1234",
+            False,
+            "X-Auth-Token",
         ]
         actual_config_path = configure_client_with_prompt()
         mock_login.assert_called_once()
-        self.assertEqual(5, mock_prompt.call_count)
+        self.assertEqual(7, mock_prompt.call_count)
         self.assertEqual(DEFAULT_CONFIG_PATH, actual_config_path)
         self.assertTrue(DEFAULT_CONFIG_PATH.exists())
         config = get_config(None)
@@ -84,7 +86,7 @@ class ReadConfigTest(unittest.TestCase):
             ClientConfig(
                 api_url="http://localhorst:9999",
                 auth_type="login",
-                auth_url="http://localhorst:9999/signon",
+                auth_url="http://localhorst:9999/signin",
                 username="bibo",
                 password="1234",
                 token="dummy-token",
@@ -132,6 +134,7 @@ class ReadConfigTest(unittest.TestCase):
                 "http://localhorst:2357/auth/login",
                 "bibo",
                 "******",
+                True,
             ]
             custom_config_path = Path("test.cfg")
             mock_prompt.assert_not_called()
@@ -150,6 +153,7 @@ class ReadConfigTest(unittest.TestCase):
                         username="bibo",
                         password="9823hc",
                         token="dummy-token",
+                        use_bearer=True,
                     ),
                     config,
                 )

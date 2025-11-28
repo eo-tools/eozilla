@@ -206,6 +206,20 @@ def new_cli(
                 help="Access token.",
             ),
         ] = None,
+        use_bearer: Annotated[
+            bool | None,
+            typer.Option(
+                "--use-bearer",
+                help="Use bearer token?",
+            ),
+        ] = None,
+        token_header: Annotated[
+            str | None,
+            typer.Option(
+                "--token-header",
+                help="Access token header",
+            ),
+        ] = None,
         config_file: Annotated[str | None, CONFIG_OPTION] = None,
     ):
         """Configure the client tool."""
@@ -222,6 +236,8 @@ def new_cli(
             username=username,
             password=password,
             token=token,
+            use_bearer=use_bearer,
+            token_header=token_header,
         )
         typer.echo(f"Client configuration written to {config_path}")
 

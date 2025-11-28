@@ -42,7 +42,7 @@ class _Context(BaseModel):
 
 def configure_client_with_prompt(
     config_path: Path | str | None = None,
-    **cli_params: str | None,
+    **cli_params: str | bool | None,
 ) -> Path:
     ctx = _Context(
         cli_params=cli_params,
@@ -55,8 +55,9 @@ def configure_client_with_prompt(
     auth_type = _prompt_for_str(
         ctx,
         "auth_type",
-        f"API authorisation type ({'|'.join(AUTH_TYPE_NAMES)})",
+        "API authorisation type",
         DEFAULT_AUTH_TYPE,
+        choice=click.Choice(AUTH_TYPE_NAMES, case_sensitive=False),
     )
     if auth_type != "none":
         _configure_auth_with_prompt(ctx, auth_type)
@@ -116,16 +117,13 @@ def _configure_token_type_with_prompt(ctx: _Context) -> None:
 
 
 def _prompt_for_str(
-    ctx: _Context,
-    key: str,
-    text: str,
-    default: str,
+    ctx: _Context, key: str, text: str, default: str, choice: click.Choice | None = None
 ) -> str:
     value: str | None = ctx.cli_params.get(key)
     if value is None:
         value = typer.prompt(
             text,
-            type=str,
+            type=choice or str,
             default=ctx.prev_params.get(key) or default,
         )
     ctx.curr_params.update({key: value})
@@ -161,13 +159,20 @@ def _prompt_for_bool(
     key: str,
     text: str,
     default: bool,
+    true_value: str = "yes",
+    false_value: str = "no",
 ) -> bool:
     value: bool | None = ctx.cli_params.get(key)
     if value is None:
-        value = typer.prompt(
-            text,
-            type=bool,
-            default=ctx.prev_params.get(key) or default,
+        value = (
+            typer.prompt(
+                text,
+                type=click.Choice([true_value, false_value], case_sensitive=False),
+                default=true_value
+                if (ctx.prev_params.get(key) or default)
+                else false_value,
+            ).lower()
+            == true_value
         )
     ctx.curr_params.update({key: value})
     assert isinstance(value, bool)

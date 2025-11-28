@@ -9,7 +9,7 @@ from unittest.mock import patch
 import typer.testing
 import yaml
 
-from cuiman import Client, ClientConfig, __version__
+from cuiman import Client, __version__
 from cuiman.cli.cli import cli, new_cli
 
 from ..helpers import MockTransport
@@ -51,6 +51,7 @@ class CliTest(TestCase):
             "bibo",
             "--password",
             "1234",
+            "--use-bearer",
         )
         mock_login.assert_called_once()
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
@@ -59,12 +60,14 @@ class CliTest(TestCase):
             config = yaml.safe_load(f.read())
             self.assertEqual(
                 {
+                    "api_url": "http://localhorst:2357/",
+                    "auth_type": "login",
                     "auth_url": "http://localhorst:2357/auth/login",
                     "username": "bibo",
                     "password": "1234",
                     "token": "dummy-token",
+                    "use_bearer": True,
                     "token_header": "X-Auth-Token",
-                    "use_bearer": False,
                     "api_key_header": "X-API-Key",
                 },
                 config,
