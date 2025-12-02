@@ -61,18 +61,18 @@ class ClientConfig(AuthConfig, BaseSettings):
         # 1. from file
         file_config = cls.from_file(config_path=config_path)
         if file_config is not None:
-            config_dict.update(file_config.to_dict())
+            _update_if_not_none(config_dict, file_config.to_dict())
 
         # 2. from env
         env_config = cls()
-        config_dict.update(env_config.to_dict())
+        _update_if_not_none(config_dict, env_config.to_dict())
 
         # 3. from config
         if config is not None:
-            config_dict.update(config.to_dict())
+            _update_if_not_none(config_dict, config.to_dict())
 
         # 4. from kwargs
-        config_dict.update(config_kwargs)
+        _update_if_not_none(config_dict, config_kwargs)
 
         return cls.new_instance(**config_dict)
 
@@ -131,3 +131,7 @@ class ClientConfig(AuthConfig, BaseSettings):
 
 ClientConfig.default_config = ClientConfig(api_url=DEFAULT_API_URL)
 ClientConfig.default_path = Path("~").expanduser() / ".eozilla" / "config"
+
+
+def _update_if_not_none(target: dict[str, Any], updates: dict[str, Any]):
+    target.update({k: v for k, v in updates.items() if v is not None})
