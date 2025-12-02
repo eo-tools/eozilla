@@ -41,10 +41,33 @@ def process_login_response(response: httpx.Response) -> Any:
     # noinspection PyBroadException
     try:
         # Accept JSON ...
-        token = response.json().get("token")
+        token_data = response.json()
     except Exception:
         # ... or plain-text tokens
-        token = response.text.strip()
+        token_data = response.text.strip()
+    return parse_token(token_data)
+
+
+def parse_token(token_data: Any) -> str:
+    token: str | None = None
+    if isinstance(token_data, str):
+        token = token_data
+    elif isinstance(token_data, dict):
+        token = token_data.get("token")
+        if not token:
+            for k, v in token_data.items():
+                if str(k).lower().endswith("token"):
+                    token = v
+                    break
+        if token is None:
+            raise RuntimeError(
+                "Login succeeded, but no token has been returned by server."
+            )
+    if not isinstance(token, str):
+        raise RuntimeError(
+            f"Login succeeded, but token returned by server has wrong type. "
+            f"Expected str, but got {type(token).__name__}."
+        )
     if not token:
-        raise RuntimeError("Login succeeded but no token returned by server.")
+        raise RuntimeError("Login succeeded, but token returned by server is empty.")
     return token

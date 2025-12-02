@@ -2,7 +2,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cuiman.api.auth import AuthConfig, AuthType, login
+from cuiman.api.auth import AuthConfig, login
+from cuiman.api.auth.login import parse_token
 
 
 def test_login_json_response():
@@ -52,3 +53,38 @@ def test_login_missing_user_pass():
 
     with pytest.raises(ValueError):
         login(cfg)
+
+
+def test_parse_token_data_ok():
+    assert parse_token("a1b2") == "a1b2"
+    assert parse_token({"token": "123"}) == "123"
+    assert parse_token({"accessToken": "abc"}) == "abc"
+
+
+def test_parse_token_data_fail():
+    with pytest.raises(
+        RuntimeError,
+        match="Login succeeded, but token returned by server has wrong type.",
+    ):
+        parse_token(137)
+
+    with pytest.raises(
+        RuntimeError,
+        match="Login succeeded, but token returned by server has wrong type.",
+    ):
+        parse_token({"accessToken": True})
+
+    with pytest.raises(
+        RuntimeError, match="Login succeeded, but no token has been returned by server."
+    ):
+        parse_token({})
+
+    with pytest.raises(
+        RuntimeError, match="Login succeeded, but token returned by server is empty."
+    ):
+        parse_token("")
+
+    with pytest.raises(
+        RuntimeError, match="Login succeeded, but token returned by server is empty."
+    ):
+        parse_token({"token": ""})
