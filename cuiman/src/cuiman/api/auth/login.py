@@ -49,16 +49,11 @@ def process_login_response(response: httpx.Response) -> Any:
 
 
 def parse_token(token_data: Any) -> str:
-    token: str | None = None
+    token: Any = None
     if isinstance(token_data, str):
         token = token_data
     elif isinstance(token_data, dict):
-        token = token_data.get("token")
-        if not token:
-            for k, v in token_data.items():
-                if str(k).lower().endswith("token"):
-                    token = v
-                    break
+        token = _find_token(token_data)
         if token is None:
             raise RuntimeError(
                 "Login succeeded, but no token has been returned by server."
@@ -71,3 +66,30 @@ def parse_token(token_data: Any) -> str:
     if not token:
         raise RuntimeError("Login succeeded, but token returned by server is empty.")
     return token
+
+
+def _find_token(token_data: dict) -> Any:
+    # TODO: This is a more or less generic hack.
+    #  Either we make the path to the token configurable or we
+    #  allow clients to pass a token-obtaining function to their
+    #  client API configuration.
+
+    for k in (
+        "token",
+        "authToken",
+        "auth_token",
+        "accessToken",
+        "access_token",
+        "apiToken",
+        "api_token",
+    ):
+        if k in token_data:
+            return token_data[k]
+
+    for v in token_data.values():
+        if isinstance(v, dict):
+            token = _find_token(v)
+            if token is not None:
+                return token
+
+    return None

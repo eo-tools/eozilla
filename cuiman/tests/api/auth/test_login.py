@@ -58,7 +58,10 @@ def test_login_missing_user_pass():
 def test_parse_token_data_ok():
     assert parse_token("a1b2") == "a1b2"
     assert parse_token({"token": "123"}) == "123"
-    assert parse_token({"accessToken": "abc"}) == "abc"
+    assert parse_token({"auth_token": "abc"}) == "abc"
+    assert parse_token({"data": {"authToken": "xyz"}}) == "xyz"
+    assert parse_token({"apiToken": "abc"}) == "abc"
+    assert parse_token({"data": {"accessToken": "xyz"}}) == "xyz"
 
 
 def test_parse_token_data_fail():
