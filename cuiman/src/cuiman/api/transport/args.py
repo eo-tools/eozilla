@@ -5,7 +5,6 @@
 import inspect
 from dataclasses import dataclass, field
 from typing import Any, Literal, Optional
-from urllib.parse import urljoin
 
 import pydantic
 import uri_template
@@ -27,7 +26,8 @@ class TransportArgs:
     extra_kwargs: dict[str, Any] = field(default_factory=dict)
 
     def get_url(self, api_url: str) -> str:
-        return urljoin(api_url, uri_template.expand(self.path, **self.path_params))
+        endpoint_path = uri_template.expand(self.path, **self.path_params)
+        return f"{api_url.rstrip('/')}/{endpoint_path.lstrip('/')}"
 
     def get_json_for_request(self) -> Any:
         request = self.request
