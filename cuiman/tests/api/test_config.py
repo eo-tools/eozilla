@@ -4,13 +4,11 @@
 
 import os
 import tempfile
-from email.policy import default
 from pathlib import Path
 from unittest import TestCase
 
-from cuiman.api.auth import AuthType
 from cuiman.api.config import ClientConfig
-from cuiman.api.defaults import DEFAULT_API_URL, DEFAULT_CONFIG_PATH
+from cuiman.api.defaults import DEFAULT_API_URL
 
 
 class ClientConfigTest(TestCase):

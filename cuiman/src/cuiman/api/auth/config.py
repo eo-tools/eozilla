@@ -79,9 +79,6 @@ def get_auth_headers(config: AuthConfig) -> dict[str, str]:
 
     auth_type = config.auth_type
 
-    if auth_type is None or auth_type == "none":
-        return {}
-
     # Static API token
     if auth_type == "token":
         if not config.token:
@@ -95,7 +92,7 @@ def get_auth_headers(config: AuthConfig) -> dict[str, str]:
     # Username/password login (token acquired earlier)
     if auth_type == "login":
         if not config.token:
-            raise ValueError("Token is missing. Run CLI 'login' first.")
+            raise ValueError("Token is missing. Run CLI 'configure' first.")
         return {config.token_header: config.token}
 
     # API Key header
@@ -115,4 +112,5 @@ def get_auth_headers(config: AuthConfig) -> dict[str, str]:
         encoded = base64.b64encode(creds.encode()).decode()
         return {"Authorization": f"Basic {encoded}"}
 
-    raise NotImplementedError(f"Unknown authentication type: {auth_type}")
+    # Here, auth_type is either None or "none"
+    return {}

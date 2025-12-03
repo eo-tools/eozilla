@@ -4,6 +4,7 @@
 
 from typing import Annotated, Final, Optional
 
+import click
 import typer.core
 
 from cuiman.api.auth import AuthType
@@ -226,7 +227,7 @@ def new_cli(
         from .config import configure_client_with_prompt
 
         if auth_type is not None and auth_type not in AUTH_TYPE_NAMES:
-            raise ValueError(f"Invalid authentication type: {auth_type}")
+            raise click.ClickException(f"Invalid authentication type: {auth_type}")
 
         config_path = configure_client_with_prompt(
             config_path=config_file,

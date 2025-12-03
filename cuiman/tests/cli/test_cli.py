@@ -74,6 +74,24 @@ class CliTest(TestCase):
             )
         config_path.unlink()
 
+    def test_configure_with_invalid_auth_method(self):
+        config_path = Path("config.cfg")
+        result = invoke_cli(
+            "configure",
+            "-c",
+            str(config_path),
+            "--api-url",
+            "http://localhost:2357",
+            "--auth-type",
+            "torken",  # INVALID
+            "--token",
+            "x-lkdkadf878akj134lk1lk5lk432lkk",
+        )
+        self.assertEqual(1, result.exit_code, msg=self.get_result_msg(result))
+        self.assertTrue("Invalid authentication type: torken" in result.stderr)
+        if config_path.exists():
+            config_path.unlink()
+
     def test_get_processes(self):
         result = invoke_cli("list-processes")
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
