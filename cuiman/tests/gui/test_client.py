@@ -1,7 +1,7 @@
 #  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-
+import time
 from typing import Any
 from unittest import TestCase
 
@@ -16,13 +16,18 @@ class ClientTest(TestCase):
     def test_show_processes(self):
         class _MockTransport(Transport):
             def call(self, args: TransportArgs) -> Any:
-                if (args.method, args.path) == ("get", "/processes"):
-                    return ProcessList(processes=[], links=[])
-                return None
+                match (args.method, args.path):
+                    case ("get", "/processes"):
+                        return ProcessList(processes=[], links=[])
+                    case ("get", "/jobs"):
+                        return JobList(jobs=[], links=[])
+                    case _:
+                        raise Exception("Unhandled case in mock")
 
         client = GuiClient(api_url="https://api.ok.ko", _transport=_MockTransport())
         processes_form = client.show()
         self.assertIsInstance(processes_form, MainPanel)
+        client.close()
 
     def test_show_jobs(self):
         class _MockTransport(Transport):
