@@ -1,3 +1,18 @@
+## Changes in version 0.0.9 (in development)
+
+- Provided additional options to customize `cuiman`:
+  1. Use `cuiman.ClientConfig` class as base 
+     class and then configure it with a custom 
+     `pydantic_settings.SettingsConfigDict` instance.
+  2. Override class members in `cuiman.ClientConfig`      
+     to initialize custom default values.
+  3. Create a dedicated CLI instance with customized
+     settings.
+- Added a couple of common authentication methods 
+  to `cuiman` client API and CLI configuration 
+  (via command `configure`).
+- Updated documentation.
+
 ## Changes in version 0.0.8
 
 - Added `get_default()` and `set_default()` class methods to 
