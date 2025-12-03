@@ -43,6 +43,18 @@ def test_login_plaintext_response():
     assert token == "plaintext-token"
 
 
+def test_login_missing_auth_url():
+    cfg = AuthConfig(
+        auth_type="login",
+        auth_url=None,
+        username="max",
+        password="1234",
+    )
+
+    with pytest.raises(ValueError, match="Authentication URL must be set."):
+        login(cfg)
+
+
 def test_login_missing_user_pass():
     cfg = AuthConfig(
         auth_type="login",
@@ -51,7 +63,10 @@ def test_login_missing_user_pass():
         password=None,
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="Username and password must be set for authentication type 'login'.",
+    ):
         login(cfg)
 
 
