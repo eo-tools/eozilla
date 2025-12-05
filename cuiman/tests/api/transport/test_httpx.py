@@ -35,7 +35,10 @@ def make_mocked_transport(
     async_httpx = MagicMock()
     async_httpx.request = AsyncMock(return_value=response)
 
-    transport = HttpxTransport(api_url="https://api.example.com")
+    transport = HttpxTransport(
+        api_url="https://api.example.com",
+        headers={"Authentication": "Bearer: wt8799aafe"},
+    )
     transport.sync_httpx = sync_httpx
     transport.async_httpx = async_httpx
     return transport
