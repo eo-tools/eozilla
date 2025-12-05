@@ -37,7 +37,7 @@ def make_mocked_transport(
 
     transport = HttpxTransport(
         api_url="https://api.example.com",
-        headers={"Authentication": "Bearer: wt8799aafe"},
+        headers={"Authorization": "Bearer: wt8799aafe"},
     )
     transport.sync_httpx = sync_httpx
     transport.async_httpx = async_httpx
@@ -71,6 +71,7 @@ class HttpxSyncTransportTest(TestCase):
             "https://api.example.com/conformance",
             params={},
             json=None,
+            headers={"Authorization": "Bearer: wt8799aafe"},
         )
         self.assertIsInstance(result, ConformanceDeclaration)
 
@@ -93,6 +94,7 @@ class HttpxSyncTransportTest(TestCase):
             "https://api.example.com/conformance",
             params={},
             json=None,
+            headers={"Authorization": "Bearer: wt8799aafe"},
         )
         self.assertIsInstance(result, ConformanceDeclaration)
 
@@ -112,6 +114,7 @@ class HttpxSyncTransportTest(TestCase):
             "https://api.example.com/conformance",
             params={},
             json=None,
+            headers={"Authorization": "Bearer: wt8799aafe"},
         )
         self.assertEqual({"conformsTo": ["Hello", "World"]}, result)
 
@@ -202,6 +205,7 @@ class HttpxAsyncTransportTest(IsolatedAsyncioTestCase):
             "https://api.example.com/conformance",
             params={},
             json=None,
+            headers={"Authorization": "Bearer: wt8799aafe"},
         )
         self.assertIsInstance(result, ConformanceDeclaration)
 

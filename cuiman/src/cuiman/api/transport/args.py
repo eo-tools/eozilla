@@ -33,8 +33,8 @@ class TransportArgs:
         endpoint_path = uri_template.expand(self.path, **self.path_params)
         if endpoint_path is None:
             raise RuntimeError(
-                f"URI template expansion failed for "
-                f"{self.path}, {self.path_params}")
+                f"URI template expansion failed for {self.path}, {self.path_params}"
+            )
         return f"{api_url.rstrip('/')}/{endpoint_path.lstrip('/')}"
 
     def get_json_for_request(self) -> Any:
