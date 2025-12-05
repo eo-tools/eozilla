@@ -2,7 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Any, Callable, Optional, TypeAlias
+from typing import Any, Callable, TypeAlias
 
 import panel as pn
 import param
@@ -20,6 +20,7 @@ from gavicore.util.request import ExecutionRequest
 from .component.container import ComponentContainer
 from .job_info_panel import JobInfoPanel
 from .jobs_observer import JobsObserver
+from ..api.config import ProcessPredicate, InputPredicate
 
 ExecuteProcessAction: TypeAlias = Callable[[str, ProcessRequest], JobInfo]
 GetProcessAction: TypeAlias = Callable[[str], ProcessDescription]
@@ -37,14 +38,12 @@ class MainPanel(pn.viewable.Viewer):
         process_list_error: ClientError | None,
         on_get_process: GetProcessAction,
         on_execute_process: ExecuteProcessAction,
-        accept_process: Optional[Callable] = None,
-        accept_input: Optional[Callable] = None,
+        accept_process: ProcessPredicate,
+        accept_input: InputPredicate,
     ):
         super().__init__()
 
-        processes = process_list.processes
-        if accept_process is not None:
-            processes = [p for p in processes if accept_process(p)]
+        processes = [p for p in process_list.processes if accept_process(p)]
 
         self._processes = processes
         self._process_list_error = process_list_error
@@ -178,11 +177,12 @@ class MainPanel(pn.viewable.Viewer):
             self._outputs_panel[:] = []
         else:
             assert isinstance(process_id, str)
-            inputs = process_description.inputs or {}
-            if self._accept_input is not None:
-                inputs = {
-                    k: v for k, v in inputs.items() if self._accept_input(process_id, v)
-                }
+
+            inputs = {
+                k: v
+                for k, v in (process_description.inputs or {}).items()
+                if self._accept_input(process_description, k, v)
+            }
 
             self._execute_button.disabled = False
             self._request_button.disabled = False

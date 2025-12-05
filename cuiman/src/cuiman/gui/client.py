@@ -11,6 +11,7 @@ from cuiman.api.exceptions import ClientError
 from cuiman.api.transport import Transport
 from gavicore.models import JobInfo, ProcessList
 
+from .. import ClientConfig
 from .job_info_panel import JobInfoPanel
 from .jobs_observer import JobsObserver
 from .jobs_panel import JobsPanel
@@ -51,11 +52,16 @@ class Client(ApiClient):
     ) -> MainPanel:
         from functools import partial
 
+        config_cls: type[ClientConfig] = type(self.config)
         accept_process = (
-            partial(self.accept_process, **process_filter) if process_filter else None
+            partial(config_cls.accept_process, **process_filter)
+            if process_filter
+            else config_cls.accept_process
         )
         accept_input = (
-            partial(self.accept_input, **input_filter) if input_filter else None
+            partial(config_cls.accept_input, **input_filter)
+            if input_filter
+            else config_cls.accept_input
         )
 
         if self._main_panel is None:
