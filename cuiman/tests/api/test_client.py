@@ -4,6 +4,8 @@
 
 from unittest import TestCase
 
+import pytest
+
 from cuiman import ClientConfig
 from cuiman.api.client import Client
 from gavicore.models import (
@@ -24,7 +26,15 @@ from ..helpers import MockTransport
 class ClientTest(TestCase):
     def setUp(self):
         self.transport = MockTransport()
-        self.client = Client(config=ClientConfig(), _transport=self.transport)
+        self.client = Client(
+            api_url="https://acme.ogc.org/api", _transport=self.transport
+        )
+
+    def test_no_api_url(self):
+        with pytest.raises(
+            ValueError, match="Required setting 'api_url' not configured"
+        ):
+            Client(api_url="", _transport=self.transport)
 
     def test_config(self):
         self.assertIsInstance(self.client.config, ClientConfig)

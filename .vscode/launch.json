@@ -1,0 +1,13 @@
+{
+    "configurations": [
+        {
+            "name": "Debug cuiman CLI",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "cuiman.cli.cli",
+            "python": "${workspaceFolder}/.pixi/envs/default/bin/python",
+            "console": "integratedTerminal",
+            "args": ["list-processes"]
+        }
+    ]
+}

@@ -2,31 +2,45 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 import yaml
-from pydantic import BaseModel
+from pydantic import HttpUrl, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from .defaults import DEFAULT_CONFIG_PATH, DEFAULT_SERVER_URL
+from .auth import AuthConfig
+from .defaults import DEFAULT_API_URL
 
 
-class ClientConfig(BaseModel):
+class ClientConfig(AuthConfig, BaseSettings):
     """Client configuration.
 
     Args:
-        user_name: name of a user of the service
-            provided by the given `server_url`
-        access_token: API access token valid for the user
-            given by `user_name`
-        server_url: a URL for a server compliant with the
-            OCG API - Processes.
+        api_url: a URL pointing to a service compliant with
+            the OCG API - Processes.
     """
 
-    user_name: Optional[str] = None
-    access_token: Optional[str] = None
-    server_url: Optional[str] = None
+    model_config = SettingsConfigDict(
+        env_prefix="EOZILLA_",
+        extra="forbid",
+    )
+
+    default_config: ClassVar["ClientConfig"]
+    """
+    Default instance. 
+    Used to create pre-configured instances of this class.
+    Designed to be overridden by library clients.
+    """
+
+    default_path: ClassVar[Path]
+    """
+    Name of the configuration's . 
+    Used for configuration persistence in `~/.<config_name>/`.
+    Designed to be overridden by library clients.
+    """
+
+    api_url: Optional[str] = None
 
     def _repr_json_(self):
         return self.model_dump(mode="json", by_alias=True), dict(
@@ -39,36 +53,28 @@ class ClientConfig(BaseModel):
         *,
         config: Optional["ClientConfig"] = None,
         config_path: Optional[Path | str] = None,
-        server_url: Optional[str] = None,
-        user_name: Optional[str] = None,
-        access_token: Optional[str] = None,
+        **config_kwargs,
     ) -> "ClientConfig":
         # 0. from defaults
-        config_dict = cls.get_default().to_dict()
+        config_dict = cls.default_config.to_dict()
 
         # 1. from file
         file_config = cls.from_file(config_path=config_path)
         if file_config is not None:
-            config_dict.update(file_config.to_dict())
+            _update_if_not_none(config_dict, file_config.to_dict())
 
         # 2. from env
-        env_config = cls.from_env()
-        if env_config is not None:
-            config_dict.update(env_config.to_dict())
+        env_config = cls()
+        _update_if_not_none(config_dict, env_config.to_dict())
 
         # 3. from config
         if config is not None:
-            config_dict.update(config.to_dict())
+            _update_if_not_none(config_dict, config.to_dict())
 
-        # 4. from args
-        args_config = ClientConfig(
-            user_name=user_name,
-            access_token=access_token,
-            server_url=server_url,
-        )
-        config_dict.update(args_config.to_dict())
+        # 4. from kwargs
+        _update_if_not_none(config_dict, config_kwargs)
 
-        return ClientConfig(**config_dict)
+        return cls.new_instance(**config_dict)
 
     @classmethod
     def from_file(
@@ -80,17 +86,7 @@ class ClientConfig(BaseModel):
         with config_path_.open("rt") as stream:
             # Note, we may switch TOML
             config_dict = yaml.safe_load(stream)
-        return ClientConfig(**config_dict)
-
-    @classmethod
-    def from_env(cls) -> Optional["ClientConfig"]:
-        config_dict: dict[str, Any] = {}
-        for field_name, _field_info in ClientConfig.model_fields.items():
-            env_var_name = "EOZILLA_" + field_name.upper()
-            if env_var_name in os.environ:
-                config_dict[field_name] = os.environ[env_var_name]
-        # noinspection PyArgumentList
-        return ClientConfig(**config_dict) if config_dict else None
+        return cls.new_instance(**config_dict)
 
     def write(self, config_path: Optional[str | Path] = None) -> Path:
         config_path = self.normalize_config_path(config_path)
@@ -106,8 +102,17 @@ class ClientConfig(BaseModel):
         return (
             config_path
             if isinstance(config_path, Path)
-            else (Path(config_path) if config_path else DEFAULT_CONFIG_PATH)
+            else (Path(config_path) if config_path else cls.default_path)
         )
+
+    @classmethod
+    def new_instance(
+        cls,
+        **kwargs: Any,
+    ) -> "ClientConfig":
+        config_cls = type(ClientConfig.default_config)
+        assert issubclass(config_cls, ClientConfig)
+        return config_cls(**kwargs)
 
     def to_dict(self):
         return self.model_dump(
@@ -118,24 +123,15 @@ class ClientConfig(BaseModel):
             exclude_unset=True,
         )
 
-    @classmethod
-    def get_default(cls) -> "ClientConfig":
-        """Get the configuration default values."""
-        return ClientConfig(**_DEFAULT_CONFIG.to_dict())
-
-    @classmethod
-    def set_default(cls, default_config: "ClientConfig") -> "ClientConfig":
-        """Set the configuration default values.
-
-        Args:
-            default_config: A configuration object providing the defaults.
-        Return:
-            The previous defaults.
-        """
-        global _DEFAULT_CONFIG
-        prev_default_config = _DEFAULT_CONFIG
-        _DEFAULT_CONFIG = ClientConfig(**default_config.to_dict())
-        return prev_default_config
+    # noinspection PyMethodParameters
+    @field_validator("api_url")
+    def validate_api_url(cls, v: str | None) -> str | None:
+        return None if v is None or v == "" else str(HttpUrl(v))
 
 
-_DEFAULT_CONFIG: ClientConfig = ClientConfig(server_url=DEFAULT_SERVER_URL)
+ClientConfig.default_config = ClientConfig(api_url=DEFAULT_API_URL)
+ClientConfig.default_path = Path("~").expanduser() / ".eozilla" / "config"
+
+
+def _update_if_not_none(target: dict[str, Any], updates: dict[str, Any]):
+    target.update({k: v for k, v in updates.items() if v is not None})

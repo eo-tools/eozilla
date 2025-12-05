@@ -5,7 +5,6 @@
 import inspect
 from dataclasses import dataclass, field
 from typing import Any, Literal, Optional
-from urllib.parse import urljoin
 
 import pydantic
 import uri_template
@@ -26,8 +25,17 @@ class TransportArgs:
     error_types: dict[str, type | None] = field(default_factory=dict)
     extra_kwargs: dict[str, Any] = field(default_factory=dict)
 
-    def get_url(self, server_url: str) -> str:
-        return urljoin(server_url, uri_template.expand(self.path, **self.path_params))
+    def __post_init__(self):
+        if not uri_template.validate(self.path):
+            raise ValueError(f"Invalid URI template {self.path}")
+
+    def get_url(self, api_url: str) -> str:
+        endpoint_path = uri_template.expand(self.path, **self.path_params)
+        if endpoint_path is None:
+            raise RuntimeError(
+                f"URI template expansion failed for {self.path}, {self.path_params}"
+            )
+        return f"{api_url.rstrip('/')}/{endpoint_path.lstrip('/')}"
 
     def get_json_for_request(self) -> Any:
         request = self.request

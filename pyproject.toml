@@ -1,6 +1,6 @@
 [project]
 name = "eozilla"
-version = "0.0.8"
+version = "0.0.9.dev0"
 description = "A suite of tools around workflow orchestration systems and the OGC API - Processes"
 requires-python = ">=3.10"
 
@@ -34,6 +34,7 @@ ruff = "*"
 mypy = "*"
 # Unit-testing
 pytest = "*"
+pytest-asyncio = "*"
 pytest-cov = "*"
 # GUI testing
 ipyleaflet = "*"
@@ -61,6 +62,7 @@ nbformat = "*"
 # For mermaid diagrams
 pymdown-extensions = "*"
 anaconda-client = ">=1.13.0,<2"
+pydantic-settings = ">=2.12.0,<3"
 
 [tool.pixi.pypi-dependencies]
 # For PyPI builds (maybe replace by some pixi-friendly tool)
