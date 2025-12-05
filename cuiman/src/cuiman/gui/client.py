@@ -4,7 +4,7 @@
 
 import threading
 import time
-from typing import Optional
+from typing import Optional, Any
 
 from cuiman.api.client import Client as ApiClient
 from cuiman.api.exceptions import ClientError
@@ -44,12 +44,27 @@ class Client(ApiClient):
         self._jobs_panel = None
         self._job_info_panels = {}
 
-    def show(self) -> MainPanel:
+    def show(
+        self,
+        process_filter: Optional[dict[str, Any]] = None,
+        input_filter: Optional[dict[str, Any]] = None,
+    ) -> MainPanel:
+        from functools import partial
+
+        accept_process = (
+            partial(self.accept_process, **process_filter) if process_filter else None
+        )
+        accept_input = (
+            partial(self.accept_input, **input_filter) if input_filter else None
+        )
+
         if self._main_panel is None:
             self._main_panel = MainPanel(
                 *self._get_processes(),
                 on_get_process=self.get_process,
                 on_execute_process=self.execute_process,
+                accept_process=accept_process,
+                accept_input=accept_input,
             )
             # noinspection PyTypeChecker
             self._jobs_observers.append(self._main_panel)

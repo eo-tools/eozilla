@@ -1,7 +1,11 @@
+#  Copyright (c) 2025 by the Eozilla team and contributors
+#  Permissions are hereby granted under the terms of the Apache 2.0 License:
+#  https://opensource.org/license/apache-2-0.
+
 from abc import ABC, abstractmethod
 from typing import Any
 
-from gavicore.models import ProcessDescription
+from gavicore.models import ProcessDescription, InputDescription
 from gavicore.util.request import ExecutionRequest
 
 
@@ -40,3 +44,58 @@ class ClientMixin(ABC):
         return ExecutionRequest.from_process_description(
             process_description, dotpath=dotpath
         )
+
+    # noinspection PyUnusedLocal
+    @classmethod
+    def accept_process(
+        cls, process_description: ProcessDescription, **filter_kwargs: Any
+    ) -> bool:
+        """
+        Predicate function that is used to filter the list of processes.
+        The function is intended to be overridden by subclasses in order to allow
+        for evaluating the given `process_description` in an application-specific way.
+        This includes the using custom fields in the given
+        [ProcessDescription][gavicore.models.ProcessDescription] instance.
+
+        Applications may use the [extend_model()][gavicore.util.model.extend_model]
+        function to enhance existing model classes by their custom fields.
+
+        The default implementation unconditionally returns `True`.
+
+        Args:
+            process_description: A process description.
+            filter_kwargs: Implementation specific arguments passed
+                by a user of this class.
+
+        Returns:
+            `True` to accept the given `process_description`, otherwise `False`.
+        """
+        return True
+
+    # noinspection PyUnusedLocal
+    @classmethod
+    def accept_input(
+        cls, process_id: str, input_description: InputDescription, **filter_kwargs: Any
+    ) -> bool:
+        """
+        Predicate function that is used to filter the list of inputs of a process.
+        The function is intended to be overridden by subclasses in order to allow
+        for evaluating the given `input_description` in an application-specific way.
+        This includes the using custom fields in the given
+        [InputDescription][gavicore.models.InputDescription] instance.
+
+        Applications may use the [extend_model()][gavicore.util.model.extend_model]
+        function to enhance existing model classes by their custom fields.
+
+        The default implementation unconditionally returns `True`.
+
+        Args:
+            process_id: The process identifier.
+            input_description: An input description.
+            filter_kwargs: Implementation specific arguments passed
+                by a user of this class.
+
+        Returns:
+            `True` to accept the given `input_description`, otherwise `False`.
+        """
+        return True

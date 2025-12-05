@@ -2,7 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Any, Callable, TypeAlias
+from typing import Any, Callable, TypeAlias, Optional
 
 import panel as pn
 import param
@@ -37,6 +37,8 @@ class MainPanel(pn.viewable.Viewer):
         process_list_error: ClientError | None,
         on_get_process: GetProcessAction,
         on_execute_process: ExecuteProcessAction,
+        accept_process: Optional[Callable] = None,
+        accept_input: Optional[Callable] = None,
     ):
         super().__init__()
         self._processes = process_list.processes
@@ -45,7 +47,11 @@ class MainPanel(pn.viewable.Viewer):
         self._on_execute_process = on_execute_process
         self._on_get_process = on_get_process
 
-        process_select_options = [p.id for p in process_list.processes]
+        self._accept_input = accept_input
+
+        process_select_options = [
+            p.id for p in process_list.processes if accept_process(p)
+        ]
         if process_select_options:
             process_id = process_select_options[0]
         else:
@@ -168,10 +174,14 @@ class MainPanel(pn.viewable.Viewer):
             self._inputs_panel[:] = []
             self._outputs_panel[:] = []
         else:
+            inputs = process_description.inputs or {}
+            if self._accept_input is not None:
+                inputs = {k: v for k, v in inputs.items() if self._accept_input(v)}
+
             self._execute_button.disabled = False
             self._request_button.disabled = False
             self._component_container = ComponentContainer.from_input_descriptions(
-                process_description.inputs or {}, {}
+                inputs, {}
             )
             self._inputs_panel[:] = self._component_container.get_viewables()
             self._outputs_panel[:] = []
