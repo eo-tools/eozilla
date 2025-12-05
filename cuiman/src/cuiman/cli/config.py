@@ -165,12 +165,9 @@ def _prompt_for_bool(
 ) -> bool:
     value: bool | None = ctx.cli_params.get(key)
     if value is None:
-        value = (
-            typer.confirm(
-                text,
-                default=ctx.prev_params.get(key) or default,
-            )
-            is True
+        value = typer.confirm(
+            text,
+            default=ctx.prev_params.get(key) or default,
         )
     ctx.curr_params.update({key: value})
     assert isinstance(value, bool)
