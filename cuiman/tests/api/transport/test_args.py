@@ -42,3 +42,15 @@ class TransportArgsTest(TestCase):
         self.assertEqual("Not implemented (status 501)", f"{client_error}")
         self.assertIsInstance(client_error.api_error, ApiError)
         self.assertEqual("ValidationError", client_error.api_error.type)
+
+    def test_invalid_uri_template(self):
+        with self.assertRaises(ValueError):
+            TransportArgs("/}}}}}", method="get")
+
+    def test_uri_template_expansion_failed(self):
+        with self.assertRaises(RuntimeError):
+            args = TransportArgs("/jobs", method="get")
+            # Easiest way to provoke a "None" result in template expansion
+            # without __post_init__ catching the invalid template first.
+            args.path = "/}}}}}"
+            args.get_url("/jobs")

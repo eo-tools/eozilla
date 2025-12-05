@@ -4,8 +4,11 @@
 
 from typing import Annotated, Final, Optional
 
+import click
 import typer.core
 
+from cuiman.api.auth import AuthType
+from cuiman.api.auth.config import AUTH_TYPE_NAMES
 from cuiman.cli.output import OutputFormat
 from gavicore.util.cli.group import AliasedGroup
 from gavicore.util.cli.parameters import (
@@ -73,6 +76,7 @@ def new_cli(
     help: str | None = None,
     summary: str | None = None,
     version: str | None = None,
+    auth_strategy: AuthType | None = None,
 ) -> typer.Typer:
     """
     Create a server CLI instance for the given, optional name and help text.
@@ -86,6 +90,8 @@ def new_cli(
             if `help` is not provided. Should end with a dot '.'.
         version: Optional version string. If not provided, the
             `cuiman` version will be used.
+        auth_strategy: Optional client authentication strategy.
+            Defaults to no-authentication (`AuthStrategy.NONE`).
     Return:
         a `typer.Typer` instance
     """
@@ -154,34 +160,85 @@ def new_cli(
 
     @t.command()
     def configure(
-        user_name: Optional[str] = typer.Option(
-            None,
-            "--user",
-            "-u",
-            help="Your user name.",
-        ),
-        access_token: Optional[str] = typer.Option(
-            None,
-            "--token",
-            "-t",
-            help="Your personal access token.",
-        ),
-        server_url: Optional[str] = typer.Option(
-            None,
-            "--server",
-            "-s",
-            help="The URL of a service complying to the OGC API - Processes.",
-        ),
-        config_file: Annotated[Optional[str], CONFIG_OPTION] = None,
+        api_url: Annotated[
+            str | None,
+            typer.Option(
+                "--api-url",
+                help="The URL of a service complying to the OGC API - Processes.",
+            ),
+        ] = None,
+        auth_type: Annotated[
+            str | None,
+            typer.Option(
+                "--auth-type",
+                "-a",
+                help="The authorisation method for the API "
+                f"({'|'.join(AUTH_TYPE_NAMES)}).",
+            ),
+        ] = None,
+        auth_url: Annotated[
+            str | None,
+            typer.Option(
+                "--auth-url",
+                help="The URL of the authorisation service for the API ",
+            ),
+        ] = None,
+        username: Annotated[
+            str | None,
+            typer.Option(
+                "--username",
+                "-u",
+                help="Username.",
+            ),
+        ] = None,
+        password: Annotated[
+            str | None,
+            typer.Option(
+                "--password",
+                "-p",
+                help="Password.",
+            ),
+        ] = None,
+        token: Annotated[
+            str | None,
+            typer.Option(
+                "--token",
+                "-t",
+                help="Access token.",
+            ),
+        ] = None,
+        use_bearer: Annotated[
+            bool | None,
+            typer.Option(
+                "--use-bearer",
+                help="Use bearer token?",
+            ),
+        ] = None,
+        token_header: Annotated[
+            str | None,
+            typer.Option(
+                "--token-header",
+                help="Access token header",
+            ),
+        ] = None,
+        config_file: Annotated[str | None, CONFIG_OPTION] = None,
     ):
         """Configure the client tool."""
-        from .config import configure_client
+        from .config import configure_client_with_prompt
 
-        config_path = configure_client(
-            user_name=user_name,
-            access_token=access_token,
-            server_url=server_url,
+        if auth_type is not None and auth_type not in AUTH_TYPE_NAMES:
+            raise click.ClickException(f"Invalid authentication type: {auth_type}")
+
+        config_path = configure_client_with_prompt(
             config_path=config_file,
+            api_url=api_url,
+            auth_type=auth_type,  # type: ignore[arg-type]
+            auth_url=auth_url,
+            username=username,
+            password=password,
+            token=token,
+            use_bearer=use_bearer,
+            token_header=token_header,
         )
         typer.echo(f"Client configuration written to {config_path}")
 

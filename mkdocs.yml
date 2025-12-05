@@ -10,15 +10,20 @@ copyright: Copyright &copy; 2025 Eozilla Team
 
 nav:
   - Overview: index.md
+  - Cuiman Client:
+    - Configuration: client-config.md
+    - Customization: client-custom.md
+    - Usage:
+      - notebooks/client-gui.ipynb
+      - notebooks/client-api.ipynb
+      - notebooks/client-api-airflow.ipynb
+      - notebooks/client-cli.ipynb
+    - References:
+      - CLI: client-cli.md
+      - API: client-api.md
+  - Procodile Framework:
+    - Process Development: process-dev.md
   - Architecture: architecture.md
-  - Client CLI: client-cli.md
-  - Client API: client-api.md
-  - Client Usage:
-        - notebooks/client-gui.ipynb
-        - notebooks/client-api.ipynb
-        - notebooks/client-api-airflow.ipynb
-        - notebooks/client-cli.ipynb
-  - Process Development: process-dev.md
   - Contributing: contributing.md
   - Roadmap: roadmap.md
 
@@ -47,6 +52,7 @@ theme:
 
 markdown_extensions:
   - attr_list
+  - tables
   - admonition
   - pymdownx.details
   - pymdownx.superfences:

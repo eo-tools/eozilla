@@ -35,7 +35,10 @@ def make_mocked_transport(
     async_httpx = MagicMock()
     async_httpx.request = AsyncMock(return_value=response)
 
-    transport = HttpxTransport(server_url="https://api.example.com")
+    transport = HttpxTransport(
+        api_url="https://api.example.com",
+        headers={"Authorization": "Bearer: wt8799aafe"},
+    )
     transport.sync_httpx = sync_httpx
     transport.async_httpx = async_httpx
     return transport
@@ -43,7 +46,7 @@ def make_mocked_transport(
 
 class HttpxSyncTransportTest(TestCase):
     def test_sync_call_initializes_correctly(self):
-        transport = HttpxTransport(server_url="https://api.example.com")
+        transport = HttpxTransport(api_url="https://api.example.com")
         self.assertIsNone(transport.sync_httpx)
         with pytest.raises(TransportError):
             transport.call(TransportArgs("/"))
@@ -68,6 +71,7 @@ class HttpxSyncTransportTest(TestCase):
             "https://api.example.com/conformance",
             params={},
             json=None,
+            headers={"Authorization": "Bearer: wt8799aafe"},
         )
         self.assertIsInstance(result, ConformanceDeclaration)
 
@@ -90,6 +94,7 @@ class HttpxSyncTransportTest(TestCase):
             "https://api.example.com/conformance",
             params={},
             json=None,
+            headers={"Authorization": "Bearer: wt8799aafe"},
         )
         self.assertIsInstance(result, ConformanceDeclaration)
 
@@ -109,6 +114,7 @@ class HttpxSyncTransportTest(TestCase):
             "https://api.example.com/conformance",
             params={},
             json=None,
+            headers={"Authorization": "Bearer: wt8799aafe"},
         )
         self.assertEqual({"conformsTo": ["Hello", "World"]}, result)
 
@@ -165,7 +171,7 @@ class HttpxSyncTransportTest(TestCase):
     def test_close(self):
         sync_httpx = MagicMock()
 
-        transport = HttpxTransport(server_url="https://api.example.com")
+        transport = HttpxTransport(api_url="https://api.example.com")
         transport.sync_httpx = sync_httpx
 
         transport.close()
@@ -174,7 +180,7 @@ class HttpxSyncTransportTest(TestCase):
 
 class HttpxAsyncTransportTest(IsolatedAsyncioTestCase):
     async def test_async_call_initializes_correctly(self):
-        transport = HttpxTransport(server_url="https://api.example.com")
+        transport = HttpxTransport(api_url="https://api.example.com")
         self.assertIsNone(transport.async_httpx)
         with pytest.raises(TransportError):
             await transport.async_call(TransportArgs("/"))
@@ -199,13 +205,14 @@ class HttpxAsyncTransportTest(IsolatedAsyncioTestCase):
             "https://api.example.com/conformance",
             params={},
             json=None,
+            headers={"Authorization": "Bearer: wt8799aafe"},
         )
         self.assertIsInstance(result, ConformanceDeclaration)
 
     async def test_async_close(self):
         async_httpx = MagicMock()
 
-        transport = HttpxTransport(server_url="https://api.example.com")
+        transport = HttpxTransport(api_url="https://api.example.com")
         transport.async_httpx = async_httpx
         transport.async_httpx.aclose = AsyncMock(return_value=None)
 

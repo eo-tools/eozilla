@@ -1,0 +1,30 @@
+{
+    // Python
+    "python.defaultInterpreterPath": "${workspaceFolder}/.pixi/env/bin/python",
+
+    // isort
+    "isort.importStrategy": "fromEnvironment",
+
+    // ruff formatting & linting
+    "ruff.enable": true,
+    "ruff.lint.enable": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.ruff": "explicit",
+        "source.organizeImports": "explicit"
+    },
+
+    // Pylance (VS Code type checker) off, we use mypy
+    "python.analysis.typeCheckingMode": "off",
+    // mypy
+    "mypy-type-checker.importStrategy": "fromEnvironment",
+
+    // Tests: pytest + unittest parallel
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": true,
+    "python.testing.autoTestDiscoverOnSaveEnabled": false,
+
+    // Discover tests in project
+    "python.testing.pytestArgs": [
+        "**/tests"
+    ]
+}

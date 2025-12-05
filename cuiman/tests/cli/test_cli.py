@@ -4,10 +4,12 @@
 
 from pathlib import Path
 from unittest import TestCase
+from unittest.mock import patch
 
 import typer.testing
+import yaml
 
-from cuiman import Client, ClientConfig, __version__
+from cuiman import Client, __version__
 from cuiman.cli.cli import cli, new_cli
 
 from ..helpers import MockTransport
@@ -15,7 +17,7 @@ from ..helpers import MockTransport
 
 def invoke_cli(*args: str) -> typer.testing.Result:
     def get_mock_client(_config_path: str | None):
-        return Client(config=ClientConfig(), _transport=MockTransport())
+        return Client(api_url="https://abc.de", _transport=MockTransport())
 
     runner = typer.testing.CliRunner()
     return runner.invoke(cli, args, obj={"get_client": get_mock_client})
@@ -32,22 +34,63 @@ class CliTest(TestCase):
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual(__version__ + "\n", result.output)
 
-    def test_configure(self):
+    @patch("cuiman.cli.config.login", return_value="dummy-token")
+    def test_configure(self, mock_login):
         config_path = Path("config.cfg")
         result = invoke_cli(
             "configure",
             "-c",
             str(config_path),
-            "-u",
-            "bibo",
-            "-t",
-            "1234",
-            "-s",
+            "--api-url",
             "http://localhorst:2357",
+            "--auth-type",
+            "login",
+            "--auth-url",
+            "http://localhorst:2357/auth/login",
+            "--username",
+            "bibo",
+            "--password",
+            "1234",
+            "--use-bearer",
         )
+        mock_login.assert_called_once()
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertTrue(config_path.exists())
+        with open(config_path) as f:
+            config = yaml.safe_load(f.read())
+            self.assertEqual(
+                {
+                    "api_url": "http://localhorst:2357/",
+                    "auth_type": "login",
+                    "auth_url": "http://localhorst:2357/auth/login",
+                    "username": "bibo",
+                    "password": "1234",
+                    "token": "dummy-token",
+                    "use_bearer": True,
+                    "token_header": "X-Auth-Token",
+                    "api_key_header": "X-API-Key",
+                },
+                config,
+            )
         config_path.unlink()
+
+    def test_configure_with_invalid_auth_method(self):
+        config_path = Path("config.cfg")
+        result = invoke_cli(
+            "configure",
+            "-c",
+            str(config_path),
+            "--api-url",
+            "http://localhost:2357",
+            "--auth-type",
+            "torken",  # INVALID
+            "--token",
+            "x-lkdkadf878akj134lk1lk5lk432lkk",
+        )
+        self.assertEqual(1, result.exit_code, msg=self.get_result_msg(result))
+        self.assertTrue("Invalid authentication type: torken" in result.stderr)
+        if config_path.exists():
+            config_path.unlink()
 
     def test_get_processes(self):
         result = invoke_cli("list-processes")

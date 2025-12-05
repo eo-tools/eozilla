@@ -11,4 +11,5 @@ from typing import Final
 DEFAULT_USER_PATH: Final = Path("~").expanduser() / ".eozilla"
 DEFAULT_CONFIG_PATH: Final = DEFAULT_USER_PATH / "config"
 
-DEFAULT_SERVER_URL: Final = "http://127.0.0.1:8008"
+DEFAULT_API_URL: Final = "http://127.0.0.1:8008/"
+DEFAULT_AUTH_TYPE: Final = "none"

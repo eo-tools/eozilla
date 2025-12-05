@@ -62,9 +62,14 @@ $ cuiman configure [OPTIONS]
 
 **Options**:
 
-* `-u, --user TEXT`: Your user name.
-* `-t, --token TEXT`: Your personal access token.
-* `-s, --server TEXT`: The URL of a service complying to the OGC API - Processes.
+* `--api-url TEXT`: The URL of a service complying to the OGC API - Processes.
+* `-a, --auth-type TEXT`: The authorisation method for the API (none|basic|token|login|api-key).
+* `--auth-url TEXT`: The URL of the authorisation service for the API
+* `-u, --username TEXT`: Username.
+* `-p, --password TEXT`: Password.
+* `-t, --token TEXT`: Access token.
+* `--use-bearer`: Use bearer token?
+* `--token-header TEXT`: Access token header
 * `-c, --config PATH`: Client configuration file.
 * `--help`: Show this message and exit.
 
