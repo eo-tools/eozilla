@@ -2,7 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Any, Callable, TypeAlias, Optional
+from typing import Any, Callable, Optional, TypeAlias
 
 import panel as pn
 import param
@@ -41,7 +41,12 @@ class MainPanel(pn.viewable.Viewer):
         accept_input: Optional[Callable] = None,
     ):
         super().__init__()
-        self._processes = process_list.processes
+
+        processes = process_list.processes
+        if accept_process is not None:
+            processes = [p for p in processes if accept_process(p)]
+
+        self._processes = processes
         self._process_list_error = process_list_error
 
         self._on_execute_process = on_execute_process
@@ -49,9 +54,7 @@ class MainPanel(pn.viewable.Viewer):
 
         self._accept_input = accept_input
 
-        process_select_options = [
-            p.id for p in process_list.processes if accept_process(p)
-        ]
+        process_select_options = [p.id for p in processes]
         if process_select_options:
             process_id = process_select_options[0]
         else:
@@ -174,9 +177,12 @@ class MainPanel(pn.viewable.Viewer):
             self._inputs_panel[:] = []
             self._outputs_panel[:] = []
         else:
+            assert isinstance(process_id, str)
             inputs = process_description.inputs or {}
             if self._accept_input is not None:
-                inputs = {k: v for k, v in inputs.items() if self._accept_input(v)}
+                inputs = {
+                    k: v for k, v in inputs.items() if self._accept_input(process_id, v)
+                }
 
             self._execute_button.disabled = False
             self._request_button.disabled = False

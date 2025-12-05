@@ -4,10 +4,8 @@
 
 from typing import TypeVar
 
-
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
-
 
 T1 = TypeVar("T1", bound=BaseModel)
 T2 = TypeVar("T2", bound=BaseModel)
@@ -45,6 +43,6 @@ def extend_model(model_cls: T1, extension_cls: T2) -> T1:
     assert hasattr(model_cls, "__pydantic_fields__")
     assert isinstance(model_cls.__pydantic_fields__, dict)
     model_cls.__pydantic_fields__.update(new_fields)
-    model_cls.__pydantic_complete__ = False
+    model_cls.__pydantic_complete__ = False  # type: ignore[misc]
     model_cls.model_rebuild()
     return model_cls

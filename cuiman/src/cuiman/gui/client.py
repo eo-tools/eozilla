@@ -4,7 +4,7 @@
 
 import threading
 import time
-from typing import Optional, Any
+from typing import Any, Optional
 
 from cuiman.api.client import Client as ApiClient
 from cuiman.api.exceptions import ClientError

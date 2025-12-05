@@ -15,6 +15,7 @@ from gavicore.models import (
     ProcessDescription,
     ProcessList,
     ProcessRequest,
+    InputDescription,
 )
 from gavicore.util.request import ExecutionRequest
 
@@ -98,3 +99,19 @@ class ClientTest(TestCase):
         self.assertFalse(self.transport.closed)
         self.client.close()
         self.assertTrue(self.transport.closed)
+
+    def test_accept_default_impls(self):
+        # noinspection PyArgumentList
+        self.assertEqual(
+            True,
+            Client.accept_process(
+                ProcessDescription(id="ignored", version="0", title="ignored")
+            ),
+        )
+        # noinspection PyArgumentList,PyTypeChecker
+        self.assertEqual(
+            True,
+            Client.accept_input(
+                "ignored", InputDescription(title="ignored", schema={})
+            ),
+        )

@@ -5,7 +5,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from gavicore.models import ProcessDescription, InputDescription
+from gavicore.models import InputDescription, ProcessDescription
 from gavicore.util.request import ExecutionRequest
 
 
@@ -71,6 +71,9 @@ class ClientMixin(ABC):
             `True` to accept the given `process_description`, otherwise `False`.
         """
         return True
+
+    # TODO: check if process_id should be process_description
+    # TODO: pass also input_name
 
     # noinspection PyUnusedLocal
     @classmethod
