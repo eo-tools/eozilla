@@ -7,6 +7,7 @@ from typing import Any, Callable, TypeAlias
 import panel as pn
 import param
 
+from cuiman.api.config import InputPredicate, ProcessPredicate
 from cuiman.api.exceptions import ClientError
 from gavicore.models import (
     JobInfo,
@@ -20,7 +21,6 @@ from gavicore.util.request import ExecutionRequest
 from .component.container import ComponentContainer
 from .job_info_panel import JobInfoPanel
 from .jobs_observer import JobsObserver
-from ..api.config import ProcessPredicate, InputPredicate
 
 ExecuteProcessAction: TypeAlias = Callable[[str, ProcessRequest], JobInfo]
 GetProcessAction: TypeAlias = Callable[[str], ProcessDescription]

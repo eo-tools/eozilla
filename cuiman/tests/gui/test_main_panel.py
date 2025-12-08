@@ -16,8 +16,8 @@ from gavicore.models import (
     ProcessDescription,
     ProcessList,
     ProcessRequest,
-    Schema,
     ProcessSummary,
+    Schema,
 )
 
 bbox_input = InputDescription(
