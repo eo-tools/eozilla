@@ -4,13 +4,14 @@
 
 import threading
 import time
-from typing import Optional
+from typing import Any, Optional
 
 from cuiman.api.client import Client as ApiClient
 from cuiman.api.exceptions import ClientError
 from cuiman.api.transport import Transport
 from gavicore.models import JobInfo, ProcessList
 
+from .. import ClientConfig
 from .job_info_panel import JobInfoPanel
 from .jobs_observer import JobsObserver
 from .jobs_panel import JobsPanel
@@ -44,12 +45,32 @@ class Client(ApiClient):
         self._jobs_panel = None
         self._job_info_panels = {}
 
-    def show(self) -> MainPanel:
+    def show(
+        self,
+        process_filter: Optional[dict[str, Any]] = None,
+        input_filter: Optional[dict[str, Any]] = None,
+    ) -> MainPanel:
+        from functools import partial
+
+        config_cls: type[ClientConfig] = type(self.config)
+        accept_process = (
+            partial(config_cls.accept_process, **process_filter)
+            if process_filter
+            else config_cls.accept_process
+        )
+        accept_input = (
+            partial(config_cls.accept_input, **input_filter)
+            if input_filter
+            else config_cls.accept_input
+        )
+
         if self._main_panel is None:
             self._main_panel = MainPanel(
                 *self._get_processes(),
                 on_get_process=self.get_process,
                 on_execute_process=self.execute_process,
+                accept_process=accept_process,
+                accept_input=accept_input,
             )
             # noinspection PyTypeChecker
             self._jobs_observers.append(self._main_panel)

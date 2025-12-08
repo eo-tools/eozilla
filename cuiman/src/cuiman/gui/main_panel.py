@@ -20,6 +20,7 @@ from gavicore.util.request import ExecutionRequest
 from .component.container import ComponentContainer
 from .job_info_panel import JobInfoPanel
 from .jobs_observer import JobsObserver
+from ..api.config import ProcessPredicate, InputPredicate
 
 ExecuteProcessAction: TypeAlias = Callable[[str, ProcessRequest], JobInfo]
 GetProcessAction: TypeAlias = Callable[[str], ProcessDescription]
@@ -37,15 +38,22 @@ class MainPanel(pn.viewable.Viewer):
         process_list_error: ClientError | None,
         on_get_process: GetProcessAction,
         on_execute_process: ExecuteProcessAction,
+        accept_process: ProcessPredicate,
+        accept_input: InputPredicate,
     ):
         super().__init__()
-        self._processes = process_list.processes
+
+        processes = [p for p in process_list.processes if accept_process(p)]
+
+        self._processes = processes
         self._process_list_error = process_list_error
 
         self._on_execute_process = on_execute_process
         self._on_get_process = on_get_process
 
-        process_select_options = [p.id for p in process_list.processes]
+        self._accept_input = accept_input
+
+        process_select_options = [p.id for p in processes]
         if process_select_options:
             process_id = process_select_options[0]
         else:
@@ -168,10 +176,18 @@ class MainPanel(pn.viewable.Viewer):
             self._inputs_panel[:] = []
             self._outputs_panel[:] = []
         else:
+            assert isinstance(process_id, str)
+
+            inputs = {
+                k: v
+                for k, v in (process_description.inputs or {}).items()
+                if self._accept_input(process_description, k, v)
+            }
+
             self._execute_button.disabled = False
             self._request_button.disabled = False
             self._component_container = ComponentContainer.from_input_descriptions(
-                process_description.inputs or {}, {}
+                inputs, {}
             )
             self._inputs_panel[:] = self._component_container.get_viewables()
             self._outputs_panel[:] = []

@@ -4,7 +4,7 @@
 
 [project]
 name = "appligator"
-version = "0.0.8"
+version = "0.0.9.dev0"
 description = "An application package bundler"
 readme = "README.md"
 authors = [
