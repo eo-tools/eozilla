@@ -9,7 +9,6 @@ import pytest
 
 from gavicore.models import Schema
 from gavicore.util.schema import (
-    create_schema_instance,
     create_schema_dict,
     inline_schema_refs,
 )
@@ -40,14 +39,6 @@ def test_pydantic_model_json_schema():
             },
         },
     }
-
-
-def test_create_schema_instance():
-    # noinspection PyArgumentList
-    assert create_schema_instance("x", {"type": "number"}) == Schema(type="number")
-
-    with pytest.raises(pydantic.ValidationError):
-        create_schema_instance("x", {"tüp": "number"})
 
 
 def test_create_schema_dict():
