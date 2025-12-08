@@ -9,6 +9,7 @@ from unittest import TestCase
 
 from cuiman.api.config import ClientConfig
 from cuiman.api.defaults import DEFAULT_API_URL
+from gavicore.models import InputDescription, ProcessDescription
 
 
 class ClientConfigTest(TestCase):
@@ -111,3 +112,23 @@ class ClientConfigTest(TestCase):
     def test_default_config(self):
         self.assertIsInstance(ClientConfig.default_config, ClientConfig)
         self.assertEqual(DEFAULT_API_URL, ClientConfig.default_config.api_url)
+
+    def test_default_filter_predicates(self):
+        # noinspection PyArgumentList
+        self.assertEqual(
+            True,
+            ClientConfig.accept_process(
+                ProcessDescription(id="ignored", version="0", title="ignored"),
+                ignored_arg=137,
+            ),
+        )
+        # noinspection PyArgumentList,PyTypeChecker
+        self.assertEqual(
+            True,
+            ClientConfig.accept_input(
+                ProcessDescription(id="ignored", version="0", title="ignored"),
+                "ignored",
+                InputDescription(title="ignored", schema={}),
+                ignored_arg=137,
+            ),
+        )
