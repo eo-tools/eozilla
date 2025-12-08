@@ -11,6 +11,8 @@
 - Added a couple of common authentication methods 
   to `cuiman` client API and CLI configuration 
   (via command `configure`).
+- Renamed `gavicore.util.schema.create_json_schema` into `create_schema_dict`.
+- Removed `gavicore.util.schema.create_schema_instance`.
 - Updated documentation.
 
 ## Changes in version 0.0.8
