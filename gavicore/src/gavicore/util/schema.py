@@ -3,26 +3,12 @@
 #  https://opensource.org/license/apache-2-0.
 
 import copy
-import json
 from typing import Any
 
 import pydantic
 
-from gavicore.models import Schema
 
-
-def create_schema_instance(name: str, schema: dict[str, Any]) -> Schema:
-    try:
-        return Schema(**schema)
-    except pydantic.ValidationError:
-        print(80 * ">")
-        print("name:", name)
-        print("schema:", json.dumps(schema, indent=2))
-        print(80 * "<")
-        raise
-
-
-def create_json_schema(
+def create_schema_dict(
     model_class: type[pydantic.BaseModel],
 ) -> dict[str, Any]:
     model_class.model_rebuild()

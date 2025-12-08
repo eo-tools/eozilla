@@ -447,3 +447,21 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
             "be the only argument \(inputs_arg='u'\)",
         ):
             Process.create(f5_too_many_args, id="f5_too_many_args", inputs_arg="u")
+
+
+def test_create_schema_ok():
+    from procodile.process import _create_schema
+
+    assert _create_schema(
+        "create_scene", "input", "thres", {"type": "number"}
+    ) == Schema(**{"type": "number"})
+
+
+def test_create_schema_fail():
+    from procodile.process import _create_schema
+
+    with pytest.raises(
+        ValueError,
+        match=r"function create_scene\(\), input 'thres': 1 validation error for Schema",
+    ):
+        _create_schema("create_scene", "input", "thres", {"type": "float64"})

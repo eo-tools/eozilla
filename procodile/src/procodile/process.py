@@ -12,8 +12,9 @@ from gavicore.models import (
     InputDescription,
     OutputDescription,
     ProcessDescription,
+    Schema,
 )
-from gavicore.util.schema import create_json_schema, create_schema_instance
+from gavicore.util.schema import create_schema_dict
 
 
 @dataclass
@@ -126,14 +127,14 @@ def _parse_inputs(
 
     model_class.model_rebuild()
 
-    inputs_schema = create_json_schema(model_class)
+    inputs_schema = create_schema_dict(model_class)
     input_descriptions = {
         input_name: InputDescription(
             minOccurs=1 if input_name in inputs_schema.get("required", []) else 0,
             maxOccurs=None,
             title=schema.pop("title", None),
             description=schema.pop("description", None),
-            schema=create_schema_instance(input_name, schema),
+            schema=_create_schema(fn_name, "input", input_name, schema),
         )
         for input_name, schema in inputs_schema.get("properties", {}).items()
     }
@@ -256,12 +257,23 @@ def _parse_outputs(
         for arg_type, (output_name, field_info) in zip(args, output_fields.items()):
             model_field_definitions[output_name] = (arg_type, field_info)
     model_class = pydantic.create_model("Outputs", **model_field_definitions)
-    outputs_schema = create_json_schema(model_class)
+    outputs_schema = create_schema_dict(model_class)
     output_descriptions = {}
     for output_name, schema in outputs_schema.get("properties", {}).items():
         output_descriptions[output_name] = OutputDescription(
             title=schema.pop("title", None),
             description=schema.pop("description", None),
-            schema=create_schema_instance(output_name, schema),
+            schema=_create_schema(fn_name, "output", output_name, schema),
         )
     return output_descriptions
+
+
+def _create_schema(
+    fn_name: str, param_type: str, param_name: str, schema: dict[str, Any]
+) -> Schema:
+    try:
+        return Schema(**schema)
+    except pydantic.ValidationError as e:
+        raise ValueError(
+            f"function {fn_name}(), {param_type} {param_name!r}: {e}"
+        ) from e
