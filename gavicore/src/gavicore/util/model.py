@@ -39,7 +39,7 @@ def extend_model(model_cls: T1, extension_cls: T2) -> T1:
     for name, new_field in new_fields.items():
         if name in old_fields:
             old_field = old_fields[name]
-            new_fields[name] = new_field.merge_field_infos(old_field)
+            new_fields[name] = FieldInfo.merge_field_infos(old_field, new_field)
     assert hasattr(model_cls, "__pydantic_fields__")
     assert isinstance(model_cls.__pydantic_fields__, dict)
     model_cls.__pydantic_fields__.update(new_fields)
