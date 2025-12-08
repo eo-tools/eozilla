@@ -31,9 +31,9 @@ def extend_model(model_cls: T1, extension_cls: T2) -> T1:
         The `model_cls` instance.
     """
     # noinspection PyTypeChecker
-    old_fields: dict[str, FieldInfo] = model_cls.model_fields
+    old_fields = model_cls.model_fields  # type: ignore[call-overload]
     # noinspection PyTypeChecker
-    new_fields: dict[str, FieldInfo] = dict(extension_cls.model_fields)
+    new_fields = dict(extension_cls.model_fields)  # type: ignore[call-overload]
     if not new_fields:
         return model_cls
     for name, new_field in new_fields.items():
