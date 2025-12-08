@@ -19,7 +19,6 @@ def test_extend_model_add_fields():
     model = MyModel(level=3)
     assert model.model_dump(mode="json") == {"level": 3}
 
-    # noinspection PyTypeChecker
     model_cls = extend_model(MyModel, MyExtension)
     assert model_cls is MyModel
 
@@ -41,7 +40,6 @@ def test_extend_model_merge_fields():
     model = MyModel(level=3)
     assert model.model_dump(mode="json") == {"level": 3}
 
-    # noinspection PyTypeChecker
     model_cls = extend_model(MyModel, MyExtension)
     assert model_cls is MyModel
 
@@ -65,7 +63,6 @@ def test_extend_model_empty():
     model = MyModel(level=3)
     assert model.model_dump(mode="json") == {"level": 3}
 
-    # noinspection PyTypeChecker
     model_cls = extend_model(MyModel, MyEmptyExtension)
     assert model_cls is MyModel
 

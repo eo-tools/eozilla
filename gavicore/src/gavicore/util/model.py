@@ -7,8 +7,8 @@ from typing import TypeVar
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 
-T1 = TypeVar("T1", bound=BaseModel)
-T2 = TypeVar("T2", bound=BaseModel)
+T1 = TypeVar("T1", bound=type[BaseModel])
+T2 = TypeVar("T2", bound=type[BaseModel])
 
 
 def extend_model(model_cls: T1, extension_cls: T2) -> T1:
