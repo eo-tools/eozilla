@@ -3,11 +3,13 @@
 #  https://opensource.org/license/apache-2-0.
 
 from pathlib import Path
-from typing import Any, ClassVar, Optional
+from typing import Annotated, Any, Callable, ClassVar, Optional, TypeAlias
 
 import yaml
-from pydantic import HttpUrl, field_validator
+from pydantic import Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 
 from .auth import AuthConfig
 from .defaults import DEFAULT_API_URL
@@ -40,7 +42,7 @@ class ClientConfig(AuthConfig, BaseSettings):
     Designed to be overridden by library clients.
     """
 
-    api_url: Optional[str] = None
+    api_url: Annotated[Optional[str], Field(title="Process API URL")] = None
 
     def _repr_json_(self):
         return self.model_dump(mode="json", by_alias=True), dict(
@@ -128,9 +130,82 @@ class ClientConfig(AuthConfig, BaseSettings):
     def validate_api_url(cls, v: str | None) -> str | None:
         return None if v is None or v == "" else str(HttpUrl(v))
 
+    # noinspection PyUnusedLocal
+    @classmethod
+    def accept_process(
+        cls, process_summary: ProcessSummary, **filter_kwargs: Any
+    ) -> bool:
+        """
+        Predicate function that is used to filter the list of processes.
+        The function is intended to be overridden by subclasses in order to allow
+        for evaluating the given `process_summary` in an application-specific way.
+        This includes the using custom fields in the given
+        [ProcessSummary][gavicore.models.ProcessSummary] instance.
 
+        Applications may use the [extend_model()][gavicore.util.model.extend_model]
+        function to enhance existing model classes by their custom fields.
+
+        The default implementation unconditionally returns `True`.
+
+        Args:
+            process_summary: A process summary.
+            filter_kwargs: Implementation specific arguments passed
+                by a user of this class.
+
+        Returns:
+            `True` to accept the given process, otherwise `False`.
+        """
+        return True
+
+    # noinspection PyUnusedLocal
+    @classmethod
+    def accept_input(
+        cls,
+        process_description: ProcessDescription,
+        input_name: str,
+        input_description: InputDescription,
+        **filter_kwargs: Any,
+    ) -> bool:
+        """
+        Predicate function that is used to filter the list of inputs of a process.
+        The function is intended to be overridden by subclasses in order to allow
+        for evaluating the given `input_description` in an application-specific way.
+        This includes the using custom fields in the given
+        [InputDescription][gavicore.models.InputDescription] instance.
+
+        Applications may use the [extend_model()][gavicore.util.model.extend_model]
+        function to enhance existing model classes by their custom fields.
+
+        The default implementation unconditionally returns `True`.
+
+        Args:
+            process_description: The process description.
+            input_name: The input's name.
+            input_description: A description of an
+                input of the given `process_description`.
+            filter_kwargs: Implementation specific arguments passed
+                by a user of this class.
+
+        Returns:
+            `True` to accept the given input, otherwise `False`.
+        """
+        return True
+
+
+# Set Eozilla defaults.
+# Cuiman applications might want to change them.
 ClientConfig.default_config = ClientConfig(api_url=DEFAULT_API_URL)
 ClientConfig.default_path = Path("~").expanduser() / ".eozilla" / "config"
+
+ProcessPredicate: TypeAlias = Callable[[ProcessSummary], bool]
+"""
+Type that describes the [accept_process][ClientConfig.accept_process] class method.
+"""
+
+InputPredicate: TypeAlias = Callable[[ProcessDescription, str, InputDescription], bool]
+"""
+Type that describes the [accept_input][ClientConfig.accept_process] class method.
+"""
 
 
 def _update_if_not_none(target: dict[str, Any], updates: dict[str, Any]):

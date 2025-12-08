@@ -17,6 +17,7 @@ from gavicore.models import (
     ProcessList,
     ProcessRequest,
     Schema,
+    ProcessSummary,
 )
 
 bbox_input = InputDescription(
@@ -95,6 +96,18 @@ def _create_main_panel(process_inputs: dict[str, InputDescription]) -> MainPanel
     return MainPanel(
         process_list,
         None,
-        on_get_process=on_get_process,
-        on_execute_process=on_execute_process,
+        on_get_process,
+        on_execute_process,
+        accept_process,
+        accept_input,
     )
+
+
+# noinspection PyUnusedLocal
+def accept_process(p: ProcessSummary) -> bool:
+    return True
+
+
+# noinspection PyUnusedLocal
+def accept_input(p: ProcessDescription, i_name: str, i: InputDescription) -> bool:
+    return True
