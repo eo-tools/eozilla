@@ -462,6 +462,6 @@ def test_create_schema_fail():
 
     with pytest.raises(
         ValueError,
-        match="function create_scene(), input 'thres': 1 validation error for Schema",
+        match=r"function create_scene\(\), input 'thres': 1 validation error for Schema",
     ):
         _create_schema("create_scene", "input", "thres", {"type": "float64"})
