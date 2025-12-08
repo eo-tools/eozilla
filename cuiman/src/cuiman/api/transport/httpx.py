@@ -39,7 +39,7 @@ class HttpxTransport(Transport, AsyncTransport):
             self.sync_httpx = httpx.Client()
         args_, kwargs_ = self._get_request_args(args)
         try:
-            response = self.sync_httpx.request(*args_, **kwargs_)
+            response = self.sync_httpx.request(timeout=10, *args_, **kwargs_)
         except httpx.HTTPError as e:
             raise TransportError(f"{e}") from e
         return self._process_response(args, response)
