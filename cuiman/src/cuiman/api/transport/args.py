@@ -47,9 +47,12 @@ class TransportArgs:
             else request
         )
 
-    def get_response_for_status(self, status_code: int, json_data: Any):
+    def get_response_for_status(
+        self, status_code: int, json_data: Any, return_type_map: dict[type, type]
+    ):
         status_key = str(status_code)
         return_type = self.return_types.get(status_key)
+        return_type = return_type_map.get(return_type, return_type)
         if (
             return_type is not None
             and inspect.isclass(return_type)

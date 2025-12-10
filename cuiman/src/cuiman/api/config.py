@@ -37,9 +37,19 @@ class ClientConfig(AuthConfig, BaseSettings):
 
     default_path: ClassVar[Path]
     """
-    Name of the configuration's . 
+    Name of the configuration's local default path. 
     Used for configuration persistence in `~/.<config_name>/`.
     Designed to be overridden by library clients.
+    """
+
+    return_type_map: ClassVar[dict[type, type]] = {}
+    """
+    A mapping from a hard-coded client return type to a 
+    custom return type. The hard-coded return type is usually a 
+    model class from `gavicore.models`. The custom return type 
+    typically extends the model class.  
+    Designed to be configured by library clients.
+    The default mapping is empty.
     """
 
     api_url: Annotated[Optional[str], Field(title="Process API URL")] = None

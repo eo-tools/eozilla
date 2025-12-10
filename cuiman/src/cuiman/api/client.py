@@ -58,6 +58,7 @@ class Client(ClientMixin):
             HttpxTransport(
                 api_url=self._config.api_url,
                 headers=self._config.auth_headers,
+                return_type_map=self._config.return_type_map,
                 debug=_debug,
             )
             if _transport is None

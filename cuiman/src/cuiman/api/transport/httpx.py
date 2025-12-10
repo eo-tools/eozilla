@@ -21,10 +21,12 @@ class HttpxTransport(Transport, AsyncTransport):
         self,
         api_url: str,
         headers: dict[str, str] | None = None,
+        return_type_map: dict[type, type] | None = None,
         debug: bool = False,
     ):
         self.api_url = api_url
         self.headers = headers
+        self.return_type_map = return_type_map or {}
         self.debug = debug
         self.sync_httpx: httpx.Client | None = None
         self.async_httpx: httpx.AsyncClient | None = None
@@ -88,7 +90,9 @@ class HttpxTransport(Transport, AsyncTransport):
             ) from e
         try:
             response.raise_for_status()
-            return args.get_response_for_status(response.status_code, response_json)
+            return args.get_response_for_status(
+                response.status_code, response_json, self.return_type_map
+            )
         except httpx.HTTPError as e:
             raise args.get_exception_for_status(
                 response.status_code, f"{e}", response_json
