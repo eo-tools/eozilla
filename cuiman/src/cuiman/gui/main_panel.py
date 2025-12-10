@@ -53,9 +53,12 @@ class MainPanel(pn.viewable.Viewer):
 
         self._accept_input = accept_input
 
-        process_select_options = [p.id for p in processes]
-        if process_select_options:
-            process_id = process_select_options[0]
+        process_select_options = {
+            f"{p.title if p.title else 'No Title'}  (id={p.id})": p.id
+            for p in processes
+        }
+        if processes:
+            process_id = processes[0].id
         else:
             process_id = None
 
@@ -147,29 +150,31 @@ class MainPanel(pn.viewable.Viewer):
         pass
 
     def _on_process_id_changed(self, process_id: str | None = None):
-        process_description: ProcessDescription | None = None
-        process_markdown: str | None = None
+        process: ProcessDescription | None = None
+        markdown_text: str | None = None
         if not process_id:
-            process_markdown = "_No process selected._"
+            markdown_text = "_No process selected._"
         else:
             if process_id in self._processes_dict:
-                process_description = self._processes_dict[process_id]
+                process = self._processes_dict[process_id]
             else:
                 try:
-                    process_description = self._on_get_process(process_id)
-                    self._processes_dict[process_id] = process_description
+                    process = self._on_get_process(process_id)
+                    self._processes_dict[process_id] = process
                 except ClientError as e:
                     # TODO: also show e.api_error.traceback, when user expands the message
-                    process_description = None
-                    process_markdown = f"**Error**: {e}: {e.api_error.detail}"
-            if process_description:
-                process_markdown = (
-                    f"**{process_description.title}**\n\n"
-                    f"{process_description.description}"
-                )
+                    process = None
+                    markdown_text = f"**Error**: {e}: {e.api_error.detail}"
 
-        self._process_doc_markdown.object = process_markdown
-        if not process_description:
+        if not markdown_text:
+            if process.description:
+                markdown_text = f"**Description:** {process.description}"
+            else:
+                markdown_text = "**Description:** _No description available._"
+
+        self._process_doc_markdown.object = markdown_text
+
+        if not process:
             self._execute_button.disabled = True
             self._request_button.disabled = True
             self._component_container = None
@@ -180,8 +185,8 @@ class MainPanel(pn.viewable.Viewer):
 
             inputs = {
                 k: v
-                for k, v in (process_description.inputs or {}).items()
-                if self._accept_input(process_description, k, v)
+                for k, v in (process.inputs or {}).items()
+                if self._accept_input(process, k, v)
             }
 
             self._execute_button.disabled = False

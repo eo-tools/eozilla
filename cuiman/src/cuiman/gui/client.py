@@ -24,7 +24,7 @@ class Client(ApiClient):
         *,
         update_interval: float = 2.0,
         _transport: Optional[Transport] = None,
-        **config,
+        **config: Any,
     ):
         super().__init__(_transport=_transport, **config)
         self._jobs: dict[str, JobInfo] = {}
@@ -45,35 +45,44 @@ class Client(ApiClient):
         self._jobs_panel = None
         self._job_info_panels = {}
 
-    def show(
-        self,
-        process_filter: Optional[dict[str, Any]] = None,
-        input_filter: Optional[dict[str, Any]] = None,
-    ) -> MainPanel:
+    def show(self, **kwargs: Any) -> MainPanel:
+        """Shows the client's main GUI.
+
+        Args:
+            kwargs: Extra GUI configuration parameters.
+                The default client does not have any extra configuration parameters.
+                However, applications using `cuiman.gui.Client` may make special
+                use of them. Refer to a dedicated documentation in this case.
+
+        Returns:
+            MainPanel: The main GUI panel object.
+        """
         from functools import partial
 
         config_cls: type[ClientConfig] = type(self.config)
         accept_process = (
-            partial(config_cls.accept_process, **process_filter)
-            if process_filter
+            partial(config_cls.accept_process, **kwargs)
+            if kwargs
             else config_cls.accept_process
         )
         accept_input = (
-            partial(config_cls.accept_input, **input_filter)
-            if input_filter
+            partial(config_cls.accept_input, **kwargs)
+            if kwargs
             else config_cls.accept_input
         )
-
-        if self._main_panel is None:
-            self._main_panel = MainPanel(
-                *self._get_processes(),
-                on_get_process=self.get_process,
-                on_execute_process=self.execute_process,
-                accept_process=accept_process,
-                accept_input=accept_input,
-            )
+        if self._main_panel is not None:
             # noinspection PyTypeChecker
-            self._jobs_observers.append(self._main_panel)
+            self._jobs_observers.remove(self._main_panel)
+
+        self._main_panel = MainPanel(
+            *self._get_processes(),
+            on_get_process=self.get_process,
+            on_execute_process=self.execute_process,
+            accept_process=accept_process,
+            accept_input=accept_input,
+        )
+        # noinspection PyTypeChecker
+        self._jobs_observers.append(self._main_panel)
 
         self._ensure_update_thread_is_running()
 
