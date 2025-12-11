@@ -27,6 +27,10 @@ def inline_schema_refs(schema: dict[str, Any]) -> dict[str, Any]:
 
 
 def _inline_schema_refs(schema: dict[str, Any], defs: dict[str, Any]) -> dict[str, Any]:
+
+    if not isinstance(schema, dict):
+       return schema
+        
     if "$ref" in schema:
         ref = schema["$ref"]
         if ref in defs:
