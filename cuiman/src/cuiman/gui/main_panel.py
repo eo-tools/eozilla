@@ -26,6 +26,11 @@ ExecuteProcessAction: TypeAlias = Callable[[str, ProcessRequest], JobInfo]
 GetProcessAction: TypeAlias = Callable[[str], ProcessDescription]
 
 
+class MainPanelSettings:
+    # Last selected process identifier
+    process_id: str | None = None
+
+
 class MainPanel(pn.viewable.Viewer):
     # can be normal list
     _processes = param.List(default=[], doc="List of process summaries")
@@ -57,17 +62,21 @@ class MainPanel(pn.viewable.Viewer):
             f"{p.title if p.title else 'No Title'}  (id={p.id})": p.id
             for p in processes
         }
+
+        process_id: str | None = None
         if processes:
-            process_id = processes[0].id
-        else:
-            process_id = None
+            # Try reusing MainPanelSettings.process_id
+            for p in processes:
+                if p.id == MainPanelSettings.process_id:
+                    process_id = p.id
+                    break
+            # Fallback to first entry
+            process_id = process_id or processes[0].id
 
         self._process_select = pn.widgets.Select(
             name="Process", options=process_select_options, value=process_id
         )
-        self._process_select.param.watch(
-            lambda e: self._on_process_id_changed(e.new), "value"
-        )
+        self._process_select.param.watch(self._on_process_id_changed, "value")
 
         self._process_doc_markdown = pn.pane.Markdown("")
         process_panel = pn.Column(
@@ -128,7 +137,11 @@ class MainPanel(pn.viewable.Viewer):
 
         self._component_container: ComponentContainer | None = None
 
-        self._on_process_id_changed(process_id)
+        class EventMock:
+            def __init__(self, new: Any):
+                self.new = new
+
+        self._on_process_id_changed(EventMock(process_id))
 
     def __panel__(self) -> pn.viewable.Viewable:
         return self._view
@@ -149,7 +162,16 @@ class MainPanel(pn.viewable.Viewer):
         # TODO: render error
         pass
 
-    def _on_process_id_changed(self, process_id: str | None = None):
+    def _on_process_id_changed(self, event: Any):
+        # noinspection PyBroadException
+        try:
+            self.__on_process_id_changed(event.new)
+        except Exception as e:
+            print(f"ERROR: {e}")
+
+    def __on_process_id_changed(self, process_id: str | None = None):
+        MainPanelSettings.process_id = process_id
+
         process: ProcessDescription | None = None
         markdown_text: str | None = None
         if not process_id:

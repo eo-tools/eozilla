@@ -1,16 +1,16 @@
 ## Changes in version 0.0.9 (in development)
 
 - Provided additional options to customize `cuiman`:
-  1. Use `cuiman.ClientConfig` class as base 
-     class and then configure it with a custom 
-     `pydantic_settings.SettingsConfigDict` instance.
-  2. Override class members in `cuiman.ClientConfig`      
-     to initialize custom default values.
-  3. Create a dedicated CLI instance with customized
-     settings.
-- Added a couple of common authentication methods 
-  to `cuiman` client API and CLI configuration 
-  (via command `configure`).
+  - Use `cuiman.ClientConfig` class as base class and then configure it with a custom 
+    `pydantic_settings.SettingsConfigDict` instance.
+  - Override class members in `cuiman.ClientConfig` to initialize custom default values,
+    override model classes, and implement application-specific behaviour.
+  - Create a dedicated CLI instance with customized settings.
+  - The `show()` method of the `cuiman.gui.Client` now supports passing application-
+    specific parameters, e.g., to filter processes and process inputs. 
+- Added a couple of common authentication methods to `cuiman` client API and CLI 
+  configuration (via command `configure`): basic, login, token, api-key methods are 
+  now supported.
 - Renamed `gavicore.util.schema.create_json_schema` into `create_schema_dict`.
 - Removed `gavicore.util.schema.create_schema_instance`.
 - Updated documentation.
