@@ -8,6 +8,7 @@
   - Create a dedicated CLI instance with customized settings.
   - The `show()` method of the `cuiman.gui.Client` now supports passing application-
     specific parameters, e.g., to filter processes and process inputs. 
+- Added switch "Show advanced inputs" to the `cuiman` GUI's main panel. 
 - Added a couple of common authentication methods to `cuiman` client API and CLI 
   configuration (via command `configure`): basic, login, token, api-key methods are 
   now supported.

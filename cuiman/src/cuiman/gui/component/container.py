@@ -74,6 +74,10 @@ class ComponentContainer:
                     raise ValueError(msg)
                 warnings.warn(msg)
 
+    @property
+    def is_empty(self) -> bool:
+        return len(self._entries) == 0
+
     def get_json_values(self):
         """Get component values as JSON values."""
         return {

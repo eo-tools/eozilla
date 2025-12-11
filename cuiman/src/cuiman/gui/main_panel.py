@@ -15,6 +15,7 @@ from gavicore.models import (
     ProcessDescription,
     ProcessList,
     ProcessRequest,
+    ProcessSummary,
 )
 from gavicore.util.request import ExecutionRequest
 
@@ -29,6 +30,8 @@ GetProcessAction: TypeAlias = Callable[[str], ProcessDescription]
 class MainPanelSettings:
     # Last selected process identifier
     process_id: str | None = None
+    # Whether to show advanced input options
+    show_advanced: bool = False
 
 
 class MainPanel(pn.viewable.Viewer):
@@ -45,6 +48,7 @@ class MainPanel(pn.viewable.Viewer):
         on_execute_process: ExecuteProcessAction,
         accept_process: ProcessPredicate,
         accept_input: InputPredicate,
+        show_advanced: bool | None = None,
     ):
         super().__init__()
 
@@ -52,39 +56,44 @@ class MainPanel(pn.viewable.Viewer):
 
         self._processes = processes
         self._process_list_error = process_list_error
-
         self._on_execute_process = on_execute_process
         self._on_get_process = on_get_process
-
+        self._client_error: ClientError | None = None
         self._accept_input = accept_input
 
+        # --- _process_select
         process_select_options = {
             f"{p.title if p.title else 'No Title'}  (id={p.id})": p.id
             for p in processes
         }
-
-        process_id: str | None = None
-        if processes:
-            # Try reusing MainPanelSettings.process_id
-            for p in processes:
-                if p.id == MainPanelSettings.process_id:
-                    process_id = p.id
-                    break
-            # Fallback to first entry
-            process_id = process_id or processes[0].id
-
+        process_id = self._get_initial_process_id(processes)
         self._process_select = pn.widgets.Select(
             name="Process", options=process_select_options, value=process_id
         )
         self._process_select.param.watch(self._on_process_id_changed, "value")
 
+        # --- _advanced_switch
+        self._advanced_switch = pn.widgets.Switch(
+            name="Show advanced inputs",
+            value=(
+                MainPanelSettings.show_advanced
+                if show_advanced is None
+                else show_advanced
+            ),
+            disabled=False,
+        )
+        self._advanced_switch.param.watch(self._on_advanced_switch_changed, "value")
+
+        # --- _process_doc_markdown
         self._process_doc_markdown = pn.pane.Markdown("")
         process_panel = pn.Column(
             # pn.pane.Markdown("# Process"),
             self._process_select,
             self._process_doc_markdown,
+            self._advanced_switch,
         )
 
+        # --- Buttons
         self._execute_button = pn.widgets.Button(
             name="Execute",
             # tooltip="Executes the selected process with the current request",
@@ -162,62 +171,113 @@ class MainPanel(pn.viewable.Viewer):
         # TODO: render error
         pass
 
+    @classmethod
+    def _get_initial_process_id(cls, processes: list[ProcessSummary]) -> str | None:
+        if not processes:
+            return None
+        # Try reusing MainPanelSettings.process_id
+        for p in processes:
+            if p.id == MainPanelSettings.process_id:
+                return p.id
+        # Fallback to first entry
+        return processes[0].id
+
     def _on_process_id_changed(self, event: Any):
+        MainPanelSettings.process_id = event.new
         # noinspection PyBroadException
         try:
-            self.__on_process_id_changed(event.new)
+            self.__on_process_id_changed()
         except Exception as e:
             print(f"ERROR: {e}")
 
-    def __on_process_id_changed(self, process_id: str | None = None):
-        MainPanelSettings.process_id = process_id
+    def __on_process_id_changed(self):
+        process = self._get_or_fetch_process_description()
+        self._update_process_description_markdown(process)
+        self._update_action_panel(process)
+        self._update_inputs_component_container(process)
 
-        process: ProcessDescription | None = None
-        markdown_text: str | None = None
-        if not process_id:
-            markdown_text = "_No process selected._"
-        else:
-            if process_id in self._processes_dict:
-                process = self._processes_dict[process_id]
-            else:
-                try:
-                    process = self._on_get_process(process_id)
-                    self._processes_dict[process_id] = process
-                except ClientError as e:
-                    # TODO: also show e.api_error.traceback, when user expands the message
-                    process = None
-                    markdown_text = f"**Error**: {e}: {e.api_error.detail}"
+    def _on_advanced_switch_changed(self, event: Any):
+        MainPanelSettings.show_advanced = bool(event.new)
+        # noinspection PyBroadException
+        try:
+            self.__on_advanced_switch_changed()
+        except Exception as e:
+            print(f"ERROR: {e}")
 
-        if not markdown_text:
+    def __on_advanced_switch_changed(self):
+        process = self._get_or_fetch_process_description()
+        self._update_inputs_component_container(process)
+
+    def _update_process_description_markdown(self, process: ProcessDescription | None):
+        if process is not None:
             if process and process.description:
                 markdown_text = f"**Description:** {process.description}"
             else:
                 markdown_text = "**Description:** _No description available._"
+        else:
+            if self._client_error is not None:
+                e = self._client_error
+                markdown_text = f"**Error**: {e}: {e.api_error.detail}"
+            else:
+                markdown_text = "_No process selected._"
 
         self._process_doc_markdown.object = markdown_text
 
-        if not process:
-            self._execute_button.disabled = True
-            self._request_button.disabled = True
+    def _update_inputs_component_container(self, process: ProcessDescription | None):
+        if process is None:
+            self._advanced_switch.disabled = True
             self._component_container = None
             self._inputs_panel[:] = []
             self._outputs_panel[:] = []
-        else:
-            assert isinstance(process_id, str)
+            return
 
-            inputs = {
+        inputs = process.inputs or {}
+        has_advanced_inputs = any(
+            hasattr(v, "level") and v.level == "advanced" for v in inputs.values()
+        )
+        if not has_advanced_inputs:
+            filtered_inputs = inputs
+        else:
+            params = {
+                "level": "advanced" if self._advanced_switch.value is True else "common"
+            }
+            # noinspection PyArgumentList
+            filtered_inputs = {
                 k: v
-                for k, v in (process.inputs or {}).items()
-                if self._accept_input(process, k, v)
+                for k, v in inputs.items()
+                if self._accept_input(process, k, v, **params)
             }
 
-            self._execute_button.disabled = False
-            self._request_button.disabled = False
-            self._component_container = ComponentContainer.from_input_descriptions(
-                inputs, {}
-            )
+        self._advanced_switch.disabled = not has_advanced_inputs
+        self._component_container = ComponentContainer.from_input_descriptions(
+            filtered_inputs, {}
+        )
+        if not self._component_container.is_empty:
             self._inputs_panel[:] = self._component_container.get_viewables()
-            self._outputs_panel[:] = []
+        else:
+            self._inputs_panel[:] = [pn.pane.Markdown("_No inputs available._")]
+        self._outputs_panel[:] = []
+
+    def _update_action_panel(self, process: ProcessDescription | None):
+        self._execute_button.disabled = process is None
+        self._request_button.disabled = process is None
+
+    def _get_or_fetch_process_description(
+        self, process_id: str | None = None
+    ) -> ProcessDescription | None:
+        process_id = process_id or self._process_select.value
+        if not process_id:
+            return None
+        if process_id in self._processes_dict:
+            return self._processes_dict[process_id]
+        try:
+            process = self._on_get_process(process_id)
+            self._processes_dict[process_id] = process
+            self._client_error = None
+        except ClientError as client_error:
+            process = None
+            self._client_error = client_error
+        return process
 
     def _on_execute_button_clicked(self, _event: Any = None):
         execution_request = self._new_execution_request()

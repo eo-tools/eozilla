@@ -65,21 +65,19 @@ class Client(ApiClient):
             if kwargs
             else config_cls.accept_process
         )
-        accept_input = (
-            partial(config_cls.accept_input, **kwargs)
-            if kwargs
-            else config_cls.accept_input
-        )
         if self._main_panel is not None:
             # noinspection PyTypeChecker
             self._jobs_observers.remove(self._main_panel)
 
+        level = kwargs.get("level")
+        show_advanced = level == "advanced" if level is not None else None
         self._main_panel = MainPanel(
             *self._get_processes(),
             on_get_process=self.get_process,
             on_execute_process=self.execute_process,
             accept_process=accept_process,
-            accept_input=accept_input,
+            accept_input=config_cls.accept_input,
+            show_advanced=show_advanced,
         )
         # noinspection PyTypeChecker
         self._jobs_observers.append(self._main_panel)
