@@ -52,7 +52,8 @@ class TransportArgs:
     ):
         status_key = str(status_code)
         return_type = self.return_types.get(status_key)
-        return_type = return_type_map.get(return_type, return_type)
+        if return_type is not None:
+            return_type = return_type_map.get(return_type, return_type)
         if (
             return_type is not None
             and inspect.isclass(return_type)

@@ -189,7 +189,7 @@ class MainPanel(pn.viewable.Viewer):
                     markdown_text = f"**Error**: {e}: {e.api_error.detail}"
 
         if not markdown_text:
-            if process.description:
+            if process and process.description:
                 markdown_text = f"**Description:** {process.description}"
             else:
                 markdown_text = "**Description:** _No description available._"
