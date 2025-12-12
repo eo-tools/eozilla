@@ -14,6 +14,8 @@
 - Renamed `gavicore.util.schema.create_json_schema` into `create_schema_dict`.
 - Removed `gavicore.util.schema.create_schema_instance`.
 - Updated documentation.
+- Implemented a defensive fix in gavicore.util.schema._inline_schema_refs so it no 
+  longer assumes every schema node is a dict. 
 
 ## Changes in version 0.0.8
 

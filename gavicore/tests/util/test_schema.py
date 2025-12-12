@@ -138,3 +138,15 @@ class TestExtraForbidModel:
         assert schema.get("additionalProperties") is False
         assert schema["required"] == ["some_data"]
         assert "properties" in schema and "some_data" in schema["properties"]
+
+
+def test_inline_schema_refs_preserves_boolean_nodes():
+    # Ensure non-dict schemas (e.g., additionalProperties: false) are left intact
+    schema = inline_schema_refs(
+        {
+            "type": "object",
+            "additionalProperties": False,
+            "$defs": {"Dummy": {"type": "string"}},
+        }
+    )
+    assert schema["additionalProperties"] is False
