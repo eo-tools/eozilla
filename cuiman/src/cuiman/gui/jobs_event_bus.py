@@ -14,8 +14,13 @@ from .jobs_observer import JobsObserver
 
 class JobsEventBus:
     def __init__(self):
+        self._job_list = JobList(jobs=[], links=[])
         self._jobs: dict[str, JobInfo] = {}
         self._jobs_observers: WeakSet[JobsObserver] = WeakSet()
+
+    @property
+    def job_list(self) -> JobList:
+        return self._job_list
 
     def get_job(self, job_id: str) -> JobInfo | None:
         return self._jobs.get(job_id)
@@ -25,8 +30,8 @@ class JobsEventBus:
 
     def poll(self, client: Client):
         try:
-            job_list = client.get_jobs()
-            self._dispatch(job_list)
+            self._job_list = client.get_jobs()
+            self._dispatch(self._job_list)
         except ClientError as error:
             self._emit("job_list_error", error)
 

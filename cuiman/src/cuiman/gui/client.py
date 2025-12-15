@@ -77,6 +77,7 @@ class Client(ApiClient):
             on_restart_job=self._restart_job,
             on_get_job_results=self.get_job_results,
         )
+        jobs_panel.on_job_list_changed(self._jobs_event_bus.job_list)
         # noinspection PyTypeChecker
         self._jobs_event_bus.register(jobs_panel)
         self._ensure_update_thread_is_running()
@@ -117,6 +118,7 @@ class Client(ApiClient):
                 target=self._run_jobs_updater, daemon=True
             )
             self._update_thread.start()
+            print("Update thread is now running")
 
     def _run_jobs_updater(self):
         while self._update_thread is not None:

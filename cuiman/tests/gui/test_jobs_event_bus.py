@@ -61,6 +61,7 @@ def test_job_added():
     ]
     assert bus.get_job("1") == job_1
     assert bus.get_job("2") == job_2
+    assert bus.job_list == job_list
 
 
 def test_job_changed():
@@ -89,6 +90,7 @@ def test_job_changed():
     ]
     assert bus.get_job("1") == job_1
     assert bus.get_job("2") == job_2b
+    assert bus.job_list == job_list_2
 
 
 def test_job_removed():
@@ -116,6 +118,7 @@ def test_job_removed():
     ]
     assert bus.get_job("1") is None
     assert bus.get_job("2") == job_2
+    assert bus.job_list == job_list_2
 
 
 def test_job_list_error():
