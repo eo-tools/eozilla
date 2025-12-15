@@ -6,16 +6,19 @@ import warnings
 from typing import Any, Callable
 from weakref import WeakSet
 
+from cuiman.api import Client, ClientError
 from gavicore.models import JobInfo, JobList
 
 from .jobs_observer import JobsObserver
-from cuiman.api import Client, ClientError
 
 
 class JobsEventBus:
     def __init__(self):
         self._jobs: dict[str, JobInfo] = {}
         self._jobs_observers: WeakSet[JobsObserver] = WeakSet()
+
+    def get_job(self, job_id: str) -> JobInfo | None:
+        return self._jobs.get(job_id)
 
     def register(self, jobs_observer: JobsObserver):
         self._jobs_observers.add(jobs_observer)

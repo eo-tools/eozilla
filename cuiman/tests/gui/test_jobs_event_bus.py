@@ -7,7 +7,7 @@ from typing import Any
 from cuiman import ClientError
 from cuiman.gui.jobs_event_bus import JobsEventBus
 from cuiman.gui.jobs_observer import JobsObserver
-from gavicore.models import JobList, JobInfo, ApiError, JobType, JobStatus
+from gavicore.models import ApiError, JobInfo, JobList, JobStatus, JobType
 
 client_error = ClientError("Argh!", ApiError(**{"type": "server"}))
 
@@ -59,6 +59,8 @@ def test_job_added():
         ("job_added", job_2),
         ("job_list_changed", job_list),
     ]
+    assert bus.get_job("1") == job_1
+    assert bus.get_job("2") == job_2
 
 
 def test_job_changed():
@@ -85,6 +87,8 @@ def test_job_changed():
         ("job_changed", job_2b),
         ("job_list_changed", job_list_2),
     ]
+    assert bus.get_job("1") == job_1
+    assert bus.get_job("2") == job_2b
 
 
 def test_job_removed():
@@ -110,6 +114,8 @@ def test_job_removed():
         ("job_removed", job_1),
         ("job_list_changed", job_list_2),
     ]
+    assert bus.get_job("1") is None
+    assert bus.get_job("2") == job_2
 
 
 def test_job_list_error():
