@@ -3,10 +3,11 @@
 #  https://opensource.org/license/apache-2-0.
 
 import copy
-from typing import Any
+from typing import Any, Union
 
 import pydantic
 
+SchemaNode = Union[dict[str, Any], list[Any], bool, int, float, str, None]
 
 def create_schema_dict(
     model_class: type[pydantic.BaseModel],
@@ -17,8 +18,8 @@ def create_schema_dict(
     return backport_schema_to_openapi_3_0(schema)
 
 
-def inline_schema_refs(schema: dict[str, Any]) -> dict[str, Any]:
-    defs: dict[str, Any] | None = schema.get("$defs")
+def inline_schema_refs(schema: SchemaNode) -> SchemaNode:
+    defs: dict[str, Any] | None = schema.get("$defs") if isinstance(schema, dict) else None
     if not defs:
         return schema
     schema = copy.copy(schema)
@@ -26,11 +27,9 @@ def inline_schema_refs(schema: dict[str, Any]) -> dict[str, Any]:
     return _inline_schema_refs(schema, {f"#/$defs/{k}": v for k, v in defs.items()})
 
 
-def _inline_schema_refs(schema: dict[str, Any], defs: dict[str, Any]) -> dict[str, Any]:
-
+def _inline_schema_refs(schema: SchemaNode, defs: dict[str, Any]) -> SchemaNode:
     if not isinstance(schema, dict):
        return schema
-        
     if "$ref" in schema:
         ref = schema["$ref"]
         if ref in defs:
