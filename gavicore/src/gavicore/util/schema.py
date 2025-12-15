@@ -7,8 +7,6 @@ from typing import Any
 
 import pydantic
 
-SchemaNode = dict[str, Any] | list[Any] | bool | int | float | str | None
-
 def create_schema_dict(
     model_class: type[pydantic.BaseModel],
 ) -> dict[str, Any]:
@@ -18,8 +16,10 @@ def create_schema_dict(
     return backport_schema_to_openapi_3_0(schema)
 
 
-def inline_schema_refs(schema: SchemaNode) -> SchemaNode:
-    defs: dict[str, Any] | None = schema.get("$defs") if isinstance(schema, dict) else None
+def inline_schema_refs(schema: dict[str, Any]) -> Any:
+    if not isinstance(schema, dict):
+        return schema
+    defs: dict[str, Any] | None = schema.get("$defs")
     if not defs:
         return schema
     schema = copy.copy(schema)
@@ -27,7 +27,7 @@ def inline_schema_refs(schema: SchemaNode) -> SchemaNode:
     return _inline_schema_refs(schema, {f"#/$defs/{k}": v for k, v in defs.items()})
 
 
-def _inline_schema_refs(schema: SchemaNode, defs: dict[str, Any]) -> SchemaNode:
+def _inline_schema_refs(schema: dict[str, Any], defs: dict[str, Any]) -> Any:
     if not isinstance(schema, dict):
        return schema
     if "$ref" in schema:
