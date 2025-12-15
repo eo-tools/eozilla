@@ -3,7 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 import copy
-from typing import Any, Union
+from typing import Any
 
 import pydantic
 
