@@ -9,6 +9,7 @@ from weakref import WeakSet
 from gavicore.models import JobInfo, JobList
 
 from .jobs_observer import JobsObserver
+from cuiman.api import Client, ClientError
 
 
 class JobsEventBus:
@@ -19,7 +20,14 @@ class JobsEventBus:
     def register(self, jobs_observer: JobsObserver):
         self._jobs_observers.add(jobs_observer)
 
-    def dispatch_job_list(self, job_list: JobList):
+    def poll(self, client: Client):
+        try:
+            job_list = client.get_jobs()
+            self._dispatch(job_list)
+        except ClientError as error:
+            self._emit("job_list_error", error)
+
+    def _dispatch(self, job_list: JobList):
         old_jobs = self._jobs
         new_jobs = {job.jobID: job for job in job_list.jobs}
 
@@ -51,7 +59,8 @@ class JobsEventBus:
                 )
                 method(event_arg)
             except ReferenceError:
-                # handle case where reference is already gone, this is ok
-                pass
+                # Handle case where reference is already gone, this is ok.
+                # Hard to reach by unit tests.
+                pass  # pragma: no cover
             except BaseException as e:
                 warnings.warn(f"Error emitting event of type {event_type!r}: {e}")
