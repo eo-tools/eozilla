@@ -7,7 +7,7 @@ from typing import Any, Union
 
 import pydantic
 
-SchemaNode = Union[dict[str, Any], list[Any], bool, int, float, str, None]
+SchemaNode = dict[str, Any] | list[Any] | bool | int | float | str | None
 
 def create_schema_dict(
     model_class: type[pydantic.BaseModel],
