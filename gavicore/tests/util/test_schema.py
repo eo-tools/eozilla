@@ -150,3 +150,8 @@ def test_inline_schema_refs_preserves_boolean_nodes():
         }
     )
     assert schema["additionalProperties"] is False
+
+
+def test_inline_schema_refs_passes_through_non_dict():
+    assert inline_schema_refs(False) is False
+    assert inline_schema_refs(1) == 1
