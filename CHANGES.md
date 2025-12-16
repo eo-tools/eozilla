@@ -20,6 +20,8 @@
 
 - Fixed problem where the GUI client's `show_jobs()` showed an empty panel
   although jobs are shown by `get_jobs()`. (#35) 
+- Fixed `gavicore.util.schema.inline_schema_refs` crashing on schemas with 
+  `additionalProperties: false` (e.g., Pydantic models using `extra="forbid"`).
 
 ### Other changes
 
