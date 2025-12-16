@@ -7,6 +7,7 @@ from typing import Any
 
 import pydantic
 
+
 def create_schema_dict(
     model_class: type[pydantic.BaseModel],
 ) -> dict[str, Any]:
@@ -29,7 +30,7 @@ def inline_schema_refs(schema: dict[str, Any]) -> Any:
 
 def _inline_schema_refs(schema: dict[str, Any], defs: dict[str, Any]) -> Any:
     if not isinstance(schema, dict):
-       return schema
+        return schema
     if "$ref" in schema:
         ref = schema["$ref"]
         if ref in defs:
