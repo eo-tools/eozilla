@@ -27,7 +27,7 @@ def inline_schema_refs(schema: dict[str, Any] | bool) -> dict[str, Any] | bool:
     return _inline_schema_refs(schema, {f"#/$defs/{k}": v for k, v in defs.items()})
 
 
-def _inline_schema_refs(schema: dict[str, Any], defs: dict[str, Any]) -> Any:
+def _inline_schema_refs(schema: dict[str, Any] | bool, defs: dict[str, Any]) -> dict[str, Any] | bool:
     if not isinstance(schema, dict):
        return schema
     if "$ref" in schema:
