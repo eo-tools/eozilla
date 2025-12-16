@@ -1,5 +1,7 @@
 ## Changes in version 0.0.9 (in development)
 
+### Enhancements
+
 - Provided additional options to customize `cuiman`:
   - Use `cuiman.ClientConfig` class as base class and then configure it with a custom 
     `pydantic_settings.SettingsConfigDict` instance.
@@ -12,9 +14,17 @@
 - Added a couple of common authentication methods to `cuiman` client API and CLI 
   configuration (via command `configure`): basic, login, token, api-key methods are 
   now supported.
+- Updated documentation.
+
+### Fixes
+
+- Fixed problem where the GUI client's `show_jobs()` showed an empty panel
+  although jobs are shown by `get_jobs()`. (#35) 
+
+### Other changes
+
 - Renamed `gavicore.util.schema.create_json_schema` into `create_schema_dict`.
 - Removed `gavicore.util.schema.create_schema_instance`.
-- Updated documentation.
 
 ## Changes in version 0.0.8
 
