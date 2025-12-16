@@ -27,7 +27,6 @@ class Client(ApiClient):
         **config: Any,
     ):
         super().__init__(_transport=_transport, **config)
-        # self._jobs: dict[str, JobInfo] = {}
         self._jobs_event_bus = JobsEventBus()
         self._update_interval = update_interval
         self._update_thread: Optional[threading.Thread] = None
