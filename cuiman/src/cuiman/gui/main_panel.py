@@ -329,7 +329,20 @@ class MainPanel(pn.viewable.Viewer):
             process_id=process_id,
             dotpath=True,
             inputs=component_container.get_json_values(),
+            outputs=self.get_default_outputs(process_description),
         )
+
+    @staticmethod
+    def get_default_outputs(
+        process_description,
+    ) -> dict[Any, dict[str, dict[str, str] | str]]:
+        return {
+            k: {
+                "format": {"mediaType": "application/json"},
+                "transmissionMode": "reference",
+            }
+            for k, v in (process_description.outputs or {}).items()
+        }
 
 
 # Register MainPanel as a virtual subclass of JobsObserver
