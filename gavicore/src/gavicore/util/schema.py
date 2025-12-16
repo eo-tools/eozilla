@@ -17,7 +17,7 @@ def create_schema_dict(
     return backport_schema_to_openapi_3_0(schema)
 
 
-def inline_schema_refs(schema: dict[str, Any] | bool) -> dict[str, Any] | bool:
+def inline_schema_refs(schema: dict[str, Any] | bool) -> Any:
     if not isinstance(schema, dict):
         return schema
     defs: dict[str, Any] | None = schema.get("$defs")
@@ -28,7 +28,7 @@ def inline_schema_refs(schema: dict[str, Any] | bool) -> dict[str, Any] | bool:
     return _inline_schema_refs(schema, {f"#/$defs/{k}": v for k, v in defs.items()})
 
 
-def _inline_schema_refs(schema: dict[str, Any] | bool, defs: dict[str, Any]) -> dict[str, Any] | bool:
+def _inline_schema_refs(schema: dict[str, Any] | bool, defs: dict[str, Any]) -> Any:
     if not isinstance(schema, dict):
         return schema
     if "$ref" in schema:
