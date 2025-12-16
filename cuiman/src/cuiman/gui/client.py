@@ -7,13 +7,13 @@ import time
 from typing import Any, Optional
 
 from cuiman.api.client import Client as ApiClient
+from cuiman.api.config import ClientConfig
 from cuiman.api.exceptions import ClientError
 from cuiman.api.transport import Transport
-from gavicore.models import JobInfo, ProcessList
+from gavicore.models import ProcessList
 
-from .. import ClientConfig
 from .job_info_panel import JobInfoPanel
-from .jobs_observer import JobsObserver
+from .jobs_event_bus import JobsEventBus
 from .jobs_panel import JobsPanel
 from .main_panel import MainPanel
 
@@ -27,23 +27,12 @@ class Client(ApiClient):
         **config: Any,
     ):
         super().__init__(_transport=_transport, **config)
-        self._jobs: dict[str, JobInfo] = {}
-        self._jobs_observers: list[JobsObserver] = []
+        self._jobs_event_bus = JobsEventBus()
         self._update_interval = update_interval
         self._update_thread: Optional[threading.Thread] = None
-        # Panels
-        self._main_panel: Optional[MainPanel] = None
-        self._jobs_panel: Optional[JobsPanel] = None
-        self._job_info_panels: dict[str, JobInfoPanel] = {}
 
     def _reset_state(self):
-        self._jobs = {}
-        self._jobs_observers = []
         self._update_thread = None
-        # Panels
-        self._main_panel = None
-        self._jobs_panel = None
-        self._job_info_panels = {}
 
     def show(self, **kwargs: Any) -> MainPanel:
         """Shows the client's main GUI.
@@ -65,13 +54,9 @@ class Client(ApiClient):
             if kwargs
             else config_cls.accept_process
         )
-        if self._main_panel is not None:
-            # noinspection PyTypeChecker
-            self._jobs_observers.remove(self._main_panel)
-
         level = kwargs.get("level")
         show_advanced = level == "advanced" if level is not None else None
-        self._main_panel = MainPanel(
+        main_panel = MainPanel(
             *self._get_processes(),
             on_get_process=self.get_process,
             on_execute_process=self.execute_process,
@@ -80,38 +65,32 @@ class Client(ApiClient):
             show_advanced=show_advanced,
         )
         # noinspection PyTypeChecker
-        self._jobs_observers.append(self._main_panel)
-
+        self._jobs_event_bus.register(main_panel)
         self._ensure_update_thread_is_running()
-
-        return self._main_panel
+        return main_panel
 
     def show_jobs(self) -> JobsPanel:
-        if self._jobs_panel is None:
-            self._jobs_panel = JobsPanel(
-                on_cancel_job=self._cancel_job,
-                on_delete_job=self._delete_job,
-                on_restart_job=self._restart_job,
-                on_get_job_results=self.get_job_results,
-            )
-            # noinspection PyTypeChecker
-            self._jobs_observers.append(self._jobs_panel)
-
+        jobs_panel = JobsPanel(
+            on_cancel_job=self._cancel_job,
+            on_delete_job=self._delete_job,
+            on_restart_job=self._restart_job,
+            on_get_job_results=self.get_job_results,
+        )
+        jobs_panel.on_job_list_changed(self._jobs_event_bus.job_list)
+        # noinspection PyTypeChecker
+        self._jobs_event_bus.register(jobs_panel)
         self._ensure_update_thread_is_running()
-
-        return self._jobs_panel
+        return jobs_panel
 
     def show_job(self, job_id: str) -> JobInfoPanel:
-        job_info_panel = self._job_info_panels.get(job_id)
-        if job_info_panel is None:
-            job_info_panel = JobInfoPanel()
-            job_info_panel.job_info = self._jobs.get(job_id)
-            self._job_info_panels[job_id] = job_info_panel
-            # noinspection PyTypeChecker
-            self._jobs_observers.append(job_info_panel)
-
+        job_info = self._jobs_event_bus.get_job(job_id)
+        if job_info is None:
+            job_info = self.get_job(job_id)
+        job_info_panel = JobInfoPanel()
+        job_info_panel.job_info = job_info
+        # noinspection PyTypeChecker
+        self._jobs_event_bus.register(job_info_panel)
         self._ensure_update_thread_is_running()
-
         return job_info_panel
 
     def close(self):
@@ -138,44 +117,12 @@ class Client(ApiClient):
                 target=self._run_jobs_updater, daemon=True
             )
             self._update_thread.start()
+            print("Update thread is now running")
 
     def _run_jobs_updater(self):
         while self._update_thread is not None:
-            if self._jobs_observers:
-                self._update_jobs()
+            self._jobs_event_bus.poll(self)
             time.sleep(self._update_interval)
-
-    def _update_jobs(self):
-        try:
-            job_list = self.get_jobs()
-        except ClientError as e:
-            for jobs_observer in self._jobs_observers:
-                jobs_observer.on_job_list_error(e)
-            return
-
-        old_jobs = self._jobs
-        new_jobs = {job.jobID: job for job in job_list.jobs}
-
-        added_jobs = [job for job_id, job in new_jobs.items() if job_id not in old_jobs]
-        changed_jobs = [
-            job
-            for job_id, job in new_jobs.items()
-            if job_id in old_jobs and job != old_jobs[job_id]
-        ]
-        removed_jobs = [
-            job for job_id, job in old_jobs.items() if job_id not in new_jobs
-        ]
-
-        if added_jobs or changed_jobs or removed_jobs:
-            for jobs_observer in self._jobs_observers:
-                for job in added_jobs:
-                    jobs_observer.on_job_added(job)
-                for job in changed_jobs:
-                    jobs_observer.on_job_changed(job)
-                for job in removed_jobs:
-                    jobs_observer.on_job_removed(job)
-                jobs_observer.on_job_list_changed(job_list)
-            self._jobs = new_jobs
 
     def _get_processes(self) -> tuple[ProcessList, ClientError | None]:
         try:
