@@ -121,3 +121,37 @@ def test_inline_schema_refs():
             },
         },
     }
+
+
+class TestExtraForbidModel:
+    class SomeTestClass(pydantic.BaseModel):
+        some_data: int
+        model_config = {"extra": "forbid"}
+
+    def test_extra_fields_rejected(self):
+        with pytest.raises(pydantic.ValidationError):
+            self.SomeTestClass(some_data=1, unexpected="nope")
+
+    def test_inline_schema_refs_handles_additional_properties_false(self):
+        # Should not crash when additionalProperties is a boolean (extra="forbid")
+        schema = inline_schema_refs(self.SomeTestClass.model_json_schema())
+        assert schema.get("additionalProperties") is False
+        assert schema["required"] == ["some_data"]
+        assert "properties" in schema and "some_data" in schema["properties"]
+
+
+def test_inline_schema_refs_preserves_boolean_nodes():
+    # Ensure non-dict schemas (e.g., additionalProperties: false) are left intact
+    schema = inline_schema_refs(
+        {
+            "type": "object",
+            "additionalProperties": False,
+            "$defs": {"Dummy": {"type": "string"}},
+        }
+    )
+    assert schema["additionalProperties"] is False
+
+
+def test_inline_schema_refs_passes_through_non_dict():
+    assert inline_schema_refs(False) is False
+    assert inline_schema_refs(1) == 1

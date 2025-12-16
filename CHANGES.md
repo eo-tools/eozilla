@@ -15,6 +15,8 @@
 - Renamed `gavicore.util.schema.create_json_schema` into `create_schema_dict`.
 - Removed `gavicore.util.schema.create_schema_instance`.
 - Updated documentation.
+- Fixed `gavicore.util.schema.inline_schema_refs` crashing on schemas with 
+  `additionalProperties: false` (e.g., Pydantic models using `extra="forbid"`).
 
 ## Changes in version 0.0.8
 
