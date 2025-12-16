@@ -16,8 +16,11 @@ from gavicore.models import (
     ProcessList,
     ProcessRequest,
     ProcessSummary,
+    Output,
+    OutputDescription,
 )
 from gavicore.util.request import ExecutionRequest
+from .component import JsonValue
 
 from .component.container import ComponentContainer
 from .job_info_panel import JobInfoPanel
@@ -194,7 +197,7 @@ class MainPanel(pn.viewable.Viewer):
         process = self._get_or_fetch_process_description()
         self._update_process_description_markdown(process)
         self._update_action_panel(process)
-        self._update_inputs_component_container(process)
+        self._update_inputs_and_outputs(process)
 
     def _on_advanced_switch_changed(self, event: Any):
         MainPanelSettings.show_advanced = bool(event.new)
@@ -206,7 +209,7 @@ class MainPanel(pn.viewable.Viewer):
 
     def __on_advanced_switch_changed(self):
         process = self._get_or_fetch_process_description()
-        self._update_inputs_component_container(process)
+        self._update_inputs_and_outputs(process)
 
     def _update_process_description_markdown(self, process: ProcessDescription | None):
         if process is not None:
@@ -223,15 +226,23 @@ class MainPanel(pn.viewable.Viewer):
 
         self._process_doc_markdown.object = markdown_text
 
-    def _update_inputs_component_container(self, process: ProcessDescription | None):
-        if process is None:
+    def _update_inputs_and_outputs(
+        self, process_description: ProcessDescription | None
+    ):
+        if process_description is None:
             self._advanced_switch.disabled = True
             self._component_container = None
             self._inputs_panel[:] = []
             self._outputs_panel[:] = []
             return
 
-        inputs = process.inputs or {}
+        last_values: dict[str, JsonValue]
+        if self._component_container is not None:
+            last_values = self._component_container.get_json_values()
+        else:
+            last_values = {}
+
+        inputs = process_description.inputs or {}
         has_advanced_inputs = any(
             hasattr(v, "level") and v.level == "advanced" for v in inputs.values()
         )
@@ -245,18 +256,58 @@ class MainPanel(pn.viewable.Viewer):
             filtered_inputs = {
                 k: v
                 for k, v in inputs.items()
-                if self._accept_input(process, k, v, **params)
+                if self._accept_input(process_description, k, v, **params)
             }
 
         self._advanced_switch.disabled = not has_advanced_inputs
         self._component_container = ComponentContainer.from_input_descriptions(
-            filtered_inputs, {}
+            filtered_inputs,
+            last_values,
         )
+
         if not self._component_container.is_empty:
             self._inputs_panel[:] = self._component_container.get_viewables()
         else:
             self._inputs_panel[:] = [pn.pane.Markdown("_No inputs available._")]
-        self._outputs_panel[:] = []
+
+        self._outputs_panel[:] = self.create_outputs_ui(process_description)
+
+    def create_outputs_ui(self, process_description: ProcessDescription) -> list:
+        outputs = process_description.outputs or {}
+        num_outputs = len(outputs)
+
+        self._output_mode = pn.widgets.RadioButtonGroup(
+            name="Output",
+            options={
+                "default": "Default (let server decide)",
+                "selection": "Selected (if supported by the server)",
+            },
+            button_type="default",
+            value="default",
+            on_change=self._on_output_mode_change,
+        )
+        self._output_mode.disabled = num_outputs < 2
+
+        return [self._output_mode] + [
+            self._create_output_option(k, v) for k, v in outputs.items()
+        ]
+
+    def _create_output_option(
+        self, key: str, output: OutputDescription
+    ) -> pn.widgets.Checkbox:
+        name: str = output.title or output.schema_.title or key
+
+        def handle_change(arg):
+            print("handle_change:", key, arg)
+
+        return pn.widgets.Checkbox(
+            name=output.title or output.schema_.title or name,
+            value=True,
+            on_change=handle_change,
+        )
+
+    def _on_output_mode_change(self, arg):
+        print("_on_output_mode_change:", arg)
 
     def _update_action_panel(self, process: ProcessDescription | None):
         self._execute_button.disabled = process is None
@@ -334,13 +385,15 @@ class MainPanel(pn.viewable.Viewer):
 
     @staticmethod
     def get_default_outputs(
-        process_description,
-    ) -> dict[Any, dict[str, dict[str, str] | str]]:
+        process_description: ProcessDescription,
+    ) -> dict[str, Output]:
         return {
-            k: {
-                "format": {"mediaType": "application/json"},
-                "transmissionMode": "reference",
-            }
+            k: Output(
+                **{
+                    "format": {"mediaType": "application/json"},
+                    "transmissionMode": "reference",
+                }
+            )
             for k, v in (process_description.outputs or {}).items()
         }
 
