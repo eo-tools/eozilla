@@ -8,12 +8,15 @@ from typing import Callable, Optional
 
 import fastapi
 import pydantic
+from pydantic.fields import FieldInfo
 
 from gavicore.models import (
+    InputDescription,
     JobInfo,
     JobList,
     JobResults,
     JobStatus,
+    OutputDescription,
     ProcessDescription,
     ProcessList,
     ProcessRequest,
@@ -136,8 +139,8 @@ class LocalService(ServiceBase):
         version: Optional[str] = None,
         title: Optional[str] = None,
         description: Optional[str] = None,
-        input_fields: Optional[dict[str, pydantic.fields.FieldInfo]] = None,
-        output_fields: Optional[dict[str, pydantic.fields.FieldInfo]] = None,
+        input_fields: Optional[dict[str, FieldInfo | InputDescription]] = None,
+        output_fields: Optional[dict[str, FieldInfo | OutputDescription]] = None,
     ) -> Callable[[Callable], Callable]:
         """
         A decorator that can be applied to a user function in order to

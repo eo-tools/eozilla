@@ -2,7 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Annotated
+from typing import Annotated, Any
 from unittest import TestCase
 
 import pydantic
@@ -10,6 +10,8 @@ import pytest
 from pydantic import BaseModel, Field
 
 from gavicore.models import (
+    AdditionalParameter,
+    AdditionalParameters,
     DataType,
     InputDescription,
     OutputDescription,
@@ -74,7 +76,18 @@ def f5_too_many_args(ctx: JobContext, u: InputArg, v: float) -> str:
     return f"{type(ctx).__name__}-{u.model_dump_json()}-{v}"
 
 
-# noinspection PyMethodMayBeStatic
+def additional_parameters(
+    parameters: dict[str, Any], **metadata: Any
+) -> AdditionalParameters:
+    return AdditionalParameters(
+        parameters=[
+            AdditionalParameter(name=k, value=[v]) for k, v in parameters.items()
+        ],
+        **metadata,
+    )
+
+
+# noinspection PyMethodMayBeStatic,PyArgumentList
 class RegisteredProcessTest(BaseModelMixin, TestCase):
     # noinspection PyMethodMayBeStatic
     def test_create_fail(self):
@@ -203,6 +216,81 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
             proc_outputs["return_value"],
         )
 
+    def test_create_f2_with_input_and_output_descriptions(self):
+        process = Process.create(
+            f2,
+            input_fields={
+                "a": InputDescription(
+                    title="Discriminator",
+                    schema=Schema(default=False),
+                    additionalParameters=additional_parameters({"level": "common"}),
+                ),
+                "b": InputDescription(
+                    title="Value",
+                    schema=Schema(default=1.0),
+                    additionalParameters=additional_parameters(
+                        {"disabled": True, "level": "advanced"}
+                    ),
+                ),
+            },
+            output_fields={
+                "point": OutputDescription(
+                    title="A point (x, y)",
+                    schema=Schema(),
+                ),
+            },
+        )
+        self.assertIsInstance(process, Process)
+        self.assertIs(f2, process.function)
+        proc_desc = process.description
+        self.assertIsInstance(proc_desc, ProcessDescription)
+        self.assertEqual("tests.test_process:f2", proc_desc.id)
+        self.assertEqual("0.0.0", proc_desc.version)
+        self.assertEqual(None, proc_desc.title)
+        self.assertEqual("This is f2.", proc_desc.description)
+        proc_inputs = proc_desc.inputs
+        proc_outputs = proc_desc.outputs
+        self.assertIsInstance(proc_inputs, dict)
+        self.assertIsInstance(proc_outputs, dict)
+        self.assertEqual(["a", "b"], list(proc_inputs.keys()))
+        self.assertEqual(["point"], list(proc_outputs.keys()))
+        self.assertBaseModelEqual(
+            InputDescription(
+                title="Discriminator",
+                schema=Schema(
+                    type=DataType.boolean,
+                    nullable=True,
+                    default=False,
+                ),
+                additionalParameters=additional_parameters({"level": "common"}),
+            ),
+            proc_inputs["a"],
+        )
+        self.assertBaseModelEqual(
+            InputDescription(
+                title="Value",
+                schema=Schema(
+                    anyOf=[Schema(type="number"), Schema(type="boolean")], default=1.0
+                ),
+                additionalParameters=additional_parameters(
+                    {"disabled": True, "level": "advanced"}
+                ),
+            ),
+            proc_inputs["b"],
+        )
+        self.assertBaseModelEqual(
+            OutputDescription(
+                title="A point (x, y)",
+                schema=Schema(
+                    type=DataType.array,
+                    items=Schema(type="number"),
+                    minItems=2,
+                    maxItems=2,
+                ),
+            ),
+            proc_outputs["point"],
+        )
+
     def test_create_f2_with_one_output_field(self):
         process = Process.create(
             f2,
@@ -275,7 +363,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         )
 
     # noinspection PyMethodMayBeStatic
-    def test_create_with_illegal_f1_with_output_fields(self):
+    def test_create_f1_with_with_illegal_output_fields(self):
         with pytest.raises(
             TypeError,
             match=(
@@ -434,7 +522,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
             TypeError,
             match="function '.*:f5_wrong_input_arg_type': "
             "type of inputs argument 'arg' must be a subclass "
-            "of pydantic.BaseModel",
+            "of BaseModel",
         ):
             Process.create(
                 f5_wrong_input_arg_type, id="f5_wrong_input_arg_type", inputs_arg="arg"

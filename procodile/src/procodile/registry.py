@@ -5,7 +5,9 @@
 from collections.abc import Iterator, Mapping
 from typing import Callable, Optional
 
-import pydantic
+from pydantic.fields import FieldInfo
+
+from gavicore.models import InputDescription, OutputDescription
 
 from .process import Process
 
@@ -42,8 +44,8 @@ class ProcessRegistry(Mapping[str, Process]):
         version: Optional[str] = None,
         title: Optional[str] = None,
         description: Optional[str] = None,
-        input_fields: Optional[dict[str, pydantic.fields.FieldInfo]] = None,
-        output_fields: Optional[dict[str, pydantic.fields.FieldInfo]] = None,
+        input_fields: Optional[dict[str, FieldInfo | InputDescription]] = None,
+        output_fields: Optional[dict[str, FieldInfo | OutputDescription]] = None,
         inputs_arg: str | bool = False,
     ) -> Callable[[Callable], Callable] | Callable:
         """
