@@ -15,7 +15,7 @@ from gavicore.models import ProcessList
 from .job_info_panel import JobInfoPanel
 from .jobs_event_bus import JobsEventBus
 from .jobs_panel import JobsPanel
-from .main_panel import MainPanel
+from ._main_panel import MainPanel
 
 
 class Client(ApiClient):

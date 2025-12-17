@@ -25,6 +25,7 @@ from .component import JsonValue
 from .component.container import ComponentContainer
 from .job_info_panel import JobInfoPanel
 from .jobs_observer import JobsObserver
+from .main_panel.viewmodel import MainViewModel
 
 ExecuteProcessAction: TypeAlias = Callable[[str, ProcessRequest], JobInfo]
 GetProcessAction: TypeAlias = Callable[[str], ProcessDescription]
@@ -55,6 +56,13 @@ class MainPanel(pn.viewable.Viewer):
     ):
         super().__init__()
 
+        self._vm = MainViewModel(
+            process_list=process_list,
+            process_list_error=process_list_error,
+            accept_process=accept_process,
+            on_get_process=on_get_process,
+        )
+
         processes = [p for p in process_list.processes if accept_process(p)]
 
         self._processes = processes
@@ -73,7 +81,18 @@ class MainPanel(pn.viewable.Viewer):
         self._process_select = pn.widgets.Select(
             name="Process", options=process_select_options, value=process_id
         )
-        self._process_select.param.watch(self._on_process_id_changed, "value")
+
+        # self._process_select.param.watch(self._on_process_id_changed, "value")
+        # self._process_select.param.watch(
+        #     lambda e: self._vm.select_process(e.new),
+        #     "value",
+        # )
+
+        def _on_select(e):
+            self._vm.select_process(e.new)
+            self._render_from_vm()
+
+        self._process_select.param.watch(_on_select, "value")
 
         # --- _advanced_switch
         self._advanced_switch = pn.widgets.Switch(
@@ -149,11 +168,14 @@ class MainPanel(pn.viewable.Viewer):
 
         self._component_container: ComponentContainer | None = None
 
-        class EventMock:
-            def __init__(self, new: Any):
-                self.new = new
-
-        self._on_process_id_changed(EventMock(process_id))
+        # class EventMock:
+        #     def __init__(self, new: Any):
+        #         self.new = new
+        #
+        # self._on_process_id_changed(EventMock(process_id))
+        self._process_select.value = self._vm.selected_process_id
+        self._vm.select_process(self._vm.selected_process_id)
+        self._render_from_vm()
 
     def __panel__(self) -> pn.viewable.Viewable:
         return self._view
@@ -185,19 +207,19 @@ class MainPanel(pn.viewable.Viewer):
         # Fallback to first entry
         return processes[0].id
 
-    def _on_process_id_changed(self, event: Any):
-        MainPanelSettings.process_id = event.new
-        # noinspection PyBroadException
-        try:
-            self.__on_process_id_changed()
-        except Exception as e:
-            print(f"ERROR: {e}")
+    # def _on_process_id_changed(self, event: Any):
+    #     MainPanelSettings.process_id = event.new
+    #     # noinspection PyBroadException
+    #     try:
+    #         self.__on_process_id_changed()
+    #     except Exception as e:
+    #         print(f"ERROR: {e}")
 
-    def __on_process_id_changed(self):
-        process = self._get_or_fetch_process_description()
-        self._update_process_description_markdown(process)
-        self._update_action_panel(process)
-        self._update_inputs_and_outputs(process)
+    # def __on_process_id_changed(self):
+    #     process = self._get_or_fetch_process_description()
+    #     self._update_process_description_markdown(process)
+    #     self._update_action_panel(process)
+    #     self._update_inputs_and_outputs(process)
 
     def _on_advanced_switch_changed(self, event: Any):
         MainPanelSettings.show_advanced = bool(event.new)
@@ -211,16 +233,24 @@ class MainPanel(pn.viewable.Viewer):
         process = self._get_or_fetch_process_description()
         self._update_inputs_and_outputs(process)
 
+    def _render_from_vm(self):
+        process = self._vm.process_description
+        self._update_process_description_markdown(process)
+        self._update_action_panel(process)
+        self._update_inputs_and_outputs(process)
+
     def _update_process_description_markdown(self, process: ProcessDescription | None):
+        # process = self._vm.process_description
+        error = self._vm.error
+
         if process is not None:
             if process and process.description:
                 markdown_text = f"**Description:** {process.description}"
             else:
                 markdown_text = "**Description:** _No description available._"
         else:
-            if self._client_error is not None:
-                e = self._client_error
-                markdown_text = f"**Error**: {e}: {e.api_error.detail}"
+            if error is not None:
+                markdown_text = f"**Error**: {error}: {error.api_error.detail}"
             else:
                 markdown_text = "_No process selected._"
 
@@ -276,20 +306,32 @@ class MainPanel(pn.viewable.Viewer):
         outputs = process_description.outputs or {}
         num_outputs = len(outputs)
 
-        self._output_mode = pn.widgets.RadioButtonGroup(
+        output_mode = pn.widgets.RadioButtonGroup(
             name="Output",
             options={
-                "default": "Default (let server decide)",
-                "selection": "Selected (if supported by the server)",
+                "Default": "default",
+                "Selected": "selection",
             },
             button_type="default",
             value="default",
-            on_change=self._on_output_mode_change,
         )
-        self._output_mode.disabled = num_outputs < 2
+        output_mode.disabled = num_outputs < 2
+        output_mode.description = (
+            "As supported by the server, the default option is safest"
+        )
 
-        return [self._output_mode] + [
-            self._create_output_option(k, v) for k, v in outputs.items()
+        output_options = [self._create_output_option(k, v) for k, v in outputs.items()]
+
+        def enable_output_options(value: str):
+            for v in output_options:
+                v.disabled = value == "default"
+
+        pn.bind(enable_output_options, output_mode)
+
+        return [
+            pn.pane.Markdown("**Output**"),
+            output_mode,
+            pn.Row(pn.pane.Markdown("Output options:"), *output_options),
         ]
 
     def _create_output_option(
@@ -297,14 +339,15 @@ class MainPanel(pn.viewable.Viewer):
     ) -> pn.widgets.Checkbox:
         name: str = output.title or output.schema_.title or key
 
-        def handle_change(arg):
-            print("handle_change:", key, arg)
+        def handle_change(selected: bool):
+            print("handle_change:", key, name, selected)
 
-        return pn.widgets.Checkbox(
-            name=output.title or output.schema_.title or name,
-            value=True,
-            on_change=handle_change,
+        checkbox = pn.widgets.Checkbox(
+            name=output.title or output.schema_.title or name, value=True
         )
+        checkbox.disabled = True
+        pn.bind(handle_change, checkbox)
+        return checkbox
 
     def _on_output_mode_change(self, arg):
         print("_on_output_mode_change:", arg)
