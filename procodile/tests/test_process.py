@@ -2,7 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Annotated, Any
+from typing import Annotated
 from unittest import TestCase
 
 import pydantic
@@ -10,8 +10,6 @@ import pytest
 from pydantic import BaseModel, Field
 
 from gavicore.models import (
-    AdditionalParameter,
-    AdditionalParameters,
     DataType,
     InputDescription,
     OutputDescription,
@@ -19,7 +17,7 @@ from gavicore.models import (
     Schema,
 )
 from gavicore.util.testing import BaseModelMixin
-from procodile import JobContext, Process
+from procodile import JobContext, Process, additional_parameters
 
 
 def f1(x: float, y: float) -> float:
@@ -74,17 +72,6 @@ def f5_wrong_input_arg_type(ctx: JobContext, arg: int) -> str:
 def f5_too_many_args(ctx: JobContext, u: InputArg, v: float) -> str:
     """This is f5 with 'u' being input arg  --> raise v is illegal"""
     return f"{type(ctx).__name__}-{u.model_dump_json()}-{v}"
-
-
-def additional_parameters(
-    parameters: dict[str, Any], **metadata: Any
-) -> AdditionalParameters:
-    return AdditionalParameters(
-        parameters=[
-            AdditionalParameter(name=k, value=[v]) for k, v in parameters.items()
-        ],
-        **metadata,
-    )
 
 
 # noinspection PyMethodMayBeStatic,PyArgumentList
