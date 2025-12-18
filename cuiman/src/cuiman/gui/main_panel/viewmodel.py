@@ -6,6 +6,7 @@ import param
 from typing import Callable
 
 from cuiman.api.exceptions import ClientError
+from cuiman.gui.component import ComponentContainer, JsonValue
 from gavicore.models import (
     ProcessList,
     ProcessDescription,
@@ -30,6 +31,14 @@ class MainViewModel(param.Parameterized):
     loading = param.Boolean(default=False)
     error = param.ClassSelector(
         class_=ClientError,
+        default=None,
+        allow_None=True,
+    )
+
+    show_advanced = param.Boolean(default=False)
+
+    input_container = param.ClassSelector(
+        class_=ComponentContainer,
         default=None,
         allow_None=True,
     )
@@ -86,6 +95,37 @@ class MainViewModel(param.Parameterized):
             self.error = e
         finally:
             self.loading = False
+
+    def update_inputs(self, accept_input: Callable):
+        process = self.process_description
+        if process is None:
+            self.input_container = None
+            return
+
+        last_values: dict[str, JsonValue] = (
+            self.input_container.get_json_values()
+            if self.input_container is not None
+            else {}
+        )
+
+        inputs = process.inputs or {}
+
+        has_advanced = any(
+            hasattr(v, "level") and v.level == "advanced" for v in inputs.values()
+        )
+
+        if not has_advanced:
+            filtered = inputs
+        else:
+            params = {"level": "advanced" if self.show_advanced else "common"}
+            filtered = {
+                k: v for k, v in inputs.items() if accept_input(process, k, v, **params)
+            }
+
+        self.input_container = ComponentContainer.from_input_descriptions(
+            filtered,
+            last_values,
+        )
 
     # ----- helpers (pure)
 

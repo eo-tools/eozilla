@@ -20,7 +20,6 @@ from gavicore.models import (
     OutputDescription,
 )
 from gavicore.util.request import ExecutionRequest
-from .component import JsonValue
 
 from .component.container import ComponentContainer
 from .job_info_panel import JobInfoPanel
@@ -104,7 +103,13 @@ class MainPanel(pn.viewable.Viewer):
             ),
             disabled=False,
         )
-        self._advanced_switch.param.watch(self._on_advanced_switch_changed, "value")
+
+        def _on_advanced(e):
+            self._vm.show_advanced = bool(e.new)
+            self._vm.update_inputs(self._accept_input)
+            self._render_inputs()
+
+        self._advanced_switch.param.watch(_on_advanced, "value")
 
         # --- _process_doc_markdown
         self._process_doc_markdown = pn.pane.Markdown("")
@@ -221,23 +226,26 @@ class MainPanel(pn.viewable.Viewer):
     #     self._update_action_panel(process)
     #     self._update_inputs_and_outputs(process)
 
-    def _on_advanced_switch_changed(self, event: Any):
-        MainPanelSettings.show_advanced = bool(event.new)
-        # noinspection PyBroadException
-        try:
-            self.__on_advanced_switch_changed()
-        except Exception as e:
-            print(f"ERROR: {e}")
-
-    def __on_advanced_switch_changed(self):
-        process = self._get_or_fetch_process_description()
-        self._update_inputs_and_outputs(process)
+    # def _on_advanced_switch_changed(self, event: Any):
+    #     MainPanelSettings.show_advanced = bool(event.new)
+    #     # noinspection PyBroadException
+    #     try:
+    #         self.__on_advanced_switch_changed()
+    #     except Exception as e:
+    #         print(f"ERROR: {e}")
+    #
+    # def __on_advanced_switch_changed(self):
+    #     process = self._get_or_fetch_process_description()
+    #     self._update_inputs_and_outputs(process)
 
     def _render_from_vm(self):
         process = self._vm.process_description
         self._update_process_description_markdown(process)
         self._update_action_panel(process)
-        self._update_inputs_and_outputs(process)
+
+        self._vm.update_inputs(self._accept_input)
+        self._render_inputs()
+        self._render_outputs()
 
     def _update_process_description_markdown(self, process: ProcessDescription | None):
         # process = self._vm.process_description
@@ -256,51 +264,65 @@ class MainPanel(pn.viewable.Viewer):
 
         self._process_doc_markdown.object = markdown_text
 
-    def _update_inputs_and_outputs(
-        self, process_description: ProcessDescription | None
-    ):
-        if process_description is None:
-            self._advanced_switch.disabled = True
-            self._component_container = None
-            self._inputs_panel[:] = []
-            self._outputs_panel[:] = []
-            return
-
-        last_values: dict[str, JsonValue]
-        if self._component_container is not None:
-            last_values = self._component_container.get_json_values()
-        else:
-            last_values = {}
-
-        inputs = process_description.inputs or {}
-        has_advanced_inputs = any(
-            hasattr(v, "level") and v.level == "advanced" for v in inputs.values()
-        )
-        if not has_advanced_inputs:
-            filtered_inputs = inputs
-        else:
-            params = {
-                "level": "advanced" if self._advanced_switch.value is True else "common"
-            }
-            # noinspection PyArgumentList
-            filtered_inputs = {
-                k: v
-                for k, v in inputs.items()
-                if self._accept_input(process_description, k, v, **params)
-            }
-
-        self._advanced_switch.disabled = not has_advanced_inputs
-        self._component_container = ComponentContainer.from_input_descriptions(
-            filtered_inputs,
-            last_values,
-        )
-
-        if not self._component_container.is_empty:
-            self._inputs_panel[:] = self._component_container.get_viewables()
-        else:
+    def _render_inputs(self):
+        container = self._vm.input_container
+        if container is None or container.is_empty:
             self._inputs_panel[:] = [pn.pane.Markdown("_No inputs available._")]
+        else:
+            self._inputs_panel[:] = container.get_viewables()
 
-        self._outputs_panel[:] = self.create_outputs_ui(process_description)
+    def _render_outputs(self):
+        process = self._vm.process_description
+        if process is None:
+            self._outputs_panel[:] = []
+        else:
+            self._outputs_panel[:] = self.create_outputs_ui(process)
+
+    # def _update_inputs_and_outputs(
+    #     self, process_description: ProcessDescription | None
+    # ):
+    #     if process_description is None:
+    #         self._advanced_switch.disabled = True
+    #         self._component_container = None
+    #         self._inputs_panel[:] = []
+    #         self._outputs_panel[:] = []
+    #         return
+    #
+    #     last_values: dict[str, JsonValue]
+    #     if self._component_container is not None:
+    #         last_values = self._component_container.get_json_values()
+    #     else:
+    #         last_values = {}
+    #
+    #     inputs = process_description.inputs or {}
+    #     has_advanced_inputs = any(
+    #         hasattr(v, "level") and v.level == "advanced" for v in inputs.values()
+    #     )
+    #     if not has_advanced_inputs:
+    #         filtered_inputs = inputs
+    #     else:
+    #         params = {
+    #             "level": "advanced" if self._advanced_switch.value is True else "common"
+    #         }
+    #         # noinspection PyArgumentList
+    #         filtered_inputs = {
+    #             k: v
+    #             for k, v in inputs.items()
+    #             if self._accept_input(process_description, k, v, **params)
+    #         }
+    #
+    #     self._advanced_switch.disabled = not has_advanced_inputs
+    #     self._component_container = ComponentContainer.from_input_descriptions(
+    #         filtered_inputs,
+    #         last_values,
+    #     )
+    #
+    #     if not self._component_container.is_empty:
+    #         self._inputs_panel[:] = self._component_container.get_viewables()
+    #     else:
+    #         self._inputs_panel[:] = [pn.pane.Markdown("_No inputs available._")]
+    #
+    #     self._outputs_panel[:] = self.create_outputs_ui(process_description)
 
     def create_outputs_ui(self, process_description: ProcessDescription) -> list:
         outputs = process_description.outputs or {}
