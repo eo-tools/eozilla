@@ -553,3 +553,27 @@ def test_create_schema_fail():
         match=r"function create_scene\(\), input 'thres': 1 validation error for Schema",
     ):
         _create_schema("create_scene", "input", "thres", {"type": "float64"})
+
+
+# noinspection PyArgumentList
+def test_merge_schemas():
+    from procodile.process import _merge_schemas
+
+    schema_a = Schema(type="boolean")
+    schema_b = Schema(type="integer", default=13)
+
+    assert _merge_schemas(
+        Schema(type="object", properties={"a": schema_a}, required=["a"]),
+        Schema(type="object", properties={"b": schema_b}),
+    ) == Schema(
+        type="object",
+        properties={
+            "a": schema_a,
+            "b": schema_b,
+        },
+        required=["a"],
+    )
+
+    assert _merge_schemas(schema_a, schema_b) == schema_b
+    # Care, flat-merging of schemas can produce silly results:
+    assert _merge_schemas(schema_b, schema_a) == Schema(type="boolean", default=13)
