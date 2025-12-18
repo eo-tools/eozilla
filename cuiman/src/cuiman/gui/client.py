@@ -61,7 +61,7 @@ class Client(ApiClient):
             on_get_process=self.get_process,
             on_execute_process=self.execute_process,
             accept_process=accept_process,
-            accept_input=config_cls.accept_input,
+            is_advanced_input=config_cls.is_advanced_input,
             show_advanced=show_advanced,
         )
         # noinspection PyTypeChecker

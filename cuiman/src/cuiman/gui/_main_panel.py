@@ -7,7 +7,7 @@ from typing import Any, Callable, TypeAlias
 import panel as pn
 import param
 
-from cuiman.api.config import InputPredicate, ProcessPredicate
+from cuiman.api.config import ProcessPredicate, AdvancedInputPredicate
 from cuiman.api.exceptions import ClientError
 from gavicore.models import (
     JobInfo,
@@ -50,7 +50,7 @@ class MainPanel(pn.viewable.Viewer):
         on_get_process: GetProcessAction,
         on_execute_process: ExecuteProcessAction,
         accept_process: ProcessPredicate,
-        accept_input: InputPredicate,
+        is_advanced_input: AdvancedInputPredicate,
         show_advanced: bool | None = None,
     ):
         super().__init__()
@@ -69,7 +69,7 @@ class MainPanel(pn.viewable.Viewer):
         self._on_execute_process = on_execute_process
         self._on_get_process = on_get_process
         self._client_error: ClientError | None = None
-        self._accept_input = accept_input
+        self._is_advanced_input = is_advanced_input
 
         # --- _process_select
         process_select_options = {
@@ -106,7 +106,7 @@ class MainPanel(pn.viewable.Viewer):
 
         def _on_advanced(e):
             self._vm.show_advanced = bool(e.new)
-            self._vm.update_inputs(self._accept_input)
+            self._vm.update_inputs(self._is_advanced_input)
             self._render_inputs()
 
         self._advanced_switch.param.watch(_on_advanced, "value")
@@ -243,7 +243,7 @@ class MainPanel(pn.viewable.Viewer):
         self._update_process_description_markdown(process)
         self._update_action_panel(process)
 
-        self._vm.update_inputs(self._accept_input)
+        self._vm.update_inputs(self._is_advanced_input)
         self._render_inputs()
         self._render_outputs()
 

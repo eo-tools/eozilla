@@ -5,12 +5,14 @@
 import param
 from typing import Callable
 
+from cuiman.api.config import AdvancedInputPredicate
 from cuiman.api.exceptions import ClientError
 from cuiman.gui.component import ComponentContainer, JsonValue
 from gavicore.models import (
     ProcessList,
     ProcessDescription,
     ProcessSummary,
+    InputDescription,
 )
 
 GetProcessAction = Callable[[str], ProcessDescription]
@@ -96,7 +98,7 @@ class MainViewModel(param.Parameterized):
         finally:
             self.loading = False
 
-    def update_inputs(self, accept_input: Callable):
+    def update_inputs(self, is_advanced_input: AdvancedInputPredicate):
         process = self.process_description
         if process is None:
             self.input_container = None
@@ -110,20 +112,15 @@ class MainViewModel(param.Parameterized):
 
         inputs = process.inputs or {}
 
-        has_advanced = any(
-            hasattr(v, "level") and v.level == "advanced" for v in inputs.values()
-        )
-
-        if not has_advanced:
-            filtered = inputs
-        else:
-            params = {"level": "advanced" if self.show_advanced else "common"}
-            filtered = {
-                k: v for k, v in inputs.items() if accept_input(process, k, v, **params)
-            }
+        show_advanced = self.show_advanced
+        filtered_inputs: dict[str, InputDescription] = {}
+        for k, v in inputs.items():
+            is_advanced = is_advanced_input(process, k, v)
+            if not is_advanced or show_advanced:
+                filtered_inputs[k] = v
 
         self.input_container = ComponentContainer.from_input_descriptions(
-            filtered,
+            filtered_inputs,
             last_values,
         )
 
