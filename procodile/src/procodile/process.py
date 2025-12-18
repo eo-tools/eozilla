@@ -6,7 +6,7 @@ import inspect
 from dataclasses import dataclass
 from typing import Any, Callable, Literal, Optional, get_args, get_origin
 
-from pydantic import BaseModel, ValidationError, create_model
+from pydantic import BaseModel, Field, ValidationError, create_model
 from pydantic.fields import FieldInfo
 
 from gavicore.models import (
@@ -148,14 +148,11 @@ def _parse_inputs(
         }
         model_class = create_model("ProcessInputs", **model_field_definitions)
 
-    field_infos = (
-        {k: v for k, v in inputs.items() if isinstance(v, FieldInfo)} if inputs else {}
-    )
-    if field_infos:
-        model_class = _merge_field_infos_into_model_class(
+    if inputs:
+        model_class = _merge_inputs_into_model_class(
             fn_name=fn_name,
             signature=signature,
-            field_infos=field_infos,
+            inputs=inputs,
             model_class=model_class,
         )
 
@@ -193,7 +190,7 @@ def _parse_outputs(
     model_field_definitions = _create_output_model_field_definitions(
         fn_name, output_annotation, outputs
     )
-    model_class = create_model("Outputs", **model_field_definitions)
+    model_class = create_model("Outputs", **model_field_definitions)  # type: ignore[call-overload]
     outputs_schema_dict = create_schema_dict(model_class)
     properties = outputs_schema_dict.get("properties", {})
 
@@ -236,16 +233,14 @@ def _parse_parameters(
     return arg_parameters, job_ctx_arg
 
 
-def _merge_field_infos_into_model_class(
+def _merge_inputs_into_model_class(
     fn_name: str,
     signature: inspect.Signature,
-    field_infos: dict[str, FieldInfo],
+    inputs: dict[str, FieldInfo | InputDescription],
     model_class: type[BaseModel],
 ) -> type[BaseModel]:
     invalid_inputs = [
-        input_name
-        for input_name in field_infos
-        if input_name not in signature.parameters
+        input_name for input_name in inputs if input_name not in signature.parameters
     ]
     if invalid_inputs:
         raise ValueError(
@@ -254,18 +249,30 @@ def _merge_field_infos_into_model_class(
             f"invalid input name(s): {', '.join(map(repr, invalid_inputs))}"
         )
 
-    # noinspection PyTypeChecker
-    model_field_definitions: dict[str, Any] = dict(model_class.model_fields)
-    for input_name, field_info in field_infos.items():
-        if input_name in model_field_definitions:
-            old_field_info = model_field_definitions[input_name]
-            parameter = signature.parameters[input_name]
-            model_field_definitions[input_name] = (
-                parameter.annotation,
-                FieldInfo.merge_field_infos(old_field_info, field_info),
+    model_fields: dict[str, type | tuple[type, FieldInfo]] = {}
+    for input_name, field_info in model_class.model_fields.items():
+        parameter = signature.parameters[input_name]
+        input_def = inputs.get(input_name)
+        annotation: type = parameter.annotation
+        if isinstance(input_def, FieldInfo):
+            model_fields[input_name] = (
+                annotation,
+                FieldInfo.merge_field_infos(field_info, input_def),
+            )
+        elif isinstance(input_def, InputDescription):
+            model_fields[input_name] = (
+                annotation,
+                FieldInfo.merge_field_infos(
+                    field_info, _io_description_to_field_info(input_def)
+                ),
+            )
+        else:
+            model_fields[input_name] = (
+                annotation,
+                field_info,
             )
 
-    return create_model(model_class.__name__, **model_field_definitions)
+    return create_model(model_class.__name__, **model_fields)  # type: ignore[call-overload]
 
 
 def _parse_input_arg(
@@ -307,18 +314,17 @@ def _parse_input_arg(
 def _create_output_model_field_definitions(
     fn_name: str,
     annotation: type,
-    output_fields: dict[str, FieldInfo | OutputDescription] | None,
-) -> dict[str, Any]:
-    model_field_definitions: dict[str, Any] = {}
-
-    if not output_fields:
+    outputs: dict[str, FieldInfo | OutputDescription] | None,
+) -> dict[str, type | tuple[type, FieldInfo]]:
+    model_fields: dict[str, Any] = {}
+    if not outputs:
         # No output fields specified -> we use the annotation
-        model_field_definitions = _create_output_field_entry("return_value", annotation)
-    elif len(output_fields) == 1:
+        model_fields["return_value"] = _create_output_model_field_value(annotation)
+    elif len(outputs) == 1:
         # A single output field specified -> we use the annotation and the field
-        output_name, field_info = next(iter(output_fields.items()))
-        model_field_definitions = _create_output_field_entry(
-            output_name, annotation, field_info
+        output_name, output_def = next(iter(outputs.items()))
+        model_fields[output_name] = _create_output_model_field_value(
+            annotation, output_def
         )
     else:
         origin = get_origin(annotation)
@@ -327,16 +333,16 @@ def _create_output_model_field_definitions(
             raise TypeError(
                 f"function {fn_name!r}: return type must be tuple[] with arguments"
             )
-        if len(args) != len(output_fields):
+        if len(args) != len(outputs):
             raise ValueError(
                 f"function {fn_name!r}: number of outputs must match number "
                 f"of tuple[] arguments"
             )
-        for arg_type, (output_name, field_info) in zip(args, output_fields.items()):
-            model_field_definitions.update(
-                _create_output_field_entry(output_name, arg_type, field_info)
+        for arg_type, (output_name, output_def) in zip(args, outputs.items()):
+            model_fields[output_name] = _create_output_model_field_value(
+                arg_type, output_def
             )
-    return model_field_definitions
+    return model_fields
 
 
 def _get_input_description_from_fields(
@@ -365,6 +371,7 @@ def _merge_input_descriptions(
 ) -> InputDescription:
     if base_description is None:
         return description
+    # noinspection PyTypeChecker
     return InputDescription(
         schema=_merge_schemas(base_description.schema_, description.schema_),
         title=base_description.title or description.title,
@@ -383,6 +390,7 @@ def _merge_output_descriptions(
 ) -> OutputDescription:
     if base_description is None:
         return description
+    # noinspection PyTypeChecker
     return OutputDescription(
         schema=_merge_schemas(base_description.schema_, description.schema_),
         title=base_description.title or description.title,
@@ -396,30 +404,32 @@ def _merge_output_descriptions(
 
 
 def _create_schema(
-    fn_name: str, param_type: str, param_name: str, schema: dict[str, Any]
+    fn_name: str, param_type: str, param_name: str, schema_dict: dict[str, Any]
 ) -> Schema:
     try:
-        return Schema(**schema)
+        return Schema(**schema_dict)
     except ValidationError as e:
         raise ValueError(
             f"function {fn_name}(), {param_type} {param_name!r}: {e}"
         ) from e
 
 
-def _create_output_field_entry(
-    output_name: str,
-    output_annotation: Any,
-    output_field: FieldInfo | OutputDescription | None = None,
-) -> dict:
-    if isinstance(output_field, FieldInfo):
-        return {output_name: (output_annotation, output_field)}
-    else:
-        return {output_name: output_annotation}
+def _create_output_model_field_value(
+    annotation: type,
+    io_def: FieldInfo | OutputDescription | None = None,
+) -> type | tuple[type, FieldInfo]:
+    if isinstance(io_def, FieldInfo):
+        return annotation, io_def
+    if isinstance(io_def, OutputDescription):
+        return annotation, _io_description_to_field_info(io_def)
+    return annotation
 
 
 def _merge_schemas(schema_1: Schema, schema_2: Schema) -> Schema:
     return Schema(
-        **_merge_dicts_flat(_to_schema_dict(schema_1), _to_schema_dict(schema_2))
+        **_merge_dicts_flat(
+            _schema_to_schema_dict(schema_1), _schema_to_schema_dict(schema_2)
+        )
     )
 
 
@@ -434,7 +444,14 @@ def _merge_dicts_flat(d1: dict[str, Any], d2: dict[str, Any]) -> dict[str, Any]:
     return d
 
 
-def _to_schema_dict(schema: Schema) -> dict[str, Any]:
+def _schema_to_schema_dict(schema: Schema) -> dict[str, Any]:
     return schema.model_dump(
         mode="json", exclude_unset=True, exclude_defaults=True, exclude_none=True
     )
+
+
+def _io_description_to_field_info(
+    io_description: InputDescription | OutputDescription,
+) -> FieldInfo:
+    json_schema_extra = _schema_to_schema_dict(io_description.schema_)
+    return Field(json_schema_extra=json_schema_extra)
