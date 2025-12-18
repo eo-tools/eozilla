@@ -20,11 +20,10 @@ checklist are addressed in your PR.
 
 **PR checklist**
 
-* Format and check code using [ruff](https://docs.astral.sh/ruff/) with 
-  default settings: `ruff format` and `ruff check`. See also section 
-  [code style](#code-style) below.
+* Format and check code using `pixi run format` and `pixi run checks`. 
+  See also section [code style](#code-style) below.
 * Your change shall not break existing unit tests.
-  `pixi run test` must run without errors.
+  `pixi run tests` must run without errors.
 * Add unit tests for any new code not yet covered by tests.
 * Make sure test coverage stays close to 100% for any change.
   Use `pixi run coverage` to verify.

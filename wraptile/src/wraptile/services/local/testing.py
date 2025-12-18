@@ -10,8 +10,8 @@ from typing import Optional
 import pydantic
 from pydantic import Field
 
-from gavicore.models import Link
-from procodile import JobContext
+from gavicore.models import InputDescription, Link, Schema
+from procodile import JobContext, additional_parameters
 from wraptile.services.local import LocalService
 
 service = LocalService(
@@ -92,6 +92,7 @@ def primes_between(
     return [min_val + i for i, prime in enumerate(is_prime) if prime]
 
 
+# noinspection PyArgumentList
 @registry.process(
     id="simulate_scene",
     title="Generate scene for testing",
@@ -102,9 +103,11 @@ def primes_between(
         "Requires installed `dask`, `xarray`, and `zarr` packages."
     ),
     inputs={
-        "var_names": Field(
+        "var_names": InputDescription(
             title="Variable names",
             description="Comma-separated list of variable names.",
+            additionalParameters=additional_parameters({"level": "advanced"}),
+            schema=Schema(),  # type: ignore[call-arg]
         ),
         "bbox": Field(
             title="Bounding box",
@@ -131,9 +134,11 @@ def primes_between(
             ge=1,
             le=10,
         ),
-        "output_path": Field(
+        "output_path": InputDescription(
             title="Output path",
             description="Local output path or URI.",
+            additionalParameters=additional_parameters({"level": "advanced"}),
+            schema=Schema(minLength=1),  # type: ignore[call-arg]
         ),
     },
 )
