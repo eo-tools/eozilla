@@ -131,7 +131,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
     def test_create_f1_with_input_fields(self):
         process = Process.create(
             f1,
-            input_fields={
+            inputs={
                 "x": Field(title="A wonderful X", ge=0.0),
                 "y": Field(title="A beautiful Y", lt=1.0),
             },
@@ -219,7 +219,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
     def test_create_f2_with_input_and_output_descriptions(self):
         process = Process.create(
             f2,
-            input_fields={
+            inputs={
                 "a": InputDescription(
                     title="Discriminator",
                     schema=Schema(default=False),
@@ -233,7 +233,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
                     ),
                 ),
             },
-            output_fields={
+            outputs={
                 "point": OutputDescription(
                     title="A point (x, y)",
                     schema=Schema(),
@@ -294,7 +294,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
     def test_create_f2_with_one_output_field(self):
         process = Process.create(
             f2,
-            output_fields={
+            outputs={
                 "point": Field(title="A point (x, y)"),
             },
         )
@@ -328,7 +328,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
     def test_create_f2_with_two_output_fields(self):
         process = Process.create(
             f2,
-            output_fields={
+            outputs={
                 "x": Field(title="The X", ge=0.0),
                 "y": Field(title="The Y", lt=1.0),
             },
@@ -373,7 +373,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         ):
             Process.create(
                 f1,
-                output_fields={
+                outputs={
                     "x": Field(title="The X", ge=0.0),
                     "y": Field(title="The Y", lt=1.0),
                 },
@@ -391,7 +391,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         ):
             Process.create(
                 f1,
-                input_fields={
+                inputs={
                     "x": Field(title="The valid X", ge=0.0),
                     "y": Field(title="The valid Y", lt=1.0),
                     "u": Field(title="The illegal U"),
@@ -410,7 +410,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         ):
             Process.create(
                 f2,
-                output_fields={
+                outputs={
                     "x": Field(title="The X", ge=0.0),
                     "y": Field(title="The Y", lt=1.0),
                     "z": Field(title="The Z"),

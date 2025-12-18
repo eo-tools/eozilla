@@ -4,19 +4,16 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures.process import ProcessPoolExecutor
-from typing import Callable, Optional
+from typing import Optional
 
 import fastapi
-import pydantic
-from pydantic.fields import FieldInfo
+from pydantic import ValidationError
 
 from gavicore.models import (
-    InputDescription,
     JobInfo,
     JobList,
     JobResults,
     JobStatus,
-    OutputDescription,
     ProcessDescription,
     ProcessList,
     ProcessRequest,
@@ -82,7 +79,7 @@ class LocalService(ServiceBase):
         job_id = f"job_{len(self.jobs)}"
         try:
             job = Job.create(process, process_request, job_id=job_id)
-        except pydantic.ValidationError as e:
+        except ValidationError as e:
             raise ServiceException(
                 400,
                 detail=f"Invalid parameterization for process {process_id!r}: {e}",
@@ -128,35 +125,6 @@ class LocalService(ServiceBase):
         assert job.job_info.status == JobStatus.successful
         assert job.future is not None
         return job.future.result()
-
-    # noinspection PyShadowingBuiltins
-    def process(
-        self,
-        function: Optional[Callable] = None,
-        /,
-        *,
-        id: Optional[str] = None,
-        version: Optional[str] = None,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
-        input_fields: Optional[dict[str, FieldInfo | InputDescription]] = None,
-        output_fields: Optional[dict[str, FieldInfo | OutputDescription]] = None,
-    ) -> Callable[[Callable], Callable]:
-        """
-        A decorator that can be applied to a user function in order to
-        register it as a process in this registry.
-
-        The decorator can be used with or without parameters.
-        """
-        return self.process_registry.process(
-            function,
-            id=id,
-            version=version,
-            title=title,
-            description=description,
-            input_fields=input_fields,
-            output_fields=output_fields,
-        )
 
     def _get_process(self, process_id: str) -> Process:
         process = self.process_registry.get(process_id)

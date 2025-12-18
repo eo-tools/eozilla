@@ -32,7 +32,7 @@ class Process:
         signature: The signature of `function`.
         job_ctx_arg: Names of `function` arguments of type `JobContext`.
         model_class: Pydantic model class for the arguments of `function`.
-        description: Process description modelled after
+        description: Process description modeled after
             [OGC API - Processes - Part 1: Core](https://docs.ogc.org/is/18-062r2/18-062r2.html#toc37).
     """
 
@@ -53,8 +53,8 @@ class Process:
         version: Optional[str] = None,
         title: Optional[str] = None,
         description: Optional[str] = None,
-        input_fields: Optional[dict[str, FieldInfo | InputDescription]] = None,
-        output_fields: Optional[dict[str, FieldInfo | OutputDescription]] = None,
+        inputs: Optional[dict[str, FieldInfo | InputDescription]] = None,
+        outputs: Optional[dict[str, FieldInfo | OutputDescription]] = None,
         inputs_arg: str | bool = False,
     ) -> "Process":
         """Create a new instance of this dataclass.
@@ -69,10 +69,12 @@ class Process:
         version = version or "0.0.0"
         description = description or inspect.getdoc(function)
         signature = inspect.signature(function)
-        inputs, model_class, input_arg_, job_ctx_arg = _parse_inputs(
-            fn_name, signature, input_fields, inputs_arg
+        input_descriptions, model_class, input_arg_, job_ctx_arg = _parse_inputs(
+            fn_name, signature, inputs, inputs_arg
         )
-        outputs = _parse_outputs(fn_name, signature.return_annotation, output_fields)
+        output_descriptions = _parse_outputs(
+            fn_name, signature.return_annotation, outputs
+        )
         return Process(
             function=function,
             signature=signature,
@@ -82,8 +84,8 @@ class Process:
                 version=version,
                 title=title,
                 description=description,
-                inputs=inputs,
-                outputs=outputs,
+                inputs=input_descriptions,
+                outputs=output_descriptions,
                 # Note, we may later add the following:
                 # metadata=metadata,
                 # keywords=keywords,
@@ -99,7 +101,7 @@ class Process:
 def _parse_inputs(
     fn_name: str,
     signature: inspect.Signature,
-    input_fields: dict[str, FieldInfo | InputDescription] | None,
+    inputs: dict[str, FieldInfo | InputDescription] | None,
     inputs_arg: str | bool,
 ) -> tuple[dict[str, InputDescription], type[BaseModel], str | None, str | None]:
     arg_parameters, job_ctx_arg = _parse_parameters(fn_name, signature)
@@ -120,9 +122,7 @@ def _parse_inputs(
         model_class = create_model("ProcessInputs", **model_field_definitions)
 
     field_infos = (
-        {k: v for k, v in input_fields.items() if isinstance(v, FieldInfo)}
-        if input_fields
-        else {}
+        {k: v for k, v in inputs.items() if isinstance(v, FieldInfo)} if inputs else {}
     )
     if field_infos:
         model_class = _merge_field_infos_into_model_class(
@@ -140,7 +140,7 @@ def _parse_inputs(
 
     input_descriptions: dict[str, InputDescription] = {}
     for input_name, input_schema_dict in properties.items():
-        base_description = _get_input_description_from_fields(input_name, input_fields)
+        base_description = _get_input_description_from_fields(input_name, inputs)
         schema_dict = dict(input_schema_dict)
         title = schema_dict.pop("title", None)
         descr = schema_dict.pop("description", None)
@@ -161,10 +161,10 @@ def _parse_inputs(
 def _parse_outputs(
     fn_name: str,
     output_annotation: type,
-    output_fields: dict[str, FieldInfo | OutputDescription] | None,
+    outputs: dict[str, FieldInfo | OutputDescription] | None,
 ) -> dict[str, OutputDescription]:
     model_field_definitions = _create_output_model_field_definitions(
-        fn_name, output_annotation, output_fields
+        fn_name, output_annotation, outputs
     )
     model_class = create_model("Outputs", **model_field_definitions)
     outputs_schema_dict = create_schema_dict(model_class)
@@ -172,9 +172,7 @@ def _parse_outputs(
 
     output_descriptions: dict[str, OutputDescription] = {}
     for output_name, output_schema_dict in properties.items():
-        base_description = _get_output_description_from_fields(
-            output_name, output_fields
-        )
+        base_description = _get_output_description_from_fields(output_name, outputs)
         schema_dict = dict(output_schema_dict)
         title = schema_dict.pop("title", None)
         descr = schema_dict.pop("description", None)
