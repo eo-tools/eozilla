@@ -154,6 +154,43 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
             proc_outputs["return_value"],
         )
 
+    # noinspection PyMethodMayBeStatic
+    def test_create_f1_with_one_input_field(self):
+        process = Process.create(
+            f1,
+            inputs={
+                "y": Field(title="A beautiful Y", lt=1.0),
+            },
+        )
+        self.assertIsInstance(process, Process)
+        self.assertIs(f1, process.function)
+        self.assertEqual(None, process.job_ctx_arg)
+        proc_desc = process.description
+        proc_inputs = proc_desc.inputs
+        proc_outputs = proc_desc.outputs
+        self.assertIsInstance(proc_inputs, dict)
+        self.assertIsInstance(proc_outputs, dict)
+        self.assertEqual(["x", "y"], list(proc_inputs.keys()))
+        self.assertEqual(["return_value"], list(proc_outputs.keys()))
+        self.assertBaseModelEqual(
+            InputDescription(title="X", schema=Schema(type=DataType.number)),
+            proc_inputs["x"],
+        )
+        self.assertBaseModelEqual(
+            InputDescription(
+                title="A beautiful Y",
+                schema=Schema(type=DataType.number, exclusiveMaximum=1.0),
+            ),
+            proc_inputs["y"],
+        )
+        self.assertEqual(
+            OutputDescription(
+                title="Return Value",
+                schema=Schema(type=DataType.number),
+            ),
+            proc_outputs["return_value"],
+        )
+
     def test_create_f2(self):
         process = Process.create(f2)
         self.assertIsInstance(process, Process)

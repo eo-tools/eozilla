@@ -15,9 +15,10 @@ workspaces = [
 ]
 
 
-def format_folder(cmd, path):
-    print(f"Formatting: {path}")
-    subprocess.run(cmd + [str(path)], check=True)
+def format_folder(cmd_prefix: list[str], path: pathlib.Path):
+    cmd = cmd_prefix + [str(path)]
+    print(f"Formatting: {' '.join(cmd)}")
+    subprocess.run(cmd, check=True)
 
 
 root = pathlib.Path(__file__).resolve().parent.parent
