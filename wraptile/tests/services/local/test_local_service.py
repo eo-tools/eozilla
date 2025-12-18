@@ -31,12 +31,13 @@ from wraptile.services.local import LocalService
 class LocalServiceSetupTest(TestCase):
     def setUp(self):
         service = LocalService(title="OGC API - Processes - Test Service")
+        registry = service.process_registry
 
-        @service.process(id="foo", version="1.0.1")
+        @registry.process(id="foo", version="1.0.1")
         def foo(x: bool, y: int) -> float:
             return 2 * y if x else y / 2
 
-        @service.process(id="bar", version="1.4.2")
+        @registry.process(id="bar", version="1.4.2")
         def bar(x: bool, y: int) -> float:
             return 2 * y if x else y / 2
 

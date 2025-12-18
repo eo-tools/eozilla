@@ -2,6 +2,11 @@
 
 ### Enhancements
 
+- By using `inputs` and `outputs` keyword arguments of 
+  `procodile.ProcessRegistry.process()` it is now possible to also provide 
+  `gavicore.models.InputDescription` and `gavicore.models.OutputDescription` 
+  that are merged into the input and output descriptions of the process.
+  Also added helper function `procodile.additional_parameters()`. (#46)
 - Provided additional options to customize `cuiman`:
   - Use `cuiman.ClientConfig` class as base class and then configure it with a custom 
     `pydantic_settings.SettingsConfigDict` instance.
@@ -26,7 +31,11 @@
 ### Other changes
 
 - Renamed `gavicore.util.schema.create_json_schema` into `create_schema_dict`.
-- Removed `gavicore.util.schema.create_schema_instance`.
+- Removed `gavicore.util.schema.create_schema_instance` with no replacement.
+- Renamed `input_fields` and `output_fields` keyword arguments into 
+  `inputs` and `outputs` of `procodile.ProcessRegistry.process()` decorator.
+- Removed `wraptile.services.local_service.LocalService.process()` decorator.
+  Instead, use the `process_registry` of `LocalService` directly.
 
 ## Changes in version 0.0.8
 

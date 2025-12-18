@@ -19,8 +19,10 @@ service = LocalService(
     description="Local test server implementing the OGC API - Processes 1.0 Standard",
 )
 
+registry = service.process_registry
 
-@service.process(
+
+@registry.process(
     id="sleep_a_while",
     title="Sleep Processor",
     description=(
@@ -44,7 +46,7 @@ def sleep_a_while(
     return time.time() - t0
 
 
-@service.process(
+@registry.process(
     id="primes_between",
     title="Prime Processor",
     description=(
@@ -90,7 +92,7 @@ def primes_between(
     return [min_val + i for i, prime in enumerate(is_prime) if prime]
 
 
-@service.process(
+@registry.process(
     id="simulate_scene",
     title="Generate scene for testing",
     description=(
@@ -99,7 +101,7 @@ def primes_between(
         "and writes it as Zarr into a temporary location. "
         "Requires installed `dask`, `xarray`, and `zarr` packages."
     ),
-    input_fields={
+    inputs={
         "var_names": Field(
             title="Variable names",
             description="Comma-separated list of variable names.",
@@ -208,7 +210,7 @@ class SceneSpec(pydantic.BaseModel):
     # bbox: Optional[Bbox] = None
 
 
-@service.process(
+@registry.process(
     id="return_base_model",
     title="BaseModel Test",
 )

@@ -17,7 +17,7 @@ from gavicore.models import (
     Schema,
 )
 from gavicore.util.testing import BaseModelMixin
-from procodile import JobContext, Process
+from procodile import JobContext, Process, additional_parameters
 
 
 def f1(x: float, y: float) -> float:
@@ -74,7 +74,7 @@ def f5_too_many_args(ctx: JobContext, u: InputArg, v: float) -> str:
     return f"{type(ctx).__name__}-{u.model_dump_json()}-{v}"
 
 
-# noinspection PyMethodMayBeStatic
+# noinspection PyMethodMayBeStatic,PyArgumentList
 class RegisteredProcessTest(BaseModelMixin, TestCase):
     # noinspection PyMethodMayBeStatic
     def test_create_fail(self):
@@ -118,7 +118,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
     def test_create_f1_with_input_fields(self):
         process = Process.create(
             f1,
-            input_fields={
+            inputs={
                 "x": Field(title="A wonderful X", ge=0.0),
                 "y": Field(title="A beautiful Y", lt=1.0),
             },
@@ -203,10 +203,85 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
             proc_outputs["return_value"],
         )
 
+    def test_create_f2_with_input_and_output_descriptions(self):
+        process = Process.create(
+            f2,
+            inputs={
+                "a": InputDescription(
+                    title="Discriminator",
+                    schema=Schema(default=False),
+                    additionalParameters=additional_parameters({"level": "common"}),
+                ),
+                "b": InputDescription(
+                    title="Value",
+                    schema=Schema(default=1.0),
+                    additionalParameters=additional_parameters(
+                        {"disabled": True, "level": "advanced"}
+                    ),
+                ),
+            },
+            outputs={
+                "point": OutputDescription(
+                    title="A point (x, y)",
+                    schema=Schema(),
+                ),
+            },
+        )
+        self.assertIsInstance(process, Process)
+        self.assertIs(f2, process.function)
+        proc_desc = process.description
+        self.assertIsInstance(proc_desc, ProcessDescription)
+        self.assertEqual("tests.test_process:f2", proc_desc.id)
+        self.assertEqual("0.0.0", proc_desc.version)
+        self.assertEqual(None, proc_desc.title)
+        self.assertEqual("This is f2.", proc_desc.description)
+        proc_inputs = proc_desc.inputs
+        proc_outputs = proc_desc.outputs
+        self.assertIsInstance(proc_inputs, dict)
+        self.assertIsInstance(proc_outputs, dict)
+        self.assertEqual(["a", "b"], list(proc_inputs.keys()))
+        self.assertEqual(["point"], list(proc_outputs.keys()))
+        self.assertBaseModelEqual(
+            InputDescription(
+                title="Discriminator",
+                schema=Schema(
+                    type=DataType.boolean,
+                    nullable=True,
+                    default=False,
+                ),
+                additionalParameters=additional_parameters({"level": "common"}),
+            ),
+            proc_inputs["a"],
+        )
+        self.assertBaseModelEqual(
+            InputDescription(
+                title="Value",
+                schema=Schema(
+                    anyOf=[Schema(type="number"), Schema(type="boolean")], default=1.0
+                ),
+                additionalParameters=additional_parameters(
+                    {"disabled": True, "level": "advanced"}
+                ),
+            ),
+            proc_inputs["b"],
+        )
+        self.assertBaseModelEqual(
+            OutputDescription(
+                title="A point (x, y)",
+                schema=Schema(
+                    type=DataType.array,
+                    items=Schema(type="number"),
+                    minItems=2,
+                    maxItems=2,
+                ),
+            ),
+            proc_outputs["point"],
+        )
+
     def test_create_f2_with_one_output_field(self):
         process = Process.create(
             f2,
-            output_fields={
+            outputs={
                 "point": Field(title="A point (x, y)"),
             },
         )
@@ -240,7 +315,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
     def test_create_f2_with_two_output_fields(self):
         process = Process.create(
             f2,
-            output_fields={
+            outputs={
                 "x": Field(title="The X", ge=0.0),
                 "y": Field(title="The Y", lt=1.0),
             },
@@ -275,7 +350,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         )
 
     # noinspection PyMethodMayBeStatic
-    def test_create_with_illegal_f1_with_output_fields(self):
+    def test_create_f1_with_with_illegal_output_fields(self):
         with pytest.raises(
             TypeError,
             match=(
@@ -285,7 +360,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         ):
             Process.create(
                 f1,
-                output_fields={
+                outputs={
                     "x": Field(title="The X", ge=0.0),
                     "y": Field(title="The Y", lt=1.0),
                 },
@@ -303,7 +378,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         ):
             Process.create(
                 f1,
-                input_fields={
+                inputs={
                     "x": Field(title="The valid X", ge=0.0),
                     "y": Field(title="The valid Y", lt=1.0),
                     "u": Field(title="The illegal U"),
@@ -322,7 +397,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
         ):
             Process.create(
                 f2,
-                output_fields={
+                outputs={
                     "x": Field(title="The X", ge=0.0),
                     "y": Field(title="The Y", lt=1.0),
                     "z": Field(title="The Z"),
@@ -434,7 +509,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
             TypeError,
             match="function '.*:f5_wrong_input_arg_type': "
             "type of inputs argument 'arg' must be a subclass "
-            "of pydantic.BaseModel",
+            "of BaseModel",
         ):
             Process.create(
                 f5_wrong_input_arg_type, id="f5_wrong_input_arg_type", inputs_arg="arg"
@@ -465,3 +540,27 @@ def test_create_schema_fail():
         match=r"function create_scene\(\), input 'thres': 1 validation error for Schema",
     ):
         _create_schema("create_scene", "input", "thres", {"type": "float64"})
+
+
+# noinspection PyArgumentList
+def test_merge_schemas():
+    from procodile.process import _merge_schemas
+
+    schema_a = Schema(type="boolean")
+    schema_b = Schema(type="integer", default=13)
+
+    assert _merge_schemas(
+        Schema(type="object", properties={"a": schema_a}, required=["a"]),
+        Schema(type="object", properties={"b": schema_b}),
+    ) == Schema(
+        type="object",
+        properties={
+            "a": schema_a,
+            "b": schema_b,
+        },
+        required=["a"],
+    )
+
+    assert _merge_schemas(schema_a, schema_b) == schema_b
+    # Care, flat-merging of schemas can produce silly results:
+    assert _merge_schemas(schema_b, schema_a) == Schema(type="boolean", default=13)
