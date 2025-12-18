@@ -6,9 +6,12 @@ import inspect
 from dataclasses import dataclass
 from typing import Any, Callable, Literal, Optional, get_args, get_origin
 
-import pydantic
+from pydantic import BaseModel, ValidationError, create_model
+from pydantic.fields import FieldInfo
 
 from gavicore.models import (
+    AdditionalParameter,
+    AdditionalParameters,
     InputDescription,
     OutputDescription,
     ProcessDescription,
@@ -31,13 +34,13 @@ class Process:
         signature: The signature of `function`.
         job_ctx_arg: Names of `function` arguments of type `JobContext`.
         model_class: Pydantic model class for the arguments of `function`.
-        description: Process description modelled after
+        description: Process description modeled after
             [OGC API - Processes - Part 1: Core](https://docs.ogc.org/is/18-062r2/18-062r2.html#toc37).
     """
 
     function: Callable
     signature: inspect.Signature
-    model_class: type[pydantic.BaseModel]
+    model_class: type[BaseModel]
     description: ProcessDescription
     # names of special arguments
     inputs_arg: str | None
@@ -52,8 +55,8 @@ class Process:
         version: Optional[str] = None,
         title: Optional[str] = None,
         description: Optional[str] = None,
-        input_fields: Optional[dict[str, pydantic.fields.FieldInfo]] = None,
-        output_fields: Optional[dict[str, pydantic.fields.FieldInfo]] = None,
+        inputs: Optional[dict[str, FieldInfo | InputDescription]] = None,
+        outputs: Optional[dict[str, FieldInfo | OutputDescription]] = None,
         inputs_arg: str | bool = False,
     ) -> "Process":
         """Create a new instance of this dataclass.
@@ -68,10 +71,12 @@ class Process:
         version = version or "0.0.0"
         description = description or inspect.getdoc(function)
         signature = inspect.signature(function)
-        inputs, model_class, input_arg_, job_ctx_arg = _parse_inputs(
-            fn_name, signature, input_fields, inputs_arg
+        input_descriptions, model_class, input_arg_, job_ctx_arg = _parse_inputs(
+            fn_name, signature, inputs, inputs_arg
         )
-        outputs = _parse_outputs(fn_name, signature.return_annotation, output_fields)
+        output_descriptions = _parse_outputs(
+            fn_name, signature.return_annotation, outputs
+        )
         return Process(
             function=function,
             signature=signature,
@@ -81,8 +86,8 @@ class Process:
                 version=version,
                 title=title,
                 description=description,
-                inputs=inputs,
-                outputs=outputs,
+                inputs=input_descriptions,
+                outputs=output_descriptions,
                 # Note, we may later add the following:
                 # metadata=metadata,
                 # keywords=keywords,
@@ -95,17 +100,40 @@ class Process:
         )
 
 
+def additional_parameters(
+    parameters: dict[str, Any], **metadata: Any
+) -> AdditionalParameters:
+    """
+    Helper function that creates an instance of `AdditionalParameters`
+    from the keys and values given the `parameters` dictionary.
+    The return value is used as the `additionalParameters` argument of an
+    `InputDescription` or `OutputDescription`.
+
+    Args:
+        parameters: the parameter key-value pairs.
+        metadata: Other metadata fields passed to `AdditionalParameters`.
+
+    Returns:
+        A `AdditionalParameters` instance that can be passed to an
+        `InputDescription` or `OutputDescription`.
+    """
+    return AdditionalParameters(
+        parameters=[
+            AdditionalParameter(name=k, value=[v]) for k, v in parameters.items()
+        ],
+        **metadata,
+    )
+
+
 def _parse_inputs(
     fn_name: str,
     signature: inspect.Signature,
-    input_fields: Optional[dict[str, pydantic.fields.FieldInfo]] | None,
+    inputs: dict[str, FieldInfo | InputDescription] | None,
     inputs_arg: str | bool,
-) -> tuple[
-    dict[str, InputDescription], type[pydantic.BaseModel], str | None, str | None
-]:
+) -> tuple[dict[str, InputDescription], type[BaseModel], str | None, str | None]:
     arg_parameters, job_ctx_arg = _parse_parameters(fn_name, signature)
 
-    model_class: type[pydantic.BaseModel]
+    model_class: type[BaseModel]
     input_arg_: str | None = None
     if inputs_arg:
         model_class, input_arg_ = _parse_input_arg(fn_name, arg_parameters, inputs_arg)
@@ -118,28 +146,73 @@ def _parse_inputs(
             )
             for param_name, parameter in arg_parameters.items()
         }
-        model_class = pydantic.create_model("ProcessInputs", **model_field_definitions)
+        model_class = create_model("ProcessInputs", **model_field_definitions)
 
-    if input_fields:
-        model_class = _merge_input_fields_into_model_class(
-            fn_name, signature, input_fields, model_class
+    field_infos = (
+        {k: v for k, v in inputs.items() if isinstance(v, FieldInfo)} if inputs else {}
+    )
+    if field_infos:
+        model_class = _merge_field_infos_into_model_class(
+            fn_name=fn_name,
+            signature=signature,
+            field_infos=field_infos,
+            model_class=model_class,
         )
 
     model_class.model_rebuild()
 
-    inputs_schema = create_schema_dict(model_class)
-    input_descriptions = {
-        input_name: InputDescription(
-            minOccurs=1 if input_name in inputs_schema.get("required", []) else 0,
-            maxOccurs=None,
-            title=schema.pop("title", None),
-            description=schema.pop("description", None),
-            schema=_create_schema(fn_name, "input", input_name, schema),
-        )
-        for input_name, schema in inputs_schema.get("properties", {}).items()
-    }
+    inputs_schema_dict: dict[str, Any] = create_schema_dict(model_class)
+    required_names: list[str] = inputs_schema_dict.get("required", [])
+    properties: dict[str, Any] = inputs_schema_dict.get("properties", {})
 
+    input_descriptions: dict[str, InputDescription] = {}
+    for input_name, input_schema_dict in properties.items():
+        base_description = _get_input_description_from_fields(input_name, inputs)
+        schema_dict = dict(input_schema_dict)
+        title = schema_dict.pop("title", None)
+        descr = schema_dict.pop("description", None)
+        schema = _create_schema(fn_name, "input", input_name, schema_dict)
+        description = InputDescription(
+            minOccurs=1 if input_name in required_names else 0,
+            maxOccurs=None,
+            schema=schema,
+            title=title,
+            description=descr,
+        )
+        input_descriptions[input_name] = _merge_input_descriptions(
+            description, base_description
+        )
     return input_descriptions, model_class, input_arg_, job_ctx_arg
+
+
+def _parse_outputs(
+    fn_name: str,
+    output_annotation: type,
+    outputs: dict[str, FieldInfo | OutputDescription] | None,
+) -> dict[str, OutputDescription]:
+    model_field_definitions = _create_output_model_field_definitions(
+        fn_name, output_annotation, outputs
+    )
+    model_class = create_model("Outputs", **model_field_definitions)
+    outputs_schema_dict = create_schema_dict(model_class)
+    properties = outputs_schema_dict.get("properties", {})
+
+    output_descriptions: dict[str, OutputDescription] = {}
+    for output_name, output_schema_dict in properties.items():
+        base_description = _get_output_description_from_fields(output_name, outputs)
+        schema_dict = dict(output_schema_dict)
+        title = schema_dict.pop("title", None)
+        descr = schema_dict.pop("description", None)
+        schema = _create_schema(fn_name, "output", output_name, schema_dict)
+        description = OutputDescription(
+            schema=schema,
+            title=title,
+            description=descr,
+        )
+        output_descriptions[output_name] = _merge_output_descriptions(
+            description, base_description
+        )
+    return output_descriptions
 
 
 def _parse_parameters(
@@ -163,15 +236,15 @@ def _parse_parameters(
     return arg_parameters, job_ctx_arg
 
 
-def _merge_input_fields_into_model_class(
+def _merge_field_infos_into_model_class(
     fn_name: str,
     signature: inspect.Signature,
-    input_fields: dict[str, pydantic.fields.FieldInfo],
-    model_class: type[pydantic.BaseModel],
-) -> type[pydantic.BaseModel]:
+    field_infos: dict[str, FieldInfo],
+    model_class: type[BaseModel],
+) -> type[BaseModel]:
     invalid_inputs = [
         input_name
-        for input_name in input_fields
+        for input_name in field_infos
         if input_name not in signature.parameters
     ]
     if invalid_inputs:
@@ -183,23 +256,23 @@ def _merge_input_fields_into_model_class(
 
     # noinspection PyTypeChecker
     model_field_definitions: dict[str, Any] = dict(model_class.model_fields)
-    for input_name, field_info in input_fields.items():
+    for input_name, field_info in field_infos.items():
         if input_name in model_field_definitions:
             old_field_info = model_field_definitions[input_name]
             parameter = signature.parameters[input_name]
             model_field_definitions[input_name] = (
                 parameter.annotation,
-                pydantic.fields.FieldInfo.merge_field_infos(old_field_info, field_info),
+                FieldInfo.merge_field_infos(old_field_info, field_info),
             )
 
-    return pydantic.create_model(model_class.__name__, **model_field_definitions)
+    return create_model(model_class.__name__, **model_field_definitions)
 
 
 def _parse_input_arg(
     fn_name: str,
     arg_parameters: dict[str, inspect.Parameter],
     inputs_arg: str | Literal[True],
-) -> tuple[type[pydantic.BaseModel], str]:
+) -> tuple[type[BaseModel], str]:
     if len(arg_parameters) > 1:
         raise ValueError(
             f"function {fn_name!r}: the inputs argument must be the only "
@@ -222,26 +295,31 @@ def _parse_input_arg(
 
     model_class = inputs_arg_param.annotation
     # noinspection PyTypeChecker
-    if isinstance(model_class, type) and issubclass(model_class, pydantic.BaseModel):
+    if isinstance(model_class, type) and issubclass(model_class, BaseModel):
         return model_class, inputs_arg_param.name
     else:
         raise TypeError(
             f"function {fn_name!r}: type of inputs argument "
-            f"{inputs_arg_param.name!r} must be a subclass of pydantic.BaseModel"
+            f"{inputs_arg_param.name!r} must be a subclass of BaseModel"
         )
 
 
-def _parse_outputs(
+def _create_output_model_field_definitions(
     fn_name: str,
     annotation: type,
-    output_fields: Optional[dict[str, pydantic.fields.FieldInfo]] | None,
-) -> dict[str, OutputDescription]:
+    output_fields: dict[str, FieldInfo | OutputDescription] | None,
+) -> dict[str, Any]:
     model_field_definitions: dict[str, Any] = {}
+
     if not output_fields:
-        model_field_definitions = {"return_value": annotation}
+        # No output fields specified -> we use the annotation
+        model_field_definitions = _create_output_field_entry("return_value", annotation)
     elif len(output_fields) == 1:
+        # A single output field specified -> we use the annotation and the field
         output_name, field_info = next(iter(output_fields.items()))
-        model_field_definitions = {output_name: (annotation, field_info)}
+        model_field_definitions = _create_output_field_entry(
+            output_name, annotation, field_info
+        )
     else:
         origin = get_origin(annotation)
         args = get_args(annotation)
@@ -255,17 +333,66 @@ def _parse_outputs(
                 f"of tuple[] arguments"
             )
         for arg_type, (output_name, field_info) in zip(args, output_fields.items()):
-            model_field_definitions[output_name] = (arg_type, field_info)
-    model_class = pydantic.create_model("Outputs", **model_field_definitions)
-    outputs_schema = create_schema_dict(model_class)
-    output_descriptions = {}
-    for output_name, schema in outputs_schema.get("properties", {}).items():
-        output_descriptions[output_name] = OutputDescription(
-            title=schema.pop("title", None),
-            description=schema.pop("description", None),
-            schema=_create_schema(fn_name, "output", output_name, schema),
-        )
-    return output_descriptions
+            model_field_definitions.update(
+                _create_output_field_entry(output_name, arg_type, field_info)
+            )
+    return model_field_definitions
+
+
+def _get_input_description_from_fields(
+    name: str,
+    fields: dict[str, FieldInfo | InputDescription] | None,
+) -> InputDescription | None:
+    if not fields:
+        return None
+    field = fields.get(name)
+    return field if isinstance(field, InputDescription) else None
+
+
+def _get_output_description_from_fields(
+    name: str,
+    fields: dict[str, FieldInfo | OutputDescription] | None,
+) -> OutputDescription | None:
+    if not fields:
+        return None
+    field = fields.get(name)
+    return field if isinstance(field, OutputDescription) else None
+
+
+def _merge_input_descriptions(
+    description: InputDescription,
+    base_description: InputDescription | None,
+) -> InputDescription:
+    if base_description is None:
+        return description
+    return InputDescription(
+        schema=_merge_schemas(base_description.schema_, description.schema_),
+        title=base_description.title or description.title,
+        description=base_description.description or description.description,
+        keywords=base_description.keywords or description.keywords,
+        metadata=base_description.metadata or description.metadata,
+        additionalParameters=(
+            base_description.additionalParameters or description.additionalParameters
+        ),
+    )
+
+
+def _merge_output_descriptions(
+    description: OutputDescription,
+    base_description: OutputDescription | None,
+) -> OutputDescription:
+    if base_description is None:
+        return description
+    return OutputDescription(
+        schema=_merge_schemas(base_description.schema_, description.schema_),
+        title=base_description.title or description.title,
+        description=base_description.description or description.description,
+        keywords=base_description.keywords or description.keywords,
+        metadata=base_description.metadata or description.metadata,
+        additionalParameters=(
+            base_description.additionalParameters or description.additionalParameters
+        ),
+    )
 
 
 def _create_schema(
@@ -273,7 +400,41 @@ def _create_schema(
 ) -> Schema:
     try:
         return Schema(**schema)
-    except pydantic.ValidationError as e:
+    except ValidationError as e:
         raise ValueError(
             f"function {fn_name}(), {param_type} {param_name!r}: {e}"
         ) from e
+
+
+def _create_output_field_entry(
+    output_name: str,
+    output_annotation: Any,
+    output_field: FieldInfo | OutputDescription | None = None,
+) -> dict:
+    if isinstance(output_field, FieldInfo):
+        return {output_name: (output_annotation, output_field)}
+    else:
+        return {output_name: output_annotation}
+
+
+def _merge_schemas(schema_1: Schema, schema_2: Schema) -> Schema:
+    return Schema(
+        **_merge_dicts_flat(_to_schema_dict(schema_1), _to_schema_dict(schema_2))
+    )
+
+
+def _merge_dicts_flat(d1: dict[str, Any], d2: dict[str, Any]) -> dict[str, Any]:
+    d = dict(d1)
+    for k, v2 in d2.items():
+        if k in d:
+            v1 = d1[k]
+            if isinstance(v1, dict) and isinstance(v2, dict):
+                v2 = _merge_dicts_flat(v1, v2)
+        d[k] = v2
+    return d
+
+
+def _to_schema_dict(schema: Schema) -> dict[str, Any]:
+    return schema.model_dump(
+        mode="json", exclude_unset=True, exclude_defaults=True, exclude_none=True
+    )

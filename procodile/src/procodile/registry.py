@@ -5,7 +5,9 @@
 from collections.abc import Iterator, Mapping
 from typing import Callable, Optional
 
-import pydantic
+from pydantic.fields import FieldInfo
+
+from gavicore.models import InputDescription, OutputDescription
 
 from .process import Process
 
@@ -42,8 +44,8 @@ class ProcessRegistry(Mapping[str, Process]):
         version: Optional[str] = None,
         title: Optional[str] = None,
         description: Optional[str] = None,
-        input_fields: Optional[dict[str, pydantic.fields.FieldInfo]] = None,
-        output_fields: Optional[dict[str, pydantic.fields.FieldInfo]] = None,
+        inputs: Optional[dict[str, FieldInfo | InputDescription]] = None,
+        outputs: Optional[dict[str, FieldInfo | OutputDescription]] = None,
         inputs_arg: str | bool = False,
     ) -> Callable[[Callable], Callable] | Callable:
         """
@@ -62,15 +64,19 @@ class ProcessRegistry(Mapping[str, Process]):
             title: Optional, short process title.
             description: Optional, detailed description of the process. If not
                 provided, the function's docstring, if any, will be used.
-            input_fields: Optional mapping from function argument names
+            inputs: Optional mapping from function argument names
                 to [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/)
-                annotations. The preferred way is to annotate the arguments directly
+                or [`InputDescription`][gavicore.models.InputDescription] instances.
+                The preferred way is to annotate the arguments directly
                 as described in [The Annotated Pattern](https://docs.pydantic.dev/latest/concepts/fields/#the-annotated-pattern).
-            output_fields: Mapping from output names to
+                Use `InputDescription` instances to pass extra information that cannot
+                be represented by a `pydantic.Field`, e.g., `additionalParameters` or `keywords`.
+            outputs: Mapping from output names to
                 [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/)
-                annotations. Required, if you have multiple outputs returned as a
-                dictionary. In this case, output names are the keys of your returned
-                dictionary.
+                or [`OutputDescription`][gavicore.models.InputDescription] instances.
+                Required, if you have multiple outputs returned as a
+                dictionary. In this case, the function must return a typed `tuple` and
+                output names refer to the items of the tuple in given order.
             inputs_arg: Specifies the use of an _inputs argument_. An inputs argument
                 is a container for the actual process inputs. If specified, it must
                 be the only function argument (besides an optional job context
@@ -86,8 +92,8 @@ class ProcessRegistry(Mapping[str, Process]):
                 version=version,
                 title=title,
                 description=description,
-                input_fields=input_fields,
-                output_fields=output_fields,
+                inputs=inputs,
+                outputs=outputs,
                 inputs_arg=inputs_arg,
             )
             self._processes[process.description.id] = process
