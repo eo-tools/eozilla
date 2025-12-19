@@ -1,19 +1,18 @@
 #  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-import time
 from typing import Any
 from unittest import TestCase
 
 from cuiman.api.transport import Transport, TransportArgs
 from cuiman.gui import Client as GuiClient
 from cuiman.gui.jobs_panel import JobsPanel
-from cuiman.gui.main_panel import MainPanel
+from cuiman.gui.main_panel import MainPanelView
 from gavicore.models import JobList, ProcessList
 
 
 class ClientTest(TestCase):
-    def test_show_processes(self):
+    def test_show(self):
         class _MockTransport(Transport):
             def call(self, args: TransportArgs) -> Any:
                 match (args.method, args.path):
@@ -26,7 +25,7 @@ class ClientTest(TestCase):
 
         client = GuiClient(api_url="https://api.ok.ko", _transport=_MockTransport())
         processes_form = client.show()
-        self.assertIsInstance(processes_form, MainPanel)
+        self.assertIsInstance(processes_form, MainPanelView)
         client.close()
 
     def test_show_jobs(self):
