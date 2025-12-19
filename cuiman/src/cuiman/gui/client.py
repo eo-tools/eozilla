@@ -15,7 +15,7 @@ from gavicore.models import ProcessList
 from .job_info_panel import JobInfoPanel
 from .jobs_event_bus import JobsEventBus
 from .jobs_panel import JobsPanel
-from ._main_panel import MainPanel
+from .main_panel import MainPanelView
 
 
 class Client(ApiClient):
@@ -34,7 +34,7 @@ class Client(ApiClient):
     def _reset_state(self):
         self._update_thread = None
 
-    def show(self, **kwargs: Any) -> MainPanel:
+    def show(self, **kwargs: Any) -> MainPanelView:
         """Shows the client's main GUI.
 
         Args:
@@ -54,15 +54,12 @@ class Client(ApiClient):
             if kwargs
             else config_cls.accept_process
         )
-        level = kwargs.get("level")
-        show_advanced = level == "advanced" if level is not None else None
-        main_panel = MainPanel(
+        main_panel = MainPanelView(
             *self._get_processes(),
             on_get_process=self.get_process,
             on_execute_process=self.execute_process,
             accept_process=accept_process,
             is_advanced_input=config_cls.is_advanced_input,
-            show_advanced=show_advanced,
         )
         # noinspection PyTypeChecker
         self._jobs_event_bus.register(main_panel)

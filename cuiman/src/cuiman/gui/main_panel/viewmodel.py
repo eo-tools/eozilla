@@ -2,23 +2,31 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from typing import Callable, TypeAlias
+
 import param
-from typing import Callable
 
 from cuiman.api.config import AdvancedInputPredicate
 from cuiman.api.exceptions import ClientError
 from cuiman.gui.component import ComponentContainer, JsonValue
 from gavicore.models import (
-    ProcessList,
-    ProcessDescription,
-    ProcessSummary,
+    Format,
     InputDescription,
+    JobInfo,
+    Output,
+    ProcessDescription,
+    ProcessList,
+    ProcessRequest,
+    ProcessSummary,
+    TransmissionMode,
 )
+from gavicore.util.request import ExecutionRequest
 
-GetProcessAction = Callable[[str], ProcessDescription]
+GetProcessAction: TypeAlias = Callable[[str], ProcessDescription]
+ExecuteProcessAction: TypeAlias = Callable[[str, ProcessRequest], JobInfo]
 
 
-class MainViewModel(param.Parameterized):
+class MainPanelViewModel(param.Parameterized):
     # ----- public state (observable)
 
     processes = param.List(default=[], doc="Filtered process summaries")
@@ -45,6 +53,12 @@ class MainViewModel(param.Parameterized):
         allow_None=True,
     )
 
+    last_job = param.ClassSelector(
+        class_=JobInfo,
+        default=None,
+        allow_None=True,
+    )
+
     # ----- internal state
 
     _process_cache = param.Dict(default={}, precedence=-1)
@@ -57,23 +71,92 @@ class MainViewModel(param.Parameterized):
         process_list: ProcessList,
         process_list_error: ClientError | None,
         accept_process,
+        is_advanced_input: AdvancedInputPredicate,
         on_get_process: GetProcessAction,
+        on_execute_process: ExecuteProcessAction,
         **params,
     ):
         super().__init__(**params)
 
         self._on_get_process = on_get_process
+        self._on_execute_process = on_execute_process
+        self._is_advanced_input = is_advanced_input
 
         self.processes = [p for p in process_list.processes if accept_process(p)]
         self.error = process_list_error
 
-        self.selected_process_id = MainViewModel._initial_process_id(self.processes)
+        self.select_process(MainPanelViewModel._initial_process_id(self.processes))
 
     # ----- intent
 
     def select_process(self, process_id: str | None):
+        if process_id:
+            MainPanelViewModel.Settings.process_id = process_id
         self.selected_process_id = process_id
         self._load_process_description()
+
+    def update_inputs(self):
+        process = self.process_description
+        if process is None:
+            self.input_container = None
+            return
+
+        last_values: dict[str, JsonValue] = (
+            self.input_container.get_json_values()
+            if self.input_container is not None
+            else {}
+        )
+
+        inputs = process.inputs or {}
+
+        show_advanced = self.show_advanced
+        filtered_inputs: dict[str, InputDescription] = {}
+        for k, v in inputs.items():
+            is_advanced = self._is_advanced_input(process, k, v)
+            if not is_advanced or show_advanced:
+                filtered_inputs[k] = v
+
+        self.input_container = ComponentContainer.from_input_descriptions(
+            filtered_inputs,
+            last_values,
+        )
+
+        MainPanelViewModel.Settings.show_advanced = show_advanced
+
+    def build_execution_request(self) -> ExecutionRequest:
+        pid = self.selected_process_id
+        process = self.process_description
+        container = self.input_container
+
+        assert pid is not None
+        assert process is not None
+        assert container is not None
+
+        return ExecutionRequest(
+            process_id=pid,
+            dotpath=True,
+            inputs=container.get_json_values(),
+            outputs=self._default_outputs(process),
+        )
+
+    def execute(self):
+        request = self.build_execution_request()
+        try:
+            self.loading = True
+            job = self._on_execute_process(
+                request.process_id,
+                request.to_process_request(),
+            )
+            self.last_job = job
+            self.error = None
+            return job
+        except ClientError as e:
+            self.error = e
+            raise
+        finally:
+            self.loading = False
+
+    # ----- helpers (state changing)
 
     def _load_process_description(self):
         pid = self.selected_process_id
@@ -98,32 +181,6 @@ class MainViewModel(param.Parameterized):
         finally:
             self.loading = False
 
-    def update_inputs(self, is_advanced_input: AdvancedInputPredicate):
-        process = self.process_description
-        if process is None:
-            self.input_container = None
-            return
-
-        last_values: dict[str, JsonValue] = (
-            self.input_container.get_json_values()
-            if self.input_container is not None
-            else {}
-        )
-
-        inputs = process.inputs or {}
-
-        show_advanced = self.show_advanced
-        filtered_inputs: dict[str, InputDescription] = {}
-        for k, v in inputs.items():
-            is_advanced = is_advanced_input(process, k, v)
-            if not is_advanced or show_advanced:
-                filtered_inputs[k] = v
-
-        self.input_container = ComponentContainer.from_input_descriptions(
-            filtered_inputs,
-            last_values,
-        )
-
     # ----- helpers (pure)
 
     @staticmethod
@@ -132,4 +189,28 @@ class MainViewModel(param.Parameterized):
     ) -> str | None:
         if not processes:
             return None
-        return processes[0].id
+        process_id = processes[0].id
+        for p in processes:
+            if p.id == MainPanelViewModel.Settings.process_id:
+                process_id = p.id
+                break
+        return process_id
+
+    @staticmethod
+    def _default_outputs(process):
+        # noinspection PyArgumentList
+        return {
+            k: Output(
+                format=Format(mediaType="application/json"),
+                transmissionMode=TransmissionMode.reference,
+            )
+            for k in (process.outputs or {}).keys()
+        }
+
+    class Settings:
+        """Used to persist some view-model settings in memory."""
+
+        # Last selected process identifier
+        process_id: str | None = None
+        # Whether to show advanced input options
+        show_advanced: bool = False
