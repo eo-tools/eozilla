@@ -251,7 +251,8 @@ class MainPanelView(pn.viewable.Viewer):
         name: str = output.title or output.schema_.title or key
 
         def handle_change(selected: bool):
-            print("handle_change:", key, name, selected)
+            # TODO
+            print("_create_output_option:handle_change:", key, name, selected)
 
         checkbox = pn.widgets.Checkbox(
             name=output.title or output.schema_.title or name, value=True
@@ -259,9 +260,6 @@ class MainPanelView(pn.viewable.Viewer):
         checkbox.disabled = True
         pn.bind(handle_change, checkbox)
         return checkbox
-
-    def _on_output_mode_change(self, arg):
-        print("_on_output_mode_change:", arg)
 
     def _update_action_panel(self, process: ProcessDescription | None):
         enabled = process is not None and self._vm.input_container is not None
@@ -292,12 +290,8 @@ class MainPanelView(pn.viewable.Viewer):
         from IPython import get_ipython
 
         var_name = "_request"
-        get_ipython().user_ns[var_name] = self._new_execution_request()
-
-    def _update_buttons(self):
-        # TODO implement action enablement
-        pass
+        get_ipython().user_ns[var_name] = self._vm.build_execution_request()
 
 
-# Register MainPanel as a virtual subclass of JobsObserver
+# Register MainPanelView as a virtual subclass of JobsObserver
 JobsObserver.register(MainPanelView)
