@@ -1,91 +1,96 @@
-from pydantic import Field
-from pydantic.fields import FieldInfo
-from typing_extensions import Annotated
+from typing import Annotated
 
-from procodile.registry import WorkflowRegistry, FromMain, WorkflowDefinition, FromStep
+from graphviz import Source
+from pydantic import Field
+
+from gavicore.util.request import ExecutionRequest
+from procodile import Job
+from procodile.workflow import WorkflowRegistry, FromMain, WorkflowDefinition, FromStep
 
 workflow_registry = WorkflowRegistry()
-first_workflow = workflow_registry.workflow(id="first_workflow")
+first_workflow = workflow_registry.get_or_create_workflow(id="first_workflow")
 
 
 @first_workflow.main(
     id="first_step",
-    outputs=({
-        "id": FieldInfo(
-            description="Main result",
-            default="hello world")
-        }
-))
+    inputs={
+        "id": Field(title="main input")
+    },
+    outputs={
+        "a": Field(title="main result", description="The result of the main step")
+    },
+)
 def fun_a(id: str) -> str:
+    print("ran from main:::", id)
     return id
 
 @first_workflow.step(
     id="second_step",
-    inputs={"id": FromMain("a")}
+    inputs={"id": FromMain(output="a")},
+    # outputs=("res",),
 )
 def fun_b(id: str) -> str:
     return id
 
-from collections import defaultdict, deque
 
-def build_dependency_graph(workflow: WorkflowDefinition):
-    graph = defaultdict(set)
-    in_degree = defaultdict(int)
+@first_workflow.step(
+    id="third_step",
+)
+def fun_c(id: Annotated[str, FromStep(step_id="second_step", output="return_value")])\
+    -> Annotated[str, Field(title="Output from Third Step")]:
+    return id
 
-    in_degree["main"] = 0
-    for step_id in workflow._steps:
-        in_degree[step_id] = 0
+@first_workflow.step(
+    id="fourth_step",
+    outputs={
+        "some_str": Field(title="Some Str"),
+    }
+)
+def fun_d(id: Annotated[str, FromStep(step_id="third_step", output="return_value")])\
+    -> str:
+    return id
 
-    for step_id, entry in workflow._steps.items():
-        deps = entry["dependencies"]
-        for dep in deps.values():
-            src = dep["step_id"]
-            if src != "main" and src not in workflow._steps:
-                raise ValueError(f"Unknown dependency step: {src}")
-            dst = step_id
+@first_workflow.step(
+    id="fifth_step",
+    outputs={
+        "some_str": Field(title="Some Str"),
+    }
+)
+def fun_e(id: Annotated[str, FromStep(step_id="third_step", output="return_value")],
+          id2: Annotated[str, FromMain(output="a")])\
+    -> tuple[str, str]:
+    return id, id2
 
-            if dst not in graph[src]:
-                graph[src].add(dst)
-                in_degree[dst] += 1
+@first_workflow.step(
+    id="sixth_step",
+    outputs={
+        "final": Field(title="Final output"),
+    }
+)
+def fun_f(id: Annotated[tuple[str, str], FromStep(step_id="fifth_step",
+                                              output="some_str")])\
+    -> tuple[str, str]:
+    return id
 
-    return graph, in_degree
+#####################
 
-def topological_sort(workflow: WorkflowDefinition) -> list[str]:
-    graph, in_degree = build_dependency_graph(workflow)
-
-    queue = deque(
-        node for node, degree in in_degree.items()
-        if degree == 0
-    )
-
-    order = []
-
-    while queue:
-        node = queue.popleft()
-        order.append(node)
-
-        for neighbor in graph.get(node, []):
-            in_degree[neighbor] -= 1
-            if in_degree[neighbor] == 0:
-                queue.append(neighbor)
-
-    if len(order) != len(in_degree):
-        remaining = [
-            node for node, degree in in_degree.items()
-            if degree > 0
-        ]
-        raise ValueError(
-            f"Workflow contains a cycle involving: {remaining}"
-        )
-
-    return order
-
-order = topological_sort(first_workflow)
 
 if __name__ == "__main__":
     print(first_workflow)
-    print(first_workflow._main["first_step"])
-    print(first_workflow._steps["second_step"])
-    print(fun_a)
-    print(fun_b)
+    # print(first_workflow._main["first_step"])
+    # print(first_workflow._steps["second_step"])
+    # print(fun_a)
+    # print(fun_b)
+    order = first_workflow.execution_order
     print(order)
+    print(first_workflow.visualize_dot())
+    # render dag
+    dot_str = WorkflowDefinition.visualize_dot(first_workflow)
+    src = Source(dot_str)
+    # src.render("pipeline", format="png", view=True)
+    execution_request = ExecutionRequest.create(
+        process_id=first_workflow.id,
+        inputs=["id=hi",],
+    )
+    job = Job.create(first_workflow, request=execution_request)
+    job.run()

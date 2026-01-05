@@ -24,6 +24,7 @@ from gavicore.models import (
 )
 
 from .process import Process
+from .workflow import WorkflowDefinition
 from .reporter import CallbackReporter
 
 
@@ -110,7 +111,7 @@ class JobContext(ABC):
 
 class Job(JobContext):
     """
-    Represents an execution of a user function.
+    Represents an execution of a user function or workflow.
 
     Args:
         process: The process that created this job.
@@ -120,14 +121,17 @@ class Job(JobContext):
             sequence of Python identifiers separated by the dot
             (`.`) character.
         subscriber: Optional subscriber URIs.
+        workflow: Optional workflow definition. If a workflow created this Job,
+            pass the definition so that this Job can run other jobs as well.
     """
 
     @classmethod
     def create(
         cls,
-        process: Process,
+        process: Process | WorkflowDefinition,
         request: ProcessRequest,
         job_id: Optional[str] = None,
+
     ) -> "Job":
         """
         Create a new job for the given process and process request.
@@ -141,6 +145,7 @@ class Job(JobContext):
             job_id: Optional job identifier.
                 If omitted, a unique identifier will be generated (UUID4).
 
+
         Returns:
             A new job instance.
 
@@ -148,6 +153,14 @@ class Job(JobContext):
             pydantic.ValidationError: if an input value is not valid
                 with respect to its process input description.
         """
+        workflow = None
+        if isinstance(process, WorkflowDefinition):
+            workflow = process
+            assert len(process.registry.main.items()) == 1, ("More than one main in "
+                                                         "workflow "
+                                                     f"{process.id}"
+                                                     "defined")
+            ((_, process),) = process.registry.main.items()
         process_desc = process.description
         input_params = request.inputs or {}
         input_default_params = {
@@ -163,6 +176,7 @@ class Job(JobContext):
             elif input_name in input_default_params:
                 input_values[input_name] = input_default_params[input_name]
 
+        print(input_values)
         model_instance: pydantic.BaseModel = process.model_class(**input_values)
 
         function_kwargs = {
@@ -176,6 +190,7 @@ class Job(JobContext):
             job_id=job_id or f"{uuid.uuid4()}",
             function_kwargs=function_kwargs,
             subscriber=request.subscriber,
+            workflow=workflow,
         )
 
     def __init__(
@@ -185,6 +200,7 @@ class Job(JobContext):
         job_id: str,
         function_kwargs: dict[str, Any],
         subscriber: Optional[Subscriber] = None,
+        workflow: WorkflowDefinition = None,
     ):
         """Internal constructor.
         Use `Job.create() instead.`
@@ -203,6 +219,7 @@ class Job(JobContext):
         self.future: Optional[Future] = None
         self.subscriber = subscriber
         self._reporter: CallbackReporter | None = None
+        self.workflow = workflow
 
     @property
     def reporter(self) -> CallbackReporter:
@@ -260,7 +277,11 @@ class Job(JobContext):
         self._start_job()
         try:
             self.check_cancelled()
-            function_result = self.process.function(**function_kwargs)
+            # TODO: Check if it is workflow step, if so run all of them sequentially
+            if self.workflow:
+                function_result = self.workflow.run(**function_kwargs)
+            else:
+                function_result = self.process.function(**function_kwargs)
             self._finish_job(JobStatus.successful)
             job_results = self._get_job_results(function_result)
             self._maybe_notify_success(job_results)
