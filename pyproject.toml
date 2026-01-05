@@ -63,6 +63,8 @@ nbformat = "*"
 pymdown-extensions = "*"
 anaconda-client = ">=1.13.0,<2"
 pydantic-settings = ">=2.12.0,<3"
+graphviz = ">=13.1.2,<14"
+python-graphviz = ">=0.21,<0.22"
 
 [tool.pixi.pypi-dependencies]
 # For PyPI builds (maybe replace by some pixi-friendly tool)
