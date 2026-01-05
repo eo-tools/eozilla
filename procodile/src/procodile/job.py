@@ -24,7 +24,7 @@ from gavicore.models import (
 )
 
 from .process import Process
-from .workflow import WorkflowDefinition
+from .workflow import Workflow
 from .reporter import CallbackReporter
 
 
@@ -128,7 +128,7 @@ class Job(JobContext):
     @classmethod
     def create(
         cls,
-        process: Process | WorkflowDefinition,
+        process: Process | Workflow,
         request: ProcessRequest,
         job_id: Optional[str] = None,
 
@@ -154,7 +154,7 @@ class Job(JobContext):
                 with respect to its process input description.
         """
         workflow = None
-        if isinstance(process, WorkflowDefinition):
+        if isinstance(process, Workflow):
             workflow = process
             assert len(process.registry.main.items()) == 1, ("More than one main in "
                                                          "workflow "
@@ -200,7 +200,7 @@ class Job(JobContext):
         job_id: str,
         function_kwargs: dict[str, Any],
         subscriber: Optional[Subscriber] = None,
-        workflow: WorkflowDefinition = None,
+        workflow: Workflow = None,
     ):
         """Internal constructor.
         Use `Job.create() instead.`

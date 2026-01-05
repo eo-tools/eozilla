@@ -18,7 +18,7 @@ class FromMain:
         self.output = output
 
     def to_dict(self):
-        return {"step_id": "main", "output": self.output, "type": "from_main"}
+        return {"output": self.output, "type": "from_main"}
 
 class FromStep:
     def __init__(self, step_id: str, output: str):
@@ -45,7 +45,7 @@ class WorkflowRegistry:
     def get_or_create_workflow(self, id: str) -> "WorkflowDefinition":
         if id in self._workflows:
             return self._workflows[id]
-        definition = WorkflowDefinition(id)
+        definition = Workflow(id)
         self._workflows[id] = definition
         return definition
 
@@ -88,14 +88,16 @@ class WorkflowStepRegistry:
         self.steps[step.description.id] = {"step": step, "dependencies": dependencies}
         return fn
 
-class WorkflowDefinition("Workflow"):
-    """A workflow is just multiple steps (processes) connected to each other without
-    any loops.
 
-    Each step is basically a process as per current OGC Part 3 draft.
-    """
+class Workflow:
+    """A workflow is just multiple steps (processes) connected to each other without
+        any loops.
+
+        Each step is basically a process as per current OGC Part 3 draft.
+        """
     def __init__(self, id: str):
         self.id = id
+
         self.registry = WorkflowStepRegistry()
         self.graph: DependencyGraph | None = None
 
@@ -115,17 +117,7 @@ class WorkflowDefinition("Workflow"):
     def _get_graph(self):
         return DependencyGraph(self.registry.main, self.registry.steps)
 
-    def main(self, fn=None, /, **kwargs):
-        if fn is None:
-            return lambda f: self.registry.register_main(f, **kwargs)
-        return self.registry.register_main(fn, **kwargs)
-
-    def step(self, fn=None, /, **kwargs):
-        if fn is None:
-            return lambda f: self.registry.register_step(f, **kwargs)
-        return self.registry.register_step(fn, **kwargs)
-
-    def visualize_dot(self) -> str:
+    def visualize_workflow(self) -> str:
         _, deps = self.execution_order
         print(deps)
         lines = ["digraph pipeline {", "rankdir=LR;"]
@@ -136,6 +128,34 @@ class WorkflowDefinition("Workflow"):
                 lines.append(f'"{node}" -> "{t}";')
         lines.append("}")
         return "\n".join(lines)
+
+    def run(self, **function_kwargs):
+        order, graph = self.execution_order
+        for step_name in order:
+            print(step_name)
+            main_process_key = next(iter(self.registry.main))
+            if step_name == main_process_key:
+                main_process = self.registry.main[main_process_key]
+                result = main_process.function(**function_kwargs)
+            else:
+                step = self.registry.steps[step_name]
+                # print(step["step"].function)
+                result=step["step"].function(**function_kwargs)
+                print(result)
+
+            # result = step_meta.func( **function_kwargs)
+
+
+    def main(self, fn=None, /, **kwargs):
+        if fn is None:
+            return lambda f: self.registry.register_main(f, **kwargs)
+        return self.registry.register_main(fn, **kwargs)
+
+    def step(self, fn=None, /, **kwargs):
+        if fn is None:
+            return lambda f: self.registry.register_step(f, **kwargs)
+        return self.registry.register_step(fn, **kwargs)
+
 
     # def step(self,
     #     function: Optional[Callable] = None,
@@ -209,7 +229,9 @@ class DependencyGraph:
                 f"Workflow must have exactly ONE main, found {len(self.main)}"
             )
 
-        in_degree["main"] = 0
+        # in_degree["main"] = 0
+        for step_id in self.main:
+            in_degree[step_id] = 0
 
         for step_id in self.steps:
             in_degree[step_id] = 0
@@ -221,8 +243,8 @@ class DependencyGraph:
                 dep_type = dep.get("type")
 
                 if dep_type == "from_main":
-                    src = "main"
                     main = next(iter(self.main.values()))
+                    src = main.description.id
                     outputs = main.description.outputs or {}
                     expected = dep.get("output", "return_value")
 
@@ -293,7 +315,5 @@ def unwrap_annotated(annotation):
         return args[0], list(args[1:])
     return annotation, []
 
-class Workflow:
-    def run(self):
-        """"""
+
 
