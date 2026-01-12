@@ -52,15 +52,11 @@ class TestDependencyGraph(unittest.TestCase):
             return x + 1
 
         @self.workflow.step(id="step1")
-        def step1(
-            a: Annotated[int, FromMain("a")]
-        ) -> int:
+        def step1(a: Annotated[int, FromMain("a")]) -> int:
             return a * 2
 
         @self.workflow.step(id="step2")
-        def step2(
-            b: Annotated[int, FromStep("step1", "return_value")]
-        ) -> int:
+        def step2(b: Annotated[int, FromStep("step1", "return_value")]) -> int:
             return b + 3
 
         order, graph = self.workflow.execution_order
@@ -77,9 +73,7 @@ class TestDependencyGraph(unittest.TestCase):
             return 1
 
         @self.workflow.step(id="step1")
-        def step1(
-            x: Annotated[int, FromStep("missing_step", "return_value")]
-        ) -> int:
+        def step1(x: Annotated[int, FromStep("missing_step", "return_value")]) -> int:
             return x
 
         with self.assertRaises(ValueError) as ctx:
@@ -93,9 +87,7 @@ class TestDependencyGraph(unittest.TestCase):
             return 1
 
         @self.workflow.step(id="step1")
-        def step1(
-            x: Annotated[int, FromMain("missing_output")]
-        ) -> int:
+        def step1(x: Annotated[int, FromMain("missing_output")]) -> int:
             return x
 
         with self.assertRaises(ValueError) as ctx:
@@ -109,21 +101,18 @@ class TestDependencyGraph(unittest.TestCase):
             return 1
 
         @self.workflow.step(id="step1")
-        def step1(
-            x: Annotated[int, FromStep("step2", "return_value")]
-        ) -> int:
+        def step1(x: Annotated[int, FromStep("step2", "return_value")]) -> int:
             return x
 
         @self.workflow.step(id="step2")
-        def step2(
-            y: Annotated[int, FromStep("step1", "return_value")]
-        ) -> int:
+        def step2(y: Annotated[int, FromStep("step1", "return_value")]) -> int:
             return y
 
         with self.assertRaises(ValueError) as ctx:
             self.workflow.execution_order
 
         self.assertIn("cycle", str(ctx.exception))
+
 
 class TestWorkflowEndToEnd(unittest.TestCase):
     def setUp(self):
@@ -142,18 +131,14 @@ class TestWorkflowEndToEnd(unittest.TestCase):
             id="step1",
             outputs={"double": None},
         )
-        def step1(
-            x: Annotated[int, FromMain("out")]
-        ) -> int:
+        def step1(x: Annotated[int, FromMain("out")]) -> int:
             return x * 2
 
         @self.workflow.step(
             id="step2",
             outputs={"final": None},
         )
-        def step2(
-            y: Annotated[int, FromStep("step1", "double")]
-        ) -> int:
+        def step2(y: Annotated[int, FromStep("step1", "double")]) -> int:
             return y + 1
 
         outputs = self.workflow.run(a=2, b=3)
@@ -183,9 +168,7 @@ class TestWorkflowEndToEnd(unittest.TestCase):
             return 1
 
         @self.workflow.step(id="step1")
-        def step1(
-            x: Annotated[int, FromMain("return_value")]
-        ) -> int:
+        def step1(x: Annotated[int, FromMain("return_value")]) -> int:
             return x
 
         dot = self.workflow.visualize_workflow()

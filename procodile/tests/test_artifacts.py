@@ -88,7 +88,14 @@ class TestExecutionContext(unittest.TestCase):
             "a": self.ref,
             "b": [self.ref, (self.ref, 1)],
             "c": (1, 2, [3, 4], self.ref, True),
-            "d": {"a": 1, "b": (9, 8), "c": False, "d": [1, 2], "e":self.ref, "f": "g"}
+            "d": {
+                "a": 1,
+                "b": (9, 8),
+                "c": False,
+                "d": [1, 2],
+                "e": self.ref,
+                "f": "g",
+            },
         }
 
         resolved = self.ctx.resolve(value)
