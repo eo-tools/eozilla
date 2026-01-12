@@ -5,13 +5,11 @@
 import inspect
 from collections import defaultdict, deque
 from collections.abc import Iterator
-from typing import Callable, Optional, get_origin, Annotated, get_args, DefaultDict, Any
+from typing import Annotated, Any, Callable, get_args, get_origin
 
-from pydantic.fields import FieldInfo
-
-from gavicore.models import InputDescription, OutputDescription
-
+from .artifacts import ArtifactStore, ExecutionContext
 from .process import Process
+
 
 class FromMain:
     def __init__(self, output: str):
@@ -19,6 +17,7 @@ class FromMain:
 
     def to_dict(self):
         return {"output": self.output, "type": "from_main"}
+
 
 class FromStep:
     def __init__(self, step_id: str, output: str):
@@ -31,9 +30,9 @@ class FromStep:
 
 class WorkflowRegistry:
     def __init__(self):
-        self._workflows: dict[str, "WorkflowDefinition"] = {}
+        self._workflows: dict[str, Workflow] = {}
 
-    def __getitem__(self, workflow_id: str, /) -> "WorkflowDefinition":
+    def __getitem__(self, workflow_id: str, /) -> "Workflow":
         return self._workflows[workflow_id]
 
     def __len__(self) -> int:
@@ -42,15 +41,17 @@ class WorkflowRegistry:
     def __iter__(self) -> Iterator[str]:
         return iter(self._workflows)
 
-    def get_or_create_workflow(self, id: str) -> "WorkflowDefinition":
+    def get_or_create_workflow(self, id: str) -> "Workflow":
         if id in self._workflows:
             return self._workflows[id]
         definition = Workflow(id)
         self._workflows[id] = definition
         return definition
 
+
 class WorkflowStepRegistry:
     """Handles storage of main process and workflow steps."""
+
     def __init__(self):
         self.main: dict[str, Process] = {}
         self.steps: dict[str, Process | dict] = {}
@@ -79,7 +80,9 @@ class WorkflowStepRegistry:
             for name, value in inputs.items():
                 if isinstance(value, (FromMain, FromStep)):
                     if name in dependencies:
-                        raise ValueError(f"Duplicate dependency definition for input {name!r}")
+                        raise ValueError(
+                            f"Duplicate dependency definition for input {name!r}"
+                        )
                     dependencies[name] = value.to_dict()
                 else:
                     schema_inputs[name] = value
@@ -89,12 +92,28 @@ class WorkflowStepRegistry:
         return fn
 
 
+def extract_dependency(annotation: Any) -> FromMain | FromStep | None:
+    """
+    Extract FromMain / FromStep metadata from Annotated types.
+    """
+    if annotation is None:
+        return None
+
+    _, metadata = unwrap_annotated(annotation)
+    for item in metadata:
+        if isinstance(item, (FromMain, FromStep)):
+            return item
+
+    return None
+
+
 class Workflow:
     """A workflow is just multiple steps (processes) connected to each other without
-        any loops.
+    any loops.
 
-        Each step is basically a process as per current OGC Part 3 draft.
-        """
+    Each step is basically a process as per current OGC Part 3 draft.
+    """
+
     def __init__(self, id: str):
         self.id = id
 
@@ -106,8 +125,9 @@ class Workflow:
         self.dep_graph: defaultdict[str, set[str]] = defaultdict(set)
 
     @property
-    def execution_order(self) -> tuple[
-        list[dict | None] | None, defaultdict[str, set[str]]]:
+    def execution_order(
+        self,
+    ) -> tuple[list[dict | None] | None, defaultdict[str, set[str]]]:
         if not self.graph:
             self.graph = self._get_graph()
         self.order, self.dep_graph = self.graph.topological_sort()
@@ -130,21 +150,81 @@ class Workflow:
         return "\n".join(lines)
 
     def run(self, **function_kwargs):
+        store = ArtifactStore()
+        ctx = ExecutionContext(store)
+
         order, graph = self.execution_order
-        for step_name in order:
-            print(step_name)
-            main_process_key = next(iter(self.registry.main))
-            if step_name == main_process_key:
-                main_process = self.registry.main[main_process_key]
-                result = main_process.function(**function_kwargs)
-            else:
-                step = self.registry.steps[step_name]
-                # print(step["step"].function)
-                result=step["step"].function(**function_kwargs)
-                print(result)
 
-            # result = step_meta.func( **function_kwargs)
+        # Run Main first
+        main_id = next(iter(self.registry.main))
+        main = self.registry.main[main_id]
 
+        main_result = main.function(**function_kwargs)
+
+        main_outputs = ctx.normalize_outputs(
+            result=main_result,
+            output_spec=main.description.outputs,
+            store=store,
+        )
+
+        ctx.main.update(main_outputs)
+        outputs = main_outputs
+
+        for step_id in order:
+            if step_id == main_id:
+                continue
+            step_entry = self.registry.steps[step_id]
+            step_def = step_entry["step"]
+            step_deps = step_entry["dependencies"]
+            fn = step_def.function
+
+            kwargs: dict[str, Any] = {}
+
+            sig = inspect.signature(fn)
+            annotations = inspect.get_annotations(fn)
+
+            for name, param in sig.parameters.items():
+                dep = extract_dependency(annotations.get(name)) or step_deps.get(name)
+
+                # convert serialized deps to FromMain/FromStep for further checks
+                if isinstance(dep, dict):
+                    if dep.get("type") == "from_main":
+                        dep = FromMain(output=dep["output"])
+                    elif dep.get("type") == "from_step":
+                        dep = FromStep(
+                            step_id=dep["step_id"],
+                            output=dep["output"],
+                        )
+                    else:
+                        raise ValueError(f"Unknown dependency type: {dep}")
+
+                if isinstance(dep, FromMain):
+                    raw = ctx.main[dep.output]
+
+                elif isinstance(dep, FromStep):
+                    raw = ctx.steps[dep.step_id][dep.output]
+
+                else:
+                    if param.default is not inspect.Parameter.empty:
+                        raw = param.default
+                    else:
+                        raise ValueError(
+                            f"Missing required argument '{name}' for step '{step_id}'"
+                        )
+
+                kwargs[name] = ctx.resolve(raw)
+
+            result = fn(**kwargs)
+
+            outputs = ctx.normalize_outputs(
+                result=result,
+                output_spec=step_def.description.outputs,
+                store=store,
+            )
+
+            ctx.steps[step_id] = outputs
+
+        return outputs
 
     def main(self, fn=None, /, **kwargs):
         if fn is None:
@@ -157,70 +237,14 @@ class Workflow:
         return self.registry.register_step(fn, **kwargs)
 
 
-    # def step(self,
-    #     function: Optional[Callable] = None,
-    #     /,
-    #     *,
-    #     id: Optional[str] = None,
-    #     version: Optional[str] = None,
-    #     title: Optional[str] = None,
-    #     description: Optional[str] = None,
-    #     inputs: Optional[dict[str, FieldInfo | InputDescription | FromMain |
-    #                                FromStep]] = None,
-    #     outputs: tuple[str] | dict[str, FieldInfo | OutputDescription] | None = None,
-    #     inputs_arg: str | bool = False,
-    # ) -> Callable[[Callable], Callable] | Callable:
-    #     def register_step(fn: Callable):
-    #         schema_inputs = {}
-    #         dependencies = {}
-    #         signature = inspect.signature(fn)
-    #         for name, param in signature.parameters.items():
-    #             annotation, metadata = unwrap_annotated(param.annotation)
-    #             for meta in metadata:
-    #                 if isinstance(meta, (FromMain, FromStep)):
-    #                     dependencies[name] = meta.to_dict()
-    #                 else:
-    #                     schema_inputs[name] = annotation
-    #             # print("annotation", param, annotation)
-    #         if inputs:
-    #             for name, value in inputs.items():
-    #                 if isinstance(value, (FromMain, FromStep)):
-    #                     if name in dependencies:
-    #                         raise ValueError(
-    #                             f"Duplicate dependency definition for input {name!r}"
-    #                         )
-    #                     dependencies[name] = value.to_dict()
-    #                 else:
-    #                     schema_inputs[name] = value
-    #         step = Process.create(
-    #             fn,
-    #             id=id,
-    #             version=version,
-    #             title=title,
-    #             description=description,
-    #             inputs=schema_inputs,
-    #             outputs=outputs,
-    #             inputs_arg=inputs_arg,
-    #         )
-    #         self._steps[step.description.id] = {
-    #                                 "step": step,
-    #                                 "dependencies": dependencies
-    #                             }
-    #
-    #         return fn
-    #
-    #     if function is not None:
-    #         return register_step(function)
-    #     else:
-    #         return register_step
-
 class DependencyGraph:
     def __init__(self, main: dict[str, Process], steps: dict[str, dict[str, Any]]):
         self.main = main
         self.steps = steps
 
-    def build_dependency_graph(self) -> tuple[
-        defaultdict[str, set], defaultdict[str, int]]:
+    def build_dependency_graph(
+        self,
+    ) -> tuple[defaultdict[str, set], defaultdict[str, int]]:
         graph = defaultdict(set)
         in_degree = defaultdict(int)
 
@@ -229,7 +253,6 @@ class DependencyGraph:
                 f"Workflow must have exactly ONE main, found {len(self.main)}"
             )
 
-        # in_degree["main"] = 0
         for step_id in self.main:
             in_degree[step_id] = 0
 
@@ -287,11 +310,13 @@ class DependencyGraph:
 
         return graph, in_degree
 
-    def topological_sort(self) -> tuple[list[dict | None] | None, defaultdict[str, set[str]]]:
+    def topological_sort(
+        self,
+    ) -> tuple[list[dict | None] | None, defaultdict[str, set[str]]]:
         graph, in_degree = self.build_dependency_graph()
         queue = deque(node for node, degree in in_degree.items() if degree == 0)
 
-        order: list[dict | None] | None = []
+        order: list[str | None] | None = []
 
         while queue:
             node = queue.popleft()
@@ -314,6 +339,3 @@ def unwrap_annotated(annotation):
         args = get_args(annotation)
         return args[0], list(args[1:])
     return annotation, []
-
-
-

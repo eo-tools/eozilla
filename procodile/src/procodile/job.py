@@ -24,8 +24,8 @@ from gavicore.models import (
 )
 
 from .process import Process
-from .workflow import Workflow
 from .reporter import CallbackReporter
+from .workflow import Workflow
 
 
 class JobCancelledException(Exception):
@@ -131,7 +131,6 @@ class Job(JobContext):
         process: Process | Workflow,
         request: ProcessRequest,
         job_id: Optional[str] = None,
-
     ) -> "Job":
         """
         Create a new job for the given process and process request.
@@ -156,10 +155,9 @@ class Job(JobContext):
         workflow = None
         if isinstance(process, Workflow):
             workflow = process
-            assert len(process.registry.main.items()) == 1, ("More than one main in "
-                                                         "workflow "
-                                                     f"{process.id}"
-                                                     "defined")
+            assert len(process.registry.main.items()) == 1, (
+                f"More than one main in workflow {process.id}defined"
+            )
             ((_, process),) = process.registry.main.items()
         process_desc = process.description
         input_params = request.inputs or {}
@@ -277,7 +275,6 @@ class Job(JobContext):
         self._start_job()
         try:
             self.check_cancelled()
-            # TODO: Check if it is workflow step, if so run all of them sequentially
             if self.workflow:
                 function_result = self.workflow.run(**function_kwargs)
             else:

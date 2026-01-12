@@ -11,7 +11,6 @@ from procodile.workflow import WorkflowRegistry, FromMain, FromStep, \
 workflow_registry = WorkflowRegistry()
 first_workflow = workflow_registry.get_or_create_workflow(id="first_workflow")
 
-
 @first_workflow.main(
     id="first_step",
     inputs={
@@ -21,27 +20,29 @@ first_workflow = workflow_registry.get_or_create_workflow(id="first_workflow")
         "a": Field(title="main result", description="The result of the main step")
     },
 )
-def fun_a(id: str) -> str:
-    print("ran from main:::", id)
-    return id
+def first_step(id: str) -> str:
+    from workflow_funcs import fun_a
+    return fun_a(id)
+
 
 @first_workflow.step(
     id="second_step",
     inputs={"id": FromMain(output="a")},
-    # outputs=("res",),
 )
-def fun_b(id: str) -> str:
-    print("ran from second_step:::", id * 2)
-    return id * 2
+def second_step(id: str) -> str:
+    from workflow_funcs import fun_b
+    return fun_b(id)
 
 
 @first_workflow.step(
     id="third_step",
 )
-def fun_c(id: Annotated[str, FromStep(step_id="second_step", output="return_value")])\
-    -> Annotated[str, Field(title="Output from Third Step")]:
-    print("ran from third_step:::", id  + "hello")
-    return id + "hello"
+def third_step(
+    id: Annotated[str, FromStep(step_id="second_step", output="return_value")]
+) -> Annotated[str, Field(title="Output from Third Step")]:
+    from workflow_funcs import fun_c
+    return fun_c(id)
+
 
 @first_workflow.step(
     id="fourth_step",
@@ -49,10 +50,12 @@ def fun_c(id: Annotated[str, FromStep(step_id="second_step", output="return_valu
         "some_str": Field(title="Some Str"),
     }
 )
-def fun_d(id: Annotated[str, FromStep(step_id="third_step", output="return_value")])\
-    -> str:
-    print("ran from fourth_step:::", id  + "world")
-    return id + "world"
+def fourth_step(
+    id: Annotated[str, FromStep(step_id="third_step", output="return_value")]
+) -> str:
+    from workflow_funcs import fun_d
+    return fun_d(id)
+
 
 @first_workflow.step(
     id="fifth_step",
@@ -60,11 +63,13 @@ def fun_d(id: Annotated[str, FromStep(step_id="third_step", output="return_value
         "some_str": Field(title="Some Str"),
     }
 )
-def fun_e(id: Annotated[str, FromStep(step_id="third_step", output="return_value")],
-          id2: Annotated[str, FromMain(output="a")] = "id2")\
-    -> tuple[str, str]:
-    print("ran from fifth_step:::", id, id2)
-    return id, id2
+def fifth_step(
+    id: Annotated[str, FromStep(step_id="third_step", output="return_value")],
+    id2: Annotated[str, FromMain(output="a")],
+) -> tuple[str, str]:
+    from workflow_funcs import fun_e
+    return fun_e(id, id2)
+
 
 @first_workflow.step(
     id="sixth_step",
@@ -72,31 +77,33 @@ def fun_e(id: Annotated[str, FromStep(step_id="third_step", output="return_value
         "final": Field(title="Final output"),
     }
 )
-def fun_f(id: Annotated[tuple[str, str], FromStep(step_id="fifth_step",
-                                              output="some_str")])\
-    -> tuple[str, str]:
-    print("ran from sixth_step:::", id)
-    return id
+def sixth_step(
+    id: Annotated[
+        tuple[str, str],
+        FromStep(step_id="fifth_step", output="some_str"),
+    ]
+) -> tuple[str, str]:
+    from workflow_funcs import fun_f
+    return fun_f(id)
 
 #####################
 
 
 if __name__ == "__main__":
     print(first_workflow)
-    # print(first_workflow._main["first_step"])
-    # print(first_workflow._steps["second_step"])
-    # print(fun_a)
-    # print(fun_b)
     order = first_workflow.execution_order
     print(order)
     print(first_workflow.visualize_workflow())
     # render dag
     dot_str = Workflow.visualize_workflow(first_workflow)
     src = Source(dot_str)
-    # src.render("pipeline", format="png", view=True)
+    src.render("pipeline", format="png", view=True)
+
     execution_request = ExecutionRequest.create(
         process_id=first_workflow.id,
         inputs=["id=hi",],
     )
+
+    # create and run job
     job = Job.create(first_workflow, request=execution_request)
     job.run()
