@@ -21,7 +21,7 @@ first_workflow = workflow_registry.get_or_create_workflow(id="first_workflow")
     },
 )
 def first_step(id: str) -> str:
-    from workflow_funcs import fun_a
+    from procodile_example.workflow_funcs import fun_a
     return fun_a(id)
 
 
@@ -30,7 +30,7 @@ def first_step(id: str) -> str:
     inputs={"id": FromMain(output="a")},
 )
 def second_step(id: str) -> str:
-    from workflow_funcs import fun_b
+    from procodile_example.workflow_funcs import fun_b
     return fun_b(id)
 
 
@@ -40,7 +40,7 @@ def second_step(id: str) -> str:
 def third_step(
     id: Annotated[str, FromStep(step_id="second_step", output="return_value")]
 ) -> Annotated[str, Field(title="Output from Third Step")]:
-    from workflow_funcs import fun_c
+    from procodile_example.workflow_funcs import fun_c
     return fun_c(id)
 
 
@@ -53,21 +53,22 @@ def third_step(
 def fourth_step(
     id: Annotated[str, FromStep(step_id="third_step", output="return_value")]
 ) -> str:
-    from workflow_funcs import fun_d
+    from procodile_example.workflow_funcs import fun_d
     return fun_d(id)
 
 
 @first_workflow.step(
     id="fifth_step",
+    inputs={ "id2": FromMain(output="a")},
     outputs={
         "some_str": Field(title="Some Str"),
     }
 )
 def fifth_step(
     id: Annotated[str, FromStep(step_id="third_step", output="return_value")],
-    id2: Annotated[str, FromMain(output="a")],
+    id2: str,
 ) -> tuple[str, str]:
-    from workflow_funcs import fun_e
+    from procodile_example.workflow_funcs import fun_e
     return fun_e(id, id2)
 
 
@@ -83,7 +84,7 @@ def sixth_step(
         FromStep(step_id="fifth_step", output="some_str"),
     ]
 ) -> tuple[str, str]:
-    from workflow_funcs import fun_f
+    from procodile_example.workflow_funcs import fun_f
     return fun_f(id)
 
 #####################
