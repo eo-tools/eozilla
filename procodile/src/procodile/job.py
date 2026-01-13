@@ -174,7 +174,6 @@ class Job(JobContext):
             elif input_name in input_default_params:
                 input_values[input_name] = input_default_params[input_name]
 
-        print(input_values)
         model_instance: pydantic.BaseModel = process.model_class(**input_values)
 
         function_kwargs = {

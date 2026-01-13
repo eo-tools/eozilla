@@ -199,7 +199,7 @@ def simulate_scene(
     if not output_path:
         output_path = "memory://datacube.zarr"
 
-    dataset.to_zarr(output_path, mode="w", zarr_format=3)
+    dataset.to_zarr(output_path, mode="w", zarr_format=2)
     if "://" in output_path:
         href = output_path
     else:
