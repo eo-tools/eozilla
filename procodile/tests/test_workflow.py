@@ -13,16 +13,12 @@ class TestDependencyHelpers(unittest.TestCase):
     def test_extract_dependency_from_annotated_from_main(self):
         ann = Annotated[int, FromMain("result")]
         dep = extract_dependency(ann)
-        print("dep", dep)
-        self.assertIsInstance(dep, FromMain)
-        self.assertEqual(dep.output, "result")
+        self.assertEqual(dep, {'output': 'result', 'type': 'from_main'})
 
     def test_extract_dependency_from_annotated_from_step(self):
         ann = Annotated[int, FromStep("step_a", "result")]
         dep = extract_dependency(ann)
-
-        self.assertIsInstance(dep, FromStep)
-        self.assertEqual(dep.output, "result")
+        self.assertEqual(dep, {'step_id': 'step_a', 'output': 'result', 'type': 'from_step'})
 
     def test_extract_dependency_none(self):
         self.assertIsNone(extract_dependency(int))
