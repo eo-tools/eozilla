@@ -6,7 +6,7 @@ from procodile import (
     FromStep,
     WorkflowRegistry,
 )
-from procodile.workflow import extract_dependency
+from procodile.workflow import extract_dependency, WorkflowStepRegistry
 
 
 class TestDependencyHelpers(unittest.TestCase):
@@ -37,6 +37,7 @@ class TestWorkflowRegistry(unittest.TestCase):
         self.assertIs(wf1, wf2)
         self.assertEqual(len(registry), 1)
         self.assertIn("wf", list(registry))
+        self.assertEqual(registry["wf"], wf1)
 
 
 class TestDependencyGraph(unittest.TestCase):
@@ -198,3 +199,184 @@ class TestWorkflowEndToEnd(unittest.TestCase):
 
         self.assertIn("digraph pipeline", dot)
         self.assertIn('"main" -> "step1"', dot)
+
+    def test_workflow_with_default_args(self):
+        @self.workflow.main(
+            id="main",
+            outputs={"out": None},
+        )
+        def main(a: int, b: int) -> int:
+            return a + b
+
+        @self.workflow.step(
+            id="step1",
+            outputs={"double": None},
+        )
+        def step1(
+            x: Annotated[int, FromMain("out")],
+            factor: int = 2,  # DEFAULT ARG
+        ) -> int:
+            return x * factor
+
+        @self.workflow.step(
+            id="step2",
+            outputs={"final": None},
+        )
+        def step2(y: Annotated[int, FromStep("step1", "double")]) -> int:
+            return y + 1
+
+        outputs = self.workflow.run(a=2, b=3)
+
+        self.assertEqual(outputs["final"], 11)
+
+
+class TestWorkflowStepRegistry(unittest.TestCase):
+    def setUp(self):
+        self.registry = WorkflowStepRegistry()
+
+    def test_register_main_stores_process(self):
+        def main(x: int) -> int:
+            return x + 1
+
+        self.registry.register_main(main, id="main")
+
+        self.assertIn("main", self.registry.main)
+        process = self.registry.main["main"]
+        self.assertEqual(process.description.id, "main")
+
+    def test_register_step_without_dependencies(self):
+        def step1(x: int, y: int) -> int:
+            return x + y
+
+        self.registry.register_step(step1, id="step1")
+
+        self.assertIn("step1", self.registry.steps)
+        entry = self.registry.steps["step1"]
+
+        self.assertEqual(entry["dependencies"], {})
+        self.assertEqual(
+            list(entry["step"].description.inputs.keys()),
+            ["x", "y"],
+        )
+
+    def test_dependency_from_main_via_annotated(self):
+        def step1(x: Annotated[int, FromMain("a")]) -> int:
+            return x
+
+        self.registry.register_step(step1, id="step1")
+
+        entry = self.registry.steps["step1"]
+
+        self.assertEqual(
+            entry["dependencies"],
+            {"x": {"type": "from_main", "output": "a"}},
+        )
+        self.assertEqual(list(entry["step"].description.inputs.keys()), ["x"])
+
+    def test_dependency_from_step_via_annotated(self):
+        def step1() -> int:
+            return 1
+
+        def step2(x: Annotated[int, FromStep("step1", "return_value")]) -> int:
+            return x
+
+        self.registry.register_step(step1, id="step1")
+        self.registry.register_step(step2, id="step2")
+
+        entry = self.registry.steps["step2"]
+
+        self.assertEqual(
+            entry["dependencies"],
+            {
+                "x": {
+                    "type": "from_step",
+                    "step_id": "step1",
+                    "output": "return_value",
+                }
+            },
+        )
+
+    def test_dependency_from_inputs_kwarg(self):
+        def step1(x: int) -> int:
+            return x
+
+        self.registry.register_step(
+            step1,
+            id="step1",
+            inputs={"x": FromMain("a")},
+        )
+
+        entry = self.registry.steps["step1"]
+
+        self.assertEqual(
+            entry["dependencies"],
+            {"x": {"type": "from_main", "output": "a"}},
+        )
+
+    def test_schema_input_from_inputs_kwarg(self):
+        def step1(x: int) -> int:
+            return x
+
+        self.registry.register_step(
+            step1,
+            id="step1",
+            inputs={"x": FromMain("b")},
+        )
+
+        entry = self.registry.steps["step1"]
+
+        self.assertEqual(entry["dependencies"], {'x': {'output': 'b', 'type': 'from_main'}})
+        self.assertEqual(list(entry["step"].description.inputs.keys()), ['x'])
+
+    def test_annotated_and_inputs_merge(self):
+        def step1(
+            x: Annotated[int, FromMain("a")],
+            y: int,
+        ) -> int:
+            return x + y
+
+        self.registry.register_step(
+            step1,
+            id="step1",
+            inputs={"y": FromMain("b")},
+        )
+
+        entry = self.registry.steps["step1"]
+
+        self.assertEqual(
+            entry["dependencies"],
+            {
+                "x": {"type": "from_main", "output": "a"},
+                "y": {"type": "from_main", "output": "b"},
+            },
+        )
+        self.assertEqual(
+            list(entry["step"].description.inputs.keys()),
+            ["x", "y"],
+        )
+
+    def test_duplicate_dependency_definition_raises(self):
+        def step1(x: Annotated[int, FromMain("b")]) -> int:
+            return x
+
+        with self.assertRaises(ValueError) as ctx:
+            self.registry.register_step(
+                step1,
+                id="step1",
+                inputs={"x": FromMain("a")},
+            )
+
+        self.assertEqual(
+            "Duplicate dependency definition for input 'x'",
+            str(ctx.exception),
+        )
+
+    def test_invalid_dependency_metadata_raises(self):
+        class DummyMeta:
+            pass
+
+        def step1(x: Annotated[int, DummyMeta()]) -> int:
+            return x
+
+        with self.assertRaises(ValueError) as ctx:
+            self.registry.register_step(step1, id="step1")

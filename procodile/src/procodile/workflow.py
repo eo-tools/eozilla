@@ -83,7 +83,6 @@ class WorkflowStepRegistry:
     def register_step(self, fn: Callable, **kwargs) -> Callable:
         signature = inspect.signature(fn)
         dependencies = {}
-        schema_inputs = {}
 
         for name, param in signature.parameters.items():
             annotation, metadata = unwrap_annotated(param.annotation)
@@ -91,7 +90,9 @@ class WorkflowStepRegistry:
                 if isinstance(meta, (FromMain, FromStep)):
                     dependencies[name] = meta.to_dict()
                 else:
-                    schema_inputs[name] = annotation
+                    raise ValueError(
+                        f"Invalid dependency metadata for input '{name}': {meta!r}"
+                    )
 
         # Merge user-provided inputs
         inputs = kwargs.pop("inputs", None)
@@ -104,9 +105,11 @@ class WorkflowStepRegistry:
                         )
                     dependencies[name] = value.to_dict()
                 else:
-                    schema_inputs[name] = value
+                    raise ValueError(
+                        f"Invalid dependency metadata for input '{name}': {meta!r}"
+                    )
 
-        step = Process.create(fn, inputs=schema_inputs, **kwargs)
+        step = Process.create(fn, **kwargs)
         self.steps[step.description.id] = {"step": step, "dependencies": dependencies}
         return fn
 
