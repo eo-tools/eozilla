@@ -197,7 +197,7 @@ class Job(JobContext):
         job_id: str,
         function_kwargs: dict[str, Any],
         subscriber: Optional[Subscriber] = None,
-        workflow: Workflow = None,
+        workflow: Workflow | None = None,
     ):
         """Internal constructor.
         Use `Job.create() instead.`

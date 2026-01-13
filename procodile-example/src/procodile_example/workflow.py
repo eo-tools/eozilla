@@ -91,6 +91,7 @@ def sixth_step(
 
 if __name__ == "__main__":
     print(first_workflow)
+    print(first_workflow.registry.steps)
     order = first_workflow.execution_order
     print(order)
     print(first_workflow.visualize_workflow())

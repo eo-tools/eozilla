@@ -5,17 +5,36 @@
 import inspect
 from collections import defaultdict, deque
 from collections.abc import Iterator
-from typing import Annotated, Any, Callable, get_args, get_origin
+from typing import Annotated, Any, Callable, get_args, get_origin, TypedDict, Literal
 
 from .artifacts import ArtifactStore, ExecutionContext
 from .process import Process
+
+
+class FromMainDependency(TypedDict):
+    type: Literal["from_main"]
+    output: str
+
+
+class FromStepDependency(TypedDict):
+    type: Literal["from_step"]
+    step_id: str
+    output: str
+
+
+DependencySpec = FromMainDependency | FromStepDependency
+
+
+class StepEntry(TypedDict):
+    step: Process
+    dependencies: dict[str, DependencySpec]
 
 
 class FromMain:
     def __init__(self, output: str):
         self.output = output
 
-    def to_dict(self):
+    def to_dict(self) -> FromMainDependency:
         return {"output": self.output, "type": "from_main"}
 
 
@@ -24,7 +43,7 @@ class FromStep:
         self.step_id = step_id
         self.output = output
 
-    def to_dict(self):
+    def to_dict(self) -> FromStepDependency:
         return {"step_id": self.step_id, "output": self.output, "type": "from_step"}
 
 
@@ -54,7 +73,7 @@ class WorkflowStepRegistry:
 
     def __init__(self):
         self.main: dict[str, Process] = {}
-        self.steps: dict[str, Process | dict] = {}
+        self.steps: dict[str, StepEntry] = {}
 
     def register_main(self, fn: Callable, **kwargs) -> Callable:
         main_process = Process.create(fn, **kwargs)
@@ -92,21 +111,6 @@ class WorkflowStepRegistry:
         return fn
 
 
-def extract_dependency(annotation: Any) -> FromMain | FromStep | None:
-    """
-    Extract FromMain / FromStep metadata from Annotated types.
-    """
-    if annotation is None:
-        return None
-
-    _, metadata = unwrap_annotated(annotation)
-    for item in metadata:
-        if isinstance(item, (FromMain, FromStep)):
-            return item
-
-    return None
-
-
 class Workflow:
     """A workflow is just multiple steps (processes) connected to each other without
     any loops.
@@ -121,17 +125,17 @@ class Workflow:
         self.graph: DependencyGraph | None = None
 
         # Properties to access the workflow execution order
-        self.order: list[dict | None] | None = None
+        self.order: list[str] = []
         self.dep_graph: defaultdict[str, set[str]] = defaultdict(set)
 
     @property
     def execution_order(
         self,
-    ) -> tuple[list[dict | None] | None, defaultdict[str, set[str]]]:
+    ) -> tuple[list[str], defaultdict[str, set[str]]]:
         if not self.graph:
             self.graph = self._get_graph()
-        self.order, self.dep_graph = self.graph.topological_sort()
 
+        self.order, self.dep_graph = self.graph.topological_sort()
         return self.order, self.dep_graph
 
     def _get_graph(self):
@@ -186,23 +190,15 @@ class Workflow:
             for name, param in sig.parameters.items():
                 dep = extract_dependency(annotations.get(name)) or step_deps.get(name)
 
-                # convert serialized deps to FromMain/FromStep for further checks
-                if isinstance(dep, dict):
-                    if dep.get("type") == "from_main":
-                        dep = FromMain(output=dep["output"])
-                    elif dep.get("type") == "from_step":
-                        dep = FromStep(
-                            step_id=dep["step_id"],
-                            output=dep["output"],
-                        )
+                if dep is not None:
+                    if dep["type"] == "from_main":
+                        raw = ctx.main[dep["output"]]
+
+                    elif dep["type"] == "from_step":
+                        raw = ctx.steps[dep["step_id"]][dep["output"]]
+
                     else:
                         raise ValueError(f"Unknown dependency type: {dep}")
-
-                if isinstance(dep, FromMain):
-                    raw = ctx.main[dep.output]
-
-                elif isinstance(dep, FromStep):
-                    raw = ctx.steps[dep.step_id][dep.output]
 
                 else:
                     if param.default is not inspect.Parameter.empty:
@@ -238,14 +234,14 @@ class Workflow:
 
 
 class DependencyGraph:
-    def __init__(self, main: dict[str, Process], steps: dict[str, dict[str, Any]]):
+    def __init__(self, main: dict[str, Process], steps: dict[str, StepEntry]):
         self.main = main
         self.steps = steps
 
     def build_dependency_graph(
         self,
     ) -> tuple[defaultdict[str, set], defaultdict[str, int]]:
-        graph = defaultdict(set)
+        graph: defaultdict[str, set[str]] = defaultdict(set)
         in_degree = defaultdict(int)
 
         if len(self.main) != 1:
@@ -263,9 +259,7 @@ class DependencyGraph:
             deps = entry.get("dependencies", {})
 
             for param, dep in deps.items():
-                dep_type = dep.get("type")
-
-                if dep_type == "from_main":
+                if dep["type"] == "from_main":
                     main = next(iter(self.main.values()))
                     src = main.description.id
                     outputs = main.description.outputs or {}
@@ -278,8 +272,8 @@ class DependencyGraph:
                             f"{tuple(outputs.keys()) or ('return_value',)}"
                         )
 
-                elif dep_type == "from_step":
-                    src = dep.get("step_id")
+                elif dep["type"] == "from_step":
+                    src = dep["step_id"]
 
                     if src not in self.steps:
                         raise ValueError(
@@ -300,7 +294,7 @@ class DependencyGraph:
 
                 else:
                     raise ValueError(
-                        f"Invalid dependency type '{dep_type}' "
+                        f"Invalid dependency type '{dep["type"]}' "
                         f"in step '{step_id}' param '{param}'"
                     )
 
@@ -312,11 +306,11 @@ class DependencyGraph:
 
     def topological_sort(
         self,
-    ) -> tuple[list[dict | None] | None, defaultdict[str, set[str]]]:
+    ) -> tuple[list[str], defaultdict[str, set[str]]]:
         graph, in_degree = self.build_dependency_graph()
         queue = deque(node for node, degree in in_degree.items() if degree == 0)
 
-        order: list[str | None] | None = []
+        order: list[str] = []
 
         while queue:
             node = queue.popleft()
@@ -339,3 +333,18 @@ def unwrap_annotated(annotation):
         args = get_args(annotation)
         return args[0], list(args[1:])
     return annotation, []
+
+
+def extract_dependency(annotation: Any) -> FromMainDependency | FromStepDependency | None:
+    """
+    Extract FromMain / FromStep metadata from Annotated types.
+    """
+    if annotation is None:
+        return None
+
+    _, metadata = unwrap_annotated(annotation)
+    for item in metadata:
+        if isinstance(item, (FromMain, FromStep)):
+            return item.to_dict()
+
+    return None
