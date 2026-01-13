@@ -294,7 +294,7 @@ class DependencyGraph:
 
                 else:
                     raise ValueError(
-                        f"Invalid dependency type '{dep["type"]}' "
+                        f"Invalid dependency type '{dep['type']}' "
                         f"in step '{step_id}' param '{param}'"
                     )
 
@@ -335,7 +335,9 @@ def unwrap_annotated(annotation):
     return annotation, []
 
 
-def extract_dependency(annotation: Any) -> FromMainDependency | FromStepDependency | None:
+def extract_dependency(
+    annotation: Any,
+) -> FromMainDependency | FromStepDependency | None:
     """
     Extract FromMain / FromStep metadata from Annotated types.
     """
