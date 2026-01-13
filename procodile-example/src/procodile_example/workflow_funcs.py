@@ -23,6 +23,6 @@ def fun_e(id: str, id2: str) -> tuple[str, str]:
     return id, id2
 
 
-def fun_f(id: tuple[str, str]) -> tuple[str, str]:
+def fun_f(id: tuple[str, str], second_input: str) -> tuple[tuple[str, str], str]:
     print("ran from sixth_step:::", id)
-    return id
+    return id, second_input

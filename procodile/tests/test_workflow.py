@@ -13,12 +13,14 @@ class TestDependencyHelpers(unittest.TestCase):
     def test_extract_dependency_from_annotated_from_main(self):
         ann = Annotated[int, FromMain("result")]
         dep = extract_dependency(ann)
-        self.assertEqual(dep, {'output': 'result', 'type': 'from_main'})
+        self.assertEqual(dep, {"output": "result", "type": "from_main"})
 
     def test_extract_dependency_from_annotated_from_step(self):
         ann = Annotated[int, FromStep("step_a", "result")]
         dep = extract_dependency(ann)
-        self.assertEqual(dep, {'step_id': 'step_a', 'output': 'result', 'type': 'from_step'})
+        self.assertEqual(
+            dep, {"step_id": "step_a", "output": "result", "type": "from_step"}
+        )
 
     def test_extract_dependency_none(self):
         self.assertIsNone(extract_dependency(int))
@@ -109,6 +111,22 @@ class TestDependencyGraph(unittest.TestCase):
 
         self.assertIn("cycle", str(ctx.exception))
 
+    def test_multiple_leaf_nodes_raises(self):
+        @self.workflow.main(id="main", outputs={"a": None})
+        def main() -> int:
+            return 1
+
+        @self.workflow.step(id="step1")
+        def step1(x: Annotated[int, FromMain("a")]) -> int:
+            return x + 1
+
+        @self.workflow.step(id="step2")
+        def step2(x: Annotated[int, FromMain("a")]) -> int:
+            return x + 2
+
+        with self.assertRaises(ValueError) as ctx:
+            self.workflow.execution_order
+
 
 class TestWorkflowEndToEnd(unittest.TestCase):
     def setUp(self):
@@ -149,9 +167,18 @@ class TestWorkflowEndToEnd(unittest.TestCase):
         def main() -> int:
             return 1
 
+        # step1 is connected to main but still has a missing argument `x` which is
+        # not connected to any step.
         @self.workflow.step(id="step1")
-        def step1(x: int) -> int:
+        def step1(
+            x: int,
+            _unused: Annotated[int, FromMain("out")],
+        ) -> int:
             return x
+
+        @self.workflow.step(id="step2")
+        def step2(y: Annotated[int, FromStep("step1", "return_value")]) -> int:
+            return y
 
         with self.assertRaises(ValueError) as ctx:
             self.workflow.run()

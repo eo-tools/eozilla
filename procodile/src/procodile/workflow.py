@@ -5,7 +5,7 @@
 import inspect
 from collections import defaultdict, deque
 from collections.abc import Iterator
-from typing import Annotated, Any, Callable, get_args, get_origin, TypedDict, Literal
+from typing import Annotated, Any, Callable, Literal, TypedDict, get_args, get_origin
 
 from .artifacts import ArtifactStore, ExecutionContext
 from .process import Process
@@ -308,6 +308,17 @@ class DependencyGraph:
         self,
     ) -> tuple[list[str], defaultdict[str, set[str]]]:
         graph, in_degree = self.build_dependency_graph()
+
+        nodes = set(in_degree.keys())
+        non_leaves = set(graph.keys())
+        leaves = nodes - non_leaves
+
+        if len(leaves) != 1:
+            raise ValueError(
+                f"Workflow must have exactly ONE leaf task, "
+                f"found {len(leaves)}: {sorted(leaves)}"
+            )
+
         queue = deque(node for node, degree in in_degree.items() if degree == 0)
 
         order: list[str] = []

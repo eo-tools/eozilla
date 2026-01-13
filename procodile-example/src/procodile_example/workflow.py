@@ -17,7 +17,7 @@ first_workflow = workflow_registry.get_or_create_workflow(id="first_workflow")
         "id": Field(title="main input")
     },
     outputs={
-        "a": Field(title="main result", description="The result of the main step")
+        "a": Field(title="main result", description="The result of the main step"),
     },
 )
 def first_step(id: str) -> str:
@@ -61,7 +61,7 @@ def fourth_step(
     id="fifth_step",
     inputs={ "id2": FromMain(output="a")},
     outputs={
-        "some_str": Field(title="Some Str"),
+        "some_other_str": Field(title="Some other Str"),
     }
 )
 def fifth_step(
@@ -81,11 +81,14 @@ def fifth_step(
 def sixth_step(
     id: Annotated[
         tuple[str, str],
-        FromStep(step_id="fifth_step", output="some_str"),
+        FromStep(step_id="fifth_step", output="some_other_str"),
+    ],
+    second_input: Annotated[
+        str, FromStep(step_id="fourth_step", output="some_str")
     ]
-) -> tuple[str, str]:
+) -> tuple[tuple[str, str], str]:
     from procodile_example.workflow_funcs import fun_f
-    return fun_f(id)
+    return fun_f(id, second_input)
 
 #####################
 
@@ -108,4 +111,5 @@ if __name__ == "__main__":
 
     # create and run job
     job = Job.create(first_workflow, request=execution_request)
-    job.run()
+    result = job.run()
+    print(result)

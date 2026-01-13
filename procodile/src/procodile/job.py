@@ -9,7 +9,8 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from concurrent.futures import Future
-from typing import Any, Optional
+from copy import deepcopy
+from typing import Any, Mapping, Optional
 
 import pydantic
 
@@ -158,7 +159,23 @@ class Job(JobContext):
             assert len(process.registry.main.items()) == 1, (
                 f"More than one main in workflow {process.id}defined"
             )
+
+            # A workflow interface as a process -> inputs from the main step, outputs
+            # from the last step
+
+            # first step - inputs
             ((_, process),) = process.registry.main.items()
+            order, _ = workflow.execution_order
+            process = deepcopy(process)
+
+            if len(workflow.registry.steps) > 0:
+                last_step = workflow.registry.steps[order[-1]]["step"]
+            else:
+                last_step = process
+
+            # last step - outputs
+            process.description.outputs = last_step.description.outputs
+
         process_desc = process.description
         input_params = request.inputs or {}
         input_default_params = {
@@ -204,9 +221,13 @@ class Job(JobContext):
         """
         self.process = process
         # noinspection PyTypeChecker
+        if workflow:
+            process_id = workflow.id
+        else:
+            process_id = process.description.id
         self.job_info = JobInfo(  # noqa [call-arg]
             type=JobType.process,
-            processID=process.description.id,
+            processID=process_id,
             jobID=job_id,
             status=JobStatus.accepted,
             created=self._now(),
@@ -276,10 +297,12 @@ class Job(JobContext):
             self.check_cancelled()
             if self.workflow:
                 function_result = self.workflow.run(**function_kwargs)
+                self._finish_job(JobStatus.successful)
+                job_results = self._get_workflow_job_results(function_result)
             else:
                 function_result = self.process.function(**function_kwargs)
-            self._finish_job(JobStatus.successful)
-            job_results = self._get_job_results(function_result)
+                self._finish_job(JobStatus.successful)
+                job_results = self._get_process_job_results(function_result)
             self._maybe_notify_success(job_results)
             return job_results
         except JobCancelledException:
@@ -290,7 +313,14 @@ class Job(JobContext):
             self._maybe_notify_failed()
         return None
 
-    def _get_job_results(self, function_result: Any) -> JobResults:
+    def _get_workflow_job_results(
+        self, function_result: Mapping[str, Any]
+    ) -> JobResults:
+        assert self.job_info.status == JobStatus.successful
+        assert self.job_info.processID is not None
+        return JobResults(**function_result)
+
+    def _get_process_job_results(self, function_result: Any) -> JobResults:
         assert self.job_info.status == JobStatus.successful
         assert self.job_info.processID is not None
         outputs = self.process.description.outputs or {}

@@ -6,13 +6,16 @@ from unittest import TestCase
 
 import pydantic
 import pytest
+from pydantic import Field
 
 from gavicore.models import JobResults, JobStatus, ProcessRequest, Subscriber
 from procodile import (
+    FromMain,
     Job,
     JobCancelledException,
     JobContext,
     Process,
+    WorkflowRegistry,
 )
 from procodile.job import NullJobContext
 
@@ -232,6 +235,84 @@ class JobTest(TestCase):
         result = job.run()
         self.assertEqual(None, result)
         self.assertEqual(JobStatus.failed, job.job_info.status)
+
+    def test_run_workflow_success(self):
+        workflow_registry = WorkflowRegistry()
+        workflow = workflow_registry.get_or_create_workflow(id="first_workflow")
+
+        @workflow.main(
+            id="first_step",
+            inputs={"id": Field(title="main input")},
+            outputs={
+                "a": Field(
+                    title="main result",
+                    description="The result of the main step",
+                ),
+            },
+        )
+        def first_step(id: str) -> str:
+            return f"result-{id}"
+
+        @workflow.step(
+            id="second_step",
+            inputs={"id": FromMain(output="a")},
+        )
+        def second_step(id: str) -> str:
+            return id * 2
+
+        job = Job.create(
+            process=workflow,
+            job_id="job_wf_01",
+            request=ProcessRequest(inputs={"id": "hello world-"}),
+        )
+
+        self.assertIs(job.workflow, workflow)
+        self.assertEqual("first_workflow", job.job_info.processID)
+        self.assertEqual({"id": "hello world-"}, job.function_kwargs)
+
+        job_results = job.run()
+
+        self.assertIsNotNone(job_results)
+        self.assertEqual(JobStatus.successful, job.job_info.status)
+
+        self.assertEqual(
+            JobResults(**{"return_value": "result-hello world-result-hello world-"}),
+            job_results,
+        )
+
+    def test_run_workflow_just_main_success(self):
+        workflow_registry = WorkflowRegistry()
+        workflow = workflow_registry.get_or_create_workflow(id="first_workflow")
+
+        @workflow.main(
+            id="first_step",
+            inputs={"id": Field(title="main input")},
+            outputs={
+                "a": Field(
+                    title="main result",
+                    description="The result of the main step",
+                ),
+            },
+        )
+        def first_step(id: str) -> str:
+            return f"result-{id}"
+
+        job = Job.create(
+            process=workflow,
+            job_id="job_wf_01",
+            request=ProcessRequest(inputs={"id": "hello world-"}),
+        )
+
+        self.assertIs(job.workflow, workflow)
+        self.assertEqual("first_workflow", job.job_info.processID)
+        self.assertEqual({"id": "hello world-"}, job.function_kwargs)
+
+        job_results = job.run()
+
+        self.assertIsNotNone(job_results)
+        self.assertEqual(JobStatus.successful, job.job_info.status)
+
+        self.assertEqual(JobResults(**{"a": "result-hello world-"}), job_results)
 
 
 class GetJobContextTest(TestCase):
