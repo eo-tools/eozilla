@@ -9,7 +9,6 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from concurrent.futures import Future
-from copy import deepcopy
 from typing import Any, Mapping, Optional
 
 import pydantic

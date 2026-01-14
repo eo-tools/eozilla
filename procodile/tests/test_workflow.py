@@ -226,7 +226,7 @@ class TestDependencyGraph(unittest.TestCase):
         def step2(x: Annotated[int, FromMain("a")]) -> int:
             return x + 2
 
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(ValueError):
             self.workflow.execution_order
 
 
@@ -481,5 +481,5 @@ class TestWorkflowStepRegistry(unittest.TestCase):
         def step1(x: Annotated[int, DummyMeta()]) -> int:
             return x
 
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(ValueError):
             self.registry.register_step(step1, id="step1")
