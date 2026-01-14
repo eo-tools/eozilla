@@ -7,6 +7,9 @@ from typing import Annotated
 
 import typer
 
+from appligator.airflow.gen_workflow_dag import gen_workflow_dag
+from procodile import WorkflowRegistry
+
 EOZILLA_PATH = Path(__file__).parent.parent.parent.parent.resolve()
 DEFAULT_DAGS_FOLDER = EOZILLA_PATH / "eozilla-airflow/dags"
 PROCESS_REGISTRY_SPEC_EX = (
@@ -20,11 +23,12 @@ cli = typer.Typer(name=CLI_NAME)
 
 @cli.command()
 def main(
-    process_registry_spec: Annotated[
+    process_or_workflow_registry_spec: Annotated[
         str | None,
         typer.Argument(
             ...,
-            help=f"Process registry specification. For example {PROCESS_REGISTRY_SPEC_EX!r}.",
+            help=f"Process or Workflow registry specification. For example "
+                 f"{PROCESS_REGISTRY_SPEC_EX!r}.",
         ),
     ] = None,
     dags_folder: Annotated[
@@ -62,28 +66,67 @@ def main(
         typer.echo(f"{__version__}")
         raise typer.Exit(0)
 
-    if not process_registry_spec:
-        typer.echo("Error: missing process registry specification.")
+    if not process_or_workflow_registry_spec:
+        typer.echo("Error: missing process/workflow registry specification.")
         raise typer.Exit(1)
 
-    process_registry: ProcessRegistry = import_value(
-        process_registry_spec,
-        type=ProcessRegistry,
-        name="process_registry",
-        example=PROCESS_REGISTRY_SPEC_EX,
-    )
-    dags_folder.mkdir(exist_ok=True)
-    for process_id, process in process_registry.items():
-        dag_code = gen_dag(process)
-        dag_file = dags_folder / f"{process_id}.py"
-        with dag_file.open("w") as stream:
-            stream.write(
-                f"# WARNING - THIS IS GENERATED CODE\n"
-                f"#   Generator: Eozilla Appligator v{__version__}\n"
-                f"#        Date: {datetime.datetime.now().isoformat()}\n"
-                f"\n"
-                f"{dag_code}"
+    # process_registry: ProcessRegistry = import_value(
+    #     process_registry_spec,
+    #     type=ProcessRegistry,
+    #     name="process_registry",
+    #     example=PROCESS_REGISTRY_SPEC_EX,
+    # )
+    try:
+        registry = import_value(
+            process_or_workflow_registry_spec,
+            type=ProcessRegistry,
+            name="process_registry",
+            example=PROCESS_REGISTRY_SPEC_EX,
+        )
+        kind = "process"
+    except TypeError:
+        try:
+            registry = import_value(
+                process_or_workflow_registry_spec,
+                type=WorkflowRegistry,
+                name="workflow_registry",
+                example=PROCESS_REGISTRY_SPEC_EX,
             )
+            kind = "workflow"
+        except TypeError:
+            typer.echo("Registry must be either ProcessRegistry or WorkflowRegistry")
+            raise typer.Exit(1)
+
+    dags_folder.mkdir(exist_ok=True)
+
+    if kind=="process":
+        typer.echo(f"genning dag now {dags_folder}")
+        for process_id, process in registry.items():
+            dag_code = gen_dag(process)
+            typer.echo(f"{dag_code}")
+            dag_file = dags_folder / f"{process_id}.py"
+            with dag_file.open("w") as stream:
+                stream.write(
+                    f"# WARNING - THIS IS GENERATED CODE\n"
+                    f"#   Generator: Eozilla Appligator v{__version__}\n"
+                    f"#        Date: {datetime.datetime.now().isoformat()}\n"
+                    f"\n"
+                    f"{dag_code}"
+                )
+    else:
+        for process_id, process in registry.items():
+            dag_code = gen_workflow_dag(dag_id=process_id,
+                                        registry=registry.get_workflow(
+                                            process_id).registry, image="")
+            dag_file = dags_folder / f"{process_id}.py"
+            with dag_file.open("w") as stream:
+                stream.write(
+                    f"# WARNING - THIS IS GENERATED CODE\n"
+                    f"#   Generator: Eozilla Appligator v{__version__}\n"
+                    f"#        Date: {datetime.datetime.now().isoformat()}\n"
+                    f"\n"
+                    f"{dag_code}"
+                )
 
 
 if __name__ == "__main__":  # pragma: no cover
