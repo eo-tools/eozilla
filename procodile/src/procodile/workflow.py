@@ -89,34 +89,23 @@ class WorkflowRegistry:
         return projected
 
     def get(self, workflow_id: str, default=None) -> Process | None:
-        # wf = self._workflows.get(workflow_id)
-        # return default if wf is None else self._as_process(wf)
-
         try:
             return self[workflow_id]
         except KeyError:
             return default
 
     def values(self):
-        # for wf in self._workflows.values():
-        #     yield self._as_process(wf)
         for workflow_id in self:
             yield self[workflow_id]
 
     def items(self):
-        # for wf_id, wf in self._workflows.items():
-        #     yield wf_id, self._as_process(wf)
         for workflow_id in self:
             yield workflow_id, self[workflow_id]
-
-    # def __getitem__(self, workflow_id: str, /) -> "Workflow":
-    #     return self._workflows[workflow_id]
 
     def __getitem__(self, workflow_id: str) -> Process:
         return self._as_process(self._workflows[workflow_id])
 
     def __iter__(self):
-        # iteration yields keys (dict semantics)
         return iter(self._workflows)
 
     def __len__(self) -> int:
@@ -124,11 +113,6 @@ class WorkflowRegistry:
 
     def __contains__(self, workflow_id: str) -> bool:
         return workflow_id in self._workflows
-
-    # def get(self, workflow_id: str, default=None) -> Process | None:
-    #     if workflow_id in self._workflows:
-    #         return self[workflow_id]
-    #     return default
 
     def get_workflow(self, workflow_id: str) -> "Workflow":
         """
@@ -223,7 +207,6 @@ class Workflow:
 
     def visualize_workflow(self) -> str:
         _, deps = self.execution_order
-        print(deps)
         lines = ["digraph pipeline {", "rankdir=LR;"]
         for node in deps:
             lines.append(f'"{node}";')
@@ -238,8 +221,6 @@ class Workflow:
         ctx = ExecutionContext(store)
 
         order, graph = self.execution_order
-        print("order", order)
-        print("graph", graph)
         # Run Main first
         main_id = next(iter(self.registry.main))
         main = self.registry.main[main_id]
