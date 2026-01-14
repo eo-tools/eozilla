@@ -25,7 +25,6 @@ from gavicore.models import (
 
 from .process import Process
 from .reporter import CallbackReporter
-from .workflow import Workflow
 
 
 class JobCancelledException(Exception):
@@ -111,7 +110,7 @@ class JobContext(ABC):
 
 class Job(JobContext):
     """
-    Represents an execution of a user function or workflow.
+    Represents an execution of a user function.
 
     Args:
         process: The process that created this job.
