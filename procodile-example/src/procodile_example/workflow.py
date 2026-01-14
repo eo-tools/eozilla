@@ -113,11 +113,12 @@ if __name__ == "__main__":
         ],
     )
     process = workflow_registry.get("first_workflow")
-    # create and run job
-    job = Job.create(process, request=execution_request)
-    result = job.run()
-    print(result)
+    if process:
+        # create and run job
+        job = Job.create(process, request=execution_request)
+        result = job.run()
+        print(result)
 
-    print(list(workflow_registry.values()))
-    print(list(workflow_registry.workflows()))
-    print(workflow_registry.get_workflow("first_workflow"))
+        print(list(workflow_registry.values()))
+        print(list(workflow_registry.workflows()))
+        print(workflow_registry.get_workflow("first_workflow"))

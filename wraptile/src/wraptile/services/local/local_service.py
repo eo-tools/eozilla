@@ -25,6 +25,7 @@ from wraptile.services.base import ServiceBase
 
 
 class LocalService(ServiceBase):
+
     def __init__(
         self,
         title: str,
@@ -33,6 +34,8 @@ class LocalService(ServiceBase):
     ):
         super().__init__(title=title, description=description)
         self.executor: Optional[ThreadPoolExecutor | ProcessPoolExecutor] = None
+
+        self.process_registry: ProcessRegistry | WorkflowRegistry
         if process_registry is None:
             self.process_registry = ProcessRegistry()
         else:

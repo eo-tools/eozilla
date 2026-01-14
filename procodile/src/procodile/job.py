@@ -121,14 +121,12 @@ class Job(JobContext):
             sequence of Python identifiers separated by the dot
             (`.`) character.
         subscriber: Optional subscriber URIs.
-        workflow: Optional workflow definition. If a workflow created this Job,
-            pass the definition so that this Job can run other jobs as well.
     """
 
     @classmethod
     def create(
         cls,
-        process: Process | Workflow,
+        process: Process,
         request: ProcessRequest,
         job_id: Optional[str] = None,
     ) -> "Job":
@@ -267,7 +265,7 @@ class Job(JobContext):
             self.check_cancelled()
             function_result = self.process.function(**function_kwargs)
             self._finish_job(JobStatus.successful)
-            job_results = self._get_process_job_results(function_result)
+            job_results = self._get_job_results(function_result)
             self._maybe_notify_success(job_results)
             return job_results
         except JobCancelledException:
@@ -278,14 +276,7 @@ class Job(JobContext):
             self._maybe_notify_failed()
         return None
 
-    def _get_workflow_job_results(
-        self, function_result: Mapping[str, Any]
-    ) -> JobResults:
-        assert self.job_info.status == JobStatus.successful
-        assert self.job_info.processID is not None
-        return JobResults(**function_result)
-
-    def _get_process_job_results(self, function_result: Any) -> JobResults:
+    def _get_job_results(self, function_result: Any) -> JobResults:
         assert self.job_info.status == JobStatus.successful
         assert self.job_info.processID is not None
 

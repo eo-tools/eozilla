@@ -18,7 +18,11 @@ service = LocalService(
 )
 
 registry = service.process_registry
-first_workflow = registry.get_or_create_workflow(id="first_workflow")
+
+if isinstance(registry, WorkflowRegistry):
+    first_workflow = registry.get_or_create_workflow(id="first_workflow")
+else:
+    raise TypeError("WorkflowRegistry required")
 
 
 @first_workflow.main(

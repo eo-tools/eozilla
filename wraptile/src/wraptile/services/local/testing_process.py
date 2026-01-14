@@ -11,7 +11,7 @@ import pydantic
 from pydantic import Field
 
 from gavicore.models import InputDescription, Link, Schema
-from procodile import JobContext, additional_parameters
+from procodile import JobContext, additional_parameters, ProcessRegistry
 from wraptile.services.local import LocalService
 
 service = LocalService(
@@ -21,6 +21,8 @@ service = LocalService(
 
 registry = service.process_registry
 
+if not isinstance(registry, ProcessRegistry):
+    raise ValueError("expected ProcessRegistry, got {}".format(type(registry)))
 
 @registry.process(
     id="sleep_a_while",
