@@ -5,8 +5,9 @@ from procodile import (
     FromMain,
     FromStep,
     WorkflowRegistry,
+    Process,
 )
-from procodile.workflow import extract_dependency, WorkflowStepRegistry
+from procodile.workflow import extract_dependency, WorkflowStepRegistry, Workflow
 
 
 class TestDependencyHelpers(unittest.TestCase):
@@ -28,6 +29,26 @@ class TestDependencyHelpers(unittest.TestCase):
 
 
 class TestWorkflowRegistry(unittest.TestCase):
+    def setUp(self):
+        self.registry = WorkflowRegistry()
+        wf = self.registry.get_or_create_workflow("first_workflow")
+
+        @wf.main(
+            id="first_step",
+            inputs={"id": None},
+            outputs={"a": None},
+        )
+        def first_step(id: str) -> str:
+            return id
+
+        @wf.step(
+            id="second_step",
+            inputs={"id": FromMain(output="a")},
+        )
+        def second_step(id: str) -> str:
+            return id
+
+
     def test_get_or_create_workflow(self):
         registry = WorkflowRegistry()
 
@@ -37,7 +58,87 @@ class TestWorkflowRegistry(unittest.TestCase):
         self.assertIs(wf1, wf2)
         self.assertEqual(len(registry), 1)
         self.assertIn("wf", list(registry))
-        self.assertEqual(registry["wf"], wf1)
+
+    def test_len_and_contains(self):
+        self.assertEqual(len(self.registry), 1)
+        self.assertIn("first_workflow", self.registry)
+        self.assertNotIn("missing", self.registry)
+
+    def test_getitem_returns_process(self):
+        proc = self.registry["first_workflow"]
+
+        self.assertIsInstance(proc, Process)
+        self.assertEqual(proc.description.id, "first_workflow")
+
+    def test_get_method(self):
+        proc = self.registry.get("first_workflow")
+        missing = self.registry.get("missing")
+
+        self.assertIsInstance(proc, Process)
+        self.assertIsNone(missing)
+
+    def test_iteration_yields_keys(self):
+        keys = list(self.registry)
+        self.assertEqual(keys, ["first_workflow"])
+
+    def test_values_yield_processes(self):
+        values = list(self.registry.values())
+
+        self.assertEqual(len(values), 1)
+        self.assertIsInstance(values[0], Process)
+
+    def test_items_yield_id_and_process(self):
+        items = list(self.registry.items())
+
+        self.assertEqual(len(items), 1)
+        workflow_id, proc = items[0]
+
+        self.assertEqual(workflow_id, "first_workflow")
+        self.assertIsInstance(proc, Process)
+
+    def test_get_workflow_returns_workflow(self):
+        wf = self.registry.get_workflow("first_workflow")
+
+        self.assertIsInstance(wf, Workflow)
+        self.assertEqual(wf.id, "first_workflow")
+
+    def test_workflow_without_steps_returns_main_interface(self):
+        registry = WorkflowRegistry()
+        wf = registry.get_or_create_workflow("simple")
+
+        @wf.main(id="main")
+        def main(x: int) -> int:
+            return x
+
+        proc = registry["simple"]
+
+        self.assertIsInstance(proc, Process)
+        self.assertEqual(proc.description.id, "simple")
+        self.assertEqual(proc.function, wf.run)
+
+    def test_multiple_main_steps_raises(self):
+        registry = WorkflowRegistry()
+        wf = registry.get_or_create_workflow("bad")
+
+        @wf.main(id="a")
+        def a(x: int) -> int:
+            return x
+
+        @wf.main(id="b")
+        def b(x: int) -> int:
+            return x
+
+        with self.assertRaises(ValueError):
+            _ = registry["bad"]
+
+    def test_registry_never_returns_workflow(self):
+        for value in self.registry.values():
+            self.assertNotIsInstance(value, Workflow)
+            self.assertIsInstance(value, Process)
+
+        for _, value in self.registry.items():
+            self.assertNotIsInstance(value, Workflow)
+            self.assertIsInstance(value, Process)
 
 
 class TestDependencyGraph(unittest.TestCase):
@@ -60,11 +161,12 @@ class TestDependencyGraph(unittest.TestCase):
 
         order, graph = self.workflow.execution_order
 
-        self.assertEqual(order, ["main", "step1", "step2"])
+        self.assertEqual(order, ["main", "step1", "step2", "final_step"])
 
         self.assertEqual(graph["main"], {"step1"})
         self.assertEqual(graph["step1"], {"step2"})
-        self.assertNotIn("step2", graph)
+        self.assertEqual(graph["step2"], {"final_step"})
+        self.assertNotIn("final_step", graph)
 
     def test_unknown_step_dependency_raises(self):
         @self.workflow.main(id="main", outputs={"a": None})

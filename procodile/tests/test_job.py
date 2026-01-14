@@ -260,13 +260,14 @@ class JobTest(TestCase):
         def second_step(id: str) -> str:
             return id * 2
 
+        process = workflow_registry.get("first_workflow")
+
         job = Job.create(
-            process=workflow,
+            process=process,
             job_id="job_wf_01",
             request=ProcessRequest(inputs={"id": "hello world-"}),
         )
 
-        self.assertIs(job.workflow, workflow)
         self.assertEqual("first_workflow", job.job_info.processID)
         self.assertEqual({"id": "hello world-"}, job.function_kwargs)
 
@@ -297,13 +298,14 @@ class JobTest(TestCase):
         def first_step(id: str) -> str:
             return f"result-{id}"
 
+        process = workflow_registry.get("first_workflow")
+
         job = Job.create(
-            process=workflow,
+            process=process,
             job_id="job_wf_01",
             request=ProcessRequest(inputs={"id": "hello world-"}),
         )
 
-        self.assertIs(job.workflow, workflow)
         self.assertEqual("first_workflow", job.job_info.processID)
         self.assertEqual({"id": "hello world-"}, job.function_kwargs)
 

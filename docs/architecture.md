@@ -295,7 +295,7 @@ config:
   theme: default
 ---
 flowchart LR
-    local_service@{ shape: stadium, label: "wraptile.services.local.testing:service" }
+    local_service@{ shape: stadium, label: "wraptile.services.local.testing_process:service" }
     dags@{ shape: stadium, label: "eozilla-airflow/dags" }
     local_service --> gen-dags
     gen-dags --> dags

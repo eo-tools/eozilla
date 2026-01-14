@@ -19,7 +19,7 @@ from gavicore.models import (
     ProcessRequest,
     ProcessSummary,
 )
-from procodile import Job, Process, ProcessRegistry
+from procodile import Job, Process, ProcessRegistry, WorkflowRegistry
 from wraptile.exceptions import ServiceException
 from wraptile.services.base import ServiceBase
 
@@ -29,11 +29,14 @@ class LocalService(ServiceBase):
         self,
         title: str,
         description: Optional[str] = None,
-        process_registry: Optional[ProcessRegistry] = None,
+        process_registry: Optional[ProcessRegistry | WorkflowRegistry] = None,
     ):
         super().__init__(title=title, description=description)
         self.executor: Optional[ThreadPoolExecutor | ProcessPoolExecutor] = None
-        self.process_registry = process_registry or ProcessRegistry()
+        if process_registry is None:
+            self.process_registry = ProcessRegistry()
+        else:
+            self.process_registry = process_registry
         self.jobs: dict[str, Job] = {}
 
     def configure(

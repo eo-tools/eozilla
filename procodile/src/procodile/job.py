@@ -153,28 +153,6 @@ class Job(JobContext):
             pydantic.ValidationError: if an input value is not valid
                 with respect to its process input description.
         """
-        workflow = None
-        if isinstance(process, Workflow):
-            workflow = process
-            assert len(process.registry.main.items()) == 1, (
-                f"More than one main in workflow {process.id}defined"
-            )
-
-            # A workflow interface as a process -> inputs from the main step, outputs
-            # from the last step
-
-            # first step - inputs
-            ((_, process),) = process.registry.main.items()
-            order, _ = workflow.execution_order
-            process = deepcopy(process)
-
-            if len(workflow.registry.steps) > 0:
-                last_step = workflow.registry.steps[order[-1]]["step"]
-            else:
-                last_step = process
-
-            # last step - outputs
-            process.description.outputs = last_step.description.outputs
 
         process_desc = process.description
         input_params = request.inputs or {}
@@ -204,7 +182,6 @@ class Job(JobContext):
             job_id=job_id or f"{uuid.uuid4()}",
             function_kwargs=function_kwargs,
             subscriber=request.subscriber,
-            workflow=workflow,
         )
 
     def __init__(
@@ -214,20 +191,15 @@ class Job(JobContext):
         job_id: str,
         function_kwargs: dict[str, Any],
         subscriber: Optional[Subscriber] = None,
-        workflow: Workflow | None = None,
     ):
         """Internal constructor.
         Use `Job.create() instead.`
         """
         self.process = process
         # noinspection PyTypeChecker
-        if workflow:
-            process_id = workflow.id
-        else:
-            process_id = process.description.id
         self.job_info = JobInfo(  # noqa [call-arg]
             type=JobType.process,
-            processID=process_id,
+            processID=process.description.id,
             jobID=job_id,
             status=JobStatus.accepted,
             created=self._now(),
@@ -237,7 +209,6 @@ class Job(JobContext):
         self.future: Optional[Future] = None
         self.subscriber = subscriber
         self._reporter: CallbackReporter | None = None
-        self.workflow = workflow
 
     @property
     def reporter(self) -> CallbackReporter:
@@ -295,14 +266,9 @@ class Job(JobContext):
         self._start_job()
         try:
             self.check_cancelled()
-            if self.workflow:
-                function_result = self.workflow.run(**function_kwargs)
-                self._finish_job(JobStatus.successful)
-                job_results = self._get_workflow_job_results(function_result)
-            else:
-                function_result = self.process.function(**function_kwargs)
-                self._finish_job(JobStatus.successful)
-                job_results = self._get_process_job_results(function_result)
+            function_result = self.process.function(**function_kwargs)
+            self._finish_job(JobStatus.successful)
+            job_results = self._get_process_job_results(function_result)
             self._maybe_notify_success(job_results)
             return job_results
         except JobCancelledException:
@@ -323,6 +289,10 @@ class Job(JobContext):
     def _get_process_job_results(self, function_result: Any) -> JobResults:
         assert self.job_info.status == JobStatus.successful
         assert self.job_info.processID is not None
+
+        if isinstance(function_result, Mapping):
+            return JobResults(**function_result)
+
         outputs = self.process.description.outputs or {}
         output_count = len(outputs)
         return JobResults(

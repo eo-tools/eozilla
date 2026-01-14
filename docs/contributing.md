@@ -50,13 +50,13 @@ pixi shell
 Run local test server
 
 ```commandline
-wraptile run -- wraptile.services.local.testing:service
+wraptile run -- wraptile.services.local.testing_process:service
 ```
 
 The dev mode is useful if you are changing server code:
 
 ```commandline
-wraptile dev wraptile.services.local.testing:service
+wraptile dev wraptile.services.local.testing_process:service
 ```
 
 Run the Eozilla client Python API

@@ -18,8 +18,7 @@ from gavicore.util.cli.parameters import (
 )
 
 if TYPE_CHECKING:  # pragma: no cover
-    from procodile import ProcessRegistry
-
+    from procodile import ProcessRegistry, WorkflowRegistry
 
 PROCESS_REGISTRY_GETTER_KEY = "get_process_registry"
 
@@ -37,7 +36,8 @@ for `execute-process`, or `lp` for `list-processes`.
 
 # noinspection PyShadowingBuiltins
 def new_cli(
-    registry: Union[str, "ProcessRegistry", Callable[[], "ProcessRegistry"]],
+    registry: Union[str, Union["ProcessRegistry", "WorkflowRegistry"], Callable[[],
+    Union["ProcessRegistry", "WorkflowRegistry"]]],
     name: str,
     version: str,
     help: str | None = None,
@@ -215,18 +215,27 @@ __all__ = [
 
 
 def _parse_process_registry_getter(
-    process_registry: Union[str, "ProcessRegistry", Callable[[], "ProcessRegistry"]],
-) -> Callable[[], "ProcessRegistry"]:
+    process_registry: Union[str, Union["ProcessRegistry", "WorkflowRegistry"], Callable[[], Union["ProcessRegistry", "WorkflowRegistry"]]],
+) -> Callable[[], Union["ProcessRegistry", "WorkflowRegistry"]]:
     process_registry_getter: Callable
     if isinstance(process_registry, str):
 
         def process_registry_getter():
             from gavicore.util.dynimp import import_value
-            from procodile import ProcessRegistry
+            from procodile import ProcessRegistry, WorkflowRegistry
 
-            return import_value(
-                process_registry, name="process registry", type=ProcessRegistry
+            registry =  import_value(
+                process_registry, name="process registry", type=object
             )
+
+            if not isinstance(registry, (ProcessRegistry, WorkflowRegistry)):
+                raise TypeError(
+                    "The process registry must be a ProcessRegistry or "
+                    "WorkflowRegistry, "
+                    f"got {type(registry).__name__}."
+                )
+
+            return registry
 
         return process_registry_getter
 
@@ -240,11 +249,11 @@ def _parse_process_registry_getter(
         return process_registry_getter
 
 
-def _get_process_registry(ctx: typer.Context) -> "ProcessRegistry":
-    from procodile import ProcessRegistry
+def _get_process_registry(ctx: typer.Context) -> Union["ProcessRegistry", "WorkflowRegistry"]:
+    from procodile import ProcessRegistry, WorkflowRegistry
 
     process_registry_getter = ctx.obj.get(PROCESS_REGISTRY_GETTER_KEY)
     assert process_registry_getter is not None and callable(process_registry_getter)
     process_registry = process_registry_getter()
-    assert isinstance(process_registry, ProcessRegistry)
+    assert isinstance(process_registry, (ProcessRegistry, WorkflowRegistry))
     return process_registry

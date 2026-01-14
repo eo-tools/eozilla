@@ -13,7 +13,7 @@ Running Wraptile with a local service:
 
 ```commandline
 pixi shell
-wraptile run -- wraptile.services.local.testing:service --processes --max-workers=5
+wraptile run -- wraptile.services.local.testing_process:service --processes --max-workers=5
 ```
 
 The possible options are

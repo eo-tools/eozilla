@@ -4,7 +4,7 @@
 
 import inspect
 from collections import defaultdict, deque
-from collections.abc import Iterator
+from copy import deepcopy
 from typing import Annotated, Any, Callable, Literal, TypedDict, get_args, get_origin
 
 from .artifacts import ArtifactStore, ExecutionContext
@@ -24,6 +24,7 @@ class FromStepDependency(TypedDict):
 
 DependencySpec = FromMainDependency | FromStepDependency
 
+FINAL_STEP_ID = "final_step"
 
 class StepEntry(TypedDict):
     step: Process
@@ -51,15 +52,6 @@ class WorkflowRegistry:
     def __init__(self):
         self._workflows: dict[str, Workflow] = {}
 
-    def __getitem__(self, workflow_id: str, /) -> "Workflow":
-        return self._workflows[workflow_id]
-
-    def __len__(self) -> int:
-        return len(self._workflows)
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._workflows)
-
     def get_or_create_workflow(self, id: str) -> "Workflow":
         if id in self._workflows:
             return self._workflows[id]
@@ -67,6 +59,90 @@ class WorkflowRegistry:
         self._workflows[id] = definition
         return definition
 
+    def _as_process(self, workflow: "Workflow") -> Process:
+        """This is the facade process object that is returned when the client wants
+        to see what processes are available and is also used to run the actual
+        workflow"""
+
+        # Exactly one main is required
+        if len(workflow.registry.main) != 1:
+            raise ValueError(
+                f"Workflow {workflow.id!r} must have exactly one main process"
+            )
+
+        main = next(iter(workflow.registry.main.values()))
+
+        projected = deepcopy(main)
+
+        # Steps exist -> last step defines outputs
+        if workflow.registry.steps:
+            order, _ = workflow.execution_order
+            last_step_id = order[-2] # because the step before that is the actual
+            # user defined last step.
+            last_step = workflow.registry.steps[last_step_id]["step"]
+            projected.description.outputs = last_step.description.outputs
+
+        projected.description.id = workflow.id
+        projected.function = workflow.run
+
+        return projected
+
+    def get(self, workflow_id: str, default=None) -> Process | None:
+        # wf = self._workflows.get(workflow_id)
+        # return default if wf is None else self._as_process(wf)
+
+        try:
+            return self[workflow_id]
+        except KeyError:
+            return default
+
+    def values(self):
+        # for wf in self._workflows.values():
+        #     yield self._as_process(wf)
+        for workflow_id in self:
+            yield self[workflow_id]
+
+    def items(self):
+        # for wf_id, wf in self._workflows.items():
+        #     yield wf_id, self._as_process(wf)
+        for workflow_id in self:
+            yield workflow_id, self[workflow_id]
+
+
+    # def __getitem__(self, workflow_id: str, /) -> "Workflow":
+    #     return self._workflows[workflow_id]
+
+    def __getitem__(self, workflow_id: str) -> Process:
+        return self._as_process(self._workflows[workflow_id])
+
+    def __iter__(self):
+        # iteration yields keys (dict semantics)
+        return iter(self._workflows)
+
+    def __len__(self) -> int:
+        return len(self._workflows)
+
+    def __contains__(self, workflow_id: str) -> bool:
+        return workflow_id in self._workflows
+
+    # def get(self, workflow_id: str, default=None) -> Process | None:
+    #     if workflow_id in self._workflows:
+    #         return self[workflow_id]
+    #     return default
+
+    def get_workflow(self, workflow_id: str) -> "Workflow":
+        """
+        INTERNAL API.
+        Returns the actual Workflow object.
+        """
+        return self._workflows[workflow_id]
+
+    def workflows(self):
+        """
+        INTERNAL API.
+        Returns all workflows
+        """
+        return self._workflows
 
 class WorkflowStepRegistry:
     """Handles storage of main process and workflow steps."""
@@ -161,7 +237,8 @@ class Workflow:
         ctx = ExecutionContext(store)
 
         order, graph = self.execution_order
-
+        print("order", order)
+        print("graph", graph)
         # Run Main first
         main_id = next(iter(self.registry.main))
         main = self.registry.main[main_id]
@@ -180,6 +257,13 @@ class Workflow:
         for step_id in order:
             if step_id == main_id:
                 continue
+
+            if step_id == FINAL_STEP_ID:
+                # ---- FINAL STEP: collect outputs ----
+                outputs = self._collect_final_outputs(ctx, graph)
+                ctx.steps[FINAL_STEP_ID] = outputs
+                continue
+
             step_entry = self.registry.steps[step_id]
             step_def = step_entry["step"]
             step_deps = step_entry["dependencies"]
@@ -225,6 +309,37 @@ class Workflow:
 
         return outputs
 
+    def _collect_final_outputs(self, ctx: ExecutionContext, graph) -> dict[str, Any]:
+        """
+        Collect outputs from all immediate predecessors of FINAL_STEP.
+        Outputs are namespaced by step ID to avoid collisions.
+        """
+
+        final_inputs = {}
+
+        # find the upstream step feeding into final_step
+        upstream_steps = [
+            src for src, targets in graph.items() if FINAL_STEP_ID in targets
+        ]
+
+        assert len(upstream_steps) == 1, ("There should be exactly one leaf step, "
+                                          f"found {len(upstream_steps)}")
+
+        for step_id in upstream_steps:
+            if ctx.steps:
+                step_outputs = ctx.steps.get(step_id)
+            else:
+                step_outputs = ctx.main
+
+            if step_outputs is None:
+                raise RuntimeError(
+                    f"Final step depends on '{step_id}', but no outputs were produced"
+                )
+
+            final_inputs = step_outputs
+
+        return final_inputs
+
     def main(self, fn=None, /, **kwargs):
         if fn is None:
             return lambda f: self.registry.register_main(f, **kwargs)
@@ -234,6 +349,7 @@ class Workflow:
         if fn is None:
             return lambda f: self.registry.register_step(f, **kwargs)
         return self.registry.register_step(fn, **kwargs)
+
 
 
 class DependencyGraph:
@@ -305,6 +421,22 @@ class DependencyGraph:
                     graph[src].add(step_id)
                     in_degree[step_id] += 1
 
+        nodes = set(in_degree.keys())
+        non_leaves = set(graph.keys())
+        real_leaves = nodes - non_leaves
+
+        if len(real_leaves) != 1:
+            raise ValueError(
+                f"Workflow must have exactly ONE leaf task, "
+                f"found {len(real_leaves)}: {sorted(real_leaves)}"
+            )
+
+        in_degree[FINAL_STEP_ID] = 0
+
+        for leaf in real_leaves:
+            graph[leaf].add(FINAL_STEP_ID)
+            in_degree[FINAL_STEP_ID] += 1
+
         return graph, in_degree
 
     def topological_sort(
@@ -338,6 +470,9 @@ class DependencyGraph:
         if len(order) != len(in_degree):
             remaining = [node for node, degree in in_degree.items() if degree > 0]
             raise ValueError(f"Workflow contains a cycle involving: {remaining}")
+
+        if order[-1] != FINAL_STEP_ID:
+            raise AssertionError(f"{FINAL_STEP_ID} must be the last step, got {order}")
 
         return order, graph
 
