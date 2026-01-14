@@ -25,7 +25,6 @@ from wraptile.services.base import ServiceBase
 
 
 class LocalService(ServiceBase):
-
     def __init__(
         self,
         title: str,

@@ -1,10 +1,11 @@
 from typing import Annotated
 
-from gavicore.util.request import ExecutionRequest
 from graphviz import Source
+from pydantic import Field
+
+from gavicore.util.request import ExecutionRequest
 from procodile import Job
 from procodile.workflow import FromMain, FromStep, Workflow, WorkflowRegistry
-from pydantic import Field
 
 workflow_registry = WorkflowRegistry()
 first_workflow = workflow_registry.get_or_create_workflow(id="first_workflow")
