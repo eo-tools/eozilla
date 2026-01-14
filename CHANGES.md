@@ -20,6 +20,9 @@
   configuration (via command `configure`): basic, login, token, api-key methods are 
   now supported.
 - Updated documentation.
+- Added workflow orchestration support in `procodile`, enabling users to define 
+  Python functions as processes and connect them via explicit dependencies to 
+  form executable workflows.
 
 ### Fixes
 
