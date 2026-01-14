@@ -34,6 +34,84 @@ A workflow **must**:
 - Contain **no cycles**
 - Explicitly declare all inter-process dependencies
 
+## WorkflowRegistry — Conceptual Overview
+
+### Motivation
+
+[OGC API – Processes Part 3 (draft)](https://docs.ogc.org/DRAFTS/21-009.html) 
+introduces the concept of workflows, where a process execution request may reference other processes as inputs (“nested processes”).
+This enables clients to define ad-hoc workflows dynamically at execution time.
+
+This framework (`procodile`) takes a complementary approach:
+
+    Instead of defining workflows dynamically in JSON at execution time, workflows 
+    are authored declaratively in Python, registered once, and then exposed as 
+    standard OGC processes.
+
+The `WorkflowRegistry` is the component that enables this model.
+
+Internally, workflows are represented as structured Python objects (Workflow) that capture:
+
+- step definitions
+- input bindings (`FromMain`, `FromStep`)
+- execution order
+- execution logic (workflow.run)
+
+Workflows are not exposed directly to OGC API clients.
+
+| Aspect           | OGC Nested Processes | Procodile Workflow Framework |
+| ---------------- | -------------------- |------------------------------|
+| Definition order | Leaf-first           | Root-first                   |
+| Representation   | Nested JSON          | Explicit DAG                 |
+| Primary use      | Ad-hoc execution     | Deployment & reuse           |
+| Identity         | Execution-scoped     | Stable process ID            |
+| Execution model  | Tree evaluation      | DAG execution                |
+
+Both models describe the same execution semantics
+
+The framework is the inverse authoring model of nested processes
+
+Future support for nested execution requests can be added without changing the internal model
+
+### Why Workflows Are Exposed as Processes
+
+OGC API – Processes is fundamentally process-centric:
+
+- Clients discover `/processes`
+- Clients execute `/processes/{id}/execution`
+
+There is no separate “workflow” resource in Part 1 or Part 3.
+
+Therefore:
+
+    A workflow must be represented as a process in order to be OGC-compliant.
+
+The `WorkflowRegistry` provides this abstraction by **projecting workflows into processes**.
+
+`WorkflowRegistry` is a mapping-like registry that:
+
+- stores internal `Workflow` objects
+- exposes them externally as `Process` objects
+
+
+### Future Compatibility with Nested Execution Requests
+
+Although workflows are currently authored as Python objects, the internal representation already contains everything needed to support OGC Part 3 nested execution requests in the future.
+
+A future extension may:
+
+- accept nested execution JSON
+- translate it into an internal workflow DAG
+- execute it using the same runtime
+- or deploy it as a persistent workflow
+
+In that scenario:
+
+- nested execution becomes an alternative front door
+- the internal execution model remains unchanged
+
+This ensures forward compatibility with the OGC API – Processes Part 3 draft.
+
 ## Creating a Workflow 
 
 (nested-processes-> OGC API Part 3 terminology)
