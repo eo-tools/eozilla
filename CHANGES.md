@@ -22,7 +22,7 @@
 - Updated documentation.
 - Added workflow orchestration support in `procodile`, enabling users to define 
   Python functions as processes and connect them via explicit dependencies to 
-  form executable workflows.
+  form executable workflows. (#50)
 
 ### Fixes
 
