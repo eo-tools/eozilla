@@ -5,13 +5,13 @@
 import datetime
 import time
 from pathlib import Path
-from typing import Optional, Annotated
+from typing import Annotated, Optional
 
 import pydantic
 from pydantic import Field
 
 from gavicore.models import InputDescription, Link, Schema
-from procodile import JobContext, additional_parameters, WorkflowRegistry, FromMain
+from procodile import FromMain, JobContext, WorkflowRegistry, additional_parameters
 from wraptile.services.local import LocalService
 
 workflow_registry = WorkflowRegistry()
@@ -19,7 +19,7 @@ workflow_registry = WorkflowRegistry()
 service = LocalService(
     title="Eozilla API Server (local dummy for testing)",
     description="Local test server implementing the OGC API - Processes 1.0 Standard",
-    process_registry=workflow_registry
+    process_registry=workflow_registry,
 )
 
 registry = service.process_registry
@@ -38,9 +38,9 @@ first_workflow = registry.get_or_create_workflow(id="first_workflow")
         ),
     },
     description=(
-            "This workflow currently just tests the execution orchestration of steps "
-            "defined in it."
-        ),
+        "This workflow currently just tests the execution orchestration of steps "
+        "defined in it."
+    ),
 )
 def fun_a(
     id: Annotated[str, Field(title="main input")] = "hithere",

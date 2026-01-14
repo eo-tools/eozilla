@@ -9,7 +9,9 @@ import typer
 
 EOZILLA_PATH = Path(__file__).parent.parent.parent.parent.resolve()
 DEFAULT_DAGS_FOLDER = EOZILLA_PATH / "eozilla-airflow/dags"
-PROCESS_REGISTRY_SPEC_EX = "wraptile.services.local.testing_process:service.process_registry"
+PROCESS_REGISTRY_SPEC_EX = (
+    "wraptile.services.local.testing_process:service.process_registry"
+)
 
 CLI_NAME = "appligator"
 

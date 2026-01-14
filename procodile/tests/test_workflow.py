@@ -4,10 +4,10 @@ from typing import Annotated
 from procodile import (
     FromMain,
     FromStep,
-    WorkflowRegistry,
     Process,
+    WorkflowRegistry,
 )
-from procodile.workflow import extract_dependency, WorkflowStepRegistry, Workflow
+from procodile.workflow import Workflow, WorkflowStepRegistry, extract_dependency
 
 
 class TestDependencyHelpers(unittest.TestCase):
@@ -47,7 +47,6 @@ class TestWorkflowRegistry(unittest.TestCase):
         )
         def second_step(id: str) -> str:
             return id
-
 
     def test_get_or_create_workflow(self):
         registry = WorkflowRegistry()
@@ -427,8 +426,10 @@ class TestWorkflowStepRegistry(unittest.TestCase):
 
         entry = self.registry.steps["step1"]
 
-        self.assertEqual(entry["dependencies"], {'x': {'output': 'b', 'type': 'from_main'}})
-        self.assertEqual(list(entry["step"].description.inputs.keys()), ['x'])
+        self.assertEqual(
+            entry["dependencies"], {"x": {"output": "b", "type": "from_main"}}
+        )
+        self.assertEqual(list(entry["step"].description.inputs.keys()), ["x"])
 
     def test_annotated_and_inputs_merge(self):
         def step1(

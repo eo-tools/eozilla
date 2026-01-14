@@ -26,6 +26,7 @@ DependencySpec = FromMainDependency | FromStepDependency
 
 FINAL_STEP_ID = "final_step"
 
+
 class StepEntry(TypedDict):
     step: Process
     dependencies: dict[str, DependencySpec]
@@ -77,7 +78,7 @@ class WorkflowRegistry:
         # Steps exist -> last step defines outputs
         if workflow.registry.steps:
             order, _ = workflow.execution_order
-            last_step_id = order[-2] # because the step before that is the actual
+            last_step_id = order[-2]  # because the step before that is the actual
             # user defined last step.
             last_step = workflow.registry.steps[last_step_id]["step"]
             projected.description.outputs = last_step.description.outputs
@@ -107,7 +108,6 @@ class WorkflowRegistry:
         #     yield wf_id, self._as_process(wf)
         for workflow_id in self:
             yield workflow_id, self[workflow_id]
-
 
     # def __getitem__(self, workflow_id: str, /) -> "Workflow":
     #     return self._workflows[workflow_id]
@@ -143,6 +143,7 @@ class WorkflowRegistry:
         Returns all workflows
         """
         return self._workflows
+
 
 class WorkflowStepRegistry:
     """Handles storage of main process and workflow steps."""
@@ -322,8 +323,9 @@ class Workflow:
             src for src, targets in graph.items() if FINAL_STEP_ID in targets
         ]
 
-        assert len(upstream_steps) == 1, ("There should be exactly one leaf step, "
-                                          f"found {len(upstream_steps)}")
+        assert len(upstream_steps) == 1, (
+            f"There should be exactly one leaf step, found {len(upstream_steps)}"
+        )
 
         for step_id in upstream_steps:
             if ctx.steps:
@@ -349,7 +351,6 @@ class Workflow:
         if fn is None:
             return lambda f: self.registry.register_step(f, **kwargs)
         return self.registry.register_step(fn, **kwargs)
-
 
 
 class DependencyGraph:

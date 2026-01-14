@@ -36,8 +36,11 @@ for `execute-process`, or `lp` for `list-processes`.
 
 # noinspection PyShadowingBuiltins
 def new_cli(
-    registry: Union[str, Union["ProcessRegistry", "WorkflowRegistry"], Callable[[],
-    Union["ProcessRegistry", "WorkflowRegistry"]]],
+    registry: Union[
+        str,
+        Union["ProcessRegistry", "WorkflowRegistry"],
+        Callable[[], Union["ProcessRegistry", "WorkflowRegistry"]],
+    ],
     name: str,
     version: str,
     help: str | None = None,
@@ -215,7 +218,11 @@ __all__ = [
 
 
 def _parse_process_registry_getter(
-    process_registry: Union[str, Union["ProcessRegistry", "WorkflowRegistry"], Callable[[], Union["ProcessRegistry", "WorkflowRegistry"]]],
+    process_registry: Union[
+        str,
+        Union["ProcessRegistry", "WorkflowRegistry"],
+        Callable[[], Union["ProcessRegistry", "WorkflowRegistry"]],
+    ],
 ) -> Callable[[], Union["ProcessRegistry", "WorkflowRegistry"]]:
     process_registry_getter: Callable
     if isinstance(process_registry, str):
@@ -224,7 +231,7 @@ def _parse_process_registry_getter(
             from gavicore.util.dynimp import import_value
             from procodile import ProcessRegistry, WorkflowRegistry
 
-            registry =  import_value(
+            registry = import_value(
                 process_registry, name="process registry", type=object
             )
 
@@ -249,7 +256,9 @@ def _parse_process_registry_getter(
         return process_registry_getter
 
 
-def _get_process_registry(ctx: typer.Context) -> Union["ProcessRegistry", "WorkflowRegistry"]:
+def _get_process_registry(
+    ctx: typer.Context,
+) -> Union["ProcessRegistry", "WorkflowRegistry"]:
     from procodile import ProcessRegistry, WorkflowRegistry
 
     process_registry_getter = ctx.obj.get(PROCESS_REGISTRY_GETTER_KEY)

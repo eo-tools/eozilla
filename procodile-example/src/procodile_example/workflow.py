@@ -1,27 +1,25 @@
 from typing import Annotated
 
-from graphviz import Source
-from pydantic import Field
-
 from gavicore.util.request import ExecutionRequest
+from graphviz import Source
 from procodile import Job
-from procodile.workflow import WorkflowRegistry, FromMain, FromStep, \
-    Workflow
+from procodile.workflow import FromMain, FromStep, Workflow, WorkflowRegistry
+from pydantic import Field
 
 workflow_registry = WorkflowRegistry()
 first_workflow = workflow_registry.get_or_create_workflow(id="first_workflow")
 
+
 @first_workflow.main(
     id="first_step",
-    inputs={
-        "id": Field(title="main input")
-    },
+    inputs={"id": Field(title="main input")},
     outputs={
         "a": Field(title="main result", description="The result of the main step"),
     },
 )
 def first_step(id: str) -> str:
     from procodile_example.workflow_funcs import fun_a
+
     return fun_a(id)
 
 
@@ -31,6 +29,7 @@ def first_step(id: str) -> str:
 )
 def second_step(id: str) -> str:
     from procodile_example.workflow_funcs import fun_b
+
     return fun_b(id)
 
 
@@ -38,9 +37,10 @@ def second_step(id: str) -> str:
     id="third_step",
 )
 def third_step(
-    id: Annotated[str, FromStep(step_id="second_step", output="return_value")]
+    id: Annotated[str, FromStep(step_id="second_step", output="return_value")],
 ) -> Annotated[str, Field(title="Output from Third Step")]:
     from procodile_example.workflow_funcs import fun_c
+
     return fun_c(id)
 
 
@@ -48,27 +48,29 @@ def third_step(
     id="fourth_step",
     outputs={
         "some_str": Field(title="Some Str"),
-    }
+    },
 )
 def fourth_step(
-    id: Annotated[str, FromStep(step_id="third_step", output="return_value")]
+    id: Annotated[str, FromStep(step_id="third_step", output="return_value")],
 ) -> str:
     from procodile_example.workflow_funcs import fun_d
+
     return fun_d(id)
 
 
 @first_workflow.step(
     id="fifth_step",
-    inputs={ "id2": FromMain(output="a")},
+    inputs={"id2": FromMain(output="a")},
     outputs={
         "some_other_str": Field(title="Some other Str"),
-    }
+    },
 )
 def fifth_step(
     id: Annotated[str, FromStep(step_id="third_step", output="return_value")],
     id2: str,
 ) -> tuple[str, str]:
     from procodile_example.workflow_funcs import fun_e
+
     return fun_e(id, id2)
 
 
@@ -76,19 +78,19 @@ def fifth_step(
     id="sixth_step",
     outputs={
         "final": Field(title="Final output"),
-    }
+    },
 )
 def sixth_step(
     id: Annotated[
         tuple[str, str],
         FromStep(step_id="fifth_step", output="some_other_str"),
     ],
-    second_input: Annotated[
-        str, FromStep(step_id="fourth_step", output="some_str")
-    ]
+    second_input: Annotated[str, FromStep(step_id="fourth_step", output="some_str")],
 ) -> tuple[tuple[str, str], str]:
     from procodile_example.workflow_funcs import fun_f
+
     return fun_f(id, second_input)
+
 
 #####################
 
@@ -106,7 +108,9 @@ if __name__ == "__main__":
 
     execution_request = ExecutionRequest.create(
         process_id=first_workflow.id,
-        inputs=["id=hi",],
+        inputs=[
+            "id=hi",
+        ],
     )
     process = workflow_registry.get("first_workflow")
     # create and run job

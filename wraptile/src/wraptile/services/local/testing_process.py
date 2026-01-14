@@ -14,7 +14,6 @@ from gavicore.models import InputDescription, Link, Schema
 from procodile import JobContext, additional_parameters
 from wraptile.services.local import LocalService
 
-
 service = LocalService(
     title="Eozilla API Server (local dummy for testing)",
     description="Local test server implementing the OGC API - Processes 1.0 Standard",
