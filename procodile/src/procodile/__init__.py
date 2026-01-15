@@ -11,12 +11,11 @@ from gavicore.util.request import ExecutionRequest
 from .artifacts import ArtifactRef, ArtifactStore, ExecutionContext
 from .job import Job, JobCancelledException, JobContext
 from .process import Process, additional_parameters
-from .registry import ProcessRegistry
+from .registry import WorkflowRegistry
 from .workflow import (
     FromMain,
     FromStep,
     Workflow,
-    WorkflowRegistry,
     WorkflowStepRegistry,
 )
 
@@ -34,7 +33,6 @@ __all__ = [
     "Job",
     "JobContext",
     "JobCancelledException",
-    "ProcessRegistry",
     "Process",
     "WorkflowRegistry",
     "WorkflowStepRegistry",

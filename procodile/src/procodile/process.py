@@ -27,7 +27,7 @@ class Process:
     in form of a Python function.
 
     Instances of this class are be managed by the
-    [ProcessRegistry][procodile.ProcessRegistry].
+    [Workflow][procodile.Workflow].
 
     Attributes:
         function: The user's Python function.
@@ -61,8 +61,39 @@ class Process:
     ) -> "Process":
         """Create a new instance of this dataclass.
 
-        Called by the `ProcessRegistry.process()` decorator function.
+        Called by the `Workflow.main()` and `Workflow.step()` decorator function.
         Not intended to be used by clients.
+
+        Args:
+            function: The decorated function that is passed automatically since
+                `process()` is a decorator function.
+            id: Optional process identifier. Must be unique within the registry.
+                If not provided, the fully qualified function name will be used.
+            version: Optional version identifier. If not provided, `"0.0.0"`
+                will be used.
+            title: Optional, short process title.
+            description: Optional, detailed description of the process. If not
+                provided, the function's docstring, if any, will be used.
+            inputs: Optional mapping from function argument names
+                to [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/)
+                or [`InputDescription`][gavicore.models.InputDescription] instances.
+                The preferred way is to annotate the arguments directly
+                as described in [The Annotated Pattern](https://docs.pydantic.dev/latest/concepts/fields/#the-annotated-pattern).
+                Use `InputDescription` instances to pass extra information that cannot
+                be represented by a `pydantic.Field`, e.g., `additionalParameters` or `keywords`.
+            outputs: Mapping from output names to
+                [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/)
+                or [`OutputDescription`][gavicore.models.InputDescription] instances.
+                Required, if you have multiple outputs returned as a
+                dictionary. In this case, the function must return a typed `tuple` and
+                output names refer to the items of the tuple in given order.
+            inputs_arg: Specifies the use of an _inputs argument_. An inputs argument
+                is a container for the actual process inputs. If specified, it must
+                be the only function argument (besides an optional job context
+                argument) and must be a subclass of `pydantic.BaseModel`.
+                If `inputs_arg` is `True` the only argument will be the input argument,
+                if `inputs_arg` is a `str` it must be the name of the only argument.
+
         """
         if not inspect.isfunction(function):
             raise TypeError("function argument must be callable")

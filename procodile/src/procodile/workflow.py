@@ -1,10 +1,9 @@
 #  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-import functools
+
 import inspect
 from collections import defaultdict, deque
-from copy import deepcopy
 from typing import Annotated, Any, Callable, Literal, TypedDict, get_args, get_origin
 
 from .artifacts import ArtifactStore, ExecutionContext, NullArtifactStore
@@ -49,89 +48,23 @@ class FromStep:
         return {"step_id": self.step_id, "output": self.output, "type": "from_step"}
 
 
-class WorkflowRegistry:
-    def __init__(self):
-        self._workflows: dict[str, Workflow] = {}
-
-    def get_or_create_workflow(self, id: str) -> "Workflow":
-        if id in self._workflows:
-            return self._workflows[id]
-        definition = Workflow(id)
-        self._workflows[id] = definition
-        return definition
-
-    @functools.lru_cache
-    def _as_process(self, workflow: "Workflow") -> Process:
-        """This is the facade process object that is returned when the client wants
-        to see what processes are available and is also used to run the actual
-        workflow"""
-
-        # Exactly one main is required
-        if len(workflow.registry.main) != 1:
-            raise ValueError(
-                f"Workflow {workflow.id!r} must have exactly one main process"
-            )
-
-        main = next(iter(workflow.registry.main.values()))
-
-        projected: Process = deepcopy(main)
-
-        # Steps exist -> last step defines outputs
-        if workflow.registry.steps:
-            order, _ = workflow.execution_order
-            last_step_id = order[-2]  # because the step before that is the actual
-            # user defined last step.
-            last_step = workflow.registry.steps[last_step_id]["step"]
-            projected.description.outputs = last_step.description.outputs
-
-        projected.description.id = workflow.id
-        projected.function = workflow.run
-
-        return projected
-
-    def get(self, workflow_id: str, default=None) -> Process | None:
-        try:
-            return self[workflow_id]
-        except KeyError:
-            return default
-
-    def values(self):
-        for workflow_id in self:
-            yield self[workflow_id]
-
-    def items(self):
-        for workflow_id in self:
-            yield workflow_id, self[workflow_id]
-
-    def __getitem__(self, workflow_id: str) -> Process:
-        return self._as_process(self._workflows[workflow_id])
-
-    def __iter__(self):
-        return iter(self._workflows)
-
-    def __len__(self) -> int:
-        return len(self._workflows)
-
-    def __contains__(self, workflow_id: str) -> bool:
-        return workflow_id in self._workflows
-
-    def get_workflow(self, workflow_id: str) -> "Workflow":
-        """
-        INTERNAL API.
-        Returns the actual Workflow object.
-        """
-        return self._workflows[workflow_id]
-
-    def workflows(self):
-        """
-        INTERNAL API.
-        Returns all workflows
-        """
-        return self._workflows
-
 
 class WorkflowStepRegistry:
-    """Handles storage of main process and workflow steps."""
+    """
+    A registry for steps in a workflow.
+
+    A *step* is a Python function annotated with either the `.main` or `.step`
+    decorator and represents a unit of execution within a workflow.
+
+    Internally, each step is a mapping from step identifiers to
+    [Process][procodile.process.Process] instances.
+
+    Each workflow **must define exactly one** `.main` step, which serves as the
+    entry point. Defining more than one `.main` step will raise an error.
+
+    In addition to the `.main` step, a workflow may define **zero or more**
+    `.step` steps, which represent dependent or downstream processing stages.
+    """
 
     def __init__(self):
         self.main: dict[str, Process] = {}
@@ -177,10 +110,19 @@ class WorkflowStepRegistry:
 
 
 class Workflow:
-    """A workflow is just multiple steps (processes) connected to each other without
-    any loops.
+    """
+    A workflow is a directed, acyclic composition of multiple steps (processes).
 
-    Each step is basically a process as per current OGC Part 3 draft.
+    Each workflow is exposed to users as a **single OGC API Process**, even though
+    internally it consists of multiple dependent steps executed in sequence based
+    on their defined dependencies.
+
+    When a user requests execution of a workflow, the system orchestrates the
+    execution of each step in the correct order. From the user's
+    perspective, however, the workflow behaves exactly like an individual process.
+
+    Each step within a workflow conforms to the OGC API – Processes (Part 3 draft)
+    process model and is itself a process.
     """
 
     def __init__(self, id: str, artifact_store: ArtifactStore = NullArtifactStore()):

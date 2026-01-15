@@ -6,8 +6,10 @@ from procodile import (
     FromStep,
     Process,
     WorkflowRegistry,
+    WorkflowStepRegistry,
+    Workflow
 )
-from procodile.workflow import Workflow, WorkflowStepRegistry, extract_dependency
+from procodile.workflow import extract_dependency
 
 
 class TestDependencyHelpers(unittest.TestCase):
