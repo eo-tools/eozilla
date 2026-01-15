@@ -7,6 +7,7 @@ from typing import Annotated
 
 import typer
 
+from appligator.airflow.gen_image import gen_image
 from appligator.airflow.gen_workflow_dag import gen_workflow_dag
 from procodile import WorkflowRegistry
 
@@ -115,9 +116,11 @@ def main(
                 )
     else:
         for process_id, process in registry.items():
+            image_name = gen_image(registry.get_workflow(process_id).registry,
+                      image_name="test_gen_image:v2", use_local_packages=True)
             dag_code = gen_workflow_dag(dag_id=process_id,
                                         registry=registry.get_workflow(
-                                            process_id).registry, image="")
+                                            process_id).registry, image=image_name, output_dir=dags_folder)
             dag_file = dags_folder / f"{process_id}.py"
             with dag_file.open("w") as stream:
                 stream.write(

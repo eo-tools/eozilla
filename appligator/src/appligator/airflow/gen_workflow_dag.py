@@ -16,7 +16,7 @@ def gen_workflow_dag(
     dag_id: str,
     registry: WorkflowStepRegistry,
     image: str,
-    output_dir: str = "dags",
+    output_dir: Path,
 )-> str:
     """
     Generates a fully-formed Airflow DAG Python file using KubernetesPodOperators
