@@ -330,6 +330,71 @@ class TestWorkflowEndToEnd(unittest.TestCase):
 
         self.assertEqual(outputs["final"], 11)
 
+    def test_workflow__as_process_cache(self):
+        @self.workflow.main(
+            id="main",
+            outputs={"out": None},
+        )
+        def main(a: int, b: int) -> int:
+            return a + b
+
+        @self.workflow.step(
+            id="step1",
+            outputs={"double": None},
+        )
+        def step1(
+            x: Annotated[int, FromMain("out")],
+            factor: int = 2,  # DEFAULT ARG
+        ) -> int:
+            return x * factor
+
+        @self.workflow.step(
+            id="step2",
+            outputs={"final": None},
+        )
+        def step2(y: Annotated[int, FromStep("step1", "double")]) -> int:
+            return y + 1
+
+        self.registry._as_process.cache_clear()
+
+        process = self.registry._as_process(self.workflow)
+
+        self.assertIsInstance(process, Process)
+
+        process2 = self.registry._as_process(self.workflow)
+
+        assert process is process2
+
+        second_workflow = self.registry.get_or_create_workflow("second_workflow")
+
+        @second_workflow.main(
+            id="main",
+            outputs={"out": None},
+        )
+        def main(a: int, b: int) -> int:
+            return a + b
+
+        @second_workflow.step(
+            id="step1",
+            outputs={"double": None},
+        )
+        def step1(
+            x: Annotated[int, FromMain("out")],
+            factor: int = 2,  # DEFAULT ARG
+        ) -> int:
+            return x * factor
+
+        @self.workflow.step(
+            id="step2",
+            outputs={"final": None},
+        )
+        def step2(y: Annotated[int, FromStep("step1", "double")]) -> int:
+            return y + 1
+
+        process3 = self.registry._as_process(second_workflow)
+        assert process3 is not process2
+        assert process3 is not process
+
 
 class TestWorkflowStepRegistry(unittest.TestCase):
     def setUp(self):

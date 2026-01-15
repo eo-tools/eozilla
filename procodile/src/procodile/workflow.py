@@ -1,13 +1,13 @@
 #  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-
+import functools
 import inspect
 from collections import defaultdict, deque
 from copy import deepcopy
 from typing import Annotated, Any, Callable, Literal, TypedDict, get_args, get_origin
 
-from .artifacts import ArtifactStore, ExecutionContext
+from .artifacts import ArtifactStore, ExecutionContext, NullArtifactStore
 from .process import Process
 
 
@@ -60,6 +60,7 @@ class WorkflowRegistry:
         self._workflows[id] = definition
         return definition
 
+    @functools.lru_cache
     def _as_process(self, workflow: "Workflow") -> Process:
         """This is the facade process object that is returned when the client wants
         to see what processes are available and is also used to run the actual
@@ -73,7 +74,7 @@ class WorkflowRegistry:
 
         main = next(iter(workflow.registry.main.values()))
 
-        projected = deepcopy(main)
+        projected: Process = deepcopy(main)
 
         # Steps exist -> last step defines outputs
         if workflow.registry.steps:
@@ -182,8 +183,9 @@ class Workflow:
     Each step is basically a process as per current OGC Part 3 draft.
     """
 
-    def __init__(self, id: str):
+    def __init__(self, id: str, artifact_store: ArtifactStore = NullArtifactStore()):
         self.id = id
+        self.artifact_store = artifact_store
 
         self.registry = WorkflowStepRegistry()
         self.graph: DependencyGraph | None = None
@@ -217,8 +219,8 @@ class Workflow:
         return "\n".join(lines)
 
     def run(self, **function_kwargs):
-        store = ArtifactStore()
-        ctx = ExecutionContext(store)
+
+        ctx = ExecutionContext(self.artifact_store)
 
         order, graph = self.execution_order
         # Run Main first
@@ -230,7 +232,7 @@ class Workflow:
         main_outputs = ctx.normalize_outputs(
             result=main_result,
             output_spec=main.description.outputs,
-            store=store,
+            store=self.artifact_store,
         )
 
         ctx.main.update(main_outputs)
@@ -284,7 +286,7 @@ class Workflow:
             outputs = ctx.normalize_outputs(
                 result=result,
                 output_spec=step_def.description.outputs,
-                store=store,
+                store=self.artifact_store,
             )
 
             ctx.steps[step_id] = outputs
