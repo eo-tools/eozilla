@@ -4,34 +4,28 @@
 import importlib
 import json
 import os
+from typing import Any
 
 INPUT_PREFIX = "STEP_INPUT_"
 
 
-def resolve_function(module_name, qualname):
+def resolve_function(module_name: str, qualname: str):
     module = importlib.import_module(module_name)
     obj = module
     for attr in qualname.split("."):
         obj = getattr(obj, attr)
     return obj
 
+def main(*,
+    func_module: str,
+    func_qualname: str,
+    inputs: dict[str, Any],
+    output_keys: list[str] | None = None,
+         ):
 
-def main():
-    func = resolve_function(
-        os.environ["STEP_FUNC_MODULE"],
-        os.environ["STEP_FUNC_QUALNAME"],
-    )
-
-    inputs = {
-        k[len(INPUT_PREFIX) :]: v
-        for k, v in os.environ.items()
-        if k.startswith(INPUT_PREFIX)
-    }
+    func = resolve_function(func_module, func_qualname)
 
     result = func(**inputs)
-
-    raw_output_keys = os.environ.get("STEP_OUTPUT_KEYS", "")
-    output_keys = [k for k in raw_output_keys.split(",") if k]
 
     if output_keys:
         if isinstance(result, tuple):

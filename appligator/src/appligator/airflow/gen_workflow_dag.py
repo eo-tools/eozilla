@@ -40,14 +40,20 @@ def gen_workflow_dag(
     main_step_id = main_step.description.id
     main_param_meta = extract_param_defaults(main_step.function)
 
+    cmd = render_cmd(
+        func_module=main_step.function.__module__,
+        func_qualname=main_step.function.__qualname__,
+        inputs=_render_main_env(main_param_meta),
+        output_keys=_render_outputs(main_step),
+    )
+
     dag_code = f'''\
 from datetime import datetime
-import os
 
 from airflow import DAG
 from airflow.models.param import Param
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 
 def _final_step_callable(ti, upstream_task_id):
     return ti.xcom_pull(task_ids=upstream_task_id)
@@ -70,13 +76,11 @@ with DAG(
         task_id="{main_step_id}",
         name="{main_step_id.replace("_", "-")}",
         image="{image}",
-        cmds=["python", "-c", "from run_step import main; main()"],
-        env_vars={{
-            "STEP_FUNC_MODULE": "{main_step.function.__module__}",
-            "STEP_FUNC_QUALNAME": "{main_step.function.__qualname__}",
-            "STEP_OUTPUT_KEYS": "{_render_outputs(main_step)}",
-{_render_main_env(main_param_meta)}
-        }},
+        cmds=[
+            "python", 
+            "-c", 
+            {cmd!r}
+        ],
         do_xcom_push=True,
     )
 '''
@@ -85,18 +89,23 @@ with DAG(
         step = meta["step"]
         deps = meta["dependencies"]
 
+        cmd = render_cmd(
+            func_module=step.function.__module__,
+            func_qualname=step.function.__qualname__,
+            inputs=_render_step_env(step, deps, main_step),
+            output_keys=_render_outputs(step),
+        )
+
         dag_code += f'''
     tasks["{step_id}"] = KubernetesPodOperator(
         task_id="{step_id}",
         name="{step_id.replace("_", "-")}",
         image="{image}",
-        cmds=["python", "-c", "from run_step import main; main()"],
-        env_vars={{
-            "STEP_FUNC_MODULE": "{step.function.__module__}",
-            "STEP_FUNC_QUALNAME": "{step.function.__qualname__}",
-            "STEP_OUTPUT_KEYS": "{_render_outputs(step)}",
-{_render_step_env(step, deps, main_step)}
-        }},
+        cmds=[
+            "python", 
+            "-c", 
+            {cmd!r}
+        ],
         do_xcom_push=True,
     )
 '''
@@ -195,7 +204,7 @@ def _render_params(param_meta: dict[str, dict[str, str | None]]) -> str:
 
 def _render_main_env(param_meta: dict[str, dict[str, str | None]]) -> str:
     return ",\n".join(
-        f'            "STEP_INPUT_{name}": "{{{{ params.{name} }}}}"'
+        f'            "{name}": "{{{{ params.{name} }}}}"'
         for name in param_meta.keys()
     )
 
@@ -209,17 +218,15 @@ Process) -> str:
         dep = deps[input_name]
         output_key = dep.get("output", "return_value")
         if dep["type"] == "from_main":
-            # step_id = next(iter(main_step))
             step_id = main_step.description.id
             lines.append(
-                # f'            "STEP_INPUT_{input_name}": "{{{{ params.{output_key} }}}}"'
-                f'''            "STEP_INPUT_{input_name}": "{{{{ ti.xcom_pull(task_ids='{step_id}')['{output_key}'] }}}}"'''
+                f'''            "{input_name}": "{{{{ ti.xcom_pull(task_ids='{step_id}')['{output_key}'] }}}}"'''
             )
 
         elif dep["type"] == "from_step":
             output_key = dep.get("output", "return_value")
             lines.append(
-                f'''            "STEP_INPUT_{input_name}": "{{{{ ti.xcom_pull(task_ids='{dep["step_id"]}')['{output_key}'] }}}}"'''
+                f'''            "{input_name}": "{{{{ ti.xcom_pull(task_ids='{dep["step_id"]}')['{output_key}'] }}}}"'''
             )
 
     return ",\n".join(lines)
@@ -228,16 +235,26 @@ Process) -> str:
 def _render_outputs(step: Process) -> str:
     outputs = step.description.outputs
     if not outputs:
-        return ""
-    return ",".join(outputs.keys())
+        return "None"
+    return repr(list(outputs.keys()))
 
 
-# order, graph = first_workflow.execution_order
-# steps = first_workflow.registry.steps
-# main_step = first_workflow.registry.main
+def render_cmd(
+    *,
+    func_module: str,
+    func_qualname: str,
+    inputs: str,
+    output_keys: str,
+) -> str:
+    return f"""
+from run_step import main
 
-# generate_airflow_dag_file(
-#     dag_id="workflow_1_airflow_test4",
-#     registry=first_workflow.registry,
-#     image="workflow_test:v1",
-# )
+main(
+    func_module="{func_module}",
+    func_qualname="{func_qualname}",
+    inputs={{
+{inputs}
+    }},
+    output_keys={output_keys}
+)
+"""
