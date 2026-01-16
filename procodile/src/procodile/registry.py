@@ -4,7 +4,6 @@
 import functools
 from collections.abc import Mapping
 from copy import deepcopy
-from typing import ItemsView, ValuesView
 
 from .process import Process
 from .workflow import Workflow
