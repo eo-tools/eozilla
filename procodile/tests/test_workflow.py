@@ -28,6 +28,7 @@ class TestDependencyHelpers(unittest.TestCase):
         self.assertIsNone(extract_dependency(int))
         self.assertIsNone(extract_dependency(None))
 
+
 class TestDependencyGraph(unittest.TestCase):
     def setUp(self):
         self.registry = WorkflowRegistry()
@@ -259,24 +260,24 @@ class TestWorkflowEndToEnd(unittest.TestCase):
             id="main",
             outputs={"out": None},
         )
-        def main(a: int, b: int) -> int:
+        def main_new(a: int, b: int) -> int:
             return a + b
 
         @second_workflow.step(
             id="step1",
             outputs={"double": None},
         )
-        def step1(
+        def step1_new(
             x: Annotated[int, FromMain("out")],
             factor: int = 2,  # DEFAULT ARG
         ) -> int:
             return x * factor
 
-        @self.workflow.step(
+        @second_workflow.step(
             id="step2",
             outputs={"final": None},
         )
-        def step2(y: Annotated[int, FromStep("step1", "double")]) -> int:
+        def step2_new(y: Annotated[int, FromStep("step1", "double")]) -> int:
             return y + 1
 
         process3 = self.registry._as_process(second_workflow)

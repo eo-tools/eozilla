@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Mapping, Union
+from typing import Any, Mapping
 
 NormalizedOutputs = dict[str, Any]
 
@@ -9,6 +9,7 @@ NormalizedOutputs = dict[str, Any]
 class ArtifactRef:
     path: str
     loader: str
+
 
 class ArtifactStore(ABC):
     """

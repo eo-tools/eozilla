@@ -9,9 +9,7 @@ import typer
 
 EOZILLA_PATH = Path(__file__).parent.parent.parent.parent.resolve()
 DEFAULT_DAGS_FOLDER = EOZILLA_PATH / "eozilla-airflow/dags"
-WORKFLOW_REGISTRY_SPEC_EX = (
-    "wraptile.services.local.testing:service.workflow_registry"
-)
+WORKFLOW_REGISTRY_SPEC_EX = "wraptile.services.local.testing:service.workflow_registry"
 
 CLI_NAME = "appligator"
 
@@ -25,7 +23,7 @@ def main(
         typer.Argument(
             ...,
             help=f"Workflow registry specification. For example"
-                 f" {WORKFLOW_REGISTRY_SPEC_EX!r}.",
+            f" {WORKFLOW_REGISTRY_SPEC_EX!r}.",
         ),
     ] = None,
     dags_folder: Annotated[

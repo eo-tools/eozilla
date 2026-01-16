@@ -3,7 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 import unittest
 
-from procodile import Process, WorkflowRegistry, Workflow, FromMain
+from procodile import FromMain, Process, Workflow, WorkflowRegistry
 
 from .test_process import f1, f2, f3, f4, f4_fail_ctx
 
@@ -186,5 +186,5 @@ class TestWorkflowRegistry(unittest.TestCase):
 
         self.assertEqual(
             ["workflow", "workflow2", "workflow3", "workflow4", "workflow5"],
-            list(registry.keys())
+            list(registry.keys()),
         )

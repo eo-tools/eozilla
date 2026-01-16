@@ -4,14 +4,10 @@
 import functools
 from collections.abc import Mapping
 from copy import deepcopy
-from typing import ValuesView, ItemsView
-
-from pydantic.fields import FieldInfo
-
-from gavicore.models import InputDescription, OutputDescription
-from .workflow import Workflow
+from typing import ItemsView, ValuesView
 
 from .process import Process
+from .workflow import Workflow
 
 
 class WorkflowRegistry(Mapping[str, Workflow]):
@@ -29,6 +25,7 @@ class WorkflowRegistry(Mapping[str, Workflow]):
     holding the required metadata for creating dependencies, passing outputs as
     inputs to downstream steps and execution.
     """
+
     def __init__(self):
         self._workflows: dict[str, Workflow] = {}
 
@@ -91,7 +88,7 @@ class WorkflowRegistry(Mapping[str, Workflow]):
         except KeyError:
             return default
 
-    def values(self)  -> ValuesView[Process]:
+    def values(self) -> ValuesView[Process]:
         return ValuesView(self)
 
     def items(self) -> ItemsView[str, Process]:

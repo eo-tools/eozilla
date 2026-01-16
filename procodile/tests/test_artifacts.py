@@ -50,7 +50,6 @@ class DummyArtifactStore(ArtifactStore):
         return xr.open_zarr(path)
 
 
-
 class TestArtifactRef(unittest.TestCase):
     def test_is_frozen_and_fields_set(self):
         ref = ArtifactRef(path="data.zarr", loader="xcube_file_store")
@@ -60,6 +59,7 @@ class TestArtifactRef(unittest.TestCase):
 
         with self.assertRaises(Exception):
             ref.path = "other.zarr"
+
 
 class TestArtifactStoreABC(unittest.TestCase):
     def test_artifact_store_is_abstract(self):
@@ -78,17 +78,18 @@ class TestNullArtifactStore(unittest.TestCase):
         self.assertFalse(self.store.is_big(None))
 
     def test_save_raises_runtime_error(self):
-        with self.assertRaises(RuntimeError) as ctx:
+        with self.assertRaises(RuntimeError):
             self.store.save(object())
 
     def test_load_raises_runtime_error(self):
         ref = ArtifactRef(path="", loader="")
 
-        with self.assertRaises(RuntimeError) as ctx:
+        with self.assertRaises(RuntimeError):
             self.store.load(ref)
 
     def test_null_store_is_instance_of_artifact_store(self):
         self.assertIsInstance(self.store, ArtifactStore)
+
 
 class TestExecutionContext(unittest.TestCase):
     def setUp(self):

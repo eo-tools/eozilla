@@ -5,15 +5,14 @@
 import datetime
 import time
 from pathlib import Path
-from typing import Optional, Annotated
+from typing import Annotated, Optional
 
 import pydantic
 from pydantic import Field
 
 from gavicore.models import InputDescription, Link, Schema
-from procodile import FromMain, WorkflowRegistry, additional_parameters, JobContext
+from procodile import FromMain, JobContext, WorkflowRegistry, additional_parameters
 from wraptile.services.local import LocalService
-
 
 workflow_registry = WorkflowRegistry()
 
@@ -26,6 +25,7 @@ service = LocalService(
 registry = service.workflow_registry
 
 sleep_a_while = registry.get_or_create_workflow(id="sleep_a_while")
+
 
 @sleep_a_while.main(
     id="sleep_a_while",
@@ -50,7 +50,9 @@ def sleep_a_while(
         time.sleep(duration / 100)
     return time.time() - t0
 
+
 primes_between = registry.get_or_create_workflow(id="primes_between")
+
 
 @primes_between.main(
     id="primes_between",
@@ -97,7 +99,9 @@ def primes_between(
     ctx.report_progress(message="Done")
     return [min_val + i for i, prime in enumerate(is_prime) if prime]
 
+
 simulate_scene = registry.get_or_create_workflow(id="simulate_scene")
+
 
 # noinspection PyArgumentList
 @simulate_scene.main(
@@ -221,7 +225,9 @@ class SceneSpec(pydantic.BaseModel):
     # TODO: uncomment and see tests fail!
     # bbox: Optional[Bbox] = None
 
+
 return_base_model = registry.get_or_create_workflow(id="return_base_model")
+
 
 @return_base_model.main(
     id="return_base_model",
@@ -232,7 +238,9 @@ def return_base_model(
 ) -> SceneSpec:
     return scene_spec
 
+
 test_workflow = registry.get_or_create_workflow(id="test_workflow")
+
 
 @test_workflow.main(
     id="first_step",

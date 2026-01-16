@@ -14,11 +14,14 @@ registry = WorkflowRegistry()
 
 workflow1 = registry.get_or_create_workflow("workflow1")
 
+
 @workflow1.main(id="f1")
 def f1(a: int, b: str, c: float) -> str:
     return f"{a}, {b}, {c}"
 
+
 workflow2 = registry.get_or_create_workflow("workflow2")
+
 
 @workflow2.main(id="f2")
 def f2(x: bool, y: str, z: float) -> tuple:
@@ -50,8 +53,14 @@ class CliTestMixin:
 
     def test_execute_process_f2_success(self):
         result = self.invoke_cli(
-            "execute-process", "workflow2", "-i", "x=true", "-i", "y=pippo", "-i",
-            "z=0.3"
+            "execute-process",
+            "workflow2",
+            "-i",
+            "x=true",
+            "-i",
+            "y=pippo",
+            "-i",
+            "z=0.3",
         )
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual(
@@ -61,8 +70,14 @@ class CliTestMixin:
 
     def test_execute_process_f2_fail(self):
         result = self.invoke_cli(
-            "execute-process", "workflow2", "-i", "x=true", "-i", "y=bibo", "-i",
-            "z=1.8"
+            "execute-process",
+            "workflow2",
+            "-i",
+            "x=true",
+            "-i",
+            "y=bibo",
+            "-i",
+            "z=1.8",
         )
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertIn('  "processID": "workflow2",', result.output)

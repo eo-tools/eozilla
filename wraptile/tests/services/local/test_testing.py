@@ -7,13 +7,14 @@ from unittest import IsolatedAsyncioTestCase, TestCase
 from gavicore.models import (
     InputDescription,
     JobResults,
+    Link,
     ProcessDescription,
     ProcessList,
     ProcessRequest,
-    Link,
 )
 from procodile import Job, Process
-from wraptile.services.local.testing import service as testing_service, SceneSpec
+from wraptile.services.local.testing import SceneSpec
+from wraptile.services.local.testing import service as testing_service
 
 
 class TestingFunctionsTest(TestCase):
@@ -77,7 +78,6 @@ class TestingFunctionsTest(TestCase):
             self.assertEqual({"a", "b"}, set(ds.data_vars.keys()))
         except ImportError:
             pass
-
 
 
 class TestingWorkflowsTest(TestCase):

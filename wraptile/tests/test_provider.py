@@ -25,9 +25,7 @@ class ServiceProviderTest(TestCase):
 
     # noinspection PyMethodMayBeStatic
     def test_set_from_env_var(self):
-        with set_env_cm(
-            EOZILLA_SERVICE="wraptile.services.local.testing:service"
-        ):
+        with set_env_cm(EOZILLA_SERVICE="wraptile.services.local.testing:service"):
             self.assertIs(test_service, ServiceProvider.get_instance())
             self.assertIs(test_service, get_service())
 

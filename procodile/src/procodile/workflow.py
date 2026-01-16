@@ -48,7 +48,6 @@ class FromStep:
         return {"step_id": self.step_id, "output": self.output, "type": "from_step"}
 
 
-
 class WorkflowStepRegistry:
     """
     A registry for steps in a workflow.
@@ -161,7 +160,6 @@ class Workflow:
         return "\n".join(lines)
 
     def run(self, **function_kwargs):
-
         ctx = ExecutionContext(self.artifact_store)
 
         order, graph = self.execution_order

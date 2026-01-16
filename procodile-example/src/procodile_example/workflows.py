@@ -6,11 +6,12 @@ from typing import Annotated
 
 from pydantic import Field
 
-from procodile import JobContext, WorkflowRegistry, FromMain, FromStep, Workflow
+from procodile import FromMain, FromStep, JobContext, WorkflowRegistry
 
 registry = WorkflowRegistry()
 
 sleep_a_while = registry.get_or_create_workflow("sleep_a_while")
+
 
 @sleep_a_while.main(id="sleep_a_while", title="Sleepy Process")
 def sleep_a_while(
@@ -34,7 +35,9 @@ def sleep_a_while(
         time.sleep(duration / 100)
     return time.time() - t0
 
+
 primes_between = registry.get_or_create_workflow("primes_between")
+
 
 @primes_between.main(id="primes_between", title="Prime Generator")
 def primes_between(
@@ -79,6 +82,7 @@ def primes_between(
 
 bigger_workflow = registry.get_or_create_workflow(id="bigger_workflow")
 
+
 @bigger_workflow.main(
     id="first_step",
     inputs={"id": Field(title="main input")},
@@ -86,8 +90,8 @@ bigger_workflow = registry.get_or_create_workflow(id="bigger_workflow")
         "a": Field(title="main result", description="The result of the main step"),
     },
     description="This is a workflow with several steps and defined dependencies that "
-                "execute sequentially.",
-    title="A Big Workflow"
+    "execute sequentially.",
+    title="A Big Workflow",
 )
 def first_step(id: str) -> str:
     from procodile_example.workflow_funcs import fun_a
@@ -162,6 +166,7 @@ def sixth_step(
     from procodile_example.workflow_funcs import fun_f
 
     return fun_f(id, second_input)
+
 
 ## This visualizes the `bigger_workflow`
 # dot_str = Workflow.visualize_workflow(bigger_workflow)
