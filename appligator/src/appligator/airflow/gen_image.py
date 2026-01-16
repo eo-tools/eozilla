@@ -1,12 +1,13 @@
+import importlib
+import inspect
 import shutil
 import subprocess
-import inspect
-import importlib
 from pathlib import Path
 
 from procodile import WorkflowStepRegistry
 
 EOZILLA_PACKAGES = ("procodile", "wraptile", "gavicore")
+
 
 def gen_image(
     registry: WorkflowStepRegistry,
@@ -21,6 +22,7 @@ def gen_image(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     import appligator.airflow.run_step as run_step
+
     shutil.copy(
         Path(run_step.__file__),
         output_dir / "run_step.py",
@@ -51,6 +53,7 @@ def gen_image(
 
     return image_name
 
+
 def _render_dockerfile(use_local_packages: bool) -> str:
     lines = [
         "FROM python:3.11-slim",
@@ -60,8 +63,7 @@ def _render_dockerfile(use_local_packages: bool) -> str:
         "RUN pip install apache-airflow-providers-cncf-kubernetes xarray",
         "",
         "COPY . .",
-        "RUN rm Dockerfile"
-        "",
+        "RUN rm Dockerfile",
     ]
 
     if use_local_packages:

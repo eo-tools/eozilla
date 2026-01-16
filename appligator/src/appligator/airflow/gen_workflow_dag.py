@@ -5,11 +5,15 @@
 
 import inspect
 from pathlib import Path
-from typing import Annotated, get_args, get_origin, Callable, Any
+from typing import Annotated, Any, Callable, get_args, get_origin
 
 from procodile import Process
-from procodile.workflow import WorkflowStepRegistry, FromMainDependency, \
-    FromStepDependency
+from procodile.workflow import (
+    FromMainDependency,
+    FromStepDependency,
+    FINAL_STEP_ID,
+    WorkflowStepRegistry,
+)
 
 
 def gen_workflow_dag(
@@ -17,7 +21,7 @@ def gen_workflow_dag(
     registry: WorkflowStepRegistry,
     image: str,
     output_dir: Path,
-)-> str:
+) -> str:
     """
     Generates a fully-formed Airflow DAG Python file using KubernetesPodOperators
     and the final step using PythonOperator.
@@ -86,6 +90,9 @@ with DAG(
 '''
 
     for step_id, meta in steps_dict.items():
+        if step_id == FINAL_STEP_ID:
+            continue
+
         step = meta["step"]
         deps = meta["dependencies"]
 
@@ -110,11 +117,11 @@ with DAG(
     )
 '''
 
-
     all_tasks = set(steps_dict.keys()) | {main_step_id}
 
     upstream_tasks = set()
-    for meta in steps_dict.values():
+    for s_id, meta  in steps_dict.items():
+        if s_id == FINAL_STEP_ID: continue
         for dep in meta["dependencies"].values():
             if dep["type"] == "from_step":
                 upstream_tasks.add(dep["step_id"])
@@ -129,8 +136,8 @@ with DAG(
     last_step_id = next(iter(leaf_tasks))
 
     dag_code += f'''
-    tasks["final_step"] = PythonOperator(
-        task_id="final_step",
+    tasks["{FINAL_STEP_ID}"] = PythonOperator(
+        task_id="{FINAL_STEP_ID}",
         python_callable=_final_step_callable,
         op_kwargs={{
             "upstream_task_id": "{last_step_id}"
@@ -142,20 +149,21 @@ with DAG(
     dag_code += "\n"
     for step_id, meta in steps_dict.items():
         for dep in meta["dependencies"].values():
+            if step_id == FINAL_STEP_ID:
+                continue
             if dep["type"] == "from_step":
                 dag_code += f'    tasks["{dep["step_id"]}"] >> tasks["{step_id}"]\n'
             elif dep["type"] == "from_main":
                 dag_code += f'    tasks["{main_step_id}"] >> tasks["{step_id}"]\n'
 
-    dag_code  += (
-    f'    tasks["{last_step_id}"] >> tasks["final_step"]\n'
-)
+    dag_code += f'    tasks["{last_step_id}"] >> tasks["{FINAL_STEP_ID}"]\n'
 
     return dag_code
 
 
-def extract_param_defaults(func: Callable[[Any], Any]) -> (
-    dict[str, dict[str, str | None]]):
+def extract_param_defaults(
+    func: Callable[[Any], Any],
+) -> dict[str, dict[str, str | None]]:
     """
     Extract default values and Airflow param types from a function signature.
     """
@@ -204,14 +212,15 @@ def _render_params(param_meta: dict[str, dict[str, str | None]]) -> str:
 
 def _render_main_env(param_meta: dict[str, dict[str, str | None]]) -> str:
     return ",\n".join(
-        f'            "{name}": "{{{{ params.{name} }}}}"'
-        for name in param_meta.keys()
+        f'            "{name}": "{{{{ params.{name} }}}}"' for name in param_meta.keys()
     )
 
 
-def _render_step_env(step: Process, deps: dict[str, FromMainDependency |
-                                                    FromStepDependency], main_step:
-Process) -> str:
+def _render_step_env(
+    step: Process,
+    deps: dict[str, FromMainDependency | FromStepDependency],
+    main_step: Process,
+) -> str:
     lines = []
 
     for input_name in step.description.inputs.keys():

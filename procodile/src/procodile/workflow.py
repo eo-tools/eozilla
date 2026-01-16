@@ -23,7 +23,7 @@ class FromStepDependency(TypedDict):
 
 DependencySpec = FromMainDependency | FromStepDependency
 
-FINAL_STEP_ID = "final_step"
+FINAL_STEP_ID = "__procodile_final_step__"
 
 
 class StepEntry(TypedDict):
