@@ -29,7 +29,7 @@ class CliTest(TestCase):
         self.assertEqual(0, result.exit_code)
         self.assertEqual(__version__ + "\n", result.output)
 
-    def test_missing_process_registry_spec(self):
+    def test_missing_workflow_registry_spec(self):
         result = runner.invoke(cli, [])
         self.assertEqual(1, result.exit_code)
 
@@ -38,11 +38,12 @@ class CliTest(TestCase):
             result = runner.invoke(
                 cli,
                 [
-                    "wraptile.services.local.testing_process:service.process_registry",
+                    "wraptile.services.local.testing:service.workflow_registry",
                     "--dags-folder",
                     tmpdir,
                 ],
             )
+            print(result.output, result)
             self.assertEqual(0, result.exit_code, msg=result.output)
             files = Path(tmpdir).glob("*.py")
             self.assertTrue(len(list(files)) >= 4)

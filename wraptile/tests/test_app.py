@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from wraptile.logging import LogMessageFilter
 from wraptile.main import app
 from wraptile.provider import ServiceProvider
-from wraptile.services.local.testing_process import service
+from wraptile.services.local.testing import service
 
 client = TestClient(app)
 

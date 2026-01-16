@@ -58,7 +58,7 @@ class CliTest(TestCase):
             [
                 "run",
                 "--",
-                "wraptile.services.local.testing_process:service",
+                "wraptile.services.local.testing:service",
                 "--processes",
                 "--max-workers=4",
             ],
@@ -75,7 +75,7 @@ class CliTest(TestCase):
             [
                 "dev",
                 "--",
-                "wraptile.services.local.testing_process:service",
+                "wraptile.services.local.testing:service",
                 "--no-processes",
                 "--max-workers=4",
             ],

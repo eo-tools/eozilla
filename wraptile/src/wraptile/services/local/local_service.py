@@ -19,7 +19,7 @@ from gavicore.models import (
     ProcessRequest,
     ProcessSummary,
 )
-from procodile import Job, Process, ProcessRegistry, WorkflowRegistry
+from procodile import Job, Process, WorkflowRegistry
 from wraptile.exceptions import ServiceException
 from wraptile.services.base import ServiceBase
 
@@ -29,16 +29,12 @@ class LocalService(ServiceBase):
         self,
         title: str,
         description: Optional[str] = None,
-        process_registry: Optional[ProcessRegistry | WorkflowRegistry] = None,
+        workflow_registry: WorkflowRegistry | None = None,
     ):
         super().__init__(title=title, description=description)
         self.executor: Optional[ThreadPoolExecutor | ProcessPoolExecutor] = None
 
-        self.process_registry: ProcessRegistry | WorkflowRegistry
-        if process_registry is None:
-            self.process_registry = ProcessRegistry()
-        else:
-            self.process_registry = process_registry
+        self.workflow_registry = workflow_registry or WorkflowRegistry()
         self.jobs: dict[str, Job] = {}
 
     def configure(
@@ -68,7 +64,7 @@ class LocalService(ServiceBase):
                         exclude={"inputs", "outputs"},
                     )
                 )
-                for p in self.process_registry.values()
+                for p in self.workflow_registry.values()
             ],
             links=[self.get_self_link(request, "get_processes")],
         )
@@ -132,7 +128,7 @@ class LocalService(ServiceBase):
         return job.future.result()
 
     def _get_process(self, process_id: str) -> Process:
-        process = self.process_registry.get(process_id)
+        process = self.workflow_registry.get(process_id)
         if process is None:
             raise ServiceException(404, detail=f"Process {process_id!r} does not exist")
         return process

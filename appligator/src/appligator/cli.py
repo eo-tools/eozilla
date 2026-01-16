@@ -13,9 +13,7 @@ from procodile import WorkflowRegistry
 
 EOZILLA_PATH = Path(__file__).parent.parent.parent.parent.resolve()
 DEFAULT_DAGS_FOLDER = EOZILLA_PATH / "eozilla-airflow/dags"
-PROCESS_REGISTRY_SPEC_EX = (
-    "wraptile.services.local.testing_process:service.process_registry"
-)
+WORKFLOW_REGISTRY_SPEC_EX = "wraptile.services.local.testing:service.workflow_registry"
 
 CLI_NAME = "appligator"
 
@@ -24,12 +22,12 @@ cli = typer.Typer(name=CLI_NAME)
 
 @cli.command()
 def main(
-    process_or_workflow_registry_spec: Annotated[
+    workflow_registry_spec: Annotated[
         str | None,
         typer.Argument(
             ...,
-            help=f"Process or Workflow registry specification. For example "
-                 f"{PROCESS_REGISTRY_SPEC_EX!r}.",
+            help=f"Workflow registry specification. For example"
+            f" {WORKFLOW_REGISTRY_SPEC_EX!r}.",
         ),
     ] = None,
     dags_folder: Annotated[
@@ -46,10 +44,10 @@ def main(
 
     WARNING: This tool is under development and subject to change anytime.
 
-    Currently it expects a _process registry_ as input, which must be
+    Currently, it expects a _workflow registry_ as input, which must be
     provided in form a Python module path plus an attribute path separated
     by a colon: "my.module.path:my.registry_obj". The type of the registry
-    must be `procodile.ProcessRegistry`. In the future the tool will be
+    must be `procodile.WorkflowRegistry`. In the future the tool will be
     able to handle other input types.
 
     It is also currently limited to generating DAGs for Airflow 3+.
@@ -61,75 +59,36 @@ def main(
     from appligator import __version__
     from appligator.airflow.gen_dag import gen_dag
     from gavicore.util.dynimp import import_value
-    from procodile import ProcessRegistry
+    from procodile import WorkflowRegistry
 
     if version:
         typer.echo(f"{__version__}")
         raise typer.Exit(0)
 
-    if not process_or_workflow_registry_spec:
-        typer.echo("Error: missing process/workflow registry specification.")
+    if not workflow_registry_spec:
+        typer.echo("Error: missing process registry specification.")
         raise typer.Exit(1)
 
-    # process_registry: ProcessRegistry = import_value(
-    #     process_registry_spec,
-    #     type=ProcessRegistry,
-    #     name="process_registry",
-    #     example=PROCESS_REGISTRY_SPEC_EX,
-    # )
-    try:
-        registry = import_value(
-            process_or_workflow_registry_spec,
-            type=ProcessRegistry,
-            name="process_registry",
-            example=PROCESS_REGISTRY_SPEC_EX,
-        )
-        kind = "process"
-    except TypeError:
-        try:
-            registry = import_value(
-                process_or_workflow_registry_spec,
-                type=WorkflowRegistry,
-                name="workflow_registry",
-                example=PROCESS_REGISTRY_SPEC_EX,
-            )
-            kind = "workflow"
-        except TypeError:
-            typer.echo("Registry must be either ProcessRegistry or WorkflowRegistry")
-            raise typer.Exit(1)
+    workflow_registry: WorkflowRegistry = import_value(
+        workflow_registry_spec,
+        type=WorkflowRegistry,
+        name="workflow_registry",
+        example=WORKFLOW_REGISTRY_SPEC_EX,
+    )
 
     dags_folder.mkdir(exist_ok=True)
 
-    if kind=="process":
-        typer.echo(f"genning dag now {dags_folder}")
-        for process_id, process in registry.items():
-            dag_code = gen_dag(process)
-            typer.echo(f"{dag_code}")
-            dag_file = dags_folder / f"{process_id}.py"
-            with dag_file.open("w") as stream:
-                stream.write(
-                    f"# WARNING - THIS IS GENERATED CODE\n"
-                    f"#   Generator: Eozilla Appligator v{__version__}\n"
-                    f"#        Date: {datetime.datetime.now().isoformat()}\n"
-                    f"\n"
-                    f"{dag_code}"
-                )
-    else:
-        for process_id, process in registry.items():
-            image_name = gen_image(registry.get_workflow(process_id).registry,
-                      image_name="test_gen_image:v2", use_local_packages=True)
-            dag_code = gen_workflow_dag(dag_id=process_id,
-                                        registry=registry.get_workflow(
-                                            process_id).registry, image=image_name, output_dir=dags_folder)
-            dag_file = dags_folder / f"{process_id}.py"
-            with dag_file.open("w") as stream:
-                stream.write(
-                    f"# WARNING - THIS IS GENERATED CODE\n"
-                    f"#   Generator: Eozilla Appligator v{__version__}\n"
-                    f"#        Date: {datetime.datetime.now().isoformat()}\n"
-                    f"\n"
-                    f"{dag_code}"
-                )
+    for process_id, process in workflow_registry.items():
+        dag_code = gen_dag(process)
+        dag_file = dags_folder / f"{process_id}.py"
+        with dag_file.open("w") as stream:
+            stream.write(
+                f"# WARNING - THIS IS GENERATED CODE\n"
+                f"#   Generator: Eozilla Appligator v{__version__}\n"
+                f"#        Date: {datetime.datetime.now().isoformat()}\n"
+                f"\n"
+                f"{dag_code}"
+            )
 
 
 if __name__ == "__main__":  # pragma: no cover

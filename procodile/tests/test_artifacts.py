@@ -1,10 +1,53 @@
 import shutil
 import tempfile
 import unittest
+import uuid
+from pathlib import Path
+from typing import Any
 
 import xarray as xr
 
 from procodile import ArtifactRef, ArtifactStore, ExecutionContext
+from procodile.artifacts import NullArtifactStore
+
+
+class DummyArtifactStore(ArtifactStore):
+    LOADER_NAME = "zarr_file"
+
+    def __init__(
+        self,
+        store_kwargs: dict | None = None,
+    ) -> None:
+        if store_kwargs is None:
+            store_kwargs = {}
+
+        root = store_kwargs.get("root", ".artifacts")
+        self.root = Path(root)
+        self.root.mkdir(parents=True, exist_ok=True)
+
+    def is_big(self, obj: Any) -> bool:
+        return isinstance(obj, xr.Dataset)
+
+    def save(self, obj: Any) -> ArtifactRef:
+        if not isinstance(obj, xr.Dataset):
+            raise TypeError(f"Unsupported big object: {type(obj)}")
+
+        data_id = f"{uuid.uuid4()}.zarr"
+        path = self.root / data_id
+
+        obj.to_zarr(path, mode="w")
+
+        return ArtifactRef(path=str(path), loader=self.LOADER_NAME)
+
+    def load(self, ref: ArtifactRef) -> xr.Dataset:
+        if ref.loader != self.LOADER_NAME:
+            raise ValueError(f"Unknown loader {ref.loader}")
+
+        path = Path(ref.path)
+        if not path.exists():
+            raise FileNotFoundError(f"Artifact not found: {path}")
+
+        return xr.open_zarr(path)
 
 
 class TestArtifactRef(unittest.TestCase):
@@ -18,59 +61,40 @@ class TestArtifactRef(unittest.TestCase):
             ref.path = "other.zarr"
 
 
-class TestArtifactStore(unittest.TestCase):
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-        self.store = ArtifactStore(
-            store_id="file",
-            store_kwargs={"root": self.tmpdir},
-        )
-
-        self.dataset = xr.Dataset(
-            {"a": (("x",), [1, 2, 3])},
-            coords={"x": [0, 1, 2]},
-        )
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir)
-
-    def test_is_big(self):
-        self.assertTrue(self.store.is_big(self.dataset))
-        self.assertFalse(self.store.is_big(123))
-        self.assertFalse(self.store.is_big({"a": 1}))
-        self.assertFalse(self.store.is_big([1, 2, 3]))
-        self.assertFalse(self.store.is_big((1, 2, "a", [2, 5])))
-
-    def test_save_and_load_dataset(self):
-        ref = self.store.save(self.dataset)
-
-        self.assertIsInstance(ref, ArtifactRef)
-        self.assertTrue(ref.path.endswith(".zarr"))
-        self.assertEqual(ref.loader, "xcube_file_store")
-
-        loaded = self.store.load(ref)
-
-        self.assertIsInstance(loaded, xr.Dataset)
-        xr.testing.assert_identical(loaded, self.dataset)
-
-    def test_save_unsupported_type_raises(self):
+class TestArtifactStoreABC(unittest.TestCase):
+    def test_artifact_store_is_abstract(self):
         with self.assertRaises(TypeError):
-            self.store.save(42)
+            ArtifactStore()  # type: ignore
 
-    def test_load_unknown_loader_raises(self):
-        ref = ArtifactRef("some_path", "unknown_loader")
 
-        with self.assertRaises(ValueError):
+class TestNullArtifactStore(unittest.TestCase):
+    def setUp(self):
+        self.store = NullArtifactStore()
+
+    def test_is_big_always_false(self):
+        self.assertFalse(self.store.is_big(object()))
+        self.assertFalse(self.store.is_big("string"))
+        self.assertFalse(self.store.is_big(123))
+        self.assertFalse(self.store.is_big(None))
+
+    def test_save_raises_runtime_error(self):
+        with self.assertRaises(RuntimeError):
+            self.store.save(object())
+
+    def test_load_raises_runtime_error(self):
+        ref = ArtifactRef(path="", loader="")
+
+        with self.assertRaises(RuntimeError):
             self.store.load(ref)
+
+    def test_null_store_is_instance_of_artifact_store(self):
+        self.assertIsInstance(self.store, ArtifactStore)
 
 
 class TestExecutionContext(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-        self.store = ArtifactStore(
-            store_id="file",
-            store_kwargs={"root": self.tmpdir},
-        )
+        self.store = DummyArtifactStore(store_kwargs={"root": self.tmpdir})
         self.ctx = ExecutionContext(self.store)
 
         self.dataset = xr.Dataset({"x": ("y", [1, 2])})

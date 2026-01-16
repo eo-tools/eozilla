@@ -1,11 +1,6 @@
-import uuid
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Mapping, Union
-
-import xarray as xr
-from xcube.core.store import new_data_store
-
-BigObject = Union[xr.Dataset]
+from typing import Any, Mapping
 
 NormalizedOutputs = dict[str, Any]
 
@@ -16,31 +11,88 @@ class ArtifactRef:
     loader: str
 
 
-class ArtifactStore:
-    def __init__(
-        self, store_id: str = "file", store_kwargs: dict | None = None
-    ) -> None:
-        if not store_kwargs:
-            store_kwargs = {}
-        if store_id == "file" and "root" not in store_kwargs:
-            store_kwargs.update({"root": ".artifacts", "max_depth": 5})
-        self.store = new_data_store(store_id, **store_kwargs)
+class ArtifactStore(ABC):
+    """
+    Abstract base class for persisting and loading large objects
+    (e.g. xarray datasets, large arrays, model artifacts).
+
+    Concrete implementations define how objects are stored
+    (filesystem, object store, etc.).
+    """
+
+    @abstractmethod
+    def is_big(self, obj: Any) -> bool:
+        """
+        Determine whether an object should be treated as a 'big object'
+        and stored externally instead of being passed as is.
+
+        Args:
+            obj: Object to inspect.
+
+        Returns:
+            True if the object is considered large and should be stored
+            via this store, False otherwise.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def save(self, obj: Any) -> ArtifactRef:
+        """
+        Persist a large object and return a reference to it.
+
+        Args:
+            obj: The object to be stored.
+
+        Returns:
+            ArtifactRef: A reference that can later be used to load the object.
+
+        Raises:
+            TypeError: If the object type is not supported by the implementation.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def load(self, ref: ArtifactRef) -> Any:
+        """
+        Load a previously stored object using an ArtifactRef.
+
+        Args:
+            ref: Reference returned by `save`.
+
+        Returns:
+            The reconstructed object.
+
+        Raises:
+            ValueError: If the loader specified in the reference is unknown.
+        """
+        raise NotImplementedError
+
+
+class NullArtifactStore(ArtifactStore):
+    """
+    No-op artifact store.
+
+    This store never treats objects as 'big' and does not
+    support saving or loading artifacts.
+    """
 
     def is_big(self, obj: Any) -> bool:
-        return isinstance(obj, xr.Dataset)
+        """
+        No object is considered big in the null store.
+        """
+        return False
 
-    def save(self, obj: BigObject) -> ArtifactRef:
-        if isinstance(obj, xr.Dataset):
-            data_id = str(uuid.uuid4()) + ".zarr"
-            self.store.write_data(obj, data_id)
-            return ArtifactRef(data_id, "xcube_file_store")
+    def save(self, obj: Any):
+        """
+        Saving artifacts is not supported in the null store.
+        """
+        raise RuntimeError("NullArtifactStore does not support saving artifacts")
 
-        raise TypeError(f"Unsupported big object: {type(obj)}")
-
-    def load(self, ref: ArtifactRef) -> Any:
-        if ref.loader == "xcube_file_store":
-            return self.store.open_data(ref.path)
-        raise ValueError(f"Unknown loader {ref.loader}")
+    def load(self, ref):
+        """
+        Loading artifacts is not supported in the null store.
+        """
+        raise RuntimeError("NullArtifactStore does not support loading artifacts")
 
 
 class ExecutionContext:
@@ -97,9 +149,7 @@ class ExecutionContext:
             return {k: self.materialize(v, store) for k, v in zip(output_keys, result)}
 
         raise TypeError(
-            f"Invalid return type for declared outputs. result: {result}, output_spec: {
-                output_spec
-            }",
+            f"Invalid return type for declared outputs. result: {result}, output_spec: {output_spec}",
         )
 
     def materialize(self, value: Any, store: ArtifactStore) -> Any:

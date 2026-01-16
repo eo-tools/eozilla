@@ -5,27 +5,29 @@
 import datetime
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
 import pydantic
 from pydantic import Field
 
 from gavicore.models import InputDescription, Link, Schema
-from procodile import JobContext, ProcessRegistry, additional_parameters
+from procodile import FromMain, JobContext, WorkflowRegistry, additional_parameters
 from wraptile.services.local import LocalService
+
+workflow_registry = WorkflowRegistry()
 
 service = LocalService(
     title="Eozilla API Server (local dummy for testing)",
     description="Local test server implementing the OGC API - Processes 1.0 Standard",
+    workflow_registry=workflow_registry,
 )
 
-registry = service.process_registry
+registry = service.workflow_registry
 
-if not isinstance(registry, ProcessRegistry):
-    raise ValueError("expected ProcessRegistry, got {}".format(type(registry)))
+sleep_a_while_workflow = registry.get_or_create_workflow(id="sleep_a_while")
 
 
-@registry.process(
+@sleep_a_while_workflow.main(
     id="sleep_a_while",
     title="Sleep Processor",
     description=(
@@ -49,7 +51,10 @@ def sleep_a_while(
     return time.time() - t0
 
 
-@registry.process(
+primes_between_workflow = registry.get_or_create_workflow(id="primes_between")
+
+
+@primes_between_workflow.main(
     id="primes_between",
     title="Prime Processor",
     description=(
@@ -95,8 +100,11 @@ def primes_between(
     return [min_val + i for i, prime in enumerate(is_prime) if prime]
 
 
+simulate_scene_workflow = registry.get_or_create_workflow(id="simulate_scene")
+
+
 # noinspection PyArgumentList
-@registry.process(
+@simulate_scene_workflow.main(
     id="simulate_scene",
     title="Generate scene for testing",
     description=(
@@ -218,7 +226,10 @@ class SceneSpec(pydantic.BaseModel):
     # bbox: Optional[Bbox] = None
 
 
-@registry.process(
+return_base_model_workflow = registry.get_or_create_workflow(id="return_base_model")
+
+
+@return_base_model_workflow.main(
     id="return_base_model",
     title="BaseModel Test",
 )
@@ -226,3 +237,42 @@ def return_base_model(
     scene_spec: SceneSpec,
 ) -> SceneSpec:
     return scene_spec
+
+
+test_workflow = registry.get_or_create_workflow(id="test_workflow")
+
+
+@test_workflow.main(
+    id="first_step",
+    # inputs={
+    #     "id": Field(title="main input")
+    # },
+    outputs={
+        "a": Field(title="main result", description="The result of the main step"),
+        "id_for_fifth": Field(
+            title="input for fifth step", description="input for fifth step"
+        ),
+    },
+    description=(
+        "This workflow currently just tests the execution orchestration of steps "
+        "defined in it."
+    ),
+)
+def fun_a(
+    id: Annotated[str, Field(title="main input")] = "hithere",
+    id2: Annotated[str, Field(title="inbput for fifth step")] = "watchadoing",
+) -> tuple[str, str]:
+    print("ran from main:::", id, id2)
+    return id, id2
+
+
+@test_workflow.step(
+    id="second_step",
+    inputs={"id": FromMain(output="a")},
+    outputs={
+        "final": Field(title="Final output"),
+    },
+)
+def fun_b(id: str) -> str:
+    print("ran from second_step:::", id * 2)
+    return id * 2
