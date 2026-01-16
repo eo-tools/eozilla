@@ -112,20 +112,19 @@ In that scenario:
 
 This ensures forward compatibility with the OGC API – Processes Part 3 draft.
 
-## Creating a Workflow 
+## Creating a Workflow
 
-(nested-processes-> OGC API Part 3 terminology)
 
 Workflows are created through a `WorkflowRegistry`.
 
 ```python
-from procodile.workflow import WorkflowRegistry
+from procodile import WorkflowRegistry
 
 workflow_registry = WorkflowRegistry()
 workflow = workflow_registry.get_or_create_workflow(id="example_workflow")
 ```
 
-Each workflow is uniquely identified by its id.
+Each workflow is uniquely identified by its `id`.
 
 ## Defining the Main Step
 
@@ -174,7 +173,7 @@ Use `FromMain` to reference outputs of the main step.
 
 ```python
 from typing import Annotated
-from procodile.workflow import FromMain
+from procodile import FromMain
 
 @workflow.step(id="use_main")
 def use_main(
@@ -187,7 +186,7 @@ or
 
 ```python
 from typing import Annotated
-from procodile.workflow import FromMain
+from procodile import FromMain
 from pydantic import Field
 
 @workflow.step(
@@ -210,7 +209,7 @@ def use_main(
 Use `FromStep` to reference outputs from another workflow step.
 
 ```python
-from procodile.workflow import FromStep
+from procodile import FromStep
 
 @workflow.step(id="use_step")
 def use_step(
@@ -222,7 +221,7 @@ def use_step(
 or 
 
 ```python
-from procodile.workflow import FromStep
+from procodile import FromStep
 
 @workflow.step(id="use_step", 
                inputs={
@@ -243,7 +242,7 @@ def use_step(
 A step may mix dependencies and normal inputs.
 
 ```python
-from procodile.workflow import FromStep, FromMain
+from procodile import FromStep, FromMain
 
 @workflow.step(id="mixed_step")
 def mixed_step(
@@ -256,7 +255,7 @@ def mixed_step(
 or 
 
 ```python
-from procodile.workflow import FromStep, FromMain
+from procodile import FromStep, FromMain
 
 @workflow.step(
     id="mixed_step",

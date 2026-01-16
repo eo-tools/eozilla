@@ -67,7 +67,7 @@ classDiagram
     namespace procodile {
         class JobContext
         class Process
-        class ProcessRegistry
+        class WorkflowRegistry
         class cli.new_cli
     }
     namespace appligator {
@@ -86,9 +86,9 @@ classDiagram
     server ..> routes : uses
     server ..> services.local.LocalService : can run with
     server ..> services.airflow.AirflowService : can run with
-    services.local.LocalService ..> ProcessRegistry : uses
-    airflow.gen_dag ..> ProcessRegistry : uses
-    ProcessRegistry *--> Process: holds
+    services.local.LocalService ..> WorkflowRegistry : uses
+    airflow.gen_dag ..> WorkflowRegistry : uses
+    WorkflowRegistry *--> Process: holds
     Process ..> JobContext : uses
     cli.new_cli ..> ExecutionRequest : uses
     models *-- models.ProcessRequest
@@ -295,7 +295,7 @@ config:
   theme: default
 ---
 flowchart LR
-    local_service@{ shape: stadium, label: "wraptile.services.local.testing_process:service" }
+    local_service@{ shape: stadium, label: "wraptile.services.local.testing:service" }
     dags@{ shape: stadium, label: "eozilla-airflow/dags" }
     local_service --> gen-dags
     gen-dags --> dags

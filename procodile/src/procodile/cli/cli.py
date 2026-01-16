@@ -18,9 +18,9 @@ from gavicore.util.cli.parameters import (
 )
 
 if TYPE_CHECKING:  # pragma: no cover
-    from procodile import ProcessRegistry, WorkflowRegistry
+    from procodile import WorkflowRegistry
 
-PROCESS_REGISTRY_GETTER_KEY = "get_process_registry"
+WORKFLOW_REGISTRY_GETTER_KEY = "get_workflow_registry"
 
 DEFAULT_NAME = "procodile"
 
@@ -38,8 +38,8 @@ for `execute-process`, or `lp` for `list-processes`.
 def new_cli(
     registry: Union[
         str,
-        Union["ProcessRegistry", "WorkflowRegistry"],
-        Callable[[], Union["ProcessRegistry", "WorkflowRegistry"]],
+        "WorkflowRegistry",
+        Callable[[], "WorkflowRegistry"],
     ],
     name: str,
     version: str,
@@ -52,20 +52,20 @@ def new_cli(
     that is given either by
 
     - a reference of the form "path.to.module:attribute",
-    - or process registry instance,
-    - or as a no-arg process registry getter function.
+    - or workflow registry instance,
+    - or as a no-arg workflow registry getter function.
 
-    The process registry is usually a singleton in your application.
+    The workflow registry is usually a singleton in your application.
 
     The context object `obj` of the returned CLI object
     will be of type `dict` and will contain
-    a process registry getter function using the key
-    `get_process_registry`.
+    a workflow registry getter function using the key
+    `get_workflow_registry`.
 
     The function must be called before any CLI command or
     callback has been invoked. Otherwise, the provided
-    `get_process_registry` getter will not be recognized and
-    all commands that require the process registry will
+    `get_workflow_registry` getter will not be recognized and
+    all commands that require the workflow registry will
     fail with an `AssertionError`.
 
     Args:
@@ -102,7 +102,7 @@ def new_cli(
         invoke_without_command=True,
         context_settings={
             "obj": {
-                PROCESS_REGISTRY_GETTER_KEY: _parse_process_registry_getter(registry),
+                WORKFLOW_REGISTRY_GETTER_KEY: _parse_workflow_registry_getter(registry),
                 **(context or {}),
             },
         },
@@ -144,7 +144,7 @@ def new_cli(
         """
         from procodile import ExecutionRequest, Job
 
-        registry = _get_process_registry(ctx)
+        registry = _get_workflow_registry(ctx)
         execution_request = ExecutionRequest.create(
             process_id=process_id,
             dotpath=dotpath,
@@ -166,7 +166,7 @@ def new_cli(
 
     @t.command("list-processes", help="List all processes.")
     def list_processes(ctx: typer.Context):
-        registry = _get_process_registry(ctx)
+        registry = _get_workflow_registry(ctx)
         typer.echo(
             json.dumps(
                 {
@@ -191,7 +191,7 @@ def new_cli(
     ):
         import json
 
-        registry = _get_process_registry(ctx)
+        registry = _get_workflow_registry(ctx)
         process = registry.get(process_id)
         if process is None:
             raise click.ClickException(f"Process {process_id!r} not found.")
@@ -217,52 +217,51 @@ __all__ = [
 ]
 
 
-def _parse_process_registry_getter(
-    process_registry: Union[
+def _parse_workflow_registry_getter(
+    workflow_registry: Union[
         str,
-        Union["ProcessRegistry", "WorkflowRegistry"],
-        Callable[[], Union["ProcessRegistry", "WorkflowRegistry"]],
+        "WorkflowRegistry",
+        Callable[[], "WorkflowRegistry"],
     ],
-) -> Callable[[], Union["ProcessRegistry", "WorkflowRegistry"]]:
-    process_registry_getter: Callable
-    if isinstance(process_registry, str):
+) -> Callable[[], "WorkflowRegistry"]:
+    workflow_registry_getter: Callable
+    if isinstance(workflow_registry, str):
 
-        def process_registry_getter():
+        def workflow_registry_getter():
             from gavicore.util.dynimp import import_value
-            from procodile import ProcessRegistry, WorkflowRegistry
+            from procodile import WorkflowRegistry
 
             registry = import_value(
-                process_registry, name="process registry", type=object
+                workflow_registry, name="process registry", type=object
             )
 
-            if not isinstance(registry, (ProcessRegistry, WorkflowRegistry)):
+            if not isinstance(registry, WorkflowRegistry):
                 raise TypeError(
-                    "The process registry must be a ProcessRegistry or "
-                    "WorkflowRegistry, "
+                    "The process registry must be a WorkflowRegistry, "
                     f"got {type(registry).__name__}."
                 )
 
             return registry
 
-        return process_registry_getter
+        return workflow_registry_getter
 
-    elif callable(process_registry):
-        return process_registry
+    elif callable(workflow_registry):
+        return workflow_registry
     else:
 
-        def process_registry_getter():
-            return process_registry
+        def workflow_registry_getter():
+            return workflow_registry
 
-        return process_registry_getter
+        return workflow_registry_getter
 
 
-def _get_process_registry(
+def _get_workflow_registry(
     ctx: typer.Context,
-) -> Union["ProcessRegistry", "WorkflowRegistry"]:
-    from procodile import ProcessRegistry, WorkflowRegistry
+) -> "WorkflowRegistry":
+    from procodile import WorkflowRegistry
 
-    process_registry_getter = ctx.obj.get(PROCESS_REGISTRY_GETTER_KEY)
-    assert process_registry_getter is not None and callable(process_registry_getter)
-    process_registry = process_registry_getter()
-    assert isinstance(process_registry, (ProcessRegistry, WorkflowRegistry))
-    return process_registry
+    workflow_registry_getter = ctx.obj.get(WORKFLOW_REGISTRY_GETTER_KEY)
+    assert workflow_registry_getter is not None and callable(workflow_registry_getter)
+    workflow_registry = workflow_registry_getter()
+    assert isinstance(workflow_registry, WorkflowRegistry)
+    return workflow_registry

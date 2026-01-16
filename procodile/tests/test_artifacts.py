@@ -93,7 +93,7 @@ class TestNullArtifactStore(unittest.TestCase):
 class TestExecutionContext(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-        self.store = DummyArtifactStore()
+        self.store = DummyArtifactStore(store_kwargs={"root": self.tmpdir})
         self.ctx = ExecutionContext(self.store)
 
         self.dataset = xr.Dataset({"x": ("y", [1, 2])})

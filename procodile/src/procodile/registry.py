@@ -2,9 +2,9 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 import functools
-from collections.abc import Iterator, Mapping
+from collections.abc import Mapping
 from copy import deepcopy
-from typing import Callable, Optional
+from typing import ValuesView, ItemsView
 
 from pydantic.fields import FieldInfo
 
@@ -32,6 +32,8 @@ class WorkflowRegistry(Mapping[str, Workflow]):
     def __init__(self):
         self._workflows: dict[str, Workflow] = {}
 
+    # --- Overriding Mapping interface ---
+
     def __getitem__(self, workflow_id: str) -> Process:
         return self._as_process(self._workflows[workflow_id])
 
@@ -43,13 +45,6 @@ class WorkflowRegistry(Mapping[str, Workflow]):
 
     def __contains__(self, workflow_id: str) -> bool:
         return workflow_id in self._workflows
-
-    def get_or_create_workflow(self, id: str) -> Workflow:
-        if id in self._workflows:
-            return self._workflows[id]
-        definition = Workflow(id)
-        self._workflows[id] = definition
-        return definition
 
     @staticmethod
     @functools.lru_cache
@@ -81,30 +76,31 @@ class WorkflowRegistry(Mapping[str, Workflow]):
 
         return projected
 
+    # --- Public API ---
+
+    def get_or_create_workflow(self, id: str) -> Workflow:
+        if id in self._workflows:
+            return self._workflows[id]
+        definition = Workflow(id)
+        self._workflows[id] = definition
+        return definition
+
     def get(self, workflow_id: str, default=None) -> Process | None:
         try:
             return self[workflow_id]
         except KeyError:
             return default
 
-    def values(self):
-        for workflow_id in self:
-            yield self[workflow_id]
+    def values(self)  -> ValuesView[Process]:
+        return ValuesView(self)
 
-    def items(self):
-        for workflow_id in self:
-            yield workflow_id, self[workflow_id]
+    def items(self) -> ItemsView[str, Process]:
+        return ItemsView(self)
+
+    # --- Internal API ---
 
     def get_workflow(self, workflow_id: str) -> Workflow:
-        """
-        INTERNAL API.
-        Returns the actual Workflow object.
-        """
         return self._workflows[workflow_id]
 
-    def workflows(self):
-        """
-        INTERNAL API.
-        Returns all workflows
-        """
+    def workflows(self) -> dict[str, Workflow]:
         return self._workflows
