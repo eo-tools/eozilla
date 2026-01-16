@@ -357,6 +357,20 @@ Errors are raised immediately if the workflow is invalid.
 
 Execution order is automatically derived using topological sorting.
 
+To ensure seamless integration with orchestrating engines 
+(such as Apache Airflow or local runners), the system automatically 
+appends a final step (`procodile.workflow.FINAL_STEP_ID`) to every user-created workflow.
+
+The final step serves as a standardized exit point for data. By maintaining a 
+consistent final node, orchestrators can reliably extract the workflow's 
+output without needing to parse unique or variable step names defined by 
+the user.
+
+**Important**: This node is a passthrough entity. It does not perform any data 
+transformations, computations, or logic. Its sole responsibility is to 
+receive the output from the preceding step and expose it via a standardized 
+key.
+
 ## Visualizing the Workflow
 
 Workflows can be visualized as a directed graph.
