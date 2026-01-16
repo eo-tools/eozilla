@@ -1,105 +1,89 @@
 #  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-
-from collections.abc import Iterator, Mapping
-from typing import Callable, Optional
-
-from pydantic.fields import FieldInfo
-
-from gavicore.models import InputDescription, OutputDescription
+import functools
+from collections.abc import Mapping
+from copy import deepcopy
 
 from .process import Process
+from .workflow import Workflow
 
 
-class ProcessRegistry(Mapping[str, Process]):
+class WorkflowRegistry(Mapping[str, Process]):
     """
-    A registry for processes.
+    A registry for managing and accessing workflows as executable processes.
 
-    Processes are Python functions with extra metadata.
+    This class provides a read-only mapping from unique identifiers to
+    facade-like [Process][procodile.process.Process] instances. While the
+    user interacts with these projected processes, the registry internally
+    manages full [Workflow][procodile.workflow.Workflow] instances.
 
-    Represents a read-only mapping from process identifiers to
-    [Process][procodile.process.Process] instances.
+    A Workflow consists of one or more Python functions with metadata,
+    designed to execute sequentially by resolving dependencies and
+    passing outputs to downstream steps.
+
+    The internal Workflow objects hold the source-of-truth metadata required
+    for dependency resolution and execution, while the exposed Process
+    objects serve as the public interface for client interaction.
     """
 
     def __init__(self):
-        self._processes: dict[str, Process] = {}
+        self._workflows: dict[str, Workflow] = {}
 
-    def __getitem__(self, process_id: str, /) -> Process:
-        return self._processes[process_id]
+    # --- Overriding Mapping interface ---
+
+    def __getitem__(self, workflow_id: str) -> Process:
+        return self._as_process(self._workflows[workflow_id])
+
+    def __iter__(self):
+        return iter(self._workflows)
 
     def __len__(self) -> int:
-        return len(self._processes)
+        return len(self._workflows)
 
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._processes)
+    @staticmethod
+    @functools.lru_cache
+    def _as_process(workflow: Workflow) -> Process:
+        """This is the facade process object that is returned when the client wants
+        to see what processes are available and is also used to run the actual
+        workflow"""
 
-    # noinspection PyShadowingBuiltins
-    def process(
-        self,
-        function: Optional[Callable] = None,
-        /,
-        *,
-        id: Optional[str] = None,
-        version: Optional[str] = None,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
-        inputs: Optional[dict[str, FieldInfo | InputDescription]] = None,
-        outputs: Optional[dict[str, FieldInfo | OutputDescription]] = None,
-        inputs_arg: str | bool = False,
-    ) -> Callable[[Callable], Callable] | Callable:
-        """
-        A decorator that can be applied to a user function in order to
-        register it as a process in this registry.
-
-        The decorator can be used with or without parameters.
-
-        Args:
-            function: The decorated function that is passed automatically since
-                `process()` is a decorator function.
-            id: Optional process identifier. Must be unique within the registry.
-                If not provided, the fully qualified function name will be used.
-            version: Optional version identifier. If not provided, `"0.0.0"`
-                will be used.
-            title: Optional, short process title.
-            description: Optional, detailed description of the process. If not
-                provided, the function's docstring, if any, will be used.
-            inputs: Optional mapping from function argument names
-                to [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/)
-                or [`InputDescription`][gavicore.models.InputDescription] instances.
-                The preferred way is to annotate the arguments directly
-                as described in [The Annotated Pattern](https://docs.pydantic.dev/latest/concepts/fields/#the-annotated-pattern).
-                Use `InputDescription` instances to pass extra information that cannot
-                be represented by a `pydantic.Field`, e.g., `additionalParameters` or `keywords`.
-            outputs: Mapping from output names to
-                [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/)
-                or [`OutputDescription`][gavicore.models.InputDescription] instances.
-                Required, if you have multiple outputs returned as a
-                dictionary. In this case, the function must return a typed `tuple` and
-                output names refer to the items of the tuple in given order.
-            inputs_arg: Specifies the use of an _inputs argument_. An inputs argument
-                is a container for the actual process inputs. If specified, it must
-                be the only function argument (besides an optional job context
-                argument) and must be a subclass of `pydantic.BaseModel`.
-                If `inputs_arg` is `True` the only argument will be the input argument,
-                if `inputs_arg` is a `str` it must be the name of the only argument.
-        """
-
-        def register_process(fn: Callable):
-            process = Process.create(
-                fn,
-                id=id,
-                version=version,
-                title=title,
-                description=description,
-                inputs=inputs,
-                outputs=outputs,
-                inputs_arg=inputs_arg,
+        # Exactly one main is required
+        if len(workflow.registry.main) != 1:
+            raise ValueError(
+                f"Workflow {workflow.id!r} must have exactly one main process"
             )
-            self._processes[process.description.id] = process
-            return fn
 
-        if function is not None:
-            return register_process(function)
-        else:
-            return register_process
+        main = next(iter(workflow.registry.main.values()))
+
+        projected: Process = deepcopy(main)
+
+        # Steps exist -> last step defines outputs
+        if workflow.registry.steps:
+            order, _ = workflow.execution_order
+            last_step_id = order[-2]  # because the step before that is the actual
+            # user defined last step.
+            last_step = workflow.registry.steps[last_step_id]["step"]
+            projected.description.outputs = last_step.description.outputs
+
+        projected.description.id = workflow.id
+        projected.function = workflow.run
+
+        return projected
+
+    # --- Public API ---
+
+    def get_or_create_workflow(self, id: str) -> Workflow:
+        if id in self._workflows:
+            return self._workflows[id]
+        definition = Workflow(id)
+        self._workflows[id] = definition
+        return definition
+
+    # --- Internal API ---
+
+    def get_workflow(self, workflow_id: str) -> Workflow:
+        return self._workflows[workflow_id]
+
+    def workflows(self) -> dict[str, Workflow]:
+        return self._workflows

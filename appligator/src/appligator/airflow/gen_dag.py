@@ -6,6 +6,7 @@ from typing import Any
 
 from gavicore.models import InputDescription, ProcessDescription
 from procodile import Process
+from procodile.workflow import FINAL_STEP_ID
 
 
 def gen_dag(process: Process | ProcessDescription, function_module: str = "") -> str:
@@ -52,7 +53,7 @@ def _gen_dag(process_description: ProcessDescription, function_module: str) -> s
         f"def {function_name}_dag():",
         "",
         f"{tab}@task(multiple_outputs={(num_outputs > 1)!r})",
-        f"{tab}def {function_name}_task(params):",
+        f"{tab}def {FINAL_STEP_ID}(params):",
         f"{tab}{tab}return {function_name}(**params)",
         "",
         f"{tab}task_instance = {function_name}_task()  # noqa: F841",

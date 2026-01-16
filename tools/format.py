@@ -2,7 +2,6 @@
 import pathlib
 import subprocess
 
-
 workspaces = [
     "appligator",
     "cuiman",

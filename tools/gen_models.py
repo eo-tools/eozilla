@@ -4,7 +4,7 @@
 
 import datamodel_code_generator as dcg
 
-from tools.common import OPEN_API_PATH, EOZILLA_PATH
+from tools.common import EOZILLA_PATH, OPEN_API_PATH
 
 MODELS_PATH = EOZILLA_PATH / "gavicore/src/gavicore/models.py"
 

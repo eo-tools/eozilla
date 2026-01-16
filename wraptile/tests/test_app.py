@@ -17,6 +17,7 @@ client = TestClient(app)
 
 class AppTest(TestCase):
     def setUp(self):
+        service.configure()
         ServiceProvider.set_instance(service)
 
     def test_get_capabilities(self):

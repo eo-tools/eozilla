@@ -7,9 +7,11 @@ from typing import Annotated
 
 import typer
 
+
 EOZILLA_PATH = Path(__file__).parent.parent.parent.parent.resolve()
 DEFAULT_DAGS_FOLDER = EOZILLA_PATH / "eozilla-airflow/dags"
-PROCESS_REGISTRY_SPEC_EX = "wraptile.services.local.testing:service.process_registry"
+WORKFLOW_REGISTRY_SPEC_EX = "wraptile.services.local.testing:service.workflow_registry"
+DEFAULT_IMAGE_NAME = "appligator_workflow_image:v1"
 
 CLI_NAME = "appligator"
 
@@ -18,17 +20,24 @@ cli = typer.Typer(name=CLI_NAME)
 
 @cli.command()
 def main(
-    process_registry_spec: Annotated[
+    workflow_registry_spec: Annotated[
         str | None,
         typer.Argument(
             ...,
-            help=f"Process registry specification. For example {PROCESS_REGISTRY_SPEC_EX!r}.",
+            help=f"Workflow registry specification. For example"
+            f" {WORKFLOW_REGISTRY_SPEC_EX!r}.",
         ),
     ] = None,
     dags_folder: Annotated[
         Path,
         typer.Option(..., help="An Airflow DAGs folder to which to write the outputs."),
     ] = DEFAULT_DAGS_FOLDER,
+    image_name: Annotated[
+            str | None,
+            typer.Option(..., help="Name of the Docker image which is created from "
+                                   "your workflow and required packages that Airflow "
+                                   "will use for running the workflows in the registry."),
+        ] = DEFAULT_IMAGE_NAME,
     version: Annotated[
         bool,
         typer.Option(..., help="Show version and exit."),
@@ -39,10 +48,10 @@ def main(
 
     WARNING: This tool is under development and subject to change anytime.
 
-    Currently it expects a _process registry_ as input, which must be
+    Currently, it expects a _workflow registry_ as input, which must be
     provided in form a Python module path plus an attribute path separated
     by a colon: "my.module.path:my.registry_obj". The type of the registry
-    must be `procodile.ProcessRegistry`. In the future the tool will be
+    must be `procodile.WorkflowRegistry`. In the future the tool will be
     able to handle other input types.
 
     It is also currently limited to generating DAGs for Airflow 3+.
@@ -52,27 +61,41 @@ def main(
     import datetime
 
     from appligator import __version__
-    from appligator.airflow.gen_dag import gen_dag
+    from appligator.airflow.gen_image import gen_image
+    from appligator.airflow.gen_workflow_dag import gen_workflow_dag
     from gavicore.util.dynimp import import_value
-    from procodile import ProcessRegistry
+
+    from procodile import WorkflowRegistry
 
     if version:
         typer.echo(f"{__version__}")
         raise typer.Exit(0)
 
-    if not process_registry_spec:
+    if not workflow_registry_spec:
         typer.echo("Error: missing process registry specification.")
         raise typer.Exit(1)
 
-    process_registry: ProcessRegistry = import_value(
-        process_registry_spec,
-        type=ProcessRegistry,
-        name="process_registry",
-        example=PROCESS_REGISTRY_SPEC_EX,
+    registry: WorkflowRegistry = import_value(
+        workflow_registry_spec,
+        type=WorkflowRegistry,
+        name="workflow_registry",
+        example=WORKFLOW_REGISTRY_SPEC_EX,
     )
+
     dags_folder.mkdir(exist_ok=True)
-    for process_id, process in process_registry.items():
-        dag_code = gen_dag(process)
+
+    for process_id, process in registry.items():
+        image_name = gen_image(
+            registry.get_workflow(process_id).registry,
+            image_name=image_name,
+            use_local_packages=True,
+        )
+        dag_code = gen_workflow_dag(
+            dag_id=process_id,
+            registry=registry.get_workflow(process_id).registry,
+            image=image_name,
+            output_dir=dags_folder,
+        )
         dag_file = dags_folder / f"{process_id}.py"
         with dag_file.open("w") as stream:
             stream.write(
