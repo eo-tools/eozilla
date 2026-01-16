@@ -3,14 +3,13 @@
 #  https://opensource.org/license/apache-2-0.
 
 from procodile.cli import new_cli
-
 from procodile_example import __version__
 
 # The CLI with a basic set of commands.
 # The `cli` is a Typer application of type `typer.Typer()`,
 # so can use the instance to register your own commands.
 cli = new_cli(
-    registry="procodile_example.processes:registry",
+    registry="procodile_example.workflows:registry",
     name="procodile-example",
     version=__version__,
 )

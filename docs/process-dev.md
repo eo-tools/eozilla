@@ -18,8 +18,13 @@ generate Docker images, Airflow DAGs, and optionally OGC Application Packages.
 
 Currently, `procodile` comprises just a few handy top-level components:
 
-* [class `ProcessRegistry`][procodile.ProcessRegistry] - to register your 
-  Python functions as processes in a central collection.
+* [class `WorkflowRegistry`][procodile.WorkflowRegistry] - to register your 
+  Python functions as workflows in a central collection. Each workflow consists 
+  of **one or more Python functions** with explicitly defined dependencies. 
+  Internally, these functions are represented as **`Process`** objects and 
+  orchestrated according to their dependency graph. 
+  From the API consumer’s perspective, **each workflow is exposed as a single
+ `Process`**, abstracting away the internal execution of individual steps.
 * [class `ExcecutionRequest`][gavicore.util.request.ExecutionRequest] - used to 
   programmatically execute your processes from Python code, for example in 
   a unit test or in a custom application.  
@@ -33,37 +38,21 @@ Currently, `procodile` comprises just a few handy top-level components:
 
 Framework usage is simple, it is a 3-step process: 
 
-1. Populate process registry with processes derived from your Python functions.
-2. Define a CLI instance from that process registry.
+1. Populate workflow registry with workflow(s) derived from your Python functions.
+2. Define a CLI instance from that workflow registry.
 3. Define an entry point script for the CLI instance, so you can run your package 
    as an application.
 
 The steps are explained in more detail in the following.
 
-### 1. Populate process registry
+### 1. Populate workflow registry
 
-First, you'll create a process registry object of type `ProcessRegistry`.
-Use the registry's `process` decorator to register your Python functions 
-that should be exposed as processes. In `my_app/processes.py`:
+First, you'll create a workflow registry object of type `WorkflowRegistry`.
+Then create a workflow from that registry and then use the workflow's `main` 
+and `step` decorator to register your Python functions as workflow(s)
+that should be exposed as processes. In `my_app/workflows.py`:
 
-```python
-from procodile import JobContext, ProcessRegistry
-
-registry = ProcessRegistry()
-
-
-@registry.process(id="my-process-1")
-def my_process_1(path: str, threshold: float = 0.5) -> str:
-    ctx = JobContext.get()
-    ...
-    ctx.report_progress(progress=15, message="Initialized sources")
-    ...
-
-
-@registry.process(id="my-process-2")
-def my_process_2(ctx: JobContext, path: str, factor: float = 1.0) -> str:
-    ...
-```
+Please see ![Workflows](workflow-dev.md#creating-a-workflow) documentation to learn more about it.
 
 The `ctx` object of type [JobContext][procodile.JobContext]
 can be used to report progress and to check for job cancellation.
@@ -73,8 +62,8 @@ or declare it as a function argument of type `JobContext`.
 Process inputs, such as the arguments `path` or `factor` above, 
 can be further specified by 
 [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/) annotations.
-Field annotations for an argument can be provided via the `input_fields` dictionary 
-passed  to the [`process`][procodile.ProcessRegistry.process] decorator, 
+Field annotations for an argument can be provided via the `inputs` dictionary 
+passed  to the [`main`][procodile.Workflow.main] or [`step`][procodile.Workflow.step] decorator, 
 or preferably as part of the type declaration using the Python `Annotated` 
 special form. An example for the latter is
 `factor: Annotated[float, Field(title="Scaling factor", gt=0., le=10.)] = 1.0`.
@@ -90,7 +79,7 @@ fields as inputs rather than the model class as single input. Conceptually:
 from typing import Annotated
 
 from pydantic import BaseModel, Field
-from procodile import JobContext, ProcessRegistry
+from procodile import JobContext, WorkflowRegistry
 
 
 class ArgsModel(BaseModel):
@@ -104,9 +93,10 @@ class ArgsModel(BaseModel):
     # ...
 
     
-registry = ProcessRegistry()
+registry = WorkflowRegistry()
+workflow = registry.get_or_create_workflow("my_workflow")
 
-@registry.process(inputs_arg=True)
+@workflow.main(inputs_arg=True)
 def my_func(args: ArgsModel) -> MyResult:
     ...
 ```
@@ -122,7 +112,7 @@ from procodile.cli import new_cli
 # The CLI with a basic set of commands.
 # The `cli` is a Typer application of type `typer.Typer()`,
 # so can use the instance to register your own commands.
-cli = new_cli(registry="my_app.processes:registry", name="my-app", version="0.5.0")
+cli = new_cli(registry="my_app.workflows:registry", name="my-app", version="0.5.0")
 ```
 
 You could also pass the imported registry directly, but using a 
@@ -246,7 +236,7 @@ The process request file format in detail:
 
 ## Framework API
 
-::: procodile.ProcessRegistry
+::: procodile.WorkflowRegistry
     options:
       show_source: false
       heading_level: 3

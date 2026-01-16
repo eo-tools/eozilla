@@ -9,8 +9,8 @@ from typing import Literal
 from tools.common import (
     C_TAB,
     D_TAB,
-    OPEN_API_PATH,
     EOZILLA_PATH,
+    OPEN_API_PATH,
     camel_to_snake,
     parse_responses,
     to_py_type,
