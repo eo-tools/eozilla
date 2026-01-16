@@ -10,20 +10,22 @@ from .process import Process
 from .workflow import Workflow
 
 
-class WorkflowRegistry(Mapping[str, Workflow]):
+class WorkflowRegistry(Mapping[str, Process]):
     """
-    A registry for workflows.
+    A registry for managing and accessing workflows as executable processes.
 
-    Workflows are one or many Python functions with extra metadata that execute
-    one after another by creating explicit dependencies and passing outputs to
-    downstream steps as defined.
+    This class provides a read-only mapping from unique identifiers to
+    facade-like [Process][procodile.process.Process] instances. While the
+    user interacts with these projected processes, the registry internally
+    manages full [Workflow][procodile.workflow.Workflow] instances.
 
-    Represents a read-only mapping from process identifiers to
-    [Process][procodile.process.Process] instances.
+    A Workflow consists of one or more Python functions with metadata,
+    designed to execute sequentially by resolving dependencies and
+    passing outputs to downstream steps.
 
-    Internally, [Workflow][procodile.workflow.Workflow] instances are used for
-    holding the required metadata for creating dependencies, passing outputs as
-    inputs to downstream steps and execution.
+    The internal Workflow objects hold the source-of-truth metadata required
+    for dependency resolution and execution, while the exposed Process
+    objects serve as the public interface for client interaction.
     """
 
     def __init__(self):
@@ -39,9 +41,6 @@ class WorkflowRegistry(Mapping[str, Workflow]):
 
     def __len__(self) -> int:
         return len(self._workflows)
-
-    def __contains__(self, workflow_id: str) -> bool:
-        return workflow_id in self._workflows
 
     @staticmethod
     @functools.lru_cache
@@ -81,18 +80,6 @@ class WorkflowRegistry(Mapping[str, Workflow]):
         definition = Workflow(id)
         self._workflows[id] = definition
         return definition
-
-    def get(self, workflow_id: str, default=None) -> Process | None:
-        try:
-            return self[workflow_id]
-        except KeyError:
-            return default
-
-    def values(self) -> ValuesView[Process]:
-        return ValuesView(self)
-
-    def items(self) -> ItemsView[str, Process]:
-        return ItemsView(self)
 
     # --- Internal API ---
 

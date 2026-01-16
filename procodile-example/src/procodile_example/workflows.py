@@ -10,10 +10,10 @@ from procodile import FromMain, FromStep, JobContext, WorkflowRegistry
 
 registry = WorkflowRegistry()
 
-sleep_a_while = registry.get_or_create_workflow("sleep_a_while")
+sleep_a_while_workflow = registry.get_or_create_workflow("sleep_a_while")
 
 
-@sleep_a_while.main(id="sleep_a_while", title="Sleepy Process")
+@sleep_a_while_workflow.main(id="sleep_a_while", title="Sleepy Process")
 def sleep_a_while(
     duration: Annotated[float, Field(title="Duration in s", gt=0)] = 10.0,
     fail: Annotated[bool, Field(title="Force failure")] = False,
@@ -36,10 +36,10 @@ def sleep_a_while(
     return time.time() - t0
 
 
-primes_between = registry.get_or_create_workflow("primes_between")
+primes_between_workflow = registry.get_or_create_workflow("primes_between")
 
 
-@primes_between.main(id="primes_between", title="Prime Generator")
+@primes_between_workflow.main(id="primes_between", title="Prime Generator")
 def primes_between(
     ctx: JobContext,
     min_val: Annotated[int, Field(title="Minimum value of search range", ge=0)] = 0,

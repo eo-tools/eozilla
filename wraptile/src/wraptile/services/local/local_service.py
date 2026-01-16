@@ -29,7 +29,7 @@ class LocalService(ServiceBase):
         self,
         title: str,
         description: Optional[str] = None,
-        workflow_registry: WorkflowRegistry = None,
+        workflow_registry: WorkflowRegistry | None = None,
     ):
         super().__init__(title=title, description=description)
         self.executor: Optional[ThreadPoolExecutor | ProcessPoolExecutor] = None

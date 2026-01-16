@@ -24,10 +24,10 @@ service = LocalService(
 
 registry = service.workflow_registry
 
-sleep_a_while = registry.get_or_create_workflow(id="sleep_a_while")
+sleep_a_while_workflow = registry.get_or_create_workflow(id="sleep_a_while")
 
 
-@sleep_a_while.main(
+@sleep_a_while_workflow.main(
     id="sleep_a_while",
     title="Sleep Processor",
     description=(
@@ -51,10 +51,10 @@ def sleep_a_while(
     return time.time() - t0
 
 
-primes_between = registry.get_or_create_workflow(id="primes_between")
+primes_between_workflow = registry.get_or_create_workflow(id="primes_between")
 
 
-@primes_between.main(
+@primes_between_workflow.main(
     id="primes_between",
     title="Prime Processor",
     description=(
@@ -100,11 +100,11 @@ def primes_between(
     return [min_val + i for i, prime in enumerate(is_prime) if prime]
 
 
-simulate_scene = registry.get_or_create_workflow(id="simulate_scene")
+simulate_scene_workflow = registry.get_or_create_workflow(id="simulate_scene")
 
 
 # noinspection PyArgumentList
-@simulate_scene.main(
+@simulate_scene_workflow.main(
     id="simulate_scene",
     title="Generate scene for testing",
     description=(
@@ -226,10 +226,10 @@ class SceneSpec(pydantic.BaseModel):
     # bbox: Optional[Bbox] = None
 
 
-return_base_model = registry.get_or_create_workflow(id="return_base_model")
+return_base_model_workflow = registry.get_or_create_workflow(id="return_base_model")
 
 
-@return_base_model.main(
+@return_base_model_workflow.main(
     id="return_base_model",
     title="BaseModel Test",
 )
