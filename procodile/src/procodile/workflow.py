@@ -233,10 +233,10 @@ class Workflow:
 
         return outputs
 
-    def _collect_final_outputs(self, ctx: ExecutionContext, graph) -> dict[str, Any]:
+    @staticmethod
+    def _collect_final_outputs(ctx: ExecutionContext, graph) -> dict[str, Any]:
         """
-        Collect outputs from all immediate predecessors of FINAL_STEP.
-        Outputs are namespaced by step ID to avoid collisions.
+        Collect outputs from all immediate predecessors of FINAL_STEP_ID.
         """
 
         final_inputs = {}
