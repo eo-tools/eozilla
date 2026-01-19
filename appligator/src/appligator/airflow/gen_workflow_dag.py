@@ -3,10 +3,10 @@
 #  https://opensource.org/license/apache-2-0.
 
 
-import inspect
 from pathlib import Path
-from typing import Annotated, Any, Callable, get_args, get_origin
+from typing import Any
 
+from gavicore.models import InputDescription
 from procodile import Process
 from procodile.workflow import (
     FromMainDependency,
@@ -15,6 +15,8 @@ from procodile.workflow import (
     WorkflowStepRegistry,
 )
 
+INDENT = f'            '
+TAB = f'    '
 
 def gen_workflow_dag(
     dag_id: str,
@@ -26,13 +28,17 @@ def gen_workflow_dag(
     Generates a fully-formed Airflow DAG Python file using KubernetesPodOperators
     and the final step using PythonOperator.
 
-    The last `final_step` is a synthetic final step that just passes the xcom from
-    the actual last step to its output so that other services can consume the output
-    of the dag from a persistent `final_step` task_id.
+    The last step with `FINAL_STEP_ID` is a synthetic final step that just passes the
+    xcom from the actual last step to its output so that other services can consume
+    the output of the dag from a persistent `FINAL_STEP_ID` task_id. This was designed
+    in `Procodile`.
     """
 
     if not isinstance(registry, WorkflowStepRegistry):
         raise TypeError(f"unexpected type for registry: {type(registry).__name__}")
+
+    if not image:
+        raise ValueError("Image name is required to generate dag.")
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -42,12 +48,17 @@ def gen_workflow_dag(
 
     main_step = next(iter(first_step_dict.values()))
     main_step_id = main_step.description.id
-    main_param_meta = extract_param_defaults(main_step.function)
+
+    input_descriptions = main_step.description.inputs or {}
+    param_specs = [
+        f"{param_name!r}: Param({_get_param_args(input_description)})"
+        for param_name, input_description in input_descriptions.items()
+    ]
 
     cmd = render_cmd(
         func_module=main_step.function.__module__,
         func_qualname=main_step.function.__qualname__,
-        inputs=_render_main_env(main_param_meta),
+        inputs=_render_main_inputs(param_specs),
         output_keys=_render_outputs(main_step),
     )
 
@@ -69,7 +80,7 @@ with DAG(
     catchup=False,
     render_template_as_native_obj=True,
     params={{
-{_render_params(main_param_meta)}
+{"\n".join(f"{TAB}{p}," for p in param_specs)}
     }},
     is_paused_upon_creation=False,
 ) as dag:
@@ -99,7 +110,7 @@ with DAG(
         cmd = render_cmd(
             func_module=step.function.__module__,
             func_qualname=step.function.__qualname__,
-            inputs=_render_step_env(step, deps, main_step),
+            inputs=_render_step_inputs(step, deps, main_step),
             output_keys=_render_outputs(step),
         )
 
@@ -152,71 +163,47 @@ with DAG(
             if step_id == FINAL_STEP_ID:
                 continue
             if dep["type"] == "from_step":
-                dag_code += f'    tasks["{dep["step_id"]}"] >> tasks["{step_id}"]\n'
+                dag_code += f'{TAB}tasks["{dep["step_id"]}"] >> tasks["{step_id}"]\n'
             elif dep["type"] == "from_main":
-                dag_code += f'    tasks["{main_step_id}"] >> tasks["{step_id}"]\n'
+                dag_code += f'{TAB}tasks["{main_step_id}"] >> tasks["{step_id}"]\n'
 
-    dag_code += f'    tasks["{last_step_id}"] >> tasks["{FINAL_STEP_ID}"]\n'
+    dag_code += f'{TAB}tasks["{last_step_id}"] >> tasks["{FINAL_STEP_ID}"]\n'
 
     return dag_code
 
-
-def extract_param_defaults(
-    func: Callable[[Any], Any],
-) -> dict[str, dict[str, str | None]]:
-    """
-    Extract default values and Airflow param types from a function signature.
-    """
-    sig = inspect.signature(func)
-    result = {}
-
-    for name, param in sig.parameters.items():
-        default = None
-        if param.default is not inspect.Parameter.empty:
-            default = param.default
-
-        airflow_type = "string"
-        annotation = param.annotation
-
-        if annotation is not inspect.Parameter.empty:
-            origin = get_origin(annotation)
-            if origin is Annotated:
-                base_type = get_args(annotation)[0]
-            else:
-                base_type = annotation
-
-            if base_type in (int, float):
-                airflow_type = "number"
-            elif base_type is bool:
-                airflow_type = "boolean"
-
-        result[name] = {
-            "default": default,
-            "type": airflow_type,
-        }
-
-    return result
+def _get_param_args(input_description: InputDescription):
+    schema = dict(
+        input_description.schema_.model_dump(
+            mode="json",
+            by_alias=True,
+            exclude_defaults=True,
+            exclude_none=True,
+            exclude_unset=True,
+        )
+    )
+    param_args: list[tuple[str, Any]] = []
+    if "default" in schema:
+        param_args.append(("default", schema.pop("default")))
+    if "type" in schema:
+        param_args.append(("type", schema.pop("type")))
+    if input_description.title:
+        schema.pop("title", None)
+        param_args.append(("title", input_description.title))
+    if input_description.description:
+        schema.pop("description", None)
+        param_args.append(("description", input_description.description))
+    param_args.extend(sorted(schema.items(), key=lambda item: item[0]))
+    return ", ".join(f"{sk}={sv!r}" for sk, sv in param_args)
 
 
-def _render_params(param_meta: dict[str, dict[str, str | None]]) -> str:
-    lines = []
-    for name, meta in param_meta.items():
-        default = meta["default"]
-        airflow_type = meta["type"]
-        default_repr = "None" if default is None else repr(default)
-
-        lines.append(f'        "{name}": Param({default_repr}, type="{airflow_type}")')
-
-    return ",\n".join(lines)
-
-
-def _render_main_env(param_meta: dict[str, dict[str, str | None]]) -> str:
+def _render_main_inputs(param_specs: list[str]) -> str:
     return ",\n".join(
-        f'            "{name}": "{{{{ params.{name} }}}}"' for name in param_meta.keys()
+        f'{INDENT}"{name}": "{{{{ params.{name} }}}}"'  # for name in  param_meta.keys()
+        for name in (spec.split(":", 1)[0].strip().strip("'") for spec in param_specs)
     )
 
 
-def _render_step_env(
+def _render_step_inputs(
     step: Process,
     deps: dict[str, FromMainDependency | FromStepDependency],
     main_step: Process,
@@ -229,13 +216,13 @@ def _render_step_env(
         if dep["type"] == "from_main":
             step_id = main_step.description.id
             lines.append(
-                f'''            "{input_name}": "{{{{ ti.xcom_pull(task_ids='{step_id}')['{output_key}'] }}}}"'''
+                f'''{INDENT}"{input_name}": "{{{{ ti.xcom_pull(task_ids='{step_id}')['{output_key}'] }}}}"'''
             )
 
         elif dep["type"] == "from_step":
             output_key = dep.get("output", "return_value")
             lines.append(
-                f'''            "{input_name}": "{{{{ ti.xcom_pull(task_ids='{dep["step_id"]}')['{output_key}'] }}}}"'''
+                f'''{INDENT}"{input_name}": "{{{{ ti.xcom_pull(task_ids='{dep["step_id"]}')['{output_key}'] }}}}"'''
             )
 
     return ",\n".join(lines)
@@ -243,8 +230,6 @@ def _render_step_env(
 
 def _render_outputs(step: Process) -> str:
     outputs = step.description.outputs
-    if not outputs:
-        return "None"
     return repr(list(outputs.keys()))
 
 
