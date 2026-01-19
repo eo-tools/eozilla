@@ -49,6 +49,7 @@ def test_generate_airflow_dag_from_workflow():
     )
     start_date = (datetime.now() - timedelta(days=1)).date().isoformat()
     assert dag_code == (
+        "import json\n"
         "from datetime import datetime\n"
         "\n"
         "from airflow import DAG\n"
@@ -62,7 +63,6 @@ def test_generate_airflow_dag_from_workflow():
         f'    start_date=datetime.fromisoformat("{start_date}"),\n'
         "    schedule=None,\n"
         "    catchup=False,\n"
-        "    render_template_as_native_obj=True,\n"
         "    is_paused_upon_creation=False,\n"
         "    params={\n"
         "    \"id\": Param(type='string', title='main input')\n"
@@ -75,11 +75,13 @@ def test_generate_airflow_dag_from_workflow():
         '    tasks["first_step"] = KubernetesPodOperator(\n'
         '        task_id="first_step",\n'
         '        image="example:latest",\n'
-        "        cmds=['python', '-c', '\"from run_step import main; "
-        "main(func_module=\\'tests.airflow.test_gen_workflow_dag\\', "
-        'func_qualname=\\\'first_step\\\', inputs={"id": "{{ '
-        'params.id }}"}, '
-        "output_keys=[\\'a\\'])\"'],\n"
+        '        cmds=["python", "/app/run_step.py"],\n'
+        '        arguments=[json.dumps({\n'
+        '            "func_module": "tests.airflow.test_gen_workflow_dag",\n'
+        '            "func_qualname": "first_step",\n'
+        '            "inputs": {"id": "{{ params.id }}"},\n'
+        '            "output_keys": [\'a\'],\n'
+        '        })],\n'
         "        do_xcom_push=True,\n"
         "    )\n"
         "\n"
@@ -87,11 +89,14 @@ def test_generate_airflow_dag_from_workflow():
         '    tasks["second_step"] = KubernetesPodOperator(\n'
         '        task_id="second_step",\n'
         '        image="example:latest",\n'
-        "        cmds=['python', '-c', '\"from run_step import main; "
-        "main(func_module=\\'tests.airflow.test_gen_workflow_dag\\', "
-        'func_qualname=\\\'second_step\\\', inputs={"id": "{{ '
-        "ti.xcom_pull(task_ids=\\'first_step\\')[\\'a\\'] }}\"}, "
-        "output_keys=[\\'return_value\\'])\"'],\n"
+        '        cmds=["python", "/app/run_step.py"],\n'
+        '        arguments=[json.dumps({\n'
+        '            "func_module": "tests.airflow.test_gen_workflow_dag",\n'
+        '            "func_qualname": "second_step",\n'
+        '            "inputs": {"id": "{{ '
+        'ti.xcom_pull(task_ids=\'first_step\')[\'a\'] }}"},\n'
+        '            "output_keys": [\'return_value\'],\n'
+        '        })],\n'
         "        do_xcom_push=True,\n"
         "    )\n"
         "\n"
@@ -99,11 +104,14 @@ def test_generate_airflow_dag_from_workflow():
         '    tasks["third_step"] = KubernetesPodOperator(\n'
         '        task_id="third_step",\n'
         '        image="example:latest",\n'
-        "        cmds=['python', '-c', '\"from run_step import main; "
-        "main(func_module=\\'tests.airflow.test_gen_workflow_dag\\', "
-        'func_qualname=\\\'third_step\\\', inputs={"id": "{{ '
-        "ti.xcom_pull(task_ids=\\'second_step\\')[\\'return_value\\'] }}\"}, "
-        "output_keys=[\\'return_value\\'])\"'],\n"
+        '        cmds=["python", "/app/run_step.py"],\n'
+        '        arguments=[json.dumps({\n'
+        '            "func_module": "tests.airflow.test_gen_workflow_dag",\n'
+        '            "func_qualname": "third_step",\n'
+        '            "inputs": {"id": "{{ '
+        'ti.xcom_pull(task_ids=\'second_step\')[\'return_value\'] }}"},\n'
+        '            "output_keys": [\'return_value\'],\n'
+        '        })],\n'
         "        do_xcom_push=True,\n"
         "    )\n"
         "\n"

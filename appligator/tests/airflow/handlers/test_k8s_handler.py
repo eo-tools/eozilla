@@ -34,7 +34,14 @@ class TestKubernetesOperatorHandler(unittest.TestCase):
     tasks["main"] = KubernetesPodOperator(
         task_id="main",
         image="my-image",
-        cmds=['python', '-c', '"from run_step import main; main(func_module=\\'my.module\\', func_qualname=\\'my_func\\', inputs={"x": "{{ params.x }}",\\n"y": "{{ ti.xcom_pull(task_ids=\\'second_step\\')[\\'y\\'] }}"}, output_keys=[\\'out\\'])"'],
+        cmds=["python", "/app/run_step.py"],
+        arguments=[json.dumps({
+            "func_module": "my.module",
+            "func_qualname": "my_func",
+            "inputs": {"x": "{{ params.x }}",
+"y": "{{ ti.xcom_pull(task_ids=\'second_step\')[\'y\'] }}"},
+            "output_keys": [\'out\'],
+        })],
         do_xcom_push=True,
     )
 """

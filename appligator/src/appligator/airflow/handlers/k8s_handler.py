@@ -18,23 +18,18 @@ class KubernetesOperatorHandler(OperatorHandler):
     def render(self, task: TaskIR) -> str:
         from appligator.airflow.renderer import render_task_inputs
         inputs = render_task_inputs(task.inputs)
-        cmd = [
-            "python",
-            "-c",
-            f"\"from run_step import main; main("
-            f"func_module='{task.func_module}', "
-            f"func_qualname='{task.func_qualname}', "
-            f"inputs={{{inputs}}}, "
-            f"output_keys={task.outputs}"
-            f")\"",
-        ]
-
 
         return f"""
     tasks["{task.id}"] = KubernetesPodOperator(
         task_id="{task.id}",
         image="{task.image}",
-        cmds={cmd},
+        cmds=["python", "/app/run_step.py"],
+        arguments=[json.dumps({{
+            "func_module": "{task.func_module}",
+            "func_qualname": "{task.func_qualname}",
+            "inputs": {{{inputs}}},
+            "output_keys": {task.outputs},
+        }})],
         do_xcom_push=True,
     )
 """

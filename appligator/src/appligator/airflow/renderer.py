@@ -57,6 +57,7 @@ class AirflowRenderer:
 
 def render_header() -> list[str]:
     return [
+        "import json",
         "from datetime import datetime",
         "\nfrom airflow import DAG",
         "from airflow.models.param import Param",
@@ -74,7 +75,6 @@ with DAG(
     start_date=datetime.fromisoformat("{start_date}"),
     schedule=None,
     catchup=False,
-    render_template_as_native_obj=True,
     is_paused_upon_creation=False,
     params={{
 {params_block}
