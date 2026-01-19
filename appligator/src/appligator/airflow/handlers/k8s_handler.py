@@ -17,6 +17,7 @@ class KubernetesOperatorHandler(OperatorHandler):
 
     def render(self, task: TaskIR) -> str:
         from appligator.airflow.renderer import render_task_inputs
+
         inputs = render_task_inputs(task.inputs)
 
         return f"""

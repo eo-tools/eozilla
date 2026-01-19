@@ -7,7 +7,6 @@ from typing import Annotated
 
 import typer
 
-
 EOZILLA_PATH = Path(__file__).parent.parent.parent.parent.resolve()
 DEFAULT_DAGS_FOLDER = EOZILLA_PATH / "eozilla-airflow/dags"
 WORKFLOW_REGISTRY_SPEC_EX = "wraptile.services.local.testing:service.workflow_registry"
@@ -33,11 +32,14 @@ def main(
         typer.Option(..., help="An Airflow DAGs folder to which to write the outputs."),
     ] = DEFAULT_DAGS_FOLDER,
     image_name: Annotated[
-            str | None,
-            typer.Option(..., help="Name of the Docker image which is created from "
-                                   "your workflow and required packages that Airflow "
-                                   "will use for running the workflows in the registry."),
-        ] = DEFAULT_IMAGE_NAME,
+        str | None,
+        typer.Option(
+            ...,
+            help="Name of the Docker image which is created from "
+            "your workflow and required packages that Airflow "
+            "will use for running the workflows in the registry.",
+        ),
+    ] = DEFAULT_IMAGE_NAME,
     version: Annotated[
         bool,
         typer.Option(..., help="Show version and exit."),
@@ -64,7 +66,6 @@ def main(
     from appligator.airflow.gen_image import gen_image
     from appligator.airflow.gen_workflow_dag import gen_workflow_dag
     from gavicore.util.dynimp import import_value
-
     from procodile import WorkflowRegistry
 
     if version:

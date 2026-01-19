@@ -7,6 +7,7 @@ Runtime = Literal[
     "syn-python",
 ]
 
+
 class TaskIR(BaseModel):
     """
     Operator-agnostic description of a single executable task.
@@ -45,6 +46,7 @@ class TaskIR(BaseModel):
     outputs: list[str] = Field(default_factory=list)
 
     depends_on: list[str] = None
+
 
 class WorkflowIR(BaseModel):
     """

@@ -7,9 +7,8 @@ from procodile.workflow import FINAL_STEP_ID
 
 
 def workflow_to_ir(
-    registry: WorkflowStepRegistry,
-    workflow_id: str,
-    image_name: str = "") -> WorkflowIR:
+    registry: WorkflowStepRegistry, workflow_id: str, image_name: str = ""
+) -> WorkflowIR:
     """
     Convert a WorkflowStepRegistry into a fully normalized WorkflowIR (Workflow
     Intermediate Representation).
@@ -105,7 +104,7 @@ def workflow_to_ir(
     leaf_tasks = all_task_ids - upstream_tasks
 
     if len(leaf_tasks) != 1:
-        raise ValueError(f"Expected exactly one leaf task")
+        raise ValueError("Expected exactly one leaf task")
 
     final_task = next(iter(leaf_tasks))
 
@@ -119,7 +118,7 @@ def workflow_to_ir(
     )
 
     return WorkflowIR(
-        id= workflow_id,
+        id=workflow_id,
         params=params,
         tasks=tasks,
         final_task=final_task,

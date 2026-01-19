@@ -40,7 +40,9 @@ def main(
     with open("/airflow/xcom/return.json", "w") as f:
         json.dump(output, f)
 
+
 if __name__ == "__main__":
     import sys
+
     payload = json.loads(sys.argv[1])
     main(**payload)

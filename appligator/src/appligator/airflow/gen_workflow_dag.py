@@ -12,7 +12,7 @@ def gen_workflow_dag(
     registry: WorkflowStepRegistry,
     image: str,
 ) -> str:
-    """ Generates a fully-formed Airflow DAG Python file."""
+    """Generates a fully-formed Airflow DAG Python file."""
 
     if not isinstance(registry, WorkflowStepRegistry):
         raise TypeError(f"unexpected type for registry: {type(registry).__name__}")
@@ -26,4 +26,3 @@ def gen_workflow_dag(
     dag_code = AirflowRenderer().render(ir)
 
     return dag_code
-

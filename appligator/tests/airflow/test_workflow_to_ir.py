@@ -1,14 +1,12 @@
 import unittest
 
+from appligator.airflow.ir import workflow_to_ir
+from gavicore.models import Field
 from procodile import Workflow
 from procodile.workflow import FINAL_STEP_ID, FromMain
-from gavicore.models import Field
-
-from appligator.airflow.ir import workflow_to_ir
 
 
 class TestWorkflowToIR(unittest.TestCase):
-
     def setUp(self):
         wf = Workflow(id="wf")
 

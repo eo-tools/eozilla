@@ -1,4 +1,3 @@
-import unittest
 from datetime import datetime, timedelta
 from typing import Annotated
 
@@ -76,12 +75,12 @@ def test_generate_airflow_dag_from_workflow():
         '        task_id="first_step",\n'
         '        image="example:latest",\n'
         '        cmds=["python", "/app/run_step.py"],\n'
-        '        arguments=[json.dumps({\n'
+        "        arguments=[json.dumps({\n"
         '            "func_module": "tests.airflow.test_gen_workflow_dag",\n'
         '            "func_qualname": "first_step",\n'
         '            "inputs": {"id": "{{ params.id }}"},\n'
-        '            "output_keys": [\'a\'],\n'
-        '        })],\n'
+        "            \"output_keys\": ['a'],\n"
+        "        })],\n"
         "        do_xcom_push=True,\n"
         "    )\n"
         "\n"
@@ -90,13 +89,13 @@ def test_generate_airflow_dag_from_workflow():
         '        task_id="second_step",\n'
         '        image="example:latest",\n'
         '        cmds=["python", "/app/run_step.py"],\n'
-        '        arguments=[json.dumps({\n'
+        "        arguments=[json.dumps({\n"
         '            "func_module": "tests.airflow.test_gen_workflow_dag",\n'
         '            "func_qualname": "second_step",\n'
         '            "inputs": {"id": "{{ '
-        'ti.xcom_pull(task_ids=\'first_step\')[\'a\'] }}"},\n'
-        '            "output_keys": [\'return_value\'],\n'
-        '        })],\n'
+        "ti.xcom_pull(task_ids='first_step')['a'] }}\"},\n"
+        "            \"output_keys\": ['return_value'],\n"
+        "        })],\n"
         "        do_xcom_push=True,\n"
         "    )\n"
         "\n"
@@ -105,13 +104,13 @@ def test_generate_airflow_dag_from_workflow():
         '        task_id="third_step",\n'
         '        image="example:latest",\n'
         '        cmds=["python", "/app/run_step.py"],\n'
-        '        arguments=[json.dumps({\n'
+        "        arguments=[json.dumps({\n"
         '            "func_module": "tests.airflow.test_gen_workflow_dag",\n'
         '            "func_qualname": "third_step",\n'
         '            "inputs": {"id": "{{ '
-        'ti.xcom_pull(task_ids=\'second_step\')[\'return_value\'] }}"},\n'
-        '            "output_keys": [\'return_value\'],\n'
-        '        })],\n'
+        "ti.xcom_pull(task_ids='second_step')['return_value'] }}\"},\n"
+        "            \"output_keys\": ['return_value'],\n"
+        "        })],\n"
         "        do_xcom_push=True,\n"
         "    )\n"
         "\n"

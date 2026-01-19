@@ -2,11 +2,13 @@ from datetime import datetime, timedelta
 
 from appligator.airflow.handlers.k8s_handler import KubernetesOperatorHandler
 from appligator.airflow.handlers.syn_python_handler import (
-    SyntheticPythonsOperatorHandler)
+    SyntheticPythonsOperatorHandler,
+)
 from appligator.airflow.models import TaskIR, WorkflowIR
 
 INDENT = "            "
 TAB = "    "
+
 
 class AirflowRenderer:
     """
@@ -55,6 +57,7 @@ class AirflowRenderer:
                 return handler.render(task)
         raise ValueError(f"No operator adapter for task {task.id}")
 
+
 def render_header() -> list[str]:
     return [
         "import json",
@@ -65,6 +68,7 @@ def render_header() -> list[str]:
         "from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator",
         "",
     ]
+
 
 def render_dag_open(workflow: WorkflowIR) -> str:
     params_block = render_dag_params(workflow.params)
@@ -93,6 +97,7 @@ def render_dag_params(params: dict[str, dict]) -> str:
         lines.append(f'{TAB}"{name}": Param({args})')
 
     return ",\n".join(lines)
+
 
 def render_task_inputs(inputs: dict[str, str]) -> str:
     lines: list[str] = []
