@@ -5,6 +5,7 @@
 import tempfile
 from pathlib import Path
 from unittest import TestCase
+from unittest.mock import patch
 
 from typer.testing import CliRunner
 
@@ -17,7 +18,6 @@ runner = CliRunner()
 class CliTest(TestCase):
     def test_help(self):
         result = runner.invoke(cli, ["--help"])
-        print(result.output)
         self.assertEqual(0, result.exit_code)
         self.assertIn(
             "Generate various application formats from your processing workflows.",
@@ -34,16 +34,19 @@ class CliTest(TestCase):
         self.assertEqual(1, result.exit_code)
 
     def test_run(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            result = runner.invoke(
-                cli,
-                [
-                    "wraptile.services.local.testing:service.workflow_registry",
-                    "--dags-folder",
-                    tmpdir,
-                ],
-            )
-            print(result.output, result)
-            self.assertEqual(0, result.exit_code, msg=result.output)
-            files = Path(tmpdir).glob("*.py")
-            self.assertTrue(len(list(files)) >= 4)
+        with patch(
+            "appligator.airflow.gen_image.gen_image",
+            return_value="fake-image:latest",
+        ):
+            with tempfile.TemporaryDirectory() as tmpdir:
+                result = runner.invoke(
+                    cli,
+                    [
+                        "wraptile.services.local.testing:service.workflow_registry",
+                        "--dags-folder",
+                        tmpdir,
+                    ],
+                )
+                self.assertEqual(0, result.exit_code, msg=result.output)
+                files = Path(tmpdir).glob("*.py")
+                self.assertTrue(len(list(files)) >= 5)
