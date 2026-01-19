@@ -44,7 +44,7 @@ class AirflowRenderer:
             lines.append(self.render_task(task))
 
         for task in workflow.tasks:
-            for upstream in task.depends_on:
+            for upstream in task.depends_on or []:
                 lines.append(f'{TAB}tasks["{upstream}"] >> tasks["{task.id}"]')
 
         lines.append("\n")

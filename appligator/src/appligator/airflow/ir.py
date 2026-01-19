@@ -59,7 +59,7 @@ def workflow_to_ir(
             func_qualname=main_step.function.__qualname__,
             image=image_name,
             inputs={name: f"param:{name}" for name in params},
-            outputs=list(main_step.description.outputs.keys()),
+            outputs=list((main_step.description.outputs or {}).keys()),
             depends_on=[],
         )
     )
@@ -94,13 +94,13 @@ def workflow_to_ir(
                 func_qualname=step.function.__qualname__,
                 image=image_name,
                 inputs=inputs,
-                outputs=list(step.description.outputs.keys()),
+                outputs=list((step.description.outputs or {}).keys()),
                 depends_on=sorted(set(depends_on)),
             )
         )
 
     all_task_ids = {t.id for t in tasks}
-    upstream_tasks = {d for t in tasks for d in t.depends_on}
+    upstream_tasks = {d for t in tasks for d in t.depends_on or []}
     leaf_tasks = all_task_ids - upstream_tasks
 
     if len(leaf_tasks) != 1:

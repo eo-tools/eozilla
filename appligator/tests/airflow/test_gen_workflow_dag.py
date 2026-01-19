@@ -165,6 +165,6 @@ def test_generate_airflow_dag_fails_on_invalid_registry():
     with pytest.raises(TypeError, match="unexpected type for registry: int"):
         gen_workflow_dag(
             dag_id="bad_registry",
-            registry=123,
+            registry=123, # type: ignore[arg-type]
             image="x",
         )

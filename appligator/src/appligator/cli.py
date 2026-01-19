@@ -32,7 +32,7 @@ def main(
         typer.Option(..., help="An Airflow DAGs folder to which to write the outputs."),
     ] = DEFAULT_DAGS_FOLDER,
     image_name: Annotated[
-        str | None,
+        str,
         typer.Option(
             ...,
             help="Name of the Docker image which is created from "

@@ -42,10 +42,10 @@ class TaskIR(BaseModel):
     env: dict[str, str] | None = None
 
     # Data flow
-    inputs: dict[str, str]
+    inputs: dict[str, str] = Field(default_factory=dict)
     outputs: list[str] = Field(default_factory=list)
 
-    depends_on: list[str] = None
+    depends_on: list[str] | None = None
 
 
 class WorkflowIR(BaseModel):
