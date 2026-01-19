@@ -16,13 +16,14 @@ def resolve_function(module_name: str, qualname: str):
         obj = getattr(obj, attr)
     return obj
 
-def main(*,
+
+def main(
+    *,
     func_module: str,
     func_qualname: str,
     inputs: dict[str, Any],
     output_keys: list[str] | None = None,
-         ):
-
+):
     func = resolve_function(func_module, func_qualname)
 
     result = func(**inputs)

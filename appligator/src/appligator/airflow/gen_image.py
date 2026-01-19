@@ -6,7 +6,7 @@ from pathlib import Path
 
 from procodile import WorkflowStepRegistry
 
-EOZILLA_PACKAGES = ("procodile", "wraptile", "gavicore")
+EOZILLA_PACKAGES = ("procodile", "wraptile", "gavicore", "appligator")
 
 
 def gen_image(

@@ -94,7 +94,6 @@ def main(
             dag_id=process_id,
             registry=registry.get_workflow(process_id).registry,
             image=image_name,
-            output_dir=dags_folder,
         )
         dag_file = dags_folder / f"{process_id}.py"
         with dag_file.open("w") as stream:
