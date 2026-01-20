@@ -45,7 +45,7 @@ def main(
         json.dump(output, f)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":   # pragma: no cover
     import sys
 
     payload = json.loads(sys.argv[1])
