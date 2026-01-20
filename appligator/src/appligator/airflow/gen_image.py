@@ -8,7 +8,6 @@ from procodile import WorkflowStepRegistry
 
 EOZILLA_PACKAGES = ("procodile", "wraptile", "gavicore", "appligator")
 
-
 def gen_image(
     registry: WorkflowStepRegistry,
     *,
@@ -16,6 +15,26 @@ def gen_image(
     use_local_packages: bool = False,
     output_dir: Path = Path("image"),
 ) -> str:
+    """
+    NOTE:
+    This function is a temporary convenience used to quickly produce a Docker image
+    for development and testing purposes.
+
+    For production or real-world applications, you should build and manage your
+    Docker images yourself. Ensure that the image includes all required runtime
+    dependencies, including (but not limited to):
+
+    - procodile
+    - gavicore
+    - appligator
+    - wraptile
+    - run_step.py
+    - Your own Python package(s) required for the workflow definitions
+    - Your workflow definition file(s)
+
+    This helper is expected to evolve or be replaced in future versions.
+    """
+
     if output_dir.exists():
         shutil.rmtree(output_dir)
 

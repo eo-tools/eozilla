@@ -86,6 +86,7 @@ def main(
     dags_folder.mkdir(exist_ok=True)
 
     for process_id, process in registry.items():
+        # TODO: implement this better later
         image_name = gen_image(
             registry.get_workflow(process_id).registry,
             image_name=image_name,
