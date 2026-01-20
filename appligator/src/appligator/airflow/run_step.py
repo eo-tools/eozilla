@@ -36,8 +36,12 @@ def main(
     else:
         output = {"return_value": result}
 
-    os.makedirs("/airflow/xcom", exist_ok=True)
-    with open("/airflow/xcom/return.json", "w") as f:
+    # using env variables to allow for easy testing.
+    XCOM_DIR = os.environ.get("AIRFLOW_XCOM_DIR", "/airflow/xcom")
+    XCOM_FILE = os.path.join(XCOM_DIR, "return.json")
+
+    os.makedirs(XCOM_DIR, exist_ok=True)
+    with open(XCOM_FILE, "w") as f:
         json.dump(output, f)
 
 

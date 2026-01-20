@@ -3,7 +3,7 @@ import unittest
 from appligator.airflow.ir import workflow_to_ir
 from gavicore.models import Field
 from procodile import Workflow
-from procodile.workflow import FINAL_STEP_ID, FromMain
+from procodile.workflow import FINAL_STEP_ID, FromMain, FromStep
 
 
 class TestWorkflowToIR(unittest.TestCase):
@@ -114,3 +114,75 @@ class TestWorkflowToIR(unittest.TestCase):
         }
 
         self.assertEqual(ir.model_dump(), expected)
+
+    def test_multiple_params_extracted(self):
+        wf = Workflow(id="wf2")
+
+        @wf.main(
+            id="main",
+            inputs={
+                "x": Field(default=1),
+                "y": Field(default=2, title="second field"),
+            },
+            outputs={"out": Field()},
+        )
+        def main(x: int, y: int) -> int:
+            return x + y
+
+        ir = workflow_to_ir(wf.registry, "wf2")
+
+        self.assertEqual(set(ir.params.keys()), {"x", "y"})
+        self.assertEqual(ir.params["x"]["default"], 1)
+        self.assertEqual(ir.params["y"]["default"], 2)
+        self.assertEqual(ir.params["y"]["title"], "second field")
+
+    def test_default_output_key_used(self):
+        wf = Workflow(id="wf")
+
+        @wf.main(
+            id="main",
+            inputs={"x": Field(default=1)},
+        )
+        def main(x: int) -> int:
+            return x
+
+        ir = workflow_to_ir(wf.registry, "wf")
+
+        main_ir = next(t for t in ir.tasks if t.id == "main")
+        self.assertEqual(main_ir.outputs, ["return_value"])
+
+    def test_step_to_step_dependency(self):
+        wf = Workflow(id="wf")
+
+        @wf.main(
+            id="main",
+            inputs={"x": Field(default=1)},
+            outputs={"out": Field()},
+        )
+        def main(x: int) -> int:
+            return x
+
+        @wf.step(
+            id="step1",
+            inputs={"y": FromMain(output="out")},
+            outputs={"z": Field()},
+        )
+        def step1(y: int) -> int:
+            return y
+
+        @wf.step(
+            id="step2",
+            inputs={"w": FromStep(step_id="step1", output="z")},
+        )
+        def step2(w: int) -> int:
+            return w
+
+        ir = workflow_to_ir(wf.registry, "wf")
+
+        step2 = next(t for t in ir.tasks if t.id == "step2")
+
+        self.assertEqual(
+            step2.inputs,
+            {"w": "xcom:step1:z"},
+        )
+        self.assertEqual(step2.depends_on, ["step1"])

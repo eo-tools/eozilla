@@ -413,3 +413,9 @@ cmd = "mkdocs serve"
 
 [tool.pixi.tasks.docs-build]
 cmd = "mkdocs build"
+
+
+[tool.coverage.run]
+omit = [
+    'appligator/airflow/gen_image.py'
+]
