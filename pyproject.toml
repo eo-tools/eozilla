@@ -416,6 +416,7 @@ cmd = "mkdocs build"
 
 
 [tool.coverage.run]
+# TODO: remove this when `gen_image` is implemented
 omit = [
-    'appligator/airflow/gen_image.py'
+    'appligator/src/appligator/airflow/gen_image.py'
 ]
