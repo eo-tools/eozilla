@@ -152,7 +152,7 @@ class TestWorkflowToIR(unittest.TestCase):
         self.assertEqual(main_ir.outputs, ["return_value"])
 
     def test_step_to_step_dependency(self):
-        wf = Workflow(id="wf")
+        wf = Workflow(id="wf2")
 
         @wf.main(
             id="main",
@@ -174,7 +174,7 @@ class TestWorkflowToIR(unittest.TestCase):
             id="step2",
             inputs={"w": FromStep(step_id="step1", output="z")},
         )
-        def step2(w: int) -> int:
+        def step_2(w: int) -> int:
             return w
 
         ir = workflow_to_ir(wf.registry, "wf")

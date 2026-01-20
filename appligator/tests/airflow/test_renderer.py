@@ -1,14 +1,14 @@
 import unittest
 
 from appligator.airflow.handlers.base_handler import OperatorHandler
+from appligator.airflow.models import TaskIR, WorkflowIR
 from appligator.airflow.renderer import (
     AirflowRenderer,
-    render_header,
     render_dag_open,
     render_dag_params,
+    render_header,
     render_task_inputs,
 )
-from appligator.airflow.models import WorkflowIR, TaskIR
 
 
 class TestRenderHeader(unittest.TestCase):

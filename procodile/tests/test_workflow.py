@@ -8,7 +8,7 @@ from procodile import (
     WorkflowRegistry,
     WorkflowStepRegistry,
 )
-from procodile.workflow import extract_dependency, FINAL_STEP_ID
+from procodile.workflow import FINAL_STEP_ID, extract_dependency
 
 
 class TestDependencyHelpers(unittest.TestCase):

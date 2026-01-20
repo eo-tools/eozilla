@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import tempfile
 import types
 import unittest
@@ -22,7 +23,6 @@ def make_test_module():
     return mod
 
 
-import sys
 
 sys.modules["test_module"] = make_test_module()
 

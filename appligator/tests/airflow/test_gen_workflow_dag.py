@@ -169,10 +169,7 @@ def test_generate_airflow_dag_fails_on_invalid_registry():
             image="x",
         )
 
+
 def test_generate_airflow_dag_fails_on_no_image():
     with pytest.raises(ValueError, match="Image name is required to generate dag."):
-        gen_workflow_dag(
-            dag_id="bad_registry",
-            registry=wf.registry,
-            image=None
-        )
+        gen_workflow_dag(dag_id="bad_registry", registry=wf.registry, image=None)
