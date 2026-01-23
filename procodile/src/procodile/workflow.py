@@ -11,11 +11,37 @@ from .process import Process
 
 
 class FromMainDependency(TypedDict):
+    """
+    Dependency specification indicating that a step input
+    should be sourced from the workflow's main step's output.
+
+    Attributes:
+        type:
+            Discriminator identifying this dependency as originating
+            from the main step. Always the literal string ``"from_main"``.
+        output:
+            The name of the output exposed by the main step that should
+            be used as the input value.
+    """
     type: Literal["from_main"]
     output: str
 
 
 class FromStepDependency(TypedDict):
+    """
+    Dependency specification indicating that a step input
+    should be sourced from another step's output in the workflow.
+
+    Attributes:
+        type:
+            Discriminator identifying this dependency as originating
+            from another step. Always the literal string ``"from_step"``.
+        step_id:
+            The identifier of the upstream step whose output is required.
+        output:
+            The name of the output produced by the upstream step that
+            should be used as the input value.
+    """
     type: Literal["from_step"]
     step_id: str
     output: str
@@ -24,14 +50,37 @@ class FromStepDependency(TypedDict):
 DependencySpec = FromMainDependency | FromStepDependency
 
 FINAL_STEP_ID = "final_step"
-
+"""
+A step identifier representing the internal final node
+in the workflow graph. The real leaf step is connected to
+this node during graph construction.
+"""
 
 class StepEntry(TypedDict):
+    """
+    Registry entry representing a workflow step and its dependencies.
+
+    Attributes:
+        step:
+            The ``Process`` object representing the executable step with metadata as
+            per OGC Processes Part 1.
+        dependencies:
+            A mapping from parameter names to dependency specifications
+            describing how each input value is resolved.
+    """
     step: Process
     dependencies: dict[str, DependencySpec]
 
 
 class FromMain:
+    """
+    Annotation helper indicating that a function parameter
+    should be populated from the main step's output.
+
+    This is intended for use with ``typing.Annotated`` in
+    workflow step function signatures and/or WorkflowStepRegistry decorators.
+    """
+
     def __init__(self, output: str):
         self.output = output
 
@@ -40,6 +89,13 @@ class FromMain:
 
 
 class FromStep:
+    """
+    Annotation helper indicating that a function parameter
+    should be populated from the output of another step.
+
+    This is intended for use with ``typing.Annotated`` in
+    workflow step function signatures and/or WorkflowStepRegistry decorators.
+    """
     def __init__(self, step_id: str, output: str):
         self.step_id = step_id
         self.output = output
