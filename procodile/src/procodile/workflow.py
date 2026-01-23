@@ -407,7 +407,7 @@ class Workflow:
 
     def step(self, fn=None, /, **kwargs):
         """Register a workflow step."""
-        
+
         if fn is None:
             return lambda f: self.registry.register_step(f, **kwargs)
         return self.registry.register_step(fn, **kwargs)

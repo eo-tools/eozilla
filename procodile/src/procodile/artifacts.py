@@ -3,10 +3,20 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 NormalizedOutputs = dict[str, Any]
-
+"""
+Normalized mapping of output names to resolved values produced by a step 
+execution in a workflow.
+"""
 
 @dataclass(frozen=True)
 class ArtifactRef:
+    """
+    Lightweight reference to an externally stored artifact.
+
+    An ``ArtifactRef`` is returned when a value is materialized by an
+    ArtifactStore and can later be resolved back into the original object.
+    """
+
     path: str
     loader: str
 
@@ -96,6 +106,12 @@ class NullArtifactStore(ArtifactStore):
 
 
 class ExecutionContext:
+    """
+    Holds execution-time state for a workflow run.
+
+    The execution context stores resolved outputs from the main step and
+    individual steps, manages artifact materialization, and normalizes outputs.
+    """
     def __init__(self, store: ArtifactStore) -> None:
         self.store = store
         self.main: dict[str, Any] = {}
