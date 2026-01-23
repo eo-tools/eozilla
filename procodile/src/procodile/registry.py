@@ -46,7 +46,7 @@ class WorkflowRegistry(Mapping[str, Process]):
     def _as_process(workflow: Workflow) -> Process:
         """This is the facade process object that is returned when the client wants
         to see what processes are available and is also used to run the actual
-        workflow"""
+        workflow."""
 
         # Exactly one main is required
         if len(workflow.registry.main) != 1:
