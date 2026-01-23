@@ -6,6 +6,7 @@ import xarray as xr
 
 from procodile import ArtifactRef, ArtifactStore, ExecutionContext
 from procodile.artifacts import NullArtifactStore
+
 from .utils import DummyArtifactStore
 
 

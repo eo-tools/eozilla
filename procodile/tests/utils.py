@@ -45,4 +45,3 @@ class DummyArtifactStore(ArtifactStore):
             raise FileNotFoundError(f"Artifact not found: {path}")
 
         return xr.open_zarr(path)
-

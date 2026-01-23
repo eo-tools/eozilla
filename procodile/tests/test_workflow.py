@@ -3,14 +3,15 @@ import unittest
 from typing import Annotated
 
 from procodile import (
+    ExecutionContext,
     FromMain,
     FromStep,
     Process,
     WorkflowRegistry,
     WorkflowStepRegistry,
-    ExecutionContext,
 )
-from procodile.workflow import extract_dependency, Workflow, FINAL_STEP_ID
+from procodile.workflow import FINAL_STEP_ID, Workflow, extract_dependency
+
 from .utils import DummyArtifactStore
 
 
@@ -118,7 +119,7 @@ class TestDependencyGraph(unittest.TestCase):
         def step2(y: Annotated[int, FromStep("step1", "return_value")]) -> int:
             return y
 
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(ValueError):
             self.workflow.execution_order
 
     def test_invalid_output_from_step_raises(self):
@@ -134,7 +135,7 @@ class TestDependencyGraph(unittest.TestCase):
         def step2(y: Annotated[int, FromStep("step1", "missing_output")]) -> int:
             return y
 
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(ValueError):
             self.workflow.execution_order
 
     def test_invalid_dependency_type_raises(self):
@@ -153,7 +154,7 @@ class TestDependencyGraph(unittest.TestCase):
             }
         }
 
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(ValueError):
             self.workflow.execution_order
 
     def test_multiple_leaf_nodes_raises(self):
@@ -359,42 +360,50 @@ class TestWorkflowEndToEnd(unittest.TestCase):
 
     def test_raises_error_when_outputs_defined_both_decorator_annotations(self):
         with self.assertRaises(ValueError):
+
             @self.workflow.main(outputs={"out": None})
             def main(a: int, b: int) -> Annotated[int, {"out": None}]:
                 return a + b
 
     def test_raises_error_when_outputs_invalid_type(self):
         with self.assertRaises(AssertionError):
+
             @self.workflow.main(outputs=["output1", "output2"])
             def main(a: int, b: int) -> tuple[int, int]:
                 return a, b
 
         with self.assertRaises(AssertionError):
+
             @self.workflow.main()
-            def main(a: int, b: int) -> Annotated[tuple[int, int], "output1", "output2"]:
+            def main(
+                a: int, b: int
+            ) -> Annotated[tuple[int, int], "output1", "output2"]:
                 return a, b
 
         with self.assertRaises(AssertionError):
+
             @self.workflow.main()
             def main(a: int, b: int) -> Annotated[tuple[int, int], 1, 3]:
                 return a, b
 
     def test_raises_error_when_outputs_invalid_type_with_single_element(self):
         with self.assertRaises(ValueError):
+
             @self.workflow.main(outputs=["output1"])
             def main(a: int, b: int) -> int:
                 return a + b
 
         with self.assertRaises(ValueError):
+
             @self.workflow.main()
             def main(a: int, b: int) -> Annotated[tuple[int, int], "output1"]:
                 return a, b
 
         with self.assertRaises(ValueError):
+
             @self.workflow.main()
             def main(a: int, b: int) -> Annotated[tuple[int, int], 1]:
                 return a, b
-
 
 
 class TestWorkflowStepRegistry(unittest.TestCase):
@@ -445,7 +454,6 @@ class TestWorkflowStepRegistry(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.registry.register_step(step1, id="step1")
-
 
     def test_dependency_from_main_via_annotated(self):
         def step1(x: Annotated[int, FromMain("a")]) -> int:
@@ -616,9 +624,9 @@ class TestWorkflowStepRegistry(unittest.TestCase):
         store = DummyArtifactStore(store_kwargs={"root": tmpdir})
         ctx = ExecutionContext(store)
         ctx.steps = {
-                "step1": {"x": 1},
-                "step2": {"y": 2},
-            }
+            "step1": {"x": 1},
+            "step2": {"y": 2},
+        }
 
         graph = {
             "step1": [FINAL_STEP_ID],
@@ -643,6 +651,7 @@ class TestWorkflowStepRegistry(unittest.TestCase):
             Workflow._collect_final_outputs(ctx, graph)
 
         self.assertIn("no outputs were produced", str(cm.exception))
+
 
 class DummyExecutionContext:
     def __init__(self, steps=None, main=None):
