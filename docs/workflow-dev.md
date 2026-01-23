@@ -14,7 +14,7 @@ From an OGC API – Processes (Part 3 draft) perspective:
 - Outputs from one step may be consumed as inputs by another step
 
 Workflows allow complex execution graphs to be expressed declaratively while
-remaining compliant with the process model.
+remaining compliant with the OGC process model.
 
 Each step in a workflow (main or any steps) is a OGC API Part 1 [Process](https://eo-tools.github.io/eozilla/process-dev/#procodile.Process)
 
@@ -73,7 +73,7 @@ The framework is the inverse authoring model of nested processes
 
 Future support for nested execution requests can be added without changing the internal model
 
-### Why Workflows Are Exposed as Processes
+### Why Workflows are exposed as Processes
 
 OGC API – Processes is fundamentally process-centric:
 
@@ -164,8 +164,9 @@ def second_step(id: str) -> str:
 
 ## Declaring Dependencies
 
-Dependencies are declared using `typing.Annotated` in type declaration of 
-your input arguments or `pydantic.Field` in the decorator.
+Dependencies are either declared 
+- using `typing.Annotated` in type annotations of your function argument declarations or 
+- using `pydantic.Field` in the decorator's `inputs` and `outputs` values.
 
 ### From the Main Step
 

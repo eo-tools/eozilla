@@ -23,8 +23,9 @@ Currently, `procodile` comprises just a few handy top-level components:
   of **one or more Python functions** with explicitly defined dependencies. 
   Internally, these functions are represented as **`Process`** objects and 
   orchestrated according to their dependency graph. 
-  From the API consumer’s perspective, **each workflow is exposed as a single
- `Process`**, abstracting away the internal execution of individual steps.
+  From the perspective of a Python API user, each workflow is represented as a
+ `Process`, abstracting away the implementation details of a workflow and its
+ step execution dependencies.
 * [class `ExcecutionRequest`][gavicore.util.request.ExecutionRequest] - used to 
   programmatically execute your processes from Python code, for example in 
   a unit test or in a custom application.  
@@ -48,9 +49,14 @@ The steps are explained in more detail in the following.
 ### 1. Populate workflow registry
 
 First, you'll create a workflow registry object of type `WorkflowRegistry`.
-Then create a workflow from that registry and then use the workflow's `main` 
-and `step` decorator to register your Python functions as workflow(s)
-that should be exposed as processes. In `my_app/workflows.py`:
+For each process you plan to expose you implement a workflow
+that comprises a single or multiple Python functions:
+- For the workflow entry point you write a function using the 
+   workflow `@registry.main` decorator. This will register the workflow
+   as an exposed process.
+- For individual workflow steps you write functions using the
+   workflow `@registry.step` decorator. This will register the step in
+   the workflow.
 
 Please see ![Workflows](workflow-dev.md#creating-a-workflow) documentation to learn more about it.
 
@@ -63,7 +69,7 @@ Process inputs, such as the arguments `path` or `factor` above,
 can be further specified by 
 [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/) annotations.
 Field annotations for an argument can be provided via the `inputs` dictionary 
-passed  to the [`main`][procodile.Workflow.main] or [`step`][procodile.Workflow.step] decorator, 
+passed to the [`main`][procodile.Workflow.main] and [`step`][procodile.Workflow.step] decorators, 
 or preferably as part of the type declaration using the Python `Annotated` 
 special form. An example for the latter is
 `factor: Annotated[float, Field(title="Scaling factor", gt=0., le=10.)] = 1.0`.
