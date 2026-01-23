@@ -518,7 +518,7 @@ class DependencyGraph:
 
         if len(real_leaves) != 1:
             raise ValueError(
-                f"Workflow must have exactly ONE leaf task, "
+                f"A workflow must have one leaf task, but "
                 f"found {len(real_leaves)}: {sorted(real_leaves)}"
             )
 
