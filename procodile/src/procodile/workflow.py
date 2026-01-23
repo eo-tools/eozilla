@@ -245,6 +245,13 @@ class Workflow:
     def execution_order(
         self,
     ) -> tuple[list[str], defaultdict[str, set[str]]]:
+        """
+        Compute and return the workflow execution order.
+
+        This property lazily constructs the dependency graph and performs a
+        topological sort to determine the order in which workflow steps must be
+        executed.
+        """
         if not self.graph:
             self.graph = self._get_graph()
 
@@ -255,6 +262,8 @@ class Workflow:
         return DependencyGraph(self.registry.main, self.registry.steps)
 
     def visualize_workflow(self) -> str:
+        """Generate a Graphviz DOT representation of the workflow."""
+
         _, deps = self.execution_order
         lines = ["digraph pipeline {", "rankdir=LR;"]
         for node in deps:
@@ -266,6 +275,28 @@ class Workflow:
         return "\n".join(lines)
 
     def run(self, **function_kwargs):
+        """
+        Execute the workflow.
+
+        This method:
+        - Executes the main step first using user-provided inputs.
+        - Executes each step in topological order.
+        - Normalizes and stores step outputs.
+        - Resolves inputs to the steps.
+        - Collects and returns the final workflow outputs.
+
+        Args:
+            **function_kwargs:
+                Input arguments passed to the workflow's main step.
+
+        Returns:
+            A dictionary of outputs produced by the workflow's final step.
+
+        Raises:
+            ValueError:
+                If required inputs for a step are missing.
+        """
+
         ctx = ExecutionContext(self.artifact_store)
 
         order, graph = self.execution_order
@@ -368,17 +399,26 @@ class Workflow:
         return final_inputs
 
     def main(self, fn=None, /, **kwargs):
+        """Register the workflow's main step."""
+
         if fn is None:
             return lambda f: self.registry.register_main(f, **kwargs)
         return self.registry.register_main(fn, **kwargs)
 
     def step(self, fn=None, /, **kwargs):
+        """Register a workflow step."""
+        
         if fn is None:
             return lambda f: self.registry.register_step(f, **kwargs)
         return self.registry.register_step(fn, **kwargs)
 
 
 class DependencyGraph:
+    """
+    Responsible for constructing and validating the dependency graph
+    of a workflow and producing a valid execution order.
+    """
+
     def __init__(self, main: dict[str, Process], steps: dict[str, StepEntry]):
         self.main = main
         self.steps = steps
@@ -386,6 +426,31 @@ class DependencyGraph:
     def build_dependency_graph(
         self,
     ) -> tuple[defaultdict[str, set], defaultdict[str, int]]:
+        """
+        Construct and validate the workflow dependency graph.
+
+         This method:
+        - Validates all dependency specifications.
+        - Builds a directed graph of step dependencies.
+        - Computes in-degrees for topological sorting.
+        - Enforces the invariant that exactly one real leaf step exists.
+        - Connects the single leaf step to the implicit FINAL_STEP_ID.
+
+        Returns:
+            A tuple containing:
+            - graph: A directed adjacency list mapping each step ID to the
+                set of steps that depend on it.
+            - in_degree: A mapping from step ID to its incoming edge count.
+
+        Raises:
+            ValueError:
+                If the workflow violates any structural invariant, including:
+                - Multiple main step
+                - Multiple leaf steps
+                - Missing or invalid dependency references
+                - Invalid dependency types
+        """
+
         graph: defaultdict[str, set[str]] = defaultdict(set)
         in_degree = defaultdict(int)
 
@@ -468,6 +533,28 @@ class DependencyGraph:
     def topological_sort(
         self,
     ) -> tuple[list[str], defaultdict[str, set[str]]]:
+        """
+        Compute a topological execution order for the workflow.
+
+        This method:
+        - Builds the dependency graph.
+        - Performs Kahn's algorithm for topological sorting.
+        - Detects cycles in the dependency graph.
+
+        Returns:
+            A tuple containing:
+            - order:
+                A list of step identifiers in valid execution order.
+            - graph:
+                The validated dependency graph that maps each step ID to the
+                set of steps that depend on it.
+
+        Raises:
+            ValueError:
+                If the workflow contains a cycle and therefore cannot
+                be executed in a valid order.
+        """
+
         graph, in_degree = self.build_dependency_graph()
 
         queue = deque(node for node, degree in in_degree.items() if degree == 0)
@@ -491,6 +578,12 @@ class DependencyGraph:
 
 
 def unwrap_annotated(annotation):
+    """
+    Unwrap a ``typing.Annotated`` type into its base annotation and metadata.
+
+    This helper separates the primary type annotation from any attached
+    metadata objects provided via ``typing.Annotated``.
+    """
     if get_origin(annotation) is Annotated:
         args = get_args(annotation)
         return args[0], list(args[1:])
@@ -501,7 +594,10 @@ def extract_dependency(
     annotation: Any,
 ) -> FromMainDependency | FromStepDependency | None:
     """
-    Extract FromMain / FromStep metadata from Annotated types.
+    Extract a dependency specification from an annotated parameter type.
+
+    This function inspects ``typing.Annotated`` metadata and returns the
+    first supported dependency marker found (``FromMain`` or ``FromStep``).
     """
     if annotation is None:
         return None
