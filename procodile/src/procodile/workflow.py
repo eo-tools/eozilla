@@ -70,6 +70,12 @@ class WorkflowStepRegistry:
         self.steps: dict[str, StepEntry] = {}
 
     def register_main(self, fn: Callable, **kwargs) -> Callable:
+        signature = inspect.signature(fn)
+        outputs = WorkflowStepRegistry._extract_and_merge_outputs(signature, kwargs)
+
+        if outputs:
+            kwargs["outputs"] = outputs
+
         main_process = Process.create(fn, **kwargs)
         self.main[main_process.description.id] = main_process
         return fn
@@ -100,12 +106,60 @@ class WorkflowStepRegistry:
                     dependencies[name] = value.to_dict()
                 else:
                     raise ValueError(
-                        f"Invalid dependency metadata for input '{name}': {meta!r}"
+                        f"Invalid dependency metadata for input '{name}': {value!r}"
                     )
+
+        outputs = WorkflowStepRegistry._extract_and_merge_outputs(signature, kwargs)
+
+        if outputs:
+            kwargs["outputs"] = outputs
 
         step = Process.create(fn, **kwargs)
         self.steps[step.description.id] = {"step": step, "dependencies": dependencies}
         return fn
+
+    @staticmethod
+    def _extract_and_merge_outputs(
+        signature: inspect.Signature,
+        kwargs: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """Extract outputs from Annotated return type or decorator kwargs."""
+
+        return_type, return_metadata = unwrap_annotated(signature.return_annotation)
+
+        outputs_from_annotation = None
+
+        if return_metadata:
+            assert len(return_metadata) == 1, (
+                f"Only one return obj expected, got {len(return_metadata)}"
+            )
+
+            meta = return_metadata[0]
+            if not isinstance(meta, dict):
+                raise ValueError(
+                    f"Invalid output metadata type, expected dict got: {type(meta)}"
+                )
+            outputs_from_annotation = meta
+
+        outputs_from_kwargs = kwargs.pop("outputs", None)
+
+        if outputs_from_kwargs:
+            assert len(outputs_from_kwargs) == 1, (
+                f"Only one object expected, got {len(return_metadata)}"
+            )
+
+            if not isinstance(outputs_from_kwargs, dict):
+                raise ValueError(
+                    f"Invalid output metadata type, expected dict got: {type(outputs_from_kwargs)}"
+                )
+
+        if outputs_from_annotation and outputs_from_kwargs:
+            raise ValueError(
+                "Outputs may be defined either in the return annotation "
+                "or in the decorator, but not both."
+            )
+
+        return outputs_from_kwargs or outputs_from_annotation
 
 
 class Workflow:
@@ -204,12 +258,8 @@ class Workflow:
                 if dep is not None:
                     if dep["type"] == "from_main":
                         raw = ctx.main[dep["output"]]
-
-                    elif dep["type"] == "from_step":
-                        raw = ctx.steps[dep["step_id"]][dep["output"]]
-
                     else:
-                        raise ValueError(f"Unknown dependency type: {dep}")
+                        raw = ctx.steps[dep["step_id"]][dep["output"]]
 
                 else:
                     if param.default is not inspect.Parameter.empty:
@@ -256,7 +306,7 @@ class Workflow:
             else:
                 step_outputs = ctx.main
 
-            if step_outputs is None:
+            if step_outputs is None or step_outputs == {}:
                 raise RuntimeError(
                     f"Final step depends on '{step_id}', but no outputs were produced"
                 )
@@ -368,16 +418,6 @@ class DependencyGraph:
     ) -> tuple[list[str], defaultdict[str, set[str]]]:
         graph, in_degree = self.build_dependency_graph()
 
-        nodes = set(in_degree.keys())
-        non_leaves = set(graph.keys())
-        leaves = nodes - non_leaves
-
-        if len(leaves) != 1:
-            raise ValueError(
-                f"Workflow must have exactly ONE leaf task, "
-                f"found {len(leaves)}: {sorted(leaves)}"
-            )
-
         queue = deque(node for node, degree in in_degree.items() if degree == 0)
 
         order: list[str] = []
@@ -394,9 +434,6 @@ class DependencyGraph:
         if len(order) != len(in_degree):
             remaining = [node for node, degree in in_degree.items() if degree > 0]
             raise ValueError(f"Workflow contains a cycle involving: {remaining}")
-
-        if order[-1] != FINAL_STEP_ID:
-            raise AssertionError(f"{FINAL_STEP_ID} must be the last step, got {order}")
 
         return order, graph
 

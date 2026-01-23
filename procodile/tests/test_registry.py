@@ -3,7 +3,8 @@
 #  https://opensource.org/license/apache-2-0.
 import unittest
 
-from procodile import FromMain, Process, Workflow, WorkflowRegistry
+from procodile import FromMain, Process, Workflow, WorkflowRegistry, \
+    WorkflowStepRegistry
 
 from .test_process import f1, f2, f3, f4, f4_fail_ctx
 
@@ -27,6 +28,9 @@ class TestWorkflowRegistry(unittest.TestCase):
         )
         def second_step(id: str) -> str:
             return id
+
+        self.first_step = first_step
+        self.second_step = second_step
 
     def test_get_or_create_workflow(self):
         registry = WorkflowRegistry()
@@ -55,6 +59,21 @@ class TestWorkflowRegistry(unittest.TestCase):
 
         self.assertIsInstance(proc, Process)
         self.assertIsNone(missing)
+
+    def test_get_workflows(self):
+        wfs = self.registry.workflows()
+
+        self.assertIsInstance(wfs, dict)
+        self.assertEqual(next(iter(wfs.keys())), "first_workflow")
+        self.assertIsInstance(next(iter(wfs.values())).registry, WorkflowStepRegistry)
+        self.assertIsInstance(next(iter(wfs.values())).registry.main["first_step"],
+                         Process)
+        self.assertIsInstance(
+            next(iter(wfs.values())).registry.steps["second_step"]["step"], Process
+        )
+        self.assertEqual(
+            next(iter(wfs.values())).registry.steps["second_step"]["dependencies"], {'id': {'output': 'a', 'type': 'from_main'}}
+        )
 
     def test_iteration_yields_keys(self):
         keys = list(self.registry)

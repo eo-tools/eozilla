@@ -33,7 +33,7 @@ class ArtifactStore(ABC):
             True if the object is considered large and should be stored
             via this store, False otherwise.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def save(self, obj: Any) -> ArtifactRef:
@@ -49,7 +49,7 @@ class ArtifactStore(ABC):
         Raises:
             TypeError: If the object type is not supported by the implementation.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def load(self, ref: ArtifactRef) -> Any:
@@ -65,7 +65,7 @@ class ArtifactStore(ABC):
         Raises:
             ValueError: If the loader specified in the reference is unknown.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
 
 class NullArtifactStore(ArtifactStore):

@@ -48,7 +48,7 @@ def new_cli(
     context: dict[str, Any] | None = None,
 ) -> typer.Typer:
     """
-    Get the CLI instance configured to use the process registry
+    Get the CLI instance configured to use the workflow registry
     that is given either by
 
     - a reference of the form "path.to.module:attribute",
@@ -232,14 +232,8 @@ def _parse_workflow_registry_getter(
             from procodile import WorkflowRegistry
 
             registry = import_value(
-                workflow_registry, name="process registry", type=object
+                workflow_registry, name="workflow registry", type=WorkflowRegistry
             )
-
-            if not isinstance(registry, WorkflowRegistry):
-                raise TypeError(
-                    "The process registry must be a WorkflowRegistry, "
-                    f"got {type(registry).__name__}."
-                )
 
             return registry
 
