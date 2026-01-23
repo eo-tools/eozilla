@@ -144,10 +144,6 @@ class WorkflowStepRegistry:
         outputs_from_kwargs = kwargs.pop("outputs", None)
 
         if outputs_from_kwargs:
-            assert len(outputs_from_kwargs) == 1, (
-                f"Only one object expected, got {len(return_metadata)}"
-            )
-
             if not isinstance(outputs_from_kwargs, dict):
                 raise ValueError(
                     f"Invalid output metadata type, expected dict got: {type(outputs_from_kwargs)}"

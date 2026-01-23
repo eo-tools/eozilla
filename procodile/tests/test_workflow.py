@@ -366,14 +366,13 @@ class TestWorkflowEndToEnd(unittest.TestCase):
                 return a + b
 
     def test_raises_error_when_outputs_invalid_type(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
 
             @self.workflow.main(outputs=["output1", "output2"])
             def main(a: int, b: int) -> tuple[int, int]:
                 return a, b
 
         with self.assertRaises(AssertionError):
-
             @self.workflow.main()
             def main(
                 a: int, b: int
@@ -386,7 +385,6 @@ class TestWorkflowEndToEnd(unittest.TestCase):
             def main(a: int, b: int) -> Annotated[tuple[int, int], 1, 3]:
                 return a, b
 
-    def test_raises_error_when_outputs_invalid_type_with_single_element(self):
         with self.assertRaises(ValueError):
 
             @self.workflow.main(outputs=["output1"])

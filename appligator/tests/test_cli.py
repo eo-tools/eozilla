@@ -43,7 +43,6 @@ class CliTest(TestCase):
                     tmpdir,
                 ],
             )
-            print(result.output, result)
             self.assertEqual(0, result.exit_code, msg=result.output)
             files = Path(tmpdir).glob("*.py")
             self.assertTrue(len(list(files)) >= 4)
