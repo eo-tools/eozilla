@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by the Eozilla team and contributors
+#  Copyright (c) 2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -209,7 +209,7 @@ class JobsPanel(pn.viewable.Viewer):
                 messages.append(
                     error_format.format(
                         job=job_text,
-                        message=(f"{e}: {e.api_error.detail}"),
+                        message=f"{e}: {e.api_error.detail}",
                     )
                 )
         self._message_md.object = " \n".join(messages)
