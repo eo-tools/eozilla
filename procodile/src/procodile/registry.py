@@ -69,8 +69,9 @@ class ProcessRegistry(Mapping[str, Process]):
 
     # --- Public API ---
 
-    def main(self, fn: Callable | None = None, **kwargs) -> Callable[[Callable],
-    Workflow] | Callable:
+    def main(
+        self, fn: Callable | None = None, **kwargs
+    ) -> Callable[[Callable], Workflow] | Callable:
         def _main(func: Callable) -> Workflow:
             workflow_id = kwargs.get("id", None)
             if workflow_id is None:
@@ -78,6 +79,7 @@ class ProcessRegistry(Mapping[str, Process]):
             workflow = Workflow(func, workflow_id, **kwargs)
             self._workflows[workflow_id] = workflow
             return workflow
+
         if fn is None:
             return _main
         return _main(fn)

@@ -11,7 +11,7 @@ import pydantic
 from pydantic import Field
 
 from gavicore.models import InputDescription, Link, Schema
-from procodile import FromMain, JobContext, additional_parameters, FromStep
+from procodile import FromMain, FromStep, JobContext, additional_parameters
 from wraptile.services.local import LocalService
 
 service = LocalService(
@@ -225,7 +225,6 @@ def return_base_model(
     return scene_spec
 
 
-
 @registry.main(
     id="process_pipeline",
     inputs={"id": Field(title="main input")},
@@ -305,4 +304,3 @@ def store_data(
 ) -> tuple[tuple[str, str], str]:
     print("In process pipeline -> store data")
     return id, second_input
-

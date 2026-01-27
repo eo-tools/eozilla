@@ -8,6 +8,7 @@ Normalized mapping of output names to resolved values produced by a step
 execution in a workflow.
 """
 
+
 @dataclass(frozen=True)
 class ArtifactRef:
     """
@@ -112,6 +113,7 @@ class ExecutionContext:
     The execution context stores resolved outputs from the main step and
     individual steps, manages artifact materialization, and normalizes outputs.
     """
+
     def __init__(self, store: ArtifactStore) -> None:
         self.store = store
         self.main: dict[str, Any] = {}

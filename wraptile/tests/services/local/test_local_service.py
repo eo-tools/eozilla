@@ -33,7 +33,6 @@ class LocalServiceSetupTest(TestCase):
         service = LocalService(title="OGC API - Processes - Test Service")
         registry = service.registry
 
-
         @registry.main(id="foo", version="1.0.1")
         def foo(x: bool, y: int) -> float:
             return 2 * y if x else y / 2

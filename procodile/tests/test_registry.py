@@ -6,8 +6,8 @@ import unittest
 from procodile import (
     FromMain,
     Process,
-    Workflow,
     ProcessRegistry,
+    Workflow,
     WorkflowStepRegistry,
 )
 
@@ -17,6 +17,7 @@ from .test_process import f1, f2, f3, f4, f4_fail_ctx
 class TestWorkflowRegistry(unittest.TestCase):
     def setUp(self):
         self.registry = ProcessRegistry()
+
         @self.registry.main(
             id="first_step",
             inputs={"id": None},
@@ -151,7 +152,9 @@ class TestWorkflowRegistry(unittest.TestCase):
         self.assertIs(p1, registry.get(p1.description.id))
         self.assertIs(p2, registry.get(p2.description.id))
         self.assertIs(p3, registry.get(p3.description.id))
-        self.assertEqual(['tests.test_process:f1', 'f2', 'my_fn3'], list(registry.keys()))
+        self.assertEqual(
+            ["tests.test_process:f1", "f2", "my_fn3"], list(registry.keys())
+        )
 
         # use JobContext
         registry.main(f4, id="func4_with_job_ctx")
@@ -166,7 +169,8 @@ class TestWorkflowRegistry(unittest.TestCase):
         self.assertIs(p3, registry.get(p3.description.id))
         self.assertIs(p4, registry.get(p4.description.id))
         self.assertEqual(
-            ['tests.test_process:f1', 'f2', 'my_fn3', "func4_with_job_ctx"], list(registry.keys())
+            ["tests.test_process:f1", "f2", "my_fn3", "func4_with_job_ctx"],
+            list(registry.keys()),
         )
 
         # use 2 JobContext
@@ -178,6 +182,6 @@ class TestWorkflowRegistry(unittest.TestCase):
             _ = registry["f4_fail_ctx_with_2_job_ctx"]
 
         self.assertEqual(
-            ['tests.test_process:f1', 'f2', 'my_fn3', 'func4_with_job_ctx'],
+            ["tests.test_process:f1", "f2", "my_fn3", "func4_with_job_ctx"],
             list(registry.keys()),
         )
