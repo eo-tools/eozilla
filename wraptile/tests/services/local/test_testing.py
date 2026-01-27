@@ -19,7 +19,7 @@ from wraptile.services.local.testing import service as testing_service
 
 class TestingFunctionsTest(TestCase):
     def setUp(self):
-        self.registry = testing_service.workflow_registry
+        self.registry = testing_service.registry
 
     def test_run_sleep_a_while(self):
         process = self.registry.get("sleep_a_while")
@@ -82,10 +82,10 @@ class TestingFunctionsTest(TestCase):
 
 class TestingWorkflowsTest(TestCase):
     def setUp(self):
-        self.registry = testing_service.workflow_registry
+        self.registry = testing_service.registry
 
     def test_test_workflow(self):
-        process = self.registry.get("test_workflow")
+        process = self.registry.get("process_pipeline")
         self.assertIsInstance(process, Process)
         job = Job.create(process, ProcessRequest(inputs={"id": "hello"}))
         job_results = job.run()
@@ -108,7 +108,7 @@ class TestingServiceTest(IsolatedAsyncioTestCase):
                 "return_base_model",
                 "simulate_scene",
                 "sleep_a_while",
-                "test_workflow",
+                "process_pipeline",
             },
             set(process_dict.keys()),
         )

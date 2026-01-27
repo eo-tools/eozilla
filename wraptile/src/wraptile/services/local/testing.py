@@ -11,23 +11,18 @@ import pydantic
 from pydantic import Field
 
 from gavicore.models import InputDescription, Link, Schema
-from procodile import FromMain, JobContext, WorkflowRegistry, additional_parameters
+from procodile import FromMain, JobContext, additional_parameters, FromStep
 from wraptile.services.local import LocalService
-
-workflow_registry = WorkflowRegistry()
 
 service = LocalService(
     title="Eozilla API Server (local dummy for testing)",
     description="Local test server implementing the OGC API - Processes 1.0 Standard",
-    workflow_registry=workflow_registry,
 )
 
-registry = service.workflow_registry
-
-sleep_a_while_workflow = registry.get_or_create_workflow(id="sleep_a_while")
+registry = service.registry
 
 
-@sleep_a_while_workflow.main(
+@registry.main(
     id="sleep_a_while",
     title="Sleep Processor",
     description=(
@@ -51,10 +46,7 @@ def sleep_a_while(
     return time.time() - t0
 
 
-primes_between_workflow = registry.get_or_create_workflow(id="primes_between")
-
-
-@primes_between_workflow.main(
+@registry.main(
     id="primes_between",
     title="Prime Processor",
     description=(
@@ -100,11 +92,8 @@ def primes_between(
     return [min_val + i for i, prime in enumerate(is_prime) if prime]
 
 
-simulate_scene_workflow = registry.get_or_create_workflow(id="simulate_scene")
-
-
 # noinspection PyArgumentList
-@simulate_scene_workflow.main(
+@registry.main(
     id="simulate_scene",
     title="Generate scene for testing",
     description=(
@@ -226,10 +215,7 @@ class SceneSpec(pydantic.BaseModel):
     # bbox: Optional[Bbox] = None
 
 
-return_base_model_workflow = registry.get_or_create_workflow(id="return_base_model")
-
-
-@return_base_model_workflow.main(
+@registry.main(
     id="return_base_model",
     title="BaseModel Test",
 )
@@ -239,40 +225,84 @@ def return_base_model(
     return scene_spec
 
 
-test_workflow = registry.get_or_create_workflow(id="test_workflow")
 
-
-@test_workflow.main(
-    id="first_step",
-    # inputs={
-    #     "id": Field(title="main input")
-    # },
+@registry.main(
+    id="process_pipeline",
+    inputs={"id": Field(title="main input")},
     outputs={
         "a": Field(title="main result", description="The result of the main step"),
-        "id_for_fifth": Field(
-            title="input for fifth step", description="input for fifth step"
-        ),
     },
-    description=(
-        "This workflow currently just tests the execution orchestration of steps "
-        "defined in it."
-    ),
+    description="This is a workflow with several steps and defined dependencies that "
+    "execute sequentially.",
+    title="A Big Workflow",
 )
-def fun_a(
-    id: Annotated[str, Field(title="main input")] = "hithere",
-    id2: Annotated[str, Field(title="inbput for fifth step")] = "watchadoing",
+def process_pipeline(id: str) -> str:
+    print("In process pipeline first step")
+    return id
+
+
+@process_pipeline.step(
+    id="read_data",
+    inputs={"id": FromMain(output="a")},
+)
+def read_data(id: str) -> str:
+    print("In process pipeline -> read data")
+    return id * 2
+
+
+@process_pipeline.step(
+    id="preprocess_data",
+)
+def preprocess_data(
+    id: Annotated[str, FromStep(step_id="read_data", output="return_value")],
+) -> Annotated[str, {"preprocessed": Field(title="Output from preprocessed Step")}]:
+    print("In process pipeline -> preprocess data")
+    return id * 2
+
+
+@process_pipeline.step(
+    id="feature_engineering",
+    outputs={
+        "some_str": Field(title="Some Str"),
+    },
+)
+def feature_engineering(
+    id: Annotated[str, FromStep(step_id="preprocess_data", output="preprocessed")],
+) -> str:
+    print("In process pipeline -> feature engineering")
+    return id + "hello"
+
+
+@process_pipeline.step(
+    id="resample_data",
+    inputs={"id2": FromMain(output="a")},
+    outputs={
+        "some_other_str": Field(title="Some other Str"),
+    },
+)
+def resample_data(
+    id: Annotated[str, FromStep(step_id="feature_engineering", output="some_str")],
+    id2: str,
 ) -> tuple[str, str]:
-    print("ran from main:::", id, id2)
+    print("In process pipeline -> resample data")
     return id, id2
 
 
-@test_workflow.step(
-    id="second_step",
-    inputs={"id": FromMain(output="a")},
+@process_pipeline.step(
+    id="store_data",
     outputs={
         "final": Field(title="Final output"),
     },
 )
-def fun_b(id: str) -> str:
-    print("ran from second_step:::", id * 2)
-    return id * 2
+def store_data(
+    id: Annotated[
+        tuple[str, str],
+        FromStep(step_id="resample_data", output="some_other_str"),
+    ],
+    second_input: Annotated[
+        str, FromStep(step_id="feature_engineering", output="some_str")
+    ],
+) -> tuple[tuple[str, str], str]:
+    print("In process pipeline -> store data")
+    return id, second_input
+

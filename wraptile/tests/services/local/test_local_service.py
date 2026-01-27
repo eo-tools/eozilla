@@ -31,17 +31,14 @@ from wraptile.services.local import LocalService
 class LocalServiceSetupTest(TestCase):
     def setUp(self):
         service = LocalService(title="OGC API - Processes - Test Service")
-        registry = service.workflow_registry
+        registry = service.registry
 
-        foo_workflow = registry.get_or_create_workflow("foo")
 
-        @foo_workflow.main(id="foo-func", version="1.0.1")
+        @registry.main(id="foo", version="1.0.1")
         def foo(x: bool, y: int) -> float:
             return 2 * y if x else y / 2
 
-        bar_workflow = registry.get_or_create_workflow("bar")
-
-        @bar_workflow.main(id="bar", version="1.4.2")
+        @registry.main(id="bar", version="1.4.2")
         def bar(x: bool, y: int) -> float:
             return 2 * y if x else y / 2
 
@@ -56,7 +53,7 @@ class LocalServiceSetupTest(TestCase):
     def test_server_setup_ok(self):
         service = self.service
 
-        foo_entry = service.workflow_registry.get("foo")
+        foo_entry = service.registry.get("foo")
         self.assertIsInstance(foo_entry, Process)
         self.assertTrue(callable(foo_entry.function))
         foo_process = foo_entry.description
@@ -64,7 +61,7 @@ class LocalServiceSetupTest(TestCase):
         self.assertEqual("foo", foo_process.id)
         self.assertEqual("1.0.1", foo_process.version)
 
-        bar_entry = service.workflow_registry.get("bar")
+        bar_entry = service.registry.get("bar")
         self.assertIsInstance(bar_entry, Process)
         self.assertTrue(callable(bar_entry.function))
         bar_process = bar_entry.description

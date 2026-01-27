@@ -17,10 +17,9 @@ runner = CliRunner()
 class CliTest(TestCase):
     def test_help(self):
         result = runner.invoke(cli, ["--help"])
-        print(result.output)
         self.assertEqual(0, result.exit_code)
         self.assertIn(
-            "Generate various application formats from your processing workflows.",
+            "Generate various application formats from your processes.",
             result.output,
         )
 
@@ -29,7 +28,7 @@ class CliTest(TestCase):
         self.assertEqual(0, result.exit_code)
         self.assertEqual(__version__ + "\n", result.output)
 
-    def test_missing_workflow_registry_spec(self):
+    def test_missing_process_registry_spec(self):
         result = runner.invoke(cli, [])
         self.assertEqual(1, result.exit_code)
 
@@ -38,7 +37,7 @@ class CliTest(TestCase):
             result = runner.invoke(
                 cli,
                 [
-                    "wraptile.services.local.testing:service.workflow_registry",
+                    "wraptile.services.local.testing:service.registry",
                     "--dags-folder",
                     tmpdir,
                 ],

@@ -4,12 +4,13 @@
 import functools
 from collections.abc import Mapping
 from copy import deepcopy
+from typing import Callable
 
 from .process import Process
 from .workflow import Workflow
 
 
-class WorkflowRegistry(Mapping[str, Process]):
+class ProcessRegistry(Mapping[str, Process]):
     """
     A registry for managing and accessing workflows as executable processes.
 
@@ -48,12 +49,6 @@ class WorkflowRegistry(Mapping[str, Process]):
         to see what processes are available and is also used to run the actual
         workflow."""
 
-        # Exactly one main is required
-        if len(workflow.registry.main) != 1:
-            raise ValueError(
-                f"Workflow {workflow.id!r} must have exactly one main process"
-            )
-
         main = next(iter(workflow.registry.main.values()))
 
         projected: Process = deepcopy(main)
@@ -66,19 +61,26 @@ class WorkflowRegistry(Mapping[str, Process]):
             last_step = workflow.registry.steps[last_step_id]["step"]
             projected.description.outputs = last_step.description.outputs
 
-        projected.description.id = workflow.id
+        # Update the function of the Process exposed to be `workflow.run` so
+        # that it executes the main and the steps after that in order.
         projected.function = workflow.run
 
         return projected
 
     # --- Public API ---
 
-    def get_or_create_workflow(self, id: str) -> Workflow:
-        if id in self._workflows:
-            return self._workflows[id]
-        definition = Workflow(id)
-        self._workflows[id] = definition
-        return definition
+    def main(self, fn: Callable | None = None, **kwargs) -> Callable[[Callable],
+    Workflow] | Callable:
+        def _main(func: Callable) -> Workflow:
+            workflow_id = kwargs.get("id", None)
+            if workflow_id is None:
+                workflow_id = f"{func.__module__}:{func.__qualname__}"
+            workflow = Workflow(func, workflow_id, **kwargs)
+            self._workflows[workflow_id] = workflow
+            return workflow
+        if fn is None:
+            return _main
+        return _main(fn)
 
     # --- Internal API ---
 

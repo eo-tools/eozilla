@@ -23,6 +23,7 @@ class FromMainDependency(TypedDict):
             The name of the output exposed by the main step that should
             be used as the input value.
     """
+
     type: Literal["from_main"]
     output: str
 
@@ -42,6 +43,7 @@ class FromStepDependency(TypedDict):
             The name of the output produced by the upstream step that
             should be used as the input value.
     """
+
     type: Literal["from_step"]
     step_id: str
     output: str
@@ -56,6 +58,7 @@ in the workflow graph. The real leaf step is connected to
 this node during graph construction.
 """
 
+
 class StepEntry(TypedDict):
     """
     Registry entry representing a workflow step and its dependencies.
@@ -68,6 +71,7 @@ class StepEntry(TypedDict):
             A mapping from parameter names to dependency specifications
             describing how each input value is resolved.
     """
+
     step: Process
     dependencies: dict[str, DependencySpec]
 
@@ -96,6 +100,7 @@ class FromStep:
     This is intended for use with ``typing.Annotated`` in
     workflow step function signatures and/or WorkflowStepRegistry decorators.
     """
+
     def __init__(self, step_id: str, output: str):
         self.step_id = step_id
         self.output = output
@@ -230,16 +235,28 @@ class Workflow:
     process model and is itself a process.
     """
 
-    def __init__(self, id: str, artifact_store: ArtifactStore = NullArtifactStore()):
-        self.id = id
+    def __init__(
+        self,
+        fn: Callable | None,
+        workflow_id: str,
+        artifact_store: ArtifactStore = NullArtifactStore(),
+        **kwargs,
+    ):
+        self.id = workflow_id
         self.artifact_store = artifact_store
 
         self.registry = WorkflowStepRegistry()
         self.graph: DependencyGraph | None = None
 
+        # register main
+        self._main(fn, **kwargs)
+
         # Properties to access the workflow execution order
         self.order: list[str] = []
         self.dep_graph: defaultdict[str, set[str]] = defaultdict(set)
+
+    def __call__(self, **kwargs):
+        return self.run(**kwargs)
 
     @property
     def execution_order(
@@ -398,14 +415,12 @@ class Workflow:
 
         return final_inputs
 
-    def main(self, fn=None, /, **kwargs):
+    def _main(self, fn: Callable, /, **kwargs):
         """Register the workflow's main step."""
 
-        if fn is None:
-            return lambda f: self.registry.register_main(f, **kwargs)
         return self.registry.register_main(fn, **kwargs)
 
-    def step(self, fn=None, /, **kwargs):
+    def step(self, fn: Callable | None = None, /, **kwargs):
         """Register a workflow step."""
 
         if fn is None:
@@ -453,11 +468,6 @@ class DependencyGraph:
 
         graph: defaultdict[str, set[str]] = defaultdict(set)
         in_degree = defaultdict(int)
-
-        if len(self.main) != 1:
-            raise ValueError(
-                f"Workflow must have exactly ONE main, found {len(self.main)}"
-            )
 
         for step_id in self.main:
             in_degree[step_id] = 0

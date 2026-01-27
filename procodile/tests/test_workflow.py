@@ -7,10 +7,14 @@ from procodile import (
     FromMain,
     FromStep,
     Process,
-    WorkflowRegistry,
+    ProcessRegistry,
     WorkflowStepRegistry,
 )
-from procodile.workflow import FINAL_STEP_ID, Workflow, extract_dependency
+from procodile.workflow import (
+    FINAL_STEP_ID,
+    Workflow,
+    extract_dependency,
+)
 
 from .utils import DummyArtifactStore
 
@@ -35,23 +39,22 @@ class TestDependencyHelpers(unittest.TestCase):
 
 class TestDependencyGraph(unittest.TestCase):
     def setUp(self):
-        self.registry = WorkflowRegistry()
-        self.workflow = self.registry.get_or_create_workflow("wf")
+        self.registry = ProcessRegistry()
 
     def test_linear_dependency_graph(self):
-        @self.workflow.main(id="main", outputs={"a": None})
+        @self.registry.main(id="main", outputs={"a": None})
         def main(x: int) -> int:
             return x + 1
 
-        @self.workflow.step(id="step1")
+        @main.step(id="step1")
         def step1(a: Annotated[int, FromMain("a")]) -> int:
             return a * 2
 
-        @self.workflow.step(id="step2")
+        @main.step(id="step2")
         def step2(b: Annotated[int, FromStep("step1", "return_value")]) -> int:
             return b + 3
 
-        order, graph = self.workflow.execution_order
+        order, graph = main.execution_order
 
         self.assertEqual(order, ["main", "step1", "step2", "final_step"])
 
@@ -61,155 +64,154 @@ class TestDependencyGraph(unittest.TestCase):
         self.assertNotIn("final_step", graph)
 
     def test_unknown_step_dependency_raises(self):
-        @self.workflow.main(id="main", outputs={"a": None})
+        @self.registry.main(id="main", outputs={"a": None})
         def main() -> int:
             return 1
 
-        @self.workflow.step(id="step1")
+        @main.step(id="step1")
         def step1(x: Annotated[int, FromStep("missing_step", "return_value")]) -> int:
             return x
 
         with self.assertRaises(ValueError) as ctx:
-            self.workflow.execution_order
+            main.execution_order
 
         self.assertIn("depends on unknown step", str(ctx.exception))
 
     def test_invalid_main_output_dependency_raises(self):
-        @self.workflow.main(id="main", outputs={"a": None})
+        @self.registry.main(id="main", outputs={"a": None})
         def main() -> int:
             return 1
 
-        @self.workflow.step(id="step1")
+        @main.step(id="step1")
         def step1(x: Annotated[int, FromMain("missing_output")]) -> int:
             return x
 
         with self.assertRaises(ValueError) as ctx:
-            self.workflow.execution_order
+            main.execution_order
 
         self.assertIn("expects output", str(ctx.exception))
 
     def test_cycle_detection(self):
-        @self.workflow.main(id="main", outputs={"a": None})
+        @self.registry.main(id="main", outputs={"a": None})
         def main() -> int:
             return 1
 
-        @self.workflow.step(id="step1")
+        @main.step(id="step1")
         def step1(x: Annotated[int, FromStep("step2", "return_value")]) -> int:
             return x
 
-        @self.workflow.step(id="step2")
+        @main.step(id="step2")
         def step2(y: Annotated[int, FromStep("step1", "return_value")]) -> int:
             return y
 
         with self.assertRaises(ValueError) as ctx:
-            self.workflow.execution_order
+            main.execution_order
 
         self.assertIn("cycle", str(ctx.exception))
 
     def test_single_main_detection(self):
-        @self.workflow.main(id="main", outputs={"a": None})
+        @self.registry.main(id="main", outputs={"a": None})
         def main() -> int:
             return 1
 
-        @self.workflow.main(id="step1")
+        @self.registry.main(id="step1")
         def step1(x: Annotated[int, FromStep("step2", "return_value")]) -> int:
             return x
 
-        @self.workflow.step(id="step2")
+        @main.step(id="step2")
         def step2(y: Annotated[int, FromStep("step1", "return_value")]) -> int:
             return y
 
         with self.assertRaises(ValueError):
-            self.workflow.execution_order
+            main.execution_order
 
     def test_invalid_output_from_step_raises(self):
-        @self.workflow.main(id="main", outputs={"a": None})
+        @self.registry.main(id="main", outputs={"a": None})
         def main() -> int:
             return 1
 
-        @self.workflow.step(id="step1", outputs={"a": None})
+        @main.step(id="step1", outputs={"a": None})
         def step1(x: Annotated[int, FromMain("a")]) -> int:
             return x
 
-        @self.workflow.step(id="step2")
+        @main.step(id="step2")
         def step2(y: Annotated[int, FromStep("step1", "missing_output")]) -> int:
             return y
 
         with self.assertRaises(ValueError):
-            self.workflow.execution_order
+            main.execution_order
 
     def test_invalid_dependency_type_raises(self):
-        @self.workflow.main(id="main", outputs={"a": None})
+        @self.registry.main(id="main", outputs={"a": None})
         def main() -> int:
             return 1
 
-        @self.workflow.step(id="step1")
+        @main.step(id="step1")
         def step1(x: int) -> int:
             return x
 
         # manually corrupt dependency metadata
-        self.workflow.registry.steps["step1"]["dependencies"] = {
+        main.registry.steps["step1"]["dependencies"] = {
             "x": {
                 "type": "invalid_type",
             }
         }
 
         with self.assertRaises(ValueError):
-            self.workflow.execution_order
+            main.execution_order
 
     def test_multiple_leaf_nodes_raises(self):
-        @self.workflow.main(id="main", outputs={"a": None})
+        @self.registry.main(id="main", outputs={"a": None})
         def main() -> int:
             return 1
 
-        @self.workflow.step(id="step1")
+        @main.step(id="step1")
         def step1(x: Annotated[int, FromMain("a")]) -> int:
             return x + 1
 
-        @self.workflow.step(id="step2")
+        @main.step(id="step2")
         def step2(x: Annotated[int, FromMain("a")]) -> int:
             return x + 2
 
         with self.assertRaises(ValueError):
-            self.workflow.execution_order
+            main.execution_order
 
 
 class TestWorkflowEndToEnd(unittest.TestCase):
     def setUp(self):
-        self.registry = WorkflowRegistry()
-        self.workflow = self.registry.get_or_create_workflow("test_workflow")
+        self.registry = ProcessRegistry()
 
     def tearDown(self):
-        self.workflow = None
+        self.registry = None
 
     def test_workflow_with_main_and_steps(self):
-        @self.workflow.main(
+        @self.registry.main(
             id="main",
             outputs={"out": None},
         )
         def main(a: int, b: int) -> int:
             return a + b
 
-        @self.workflow.step(
+        @main.step(
             id="step1",
             outputs={"double": None},
         )
         def step1(x: Annotated[int, FromMain("out")]) -> int:
             return x * 2
 
-        @self.workflow.step(
+        @main.step(
             id="step2",
             outputs={"final": None},
         )
         def step2(y: Annotated[int, FromStep("step1", "double")]) -> int:
             return y + 1
 
-        outputs = self.workflow.run(a=2, b=3)
+        outputs = main(a=2, b=3)
 
         self.assertEqual(outputs["final"], 11)
 
     def test_missing_required_argument_raises(self):
-        @self.workflow.main(
+        @self.registry.main(
             id="main",
             outputs={"out": None},
         )
@@ -218,45 +220,48 @@ class TestWorkflowEndToEnd(unittest.TestCase):
 
         # step1 is connected to main but still has a missing argument `x` which is
         # not connected to any step.
-        @self.workflow.step(id="step1")
+        @main.step(id="step1")
         def step1(
             x: int,
             _unused: Annotated[int, FromMain("out")],
         ) -> int:
             return x
 
-        @self.workflow.step(id="step2")
+        @main.step(id="step2")
         def step2(y: Annotated[int, FromStep("step1", "return_value")]) -> int:
             return y
 
         with self.assertRaises(ValueError) as ctx:
-            self.workflow.run()
+            main()
+
+        with self.assertRaises(ValueError) as ctx:
+            main.run()
 
         self.assertIn("Missing required argument", str(ctx.exception))
 
     def test_visualize_workflow(self):
-        @self.workflow.main(id="main")
+        @self.registry.main(id="main")
         def main() -> int:
             return 1
 
-        @self.workflow.step(id="step1")
+        @main.step(id="step1")
         def step1(x: Annotated[int, FromMain("return_value")]) -> int:
             return x
 
-        dot = self.workflow.visualize_workflow()
+        dot = main.visualize_workflow()
 
         self.assertIn("digraph pipeline", dot)
         self.assertIn('"main" -> "step1"', dot)
 
     def test_workflow_with_default_args(self):
-        @self.workflow.main(
+        @self.registry.main(
             id="main",
             outputs={"out": None},
         )
         def main(a: int, b: int) -> int:
             return a + b
 
-        @self.workflow.step(
+        @main.step(
             id="step1",
             outputs={"double": None},
         )
@@ -266,26 +271,28 @@ class TestWorkflowEndToEnd(unittest.TestCase):
         ) -> int:
             return x * factor
 
-        @self.workflow.step(
+        @main.step(
             id="step2",
             outputs={"final": None},
         )
         def step2(y: Annotated[int, FromStep("step1", "double")]) -> int:
             return y + 1
 
-        outputs = self.workflow.run(a=2, b=3)
+        outputs = main.run(a=2, b=3)
+        self.assertEqual(outputs["final"], 11)
 
+        outputs = main(a=2, b=3)
         self.assertEqual(outputs["final"], 11)
 
     def test_workflow__as_process_cache(self):
-        @self.workflow.main(
+        @self.registry.main(
             id="main",
             outputs={"out": None},
         )
         def main(a: int, b: int) -> int:
             return a + b
 
-        @self.workflow.step(
+        @main.step(
             id="step1",
             outputs={"double": None},
         )
@@ -295,7 +302,7 @@ class TestWorkflowEndToEnd(unittest.TestCase):
         ) -> int:
             return x * factor
 
-        @self.workflow.step(
+        @main.step(
             id="step2",
             outputs={"final": None},
         )
@@ -304,76 +311,49 @@ class TestWorkflowEndToEnd(unittest.TestCase):
 
         self.registry._as_process.cache_clear()
 
-        process = self.registry._as_process(self.workflow)
+        process = self.registry._as_process(main)
 
         self.assertIsInstance(process, Process)
 
-        process2 = self.registry._as_process(self.workflow)
+        process2 = self.registry._as_process(main)
 
         assert process is process2
 
-        second_workflow = self.registry.get_or_create_workflow("second_workflow")
-
-        @second_workflow.main(
-            id="main",
-            outputs={"out": None},
-        )
-        def main_new(a: int, b: int) -> int:
-            return a + b
-
-        @second_workflow.step(
-            id="step1",
-            outputs={"double": None},
-        )
-        def step1_new(
-            x: Annotated[int, FromMain("out")],
-            factor: int = 2,  # DEFAULT ARG
-        ) -> int:
-            return x * factor
-
-        @second_workflow.step(
-            id="step2",
-            outputs={"final": None},
-        )
-        def step2_new(y: Annotated[int, FromStep("step1", "double")]) -> int:
-            return y + 1
-
-        process3 = self.registry._as_process(second_workflow)
-        assert process3 is not process2
-        assert process3 is not process
-
     def test_workflow_with_decorators_without_callables(self):
-        @self.workflow.main
+        @self.registry.main
         def main(a: int, b: int) -> Annotated[int, {"out": None}]:
             return a + b
 
-        @self.workflow.step
+        @main.step
         def step1(
             x: Annotated[int, FromMain("out")],
             factor: int = 2,
         ) -> Annotated[int, {"double": None}]:
             return x * factor
 
-        outputs = self.workflow.run(a=2, b=3)
+        outputs = main.run(a=2, b=3)
+        self.assertEqual(outputs["double"], 10)
 
+        outputs = main(a=2, b=3)
         self.assertEqual(outputs["double"], 10)
 
     def test_raises_error_when_outputs_defined_both_decorator_annotations(self):
         with self.assertRaises(ValueError):
 
-            @self.workflow.main(outputs={"out": None})
+            @self.registry.main(outputs={"out": None})
             def main(a: int, b: int) -> Annotated[int, {"out": None}]:
                 return a + b
 
     def test_raises_error_when_outputs_invalid_type(self):
         with self.assertRaises(ValueError):
 
-            @self.workflow.main(outputs=["output1", "output2"])
+            @self.registry.main(outputs=["output1", "output2"])
             def main(a: int, b: int) -> tuple[int, int]:
                 return a, b
 
         with self.assertRaises(AssertionError):
-            @self.workflow.main()
+
+            @self.registry.main()
             def main(
                 a: int, b: int
             ) -> Annotated[tuple[int, int], "output1", "output2"]:
@@ -381,25 +361,25 @@ class TestWorkflowEndToEnd(unittest.TestCase):
 
         with self.assertRaises(AssertionError):
 
-            @self.workflow.main()
+            @self.registry.main()
             def main(a: int, b: int) -> Annotated[tuple[int, int], 1, 3]:
                 return a, b
 
         with self.assertRaises(ValueError):
 
-            @self.workflow.main(outputs=["output1"])
+            @self.registry.main(outputs=["output1"])
             def main(a: int, b: int) -> int:
                 return a + b
 
         with self.assertRaises(ValueError):
 
-            @self.workflow.main()
+            @self.registry.main()
             def main(a: int, b: int) -> Annotated[tuple[int, int], "output1"]:
                 return a, b
 
         with self.assertRaises(ValueError):
 
-            @self.workflow.main()
+            @self.registry.main()
             def main(a: int, b: int) -> Annotated[tuple[int, int], 1]:
                 return a, b
 

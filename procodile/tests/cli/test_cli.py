@@ -6,24 +6,19 @@ from unittest import TestCase
 
 import typer.testing
 
-from procodile import WorkflowRegistry
+from procodile import ProcessRegistry
 from procodile import __version__ as procodile_version
 from procodile.cli import new_cli
 
-registry = WorkflowRegistry()
-
-workflow1 = registry.get_or_create_workflow("workflow1")
+registry = ProcessRegistry()
 
 
-@workflow1.main(id="f1")
+@registry.main(id="f1")
 def f1(a: int, b: str, c: float) -> str:
     return f"{a}, {b}, {c}"
 
 
-workflow2 = registry.get_or_create_workflow("workflow2")
-
-
-@workflow2.main(id="f2")
+@registry.main(id="f2")
 def f2(x: bool, y: str, z: float) -> tuple:
     if y == "bibo":
         raise ValueError("y must not be bibo")
@@ -43,7 +38,7 @@ class CliTestMixin:
 
     def test_execute_process_f1_success(self):
         result = self.invoke_cli(
-            "execute-process", "workflow1", "-i", "a=0", "-i", "b=bibo", "-i", "c=0.2"
+            "execute-process", "f1", "-i", "a=0", "-i", "b=bibo", "-i", "c=0.2"
         )
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual(
@@ -54,7 +49,7 @@ class CliTestMixin:
     def test_execute_process_f2_success(self):
         result = self.invoke_cli(
             "execute-process",
-            "workflow2",
+            "f2",
             "-i",
             "x=true",
             "-i",
@@ -71,7 +66,7 @@ class CliTestMixin:
     def test_execute_process_f2_fail(self):
         result = self.invoke_cli(
             "execute-process",
-            "workflow2",
+            "f2",
             "-i",
             "x=true",
             "-i",
@@ -80,7 +75,7 @@ class CliTestMixin:
             "z=1.8",
         )
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
-        self.assertIn('  "processID": "workflow2",', result.output)
+        self.assertIn('  "processID": "f2",', result.output)
         self.assertIn('  "status": "failed",', result.output)
         self.assertIn('  "message": "y must not be bibo",', result.output)
 
@@ -95,12 +90,12 @@ class CliTestMixin:
         self.assertEqual(
             (
                 "{\n"
-                '  "workflow1": {\n'
-                '    "id": "workflow1",\n'
+                '  "f1": {\n'
+                '    "id": "f1",\n'
                 '    "version": "0.0.0"\n'
                 "  },\n"
-                '  "workflow2": {\n'
-                '    "id": "workflow2",\n'
+                '  "f2": {\n'
+                '    "id": "f2",\n'
                 '    "version": "0.0.0"\n'
                 "  }\n"
                 "}\n"
@@ -109,12 +104,12 @@ class CliTestMixin:
         )
 
     def test_get_process_ok(self):
-        result = self.invoke_cli("get-process", "workflow2")
+        result = self.invoke_cli("get-process", "f2")
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual(
             (
                 "{\n"
-                '  "id": "workflow2",\n'
+                '  "id": "f2",\n'
                 '  "version": "0.0.0",\n'
                 '  "inputs": {\n'
                 '    "x": {\n'

@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Mapping, TypeAlias
 
-NormalizedOutputs = dict[str, Any]
+NormalizedOutputs: TypeAlias = dict[str, Any]
 """
 Normalized mapping of output names to resolved values produced by a step 
 execution in a workflow.
