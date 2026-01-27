@@ -14,7 +14,8 @@ from gavicore.models import ProcessList
 
 from .job_info_panel import JobInfoPanel
 from .jobs_event_bus import JobsEventBus
-from .jobs_panel import JobsPanel
+from .jobs_panel.view import JobsPanelView
+from .jobs_panel.viewmodel import JobsPanelViewModel
 from .main_panel import MainPanelView
 
 
@@ -66,14 +67,16 @@ class Client(ApiClient):
         self._ensure_update_thread_is_running()
         return main_panel
 
-    def show_jobs(self) -> JobsPanel:
-        jobs_panel = JobsPanel(
-            on_cancel_job=self._cancel_job,
-            on_delete_job=self._delete_job,
-            on_restart_job=self._restart_job,
-            on_get_job_results=self.get_job_results,
+    def show_jobs(self) -> JobsPanelView:
+        jobs_panel = JobsPanelView(
+            JobsPanelViewModel(
+                job_list=self._jobs_event_bus.job_list,
+                on_cancel_job=self._cancel_job,
+                on_delete_job=self._delete_job,
+                on_restart_job=self._restart_job,
+                on_get_job_results=self.get_job_results,
+            )
         )
-        jobs_panel.on_job_list_changed(self._jobs_event_bus.job_list)
         # noinspection PyTypeChecker
         self._jobs_event_bus.register(jobs_panel)
         self._ensure_update_thread_is_running()
