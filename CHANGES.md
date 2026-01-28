@@ -21,11 +21,9 @@
   now supported.
 - Updated documentation.
 - `Workflow Orchestration Support`: You can now define Python functions as 
-  individual processes and link them using explicit dependencies. This 
-  allows for the creation of complex, executable workflows directly within 
-  `procodile`. (#50)
-- `WorkflowRegistry`: Introduced `WorkflowRegistry` as the new central hub for managing 
-  and executing and orchestrated processes.
+  individual processes and link them using explicit dependencies defined using 
+  `steps`. This allows for the creation of complex, executable workflows 
+  directly within `procodile`. (#50)
 
 ### Fixes
 
@@ -46,12 +44,9 @@
   `inputs` and `outputs` of `procodile.ProcessRegistry.process()` decorator.
 - Removed `wraptile.services.local_service.LocalService.process()` decorator.
   Instead, use the `process_registry` of `LocalService` directly.
-- `ProcessRegistry` Removal: The ProcessRegistry has been officially removed.
-  Users should migrate their process definitions to the new `WorkflowRegistry` 
-  system to take advantage of the orchestration features.
-
-  **NOTE**: The legacy `@process` decorator is no longer exposed. It has been 
-  superseded by `@workflow.main()` and `@workflow.step()`. All API 
+- The legacy `@process` decorator is no longer exposed. It has been 
+  superseded by `@process_registry.main()` and `@your_func.step()` where 
+  `your_func` is the function decorated by `@process_registry.main()`. All API 
   refinements including renamed arguments and registry access via 
   `LocalService` are now implemented within this new workflow orchestration 
   system.
