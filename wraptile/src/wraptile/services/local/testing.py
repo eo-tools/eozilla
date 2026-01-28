@@ -231,12 +231,14 @@ def return_base_model(
     outputs={
         "a": Field(title="main result", description="The result of the main step"),
     },
-    description="This is a workflow with several steps and defined dependencies that "
-    "execute sequentially.",
+    description=(
+        "This is a workflow with several steps and defined dependencies that "
+        "execute sequentially."
+    ),
     title="A Big Workflow",
 )
 def process_pipeline(id: str) -> str:
-    print("In process pipeline first step")
+    print("Initializing process pipeline")
     return id
 
 
@@ -245,8 +247,8 @@ def process_pipeline(id: str) -> str:
     inputs={"id": FromMain(output="a")},
 )
 def read_data(id: str) -> str:
-    print("In process pipeline -> read data")
-    return id * 2
+    print("Reading data")
+    return id + "_read"
 
 
 @process_pipeline.step(
@@ -254,9 +256,9 @@ def read_data(id: str) -> str:
 )
 def preprocess_data(
     id: Annotated[str, FromStep(step_id="read_data", output="return_value")],
-) -> Annotated[str, {"preprocessed": Field(title="Output from preprocessed Step")}]:
-    print("In process pipeline -> preprocess data")
-    return id * 2
+) -> Annotated[str, {"preprocessed": Field(title="Preprocessed dataset")}]:
+    print("Preprocessing data")
+    return id + "_preprocessed"
 
 
 @process_pipeline.step(
@@ -268,8 +270,8 @@ def preprocess_data(
 def feature_engineering(
     id: Annotated[str, FromStep(step_id="preprocess_data", output="preprocessed")],
 ) -> str:
-    print("In process pipeline -> feature engineering")
-    return id + "hello"
+    print("Performing feature engineering")
+    return id + "_feature_mean"
 
 
 @process_pipeline.step(
@@ -283,8 +285,8 @@ def resample_data(
     id: Annotated[str, FromStep(step_id="feature_engineering", output="some_str")],
     id2: str,
 ) -> tuple[str, str]:
-    print("In process pipeline -> resample data")
-    return id, id2
+    print("Resampling data")
+    return id, f"resampled_from={id2}"
 
 
 @process_pipeline.step(
@@ -302,5 +304,5 @@ def store_data(
         str, FromStep(step_id="feature_engineering", output="some_str")
     ],
 ) -> tuple[tuple[str, str], str]:
-    print("In process pipeline -> store data")
+    print("Storing data")
     return id, second_input
