@@ -10,32 +10,57 @@ import pandas as pd
 
 from cuiman.api.exceptions import ClientError
 from gavicore.models import JobInfo, JobList, JobResults, JobStatus
-
+from ..jobs_observer import JobsObserver
 from ..util import JsonDict
 
 JobAction: TypeAlias = Callable[[str], Any]
 
 
 class JobsPanelViewModel(param.Parameterized):
+    """
+    Reactive state and logic holder for JobsPanelView.
+
+    It implements the JobsObserver interface by protocol.
+    """
+
     # ---- reactive state ----
     jobs = param.List(default=[])
     selection = param.List(default=[])
     message = param.String(default="")
     error = param.Parameter(default=None)
+    # ---- reactive enablement ----
+    cancel_disabled = param.Boolean(default=False)
+    delete_disabled = param.Boolean(default=False)
+    restart_disabled = param.Boolean(default=False)
+    get_results_disabled = param.Boolean(default=False)
 
-    # ---- capabilities (not reactive) ----
-    on_delete_job: Optional[JobAction] = None
-    on_cancel_job: Optional[JobAction] = None
-    on_restart_job: Optional[JobAction] = None
-    on_get_job_results: Optional[JobAction] = None
-
-    def __init__(self, job_list: JobList, **kwargs):
+    def __init__(
+        self,
+        job_list: JobList,
+        delete_job: Optional[JobAction] = None,
+        cancel_job: Optional[JobAction] = None,
+        restart_job: Optional[JobAction] = None,
+        get_job_results: Optional[JobAction] = None,
+    ):
         super().__init__()
+        # ---- capabilities (not reactive) ----
+        self._delete_job = delete_job
+        self._cancel_job = cancel_job
+        self._restart_job = restart_job
+        self._get_job_results = get_job_results
+        # ---- reactive state ----
         self.jobs = list(job_list.jobs)
-        for k, v in kwargs.items():
-            setattr(self, k, v)
 
-    # ---- observer inputs ----
+    # ---- JobsObserver interface implementation ----
+
+    def on_job_added(self, _job_info: JobInfo):
+        pass
+
+    def on_job_removed(self, _job_info: JobInfo):
+        pass
+
+    def on_job_changed(self, _job_info: JobInfo):
+        pass
 
     def on_job_list_changed(self, job_list: JobList):
         self.jobs = list(job_list.jobs)
@@ -43,51 +68,46 @@ class JobsPanelViewModel(param.Parameterized):
     def on_job_list_error(self, error: ClientError | None):
         self.error = error
 
+    # ---- selection state ----
+
     def set_selection(self, selection: list[int]):
-        self.selection = list(selection or [])
+        self.selection = [self.jobs[selected_idx].jobID for selected_idx in selection]
 
     # ---- derived (pure) ----
 
-    @param.depends("jobs", "selection")
+    @param.depends("jobs")
     def dataframe(self) -> pd.DataFrame:
         return _jobs_to_dataframe(self.jobs)
 
     def selected_jobs(self) -> list[JobInfo]:
         if not self.selection:
             return []
-        ids = {self.jobs[i].jobID for i in self.selection}
-        return [j for j in self.jobs if j.jobID in ids]
+        ids = set(self.selection)
+        return [job for job in self.jobs if job.jobID in ids]
 
-    @param.depends("jobs", "selection")
-    def can_cancel(self) -> bool:
-        return self._can(self.on_cancel_job, {JobStatus.accepted, JobStatus.running})
-
-    @param.depends("jobs", "selection")
-    def can_delete(self) -> bool:
-        return self._can(
-            self.on_delete_job,
+    @param.depends("jobs", "selection", watch=True)
+    def _update_capabilities(self):
+        self.cancel_disabled = not self._can_perform_action(
+            self._cancel_job, {JobStatus.accepted, JobStatus.running}
+        )
+        self.delete_disabled = not self._can_perform_action(
+            self._delete_job,
             {JobStatus.successful, JobStatus.dismissed, JobStatus.failed},
         )
-
-    @param.depends("jobs", "selection")
-    def can_restart(self) -> bool:
-        return self._can(
-            self.on_restart_job,
+        self.restart_disabled = not self._can_perform_action(
+            self._restart_job,
             {JobStatus.successful, JobStatus.dismissed, JobStatus.failed},
         )
-
-    @param.depends("jobs", "selection")
-    def can_get_results(self) -> bool:
         jobs = self.selected_jobs()
-        return (
-            self.on_get_job_results is not None
+        self.get_results_disabled = not (
+            self._get_job_results is not None
             and len(jobs) == 1
             and _job_requirements_fulfilled(
                 jobs, {JobStatus.successful, JobStatus.failed}
             )
         )
 
-    def _can(self, action: JobAction, statuses: set[JobStatus]):
+    def _can_perform_action(self, action: JobAction, statuses: set[JobStatus]) -> bool:
         jobs = self.selected_jobs()
         return action is not None and _job_requirements_fulfilled(jobs, statuses)
 
@@ -95,21 +115,21 @@ class JobsPanelViewModel(param.Parameterized):
 
     def cancel_selected(self):
         self.message = self._run_action(
-            self.on_cancel_job,
+            self._cancel_job,
             "✅ Cancelled {job}",
             "⚠️ Failed cancelling {job}: {message}",
         )
 
     def delete_selected(self):
         self.message = self._run_action(
-            self.on_delete_job,
+            self._delete_job,
             "✅ Deleted {job}",
             "⚠️ Failed deleting {job}: {message}",
         )
 
     def restart_selected(self):
         self.message = self._run_action(
-            self.on_restart_job,
+            self._restart_job,
             "✅ Restarted {job}",
             "⚠️ Failed restarting {job}: {message}",
         )
@@ -136,7 +156,7 @@ class JobsPanelViewModel(param.Parameterized):
             return f"✅ Stored results of {{job}} in **`{var_name}`**"
 
         self.message = self._run_action(
-            self.on_get_job_results,
+            self._get_job_results,
             handle,
             "⚠️ Failed to get results for {job}: {message}",
         )
@@ -168,6 +188,11 @@ class JobsPanelViewModel(param.Parameterized):
                 messages.append(error_fmt.format(job=job_text, message=msg))
 
         return "  \n".join(messages)
+
+
+# TODO - use as decorator
+# Make JobsPanelViewModel a virtual instance of JobsObserver.
+JobsObserver.register(JobsPanelViewModel)
 
 
 def _jobs_to_dataframe(jobs: list[JobInfo]):

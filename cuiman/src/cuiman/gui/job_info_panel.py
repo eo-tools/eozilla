@@ -29,6 +29,8 @@ class JobInfoPanel(pn.viewable.Viewer):
     def __panel__(self) -> pn.viewable.Viewable:
         return self._layout
 
+    # ---- JobsObserver interface implementation ----
+
     def on_job_added(self, job_info: JobInfo):
         self.on_job_changed(job_info)
 
@@ -84,6 +86,7 @@ class JobInfoPanel(pn.viewable.Viewer):
         # pn.state.notifications.success(f"Change {job_info.updated}", duration=1000)
 
 
+# TODO - use as decorator
 # Register JobInfoPanel as a virtual subclass of JobsObserver
 JobsObserver.register(JobInfoPanel)
 

@@ -68,19 +68,17 @@ class Client(ApiClient):
         return main_panel
 
     def show_jobs(self) -> JobsPanelView:
-        jobs_panel = JobsPanelView(
-            JobsPanelViewModel(
-                job_list=self._jobs_event_bus.job_list,
-                on_cancel_job=self._cancel_job,
-                on_delete_job=self._delete_job,
-                on_restart_job=self._restart_job,
-                on_get_job_results=self.get_job_results,
-            )
+        view_model = JobsPanelViewModel(
+            job_list=self._jobs_event_bus.job_list,
+            cancel_job=self._cancel_job,
+            delete_job=self._delete_job,
+            restart_job=self._restart_job,
+            get_job_results=self.get_job_results,
         )
-        # noinspection PyTypeChecker
-        self._jobs_event_bus.register(jobs_panel)
         self._ensure_update_thread_is_running()
-        return jobs_panel
+        # noinspection PyTypeChecker
+        self._jobs_event_bus.register(view_model)
+        return JobsPanelView(view_model)
 
     def show_job(self, job_id: str) -> JobInfoPanel:
         job_info = self._jobs_event_bus.get_job(job_id)
@@ -117,7 +115,6 @@ class Client(ApiClient):
                 target=self._run_jobs_updater, daemon=True
             )
             self._update_thread.start()
-            print("Update thread is now running")
 
     def _run_jobs_updater(self):
         while self._update_thread is not None:
