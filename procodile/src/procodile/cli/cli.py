@@ -20,7 +20,6 @@ from gavicore.util.cli.parameters import (
 if TYPE_CHECKING:  # pragma: no cover
     from procodile import ProcessRegistry
 
-
 PROCESS_REGISTRY_GETTER_KEY = "get_process_registry"
 
 DEFAULT_NAME = "procodile"
@@ -37,7 +36,11 @@ for `execute-process`, or `lp` for `list-processes`.
 
 # noinspection PyShadowingBuiltins
 def new_cli(
-    registry: Union[str, "ProcessRegistry", Callable[[], "ProcessRegistry"]],
+    registry: Union[
+        str,
+        "ProcessRegistry",
+        Callable[[], "ProcessRegistry"],
+    ],
     name: str,
     version: str,
     help: str | None = None,
@@ -215,7 +218,11 @@ __all__ = [
 
 
 def _parse_process_registry_getter(
-    process_registry: Union[str, "ProcessRegistry", Callable[[], "ProcessRegistry"]],
+    process_registry: Union[
+        str,
+        "ProcessRegistry",
+        Callable[[], "ProcessRegistry"],
+    ],
 ) -> Callable[[], "ProcessRegistry"]:
     process_registry_getter: Callable
     if isinstance(process_registry, str):
@@ -240,7 +247,9 @@ def _parse_process_registry_getter(
         return process_registry_getter
 
 
-def _get_process_registry(ctx: typer.Context) -> "ProcessRegistry":
+def _get_process_registry(
+    ctx: typer.Context,
+) -> "ProcessRegistry":
     from procodile import ProcessRegistry
 
     process_registry_getter = ctx.obj.get(PROCESS_REGISTRY_GETTER_KEY)

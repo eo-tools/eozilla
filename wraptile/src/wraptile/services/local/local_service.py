@@ -29,10 +29,11 @@ class LocalService(ServiceBase):
         self,
         title: str,
         description: Optional[str] = None,
-        process_registry: Optional[ProcessRegistry] = None,
+        process_registry: ProcessRegistry | None = None,
     ):
         super().__init__(title=title, description=description)
         self.executor: Optional[ThreadPoolExecutor | ProcessPoolExecutor] = None
+
         self.process_registry = process_registry or ProcessRegistry()
         self.jobs: dict[str, Job] = {}
 

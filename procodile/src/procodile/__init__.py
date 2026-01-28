@@ -8,19 +8,33 @@ __version__ = version("procodile")
 
 from gavicore.util.request import ExecutionRequest
 
+from .artifacts import ArtifactRef, ArtifactStore, ExecutionContext
 from .job import Job, JobCancelledException, JobContext
 from .process import Process, additional_parameters
 from .registry import ProcessRegistry
+from .workflow import (
+    FromMain,
+    FromStep,
+    Workflow,
+    WorkflowStepRegistry,
+)
 
 """Processes development API."""
 
 __all__ = [
     "additional_parameters",
+    "ArtifactRef",
+    "ArtifactStore",
     "__version__",
     "ExecutionRequest",
+    "ExecutionContext",
+    "FromStep",
+    "FromMain",
     "Job",
     "JobContext",
     "JobCancelledException",
-    "ProcessRegistry",
     "Process",
+    "ProcessRegistry",
+    "WorkflowStepRegistry",
+    "Workflow",
 ]

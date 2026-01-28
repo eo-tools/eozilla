@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cuiman.api.auth import AuthConfig, AuthType, login_async
+from cuiman.api.auth import AuthConfig, login_async
 
 
 @pytest.mark.asyncio

@@ -6,13 +6,16 @@ from unittest import TestCase
 
 import pydantic
 import pytest
+from pydantic import Field
 
 from gavicore.models import JobResults, JobStatus, ProcessRequest, Subscriber
 from procodile import (
+    FromMain,
     Job,
     JobCancelledException,
     JobContext,
     Process,
+    ProcessRegistry,
 )
 from procodile.job import NullJobContext
 
@@ -232,6 +235,84 @@ class JobTest(TestCase):
         result = job.run()
         self.assertEqual(None, result)
         self.assertEqual(JobStatus.failed, job.job_info.status)
+
+    def test_run_workflow_success(self):
+        registry = ProcessRegistry()
+
+        @registry.main(
+            id="first_step",
+            inputs={"id": Field(title="main input")},
+            outputs={
+                "a": Field(
+                    title="main result",
+                    description="The result of the main step",
+                ),
+            },
+        )
+        def first_step(id: str) -> str:
+            return f"result-{id}"
+
+        @first_step.step(
+            id="second_step",
+            inputs={"id": FromMain(output="a")},
+        )
+        def second_step(id: str) -> str:
+            return id * 2
+
+        process = registry.get("first_step")
+
+        job = Job.create(
+            process=process,
+            job_id="job_wf_01",
+            request=ProcessRequest(inputs={"id": "hello world-"}),
+        )
+
+        self.assertEqual("first_step", job.job_info.processID)
+        self.assertEqual({"id": "hello world-"}, job.function_kwargs)
+
+        job_results = job.run()
+
+        self.assertIsNotNone(job_results)
+        self.assertEqual(JobStatus.successful, job.job_info.status)
+
+        self.assertEqual(
+            JobResults(**{"return_value": "result-hello world-result-hello world-"}),
+            job_results,
+        )
+
+    def test_run_workflow_just_main_success(self):
+        registry = ProcessRegistry()
+
+        @registry.main(
+            id="first_step",
+            inputs={"id": Field(title="main input")},
+            outputs={
+                "a": Field(
+                    title="main result",
+                    description="The result of the main step",
+                ),
+            },
+        )
+        def first_step(id: str) -> str:
+            return f"result-{id}"
+
+        process = registry.get("first_step")
+
+        job = Job.create(
+            process=process,
+            job_id="job_wf_01",
+            request=ProcessRequest(inputs={"id": "hello world-"}),
+        )
+
+        self.assertEqual("first_step", job.job_info.processID)
+        self.assertEqual({"id": "hello world-"}, job.function_kwargs)
+
+        job_results = job.run()
+
+        self.assertIsNotNone(job_results)
+        self.assertEqual(JobStatus.successful, job.job_info.status)
+
+        self.assertEqual(JobResults(**{"a": "result-hello world-"}), job_results)
 
 
 class GetJobContextTest(TestCase):

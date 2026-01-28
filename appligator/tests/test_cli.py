@@ -17,10 +17,9 @@ runner = CliRunner()
 class CliTest(TestCase):
     def test_help(self):
         result = runner.invoke(cli, ["--help"])
-        print(result.output)
         self.assertEqual(0, result.exit_code)
         self.assertIn(
-            "Generate various application formats from your processing workflows.",
+            "Generate various application formats from your processes.",
             result.output,
         )
 

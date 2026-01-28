@@ -5,13 +5,13 @@
 import datetime
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
 import pydantic
 from pydantic import Field
 
 from gavicore.models import InputDescription, Link, Schema
-from procodile import JobContext, additional_parameters
+from procodile import FromMain, FromStep, JobContext, additional_parameters
 from wraptile.services.local import LocalService
 
 service = LocalService(
@@ -199,7 +199,7 @@ def simulate_scene(
     if not output_path:
         output_path = "memory://datacube.zarr"
 
-    dataset.to_zarr(output_path, mode="w", zarr_format=3)
+    dataset.to_zarr(output_path, mode="w", zarr_format=2)
     if "://" in output_path:
         href = output_path
     else:
@@ -223,3 +223,86 @@ def return_base_model(
     scene_spec: SceneSpec,
 ) -> SceneSpec:
     return scene_spec
+
+
+@registry.main(
+    id="process_pipeline",
+    inputs={"id": Field(title="main input")},
+    outputs={
+        "a": Field(title="main result", description="The result of the main step"),
+    },
+    description=(
+        "This is a workflow with several steps and defined dependencies that "
+        "execute sequentially."
+    ),
+    title="A Big Workflow",
+)
+def process_pipeline(id: str) -> str:
+    print("Initializing process pipeline")
+    return id
+
+
+@process_pipeline.step(
+    id="read_data",
+    inputs={"id": FromMain(output="a")},
+)
+def read_data(id: str) -> str:
+    print("Reading data")
+    return id + "_read"
+
+
+@process_pipeline.step(
+    id="preprocess_data",
+)
+def preprocess_data(
+    id: Annotated[str, FromStep(step_id="read_data", output="return_value")],
+) -> Annotated[str, {"preprocessed": Field(title="Preprocessed dataset")}]:
+    print("Preprocessing data")
+    return id + "_preprocessed"
+
+
+@process_pipeline.step(
+    id="feature_engineering",
+    outputs={
+        "some_str": Field(title="Some Str"),
+    },
+)
+def feature_engineering(
+    id: Annotated[str, FromStep(step_id="preprocess_data", output="preprocessed")],
+) -> str:
+    print("Performing feature engineering")
+    return id + "_feature_mean"
+
+
+@process_pipeline.step(
+    id="resample_data",
+    inputs={"id2": FromMain(output="a")},
+    outputs={
+        "some_other_str": Field(title="Some other Str"),
+    },
+)
+def resample_data(
+    id: Annotated[str, FromStep(step_id="feature_engineering", output="some_str")],
+    id2: str,
+) -> tuple[str, str]:
+    print("Resampling data")
+    return id, f"resampled_from={id2}"
+
+
+@process_pipeline.step(
+    id="store_data",
+    outputs={
+        "final": Field(title="Final output"),
+    },
+)
+def store_data(
+    id: Annotated[
+        tuple[str, str],
+        FromStep(step_id="resample_data", output="some_other_str"),
+    ],
+    second_input: Annotated[
+        str, FromStep(step_id="feature_engineering", output="some_str")
+    ],
+) -> tuple[tuple[str, str], str]:
+    print("Storing data")
+    return id, second_input

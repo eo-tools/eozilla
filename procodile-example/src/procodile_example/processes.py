@@ -4,7 +4,7 @@
 
 from typing import Annotated
 
-from procodile import JobContext, ProcessRegistry
+from procodile import FromMain, FromStep, JobContext, ProcessRegistry
 from pydantic import Field
 
 registry = ProcessRegistry()
@@ -72,3 +72,96 @@ def primes_between(
 
     ctx.report_progress(message="Done")
     return [min_val + i for i, prime in enumerate(is_prime) if prime]
+
+
+@registry.main(
+    id="process_pipeline",
+    inputs={"id": Field(title="main input")},
+    outputs={
+        "a": Field(title="main result", description="The result of the main step"),
+    },
+    description=(
+        "This is a workflow with several steps and defined dependencies that "
+        "execute sequentially."
+    ),
+    title="A Big Workflow",
+)
+def process_pipeline(id: str) -> str:
+    print("Initializing process pipeline")
+    return id
+
+
+@process_pipeline.step(
+    id="read_data",
+    inputs={"id": FromMain(output="a")},
+)
+def read_data(id: str) -> str:
+    print("Reading data")
+    return id + "_read"
+
+
+@process_pipeline.step(
+    id="preprocess_data",
+)
+def preprocess_data(
+    id: Annotated[str, FromStep(step_id="read_data", output="return_value")],
+) -> Annotated[str, {"preprocessed": Field(title="Preprocessed dataset")}]:
+    print("Preprocessing data")
+    return id + "_preprocessed"
+
+
+@process_pipeline.step(
+    id="feature_engineering",
+    outputs={
+        "some_str": Field(title="Some Str"),
+    },
+)
+def feature_engineering(
+    id: Annotated[str, FromStep(step_id="preprocess_data", output="preprocessed")],
+) -> str:
+    print("Performing feature engineering")
+    return id + "_feature_mean"
+
+
+@process_pipeline.step(
+    id="resample_data",
+    inputs={"id2": FromMain(output="a")},
+    outputs={
+        "some_other_str": Field(title="Some other Str"),
+    },
+)
+def resample_data(
+    id: Annotated[str, FromStep(step_id="feature_engineering", output="some_str")],
+    id2: str,
+) -> tuple[str, str]:
+    print("Resampling data")
+    return id, f"resampled_from={id2}"
+
+
+@process_pipeline.step(
+    id="store_data",
+    outputs={
+        "final": Field(title="Final output"),
+    },
+)
+def store_data(
+    id: Annotated[
+        tuple[str, str],
+        FromStep(step_id="resample_data", output="some_other_str"),
+    ],
+    second_input: Annotated[
+        str, FromStep(step_id="feature_engineering", output="some_str")
+    ],
+) -> tuple[tuple[str, str], str]:
+    print("Storing data")
+    return id, second_input
+
+
+print(process_pipeline(id="eozilla"))
+#
+# # This visualizes the `process_pipeline`
+# from graphviz import Source
+#
+# dot_str = process_pipeline.visualize_workflow()
+# src = Source(dot_str)
+# src.render("pipeline", format="png", view=True, cleanup=True)

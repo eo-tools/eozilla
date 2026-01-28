@@ -20,6 +20,10 @@
   configuration (via command `configure`): basic, login, token, api-key methods are 
   now supported.
 - Updated documentation.
+- `Workflow Orchestration Support`: You can now define Python functions as 
+  individual processes and link them using explicit dependencies defined using 
+  `steps`. This allows for the creation of complex, executable workflows 
+  directly within `procodile`. (#50)
 
 ### Fixes
 
@@ -32,10 +36,20 @@
 
 - Renamed `gavicore.util.schema.create_json_schema` into `create_schema_dict`.
 - Removed `gavicore.util.schema.create_schema_instance` with no replacement.
+
+
+### Breaking Changes
+
 - Renamed `input_fields` and `output_fields` keyword arguments into 
   `inputs` and `outputs` of `procodile.ProcessRegistry.process()` decorator.
 - Removed `wraptile.services.local_service.LocalService.process()` decorator.
   Instead, use the `process_registry` of `LocalService` directly.
+- The legacy `@process` decorator is no longer exposed. It has been 
+  superseded by `@process_registry.main()` and `@your_func.step()` where 
+  `your_func` is the function decorated by `@process_registry.main()`. All API 
+  refinements including renamed arguments and registry access via 
+  `LocalService` are now implemented within this new workflow orchestration 
+  system.
 
 ## Changes in version 0.0.8
 

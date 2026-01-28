@@ -22,7 +22,8 @@ def main(
         str | None,
         typer.Argument(
             ...,
-            help=f"Process registry specification. For example {PROCESS_REGISTRY_SPEC_EX!r}.",
+            help=f"Process registry specification. For example"
+            f" {PROCESS_REGISTRY_SPEC_EX!r}.",
         ),
     ] = None,
     dags_folder: Annotated[
@@ -35,11 +36,11 @@ def main(
     ] = False,
 ):
     """
-    Generate various application formats from your processing workflows.
+    Generate various application formats from your processes.
 
     WARNING: This tool is under development and subject to change anytime.
 
-    Currently it expects a _process registry_ as input, which must be
+    Currently, it expects a _process registry_ as input, which must be
     provided in form a Python module path plus an attribute path separated
     by a colon: "my.module.path:my.registry_obj". The type of the registry
     must be `procodile.ProcessRegistry`. In the future the tool will be
@@ -70,7 +71,9 @@ def main(
         name="process_registry",
         example=PROCESS_REGISTRY_SPEC_EX,
     )
+
     dags_folder.mkdir(exist_ok=True)
+
     for process_id, process in process_registry.items():
         dag_code = gen_dag(process)
         dag_file = dags_folder / f"{process_id}.py"

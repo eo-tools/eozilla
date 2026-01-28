@@ -80,6 +80,18 @@ class TestingFunctionsTest(TestCase):
             pass
 
 
+class TestingWorkflowsTest(TestCase):
+    def setUp(self):
+        self.registry = testing_service.process_registry
+
+    def test_test_workflow(self):
+        process = self.registry.get("process_pipeline")
+        self.assertIsInstance(process, Process)
+        job = Job.create(process, ProcessRequest(inputs={"id": "hello"}))
+        job_results = job.run()
+        self.assertIsInstance(job_results, JobResults)
+
+
 class TestingServiceTest(IsolatedAsyncioTestCase):
     async def test_get_processes(self):
         class MockRequest:
@@ -92,10 +104,11 @@ class TestingServiceTest(IsolatedAsyncioTestCase):
         process_dict = {v.id: v for v in process_list.processes}
         self.assertEqual(
             {
-                "sleep_a_while",
                 "primes_between",
-                "simulate_scene",
                 "return_base_model",
+                "simulate_scene",
+                "sleep_a_while",
+                "process_pipeline",
             },
             set(process_dict.keys()),
         )
