@@ -62,6 +62,8 @@ class MainPanelViewModel(param.Parameterized):
     # ----- dependent state
 
     has_advanced = param.Boolean(default=False)
+    execute_disabled = param.Boolean(default=False)
+    get_request_disabled = param.Boolean(default=False)
 
     # ----- internal state
 
@@ -76,14 +78,14 @@ class MainPanelViewModel(param.Parameterized):
         process_list_error: ClientError | None,
         accept_process,
         is_advanced_input: AdvancedInputPredicate,
-        on_get_process: GetProcessAction,
-        on_execute_process: ExecuteProcessAction,
+        get_process: GetProcessAction,
+        execute_process: ExecuteProcessAction,
         **params,
     ):
         super().__init__(**params)
 
-        self._on_get_process = on_get_process
-        self._on_execute_process = on_execute_process
+        self._get_process = get_process
+        self._execute_process = execute_process
         self._is_advanced_input = is_advanced_input
 
         self.processes = [p for p in process_list.processes if accept_process(p)]
@@ -98,6 +100,8 @@ class MainPanelViewModel(param.Parameterized):
             MainPanelViewModel.Settings.process_id = process_id
         self.selected_process_id = process_id
         self._load_process_description()
+        self.execute_disabled = not process_id
+        self.get_request_disabled = not process_id
 
     def update_inputs(self):
         process = self.process_description
@@ -150,7 +154,7 @@ class MainPanelViewModel(param.Parameterized):
         request = self.build_execution_request()
         try:
             self.loading = True
-            job = self._on_execute_process(
+            job = self._execute_process(
                 request.process_id,
                 request.to_process_request(),
             )
@@ -178,7 +182,7 @@ class MainPanelViewModel(param.Parameterized):
 
         try:
             self.loading = True
-            process = self._on_get_process(pid)
+            process = self._get_process(pid)
             self._process_cache[pid] = process
             self.process_description = process
             self.error = None

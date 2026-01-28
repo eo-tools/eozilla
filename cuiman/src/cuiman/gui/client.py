@@ -57,8 +57,8 @@ class Client(ApiClient):
         )
         main_panel = MainPanelView(
             *self._get_processes(),
-            on_get_process=self.get_process,
-            on_execute_process=self.execute_process,
+            get_process=self.get_process,
+            execute_process=self.execute_process,
             accept_process=accept_process,
             is_advanced_input=config_cls.is_advanced_input,
         )

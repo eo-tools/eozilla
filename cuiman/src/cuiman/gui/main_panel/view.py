@@ -47,8 +47,8 @@ class MainPanelView(pn.viewable.Viewer):
         self,
         process_list: ProcessList,
         process_list_error: ClientError | None,
-        on_get_process: GetProcessAction,
-        on_execute_process: ExecuteProcessAction,
+        get_process: GetProcessAction,
+        execute_process: ExecuteProcessAction,
         accept_process: ProcessPredicate,
         is_advanced_input: AdvancedInputPredicate,
     ):
@@ -59,8 +59,8 @@ class MainPanelView(pn.viewable.Viewer):
             process_list_error=process_list_error,
             accept_process=accept_process,
             is_advanced_input=is_advanced_input,
-            on_get_process=on_get_process,
-            on_execute_process=on_execute_process,
+            get_process=get_process,
+            execute_process=execute_process,
         )
 
         # --- _process_select
@@ -83,9 +83,7 @@ class MainPanelView(pn.viewable.Viewer):
         # --- _advanced_switch
 
         self._advanced_switch = pn.widgets.Switch(
-            name="Show advanced inputs",
             value=self._vm.show_advanced,
-            disabled=False,
         )
 
         def _on_advanced(e):
@@ -99,12 +97,12 @@ class MainPanelView(pn.viewable.Viewer):
 
         self._process_doc_markdown = pn.pane.Markdown("")
         process_panel = pn.Column(
-            pn.pane.Markdown("# Process"),
+            # pn.pane.Markdown("# Process"),
             self._process_select,
             self._process_doc_markdown,
             pn.Row(
-                "Show advanced inputs",
                 self._advanced_switch,
+                pn.widgets.StaticText(value="Show advanced inputs"),
                 visible=self._vm.param.has_advanced,
             ),
         )
@@ -115,7 +113,7 @@ class MainPanelView(pn.viewable.Viewer):
             # tooltip="Executes the selected process with the current request",
             button_type="primary",
             on_click=self._on_execute_button_clicked,
-            disabled=True,
+            disabled=self._vm.param.execute_disabled,
         )
         self._open_button = pn.widgets.Button(
             name="Open",
@@ -135,7 +133,7 @@ class MainPanelView(pn.viewable.Viewer):
         self._request_button = pn.widgets.Button(
             name="Get Request",
             on_click=self._on_get_process_request,
-            disabled=True,
+            disabled=self._vm.param.get_request_disabled,
         )
 
         action_panel = pn.Row(
@@ -183,7 +181,6 @@ class MainPanelView(pn.viewable.Viewer):
     def _render_from_vm(self):
         process = self._vm.process_description
         self._update_process_description_markdown(process)
-        self._update_action_panel(process)
 
         self._vm.update_inputs()
         self._render_inputs()
@@ -265,11 +262,6 @@ class MainPanelView(pn.viewable.Viewer):
         checkbox.disabled = True
         pn.bind(handle_change, checkbox)
         return checkbox
-
-    def _update_action_panel(self, process: ProcessDescription | None):
-        enabled = process is not None and self._vm.input_container is not None
-        self._execute_button.disabled = not enabled
-        self._request_button.disabled = not enabled
 
     def _on_execute_button_clicked(self, _event: Any = None):
         try:
