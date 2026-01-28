@@ -231,11 +231,9 @@ def _parse_process_registry_getter(
             from gavicore.util.dynimp import import_value
             from procodile import ProcessRegistry
 
-            registry = import_value(
+            return import_value(
                 process_registry, name="process registry", type=ProcessRegistry
             )
-
-            return registry
 
         return process_registry_getter
 
