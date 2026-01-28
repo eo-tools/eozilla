@@ -148,29 +148,29 @@ class ExecutionContext:
         - Single value → single output
         """
         if output_spec is None:
-            return {"return_value": self.materialize(result, store)}
+            return {"return_value": self.materialize_artifact(result, store)}
 
         output_keys = list(output_spec.keys())
 
         if len(output_keys) == 1:
-            return {output_keys[0]: self.materialize(result, store)}
+            return {output_keys[0]: self.materialize_artifact(result, store)}
 
         if isinstance(result, dict):
             missing = set(output_keys) - result.keys()
             if missing:
                 raise ValueError(f"Missing outputs in return dict: {missing}")
-            return {k: self.materialize(result[k], store) for k in output_keys}
+            return {k: self.materialize_artifact(result[k], store) for k in output_keys}
 
         if isinstance(result, tuple):
             if len(result) != len(output_keys):
                 raise ValueError("Tuple output length does not match declared outputs")
-            return {k: self.materialize(v, store) for k, v in zip(output_keys, result)}
+            return {k: self.materialize_artifact(v, store) for k, v in zip(output_keys, result)}
 
         raise TypeError(
             f"Invalid return type for declared outputs. result: {result}, output_spec: {output_spec}",
         )
 
-    def materialize(self, value: Any, store: ArtifactStore) -> Any:
+    def materialize_artifact(self, value: Any, store: ArtifactStore) -> Any:
         """
         Recursively materialize big objects.
         """
@@ -178,12 +178,12 @@ class ExecutionContext:
             return store.save_artifact(value)
 
         if isinstance(value, dict):
-            return {k: self.materialize(v, store) for k, v in value.items()}
+            return {k: self.materialize_artifact(v, store) for k, v in value.items()}
 
         if isinstance(value, tuple):
-            return tuple(self.materialize(v, store) for v in value)
+            return tuple(self.materialize_artifact(v, store) for v in value)
 
         if isinstance(value, list):
-            return [self.materialize(v, store) for v in value]
+            return [self.materialize_artifact(v, store) for v in value]
 
         return value

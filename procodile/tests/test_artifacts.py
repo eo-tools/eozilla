@@ -113,7 +113,7 @@ class TestExecutionContext(unittest.TestCase):
         self.assertEqual(self.ctx.resolve(123), 123)
 
     def test_materialize_big_object(self):
-        result = self.ctx.materialize(self.dataset, self.store)
+        result = self.ctx.materialize_artifact(self.dataset, self.store)
 
         self.assertIsInstance(result, ArtifactRef)
 
@@ -126,14 +126,14 @@ class TestExecutionContext(unittest.TestCase):
             "b": [self.dataset, 1],
         }
 
-        result = self.ctx.materialize(value, self.store)
+        result = self.ctx.materialize_artifact(value, self.store)
 
         self.assertIsInstance(result["a"], ArtifactRef)
         self.assertIsInstance(result["b"][0], ArtifactRef)
         self.assertEqual(result["b"][1], 1)
 
     def test_materialize_scalar(self):
-        self.assertEqual(self.ctx.materialize(5, self.store), 5)
+        self.assertEqual(self.ctx.materialize_artifact(5, self.store), 5)
 
     def test_no_output_spec(self):
         result = self.ctx.normalize_outputs(
