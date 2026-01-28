@@ -59,6 +59,10 @@ class MainPanelViewModel(param.Parameterized):
         allow_None=True,
     )
 
+    # ----- dependent state
+
+    has_advanced = param.Boolean(default=False)
+
     # ----- internal state
 
     _process_cache = param.Dict(default={}, precedence=-1)
@@ -110,11 +114,14 @@ class MainPanelViewModel(param.Parameterized):
         inputs = process.inputs or {}
 
         show_advanced = self.show_advanced
+        has_advanced = False
         filtered_inputs: dict[str, InputDescription] = {}
         for k, v in inputs.items():
             is_advanced = self._is_advanced_input(process, k, v)
+            has_advanced = has_advanced or is_advanced
             if not is_advanced or show_advanced:
                 filtered_inputs[k] = v
+        self.has_advanced = has_advanced
 
         self.input_container = ComponentContainer.from_input_descriptions(
             filtered_inputs,

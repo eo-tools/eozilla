@@ -101,7 +101,11 @@ class MainPanelView(pn.viewable.Viewer):
             # pn.pane.Markdown("# Process"),
             self._process_select,
             self._process_doc_markdown,
-            self._advanced_switch,
+            pn.Row(
+                "Show advanced inputs",
+                self._advanced_switch,
+                visible=self._vm.param.has_advanced,
+            ),
         )
 
         # --- Buttons
@@ -293,5 +297,6 @@ class MainPanelView(pn.viewable.Viewer):
         get_ipython().user_ns[var_name] = self._vm.build_execution_request()
 
 
+# TODO - use as decorator
 # Register MainPanelView as a virtual subclass of JobsObserver
 JobsObserver.register(MainPanelView)
