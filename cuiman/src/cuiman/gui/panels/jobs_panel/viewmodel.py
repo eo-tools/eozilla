@@ -4,14 +4,13 @@
 
 from typing import Any, Callable, Optional, TypeAlias
 
-from pydantic import BaseModel
-import param
 import pandas as pd
+import param
+from pydantic import BaseModel
 
 from cuiman.api.exceptions import ClientError
+from cuiman.gui.jobs_observer import JobsObserver
 from gavicore.models import JobInfo, JobList, JobResults, JobStatus
-from ..jobs_observer import JobsObserver
-from ..util import JsonDict
 
 JobAction: TypeAlias = Callable[[str], Any]
 
@@ -136,7 +135,7 @@ class JobsPanelViewModel(param.Parameterized):
         )
 
     def get_results_for_selected(self, var_name="_results"):
-        def handle(_job_id: str, results: JobResults | dict):
+        def set_ipython_value(_job_id: str, results: JobResults | dict):
             # noinspection PyProtectedMember
             from IPython import get_ipython
 
@@ -158,7 +157,7 @@ class JobsPanelViewModel(param.Parameterized):
 
         self.message = self._run_action(
             self._get_job_results,
-            handle,
+            set_ipython_value,
             "⚠️ Failed to get results for {job}: {message}",
         )
 
@@ -209,3 +208,15 @@ def _job_requirements_fulfilled(
     jobs: list[JobInfo], requirements: set[JobStatus]
 ) -> bool:
     return bool(jobs) and all(j.status in requirements for j in jobs)
+
+
+class JsonDict(dict):
+    """A JSON object value that renders nicely in Jupyter notebooks."""
+
+    def __init__(self, name: str, *args, **kwargs):
+        # noinspection PyArgumentList
+        super().__init__(*args, **kwargs)
+        self._name = name
+
+    def _repr_json_(self):
+        return self, {"root": f"{self._name}:"}

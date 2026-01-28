@@ -24,12 +24,12 @@ class JobsPanelView(pn.viewable.Viewer):
             pn.Row(
                 pn.widgets.Button(
                     name="Cancel",
+                    button_type="danger",
                     disabled=vm.param.cancel_disabled,
                     on_click=lambda _: vm.cancel_selected(),
                 ),
                 pn.widgets.Button(
                     name="Delete",
-                    button_type="danger",
                     disabled=vm.param.delete_disabled,
                     on_click=lambda _: vm.delete_selected(),
                 ),

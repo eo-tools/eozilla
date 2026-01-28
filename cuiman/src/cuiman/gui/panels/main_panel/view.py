@@ -8,6 +8,7 @@ import panel as pn
 
 from cuiman.api.config import AdvancedInputPredicate, ProcessPredicate
 from cuiman.api.exceptions import ClientError
+from cuiman.gui.jobs_observer import JobsObserver
 from gavicore.models import (
     JobInfo,
     JobList,
@@ -16,8 +17,7 @@ from gavicore.models import (
     ProcessList,
 )
 
-from ..job_info_panel import JobInfoPanel
-from ..jobs_observer import JobsObserver
+from ..job_info_panel import JobInfoPanelView
 from .viewmodel import ExecuteProcessAction, GetProcessAction, MainPanelViewModel
 
 
@@ -54,7 +54,7 @@ class MainPanelView(pn.viewable.Viewer):
     ):
         super().__init__()
 
-        self._vm = MainPanelViewModel(
+        self.vm = MainPanelViewModel(
             process_list=process_list,
             process_list_error=process_list_error,
             accept_process=accept_process,
@@ -66,16 +66,16 @@ class MainPanelView(pn.viewable.Viewer):
         # --- _process_select
         process_select_options = {
             f"{p.title if p.title else 'No Title'}  (id={p.id})": p.id
-            for p in self._vm.processes
+            for p in self.vm.processes
         }
         self._process_select = pn.widgets.Select(
             name="Process",
             options=process_select_options,
-            value=self._vm.selected_process_id,
+            value=self.vm.selected_process_id,
         )
 
         def _on_select(e):
-            self._vm.select_process(e.new)
+            self.vm.select_process(e.new)
             self._render_from_vm()
 
         self._process_select.param.watch(_on_select, "value")
@@ -83,12 +83,12 @@ class MainPanelView(pn.viewable.Viewer):
         # --- _advanced_switch
 
         self._advanced_switch = pn.widgets.Switch(
-            value=self._vm.show_advanced,
+            value=self.vm.show_advanced,
         )
 
         def _on_advanced(e):
-            self._vm.show_advanced = bool(e.new)
-            self._vm.update_inputs()
+            self.vm.show_advanced = bool(e.new)
+            self.vm.update_inputs()
             self._render_inputs()
 
         self._advanced_switch.param.watch(_on_advanced, "value")
@@ -103,7 +103,7 @@ class MainPanelView(pn.viewable.Viewer):
             pn.Row(
                 self._advanced_switch,
                 pn.widgets.StaticText(value="Show advanced inputs"),
-                visible=self._vm.param.has_advanced,
+                visible=self.vm.param.has_advanced,
             ),
         )
 
@@ -113,7 +113,7 @@ class MainPanelView(pn.viewable.Viewer):
             # tooltip="Executes the selected process with the current request",
             button_type="primary",
             on_click=self._on_execute_button_clicked,
-            disabled=self._vm.param.execute_disabled,
+            disabled=self.vm.param.execute_disabled,
         )
         self._open_button = pn.widgets.Button(
             name="Open",
@@ -133,7 +133,7 @@ class MainPanelView(pn.viewable.Viewer):
         self._request_button = pn.widgets.Button(
             name="Get Request",
             on_click=self._on_get_process_request,
-            disabled=self._vm.param.get_request_disabled,
+            disabled=self.vm.param.get_request_disabled,
         )
 
         action_panel = pn.Row(
@@ -147,7 +147,7 @@ class MainPanelView(pn.viewable.Viewer):
         self._inputs_panel = pn.Column()
         self._outputs_panel = pn.Column()
 
-        self._job_info_panel = JobInfoPanel()
+        self._job_info_panel = JobInfoPanelView()
 
         self._view = pn.Column(
             process_panel,
@@ -179,16 +179,16 @@ class MainPanelView(pn.viewable.Viewer):
         pass
 
     def _render_from_vm(self):
-        process = self._vm.process_description
+        process = self.vm.process_description
         self._update_process_description_markdown(process)
 
-        self._vm.update_inputs()
+        self.vm.update_inputs()
         self._render_inputs()
         self._render_outputs()
 
     def _update_process_description_markdown(self, process: ProcessDescription | None):
         # process = self._vm.process_description
-        error = self._vm.error
+        error = self.vm.error
         if process is not None:
             if process and process.description:
                 markdown_text = f"**Description:** {process.description}"
@@ -202,14 +202,14 @@ class MainPanelView(pn.viewable.Viewer):
         self._process_doc_markdown.object = markdown_text
 
     def _render_inputs(self):
-        container = self._vm.input_container
+        container = self.vm.input_container
         if container is None or container.is_empty:
             self._inputs_panel[:] = [pn.pane.Markdown("_No inputs available._")]
         else:
             self._inputs_panel[:] = container.get_viewables()
 
     def _render_outputs(self):
-        process = self._vm.process_description
+        process = self.vm.process_description
         if process is None:
             self._outputs_panel[:] = []
         else:
@@ -265,7 +265,7 @@ class MainPanelView(pn.viewable.Viewer):
 
     def _on_execute_button_clicked(self, _event: Any = None):
         try:
-            job = self._vm.execute()
+            job = self.vm.execute()
             self._job_info_panel.job_info = job
         except ClientError as e:
             self._job_info_panel.client_error = e
@@ -287,4 +287,4 @@ class MainPanelView(pn.viewable.Viewer):
         from IPython import get_ipython
 
         var_name = "_request"
-        get_ipython().user_ns[var_name] = self._vm.build_execution_request()
+        get_ipython().user_ns[var_name] = self.vm.build_execution_request()

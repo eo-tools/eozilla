@@ -6,17 +6,15 @@ import threading
 import time
 from typing import Any, Optional
 
+import panel as pn
+
 from cuiman.api.client import Client as ApiClient
 from cuiman.api.config import ClientConfig
 from cuiman.api.exceptions import ClientError
 from cuiman.api.transport import Transport
 from gavicore.models import ProcessList
 
-from .job_info_panel import JobInfoPanel
 from .jobs_event_bus import JobsEventBus
-from .jobs_panel.view import JobsPanelView
-from .jobs_panel.viewmodel import JobsPanelViewModel
-from .main_panel import MainPanelView
 
 
 class Client(ApiClient):
@@ -35,7 +33,7 @@ class Client(ApiClient):
     def _reset_state(self):
         self._update_thread = None
 
-    def show(self, **kwargs: Any) -> MainPanelView:
+    def show(self, **kwargs: Any):
         """Shows the client's main GUI.
 
         Args:
@@ -48,6 +46,8 @@ class Client(ApiClient):
             MainPanel: The main GUI panel object.
         """
         from functools import partial
+
+        from .panels import MainPanelView
 
         config_cls: type[ClientConfig] = type(self.config)
         accept_process = (
@@ -67,7 +67,9 @@ class Client(ApiClient):
         self._ensure_update_thread_is_running()
         return main_panel
 
-    def show_jobs(self) -> JobsPanelView:
+    def show_jobs(self) -> pn.viewable.Viewer:
+        from .panels import JobsPanelView, JobsPanelViewModel
+
         view_model = JobsPanelViewModel(
             job_list=self._jobs_event_bus.job_list,
             cancel_job=self._cancel_job,
@@ -80,11 +82,13 @@ class Client(ApiClient):
         self._jobs_event_bus.register(view_model)
         return JobsPanelView(view_model)
 
-    def show_job(self, job_id: str) -> JobInfoPanel:
+    def show_job(self, job_id: str):
+        from .panels import JobInfoPanelView
+
         job_info = self._jobs_event_bus.get_job(job_id)
         if job_info is None:
             job_info = self.get_job(job_id)
-        job_info_panel = JobInfoPanel()
+        job_info_panel = JobInfoPanelView()
         job_info_panel.job_info = job_info
         # noinspection PyTypeChecker
         self._jobs_event_bus.register(job_info_panel)

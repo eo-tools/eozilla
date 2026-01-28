@@ -8,14 +8,13 @@ import panel
 import panel as pn
 import param
 
-from cuiman import ClientError
+from cuiman.api.exceptions import ClientError
+from cuiman.gui.jobs_observer import JobsObserver
 from gavicore.models import JobInfo, JobList
-
-from .jobs_observer import JobsObserver
 
 
 @JobsObserver.register  # virtual subclass, no runtime checks
-class JobInfoPanel(pn.viewable.Viewer):
+class JobInfoPanelView(pn.viewable.Viewer):
     job_info = param.ClassSelector(class_=JobInfo, allow_None=True, default=None)
     client_error = param.ClassSelector(
         class_=ClientError, allow_None=True, default=None
