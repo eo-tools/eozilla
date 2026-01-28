@@ -93,7 +93,7 @@ class NullArtifactStore(ArtifactStore):
         """
         return False
 
-    def save_artifact(self, obj: Any, loader_id: str):
+    def save_artifact(self, obj: Any):
         """
         Saving artifacts is not supported in the null store.
         """
@@ -122,7 +122,7 @@ class ExecutionContext:
     def resolve(self, value: Any) -> Any:
         """Recursively resolve the inputs."""
         if isinstance(value, ArtifactRef):
-            return self.store.load(value)
+            return self.store.load_artifact(value)
 
         if isinstance(value, dict):
             return {k: self.resolve(v) for k, v in value.items()}

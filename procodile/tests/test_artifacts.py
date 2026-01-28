@@ -45,7 +45,7 @@ class TestNullArtifactStore(unittest.TestCase):
         ref = ArtifactRef(path="", loader="")
 
         with self.assertRaises(RuntimeError):
-            self.store.load(ref)
+            self.store.load_artifact(ref)
 
     def test_null_store_is_instance_of_artifact_store(self):
         self.assertIsInstance(self.store, ArtifactStore)
@@ -117,7 +117,7 @@ class TestExecutionContext(unittest.TestCase):
 
         self.assertIsInstance(result, ArtifactRef)
 
-        loaded = self.store.load(result)
+        loaded = self.store.load_artifact(result)
         xr.testing.assert_identical(loaded, self.dataset)
 
     def test_materialize_nested(self):
