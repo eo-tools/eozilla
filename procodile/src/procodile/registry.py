@@ -4,7 +4,11 @@
 import functools
 from collections.abc import Mapping
 from copy import deepcopy
-from typing import Callable
+from typing import Callable, Optional
+
+from pydantic.fields import FieldInfo
+
+from gavicore.models import InputDescription, OutputDescription
 
 from .process import Process
 from .workflow import Workflow
@@ -73,19 +77,86 @@ class ProcessRegistry(Mapping[str, Process]):
     # --- Public API ---
 
     def main(
-        self, fn: Callable | None = None, **kwargs
+        self,
+        function: Callable | None = None,
+        /,
+        *,
+        id: Optional[str] = None,
+        version: Optional[str] = None,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        inputs: Optional[dict[str, FieldInfo | InputDescription]] = None,
+        outputs: Optional[dict[str, FieldInfo | OutputDescription]] = None,
+        inputs_arg: str | bool = False,
     ) -> Callable[[Callable], Workflow] | Callable:
-        def _main(func: Callable) -> Workflow:
-            workflow_id = kwargs.get("id", None)
-            if workflow_id is None:
-                workflow_id = f"{func.__module__}:{func.__qualname__}"
-            workflow = Workflow(func, workflow_id, **kwargs)
+        """
+        A decorator that can be applied to a user function in order to
+        register it as a process in this registry.
+
+        Note:
+
+            - Use `main` decorator to express a process that comprises multiple steps
+            that require a reference to the main entry point.
+
+            - Use `process` decorator to express a process that has no steps,
+            hence requires no reference to a main step.
+
+        The decorator can be used with or without parameters.
+
+        Args:
+            function: The decorated function that is passed automatically since
+                `process()` is a decorator function.
+            id: Optional process identifier. Must be unique within the registry.
+                If not provided, the fully qualified function name will be used.
+            version: Optional version identifier. If not provided, `"0.0.0"`
+                will be used.
+            title: Optional, short process title.
+            description: Optional, detailed description of the process. If not
+                provided, the function's docstring, if any, will be used.
+            inputs: Optional mapping from function argument names
+                to [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/)
+                or [`InputDescription`][gavicore.models.InputDescription] instances.
+                The preferred way is to annotate the arguments directly
+                as described in [The Annotated Pattern](https://docs.pydantic.dev/latest/concepts/fields/#the-annotated-pattern).
+                Use `InputDescription` instances to pass extra information that cannot
+                be represented by a `pydantic.Field`, e.g., `additionalParameters` or `keywords`.
+            outputs: Mapping from output names to
+                [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/)
+                or [`OutputDescription`][gavicore.models.InputDescription] instances.
+                Required, if you have multiple outputs returned as a
+                dictionary. In this case, the function must return a typed `tuple` and
+                output names refer to the items of the tuple in given order.
+            inputs_arg: Specifies the use of an _inputs argument_. An inputs argument
+                is a container for the actual process inputs. If specified, it must
+                be the only function argument (besides an optional job context
+                argument) and must be a subclass of `pydantic.BaseModel`.
+                If `inputs_arg` is `True` the only argument will be the input argument,
+                if `inputs_arg` is a `str` it must be the name of the only argument.
+        """
+
+        def register_workflow(fn: Callable) -> Workflow:
+            f_name = f"{fn.__module__}:{fn.__qualname__}"
+            workflow_id = id or f_name
+            workflow = Workflow(
+                fn,
+                workflow_id=workflow_id,
+                id=id,
+                version=version,
+                title=title,
+                description=description,
+                inputs=inputs,
+                outputs=outputs,
+                inputs_arg=inputs_arg,
+            )
             self._workflows[workflow_id] = workflow
             return workflow
 
-        if fn is None:
-            return _main
-        return _main(fn)
+        if function is None:
+            return register_workflow
+        return register_workflow(function)
+
+    # alias for main, when users need to define just process without any steps
+    process = main
 
     # --- Internal API ---
 

@@ -22,7 +22,7 @@ service = LocalService(
 registry = service.process_registry
 
 
-@registry.main(
+@registry.process(
     id="sleep_a_while",
     title="Sleep Processor",
     description=(
@@ -46,7 +46,7 @@ def sleep_a_while(
     return time.time() - t0
 
 
-@registry.main(
+@registry.process(
     id="primes_between",
     title="Prime Processor",
     description=(
@@ -93,7 +93,7 @@ def primes_between(
 
 
 # noinspection PyArgumentList
-@registry.main(
+@registry.process(
     id="simulate_scene",
     title="Generate scene for testing",
     description=(
@@ -215,7 +215,7 @@ class SceneSpec(pydantic.BaseModel):
     # bbox: Optional[Bbox] = None
 
 
-@registry.main(
+@registry.process(
     id="return_base_model",
     title="BaseModel Test",
 )

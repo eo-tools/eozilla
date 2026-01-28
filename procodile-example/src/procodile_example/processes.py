@@ -10,7 +10,7 @@ from pydantic import Field
 registry = ProcessRegistry()
 
 
-@registry.main(id="sleep_a_while", title="Sleepy Process")
+@registry.process(id="sleep_a_while", title="Sleepy Process")
 def sleep_a_while(
     duration: Annotated[float, Field(title="Duration in s", gt=0)] = 10.0,
     fail: Annotated[bool, Field(title="Force failure")] = False,
@@ -33,7 +33,7 @@ def sleep_a_while(
     return time.time() - t0
 
 
-@registry.main(id="primes_between", title="Prime Generator")
+@registry.process(id="primes_between", title="Prime Generator")
 def primes_between(
     ctx: JobContext,
     min_val: Annotated[int, Field(title="Minimum value of search range", ge=0)] = 0,

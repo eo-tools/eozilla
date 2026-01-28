@@ -73,11 +73,21 @@ Process inputs, such as the arguments `path` or `factor` above,
 can be further specified by
 [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/) annotations.
 Field annotations for an argument can be provided via the `inputs` dictionary
-passed to the [`main`][procodile.WorkflowRegsitry.main] and [`step`][procodile.Workflow.step]
+passed to the [`main`][procodile.WorkflowRegsitry.main] or 
+[`process`][procodile.WorkflowRegsitry.process] and [`step`][procodile.Workflow.step]
 decorators,
 or preferably as part of the type declaration using the Python `Annotated`
 special form. An example for the latter is
 `factor: Annotated[float, Field(title="Scaling factor", gt=0., le=10.)] = 1.0`.
+
+Use `main` decorator to express a process that comprises multiple steps that 
+require a reference to the main entry point.
+
+Use `process` decorator to express a process that has no steps, hence requires 
+no reference to a main step. 
+
+This is purely for semantic reasons, in fact, the `process` decorator is an 
+alias for `main` decorator.
 
 Should your process have many arguments, you may consider defining them elsewhere
 in a dedicated _pydantic Model_ derived from
@@ -105,10 +115,11 @@ class ArgsModel(BaseModel):
 
     registry = ProcessRegistry()
 
-@registry.main(inputs_arg=True)
+@registry.process(inputs_arg=True)
 def my_func(args: ArgsModel) -> MyResult:
     ...
 ```
+
 
 ### 2. Define CLI instance
 
