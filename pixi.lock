@@ -3152,11 +3152,12 @@ packages:
 - pypi: ./cuiman
   name: cuiman
   version: 0.0.9.dev0
-  sha256: 16ee814b5e350a9504761415afdafead83b900b5641b7bbe3fb83fe1588a62bb
+  sha256: e621b5e81ee99a3741c2f154789fdf768d7efa26816b2527364cf55af80d627f
   requires_dist:
   - click
   - panel
   - pydantic
+  - pydantic-settings
   - pyyaml
   - typer
   - uri-template

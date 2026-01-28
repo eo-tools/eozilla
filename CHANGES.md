@@ -2,6 +2,7 @@
 
 ### Enhancements
 
+- Added dependency `pydantic-settings` to `cuiman`. (#53)
 - By using `inputs` and `outputs` keyword arguments of 
   `procodile.ProcessRegistry.process()` it is now possible to also provide 
   `gavicore.models.InputDescription` and `gavicore.models.OutputDescription` 
