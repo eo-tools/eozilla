@@ -16,6 +16,7 @@ from ..util import JsonDict
 JobAction: TypeAlias = Callable[[str], Any]
 
 
+@JobsObserver.register  # virtual subclass, no runtime checks
 class JobsPanelViewModel(param.Parameterized):
     """
     Reactive state and logic holder for JobsPanelView.
@@ -188,11 +189,6 @@ class JobsPanelViewModel(param.Parameterized):
                 messages.append(error_fmt.format(job=job_text, message=msg))
 
         return "  \n".join(messages)
-
-
-# TODO - use as decorator
-# Make JobsPanelViewModel a virtual instance of JobsObserver.
-JobsObserver.register(JobsPanelViewModel)
 
 
 def _jobs_to_dataframe(jobs: list[JobInfo]):

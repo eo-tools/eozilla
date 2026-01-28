@@ -21,6 +21,7 @@ from ..jobs_observer import JobsObserver
 from .viewmodel import ExecuteProcessAction, GetProcessAction, MainPanelViewModel
 
 
+@JobsObserver.register  # virtual subclass, no runtime checks
 class MainPanelView(pn.viewable.Viewer):
     """
     The main panel GUI. Its design for allows the view
@@ -98,7 +99,7 @@ class MainPanelView(pn.viewable.Viewer):
 
         self._process_doc_markdown = pn.pane.Markdown("")
         process_panel = pn.Column(
-            # pn.pane.Markdown("# Process"),
+            pn.pane.Markdown("# Process"),
             self._process_select,
             self._process_doc_markdown,
             pn.Row(
@@ -295,8 +296,3 @@ class MainPanelView(pn.viewable.Viewer):
 
         var_name = "_request"
         get_ipython().user_ns[var_name] = self._vm.build_execution_request()
-
-
-# TODO - use as decorator
-# Register MainPanelView as a virtual subclass of JobsObserver
-JobsObserver.register(MainPanelView)
