@@ -19,7 +19,7 @@ from wraptile.services.local.testing import service as testing_service
 
 class TestingFunctionsTest(TestCase):
     def setUp(self):
-        self.registry = testing_service.registry
+        self.registry = testing_service.process_registry
 
     def test_run_sleep_a_while(self):
         process = self.registry.get("sleep_a_while")
@@ -82,7 +82,7 @@ class TestingFunctionsTest(TestCase):
 
 class TestingWorkflowsTest(TestCase):
     def setUp(self):
-        self.registry = testing_service.registry
+        self.registry = testing_service.process_registry
 
     def test_test_workflow(self):
         process = self.registry.get("process_pipeline")

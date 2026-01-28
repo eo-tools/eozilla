@@ -31,7 +31,7 @@ from wraptile.services.local import LocalService
 class LocalServiceSetupTest(TestCase):
     def setUp(self):
         service = LocalService(title="OGC API - Processes - Test Service")
-        registry = service.registry
+        registry = service.process_registry
 
         @registry.main(id="foo", version="1.0.1")
         def foo(x: bool, y: int) -> float:
@@ -52,7 +52,7 @@ class LocalServiceSetupTest(TestCase):
     def test_server_setup_ok(self):
         service = self.service
 
-        foo_entry = service.registry.get("foo")
+        foo_entry = service.process_registry.get("foo")
         self.assertIsInstance(foo_entry, Process)
         self.assertTrue(callable(foo_entry.function))
         foo_process = foo_entry.description
@@ -60,7 +60,7 @@ class LocalServiceSetupTest(TestCase):
         self.assertEqual("foo", foo_process.id)
         self.assertEqual("1.0.1", foo_process.version)
 
-        bar_entry = service.registry.get("bar")
+        bar_entry = service.process_registry.get("bar")
         self.assertIsInstance(bar_entry, Process)
         self.assertTrue(callable(bar_entry.function))
         bar_process = bar_entry.description

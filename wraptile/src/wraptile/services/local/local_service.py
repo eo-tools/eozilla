@@ -29,12 +29,12 @@ class LocalService(ServiceBase):
         self,
         title: str,
         description: Optional[str] = None,
-        registry: ProcessRegistry | None = None,
+        process_registry: ProcessRegistry | None = None,
     ):
         super().__init__(title=title, description=description)
         self.executor: Optional[ThreadPoolExecutor | ProcessPoolExecutor] = None
 
-        self.registry = registry or ProcessRegistry()
+        self.process_registry = process_registry or ProcessRegistry()
         self.jobs: dict[str, Job] = {}
 
     def configure(
@@ -64,7 +64,7 @@ class LocalService(ServiceBase):
                         exclude={"inputs", "outputs"},
                     )
                 )
-                for p in self.registry.values()
+                for p in self.process_registry.values()
             ],
             links=[self.get_self_link(request, "get_processes")],
         )
@@ -128,7 +128,7 @@ class LocalService(ServiceBase):
         return job.future.result()
 
     def _get_process(self, process_id: str) -> Process:
-        process = self.registry.get(process_id)
+        process = self.process_registry.get(process_id)
         if process is None:
             raise ServiceException(404, detail=f"Process {process_id!r} does not exist")
         return process

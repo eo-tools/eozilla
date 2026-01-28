@@ -19,7 +19,7 @@ service = LocalService(
     description="Local test server implementing the OGC API - Processes 1.0 Standard",
 )
 
-registry = service.registry
+registry = service.process_registry
 
 
 @registry.main(

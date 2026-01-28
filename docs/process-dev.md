@@ -121,7 +121,7 @@ from procodile.cli import new_cli
 # The CLI with a basic set of commands.
 # The `cli` is a Typer application of type `typer.Typer()`,
 # so can use the instance to register your own commands.
-cli = new_cli(registry="my_app.workflows:registry", name="my-app", version="0.5.0")
+cli = new_cli(registry="my_app.processes:registry", name="my-app", version="0.5.0")
 ```
 
 You could also pass the imported registry directly, but using a

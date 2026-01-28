@@ -37,7 +37,7 @@ class CliTest(TestCase):
             result = runner.invoke(
                 cli,
                 [
-                    "wraptile.services.local.testing:service.registry",
+                    "wraptile.services.local.testing:service.process_registry",
                     "--dags-folder",
                     tmpdir,
                 ],
