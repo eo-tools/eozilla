@@ -23,7 +23,6 @@ def make_test_module():
     return mod
 
 
-
 sys.modules["test_module"] = make_test_module()
 
 

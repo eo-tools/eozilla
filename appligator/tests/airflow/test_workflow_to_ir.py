@@ -2,7 +2,7 @@ import unittest
 
 from appligator.airflow.ir import workflow_to_ir
 from gavicore.models import Field
-from procodile import Workflow, ProcessRegistry
+from procodile import ProcessRegistry, Workflow
 from procodile.workflow import FINAL_STEP_ID, FromMain, FromStep
 
 

@@ -58,6 +58,7 @@ in the workflow graph. The real leaf step is connected to
 this node during graph construction.
 """
 
+
 class StepEntry(TypedDict):
     """
     Registry entry representing a workflow step and its dependencies.

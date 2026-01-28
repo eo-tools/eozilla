@@ -12,6 +12,7 @@ from procodile.workflow import FromMain, FromStep, Workflow
 
 registry = ProcessRegistry()
 
+
 @registry.main(
     id="first_step",
     inputs={"id": Field(title="main input")},
@@ -132,7 +133,6 @@ def test_generate_airflow_dag_from_workflow():
         '    tasks["third_step"] >> tasks["__procodile_final_step__"]\n'
         "\n"
     )
-
 
 
 @registry.main(id="main")
