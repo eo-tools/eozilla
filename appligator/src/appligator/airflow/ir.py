@@ -65,9 +65,6 @@ def workflow_to_ir(
     )
 
     for step_id, meta in registry.steps.items():
-        if step_id == main_step_id:
-            continue
-
         step = meta["step"]
         deps = meta["dependencies"]
 
