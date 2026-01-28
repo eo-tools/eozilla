@@ -11,11 +11,39 @@ from .process import Process
 
 
 class FromMainDependency(TypedDict):
+    """
+    Dependency specification indicating that a step input
+    should be sourced from the workflow's main step's output.
+
+    Attributes:
+        type:
+            Discriminator identifying this dependency as originating
+            from the main step. Always the literal string ``"from_main"``.
+        output:
+            The name of the output exposed by the main step that should
+            be used as the input value.
+    """
+
     type: Literal["from_main"]
     output: str
 
 
 class FromStepDependency(TypedDict):
+    """
+    Dependency specification indicating that a step input
+    should be sourced from another step's output in the workflow.
+
+    Attributes:
+        type:
+            Discriminator identifying this dependency as originating
+            from another step. Always the literal string ``"from_step"``.
+        step_id:
+            The identifier of the upstream step whose output is required.
+        output:
+            The name of the output produced by the upstream step that
+            should be used as the input value.
+    """
+
     type: Literal["from_step"]
     step_id: str
     output: str
@@ -24,14 +52,38 @@ class FromStepDependency(TypedDict):
 DependencySpec = FromMainDependency | FromStepDependency
 
 FINAL_STEP_ID = "__procodile_final_step__"
-
+"""
+A step identifier representing the internal final node
+in the workflow graph. The real leaf step is connected to
+this node during graph construction.
+"""
 
 class StepEntry(TypedDict):
+    """
+    Registry entry representing a workflow step and its dependencies.
+
+    Attributes:
+        step:
+            The ``Process`` object representing the executable step with metadata as
+            per OGC Processes Part 1.
+        dependencies:
+            A mapping from parameter names to dependency specifications
+            describing how each input value is resolved.
+    """
+
     step: Process
     dependencies: dict[str, DependencySpec]
 
 
 class FromMain:
+    """
+    Annotation helper indicating that a function parameter
+    should be populated from the main step's output.
+
+    This is intended for use with ``typing.Annotated`` in
+    workflow step function signatures and/or WorkflowStepRegistry decorators.
+    """
+
     def __init__(self, output: str):
         self.output = output
 
@@ -40,6 +92,14 @@ class FromMain:
 
 
 class FromStep:
+    """
+    Annotation helper indicating that a function parameter
+    should be populated from the output of another step.
+
+    This is intended for use with ``typing.Annotated`` in
+    workflow step function signatures and/or WorkflowStepRegistry decorators.
+    """
+
     def __init__(self, step_id: str, output: str):
         self.step_id = step_id
         self.output = output
@@ -70,6 +130,12 @@ class WorkflowStepRegistry:
         self.steps: dict[str, StepEntry] = {}
 
     def register_main(self, fn: Callable, **kwargs) -> Callable:
+        signature = inspect.signature(fn)
+        outputs = WorkflowStepRegistry._extract_and_merge_outputs(signature, kwargs)
+
+        if outputs:
+            kwargs["outputs"] = outputs
+
         main_process = Process.create(fn, **kwargs)
         self.main[main_process.description.id] = main_process
         return fn
@@ -100,12 +166,56 @@ class WorkflowStepRegistry:
                     dependencies[name] = value.to_dict()
                 else:
                     raise ValueError(
-                        f"Invalid dependency metadata for input '{name}': {meta!r}"
+                        f"Invalid dependency metadata for input '{name}': {value!r}"
                     )
+
+        outputs = WorkflowStepRegistry._extract_and_merge_outputs(signature, kwargs)
+
+        if outputs:
+            kwargs["outputs"] = outputs
 
         step = Process.create(fn, **kwargs)
         self.steps[step.description.id] = {"step": step, "dependencies": dependencies}
         return fn
+
+    @staticmethod
+    def _extract_and_merge_outputs(
+        signature: inspect.Signature,
+        kwargs: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """Extract outputs from Annotated return type or decorator kwargs."""
+
+        return_type, return_metadata = unwrap_annotated(signature.return_annotation)
+
+        outputs_from_annotation = None
+
+        if return_metadata:
+            assert len(return_metadata) == 1, (
+                f"Only one return obj expected, got {len(return_metadata)}"
+            )
+
+            meta = return_metadata[0]
+            if not isinstance(meta, dict):
+                raise ValueError(
+                    f"Invalid output metadata type, expected dict got: {type(meta)}"
+                )
+            outputs_from_annotation = meta
+
+        outputs_from_kwargs = kwargs.pop("outputs", None)
+
+        if outputs_from_kwargs:
+            if not isinstance(outputs_from_kwargs, dict):
+                raise ValueError(
+                    f"Invalid output metadata type, expected dict got: {type(outputs_from_kwargs)}"
+                )
+
+        if outputs_from_annotation and outputs_from_kwargs:
+            raise ValueError(
+                "Outputs may be defined either in the return annotation "
+                "or in the decorator, but not both."
+            )
+
+        return outputs_from_kwargs or outputs_from_annotation
 
 
 class Workflow:
@@ -124,21 +234,40 @@ class Workflow:
     process model and is itself a process.
     """
 
-    def __init__(self, id: str, artifact_store: ArtifactStore = NullArtifactStore()):
-        self.id = id
+    def __init__(
+        self,
+        fn: Callable,
+        workflow_id: str,
+        artifact_store: ArtifactStore = NullArtifactStore(),
+        **kwargs,
+    ):
+        self.id = workflow_id
         self.artifact_store = artifact_store
 
         self.registry = WorkflowStepRegistry()
         self.graph: DependencyGraph | None = None
 
+        # register main
+        self._main(fn, **kwargs)
+
         # Properties to access the workflow execution order
         self.order: list[str] = []
         self.dep_graph: defaultdict[str, set[str]] = defaultdict(set)
+
+    def __call__(self, **kwargs):
+        return self.run(**kwargs)
 
     @property
     def execution_order(
         self,
     ) -> tuple[list[str], defaultdict[str, set[str]]]:
+        """
+        Compute and return the workflow execution order.
+
+        This property lazily constructs the dependency graph and performs a
+        topological sort to determine the order in which workflow steps must be
+        executed.
+        """
         if not self.graph:
             self.graph = self._get_graph()
 
@@ -149,6 +278,8 @@ class Workflow:
         return DependencyGraph(self.registry.main, self.registry.steps)
 
     def visualize_workflow(self) -> str:
+        """Generate a Graphviz DOT representation of the workflow."""
+
         _, deps = self.execution_order
         lines = ["digraph pipeline {", "rankdir=LR;"]
         for node in deps:
@@ -160,6 +291,28 @@ class Workflow:
         return "\n".join(lines)
 
     def run(self, **function_kwargs):
+        """
+        Execute the workflow.
+
+        This method:
+        - Executes the main step first using user-provided inputs.
+        - Executes each step in topological order.
+        - Normalizes and stores step outputs.
+        - Resolves inputs to the steps.
+        - Collects and returns the final workflow outputs.
+
+        Args:
+            **function_kwargs:
+                Input arguments passed to the workflow's main step.
+
+        Returns:
+            A dictionary of outputs produced by the workflow's final step.
+
+        Raises:
+            ValueError:
+                If required inputs for a step are missing.
+        """
+
         ctx = ExecutionContext(self.artifact_store)
 
         order, graph = self.execution_order
@@ -204,12 +357,8 @@ class Workflow:
                 if dep is not None:
                     if dep["type"] == "from_main":
                         raw = ctx.main[dep["output"]]
-
-                    elif dep["type"] == "from_step":
-                        raw = ctx.steps[dep["step_id"]][dep["output"]]
-
                     else:
-                        raise ValueError(f"Unknown dependency type: {dep}")
+                        raw = ctx.steps[dep["step_id"]][dep["output"]]
 
                 else:
                     if param.default is not inspect.Parameter.empty:
@@ -256,7 +405,7 @@ class Workflow:
             else:
                 step_outputs = ctx.main
 
-            if step_outputs is None:
+            if step_outputs is None or step_outputs == {}:
                 raise RuntimeError(
                     f"Final step depends on '{step_id}', but no outputs were produced"
                 )
@@ -265,18 +414,25 @@ class Workflow:
 
         return final_inputs
 
-    def main(self, fn=None, /, **kwargs):
-        if fn is None:
-            return lambda f: self.registry.register_main(f, **kwargs)
+    def _main(self, fn: Callable, /, **kwargs):
+        """Register the workflow's main step."""
+
         return self.registry.register_main(fn, **kwargs)
 
-    def step(self, fn=None, /, **kwargs):
+    def step(self, fn: Callable | None = None, /, **kwargs):
+        """Register a workflow step."""
+
         if fn is None:
             return lambda f: self.registry.register_step(f, **kwargs)
         return self.registry.register_step(fn, **kwargs)
 
 
 class DependencyGraph:
+    """
+    Responsible for constructing and validating the dependency graph
+    of a workflow and producing a valid execution order.
+    """
+
     def __init__(self, main: dict[str, Process], steps: dict[str, StepEntry]):
         self.main = main
         self.steps = steps
@@ -284,13 +440,33 @@ class DependencyGraph:
     def build_dependency_graph(
         self,
     ) -> tuple[defaultdict[str, set], defaultdict[str, int]]:
+        """
+        Construct and validate the workflow dependency graph.
+
+         This method:
+        - Validates all dependency specifications.
+        - Builds a directed graph of step dependencies.
+        - Computes in-degrees for topological sorting.
+        - Enforces the invariant that exactly one real leaf step exists.
+        - Connects the single leaf step to the implicit FINAL_STEP_ID.
+
+        Returns:
+            A tuple containing:
+            - graph: A directed adjacency list mapping each step ID to the
+                set of steps that depend on it.
+            - in_degree: A mapping from step ID to its incoming edge count.
+
+        Raises:
+            ValueError:
+                If the workflow violates any structural invariant, including:
+                - Multiple main step
+                - Multiple leaf steps
+                - Missing or invalid dependency references
+                - Invalid dependency types
+        """
+
         graph: defaultdict[str, set[str]] = defaultdict(set)
         in_degree = defaultdict(int)
-
-        if len(self.main) != 1:
-            raise ValueError(
-                f"Workflow must have exactly ONE main, found {len(self.main)}"
-            )
 
         for step_id in self.main:
             in_degree[step_id] = 0
@@ -351,7 +527,7 @@ class DependencyGraph:
 
         if len(real_leaves) != 1:
             raise ValueError(
-                f"Workflow must have exactly ONE leaf task, "
+                f"A workflow must have one leaf task, but "
                 f"found {len(real_leaves)}: {sorted(real_leaves)}"
             )
 
@@ -366,17 +542,29 @@ class DependencyGraph:
     def topological_sort(
         self,
     ) -> tuple[list[str], defaultdict[str, set[str]]]:
+        """
+        Compute a topological execution order for the workflow.
+
+        This method:
+        - Builds the dependency graph.
+        - Performs Kahn's algorithm for topological sorting.
+        - Detects cycles in the dependency graph.
+
+        Returns:
+            A tuple containing:
+            - order:
+                A list of step identifiers in valid execution order.
+            - graph:
+                The validated dependency graph that maps each step ID to the
+                set of steps that depend on it.
+
+        Raises:
+            ValueError:
+                If the workflow contains a cycle and therefore cannot
+                be executed in a valid order.
+        """
+
         graph, in_degree = self.build_dependency_graph()
-
-        nodes = set(in_degree.keys())
-        non_leaves = set(graph.keys())
-        leaves = nodes - non_leaves
-
-        if len(leaves) != 1:
-            raise ValueError(
-                f"Workflow must have exactly ONE leaf task, "
-                f"found {len(leaves)}: {sorted(leaves)}"
-            )
 
         queue = deque(node for node, degree in in_degree.items() if degree == 0)
 
@@ -395,13 +583,16 @@ class DependencyGraph:
             remaining = [node for node, degree in in_degree.items() if degree > 0]
             raise ValueError(f"Workflow contains a cycle involving: {remaining}")
 
-        if order[-1] != FINAL_STEP_ID:
-            raise AssertionError(f"{FINAL_STEP_ID} must be the last step, got {order}")
-
         return order, graph
 
 
 def unwrap_annotated(annotation):
+    """
+    Unwrap a ``typing.Annotated`` type into its base annotation and metadata.
+
+    This helper separates the primary type annotation from any attached
+    metadata objects provided via ``typing.Annotated``.
+    """
     if get_origin(annotation) is Annotated:
         args = get_args(annotation)
         return args[0], list(args[1:])
@@ -412,7 +603,10 @@ def extract_dependency(
     annotation: Any,
 ) -> FromMainDependency | FromStepDependency | None:
     """
-    Extract FromMain / FromStep metadata from Annotated types.
+    Extract a dependency specification from an annotated parameter type.
+
+    This function inspects ``typing.Annotated`` metadata and returns the
+    first supported dependency marker found (``FromMain`` or ``FromStep``).
     """
     if annotation is None:
         return None

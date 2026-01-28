@@ -27,7 +27,7 @@ class Process:
     in form of a Python function.
 
     Instances of this class are be managed by the
-    [Workflow][procodile.Workflow].
+    [ProcessRegistry][procodile.ProcessRegistry].
 
     Attributes:
         function: The user's Python function.
@@ -61,7 +61,9 @@ class Process:
     ) -> "Process":
         """Create a new instance of this dataclass.
 
-        Called by the `Workflow.main()` and `Workflow.step()` decorator function.
+        Called by the `process_registry.main()` and by the `your_function.step()`
+        decorator, where `your_function` is the function decorated with `main()`.
+
         Not intended to be used by clients.
 
         Args:

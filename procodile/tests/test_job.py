@@ -15,7 +15,7 @@ from procodile import (
     JobCancelledException,
     JobContext,
     Process,
-    WorkflowRegistry,
+    ProcessRegistry,
 )
 from procodile.job import NullJobContext
 
@@ -237,10 +237,9 @@ class JobTest(TestCase):
         self.assertEqual(JobStatus.failed, job.job_info.status)
 
     def test_run_workflow_success(self):
-        workflow_registry = WorkflowRegistry()
-        workflow = workflow_registry.get_or_create_workflow(id="first_workflow")
+        registry = ProcessRegistry()
 
-        @workflow.main(
+        @registry.main(
             id="first_step",
             inputs={"id": Field(title="main input")},
             outputs={
@@ -253,14 +252,14 @@ class JobTest(TestCase):
         def first_step(id: str) -> str:
             return f"result-{id}"
 
-        @workflow.step(
+        @first_step.step(
             id="second_step",
             inputs={"id": FromMain(output="a")},
         )
         def second_step(id: str) -> str:
             return id * 2
 
-        process = workflow_registry.get("first_workflow")
+        process = registry.get("first_step")
 
         job = Job.create(
             process=process,
@@ -268,7 +267,7 @@ class JobTest(TestCase):
             request=ProcessRequest(inputs={"id": "hello world-"}),
         )
 
-        self.assertEqual("first_workflow", job.job_info.processID)
+        self.assertEqual("first_step", job.job_info.processID)
         self.assertEqual({"id": "hello world-"}, job.function_kwargs)
 
         job_results = job.run()
@@ -282,10 +281,9 @@ class JobTest(TestCase):
         )
 
     def test_run_workflow_just_main_success(self):
-        workflow_registry = WorkflowRegistry()
-        workflow = workflow_registry.get_or_create_workflow(id="first_workflow")
+        registry = ProcessRegistry()
 
-        @workflow.main(
+        @registry.main(
             id="first_step",
             inputs={"id": Field(title="main input")},
             outputs={
@@ -298,7 +296,7 @@ class JobTest(TestCase):
         def first_step(id: str) -> str:
             return f"result-{id}"
 
-        process = workflow_registry.get("first_workflow")
+        process = registry.get("first_step")
 
         job = Job.create(
             process=process,
@@ -306,7 +304,7 @@ class JobTest(TestCase):
             request=ProcessRequest(inputs={"id": "hello world-"}),
         )
 
-        self.assertEqual("first_workflow", job.job_info.processID)
+        self.assertEqual("first_step", job.job_info.processID)
         self.assertEqual({"id": "hello world-"}, job.function_kwargs)
 
         job_results = job.run()

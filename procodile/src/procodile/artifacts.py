@@ -1,12 +1,23 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Mapping, TypeAlias
 
-NormalizedOutputs = dict[str, Any]
+NormalizedOutputs: TypeAlias = dict[str, Any]
+"""
+Normalized mapping of output names to resolved values produced by a step 
+execution in a workflow.
+"""
 
 
 @dataclass(frozen=True)
 class ArtifactRef:
+    """
+    Lightweight reference to an externally stored artifact.
+
+    An ``ArtifactRef`` is returned when a value is materialized by an
+    ArtifactStore and can later be resolved back into the original object.
+    """
+
     path: str
     loader: str
 
@@ -21,7 +32,7 @@ class ArtifactStore(ABC):
     """
 
     @abstractmethod
-    def is_big(self, obj: Any) -> bool:
+    def is_artifact_big(self, obj: Any) -> bool:
         """
         Determine whether an object should be treated as a 'big object'
         and stored externally instead of being passed as is.
@@ -33,10 +44,10 @@ class ArtifactStore(ABC):
             True if the object is considered large and should be stored
             via this store, False otherwise.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
-    def save(self, obj: Any) -> ArtifactRef:
+    def save_artifact(self, obj: Any) -> ArtifactRef:
         """
         Persist a large object and return a reference to it.
 
@@ -49,10 +60,10 @@ class ArtifactStore(ABC):
         Raises:
             TypeError: If the object type is not supported by the implementation.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
-    def load(self, ref: ArtifactRef) -> Any:
+    def load_artifact(self, ref: ArtifactRef) -> Any:
         """
         Load a previously stored object using an ArtifactRef.
 
@@ -65,7 +76,7 @@ class ArtifactStore(ABC):
         Raises:
             ValueError: If the loader specified in the reference is unknown.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
 
 class NullArtifactStore(ArtifactStore):
@@ -76,19 +87,19 @@ class NullArtifactStore(ArtifactStore):
     support saving or loading artifacts.
     """
 
-    def is_big(self, obj: Any) -> bool:
+    def is_artifact_big(self, obj: Any) -> bool:
         """
         No object is considered big in the null store.
         """
         return False
 
-    def save(self, obj: Any):
+    def save_artifact(self, obj: Any):
         """
         Saving artifacts is not supported in the null store.
         """
         raise RuntimeError("NullArtifactStore does not support saving artifacts")
 
-    def load(self, ref):
+    def load_artifact(self, ref):
         """
         Loading artifacts is not supported in the null store.
         """
@@ -96,6 +107,13 @@ class NullArtifactStore(ArtifactStore):
 
 
 class ExecutionContext:
+    """
+    Holds execution-time state for a workflow run.
+
+    The execution context stores resolved outputs from the main step and
+    individual steps, manages artifact materialization, and normalizes outputs.
+    """
+
     def __init__(self, store: ArtifactStore) -> None:
         self.store = store
         self.main: dict[str, Any] = {}
@@ -104,7 +122,7 @@ class ExecutionContext:
     def resolve(self, value: Any) -> Any:
         """Recursively resolve the inputs."""
         if isinstance(value, ArtifactRef):
-            return self.store.load(value)
+            return self.store.load_artifact(value)
 
         if isinstance(value, dict):
             return {k: self.resolve(v) for k, v in value.items()}
@@ -130,42 +148,42 @@ class ExecutionContext:
         - Single value → single output
         """
         if output_spec is None:
-            return {"return_value": self.materialize(result, store)}
+            return {"return_value": self.materialize_artifact(result, store)}
 
         output_keys = list(output_spec.keys())
 
         if len(output_keys) == 1:
-            return {output_keys[0]: self.materialize(result, store)}
+            return {output_keys[0]: self.materialize_artifact(result, store)}
 
         if isinstance(result, dict):
             missing = set(output_keys) - result.keys()
             if missing:
                 raise ValueError(f"Missing outputs in return dict: {missing}")
-            return {k: self.materialize(result[k], store) for k in output_keys}
+            return {k: self.materialize_artifact(result[k], store) for k in output_keys}
 
         if isinstance(result, tuple):
             if len(result) != len(output_keys):
                 raise ValueError("Tuple output length does not match declared outputs")
-            return {k: self.materialize(v, store) for k, v in zip(output_keys, result)}
+            return {k: self.materialize_artifact(v, store) for k, v in zip(output_keys, result)}
 
         raise TypeError(
             f"Invalid return type for declared outputs. result: {result}, output_spec: {output_spec}",
         )
 
-    def materialize(self, value: Any, store: ArtifactStore) -> Any:
+    def materialize_artifact(self, value: Any, store: ArtifactStore) -> Any:
         """
         Recursively materialize big objects.
         """
-        if store.is_big(value):
-            return store.save(value)
+        if store.is_artifact_big(value):
+            return store.save_artifact(value)
 
         if isinstance(value, dict):
-            return {k: self.materialize(v, store) for k, v in value.items()}
+            return {k: self.materialize_artifact(v, store) for k, v in value.items()}
 
         if isinstance(value, tuple):
-            return tuple(self.materialize(v, store) for v in value)
+            return tuple(self.materialize_artifact(v, store) for v in value)
 
         if isinstance(value, list):
-            return [self.materialize(v, store) for v in value]
+            return [self.materialize_artifact(v, store) for v in value]
 
         return value

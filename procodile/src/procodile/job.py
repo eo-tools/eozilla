@@ -9,7 +9,7 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from concurrent.futures import Future
-from typing import Any, Mapping, Optional
+from typing import Any, Optional
 
 import pydantic
 
@@ -279,7 +279,9 @@ class Job(JobContext):
         assert self.job_info.status == JobStatus.successful
         assert self.job_info.processID is not None
 
-        if isinstance(function_result, Mapping):
+        # Outputs are already validated and normalized by
+        # `ExecutionContext.normalize_outputs()`.
+        if isinstance(function_result, dict):
             return JobResults(**function_result)
 
         outputs = self.process.description.outputs or {}

@@ -1,53 +1,13 @@
 import shutil
 import tempfile
 import unittest
-import uuid
-from pathlib import Path
-from typing import Any
 
 import xarray as xr
 
 from procodile import ArtifactRef, ArtifactStore, ExecutionContext
 from procodile.artifacts import NullArtifactStore
 
-
-class DummyArtifactStore(ArtifactStore):
-    LOADER_NAME = "zarr_file"
-
-    def __init__(
-        self,
-        store_kwargs: dict | None = None,
-    ) -> None:
-        if store_kwargs is None:
-            store_kwargs = {}
-
-        root = store_kwargs.get("root", ".artifacts")
-        self.root = Path(root)
-        self.root.mkdir(parents=True, exist_ok=True)
-
-    def is_big(self, obj: Any) -> bool:
-        return isinstance(obj, xr.Dataset)
-
-    def save(self, obj: Any) -> ArtifactRef:
-        if not isinstance(obj, xr.Dataset):
-            raise TypeError(f"Unsupported big object: {type(obj)}")
-
-        data_id = f"{uuid.uuid4()}.zarr"
-        path = self.root / data_id
-
-        obj.to_zarr(path, mode="w")
-
-        return ArtifactRef(path=str(path), loader=self.LOADER_NAME)
-
-    def load(self, ref: ArtifactRef) -> xr.Dataset:
-        if ref.loader != self.LOADER_NAME:
-            raise ValueError(f"Unknown loader {ref.loader}")
-
-        path = Path(ref.path)
-        if not path.exists():
-            raise FileNotFoundError(f"Artifact not found: {path}")
-
-        return xr.open_zarr(path)
+from .utils import DummyArtifactStore
 
 
 class TestArtifactRef(unittest.TestCase):
@@ -72,20 +32,20 @@ class TestNullArtifactStore(unittest.TestCase):
         self.store = NullArtifactStore()
 
     def test_is_big_always_false(self):
-        self.assertFalse(self.store.is_big(object()))
-        self.assertFalse(self.store.is_big("string"))
-        self.assertFalse(self.store.is_big(123))
-        self.assertFalse(self.store.is_big(None))
+        self.assertFalse(self.store.is_artifact_big(object()))
+        self.assertFalse(self.store.is_artifact_big("string"))
+        self.assertFalse(self.store.is_artifact_big(123))
+        self.assertFalse(self.store.is_artifact_big(None))
 
     def test_save_raises_runtime_error(self):
         with self.assertRaises(RuntimeError):
-            self.store.save(object())
+            self.store.save_artifact(object())
 
     def test_load_raises_runtime_error(self):
         ref = ArtifactRef(path="", loader="")
 
         with self.assertRaises(RuntimeError):
-            self.store.load(ref)
+            self.store.load_artifact(ref)
 
     def test_null_store_is_instance_of_artifact_store(self):
         self.assertIsInstance(self.store, ArtifactStore)
@@ -98,7 +58,7 @@ class TestExecutionContext(unittest.TestCase):
         self.ctx = ExecutionContext(self.store)
 
         self.dataset = xr.Dataset({"x": ("y", [1, 2])})
-        self.ref = self.store.save(self.dataset)
+        self.ref = self.store.save_artifact(self.dataset)
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
@@ -153,11 +113,11 @@ class TestExecutionContext(unittest.TestCase):
         self.assertEqual(self.ctx.resolve(123), 123)
 
     def test_materialize_big_object(self):
-        result = self.ctx.materialize(self.dataset, self.store)
+        result = self.ctx.materialize_artifact(self.dataset, self.store)
 
         self.assertIsInstance(result, ArtifactRef)
 
-        loaded = self.store.load(result)
+        loaded = self.store.load_artifact(result)
         xr.testing.assert_identical(loaded, self.dataset)
 
     def test_materialize_nested(self):
@@ -166,14 +126,14 @@ class TestExecutionContext(unittest.TestCase):
             "b": [self.dataset, 1],
         }
 
-        result = self.ctx.materialize(value, self.store)
+        result = self.ctx.materialize_artifact(value, self.store)
 
         self.assertIsInstance(result["a"], ArtifactRef)
         self.assertIsInstance(result["b"][0], ArtifactRef)
         self.assertEqual(result["b"][1], 1)
 
     def test_materialize_scalar(self):
-        self.assertEqual(self.ctx.materialize(5, self.store), 5)
+        self.assertEqual(self.ctx.materialize_artifact(5, self.store), 5)
 
     def test_no_output_spec(self):
         result = self.ctx.normalize_outputs(

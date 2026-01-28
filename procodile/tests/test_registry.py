@@ -3,17 +3,22 @@
 #  https://opensource.org/license/apache-2-0.
 import unittest
 
-from procodile import FromMain, Process, Workflow, WorkflowRegistry
+from procodile import (
+    FromMain,
+    Process,
+    ProcessRegistry,
+    Workflow,
+    WorkflowStepRegistry,
+)
 
 from .test_process import f1, f2, f3, f4, f4_fail_ctx
 
 
 class TestWorkflowRegistry(unittest.TestCase):
     def setUp(self):
-        self.registry = WorkflowRegistry()
-        wf = self.registry.get_or_create_workflow("first_workflow")
+        self.registry = ProcessRegistry()
 
-        @wf.main(
+        @self.registry.main(
             id="first_step",
             inputs={"id": None},
             outputs={"a": None},
@@ -21,44 +26,54 @@ class TestWorkflowRegistry(unittest.TestCase):
         def first_step(id: str) -> str:
             return id
 
-        @wf.step(
+        @first_step.step(
             id="second_step",
             inputs={"id": FromMain(output="a")},
         )
         def second_step(id: str) -> str:
             return id
 
-    def test_get_or_create_workflow(self):
-        registry = WorkflowRegistry()
-
-        wf1 = registry.get_or_create_workflow("wf")
-        wf2 = registry.get_or_create_workflow("wf")
-
-        self.assertIs(wf1, wf2)
-        self.assertEqual(len(registry), 1)
-        self.assertIn("wf", list(registry))
+        self.first_step = first_step
+        self.second_step = second_step
 
     def test_len_and_contains(self):
         self.assertEqual(len(self.registry), 1)
-        self.assertIn("first_workflow", self.registry)
+        self.assertIn("first_step", self.registry)
         self.assertNotIn("missing", self.registry)
 
     def test_getitem_returns_process(self):
-        proc = self.registry["first_workflow"]
+        proc = self.registry["first_step"]
 
         self.assertIsInstance(proc, Process)
-        self.assertEqual(proc.description.id, "first_workflow")
+        self.assertEqual(proc.description.id, "first_step")
 
     def test_get_method(self):
-        proc = self.registry.get("first_workflow")
+        proc = self.registry.get("first_step")
         missing = self.registry.get("missing")
 
         self.assertIsInstance(proc, Process)
         self.assertIsNone(missing)
 
+    def test_get_workflows(self):
+        wfs = self.registry.workflows()
+
+        self.assertIsInstance(wfs, dict)
+        self.assertEqual(next(iter(wfs.keys())), "first_step")
+        self.assertIsInstance(next(iter(wfs.values())).registry, WorkflowStepRegistry)
+        self.assertIsInstance(
+            next(iter(wfs.values())).registry.main["first_step"], Process
+        )
+        self.assertIsInstance(
+            next(iter(wfs.values())).registry.steps["second_step"]["step"], Process
+        )
+        self.assertEqual(
+            next(iter(wfs.values())).registry.steps["second_step"]["dependencies"],
+            {"id": {"output": "a", "type": "from_main"}},
+        )
+
     def test_iteration_yields_keys(self):
         keys = list(self.registry)
-        self.assertEqual(keys, ["first_workflow"])
+        self.assertEqual(keys, ["first_step"])
 
     def test_values_yield_processes(self):
         values = list(self.registry.values())
@@ -72,43 +87,27 @@ class TestWorkflowRegistry(unittest.TestCase):
         self.assertEqual(len(items), 1)
         workflow_id, proc = items[0]
 
-        self.assertEqual(workflow_id, "first_workflow")
+        self.assertEqual(workflow_id, "first_step")
         self.assertIsInstance(proc, Process)
 
     def test_get_workflow_returns_workflow(self):
-        wf = self.registry.get_workflow("first_workflow")
+        wf = self.registry.get_workflow("first_step")
 
         self.assertIsInstance(wf, Workflow)
-        self.assertEqual(wf.id, "first_workflow")
+        self.assertEqual(wf.id, "first_step")
 
     def test_workflow_without_steps_returns_main_interface(self):
-        registry = WorkflowRegistry()
-        wf = registry.get_or_create_workflow("simple")
+        registry = ProcessRegistry()
 
-        @wf.main(id="main")
+        @registry.main(id="main")
         def main(x: int) -> int:
             return x
 
-        proc = registry["simple"]
+        proc = registry["main"]
 
         self.assertIsInstance(proc, Process)
-        self.assertEqual(proc.description.id, "simple")
-        self.assertEqual(proc.function, wf.run)
-
-    def test_multiple_main_steps_raises(self):
-        registry = WorkflowRegistry()
-        wf = registry.get_or_create_workflow("bad")
-
-        @wf.main(id="a")
-        def a(x: int) -> int:
-            return x
-
-        @wf.main(id="b")
-        def b(x: int) -> int:
-            return x
-
-        with self.assertRaises(ValueError):
-            _ = registry["bad"]
+        self.assertEqual(proc.description.id, "main")
+        self.assertEqual(proc.function, main.run)
 
     def test_registry_never_returns_workflow(self):
         for value in self.registry.values():
@@ -120,34 +119,31 @@ class TestWorkflowRegistry(unittest.TestCase):
             self.assertIsInstance(value, Process)
 
     def test_register(self):
-        registry = WorkflowRegistry()
+        registry = ProcessRegistry()
 
         self.assertEqual(None, registry.get("f1"))
         self.assertEqual([], list(registry.keys()))
 
         # use as no-arg decorator
-        workflow = registry.get_or_create_workflow("workflow")
-        workflow.main(f1)
+        registry.main(f1)
         self.assertEqual(1, len(registry))
         p1 = list(registry.values())[0]
         self.assertIsInstance(p1, Process)
         self.assertIs(p1, registry.get(p1.description.id))
-        self.assertEqual(["workflow"], list(registry.keys()))
+        self.assertEqual(["tests.test_process:f1"], list(registry.keys()))
 
         # use as decorator with args
-        workflow2 = registry.get_or_create_workflow("workflow2")
-        workflow2.main(id="f2")(f2)
+        registry.main(id="f2")(f2)
         self.assertEqual(2, len(registry))
         p1, p2 = registry.values()
         self.assertIsInstance(p1, Process)
         self.assertIsInstance(p2, Process)
         self.assertIs(p1, registry.get(p1.description.id))
         self.assertIs(p2, registry.get(p2.description.id))
-        self.assertEqual(["workflow", "workflow2"], list(registry.keys()))
+        self.assertEqual(["tests.test_process:f1", "f2"], list(registry.keys()))
 
         # use as function
-        workflow3 = registry.get_or_create_workflow("workflow3")
-        workflow3.main(f3, id="my_fn3")
+        registry.main(f3, id="my_fn3")
         self.assertEqual(3, len(registry))
         p1, p2, p3 = registry.values()
         self.assertIsInstance(p1, Process)
@@ -156,11 +152,12 @@ class TestWorkflowRegistry(unittest.TestCase):
         self.assertIs(p1, registry.get(p1.description.id))
         self.assertIs(p2, registry.get(p2.description.id))
         self.assertIs(p3, registry.get(p3.description.id))
-        self.assertEqual(["workflow", "workflow2", "workflow3"], list(registry.keys()))
+        self.assertEqual(
+            ["tests.test_process:f1", "f2", "my_fn3"], list(registry.keys())
+        )
 
         # use JobContext
-        workflow4 = registry.get_or_create_workflow("workflow4")
-        workflow4.main(f4, id="func4_with_job_ctx")
+        registry.main(f4, id="func4_with_job_ctx")
         self.assertEqual(4, len(registry))
         p1, p2, p3, p4 = registry.values()
         self.assertIsInstance(p1, Process)
@@ -172,19 +169,19 @@ class TestWorkflowRegistry(unittest.TestCase):
         self.assertIs(p3, registry.get(p3.description.id))
         self.assertIs(p4, registry.get(p4.description.id))
         self.assertEqual(
-            ["workflow", "workflow2", "workflow3", "workflow4"], list(registry.keys())
+            ["tests.test_process:f1", "f2", "my_fn3", "func4_with_job_ctx"],
+            list(registry.keys()),
         )
 
         # use 2 JobContext
-        workflow5 = registry.get_or_create_workflow("workflow5")
         with self.assertRaises(ValueError):
-            workflow5.main(f4_fail_ctx, id="f4_fail_ctx_with_2_job_ctx")
-        self.assertEqual(5, len(registry))
+            registry.main(f4_fail_ctx, id="f4_fail_ctx_with_2_job_ctx")
+        self.assertEqual(4, len(registry))
 
-        with self.assertRaises(ValueError):
-            _ = registry["workflow5"]
+        with self.assertRaises(KeyError):
+            _ = registry["f4_fail_ctx_with_2_job_ctx"]
 
         self.assertEqual(
-            ["workflow", "workflow2", "workflow3", "workflow4", "workflow5"],
+            ["tests.test_process:f1", "f2", "my_fn3", "func4_with_job_ctx"],
             list(registry.keys()),
         )
