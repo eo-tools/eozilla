@@ -78,7 +78,7 @@ class ComponentContainer:
     def is_empty(self) -> bool:
         return len(self._entries) == 0
 
-    def get_json_values(self):
+    def get_json_values(self) -> dict[str, JsonValue]:
         """Get component values as JSON values."""
         return {
             name: entry.component.get_json_value()

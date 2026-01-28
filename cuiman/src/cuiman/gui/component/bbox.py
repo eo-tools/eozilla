@@ -32,12 +32,10 @@ class BboxSelector(pn.viewable.Viewer):
         self.map.add(draw_control)
 
         # Leaflet map as ipy-widget
-        map_widget = pn.pane.IPyWidget(self.map, width=512)
+        map_widget = pn.pane.IPyWidget(self.map, width=640)
 
         # Displayed value as text for feedback
-        value_display = pn.widgets.StaticText(
-            name="Selected bbox", value=str(self.value)
-        )
+        value_display = pn.widgets.StaticText(value=f"Selected bbox: {self.value}")
 
         self._panel = pn.Column(map_widget, value_display)
         self._value_display = value_display
@@ -55,7 +53,7 @@ class BboxSelector(pn.viewable.Viewer):
             min_lon, max_lon = min(lons), max(lons)
             min_lat, max_lat = min(lats), max(lats)
             self.value = [min_lon, min_lat, max_lon, max_lat]
-            self._value_display.value = str(self.value)
+            self._value_display.value = f"Selected bbox: {self.value}"
 
             for layer in self.map.layers:
                 if layer.name == "user":

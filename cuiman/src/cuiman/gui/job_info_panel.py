@@ -14,6 +14,7 @@ from gavicore.models import JobInfo, JobList
 from .jobs_observer import JobsObserver
 
 
+@JobsObserver.register  # virtual subclass, no runtime checks
 class JobInfoPanel(pn.viewable.Viewer):
     job_info = param.ClassSelector(class_=JobInfo, allow_None=True, default=None)
     client_error = param.ClassSelector(
@@ -28,6 +29,8 @@ class JobInfoPanel(pn.viewable.Viewer):
 
     def __panel__(self) -> pn.viewable.Viewable:
         return self._layout
+
+    # ---- JobsObserver interface implementation ----
 
     def on_job_added(self, job_info: JobInfo):
         self.on_job_changed(job_info)
@@ -82,10 +85,6 @@ class JobInfoPanel(pn.viewable.Viewer):
         self._message_pane.object = job_info.message or ""
         self._layout[:] = [self._message_pane, pn.Row(column1, column2)]
         # pn.state.notifications.success(f"Change {job_info.updated}", duration=1000)
-
-
-# Register JobInfoPanel as a virtual subclass of JobsObserver
-JobsObserver.register(JobInfoPanel)
 
 
 def _to_value(value: Any, units: str = ""):
