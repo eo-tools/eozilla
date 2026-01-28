@@ -12,16 +12,19 @@ from .workflow import Workflow
 
 class ProcessRegistry(Mapping[str, Process]):
     """
-    A registry for managing and accessing workflows as executable processes.
+    A registry for processes.
 
-    This class provides a read-only mapping from unique identifiers to
-    facade-like [Process][procodile.process.Process] instances. While the
-    user interacts with these projected processes, the registry internally
-    manages full [Workflow][procodile.workflow.Workflow] instances.
+    Processes are Python functions with extra metadata and can be extended
+    to create `workflows` using `steps` decorator.
 
     A Workflow consists of one or more Python functions with metadata,
     designed to execute sequentially by resolving dependencies and
     passing outputs to downstream steps.
+
+    This class provides a read-only mapping from unique identifiers to
+    facade-like [Process][procodile.process.Process] instances. While the
+    user interacts with these processes, the registry internally
+    manages full [Workflow][procodile.workflow.Workflow] instances.
 
     The internal Workflow objects hold the source-of-truth metadata required
     for dependency resolution and execution, while the exposed Process
