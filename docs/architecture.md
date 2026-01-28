@@ -67,7 +67,7 @@ classDiagram
     namespace procodile {
         class JobContext
         class Process
-        class WorkflowRegistry
+        class ProcessRegistry
         class cli.new_cli
     }
     namespace appligator {
@@ -86,9 +86,9 @@ classDiagram
     server ..> routes : uses
     server ..> services.local.LocalService : can run with
     server ..> services.airflow.AirflowService : can run with
-    services.local.LocalService ..> WorkflowRegistry : uses
-    airflow.gen_dag ..> WorkflowRegistry : uses
-    WorkflowRegistry *--> Process: holds
+    services.local.LocalService ..> ProcessRegistry : uses
+    airflow.gen_dag ..> ProcessRegistry : uses
+    ProcessRegistry *--> Process: holds
     Process ..> JobContext : uses
     cli.new_cli ..> ExecutionRequest : uses
     models *-- models.ProcessRequest

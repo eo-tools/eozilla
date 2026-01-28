@@ -5,7 +5,6 @@ allows for a couple of things:
 
 - Registering your workflows comprising an entry-point (main) and
   steps implemented as Python functions.
-  (Well, steps are not yet implemented.)
 - Querying and executing the workflow entry points via a dedicated Python API
   and CLI.
 - Using YAML and JSON formats based on the interfaces and models
