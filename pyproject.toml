@@ -285,7 +285,7 @@ cmd = "python -m tools.gen_client"
 cmd = "python -m tools.gen_client_docs"
 
 [tool.pixi.tasks.gen-dags]
-cmd = "appligator wraptile.services.local.testing:service.workflow_registry"
+cmd = "appligator wraptile.services.local.testing:service.registry"
 
 # pixi run build
 
