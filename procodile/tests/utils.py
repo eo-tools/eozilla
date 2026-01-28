@@ -22,10 +22,10 @@ class DummyArtifactStore(ArtifactStore):
         self.root.mkdir(parents=True, exist_ok=True)
         super().__init__()
 
-    def is_big(self, obj: Any) -> bool:
+    def is_artifact_big(self, obj: Any) -> bool:
         return isinstance(obj, xr.Dataset)
 
-    def save(self, obj: Any) -> ArtifactRef:
+    def save_artifact(self, obj: Any) -> ArtifactRef:
         if not isinstance(obj, xr.Dataset):
             raise TypeError(f"Unsupported big object: {type(obj)}")
 
@@ -36,7 +36,7 @@ class DummyArtifactStore(ArtifactStore):
 
         return ArtifactRef(path=str(path), loader=self.LOADER_NAME)
 
-    def load(self, ref: ArtifactRef) -> xr.Dataset:
+    def load_artifact(self, ref: ArtifactRef) -> xr.Dataset:
         if ref.loader != self.LOADER_NAME:
             raise ValueError(f"Unknown loader {ref.loader}")
 

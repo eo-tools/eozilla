@@ -32,14 +32,14 @@ class TestNullArtifactStore(unittest.TestCase):
         self.store = NullArtifactStore()
 
     def test_is_big_always_false(self):
-        self.assertFalse(self.store.is_big(object()))
-        self.assertFalse(self.store.is_big("string"))
-        self.assertFalse(self.store.is_big(123))
-        self.assertFalse(self.store.is_big(None))
+        self.assertFalse(self.store.is_artifact_big(object()))
+        self.assertFalse(self.store.is_artifact_big("string"))
+        self.assertFalse(self.store.is_artifact_big(123))
+        self.assertFalse(self.store.is_artifact_big(None))
 
     def test_save_raises_runtime_error(self):
         with self.assertRaises(RuntimeError):
-            self.store.save(object())
+            self.store.save_artifact(object())
 
     def test_load_raises_runtime_error(self):
         ref = ArtifactRef(path="", loader="")
@@ -58,7 +58,7 @@ class TestExecutionContext(unittest.TestCase):
         self.ctx = ExecutionContext(self.store)
 
         self.dataset = xr.Dataset({"x": ("y", [1, 2])})
-        self.ref = self.store.save(self.dataset)
+        self.ref = self.store.save_artifact(self.dataset)
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)

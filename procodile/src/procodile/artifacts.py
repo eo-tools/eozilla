@@ -32,7 +32,7 @@ class ArtifactStore(ABC):
     """
 
     @abstractmethod
-    def is_big(self, obj: Any) -> bool:
+    def is_artifact_big(self, obj: Any) -> bool:
         """
         Determine whether an object should be treated as a 'big object'
         and stored externally instead of being passed as is.
@@ -47,7 +47,7 @@ class ArtifactStore(ABC):
         raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
-    def save(self, obj: Any) -> ArtifactRef:
+    def save_artifact(self, obj: Any) -> ArtifactRef:
         """
         Persist a large object and return a reference to it.
 
@@ -63,7 +63,7 @@ class ArtifactStore(ABC):
         raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
-    def load(self, ref: ArtifactRef) -> Any:
+    def load_artifact(self, ref: ArtifactRef) -> Any:
         """
         Load a previously stored object using an ArtifactRef.
 
@@ -87,19 +87,19 @@ class NullArtifactStore(ArtifactStore):
     support saving or loading artifacts.
     """
 
-    def is_big(self, obj: Any) -> bool:
+    def is_artifact_big(self, obj: Any) -> bool:
         """
         No object is considered big in the null store.
         """
         return False
 
-    def save(self, obj: Any):
+    def save_artifact(self, obj: Any, loader_id: str):
         """
         Saving artifacts is not supported in the null store.
         """
         raise RuntimeError("NullArtifactStore does not support saving artifacts")
 
-    def load(self, ref):
+    def load_artifact(self, ref):
         """
         Loading artifacts is not supported in the null store.
         """
@@ -174,8 +174,8 @@ class ExecutionContext:
         """
         Recursively materialize big objects.
         """
-        if store.is_big(value):
-            return store.save(value)
+        if store.is_artifact_big(value):
+            return store.save_artifact(value)
 
         if isinstance(value, dict):
             return {k: self.materialize(v, store) for k, v in value.items()}
