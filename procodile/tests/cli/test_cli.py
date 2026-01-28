@@ -13,12 +13,12 @@ from procodile.cli import new_cli
 registry = ProcessRegistry()
 
 
-@registry.main(id="f1")
+@registry.process(id="f1")
 def f1(a: int, b: str, c: float) -> str:
     return f"{a}, {b}, {c}"
 
 
-@registry.main(id="f2")
+@registry.process(id="f2")
 def f2(x: bool, y: str, z: float) -> tuple:
     if y == "bibo":
         raise ValueError("y must not be bibo")

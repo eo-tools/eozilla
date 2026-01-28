@@ -14,7 +14,7 @@ from procodile import (
 from .test_process import f1, f2, f3, f4, f4_fail_ctx
 
 
-class TestWorkflowRegistry(unittest.TestCase):
+class TestProcessRegistry(unittest.TestCase):
     def setUp(self):
         self.registry = ProcessRegistry()
 
@@ -99,7 +99,7 @@ class TestWorkflowRegistry(unittest.TestCase):
     def test_workflow_without_steps_returns_main_interface(self):
         registry = ProcessRegistry()
 
-        @registry.main(id="main")
+        @registry.process(id="main")
         def main(x: int) -> int:
             return x
 
@@ -125,7 +125,7 @@ class TestWorkflowRegistry(unittest.TestCase):
         self.assertEqual([], list(registry.keys()))
 
         # use as no-arg decorator
-        registry.main(f1)
+        registry.process(f1)
         self.assertEqual(1, len(registry))
         p1 = list(registry.values())[0]
         self.assertIsInstance(p1, Process)
@@ -133,7 +133,7 @@ class TestWorkflowRegistry(unittest.TestCase):
         self.assertEqual(["tests.test_process:f1"], list(registry.keys()))
 
         # use as decorator with args
-        registry.main(id="f2")(f2)
+        registry.process(id="f2")(f2)
         self.assertEqual(2, len(registry))
         p1, p2 = registry.values()
         self.assertIsInstance(p1, Process)
@@ -143,7 +143,7 @@ class TestWorkflowRegistry(unittest.TestCase):
         self.assertEqual(["tests.test_process:f1", "f2"], list(registry.keys()))
 
         # use as function
-        registry.main(f3, id="my_fn3")
+        registry.process(f3, id="my_fn3")
         self.assertEqual(3, len(registry))
         p1, p2, p3 = registry.values()
         self.assertIsInstance(p1, Process)
@@ -157,7 +157,7 @@ class TestWorkflowRegistry(unittest.TestCase):
         )
 
         # use JobContext
-        registry.main(f4, id="func4_with_job_ctx")
+        registry.process(f4, id="func4_with_job_ctx")
         self.assertEqual(4, len(registry))
         p1, p2, p3, p4 = registry.values()
         self.assertIsInstance(p1, Process)
@@ -175,7 +175,7 @@ class TestWorkflowRegistry(unittest.TestCase):
 
         # use 2 JobContext
         with self.assertRaises(ValueError):
-            registry.main(f4_fail_ctx, id="f4_fail_ctx_with_2_job_ctx")
+            registry.process(f4_fail_ctx, id="f4_fail_ctx_with_2_job_ctx")
         self.assertEqual(4, len(registry))
 
         with self.assertRaises(KeyError):
