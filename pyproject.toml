@@ -412,3 +412,10 @@ cmd = "mkdocs serve"
 
 [tool.pixi.tasks.docs-build]
 cmd = "mkdocs build"
+
+
+[tool.coverage.run]
+# TODO: remove this when `gen_image` is implemented
+omit = [
+    'appligator/src/appligator/airflow/gen_image.py'
+]

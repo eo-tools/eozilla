@@ -56,12 +56,12 @@ class TestDependencyGraph(unittest.TestCase):
 
         order, graph = main.execution_order
 
-        self.assertEqual(order, ["main", "step1", "step2", "final_step"])
+        self.assertEqual(order, ["main", "step1", "step2", FINAL_STEP_ID])
 
         self.assertEqual(graph["main"], {"step1"})
         self.assertEqual(graph["step1"], {"step2"})
-        self.assertEqual(graph["step2"], {"final_step"})
-        self.assertNotIn("final_step", graph)
+        self.assertEqual(graph["step2"], {FINAL_STEP_ID})
+        self.assertNotIn(FINAL_STEP_ID, graph)
 
     def test_unknown_step_dependency_raises(self):
         @self.registry.main(id="main", outputs={"a": None})

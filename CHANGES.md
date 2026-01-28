@@ -24,6 +24,15 @@
   individual processes and link them using explicit dependencies defined using 
   `steps`. This allows for the creation of complex, executable workflows 
   directly within `procodile`. (#50)
+- Updated `appligator` to generate Airflow DAGs directly from a
+  `WorkflowRegistry`, supporting workflows with multiple, explicitly defined
+  steps.
+- Added a new `--image-name` option to the `appligator` CLI to control the
+  Docker image used for generated Airflow tasks.
+- Introduced an **Intermediate Representation (IR)** layer that normalizes
+  workflows from `WorkflowRegistry` before DAG generation, enabling easier 
+  debugging, clearer dependency inspection, and more robust and extensible 
+  DAG rendering.
 
 ### Fixes
 

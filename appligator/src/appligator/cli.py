@@ -10,6 +10,7 @@ import typer
 EOZILLA_PATH = Path(__file__).parent.parent.parent.parent.resolve()
 DEFAULT_DAGS_FOLDER = EOZILLA_PATH / "eozilla-airflow/dags"
 PROCESS_REGISTRY_SPEC_EX = "wraptile.services.local.testing:service.process_registry"
+DEFAULT_IMAGE_NAME = "appligator_workflow_image:v1"
 
 CLI_NAME = "appligator"
 
@@ -30,6 +31,15 @@ def main(
         Path,
         typer.Option(..., help="An Airflow DAGs folder to which to write the outputs."),
     ] = DEFAULT_DAGS_FOLDER,
+    image_name: Annotated[
+        str,
+        typer.Option(
+            ...,
+            help="Name of the Docker image which is created from "
+            "your workflow and required packages that Airflow "
+            "will use for running the workflows in the registry.",
+        ),
+    ] = DEFAULT_IMAGE_NAME,
     version: Annotated[
         bool,
         typer.Option(..., help="Show version and exit."),
@@ -53,7 +63,8 @@ def main(
     import datetime
 
     from appligator import __version__
-    from appligator.airflow.gen_dag import gen_dag
+    from appligator.airflow.gen_image import gen_image
+    from appligator.airflow.gen_workflow_dag import gen_workflow_dag
     from gavicore.util.dynimp import import_value
     from procodile import ProcessRegistry
 
@@ -75,7 +86,17 @@ def main(
     dags_folder.mkdir(exist_ok=True)
 
     for process_id, process in process_registry.items():
-        dag_code = gen_dag(process)
+        # TODO: implement this better later
+        image_name = gen_image(
+            process_registry.get_workflow(process_id).registry,
+            image_name=image_name,
+            use_local_packages=True,
+        )
+        dag_code = gen_workflow_dag(
+            dag_id=process_id,
+            registry=process_registry.get_workflow(process_id).registry,
+            image=image_name,
+        )
         dag_file = dags_folder / f"{process_id}.py"
         with dag_file.open("w") as stream:
             stream.write(
