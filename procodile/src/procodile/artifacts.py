@@ -164,7 +164,10 @@ class ExecutionContext:
         if isinstance(result, tuple):
             if len(result) != len(output_keys):
                 raise ValueError("Tuple output length does not match declared outputs")
-            return {k: self.materialize_artifact(v, store) for k, v in zip(output_keys, result)}
+            return {
+                k: self.materialize_artifact(v, store)
+                for k, v in zip(output_keys, result)
+            }
 
         raise TypeError(
             f"Invalid return type for declared outputs. result: {result}, output_spec: {output_spec}",

@@ -3,6 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 from procodile.cli import new_cli
+
 from procodile_example import __version__
 
 # The CLI with a basic set of commands.

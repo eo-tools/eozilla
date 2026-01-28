@@ -9,6 +9,7 @@ from typing import Callable, Optional
 from pydantic.fields import FieldInfo
 
 from gavicore.models import InputDescription, OutputDescription
+
 from .process import Process
 from .workflow import Workflow
 
@@ -132,6 +133,7 @@ class ProcessRegistry(Mapping[str, Process]):
                 If `inputs_arg` is `True` the only argument will be the input argument,
                 if `inputs_arg` is a `str` it must be the name of the only argument.
         """
+
         def register_workflow(fn: Callable) -> Workflow:
             f_name = f"{fn.__module__}:{fn.__qualname__}"
             workflow_id = id or f_name
