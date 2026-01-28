@@ -7,12 +7,12 @@ from pydantic import Field
 from appligator.airflow.gen_workflow_dag import (
     gen_workflow_dag,
 )
+from procodile import ProcessRegistry
 from procodile.workflow import FromMain, FromStep, Workflow
 
-first_workflow = Workflow(id="first_workflow")
+registry = ProcessRegistry()
 
-
-@first_workflow.main(
+@registry.main(
     id="first_step",
     inputs={"id": Field(title="main input")},
     outputs={
@@ -23,7 +23,7 @@ def first_step(id: str) -> str:
     return id
 
 
-@first_workflow.step(
+@first_step.step(
     id="second_step",
     inputs={"id": FromMain(output="a")},
 )
@@ -31,7 +31,7 @@ def second_step(id: str) -> str:
     return id
 
 
-@first_workflow.step(
+@first_step.step(
     id="third_step",
 )
 def third_step(
@@ -43,7 +43,7 @@ def third_step(
 def test_generate_airflow_dag_from_workflow():
     dag_code = gen_workflow_dag(
         dag_id="first_workflow",
-        registry=first_workflow.registry,
+        registry=first_step.registry,
         image="example:latest",
     )
     start_date = (datetime.now() - timedelta(days=1)).date().isoformat()
@@ -134,20 +134,18 @@ def test_generate_airflow_dag_from_workflow():
     )
 
 
-wf = Workflow(id="bad_workflow")
 
-
-@wf.main(id="main")
+@registry.main(id="main")
 def main() -> str:
     return "x"
 
 
-@wf.step(id="step1")
+@main.step(id="step1")
 def step1(x: Annotated[str, FromMain("f")]) -> str:
     return x
 
 
-@wf.step(id="step2")
+@main.step(id="step2")
 def step2(x: Annotated[str, FromMain("p")]) -> str:
     return x
 
@@ -156,7 +154,7 @@ def test_generate_airflow_dag_fails_on_multiple_leaf_steps():
     with pytest.raises(ValueError, match="Expected exactly one leaf task"):
         gen_workflow_dag(
             dag_id="bad_workflow",
-            registry=wf.registry,
+            registry=main.registry,
             image="x",
         )
 
@@ -172,4 +170,4 @@ def test_generate_airflow_dag_fails_on_invalid_registry():
 
 def test_generate_airflow_dag_fails_on_no_image():
     with pytest.raises(ValueError, match="Image name is required to generate dag."):
-        gen_workflow_dag(dag_id="bad_registry", registry=wf.registry, image=None)
+        gen_workflow_dag(dag_id="bad_registry", registry=main.registry, image=None)
