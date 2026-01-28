@@ -237,7 +237,7 @@ class Workflow:
 
     def __init__(
         self,
-        fn: Callable | None,
+        fn: Callable,
         workflow_id: str,
         artifact_store: ArtifactStore = NullArtifactStore(),
         **kwargs,
