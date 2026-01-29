@@ -9,7 +9,12 @@ from unittest import TestCase
 
 from cuiman.api.config import ClientConfig
 from cuiman.api.defaults import DEFAULT_API_URL
-from gavicore.models import InputDescription, ProcessDescription
+from gavicore.models import (
+    InputDescription,
+    ProcessDescription,
+    AdditionalParameters,
+    AdditionalParameter,
+)
 
 
 class ClientConfigTest(TestCase):
@@ -113,7 +118,7 @@ class ClientConfigTest(TestCase):
         self.assertIsInstance(ClientConfig.default_config, ClientConfig)
         self.assertEqual(DEFAULT_API_URL, ClientConfig.default_config.api_url)
 
-    def test_default_filter_predicates(self):
+    def test_default_accept_process(self):
         # noinspection PyArgumentList
         self.assertEqual(
             True,
@@ -122,6 +127,8 @@ class ClientConfigTest(TestCase):
                 ignored_arg=137,
             ),
         )
+
+    def test_default_accept_input(self):
         # noinspection PyArgumentList,PyTypeChecker
         self.assertEqual(
             True,
@@ -130,5 +137,32 @@ class ClientConfigTest(TestCase):
                 "ignored",
                 InputDescription(title="ignored", schema={}),
                 ignored_arg=137,
+            ),
+        )
+
+    def test_default_is_advanced_input(self):
+        # noinspection PyArgumentList,PyTypeChecker
+        self.assertEqual(
+            False,
+            ClientConfig.is_advanced_input(
+                ProcessDescription(id="test", version="0"),
+                "common_x",
+                InputDescription(schema={"type": "integer"}),
+            ),
+        )
+        # noinspection PyArgumentList,PyTypeChecker
+        self.assertEqual(
+            True,
+            ClientConfig.is_advanced_input(
+                ProcessDescription(id="test", version="0"),
+                "advanced_x",
+                InputDescription(
+                    schema={"type": "integer"},
+                    additionalParameters=AdditionalParameters(
+                        parameters=[
+                            AdditionalParameter(name="level", value=["advanced"])
+                        ]
+                    ),
+                ),
             ),
         )

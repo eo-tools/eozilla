@@ -212,6 +212,14 @@ class ClientConfig(AuthConfig, BaseSettings):
         """
         Experimental method, do not use!
 
+        Designed to be overridden by a custom `ClientConfig` class
+        from which an instance will be assigned to `ClientConfig.default_config`
+        to become effective.
+
+        The default implementations checks if the given `input_description`
+        has `additionalParameters`, and if so, if a parameter with name
+        `"level"` has value `["advanced"]` (a list!).
+
         Args:
             process_description: The process description.
             input_name: The input's name.
@@ -220,7 +228,7 @@ class ClientConfig(AuthConfig, BaseSettings):
 
         Returns:
             `True` if the input is advanced
-            (e.g. for advanced users only).
+            (e.g. for advanced process users only).
         """
         additional_parameters = input_description.additionalParameters
         if additional_parameters:
