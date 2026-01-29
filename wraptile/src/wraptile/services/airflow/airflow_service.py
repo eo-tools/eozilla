@@ -36,6 +36,7 @@ from gavicore.models import (
     ProcessRequest,
     ProcessSummary,
 )
+from procodile.workflow import FINAL_STEP_ID
 from wraptile.exceptions import ServiceException
 from wraptile.services.base import ServiceBase
 
@@ -198,7 +199,7 @@ class AirflowService(ServiceBase):
             xcom_entry = self.airflow_xcom_api.get_xcom_entry(
                 dag_id=dag_id,
                 dag_run_id=job_id,
-                task_id=dag_id + "_task",
+                task_id=FINAL_STEP_ID,
                 xcom_key="return_value",
             )
             if xcom_entry is not None and xcom_entry.actual_instance is not None:

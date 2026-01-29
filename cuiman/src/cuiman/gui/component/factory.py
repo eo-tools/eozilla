@@ -47,26 +47,27 @@ class ComponentFactory(ABC):
 
 class ComponentFactoryBase(ComponentFactory, ABC):
     """
-    Base class for component factories that dedicated to JSON type and/or format.
+    Base class for component factories that can be identified
+    by a JSON Schema's "type" and/or "format" values.
     """
 
     type: JsonType | Literal["*"] | None = None
     """
     Specifies the JSON type to use as a registry key.
-    The key `"*"` can be used for arbitrary types and requires
+    The value `"*"` can be used for arbitrary types and requires
     overriding the `accept` method by a suitable implementation
     that recognizes the actual type in the schema.
-    The key `None` expects that a type must not be specified
+    The value `None` expects that a type must not be specified
     in a given schema.
     """
 
     format: str | Literal["*"] | None = None
     """
-    Specifies the JSON type to use as a registry key.
-    The key `"*"` can be used for arbitrary types and requires
+    Specifies the JSON format to use as a registry key.
+    The value `"*"` can be used for arbitrary formats and requires
     overriding the `accept` method by a suitable implementation
     that recognizes the actual format in the schema.
-    The key `None` expects that a type must not be specified
+    The value `None` expects that a format must not be specified
     in a given schema.
     """
 

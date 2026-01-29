@@ -16,6 +16,7 @@ click = "*"
 fastapi = "*"
 httpx = "*"
 pydantic = "*"
+pydantic-settings = "*"
 pyyaml = "*"
 typer = "*"
 uri-template = "*"
@@ -62,7 +63,8 @@ nbformat = "*"
 # For mermaid diagrams
 pymdown-extensions = "*"
 anaconda-client = ">=1.13.0,<2"
-pydantic-settings = ">=2.12.0,<3"
+graphviz = ">=13.1.2,<14"
+python-graphviz = ">=0.21,<0.22"
 
 [tool.pixi.pypi-dependencies]
 # For PyPI builds (maybe replace by some pixi-friendly tool)
@@ -410,3 +412,10 @@ cmd = "mkdocs serve"
 
 [tool.pixi.tasks.docs-build]
 cmd = "mkdocs build"
+
+
+[tool.coverage.run]
+# TODO: remove this when `gen_image` is implemented
+omit = [
+    'appligator/src/appligator/airflow/gen_image.py'
+]

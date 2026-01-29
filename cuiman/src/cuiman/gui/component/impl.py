@@ -22,6 +22,8 @@ class BooleanCF(ComponentFactoryBase):
         self, value: JsonValue, title: str, schema: JsonSchemaDict
     ) -> Component:
         value = value if value is not None else False
+        # description = schema.get("description")
+        # Checkbox does not support "description"
         return WidgetComponent(
             pn.widgets.Checkbox(name=title, value=value),
         )
@@ -37,11 +39,13 @@ class IntegerCF(ComponentFactoryBase):
         assert isinstance(value, (int, float))
         minimum = schema.get("minimum")
         maximum = schema.get("maximum")
+        description = schema.get("description")
         if (
             isinstance(minimum, (int, float))
             and isinstance(maximum, (int, float))
             and minimum < maximum
         ):
+            # EditableIntSlider does not support "description"
             widget = pn.widgets.EditableIntSlider(
                 name=title,
                 start=int(minimum),
@@ -50,7 +54,9 @@ class IntegerCF(ComponentFactoryBase):
                 step=max(1, pow(10, int(math.log10(maximum - minimum)) - 1) // 10),
             )
         else:
-            widget = pn.widgets.IntInput(name=title, value=int(value))
+            widget = pn.widgets.IntInput(
+                name=title, value=int(value), description=description
+            )
         return WidgetComponent(widget)
 
 
@@ -63,11 +69,13 @@ class NumberCF(ComponentFactoryBase):
         value = value if value is not None else 0
         minimum = schema.get("minimum")
         maximum = schema.get("maximum")
+        description = schema.get("description")
         if (
             isinstance(minimum, (int, float))
             and isinstance(maximum, (int, float))
             and minimum < maximum
         ):
+            # EditableFloatSlider does not support "description"
             widget = pn.widgets.EditableFloatSlider(
                 name=title,
                 start=minimum,
@@ -76,7 +84,9 @@ class NumberCF(ComponentFactoryBase):
                 step=pow(10.0, int(math.log10(maximum - minimum)) - 1.0),
             )
         else:
-            widget = pn.widgets.FloatInput(name=title, value=value)
+            widget = pn.widgets.FloatInput(
+                name=title, value=value, description=description
+            )
         return WidgetComponent(widget)
 
 
@@ -87,10 +97,15 @@ class StringCF(ComponentFactoryBase):
         self, value: JsonValue, title: str, schema: JsonSchemaDict
     ) -> Component:
         value = value or ""
+        description = schema.get("description")
         if "enum" in schema:
-            widget = pn.widgets.Select(name=title, options=schema["enum"], value=value)
+            widget = pn.widgets.Select(
+                name=title, options=schema["enum"], value=value, description=description
+            )
         else:
-            widget = pn.widgets.TextInput(name=title, value=value)
+            widget = pn.widgets.TextInput(
+                name=title, value=value, description=description
+            )
         return WidgetComponent(widget)
 
 
@@ -103,8 +118,10 @@ class DateCF(ComponentFactoryBase):
     ) -> Component:
         json_codec = JsonDateCodec()
         date = json_codec.from_json(value) or datetime.date.today()
+        description = schema.get("description")
         return WidgetComponent(
-            pn.widgets.DatePicker(name=title, value=date), json_codec=json_codec
+            pn.widgets.DatePicker(name=title, value=date, description=description),
+            json_codec=json_codec,
         )
 
 

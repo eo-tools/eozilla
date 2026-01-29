@@ -48,7 +48,14 @@ class CliTestMixin:
 
     def test_execute_process_f2_success(self):
         result = self.invoke_cli(
-            "execute-process", "f2", "-i", "x=true", "-i", "y=pippo", "-i", "z=0.3"
+            "execute-process",
+            "f2",
+            "-i",
+            "x=true",
+            "-i",
+            "y=pippo",
+            "-i",
+            "z=0.3",
         )
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual(
@@ -58,7 +65,14 @@ class CliTestMixin:
 
     def test_execute_process_f2_fail(self):
         result = self.invoke_cli(
-            "execute-process", "f2", "-i", "x=true", "-i", "y=bibo", "-i", "z=1.8"
+            "execute-process",
+            "f2",
+            "-i",
+            "x=true",
+            "-i",
+            "y=bibo",
+            "-i",
+            "z=1.8",
         )
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertIn('  "processID": "f2",', result.output)

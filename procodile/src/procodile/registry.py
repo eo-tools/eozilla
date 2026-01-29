@@ -1,8 +1,9 @@
 #  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-
-from collections.abc import Iterator, Mapping
+import functools
+from collections.abc import Mapping
+from copy import deepcopy
 from typing import Callable, Optional
 
 from pydantic.fields import FieldInfo
@@ -10,34 +11,75 @@ from pydantic.fields import FieldInfo
 from gavicore.models import InputDescription, OutputDescription
 
 from .process import Process
+from .workflow import Workflow
 
 
 class ProcessRegistry(Mapping[str, Process]):
     """
     A registry for processes.
 
-    Processes are Python functions with extra metadata.
+    Processes are Python functions with extra metadata and can be extended
+    to create `workflows` using `steps` decorator.
 
-    Represents a read-only mapping from process identifiers to
-    [Process][procodile.process.Process] instances.
+    A Workflow consists of one or more Python functions with metadata,
+    designed to execute sequentially by resolving dependencies and
+    passing outputs to downstream steps.
+
+    This class provides a read-only mapping from unique identifiers to
+    facade-like [Process][procodile.process.Process] instances. While the
+    user interacts with these processes, the registry internally
+    manages full [Workflow][procodile.workflow.Workflow] instances.
+
+    The internal Workflow objects hold the source-of-truth metadata required
+    for dependency resolution and execution, while the exposed Process
+    objects serve as the public interface for client interaction.
     """
 
     def __init__(self):
-        self._processes: dict[str, Process] = {}
+        self._workflows: dict[str, Workflow] = {}
 
-    def __getitem__(self, process_id: str, /) -> Process:
-        return self._processes[process_id]
+    # --- Overriding Mapping interface ---
+
+    def __getitem__(self, workflow_id: str) -> Process:
+        return self._as_process(self._workflows[workflow_id])
+
+    def __iter__(self):
+        return iter(self._workflows)
 
     def __len__(self) -> int:
-        return len(self._processes)
+        return len(self._workflows)
 
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._processes)
+    @staticmethod
+    @functools.lru_cache
+    def _as_process(workflow: Workflow) -> Process:
+        """This is the facade process object that is returned when the client wants
+        to see what processes are available and is also used to run the actual
+        workflow."""
+
+        main = next(iter(workflow.registry.main.values()))
+
+        projected: Process = deepcopy(main)
+
+        # Steps exist -> last step defines outputs
+        if workflow.registry.steps:
+            order, _ = workflow.execution_order
+            last_step_id = order[-2]  # because the step before that is the actual
+            # user defined last step.
+            last_step = workflow.registry.steps[last_step_id]["step"]
+            projected.description.outputs = last_step.description.outputs
+
+        # Update the function of the Process exposed to be `workflow.run` so
+        # that it executes the main and the steps after that in order.
+        projected.function = workflow.run
+
+        return projected
+
+    # --- Public API ---
 
     # noinspection PyShadowingBuiltins
-    def process(
+    def main(
         self,
-        function: Optional[Callable] = None,
+        function: Callable | None = None,
         /,
         *,
         id: Optional[str] = None,
@@ -47,10 +89,18 @@ class ProcessRegistry(Mapping[str, Process]):
         inputs: Optional[dict[str, FieldInfo | InputDescription]] = None,
         outputs: Optional[dict[str, FieldInfo | OutputDescription]] = None,
         inputs_arg: str | bool = False,
-    ) -> Callable[[Callable], Callable] | Callable:
+    ) -> Callable[[Callable], Workflow] | Callable:
         """
         A decorator that can be applied to a user function in order to
         register it as a process in this registry.
+
+        Note:
+
+            - Use `main` decorator to express a process that comprises multiple steps
+              that require a reference to the main entry point.
+
+            - Use `process` decorator to express a process that has no steps,
+              hence requires no reference to a main step.
 
         The decorator can be used with or without parameters.
 
@@ -85,9 +135,13 @@ class ProcessRegistry(Mapping[str, Process]):
                 if `inputs_arg` is a `str` it must be the name of the only argument.
         """
 
-        def register_process(fn: Callable):
-            process = Process.create(
+        def register_workflow(fn: Callable) -> Workflow:
+            # noinspection PyUnresolvedReferences
+            f_name = f"{fn.__module__}:{fn.__qualname__}"
+            workflow_id = id or f_name
+            workflow = Workflow(
                 fn,
+                workflow_id=workflow_id,
                 id=id,
                 version=version,
                 title=title,
@@ -96,10 +150,20 @@ class ProcessRegistry(Mapping[str, Process]):
                 outputs=outputs,
                 inputs_arg=inputs_arg,
             )
-            self._processes[process.description.id] = process
-            return fn
+            self._workflows[workflow_id] = workflow
+            return workflow
 
-        if function is not None:
-            return register_process(function)
-        else:
-            return register_process
+        if function is None:
+            return register_workflow
+        return register_workflow(function)
+
+    # alias for main, when users need to define just process without any steps
+    process = main
+
+    # --- Internal API ---
+
+    def get_workflow(self, workflow_id: str) -> Workflow:
+        return self._workflows[workflow_id]
+
+    def workflows(self) -> dict[str, Workflow]:
+        return self._workflows

@@ -141,6 +141,7 @@ class Job(JobContext):
             job_id: Optional job identifier.
                 If omitted, a unique identifier will be generated (UUID4).
 
+
         Returns:
             A new job instance.
 
@@ -148,6 +149,7 @@ class Job(JobContext):
             pydantic.ValidationError: if an input value is not valid
                 with respect to its process input description.
         """
+
         process_desc = process.description
         input_params = request.inputs or {}
         input_default_params = {
@@ -276,6 +278,12 @@ class Job(JobContext):
     def _get_job_results(self, function_result: Any) -> JobResults:
         assert self.job_info.status == JobStatus.successful
         assert self.job_info.processID is not None
+
+        # Outputs are already validated and normalized by
+        # `ExecutionContext.normalize_outputs()`.
+        if isinstance(function_result, dict):
+            return JobResults(**function_result)
+
         outputs = self.process.description.outputs or {}
         output_count = len(outputs)
         return JobResults(

@@ -7,7 +7,6 @@ from typing import Annotated
 import pydantic
 import pytest
 
-from gavicore.models import Schema
 from gavicore.util.schema import (
     create_schema_dict,
     inline_schema_refs,

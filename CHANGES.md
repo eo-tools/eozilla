@@ -2,6 +2,9 @@
 
 ### Enhancements
 
+- Added tooltips to GUI widgets that support it in the `cuiman` GUI client.
+  Tooltip texts are taken from the process input `description` metadata.
+- Added `cuiman` dependency `pydantic-settings` introduced in version 0.0.8. (#53)
 - By using `inputs` and `outputs` keyword arguments of 
   `procodile.ProcessRegistry.process()` it is now possible to also provide 
   `gavicore.models.InputDescription` and `gavicore.models.OutputDescription` 
@@ -20,6 +23,19 @@
   configuration (via command `configure`): basic, login, token, api-key methods are 
   now supported.
 - Updated documentation.
+- `Workflow Orchestration Support`: You can now define Python functions as 
+  individual processes and link them using explicit dependencies defined using 
+  `steps`. This allows for the creation of complex, executable workflows 
+  directly within `procodile`. (#50)
+- Updated `appligator` to generate Airflow DAGs directly from a
+  `WorkflowRegistry`, supporting workflows with multiple, explicitly defined
+  steps.
+- Added a new `--image-name` option to the `appligator` CLI to control the
+  Docker image used for generated Airflow tasks.
+- Introduced an **Intermediate Representation (IR)** layer that normalizes
+  workflows from `WorkflowRegistry` before DAG generation, enabling easier 
+  debugging, clearer dependency inspection, and more robust and extensible 
+  DAG rendering.
 
 ### Fixes
 
@@ -32,10 +48,20 @@
 
 - Renamed `gavicore.util.schema.create_json_schema` into `create_schema_dict`.
 - Removed `gavicore.util.schema.create_schema_instance` with no replacement.
+
+
+### Breaking Changes
+
 - Renamed `input_fields` and `output_fields` keyword arguments into 
   `inputs` and `outputs` of `procodile.ProcessRegistry.process()` decorator.
 - Removed `wraptile.services.local_service.LocalService.process()` decorator.
   Instead, use the `process_registry` of `LocalService` directly.
+- The legacy `@process` decorator is no longer exposed. It has been 
+  superseded by `@process_registry.main()` and `@your_func.step()` where 
+  `your_func` is the function decorated by `@process_registry.main()`. All API 
+  refinements including renamed arguments and registry access via 
+  `LocalService` are now implemented within this new workflow orchestration 
+  system.
 
 ## Changes in version 0.0.8
 
