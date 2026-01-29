@@ -2,6 +2,8 @@
 
 ### Enhancements
 
+- Added tooltips to GUI widgets that support it in the `cuiman` GUI client.
+  Tooltip texts are taken from the process input metadata.
 - Added `cuiman` dependency `pydantic-settings` introduced in version 0.0.8. (#53)
 - By using `inputs` and `outputs` keyword arguments of 
   `procodile.ProcessRegistry.process()` it is now possible to also provide 
