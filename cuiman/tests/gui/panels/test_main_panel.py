@@ -7,7 +7,7 @@ from unittest import TestCase
 from panel.layout import Panel
 
 from cuiman.gui.jobs_observer import JobsObserver
-from cuiman.gui.main_panel import MainPanelView
+from cuiman.gui.panels import MainPanelView
 from gavicore.models import (
     InputDescription,
     JobInfo,

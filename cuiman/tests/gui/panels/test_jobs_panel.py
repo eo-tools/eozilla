@@ -7,7 +7,7 @@ from unittest import TestCase
 from panel.layout import Panel
 
 from cuiman.gui.jobs_observer import JobsObserver
-from cuiman.gui.jobs_panel import JobsPanel
+from cuiman.gui.panels import JobsPanelView, JobsPanelViewModel
 from gavicore.models import JobInfo, JobList, JobStatus, JobType
 
 
@@ -16,12 +16,12 @@ class JobsFormTest(TestCase):
         jobs_panel = _create_jobs_form()
         self.assertIsInstance(jobs_panel.__panel__(), Panel)
 
-    def test_is_observer(self):
+    def test_vm_is_observer(self):
         jobs_form = _create_jobs_form()
-        self.assertIsInstance(jobs_form, JobsObserver)
+        self.assertIsInstance(jobs_form.vm, JobsObserver)
 
 
-def _create_jobs_form() -> JobsPanel:
+def _create_jobs_form() -> JobsPanelView:
     job_list = JobList(
         jobs=[
             JobInfo(
@@ -55,23 +55,25 @@ def _create_jobs_form() -> JobsPanel:
         links=[],
     )
 
-    def on_delete_job(job_id: str):
+    def on_delete_job(_job_id: str):
         pass
 
-    def on_cancel_job(job_id: str):
+    def on_cancel_job(_job_id: str):
         pass
 
-    def on_restart_job(job_id: str):
+    def on_restart_job(_job_id: str):
         pass
 
-    def on_get_job_results(job_id: str):
+    def on_get_job_results(_job_id: str):
         pass
 
-    panel = JobsPanel(
-        on_delete_job=on_delete_job,
-        on_cancel_job=on_cancel_job,
-        on_restart_job=on_restart_job,
-        on_get_job_results=on_get_job_results,
+    panel = JobsPanelView(
+        JobsPanelViewModel(
+            job_list,
+            delete_job=on_delete_job,
+            cancel_job=on_cancel_job,
+            restart_job=on_restart_job,
+            get_job_results=on_get_job_results,
+        )
     )
-    panel.on_job_list_changed(job_list)
     return panel

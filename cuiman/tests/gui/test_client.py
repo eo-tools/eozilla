@@ -6,8 +6,8 @@ from unittest import TestCase
 
 from cuiman.api.transport import Transport, TransportArgs
 from cuiman.gui import Client as GuiClient
-from cuiman.gui.jobs_panel import JobsPanel
-from cuiman.gui.main_panel import MainPanelView
+from cuiman.gui.panels import JobsPanelView
+from cuiman.gui.panels import MainPanelView
 from gavicore.models import JobList, ProcessList
 
 
@@ -37,4 +37,4 @@ class ClientTest(TestCase):
 
         client = GuiClient(api_url="https://api.ok.ko", _transport=_MockTransport())
         jobs_form = client.show_jobs()
-        self.assertIsInstance(jobs_form, JobsPanel)
+        self.assertIsInstance(jobs_form, JobsPanelView)
