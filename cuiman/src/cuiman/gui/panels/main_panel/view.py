@@ -142,12 +142,13 @@ class MainPanelView(pn.viewable.Viewer):
             self._save_button,
             self._save_as_button,
             self._request_button,
+            margin=(10, 0, 0, 0),
         )
 
         self._inputs_panel = pn.Column()
         self._outputs_panel = pn.Column()
 
-        self._job_info_panel = JobInfoPanelView()
+        self._job_info_panel = JobInfoPanelView(standalone=False)
 
         self._view = pn.Column(
             process_panel,
@@ -210,14 +211,19 @@ class MainPanelView(pn.viewable.Viewer):
 
     def _render_outputs(self):
         process = self.vm.process_description
+        num_outputs = self._num_outputs
         if process is None:
             self._outputs_panel[:] = []
         else:
-            self._outputs_panel[:] = self.create_outputs_ui(process)
+            self._outputs_panel[:] = (
+                self.create_outputs_ui(process) if num_outputs >= 2 else []
+            )
+        if num_outputs < 2:
+            self._outputs_panel.visible = False
 
     def create_outputs_ui(self, process_description: ProcessDescription) -> list:
         outputs = process_description.outputs or {}
-        num_outputs = len(outputs)
+        num_outputs = self._num_outputs
 
         output_mode = pn.widgets.RadioButtonGroup(
             name="Output",
@@ -242,11 +248,11 @@ class MainPanelView(pn.viewable.Viewer):
         pn.bind(enable_output_options, output_mode)
 
         return [
-            pn.pane.Markdown("**Output**"),
             output_mode,
             pn.Row(pn.pane.Markdown("Output options:"), *output_options),
         ]
 
+    # noinspection PyMethodMayBeStatic
     def _create_output_option(
         self, key: str, output: OutputDescription
     ) -> pn.widgets.Checkbox:
@@ -288,3 +294,8 @@ class MainPanelView(pn.viewable.Viewer):
 
         var_name = "_request"
         get_ipython().user_ns[var_name] = self.vm.build_execution_request()
+
+    @property
+    def _num_outputs(self) -> int:
+        process = self.vm.process_description
+        return len(process.outputs) if process and process.outputs else 0

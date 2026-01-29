@@ -88,7 +88,7 @@ class Client(ApiClient):
         job_info = self._jobs_event_bus.get_job(job_id)
         if job_info is None:
             job_info = self.get_job(job_id)
-        job_info_panel = JobInfoPanelView()
+        job_info_panel = JobInfoPanelView(standalone=True)
         job_info_panel.job_info = job_info
         # noinspection PyTypeChecker
         self._jobs_event_bus.register(job_info_panel)
