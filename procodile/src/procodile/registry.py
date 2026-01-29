@@ -76,6 +76,7 @@ class ProcessRegistry(Mapping[str, Process]):
 
     # --- Public API ---
 
+    # noinspection PyShadowingBuiltins
     def main(
         self,
         function: Callable | None = None,
@@ -96,10 +97,10 @@ class ProcessRegistry(Mapping[str, Process]):
         Note:
 
             - Use `main` decorator to express a process that comprises multiple steps
-            that require a reference to the main entry point.
+              that require a reference to the main entry point.
 
             - Use `process` decorator to express a process that has no steps,
-            hence requires no reference to a main step.
+              hence requires no reference to a main step.
 
         The decorator can be used with or without parameters.
 
@@ -135,6 +136,7 @@ class ProcessRegistry(Mapping[str, Process]):
         """
 
         def register_workflow(fn: Callable) -> Workflow:
+            # noinspection PyUnresolvedReferences
             f_name = f"{fn.__module__}:{fn.__qualname__}"
             workflow_id = id or f_name
             workflow = Workflow(
