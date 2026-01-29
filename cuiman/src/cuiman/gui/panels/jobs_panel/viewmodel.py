@@ -107,7 +107,9 @@ class JobsPanelViewModel(param.Parameterized):
             )
         )
 
-    def _can_perform_action(self, action: JobAction, statuses: set[JobStatus]) -> bool:
+    def _can_perform_action(
+        self, action: JobAction | None, statuses: set[JobStatus]
+    ) -> bool:
         jobs = self.selected_jobs()
         return action is not None and _job_requirements_fulfilled(jobs, statuses)
 
@@ -163,7 +165,7 @@ class JobsPanelViewModel(param.Parameterized):
 
     def _run_action(
         self,
-        action: JobAction,
+        action: JobAction | None,
         success_fmt: str | Callable[[str, Any], str],
         error_fmt: str,
     ) -> str:

@@ -46,6 +46,9 @@
 
 ### Other changes
 
+- Refactored panels in `cuiman.gui.panels` package to follow MVVM 
+  (Model–View–ViewModel) style.
+- Added preliminary output GUI to the main panel in `cuiman.gui.panels`.
 - Renamed `gavicore.util.schema.create_json_schema` into `create_schema_dict`.
 - Removed `gavicore.util.schema.create_schema_instance` with no replacement.
 

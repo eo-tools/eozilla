@@ -212,7 +212,7 @@ class MainPanelViewModel(param.Parameterized):
         # noinspection PyArgumentList
         return {
             k: Output(
-                format=Format(mediaType="application/json"),
+                format=Format(mediaType="application/json"),  # noqa[call-arg]
                 transmissionMode=TransmissionMode.reference,
             )
             for k in (process.outputs or {}).keys()
