@@ -2,6 +2,9 @@
 
 ### Enhancements
 
+- Added preliminary output GUI to the main panel in `cuiman.gui.panels`.
+  Only shown, if multiple output values are used. The UI is still 
+  experimental and subject to change. (#36)
 - Added tooltips to GUI widgets that support it in the `cuiman` GUI client.
   Tooltip texts are taken from the process input `description` metadata.
 - Added `cuiman` dependency `pydantic-settings` introduced in version 0.0.8. (#53)
@@ -41,11 +44,16 @@
 
 - Fixed problem where the GUI client's `show_jobs()` showed an empty panel
   although jobs are shown by `get_jobs()`. (#35) 
+- No longer showing "No job selected" in the GUI client's main panel.
+  If no job given, the job info panel is now hidden.
+- Removed persistent error message in GUI client's job info panel.
 - Fixed `gavicore.util.schema.inline_schema_refs` crashing on schemas with 
   `additionalProperties: false` (e.g., Pydantic models using `extra="forbid"`).
 
 ### Other changes
 
+- Refactored panels in `cuiman.gui.panels` package to follow MVVM 
+  (Model–View–ViewModel) style.
 - Renamed `gavicore.util.schema.create_json_schema` into `create_schema_dict`.
 - Removed `gavicore.util.schema.create_schema_instance` with no replacement.
 

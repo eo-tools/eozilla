@@ -7,7 +7,7 @@ from unittest import TestCase
 from panel.layout import Panel
 
 from cuiman.gui.jobs_observer import JobsObserver
-from cuiman.gui.main_panel import MainPanel
+from cuiman.gui.panels import MainPanelView
 from gavicore.models import (
     InputDescription,
     JobInfo,
@@ -72,7 +72,7 @@ class MainFormTest(TestCase):
         self.assertIsInstance(main_panel.__panel__(), Panel)
 
 
-def _create_main_panel(process_inputs: dict[str, InputDescription]) -> MainPanel:
+def _create_main_panel(process_inputs: dict[str, InputDescription]) -> MainPanelView:
     process = ProcessDescription(
         id="gen_scene",
         title="Generate a scene",
@@ -93,13 +93,13 @@ def _create_main_panel(process_inputs: dict[str, InputDescription]) -> MainPanel
 
     process_list = ProcessList(processes=[process], links=[])
 
-    return MainPanel(
+    return MainPanelView(
         process_list,
         None,
         on_get_process,
         on_execute_process,
         accept_process,
-        accept_input,
+        is_advanced_input,
     )
 
 
@@ -109,5 +109,5 @@ def accept_process(p: ProcessSummary) -> bool:
 
 
 # noinspection PyUnusedLocal
-def accept_input(p: ProcessDescription, i_name: str, i: InputDescription) -> bool:
-    return True
+def is_advanced_input(p: ProcessDescription, i_name: str, i: InputDescription) -> bool:
+    return False

@@ -24,7 +24,7 @@ class Component:
         self.viewable = viewable
         self.json_codec = JsonIdentityCodec() if json_codec is None else json_codec
 
-    def get_json_value(self) -> Any:
+    def get_json_value(self) -> JsonValue:
         """Get the viewable's value as a json value."""
         return self.json_codec.to_json(self.get_value())
 

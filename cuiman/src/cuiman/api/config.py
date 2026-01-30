@@ -201,6 +201,44 @@ class ClientConfig(AuthConfig, BaseSettings):
         """
         return True
 
+    # noinspection PyUnusedLocal
+    @classmethod
+    def is_advanced_input(
+        cls,
+        process_description: ProcessDescription,
+        input_name: str,
+        input_description: InputDescription,
+    ) -> bool:
+        """
+        Experimental method, do not use!
+
+        Designed to be overridden by a custom `ClientConfig` class
+        from which an instance will be assigned to `ClientConfig.default_config`
+        to become effective.
+
+        The default implementations checks if the given `input_description`
+        has `additionalParameters`, and if so, if a parameter with name
+        `"level"` has value `["advanced"]` (a list!).
+
+        Args:
+            process_description: The process description.
+            input_name: The input's name.
+            input_description: A description of an
+                input of the given `process_description`.
+
+        Returns:
+            `True` if the input is advanced
+            (e.g. for advanced process users only).
+        """
+        additional_parameters = input_description.additionalParameters
+        if additional_parameters:
+            parameters = additional_parameters.parameters
+            if parameters:
+                for p in parameters:
+                    if p.name == "level" and p.value == ["advanced"]:
+                        return True
+        return False
+
 
 # Set Eozilla defaults.
 # Cuiman applications might want to change them.
@@ -216,6 +254,10 @@ InputPredicate: TypeAlias = Callable[[ProcessDescription, str, InputDescription]
 """
 Type that describes the [accept_input][ClientConfig.accept_process] class method.
 """
+
+AdvancedInputPredicate: TypeAlias = Callable[
+    [ProcessDescription, str, InputDescription], bool
+]
 
 
 def _update_if_not_none(target: dict[str, Any], updates: dict[str, Any]):

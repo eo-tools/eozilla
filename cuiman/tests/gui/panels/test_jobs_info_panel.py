@@ -6,15 +6,15 @@ from unittest import TestCase
 
 from panel.layout import Panel
 
-from cuiman.gui.job_info_panel import JobInfoPanel
+from cuiman.gui.panels import JobInfoPanelView
 from cuiman.gui.jobs_observer import JobsObserver
 
 
 class JobInfoPanelTest(TestCase):
     def test_with_date_input(self):
-        job_info_panel = JobInfoPanel()
+        job_info_panel = JobInfoPanelView()
         self.assertIsInstance(job_info_panel.__panel__(), Panel)
 
     def test_is_observer(self):
-        job_info_panel = JobInfoPanel()
+        job_info_panel = JobInfoPanelView()
         self.assertIsInstance(job_info_panel, JobsObserver)
