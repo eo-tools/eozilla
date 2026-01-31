@@ -114,34 +114,41 @@ class MainPanelView(pn.viewable.Viewer):
             button_type="primary",
             on_click=self._on_execute_button_clicked,
             disabled=self.vm.param.execute_disabled,
+            description="Execute the process using the current settings",
         )
         self._open_button = pn.widgets.Button(
             name="Open",
             on_click=self._on_open_request_clicked,
             disabled=True,
+            description="Open a process request from a JSON or YAML file",
         )
         self._save_button = pn.widgets.Button(
             name="Save",
             on_click=self._on_save_request_clicked,
             disabled=True,
+            description="Save the current settings as process request file using JSON or YAML format",
         )
         self._save_as_button = pn.widgets.Button(
             name="Save As...",
             on_click=self._on_save_as_request_clicked,
             disabled=True,
+            description="Save the current settings as process request file using JSON or YAML format",
         )
         self._request_button = pn.widgets.Button(
             name="Get Request",
             on_click=self._on_get_process_request,
             disabled=self.vm.param.get_request_disabled,
+            description="Sets the variable `_request` to the\ncurrent process request object",
         )
 
         action_panel = pn.Row(
             self._execute_button,
-            self._open_button,
-            self._save_button,
-            self._save_as_button,
             self._request_button,
+            # XMenu(
+            #     "File",
+            #     (self._open_button, self._save_button, self._save_as_button),
+            #     description="Request-file related actions",
+            # ),
             margin=(10, 0, 0, 0),
         )
 
