@@ -59,6 +59,7 @@ class Client(ApiClient):
             *self._get_processes(),
             get_process=self.get_process,
             execute_process=self.execute_process,
+            get_job_results=self.get_job_results,
             accept_process=accept_process,
             is_advanced_input=config_cls.is_advanced_input,
         )
