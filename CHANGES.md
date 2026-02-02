@@ -2,9 +2,14 @@
 
 ### Enhancements
 
-- Added preliminary output GUI to the main panel in `cuiman.gui.panels`.
-  Only shown, if multiple output values are used. The UI is still 
-  experimental and subject to change. (#36)
+The following enhancements have been applied to the main panel in `cuiman.gui.panels`:
+  - Added functional "Get Results" button
+  - Moved not-yet-functional process request file actions into a custom drop-down-menu.
+  - Added preliminary output GUI to the main panel.
+    Only shown, if multiple output values are used. The UI is still 
+    experimental and subject to change. (#36)
+  - Added switch "Show advanced inputs". 
+  - Fixed updating job details display.
 - Added tooltips to GUI widgets that support it in the `cuiman` GUI client.
   Tooltip texts are taken from the process input `description` metadata.
 - Added `cuiman` dependency `pydantic-settings` introduced in version 0.0.8. (#53)
@@ -21,7 +26,6 @@
   - Create a dedicated CLI instance with customized settings.
   - The `show()` method of the `cuiman.gui.Client` now supports passing application-
     specific parameters, e.g., to filter processes and process inputs. 
-- Added switch "Show advanced inputs" to the `cuiman` GUI's main panel. 
 - Added a couple of common authentication methods to `cuiman` client API and CLI 
   configuration (via command `configure`): basic, login, token, api-key methods are 
   now supported.
