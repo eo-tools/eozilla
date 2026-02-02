@@ -3,10 +3,8 @@
 #  https://opensource.org/license/apache-2-0.
 
 from .job_info_panel import JobInfoPanelView
-from .jobs_panel import JobsPanelView
-from .jobs_panel import JobsPanelViewModel
-from .main_panel import MainPanelView
-from .main_panel import MainPanelViewModel
+from .jobs_panel import JobsPanelView, JobsPanelViewModel
+from .main_panel import MainPanelView, MainPanelViewModel
 
 __all__ = [
     "JobInfoPanelView",

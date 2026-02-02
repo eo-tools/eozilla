@@ -6,9 +6,9 @@ from typing import Any, Callable, Optional, TypeAlias
 
 import pandas as pd
 import param
-from pydantic import BaseModel
 
 from cuiman.api.exceptions import ClientError
+from cuiman.gui.ipy_helper import IPyHelper
 from cuiman.gui.jobs_observer import JobsObserver
 from gavicore.models import JobInfo, JobList, JobResults, JobStatus
 
@@ -136,31 +136,15 @@ class JobsPanelViewModel(param.Parameterized):
             "⚠️ Failed restarting {job}: {message}",
         )
 
-    def get_results_for_selected(self, var_name="_results"):
+    def get_results_for_selected(self):
         def set_ipython_value(_job_id: str, results: JobResults | dict):
-            # noinspection PyProtectedMember
-            from IPython import get_ipython
-
-            value = results.root if isinstance(results, JobResults) else results
-            if isinstance(value, dict):
-                value = JsonDict(
-                    "Results",
-                    {
-                        k: (v.model_dump() if isinstance(v, BaseModel) else v)
-                        for k, v in value.items()
-                    },
-                )
-
-            ip = get_ipython()
-            if ip is None:
-                raise RuntimeError("Not running inside IPython")
-            ip.user_ns[var_name] = value
-            return f"✅ Stored results of {{job}} in **`{var_name}`**"
+            var_name = IPyHelper.set_job_results_in_user_ns(results)
+            return f"✅ Stored results of job in **`{var_name}`**"
 
         self.message = self._run_action(
             self._get_job_results,
             set_ipython_value,
-            "⚠️ Failed to get results for {job}: {message}",
+            "⚠️ Failed to get results for job: {message}",
         )
 
     def _run_action(
@@ -210,15 +194,3 @@ def _job_requirements_fulfilled(
     jobs: list[JobInfo], requirements: set[JobStatus]
 ) -> bool:
     return bool(jobs) and all(j.status in requirements for j in jobs)
-
-
-class JsonDict(dict):
-    """A JSON object value that renders nicely in Jupyter notebooks."""
-
-    def __init__(self, name: str, *args, **kwargs):
-        # noinspection PyArgumentList
-        super().__init__(*args, **kwargs)
-        self._name = name
-
-    def _repr_json_(self):
-        return self, {"root": f"{self._name}:"}

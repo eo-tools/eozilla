@@ -18,6 +18,7 @@ from gavicore.models import (
     ProcessRequest,
     ProcessSummary,
     Schema,
+    JobResults,
 )
 
 bbox_input = InputDescription(
@@ -91,6 +92,9 @@ def _create_main_panel(process_inputs: dict[str, InputDescription]) -> MainPanel
             status=JobStatus.successful,
         )
 
+    def on_get_job_results(_job_id: str) -> JobResults:
+        return JobResults(**{"return_value": 13})
+
     process_list = ProcessList(processes=[process], links=[])
 
     return MainPanelView(
@@ -98,6 +102,7 @@ def _create_main_panel(process_inputs: dict[str, InputDescription]) -> MainPanel
         None,
         on_get_process,
         on_execute_process,
+        on_get_job_results,
         accept_process,
         is_advanced_input,
     )

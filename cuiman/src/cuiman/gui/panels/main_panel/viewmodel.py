@@ -13,6 +13,7 @@ from gavicore.models import (
     Format,
     InputDescription,
     JobInfo,
+    JobResults,
     Output,
     ProcessDescription,
     ProcessList,
@@ -24,6 +25,7 @@ from gavicore.util.request import ExecutionRequest
 
 GetProcessAction: TypeAlias = Callable[[str], ProcessDescription]
 ExecuteProcessAction: TypeAlias = Callable[[str, ProcessRequest], JobInfo]
+GetJobResultsAction: TypeAlias = Callable[[str], JobResults]
 
 
 class MainPanelViewModel(param.Parameterized):

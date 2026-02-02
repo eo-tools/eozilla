@@ -12,13 +12,22 @@ from cuiman.gui.jobs_observer import JobsObserver
 from gavicore.models import (
     JobInfo,
     JobList,
+    JobStatus,
     OutputDescription,
     ProcessDescription,
     ProcessList,
 )
 
+from ...ipy_helper import IPyHelper
 from ..job_info_panel import JobInfoPanelView
-from .viewmodel import ExecuteProcessAction, GetProcessAction, MainPanelViewModel
+from ..x_menu import XMenu
+from ..x_menu_item import XMenuItem
+from .viewmodel import (
+    ExecuteProcessAction,
+    GetJobResultsAction,
+    GetProcessAction,
+    MainPanelViewModel,
+)
 
 
 @JobsObserver.register  # virtual subclass, no runtime checks
@@ -49,6 +58,7 @@ class MainPanelView(pn.viewable.Viewer):
         process_list_error: ClientError | None,
         get_process: GetProcessAction,
         execute_process: ExecuteProcessAction,
+        get_job_results: GetJobResultsAction,
         accept_process: ProcessPredicate,
         is_advanced_input: AdvancedInputPredicate,
     ):
@@ -62,6 +72,8 @@ class MainPanelView(pn.viewable.Viewer):
             get_process=get_process,
             execute_process=execute_process,
         )
+        # Used in view only, once we go async, move to viewmodel
+        self._get_job_results = get_job_results
 
         # --- _process_select
         process_select_options = {
@@ -74,11 +86,12 @@ class MainPanelView(pn.viewable.Viewer):
             value=self.vm.selected_process_id,
         )
 
-        def _on_select(e):
+        def _on_select_process(e):
             self.vm.select_process(e.new)
             self._render_from_vm()
+            self._set_own_job_info(None)
 
-        self._process_select.param.watch(_on_select, "value")
+        self._process_select.param.watch(_on_select_process, "value")
 
         # --- _advanced_switch
 
@@ -96,8 +109,8 @@ class MainPanelView(pn.viewable.Viewer):
         # --- _process_doc_markdown
 
         self._process_doc_markdown = pn.pane.Markdown("")
+
         process_panel = pn.Column(
-            # pn.pane.Markdown("# Process"),
             self._process_select,
             self._process_doc_markdown,
             pn.Row(
@@ -114,34 +127,52 @@ class MainPanelView(pn.viewable.Viewer):
             button_type="primary",
             on_click=self._on_execute_button_clicked,
             disabled=self.vm.param.execute_disabled,
-        )
-        self._open_button = pn.widgets.Button(
-            name="Open",
-            on_click=self._on_open_request_clicked,
-            disabled=True,
-        )
-        self._save_button = pn.widgets.Button(
-            name="Save",
-            on_click=self._on_save_request_clicked,
-            disabled=True,
-        )
-        self._save_as_button = pn.widgets.Button(
-            name="Save As...",
-            on_click=self._on_save_as_request_clicked,
-            disabled=True,
+            description="Execute the process using the current settings",
         )
         self._request_button = pn.widgets.Button(
             name="Get Request",
             on_click=self._on_get_process_request,
             disabled=self.vm.param.get_request_disabled,
+            description="Sets the variable `_request` to the\ncurrent process request object",
+        )
+        self._results_button = pn.widgets.Button(
+            name="Get Results",
+            on_click=self._on_get_process_results,
+            disabled=True,
+            description="Sets the variable `_results` to the\ncurrent process results object",
+        )
+
+        # --- file_menu
+
+        self._open_button = XMenuItem(
+            "Open",
+            on_click=self._on_open_request_clicked,
+            disabled=True,
+            description="Open a process request from a JSON or YAML file",
+        )
+        self._save_button = XMenuItem(
+            "Save",
+            on_click=self._on_save_request_clicked,
+            disabled=True,
+            description="Save the current settings as process request file using JSON or YAML format",
+        )
+        self._save_as_button = XMenuItem(
+            "Save As...",
+            on_click=self._on_save_as_request_clicked,
+            disabled=True,
+            description="Save the current settings as process request file using JSON or YAML format",
+        )
+        file_menu = XMenu(
+            "File",
+            (self._open_button, self._save_button, self._save_as_button),
+            description="Request-file related actions",
         )
 
         action_panel = pn.Row(
             self._execute_button,
-            self._open_button,
-            self._save_button,
-            self._save_as_button,
             self._request_button,
+            self._results_button,
+            file_menu,
             margin=(10, 0, 0, 0),
         )
 
@@ -149,6 +180,7 @@ class MainPanelView(pn.viewable.Viewer):
         self._outputs_panel = pn.Column()
 
         self._job_info_panel = JobInfoPanelView(standalone=False)
+        self._job_info_panel.param.watch(self._on_own_job_info_changed, "job_info")
 
         self._view = pn.Column(
             process_panel,
@@ -178,6 +210,12 @@ class MainPanelView(pn.viewable.Viewer):
     def on_job_list_error(self, job_list: JobList):
         # TODO: render error
         pass
+
+    def _on_own_job_info_changed(self, _event: Any):
+        own_job_info = self._job_info_panel.job_info
+        self._results_button.disabled = (
+            own_job_info is None or own_job_info.status != JobStatus.successful
+        )
 
     def _render_from_vm(self):
         process = self.vm.process_description
@@ -270,11 +308,12 @@ class MainPanelView(pn.viewable.Viewer):
         return checkbox
 
     def _on_execute_button_clicked(self, _event: Any = None):
+        self._set_own_job_info(None)
         try:
-            job = self.vm.execute()
-            self._job_info_panel.job_info = job
+            job_info = self.vm.execute()
+            self._set_own_job_info(job_info)
         except ClientError as e:
-            self._job_info_panel.client_error = e
+            self._set_own_job_info(None, client_error=e)
 
     def _on_open_request_clicked(self, _event: Any = None):
         # TODO implement open request
@@ -289,13 +328,29 @@ class MainPanelView(pn.viewable.Viewer):
         pass
 
     def _on_get_process_request(self, _event: Any = None):
-        # noinspection PyProtectedMember
-        from IPython import get_ipython
+        execution_request = self.vm.build_execution_request()
+        IPyHelper.set_execution_request_in_user_ns(execution_request)
 
-        var_name = "_request"
-        get_ipython().user_ns[var_name] = self.vm.build_execution_request()
+    def _on_get_process_results(self, _event: Any = None):
+        job_info = self._get_own_job_info()
+        if job_info is None or job_info.status != JobStatus.successful:
+            return
+        try:
+            job_results = self._get_job_results(job_info.jobID)
+            IPyHelper.set_job_results_in_user_ns(job_results)
+        except ClientError as e:
+            self._set_own_job_info(job_info, e)
 
     @property
     def _num_outputs(self) -> int:
         process = self.vm.process_description
         return len(process.outputs) if process and process.outputs else 0
+
+    def _get_own_job_info(self) -> JobInfo | None:
+        return self._job_info_panel.job_info
+
+    def _set_own_job_info(
+        self, job_info: JobInfo | None, client_error: ClientError | None = None
+    ) -> None:
+        self._job_info_panel.job_info = job_info
+        self._job_info_panel.client_error = client_error
