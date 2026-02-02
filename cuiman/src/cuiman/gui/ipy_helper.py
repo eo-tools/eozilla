@@ -3,6 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 from typing import TYPE_CHECKING
+
 from pydantic import BaseModel
 
 from gavicore.models import JobResults

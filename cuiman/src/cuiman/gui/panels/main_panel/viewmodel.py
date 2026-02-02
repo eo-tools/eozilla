@@ -13,13 +13,13 @@ from gavicore.models import (
     Format,
     InputDescription,
     JobInfo,
+    JobResults,
     Output,
     ProcessDescription,
     ProcessList,
     ProcessRequest,
     ProcessSummary,
     TransmissionMode,
-    JobResults,
 )
 from gavicore.util.request import ExecutionRequest
 

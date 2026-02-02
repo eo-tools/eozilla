@@ -6,8 +6,8 @@ from unittest import TestCase
 
 from panel.layout import Panel
 
-from cuiman.gui.panels import JobInfoPanelView
 from cuiman.gui.jobs_observer import JobsObserver
+from cuiman.gui.panels import JobInfoPanelView
 
 
 class JobInfoPanelTest(TestCase):

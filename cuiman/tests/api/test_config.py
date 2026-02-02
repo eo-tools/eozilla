@@ -10,10 +10,10 @@ from unittest import TestCase
 from cuiman.api.config import ClientConfig
 from cuiman.api.defaults import DEFAULT_API_URL
 from gavicore.models import (
+    AdditionalParameter,
+    AdditionalParameters,
     InputDescription,
     ProcessDescription,
-    AdditionalParameters,
-    AdditionalParameter,
 )
 
 

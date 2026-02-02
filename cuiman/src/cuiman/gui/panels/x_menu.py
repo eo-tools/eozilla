@@ -7,7 +7,7 @@ from collections.abc import Iterable
 import panel as pn
 import param
 
-from .x_menu_item import XMenuItemOptions, XMenuItem
+from .x_menu_item import XMenuItem, XMenuItemOptions
 
 MENU_WIDTH = 150
 
@@ -31,7 +31,7 @@ class XMenu(pn.viewable.Viewer):
         self.button.on_click(lambda _: self._toggle_open())
         self._set_menu_button_name()
 
-        self.items = []
+        self.items: list[XMenuItemLike] = []
         self.menu = pn.Column(
             visible=False,
             width=MENU_WIDTH,

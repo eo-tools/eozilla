@@ -12,22 +12,22 @@ from cuiman.gui.jobs_observer import JobsObserver
 from gavicore.models import (
     JobInfo,
     JobList,
+    JobStatus,
     OutputDescription,
     ProcessDescription,
     ProcessList,
-    JobStatus,
 )
 
+from ...ipy_helper import IPyHelper
 from ..job_info_panel import JobInfoPanelView
 from ..x_menu import XMenu
 from ..x_menu_item import XMenuItem
 from .viewmodel import (
     ExecuteProcessAction,
+    GetJobResultsAction,
     GetProcessAction,
     MainPanelViewModel,
-    GetJobResultsAction,
 )
-from ...ipy_helper import IPyHelper
 
 
 @JobsObserver.register  # virtual subclass, no runtime checks

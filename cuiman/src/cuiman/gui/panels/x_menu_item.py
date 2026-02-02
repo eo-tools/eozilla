@@ -3,7 +3,8 @@
 #  https://opensource.org/license/apache-2-0.
 
 from dataclasses import dataclass
-from typing import Callable, Any, TypedDict, overload
+from typing import Any, Callable, TypedDict
+
 import panel as pn
 
 XMENU_ITEM_CSS = r"""
@@ -25,27 +26,12 @@ class XMenuItemOptions(TypedDict, total=False):
 
 
 class XMenuItem(pn.viewable.Viewer):
-    @overload
-    def __init__(
-        self,
-        options: XMenuItemOptions,
-        _close_menu: Callable | None = None,
-        **button_params: Any,
-    ): ...
-    @overload
-    def __init__(
-        self,
-        label: str,
-        disabled: bool = False,
-        on_click: Callable | None = None,
-        _close_menu: Callable | None = None,
-        **button_params: Any,
-    ): ...
     def __init__(
         self,
         options_or_label: XMenuItemOptions | str,
-        disabled: bool | None = None,
+        *,
         on_click: Callable | None = None,
+        disabled: bool | None = None,
         _close_menu: Callable | None = None,
         **button_params: Any,
     ):
@@ -71,7 +57,7 @@ class XMenuItem(pn.viewable.Viewer):
             **button_params,
         )
         self.button.css_classes = ["xmenu-item"]  # doesn't work  :(
-        self.button.margin = (1, 10)
+        self.button.margin = (1, 10)  # type: ignore[assignment]
 
         if on_click:
             self.button.on_click(on_click)

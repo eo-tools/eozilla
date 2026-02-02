@@ -1,13 +1,13 @@
 #  Copyright (c) 2025 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
+
 from typing import Any
 from unittest import TestCase
 
 from cuiman.api.transport import Transport, TransportArgs
 from cuiman.gui import Client as GuiClient
-from cuiman.gui.panels import JobsPanelView
-from cuiman.gui.panels import MainPanelView
+from cuiman.gui.panels import JobsPanelView, MainPanelView
 from gavicore.models import JobList, ProcessList
 
 
