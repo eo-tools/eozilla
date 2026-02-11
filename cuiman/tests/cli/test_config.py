@@ -121,6 +121,8 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
             "http://localhorst:9999",
             "login",
             "http://localhorst:9999/signin",
+            "my-client",
+            "my-secret",
             "bibo",
             "1234",
             "X-Auth-Token",
@@ -132,7 +134,7 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
         actual_config_path = configure_client_with_prompt()
         mock_login.assert_called_once()
         mock_confirm.assert_called_once()
-        self.assertEqual(6, mock_prompt.call_count)
+        self.assertEqual(8, mock_prompt.call_count)
         self.assert_is_default_config_path(actual_config_path)
         config = get_config(None)
         self.assertEqual(
@@ -140,6 +142,8 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
                 api_url="http://localhorst:9999",
                 auth_type="login",
                 auth_url="http://localhorst:9999/signin",
+                client_id="my-client",
+                client_secret="my-secret",
                 username="bibo",
                 password="1234",
                 token="dummy-token",
@@ -215,6 +219,8 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
                 "http://localhorst:2357",
                 "login",
                 "http://localhorst:2357/auth/login",
+                "my-client",
+                "my-secret",
                 "bibo",
                 "******",
                 "bibo",
@@ -235,6 +241,8 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
                     auth_type="login",
                     api_url="http://localhorst:2357",
                     auth_url="http://localhorst:2357/auth/login",
+                    client_id="my-client",
+                    client_secret="my-secret",
                     username="bibo",
                     password=expected_password,
                     token="dummy-token",

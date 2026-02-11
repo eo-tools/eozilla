@@ -10,6 +10,8 @@ def test_login_json_response():
     cfg = AuthConfig(
         auth_type="login",
         auth_url="https://acme.com/api/auth/login",
+        client_id="my-client",
+        client_secret="my-secret",
         username="u",
         password="p",
     )
@@ -18,16 +20,28 @@ def test_login_json_response():
     mock_response.json.return_value = {"token": "abc123"}
     mock_response.raise_for_status.return_value = None
 
-    with patch("httpx.Client.post", return_value=mock_response):
+    with patch("httpx.Client.post", return_value=mock_response) as mock_post:
         token = login(cfg)
 
     assert token == "abc123"
+    mock_post.assert_called_once_with(
+        "https://acme.com/api/auth/login",
+        data={
+            "grant_type": "password",
+            "username": "u",
+            "password": "p",
+            "client_id": "my-client",
+            "client_secret": "my-secret",
+        },
+    )
 
 
 def test_login_plaintext_response():
     cfg = AuthConfig(
         auth_type="login",
         auth_url="https://acme.com/api/auth/login",
+        client_id="my-client",
+        client_secret="my-secret",
         username="u",
         password="p",
     )
@@ -41,6 +55,32 @@ def test_login_plaintext_response():
         token = login(cfg)
 
     assert token == "plaintext-token"
+
+
+def test_login_without_client_credentials():
+    cfg = AuthConfig(
+        auth_type="login",
+        auth_url="https://acme.com/api/auth/login",
+        username="u",
+        password="p",
+    )
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"token": "abc123"}
+    mock_response.raise_for_status.return_value = None
+
+    with patch("httpx.Client.post", return_value=mock_response) as mock_post:
+        token = login(cfg)
+
+    assert token == "abc123"
+    mock_post.assert_called_once_with(
+        "https://acme.com/api/auth/login",
+        data={
+            "grant_type": "password",
+            "username": "u",
+            "password": "p",
+        },
+    )
 
 
 def test_login_missing_auth_url():
