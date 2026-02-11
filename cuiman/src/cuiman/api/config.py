@@ -53,6 +53,10 @@ class ClientConfig(AuthConfig, BaseSettings):
     """
 
     api_url: Annotated[Optional[str], Field(title="Process API URL")] = None
+    """
+    The URL of the server that provides a web API compliant with
+    OGC API - Processes, Part 1 - Core.
+    """
 
     def _repr_json_(self):
         return self.model_dump(mode="json", by_alias=True), dict(

@@ -1,4 +1,4 @@
-# Client Configuration
+# Cuiman Configuration
 
 The `cuiman` configuration settings may be passed in a couple of ways 
 to the Python API and CLI clients. The different ways also have different 
@@ -19,7 +19,7 @@ This list is implemented in the class method `create()` of the
 `cuiman.api.ClientConfig` class. 
 
 Note that applications using `cuiman` under the hood may customize the 
-configuration, see [Client Customization](client-custom). 
+configuration, see [Cuiman Customization](./customization.md). 
 
 ### Configuration Files
 
