@@ -6,7 +6,7 @@ import json
 import logging
 import threading
 from typing import Any
-from urllib import error, request
+from urllib import error, parse, request
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,6 +30,11 @@ class CallbackReporter:
         self._thread.start()
 
     def report(self, url: str, data: dict[str, Any]):
+        # justifying the "noqa: S310" (= suspicious-url-open) in _post_json() below:
+        parsed_url = parse.urlparse(url)
+        if parsed_url.scheme not in {"http", "https"}:
+            raise ValueError("Only URLs using http or https schema are allowed")
+
         with self._lock:
             self._latest_payload = url, data
         self._notify_event.set()
@@ -56,12 +61,14 @@ class CallbackReporter:
 
     def _post_json(self, payload: tuple[str, dict]):
         url, data = payload
+
         json_text = json.dumps(data).encode("utf-8")
-        req = request.Request(
+
+        req = request.Request(  # noqa: S310
             url,
             data=json_text,
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        with request.urlopen(req, timeout=self.request_timeout) as resp:
+        with request.urlopen(req, timeout=self.request_timeout) as resp:  # noqa: S310
             resp.read()
