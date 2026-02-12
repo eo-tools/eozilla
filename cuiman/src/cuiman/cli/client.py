@@ -48,7 +48,7 @@ class UseClient:
             client_error: ClientError = exc_value
             api_error = client_error.api_error
             message_lines = [
-                f"❌ Error: {client_error}",
+                f"Error: {client_error}",
                 "Server-side error details:",
                 f"  title:  {api_error.title}",
                 f"  status: {api_error.status}",
@@ -62,7 +62,7 @@ class UseClient:
             if not show_traceback:
                 raise typer.Exit(code=2)
         elif isinstance(exc_value, TransportError):
-            typer.echo(f"❌ Transport error: {exc_value}")
+            typer.echo(f"Transport error: {exc_value}")
             if not show_traceback:
                 raise typer.Exit(code=3)
 
