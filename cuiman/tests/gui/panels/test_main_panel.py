@@ -11,6 +11,7 @@ from cuiman.gui.panels import MainPanelView
 from gavicore.models import (
     InputDescription,
     JobInfo,
+    JobResults,
     JobStatus,
     JobType,
     ProcessDescription,
@@ -18,7 +19,6 @@ from gavicore.models import (
     ProcessRequest,
     ProcessSummary,
     Schema,
-    JobResults,
 )
 
 bbox_input = InputDescription(
