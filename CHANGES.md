@@ -60,6 +60,8 @@ The following enhancements have been applied to the main panel in `cuiman.gui.pa
   (Model–View–ViewModel) style.
 - Renamed `gavicore.util.schema.create_json_schema` into `create_schema_dict`.
 - Removed `gavicore.util.schema.create_schema_instance` with no replacement.
+- Added "S" option (= security rules enabled by Bandit) to `ruff check`
+  configuration.
 
 
 ### Breaking Changes
