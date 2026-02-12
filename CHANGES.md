@@ -43,6 +43,7 @@ The following enhancements have been applied to the main panel in `cuiman.gui.pa
   workflows from `WorkflowRegistry` before DAG generation, enabling easier 
   debugging, clearer dependency inspection, and more robust and extensible 
   DAG rendering.
+- Enhanced and updated documentation.
 
 ### Fixes
 
