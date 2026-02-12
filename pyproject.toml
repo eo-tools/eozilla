@@ -116,10 +116,19 @@ include = [
 ]
 
 [tool.ruff.lint]
-ignore = ["E501", "I001"]
-isort = { relative-imports-order = "closest-to-furthest" }
+select = [
+    "B", # pycodestyle (coding style)
+    "E", # pyflakes (basic errors)
+    "F", # bugbear (common logic issues)
+    "I", # Isort (import order)
+    "S", # Bandit (security checks)
+]
+ignore = [
+    "E501",  # line-too-long
+    "I001",  # unsorted-imports
+]
 per-file-ignores = { "*.ipynb" = ["E402"] }
-select = ["I", "F", "E"]
+isort = { relative-imports-order = "closest-to-furthest" }
 
 [tool.coverage.report]
 omit = [
