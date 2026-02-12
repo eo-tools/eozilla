@@ -53,7 +53,7 @@ class AuthConfig(BaseSettings):
 
     # For type "token": custom header or Bearer
     use_bearer: bool = False  # if True → Authorization: Bearer <token>
-    token_header: str = "X-Auth-Token"
+    token_header: str = "X-Auth-Token"  # noqa: S105
 
     # For type "api-key"
     api_key: Optional[str] = None

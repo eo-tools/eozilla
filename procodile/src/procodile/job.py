@@ -71,7 +71,8 @@ class JobContext(ABC):
             del frame
         # noinspection PyUnreachableCode
         warnings.warn(
-            "cannot determine current job context; using non-functional dummy"
+            "cannot determine current job context; using non-functional dummy",
+            stacklevel=2,
         )
         return NullJobContext()
 

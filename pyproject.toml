@@ -126,6 +126,7 @@ select = [
 ignore = [
     "E501",  # line-too-long
     "I001",  # unsorted-imports
+    "S101", # assert
 ]
 per-file-ignores = { "*.ipynb" = ["E402"] }
 isort = { relative-imports-order = "closest-to-furthest" }
