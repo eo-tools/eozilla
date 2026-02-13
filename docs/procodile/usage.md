@@ -77,8 +77,8 @@ Process inputs, such as the arguments `path` or `factor` above,
 can be further specified by
 [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/) annotations.
 Field annotations for an argument can be provided via the `inputs` dictionary
-passed to the [`main`][procodile.WorkflowRegsitry.main] or 
-[`process`][procodile.WorkflowRegsitry.process] and [`step`][procodile.Workflow.step]
+passed to the [`main`][procodile.ProcessRegistry.main] or 
+[`process`][procodile.ProcessRegistry.process] and [`step`][procodile.Process.step]
 decorators,
 or preferably as part of the type declaration using the Python `Annotated`
 special form. An example for the latter is
@@ -158,7 +158,7 @@ my-app = "my_app.cli:cli"
 After installing `my_app` in a Python environment using `pip` or `pixi`
 you can run your CLI as an executable and `my-app --help` will output:
 
-![process-cli.png](assets/process-cli.png)
+![process-cli.png](../assets/process-cli.png)
 
 ## Usage Example
 
@@ -224,7 +224,7 @@ published process `primes_between`:
 To execute your processes, see help for the `execute-process` (or short `ep`)
 subcommand:
 
-![process-ep-cli.png](assets/process-ep-cli.png)
+![process-ep-cli.png](../assets/process-ep-cli.png)
 
 ### Execution request files
 
