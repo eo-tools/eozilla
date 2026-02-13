@@ -4,7 +4,7 @@
 
 [project]
 name = "eozilla"
-version = "0.0.9.dev0"
+version = "0.0.9"
 description = "Comprises all packages of the Eozilla suite"
 readme = "README.md"
 authors = [
