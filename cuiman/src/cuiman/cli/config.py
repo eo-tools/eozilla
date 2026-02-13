@@ -84,6 +84,8 @@ def _configure_basic_auth_with_prompt(ctx: _Context) -> None:
 def _configure_login_auth_with_prompt(ctx: _Context) -> None:
     # TODO: add URL validator
     _prompt_for_str(ctx, "auth_url", "Authentication URL", "")
+    _prompt_for_str(ctx, "client_id", "OAuth2 client ID", "")
+    _prompt_for_pw(ctx, "client_secret", "OAuth2 client secret")
     _configure_username_password_with_prompt(ctx)
     auth_config = AuthConfig(**ctx.curr_params)
     ctx.curr_params["token"] = login(auth_config)

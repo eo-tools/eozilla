@@ -199,6 +199,20 @@ def new_cli(
                 help="Password.",
             ),
         ] = None,
+        client_id: Annotated[
+            str | None,
+            typer.Option(
+                "--client-id",
+                help="OAuth2 client ID for login authentication.",
+            ),
+        ] = None,
+        client_secret: Annotated[
+            str | None,
+            typer.Option(
+                "--client-secret",
+                help="OAuth2 client secret for login authentication.",
+            ),
+        ] = None,
         token: Annotated[
             str | None,
             typer.Option(
@@ -234,6 +248,8 @@ def new_cli(
             api_url=api_url,
             auth_type=auth_type,  # type: ignore[arg-type]
             auth_url=auth_url,
+            client_id=client_id,
+            client_secret=client_secret,
             username=username,
             password=password,
             token=token,

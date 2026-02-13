@@ -48,6 +48,11 @@ class AuthConfig(BaseSettings):
     username: Optional[str] = None
     password: Optional[str] = None
 
+    # For type "login" (OAuth2 Resource Owner Password Credentials)
+    client_id: Optional[str] = None
+    client_secret: Optional[str] = None
+    grant_type: str = "password"
+
     # For type "token" or "login"
     token: Optional[str] = None
 

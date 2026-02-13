@@ -10,6 +10,8 @@ async def test_login_async_json():
     cfg = AuthConfig(
         auth_type="login",
         auth_url="https://acme.com/api/auth/login",
+        client_id="my-client",
+        client_secret="my-secret",
         username="u",
         password="p",
     )
@@ -34,6 +36,8 @@ async def test_login_async_plaintext():
     cfg = AuthConfig(
         auth_type="login",
         auth_url="https://acme.com/api/auth/login",
+        client_id="my-client",
+        client_secret="my-secret",
         username="u",
         password="p",
     )

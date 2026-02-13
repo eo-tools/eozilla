@@ -33,7 +33,16 @@ def prepare_login(config: AuthConfig) -> tuple[str, dict[str, str | None]]:
         raise ValueError(
             "Username and password must be set for authentication type 'login'."
         )
-    return config.auth_url, {"username": config.username, "password": config.password}
+    data: dict[str, str | None] = {
+        "grant_type": config.grant_type,
+        "username": config.username,
+        "password": config.password,
+    }
+    if config.client_id:
+        data["client_id"] = config.client_id
+    if config.client_secret:
+        data["client_secret"] = config.client_secret
+    return config.auth_url, data
 
 
 def process_login_response(response: httpx.Response) -> Any:
