@@ -1,6 +1,6 @@
-# Client API Reference
+# # Cuiman API Reference
 
-The Python client API is provided by the Eozilla `cuiman` package.
+The Cuiman Python API is provided by the `cuiman` package.
 
 The [`Client`](#cuiman.Client) class provides a synchronous API.
 If you want an asynchronous version, use the `AsyncClient` class instead.

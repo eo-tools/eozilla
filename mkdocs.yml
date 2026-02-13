@@ -2,35 +2,46 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-site_name: Eozilla
+site_name: Eozilla 🦖
 repo_url: https://github.com/eo-tools/eozilla
 repo_name: eo-tools/eozilla
 
-copyright: Copyright &copy; 2025 Eozilla Team
+copyright: Copyright &copy; 2026 Eozilla Team
 
 nav:
   - Overview: index.md
-  - Cuiman Client:
-    - Configuration: client-config.md
-    - Customization: client-custom.md
+  - Cuiman:
+    - Introduction: cuiman/introduction.md
+    - Configuration: cuiman/configuration.md
+    - Customization: cuiman/customization.md
     - Usage:
-      - notebooks/client-gui.ipynb
-      - notebooks/client-api.ipynb
-      - notebooks/client-api-airflow.ipynb
-      - notebooks/client-cli.ipynb
-    - References:
-      - CLI: client-cli.md
-      - API: client-api.md
-  - Procodile Framework:
-    - Process Development: process-dev.md
+      - notebooks/cuiman-api.ipynb
+      - notebooks/cuiman-gui.ipynb
+      # - notebooks/cuiman-api-airflow.ipynb
+      - notebooks/cuiman-cli.ipynb
+    - CLI: cuiman/cli.md
+    - API: cuiman/api.md
+  - Wraptile:
+    - Introduction: wraptile/introduction.md
+    - Usage: wraptile/usage.md
+    - Customization: wraptile/customization.md
+    - CLI: wraptile/cli.md
+  - Procodile:
+    - Introduction: procodile/introduction.md
+    - Usage: procodile/usage.md
+    - API: procodile/api.md
+    - CLI: procodile/cli.md
+  - Appligator:
+    - Introduction: appligator/introduction.md
+    - Usage: appligator/usage.md
+    - CLI: appligator/cli.md
   - Architecture: architecture.md
   - Contributing: contributing.md
-  - Roadmap: roadmap.md
 
 theme:
   name: material
-  logo: assets/logo.png
-  favicon: assets/logo.ico
+  # logo: assets/logo.png
+  # favicon: assets/logo.ico
   palette:
     # Palette toggle for light mode
     - scheme: default

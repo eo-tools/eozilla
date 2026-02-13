@@ -6,10 +6,11 @@
 
 # Eozilla Appligator
 
-Appligator is tool that bundles your workflows so they can be 
-recognized and executed by specific workflow orchestrators. 
+_Appligator_ is tool that transforms (often bundles) your workflows so 
+they can be recognized and executed by specific workflow orchestrators. 
 
-Workflow orchestrator specific bundlers will be provided as 
+Workflow orchestrator specific transformers will be provided as 
 plugins. The default bundler outputs the 
 [OGC Earth Observation Application Package (EOAP)](https://eoap.github.io/) format.
+
 

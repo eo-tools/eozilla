@@ -12,6 +12,7 @@ from procodile_example import __version__
 cli = new_cli(
     registry="procodile_example.processes:registry",
     name="procodile-example",
+    summary="This is the CLI of the Eozilla Procodile example.",
     version=__version__,
 )
 

@@ -1,10 +1,4 @@
-# Eozilla Wraptile
-
-_Wraptile_ is a server made for wrapping workflow orchestration 
-systems with a unified restful API that should be almost compliant
-with the [OGC API - Processes](https://github.com/opengeospatial/ogcapi-processes).
-
-Wraptile can currently be run with a local execution service or with Airflow.
+# Wraptile Usage
 
 ## Local execution service
 
@@ -46,5 +40,3 @@ The possible options are
 * `--airflow-password=TEXT`: The Airflow password. 
   For an Airflow installation with the simple Auth manager, use the one from
   `.airflow/simple_auth_manager_passwords.json.generated`.
-
-

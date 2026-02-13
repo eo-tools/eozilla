@@ -32,8 +32,8 @@ class Client(ClientMixin):
       config: Optional client configuration object. If given,
         other configuration arguments are ignored.
       config_path: Optional path of the configuration file to be loaded
-      config_kwargs: Configuration settings as keyword arguments.
       api_url: The service URL of the OGC API - Processes.
+      config_kwargs: Configuration settings as keyword arguments.
     """
 
     def __init__(
@@ -44,7 +44,7 @@ class Client(ClientMixin):
         api_url: Optional[str] = None,
         _debug: bool = False,
         _transport: Optional[Transport] = None,
-        **config_kwargs,
+        **config_kwargs: Any,
     ):
         self._config = ClientConfig.create(
             config=config,
