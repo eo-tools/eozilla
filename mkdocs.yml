@@ -30,13 +30,13 @@ nav:
     - Introduction: procodile/introduction.md
     - Usage: procodile/usage.md
     - API: procodile/api.md
+    - CLI: procodile/cli.md
   - Appligator:
     - Introduction: appligator/introduction.md
     - Usage: appligator/usage.md
     - CLI: appligator/cli.md
   - Architecture: architecture.md
   - Contributing: contributing.md
-  - Roadmap: roadmap.md
 
 theme:
   name: material

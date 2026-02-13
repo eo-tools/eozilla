@@ -1,4 +1,4 @@
-# Cuiman CLI Reference
+# Cuiman CLI
 
 The `cuiman` tool is a shell client for any web services 
 compliant with OGC API - Processes, Part 1: Core Standard.
