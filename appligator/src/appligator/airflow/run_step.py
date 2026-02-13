@@ -30,7 +30,7 @@ def main(
 
     if output_keys:
         if isinstance(result, tuple):
-            output = dict(zip(output_keys, result))
+            output = dict(zip(output_keys, result, strict=False))
         else:
             output = {output_keys[0]: result}
     else:

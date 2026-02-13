@@ -18,7 +18,7 @@ from .provider import get_service
 async def get_capabilities(
     request: fastapi.Request,
     response: fastapi.Response,
-    service: Service = fastapi.Depends(get_service),
+    service: Service = fastapi.Depends(get_service),  # noqa B008
 ):
     return await service.get_capabilities(request=request, response=response)
 
@@ -28,7 +28,7 @@ async def get_capabilities(
 async def get_conformance(
     request: fastapi.Request,
     response: fastapi.Response,
-    service: Service = fastapi.Depends(get_service),
+    service: Service = fastapi.Depends(get_service),  # noqa B008
 ):
     return await service.get_conformance(request=request, response=response)
 
@@ -38,7 +38,7 @@ async def get_conformance(
 async def get_processes(
     request: fastapi.Request,
     response: fastapi.Response,
-    service: Service = fastapi.Depends(get_service),
+    service: Service = fastapi.Depends(get_service),  # noqa B008
 ):
     return await service.get_processes(request=request, response=response)
 
@@ -49,7 +49,7 @@ async def get_process(
     processID: str,
     request: fastapi.Request,
     response: fastapi.Response,
-    service: Service = fastapi.Depends(get_service),
+    service: Service = fastapi.Depends(get_service),  # noqa B008
 ):
     return await service.get_process(
         process_id=processID, request=request, response=response
@@ -63,7 +63,7 @@ async def execute_process(
     process_request: ProcessRequest,
     request: fastapi.Request,
     response: fastapi.Response,
-    service: Service = fastapi.Depends(get_service),
+    service: Service = fastapi.Depends(get_service),  # noqa B008
 ):
     return await service.execute_process(
         process_id=processID,
@@ -78,7 +78,7 @@ async def execute_process(
 async def get_jobs(
     request: fastapi.Request,
     response: fastapi.Response,
-    service: Service = fastapi.Depends(get_service),
+    service: Service = fastapi.Depends(get_service),  # noqa B008
 ):
     return await service.get_jobs(request=request, response=response)
 
@@ -89,7 +89,7 @@ async def get_job(
     jobId: str,
     request: fastapi.Request,
     response: fastapi.Response,
-    service: Service = fastapi.Depends(get_service),
+    service: Service = fastapi.Depends(get_service),  # noqa B008
 ):
     return await service.get_job(job_id=jobId, request=request, response=response)
 
@@ -100,7 +100,7 @@ async def dismiss_job(
     jobId: str,
     request: fastapi.Request,
     response: fastapi.Response,
-    service: Service = fastapi.Depends(get_service),
+    service: Service = fastapi.Depends(get_service),  # noqa B008
 ):
     return await service.dismiss_job(job_id=jobId, request=request, response=response)
 
@@ -111,7 +111,7 @@ async def get_job_results(
     jobId: str,
     request: fastapi.Request,
     response: fastapi.Response,
-    service: Service = fastapi.Depends(get_service),
+    service: Service = fastapi.Depends(get_service),  # noqa B008
 ):
     return await service.get_job_results(
         job_id=jobId, request=request, response=response
