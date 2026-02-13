@@ -5,9 +5,11 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
+<link href="../../cuiman/customization/" rel="prev"/>
+<link href="../cuiman-gui/" rel="next"/>
 <link href="../../assets/images/favicon.png" rel="icon"/>
 <meta content="mkdocs-1.6.1, mkdocs-material-9.7.1" name="generator"/>
-<title>Notebooks json output - Eozilla 🦖</title>
+<title>Cuiman Python API usage - Eozilla 🦖</title>
 <link href="../../assets/stylesheets/main.484c7ddc.min.css" rel="stylesheet"/>
 <link href="../../assets/stylesheets/palette.ab4e12ef.min.css" rel="stylesheet"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -22,6 +24,9 @@
 <input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
 <label class="md-overlay" for="__drawer"></label>
 <div data-md-component="skip">
+<a class="md-skip" href="#cuiman-python-api-usage">
+          Skip to content
+        </a>
 </div>
 <div data-md-component="announce">
 </div>
@@ -43,7 +48,7 @@
 <div class="md-header__topic" data-md-component="header-topic">
 <span class="md-ellipsis">
             
-              Notebooks json output
+              Cuiman Python API usage
             
           </span>
 </div>
@@ -138,8 +143,8 @@
   </span>
 </a>
 </li>
-<li class="md-nav__item md-nav__item--nested">
-<input class="md-nav__toggle md-toggle" id="__nav_2" type="checkbox"/>
+<li class="md-nav__item md-nav__item--active md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" id="__nav_2" type="checkbox"/>
 <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
 <span class="md-ellipsis">
     
@@ -151,7 +156,7 @@
   </span>
 <span class="md-nav__icon md-icon"></span>
 </label>
-<nav aria-expanded="false" aria-labelledby="__nav_2_label" class="md-nav" data-md-level="1">
+<nav aria-expanded="true" aria-labelledby="__nav_2_label" class="md-nav" data-md-level="1">
 <label class="md-nav__title" for="__nav_2">
 <span class="md-nav__icon md-icon"></span>
             
@@ -197,8 +202,8 @@
   </span>
 </a>
 </li>
-<li class="md-nav__item md-nav__item--nested">
-<input class="md-nav__toggle md-toggle" id="__nav_2_4" type="checkbox"/>
+<li class="md-nav__item md-nav__item--active md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" id="__nav_2_4" type="checkbox"/>
 <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
 <span class="md-ellipsis">
     
@@ -210,7 +215,7 @@
   </span>
 <span class="md-nav__icon md-icon"></span>
 </label>
-<nav aria-expanded="false" aria-labelledby="__nav_2_4_label" class="md-nav" data-md-level="2">
+<nav aria-expanded="true" aria-labelledby="__nav_2_4_label" class="md-nav" data-md-level="2">
 <label class="md-nav__title" for="__nav_2_4">
 <span class="md-nav__icon md-icon"></span>
             
@@ -220,8 +225,9 @@
 
           </label>
 <ul class="md-nav__list" data-md-scrollfix="">
-<li class="md-nav__item">
-<a class="md-nav__link" href="../../notebooks/cuiman-api/">
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<a class="md-nav__link md-nav__link--active" href="./">
 <span class="md-ellipsis">
     
   
@@ -233,7 +239,7 @@
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="../../notebooks/cuiman-gui/">
+<a class="md-nav__link" href="../cuiman-gui/">
 <span class="md-ellipsis">
     
   
@@ -245,7 +251,7 @@
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="../../notebooks/cuiman-cli/">
+<a class="md-nav__link" href="../cuiman-cli/">
 <span class="md-ellipsis">
     
   
@@ -535,7 +541,6 @@
 </div>
 <div class="md-content" data-md-component="content">
 <article class="md-content__inner md-typeset">
-<h1>Notebooks json output</h1>
 <script>
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
@@ -972,13 +977,38 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </style>
 <!-- End of mermaid configuration --><div class="jupyter-wrapper">
 <div class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=d3aed6f8">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ed01d1e5-12e4-4fe8-9e1a-e57f0bb7a7da">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h1 id="cuiman-python-api-usage">Cuiman Python API usage<a class="anchor-link" href="#cuiman-python-api-usage">¶</a></h1><p>The Cuiman Python API client allows for</p>
+<ul>
+<li><code>client.get_processes()</code>: listing existing processes,</li>
+<li><code>client.get_process()</code>: get the details about a process,</li>
+<li><code>client.execute_process()</code>: executing a given process execution request,</li>
+<li><code>client.get_jobs()</code>: observing the jobs resulting from a process execution,</li>
+<li><code>client.get_job()</code>: getting a job's details,</li>
+<li><code>client.get_job_result()</code>: getting a job's result, and finally</li>
+<li><code>client.dismiss_job()</code>: cancelling a job.</li>
+</ul>
+<p>In the following, we visit all the features by example.</p>
+<p>The client expects a running server that conforms to the <a href="">OGC API - Process: Part 1, Version 1.0</a>.
+If you don't have one available, you can also run the project's server
+with a test configuration:</p>
+<div class="highlight"><pre><span></span>wraptile<span class="w"> </span>run<span class="w"> </span>--<span class="w"> </span>wraptile.services.local.testing:service
+</pre></div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=8be0d24e-00ad-4ce0-8217-27a6747b5767">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-1">
@@ -991,27 +1021,23 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">html</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">cuiman</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gavicore.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessRequest</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-1">import html
-import json
-import shutil
-from pathlib import Path</div>
+<div class="clipboard-copy-txt" id="cell-1">from cuiman import Client
+from gavicore.models import ProcessRequest</div>
 </div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=356d9b37">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=6c90402f-b2a2-4e1e-873c-8ceca7780ed6">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-2">
@@ -1024,21 +1050,46 @@ from pathlib import Path</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nbformat</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nbf</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
+<span class="n">client</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-2">import nbformat as nbf</div>
+<div class="clipboard-copy-txt" id="cell-2">client = Client()
+client</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[2]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "api_key": null,
+  "api_key_header": "X-API-Key",
+  "api_url": "http://127.0.0.1:8008/",
+  "auth_type": "basic",
+  "auth_url": null,
+  "password": "gfds",
+  "token": null,
+  "token_header": "X-Auth-Token",
+  "use_bearer": false,
+  "username": "Norman"
+}</code></pre>
 </div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=6845b54a">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=18cd3a18-73ee-411d-b6bb-8a63a9c2d95c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-3">
@@ -1051,59 +1102,136 @@ from pathlib import Path</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">on_pre_build</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Runs the updates once before the build of the documentation</span>
-
-<span class="sd">    References:</span>
-<span class="sd">    - mkdocs hooks: https://www.mkdocs.org/user-guide/configuration/?#hooks</span>
-<span class="sd">    - mkdocs events: https://www.mkdocs.org/dev-guide/plugins/#on_pre_build</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">     - config: global MkDocsConfig Object</span>
-<span class="sd">    """</span>
-    <span class="n">source</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span> <span class="o">/</span> <span class="s2">"notebooks"</span>
-    <span class="n">destination</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span> <span class="o">/</span> <span class="s2">"docs/notebooks"</span>
-
-    <span class="n">_update_files_in_docs</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">destination</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[hooks] Updated notebooks: </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">destination</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">ipynb</span> <span class="ow">in</span> <span class="n">destination</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">"*.ipynb"</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">_patch_notebook</span><span class="p">(</span><span class="n">ipynb</span><span class="p">):</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[hooks] Patched: </span><span class="si">{</span><span class="n">ipynb</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">get_capabilities</span><span class="p">()</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-3">def on_pre_build(config):
-    """
-    Runs the updates once before the build of the documentation
-
-    References:
-    - mkdocs hooks: https://www.mkdocs.org/user-guide/configuration/?#hooks
-    - mkdocs events: https://www.mkdocs.org/dev-guide/plugins/#on_pre_build
-
-    Args:
-     - config: global MkDocsConfig Object
-    """
-    source = Path.cwd() / "notebooks"
-    destination = Path.cwd() / "docs/notebooks"
-
-    _update_files_in_docs(source, destination)
-    print(f"[hooks] Updated notebooks: {source} to {destination}")
-
-    for ipynb in destination.rglob("*.ipynb"):
-        if _patch_notebook(ipynb):
-            print(f"[hooks] Patched: {ipynb}")</div>
+<div class="clipboard-copy-txt" id="cell-3">client.get_capabilities()</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[3]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "description": "Local test server implementing the OGC API - Processes 1.0 Standard",
+  "links": [
+    {
+      "href": "http://127.0.0.1:8008/",
+      "hreflang": "en",
+      "rel": "self",
+      "title": "get_capabilities",
+      "type": "application/json"
+    },
+    {
+      "href": "http://127.0.0.1:8008/openapi.json",
+      "hreflang": "en",
+      "rel": "service",
+      "title": "openapi",
+      "type": "application/json"
+    },
+    {
+      "href": "http://127.0.0.1:8008/docs",
+      "hreflang": "en",
+      "rel": "service",
+      "title": "swagger_ui_html",
+      "type": "text/html"
+    },
+    {
+      "href": "http://127.0.0.1:8008/docs/oauth2-redirect",
+      "hreflang": "en",
+      "rel": "service",
+      "title": "swagger_ui_redirect",
+      "type": "text/html"
+    },
+    {
+      "href": "http://127.0.0.1:8008/redoc",
+      "hreflang": "en",
+      "rel": "service",
+      "title": "redoc_html",
+      "type": "text/html"
+    },
+    {
+      "href": "http://127.0.0.1:8008/",
+      "hreflang": "en",
+      "rel": "service",
+      "title": "get_capabilities",
+      "type": "application/json"
+    },
+    {
+      "href": "http://127.0.0.1:8008/conformance",
+      "hreflang": "en",
+      "rel": "service",
+      "title": "get_conformance",
+      "type": "application/json"
+    },
+    {
+      "href": "http://127.0.0.1:8008/processes",
+      "hreflang": "en",
+      "rel": "service",
+      "title": "get_processes",
+      "type": "application/json"
+    },
+    {
+      "href": "http://127.0.0.1:8008/processes/{processID}",
+      "hreflang": "en",
+      "rel": "service",
+      "title": "get_process",
+      "type": "application/json"
+    },
+    {
+      "href": "http://127.0.0.1:8008/processes/{processID}/execution",
+      "hreflang": "en",
+      "rel": "service",
+      "title": "execute_process",
+      "type": "application/json"
+    },
+    {
+      "href": "http://127.0.0.1:8008/jobs",
+      "hreflang": "en",
+      "rel": "service",
+      "title": "get_jobs",
+      "type": "application/json"
+    },
+    {
+      "href": "http://127.0.0.1:8008/jobs/{jobId}",
+      "hreflang": "en",
+      "rel": "service",
+      "title": "get_job",
+      "type": "application/json"
+    },
+    {
+      "href": "http://127.0.0.1:8008/jobs/{jobId}",
+      "hreflang": "en",
+      "rel": "service",
+      "title": "dismiss_job",
+      "type": "application/json"
+    },
+    {
+      "href": "http://127.0.0.1:8008/jobs/{jobId}/results",
+      "hreflang": "en",
+      "rel": "service",
+      "title": "get_job_results",
+      "type": "application/json"
+    }
+  ],
+  "title": "Eozilla API Server (local dummy for testing)"
+}</code></pre>
 </div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e0d8c2ab">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=ed699a45-ff53-4278-8023-ee131f225088">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-4">
@@ -1116,71 +1244,42 @@ from pathlib import Path</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">_patch_notebook</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Changes the output type of Jupyter notebook cells from</span>
-<span class="sd">    `json/application` to `text/html` to make the output readable</span>
-<span class="sd">    in mkdocs documentation</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        - path: Path to notebooks in docs/</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        - boolean indicator to report if notebook patching was done</span>
-<span class="sd">    """</span>
-    <span class="n">nb</span> <span class="o">=</span> <span class="n">nbf</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">as_version</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-    <span class="n">changed</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">nb</span><span class="o">.</span><span class="n">cells</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">out</span> <span class="ow">in</span> <span class="n">cell</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"outputs"</span><span class="p">,</span> <span class="p">[]):</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data"</span><span class="p">,</span> <span class="p">{})</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">"application/json"</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-                <span class="n">pretty</span> <span class="o">=</span> <span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"application/json"</span><span class="p">],</span>
-                                                <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-                                                <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
-                <span class="n">data</span><span class="p">[</span><span class="s2">"text/html"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"&lt;pre&gt;&lt;code class='text-json'&gt;</span><span class="si">{</span><span class="n">pretty</span><span class="si">}</span><span class="s2">&lt;/code&gt;&lt;/pre&gt;"</span>
-                <span class="n">changed</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="k">if</span> <span class="n">changed</span><span class="p">:</span>
-        <span class="n">nbf</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nb</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">changed</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">get_conformance</span><span class="p">()</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-4">def _patch_notebook(path: Path):
-    """
-    Changes the output type of Jupyter notebook cells from
-    `json/application` to `text/html` to make the output readable
-    in mkdocs documentation
-
-    Args:
-        - path: Path to notebooks in docs/
-
-    Returns:
-        - boolean indicator to report if notebook patching was done
-    """
-    nb = nbf.read(path, as_version=4)
-    changed = False
-    for cell in nb.cells:
-        for out in cell.get("outputs", []):
-            data = out.get("data", {})
-            if isinstance(data, dict) and "application/json" in data:
-                pretty = html.escape(json.dumps(data["application/json"],
-                                                indent=2,
-                                                ensure_ascii=False))
-                data["text/html"] = f"<pre><code class="text-json">{pretty}</code></pre>"
-                changed = True
-    if changed:
-        nbf.write(nb, path)
-    return changed</div>
+<div class="clipboard-copy-txt" id="cell-4">client.get_conformance()</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[4]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "conformsTo": [
+    "http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/core",
+    "http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/ogc-process-description",
+    "http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/json",
+    "http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/oas30",
+    "http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/job-list",
+    "http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/dismiss"
+  ]
+}</code></pre>
 </div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=60ac00ef">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=7154afcd-59a9-484f-8271-1b4773b8c636">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-5">
@@ -1193,27 +1292,795 @@ from pathlib import Path</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">_update_files_in_docs</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">destination</span><span class="p">:</span> <span class="n">Path</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Adds notebooks to docs/notebooks</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        - source: Path to original notebooks</span>
-<span class="sd">        - destination: Path to copy original notebooks to prepare for and add to</span>
-<span class="sd">        mkdocs documentation</span>
-<span class="sd">    """</span>
-    <span class="n">shutil</span><span class="o">.</span><span class="n">copytree</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">destination</span><span class="p">,</span> <span class="n">dirs_exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">get_processes</span><span class="p">()</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-5">def _update_files_in_docs(source: Path, destination: Path):
-    """
-    Adds notebooks to docs/notebooks
-
-    Args:
-        - source: Path to original notebooks
-        - destination: Path to copy original notebooks to prepare for and add to
-        mkdocs documentation
-    """
-    shutil.copytree(source, destination, dirs_exist_ok=True)</div>
+<div class="clipboard-copy-txt" id="cell-5">client.get_processes()</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[5]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "links": [
+    {
+      "href": "http://127.0.0.1:8008/processes",
+      "hreflang": "en",
+      "rel": "self",
+      "title": "get_processes",
+      "type": "application/json"
+    }
+  ],
+  "processes": [
+    {
+      "description": "Sleeps for `duration` seconds. Fails on purpose if `fail` is `True`. Returns the effective amount of sleep in seconds.",
+      "id": "sleep_a_while",
+      "title": "Sleep Processor",
+      "version": "0.0.0"
+    },
+    {
+      "description": "Returns the list of prime numbers between a `min_val` and `max_val`.",
+      "id": "primes_between",
+      "title": "Prime Processor",
+      "version": "0.0.0"
+    },
+    {
+      "description": "Simulate a set scene images slices for testing. Creates an xarray dataset with `periodicity` time slices and writes it as Zarr into a temporary location. Requires installed `dask`, `xarray`, and `zarr` packages.",
+      "id": "simulate_scene",
+      "title": "Generate scene for testing",
+      "version": "0.0.0"
+    },
+    {
+      "id": "return_base_model",
+      "title": "BaseModel Test",
+      "version": "0.0.0"
+    },
+    {
+      "description": "This is a workflow with several steps and defined dependencies that execute sequentially.",
+      "id": "process_pipeline",
+      "title": "A Big Workflow",
+      "version": "0.0.0"
+    }
+  ]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=a629ba21-e389-4131-ae84-2ce5c5fc7aa9">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-6">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">get_process</span><span class="p">(</span><span class="n">process_id</span><span class="o">=</span><span class="s2">"sleep_a_while"</span><span class="p">)</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-6">client.get_process(process_id="sleep_a_while")</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[6]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "description": "Sleeps for `duration` seconds. Fails on purpose if `fail` is `True`. Returns the effective amount of sleep in seconds.",
+  "id": "sleep_a_while",
+  "inputs": {
+    "duration": {
+      "minOccurs": 0,
+      "schema": {
+        "default": 10,
+        "type": "number"
+      },
+      "title": "Duration"
+    },
+    "fail": {
+      "minOccurs": 0,
+      "schema": {
+        "default": false,
+        "type": "boolean"
+      },
+      "title": "Fail"
+    }
+  },
+  "outputs": {
+    "return_value": {
+      "schema": {
+        "type": "number"
+      },
+      "title": "Return Value"
+    }
+  },
+  "title": "Sleep Processor",
+  "version": "0.0.0"
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=e4e20f28-0ed4-4e30-9fcd-23238a7d06a0">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-7">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">get_jobs</span><span class="p">()</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-7">client.get_jobs()</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[7]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "jobs": [],
+  "links": [
+    {
+      "href": "http://127.0.0.1:8008/jobs",
+      "hreflang": "en",
+      "rel": "self",
+      "title": "get_jobs",
+      "type": "application/json"
+    }
+  ]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=cc034916-02db-4ec2-8682-71710d54edf6">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-8">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">execute_process</span><span class="p">(</span><span class="n">process_id</span><span class="o">=</span><span class="s2">"sleep_a_while"</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">ProcessRequest</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">{</span><span class="s2">"duration"</span><span class="p">:</span><span class="mi">2</span><span class="p">}))</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-8">client.execute_process(process_id="sleep_a_while", request=ProcessRequest(inputs={"duration":2}))</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[8]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "created": "2026-02-12T16:13:30.682487Z",
+  "jobID": "job_0",
+  "processID": "sleep_a_while",
+  "progress": 0,
+  "started": "2026-02-12T16:13:30.683002Z",
+  "status": "running",
+  "type": "process",
+  "updated": "2026-02-12T16:13:30.683152Z"
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=4cd38b1d-5989-4991-9b62-d1981d33a46e">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-9">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">execute_process</span><span class="p">(</span><span class="n">process_id</span><span class="o">=</span><span class="s2">"sleep_a_while"</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">ProcessRequest</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">{</span><span class="s2">"fail"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}))</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-9">client.execute_process(process_id="sleep_a_while", request=ProcessRequest(inputs={"fail": True}))</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[9]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "created": "2026-02-12T16:13:30.693029Z",
+  "jobID": "job_1",
+  "processID": "sleep_a_while",
+  "progress": 0,
+  "started": "2026-02-12T16:13:30.693375Z",
+  "status": "running",
+  "type": "process",
+  "updated": "2026-02-12T16:13:30.693446Z"
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=21b94f40-5a1b-408f-a3a7-52de97b05b82">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-10">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">execute_process</span><span class="p">(</span><span class="n">process_id</span><span class="o">=</span><span class="s2">"primes_between"</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="p">{})</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-10">client.execute_process(process_id="primes_between", request={})</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[10]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "created": "2026-02-12T16:13:30.702482Z",
+  "finished": "2026-02-12T16:13:30.703101Z",
+  "jobID": "job_2",
+  "message": "Done",
+  "processID": "primes_between",
+  "started": "2026-02-12T16:13:30.702895Z",
+  "status": "successful",
+  "type": "process",
+  "updated": "2026-02-12T16:13:30.703050Z"
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=9ff86bd5-7f91-498b-a47d-3ff57212542c">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-11">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">get_process</span><span class="p">(</span><span class="n">process_id</span><span class="o">=</span><span class="s2">"process_pipeline"</span><span class="p">)</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-11">client.get_process(process_id="process_pipeline")</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[11]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "description": "This is a workflow with several steps and defined dependencies that execute sequentially.",
+  "id": "process_pipeline",
+  "inputs": {
+    "id": {
+      "schema": {
+        "type": "string"
+      },
+      "title": "main input"
+    }
+  },
+  "outputs": {
+    "final": {
+      "schema": {
+        "items": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "maxItems": 2,
+        "minItems": 2,
+        "type": "array"
+      },
+      "title": "Final output"
+    }
+  },
+  "title": "A Big Workflow",
+  "version": "0.0.0"
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=dacd9dd0-3fa7-4d65-a26f-a1c118a2c89f">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [12]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-12">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">execute_process</span><span class="p">(</span><span class="n">process_id</span><span class="o">=</span><span class="s2">"process_pipeline"</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">ProcessRequest</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"eozilla-is-wow"</span><span class="p">}))</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-12">client.execute_process(process_id="process_pipeline", request=ProcessRequest(inputs={"id": "eozilla-is-wow"}))</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[12]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "created": "2026-02-12T16:13:30.722516Z",
+  "jobID": "job_3",
+  "processID": "process_pipeline",
+  "status": "accepted",
+  "type": "process"
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=9cf5e867-d91e-45dd-91b3-a54bc2d087a7">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [13]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-13">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">get_jobs</span><span class="p">()</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-13">client.get_jobs()</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[13]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "jobs": [
+    {
+      "created": "2026-02-12T16:13:30.682487Z",
+      "jobID": "job_0",
+      "processID": "sleep_a_while",
+      "progress": 2,
+      "started": "2026-02-12T16:13:30.683002Z",
+      "status": "running",
+      "type": "process",
+      "updated": "2026-02-12T16:13:30.724402Z"
+    },
+    {
+      "created": "2026-02-12T16:13:30.693029Z",
+      "jobID": "job_1",
+      "processID": "sleep_a_while",
+      "progress": 0,
+      "started": "2026-02-12T16:13:30.693375Z",
+      "status": "running",
+      "type": "process",
+      "updated": "2026-02-12T16:13:30.693446Z"
+    },
+    {
+      "created": "2026-02-12T16:13:30.702482Z",
+      "finished": "2026-02-12T16:13:30.703101Z",
+      "jobID": "job_2",
+      "message": "Done",
+      "processID": "primes_between",
+      "started": "2026-02-12T16:13:30.702895Z",
+      "status": "successful",
+      "type": "process",
+      "updated": "2026-02-12T16:13:30.703050Z"
+    },
+    {
+      "created": "2026-02-12T16:13:30.722516Z",
+      "finished": "2026-02-12T16:13:30.723774Z",
+      "jobID": "job_3",
+      "processID": "process_pipeline",
+      "started": "2026-02-12T16:13:30.722979Z",
+      "status": "successful",
+      "type": "process"
+    }
+  ],
+  "links": [
+    {
+      "href": "http://127.0.0.1:8008/jobs",
+      "hreflang": "en",
+      "rel": "self",
+      "title": "get_jobs",
+      "type": "application/json"
+    }
+  ]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=fe96d358-084e-4e2c-af93-4c6562b0f12e">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [14]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-14">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">get_job</span><span class="p">(</span><span class="s2">"job_1"</span><span class="p">)</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-14">client.get_job("job_1")</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[14]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "created": "2026-02-12T16:13:30.693029Z",
+  "jobID": "job_1",
+  "processID": "sleep_a_while",
+  "progress": 0,
+  "started": "2026-02-12T16:13:30.693375Z",
+  "status": "running",
+  "type": "process",
+  "updated": "2026-02-12T16:13:30.693446Z"
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=b7f99444-d724-4451-aeae-0c23e8245dd1">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [15]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-15">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">get_job_results</span><span class="p">(</span><span class="s2">"job_3"</span><span class="p">)</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-15">client.get_job_results("job_3")</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[15]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "final": [
+    [
+      "eozilla-is-wow_read_preprocessed_feature_mean",
+      "resampled_from=eozilla-is-wow"
+    ],
+    "eozilla-is-wow_read_preprocessed_feature_mean"
+  ]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=0be752c2-63b0-4ab3-92e2-8503f32128fb">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [16]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-16">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">get_job_results</span><span class="p">(</span><span class="s2">"job_2"</span><span class="p">)</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-16">client.get_job_results("job_2")</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[16]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "return_value": [
+    2,
+    3,
+    5,
+    7,
+    11,
+    13,
+    17,
+    19,
+    23,
+    29,
+    31,
+    37,
+    41,
+    43,
+    47,
+    53,
+    59,
+    61,
+    67,
+    71,
+    73,
+    79,
+    83,
+    89,
+    97
+  ]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=736d52d8-d91a-435b-8dfb-b016a5139201">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [17]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-17">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">client</span><span class="o">.</span><span class="n">get_jobs</span><span class="p">()</span><span class="o">.</span><span class="n">jobs</span><span class="p">:</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">dismiss_job</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">jobID</span><span class="p">)</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-17">for job in client.get_jobs().jobs:
+    client.dismiss_job(job.jobID)</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=4636fdfc-3f61-40b4-889e-497c2dd50d91">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [18]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-18">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">get_jobs</span><span class="p">()</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-18">client.get_jobs()</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[18]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<pre><code class="text-json">{
+  "jobs": [
+    {
+      "created": "2026-02-12T16:13:30.682487Z",
+      "jobID": "job_0",
+      "processID": "sleep_a_while",
+      "progress": 4,
+      "started": "2026-02-12T16:13:30.683002Z",
+      "status": "running",
+      "type": "process",
+      "updated": "2026-02-12T16:13:30.765438Z"
+    },
+    {
+      "created": "2026-02-12T16:13:30.693029Z",
+      "jobID": "job_1",
+      "processID": "sleep_a_while",
+      "progress": 0,
+      "started": "2026-02-12T16:13:30.693375Z",
+      "status": "running",
+      "type": "process",
+      "updated": "2026-02-12T16:13:30.693446Z"
+    }
+  ],
+  "links": [
+    {
+      "href": "http://127.0.0.1:8008/jobs",
+      "hreflang": "en",
+      "rel": "self",
+      "title": "get_jobs",
+      "type": "application/json"
+    }
+  ]
+}</code></pre>
 </div>
 </div>
 </div>
@@ -1222,6 +2089,9 @@ from pathlib import Path</div>
 </div>
 </div> <!-- jp-Notebook -->
 </div> <!-- jupyter-wrapper -->
+<style>
+        ['pre { line-height: 125%; }\ntd.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }\nspan.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }\ntd.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }\nspan.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }\n.highlight-ipynb .hll { background-color: var(--jp-cell-editor-active-background) }\n.highlight-ipynb { background: var(--jp-cell-editor-background); color: var(--jp-mirror-editor-variable-color) }\n.highlight-ipynb .c { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment */\n.highlight-ipynb .err { color: var(--jp-mirror-editor-error-color) } /* Error */\n.highlight-ipynb .k { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword */\n.highlight-ipynb .o { color: var(--jp-mirror-editor-operator-color); font-weight: bold } /* Operator */\n.highlight-ipynb .p { color: var(--jp-mirror-editor-punctuation-color) } /* Punctuation */\n.highlight-ipynb .ch { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Hashbang */\n.highlight-ipynb .cm { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Multiline */\n.highlight-ipynb .cp { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Preproc */\n.highlight-ipynb .cpf { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.PreprocFile */\n.highlight-ipynb .c1 { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Single */\n.highlight-ipynb .cs { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Special */\n.highlight-ipynb .kc { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Constant */\n.highlight-ipynb .kd { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Declaration */\n.highlight-ipynb .kn { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Namespace */\n.highlight-ipynb .kp { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Pseudo */\n.highlight-ipynb .kr { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Reserved */\n.highlight-ipynb .kt { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Type */\n.highlight-ipynb .m { color: var(--jp-mirror-editor-number-color) } /* Literal.Number */\n.highlight-ipynb .s { color: var(--jp-mirror-editor-string-color) } /* Literal.String */\n.highlight-ipynb .ow { color: var(--jp-mirror-editor-operator-color); font-weight: bold } /* Operator.Word */\n.highlight-ipynb .pm { color: var(--jp-mirror-editor-punctuation-color) } /* Punctuation.Marker */\n.highlight-ipynb .w { color: var(--jp-mirror-editor-variable-color) } /* Text.Whitespace */\n.highlight-ipynb .mb { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Bin */\n.highlight-ipynb .mf { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Float */\n.highlight-ipynb .mh { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Hex */\n.highlight-ipynb .mi { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Integer */\n.highlight-ipynb .mo { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Oct */\n.highlight-ipynb .sa { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Affix */\n.highlight-ipynb .sb { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Backtick */\n.highlight-ipynb .sc { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Char */\n.highlight-ipynb .dl { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Delimiter */\n.highlight-ipynb .sd { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Doc */\n.highlight-ipynb .s2 { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Double */\n.highlight-ipynb .se { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Escape */\n.highlight-ipynb .sh { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Heredoc */\n.highlight-ipynb .si { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Interpol */\n.highlight-ipynb .sx { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Other */\n.highlight-ipynb .sr { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Regex */\n.highlight-ipynb .s1 { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Single */\n.highlight-ipynb .ss { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Symbol */\n.highlight-ipynb .il { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Integer.Long */']
+        </style>
 </article>
 </div>
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
