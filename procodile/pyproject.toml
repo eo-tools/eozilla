@@ -4,7 +4,7 @@
 
 [project]
 name = "procodile"
-version = "0.0.9.dev0"
+version = "0.0.9"
 description = "A light-weight processor development framework"
 readme = "README.md"
 authors = [
