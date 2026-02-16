@@ -10,7 +10,7 @@ import click
 import typer
 from pydantic import BaseModel
 
-from cuiman.api.auth import login
+from cuiman.api.auth import login_for_tokens
 from cuiman.api.auth.config import AUTH_TYPE_NAMES, AuthConfig
 from cuiman.api.config import ClientConfig
 from cuiman.api.defaults import DEFAULT_API_URL, DEFAULT_AUTH_TYPE
@@ -88,7 +88,10 @@ def _configure_login_auth_with_prompt(ctx: _Context) -> None:
     _prompt_for_pw(ctx, "client_secret", "OAuth2 client secret")
     _configure_username_password_with_prompt(ctx)
     auth_config = AuthConfig(**ctx.curr_params)
-    ctx.curr_params["token"] = login(auth_config)
+    result = login_for_tokens(auth_config)
+    ctx.curr_params["token"] = result.access_token
+    if result.refresh_token:
+        ctx.curr_params["refresh_token"] = result.refresh_token
     _configure_token_type_with_prompt(ctx)
 
 

@@ -72,6 +72,7 @@ class {{ uc_async }}Client({{ uc_async }}ClientMixin):
             HttpxTransport(
                 api_url=self._config.api_url,
                 headers=self._config.auth_headers,
+                {{ refresher_kwarg }}
                 debug=_debug,
             )
             if _transport is None
@@ -102,6 +103,10 @@ def main():
     sync_code = sync_code.replace("{{ client_methods }}", client_methods)
     sync_code = sync_code.replace("{{ uc_async }}", "")
     sync_code = sync_code.replace("{{ hr_async }}", "synchronous")
+    sync_code = sync_code.replace(
+        "{{ refresher_kwarg }}",
+        "token_refresher=self._config._make_token_refresher(),",
+    )
 
     write_file(
         GENERATOR_NAME,
@@ -118,6 +123,10 @@ def main():
     async_code = async_code.replace("{{ client_methods }}", client_methods)
     async_code = async_code.replace("{{ uc_async }}", "Async")
     async_code = async_code.replace("{{ hr_async }}", "asynchronous")
+    async_code = async_code.replace(
+        "{{ refresher_kwarg }}",
+        "async_token_refresher=self._config._make_async_token_refresher(),",
+    )
 
     write_file(
         GENERATOR_NAME,

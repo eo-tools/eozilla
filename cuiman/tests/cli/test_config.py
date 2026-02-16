@@ -11,6 +11,7 @@ import click
 import pytest
 
 from cuiman import ClientConfig
+from cuiman.api.auth.login import LoginResult
 from cuiman.api.defaults import DEFAULT_CONFIG_PATH
 from cuiman.cli.config import configure_client_with_prompt, get_config
 from gavicore.util.testing import set_env, set_env_cm
@@ -110,12 +111,15 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
             config,
         )
 
-    @patch("cuiman.cli.config.login", return_value="dummy-token")
+    @patch("cuiman.cli.config.login_for_tokens")
     @patch("typer.confirm")
     @patch("typer.prompt")
     def test_auth_type_login(
         self, mock_prompt: MagicMock, mock_confirm: MagicMock, mock_login: MagicMock
     ):
+        mock_login.return_value = LoginResult(
+            access_token="dummy-token", refresh_token="dummy-refresh"
+        )
         # Simulate sequential responses to typer.prompt()
         mock_prompt.side_effect = [
             "http://localhorst:9999",
@@ -147,6 +151,7 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
                 username="bibo",
                 password="1234",
                 token="dummy-token",
+                refresh_token="dummy-refresh",
                 use_bearer=False,
                 token_header="X-Auth-Token",
             ),
@@ -205,12 +210,15 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
             config,
         )
 
-    @patch("cuiman.cli.config.login", return_value="dummy-token")
+    @patch("cuiman.cli.config.login_for_tokens")
     @patch("typer.confirm")
     @patch("typer.prompt")
     def test_defaults_are_used(
         self, mock_prompt: MagicMock, mock_confirm: MagicMock, mock_login: MagicMock
     ):
+        mock_login.return_value = LoginResult(
+            access_token="dummy-token", refresh_token="dummy-refresh"
+        )
         # Use default password "9823hc!"
         expected_password = "9823hc!"
         with set_env_cm(EOZILLA_PASSWORD=expected_password):
@@ -246,6 +254,7 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
                     username="bibo",
                     password=expected_password,
                     token="dummy-token",
+                    refresh_token="dummy-refresh",
                     use_bearer=True,
                 ),
                 config,
