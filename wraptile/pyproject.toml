@@ -4,7 +4,7 @@
 
 [project]
 name = "wraptile"
-version = "0.0.9.dev0"
+version = "0.1.0.dev0"
 description = "FastAPI server that implements the OGC API - Processes"
 readme = "README.md"
 authors = [
@@ -46,6 +46,12 @@ dependencies = [
   # local dependency
   "gavicore >=0.0.7",
   "procodile >=0.0.7",
+]
+
+[project.optional-dependencies]
+airflow = [
+  "apache-airflow-client==3.0.2",
+  "requests",
 ]
 
 [project.scripts]
