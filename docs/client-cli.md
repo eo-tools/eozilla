@@ -73,6 +73,10 @@ $ cuiman configure [OPTIONS]
 * `-c, --config PATH`: Client configuration file.
 * `--help`: Show this message and exit.
 
+For `auth_type=login`, the configure command performs a login call and stores the
+returned access token and (if provided) the `refresh_token` in the config file.
+When a refresh token is present, `cuiman` refreshes on HTTP 401 and retries once.
+
 ## `cuiman list-processes`
 
 List available processes.
