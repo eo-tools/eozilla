@@ -36,6 +36,7 @@ _HIDDEN_INPUT = 6 * "*"
 
 class _Context(BaseModel):
     cli_params: dict[str, Any]
+    env_params: dict[str, Any]
     prev_params: dict[str, Any]
     curr_params: dict[str, Any]
 
@@ -46,6 +47,7 @@ def configure_client_with_prompt(
 ) -> Path:
     ctx = _Context(
         cli_params=cli_params,
+        env_params=ClientConfig().to_dict(),
         prev_params=ClientConfig.create(config_path=config_path).to_dict(),
         curr_params={},
     )
@@ -85,7 +87,7 @@ def _configure_login_auth_with_prompt(ctx: _Context) -> None:
     # TODO: add URL validator
     _prompt_for_str(ctx, "auth_url", "Authentication URL", "")
     _prompt_for_str(ctx, "client_id", "OAuth2 client ID", "")
-    _prompt_for_pw(ctx, "client_secret", "OAuth2 client secret")
+    _prompt_for_str(ctx, "client_secret", "OAuth2 client secret", "")
     _configure_username_password_with_prompt(ctx)
     auth_config = AuthConfig(**ctx.curr_params)
     result = login_for_tokens(auth_config)
@@ -124,7 +126,7 @@ def _configure_token_type_with_prompt(ctx: _Context) -> None:
 def _prompt_for_str(
     ctx: _Context, key: str, text: str, default: str, choice: click.Choice | None = None
 ) -> str:
-    value: str | None = ctx.cli_params.get(key)
+    value: str | None = ctx.cli_params.get(key) or ctx.env_params.get(key)
     if value is None:
         value = (
             typer.prompt(
@@ -144,7 +146,7 @@ def _prompt_for_pw(
     key: str,
     text: str,
 ) -> str:
-    pw = ctx.cli_params.get(key)
+    pw = ctx.cli_params.get(key) or ctx.env_params.get(key)
     if pw is None:
         prev_pw: str | None = ctx.prev_params.get(key)
         new_pw: str = typer.prompt(
@@ -170,10 +172,14 @@ def _prompt_for_bool(
 ) -> bool:
     value: bool | None = ctx.cli_params.get(key)
     if value is None:
-        value = typer.confirm(
-            text,
-            default=ctx.prev_params.get(key) or default,
-        )
+        env_value = ctx.env_params.get(key)
+        if env_value is not None:
+            value = env_value
+        else:
+            value = typer.confirm(
+                text,
+                default=ctx.prev_params.get(key) or default,
+            )
     ctx.curr_params.update({key: value})
     assert isinstance(value, bool)
     return value
