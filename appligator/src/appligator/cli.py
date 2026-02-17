@@ -63,6 +63,7 @@ def main(
     import datetime
 
     from appligator import __version__
+    from appligator.airflow.gen_image import gen_image
     from appligator.airflow.gen_workflow_dag import gen_workflow_dag
     from gavicore.util.dynimp import import_value
     from procodile import ProcessRegistry
@@ -81,7 +82,9 @@ def main(
         name="process_registry",
         example=PROCESS_REGISTRY_SPEC_EX,
     )
+
     dags_folder.mkdir(exist_ok=True)
+
     for process_id, process in process_registry.items():
         # TODO: implement this better later
         image_name = gen_image(
