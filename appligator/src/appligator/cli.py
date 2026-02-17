@@ -81,24 +81,19 @@ def main(
         name="process_registry",
         example=PROCESS_REGISTRY_SPEC_EX,
     )
-    print("process registry:", process_registry)
     dags_folder.mkdir(exist_ok=True)
-    print("process items:", process_registry.items())
     for process_id, process in process_registry.items():
         # TODO: implement this better later
-        # image_name = gen_image(
-        #     process_registry.get_workflow(process_id).registry,
-        #     image_name=image_name,
-        #     use_local_packages=True,
-        # )
-        print("process_id:", process_id)
-        print("process:", process)
+        image_name = gen_image(
+            process_registry.get_workflow(process_id).registry,
+            image_name=image_name,
+            use_local_packages=True,
+        )
         dag_code = gen_workflow_dag(
             dag_id=process_id,
             registry=process_registry.get_workflow(process_id).registry,
             image=image_name,
         )
-        print(dag_code)
         dag_file = dags_folder / f"{process_id}.py"
         with dag_file.open("w") as stream:
             stream.write(
