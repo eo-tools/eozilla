@@ -168,7 +168,7 @@ class HttpxSyncTransportTest(TestCase):
             ce.api_error,
         )
 
-    def test_close(self):
+    def test_close_is_noop(self):
         sync_httpx = MagicMock()
 
         transport = HttpxTransport(api_url="https://api.example.com")

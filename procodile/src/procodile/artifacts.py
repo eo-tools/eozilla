@@ -166,7 +166,7 @@ class ExecutionContext:
                 raise ValueError("Tuple output length does not match declared outputs")
             return {
                 k: self.materialize_artifact(v, store)
-                for k, v in zip(output_keys, result)
+                for k, v in zip(output_keys, result, strict=True)
             }
 
         raise TypeError(

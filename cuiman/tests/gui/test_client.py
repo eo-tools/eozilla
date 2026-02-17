@@ -23,6 +23,9 @@ class ClientTest(TestCase):
                     case _:
                         raise Exception("Unhandled case in mock")
 
+            def close(self):
+                pass
+
         client = GuiClient(api_url="https://api.ok.ko", _transport=_MockTransport())
         processes_form = client.show()
         self.assertIsInstance(processes_form, MainPanelView)
@@ -34,6 +37,9 @@ class ClientTest(TestCase):
                 if (args.method, args.path) == ("get", "/jobs"):
                     return JobList(jobs=[], links=[])
                 return None
+
+            def close(self):
+                pass
 
         client = GuiClient(api_url="https://api.ok.ko", _transport=_MockTransport())
         jobs_form = client.show_jobs()

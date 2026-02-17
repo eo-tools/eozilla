@@ -48,12 +48,6 @@ dependencies = [
   "procodile >=0.0.7",
 ]
 
-[project.optional-dependencies]
-airflow = [
-  "apache-airflow-client==3.0.2",
-  "requests",
-]
-
 [project.scripts]
 wraptile = "wraptile.cli:cli"
 

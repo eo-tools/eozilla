@@ -85,7 +85,7 @@ class LocalService(ServiceBase):
                 400,
                 detail=f"Invalid parameterization for process {process_id!r}: {e}",
                 exception=e,
-            )
+            ) from e
         self.jobs[job_id] = job
         assert self.executor is not None, "illegal state: no executor specified"
         job.future = self.executor.submit(job.run)

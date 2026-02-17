@@ -26,28 +26,28 @@ The following enhancements have been applied to the main panel in `cuiman.gui.pa
   - Added functional "Get Results" button
   - Moved not-yet-functional process request file actions into a custom drop-down-menu.
   - Added preliminary output GUI to the main panel.
-    Only shown, if multiple output values are used. The UI is still
+    Only shown, if multiple output values are used. The UI is still 
     experimental and subject to change. (#36)
-  - Added switch "Show advanced inputs".
+  - Added switch "Show advanced inputs". 
   - Fixed updating job details display.
 - Added tooltips to GUI widgets that support it in the `cuiman` GUI client.
   Tooltip texts are taken from the process input `description` metadata.
 - Added `cuiman` dependency `pydantic-settings` introduced in version 0.0.8. (#53)
-- By using `inputs` and `outputs` keyword arguments of
-  `procodile.ProcessRegistry.process()` it is now possible to also provide
-  `gavicore.models.InputDescription` and `gavicore.models.OutputDescription`
+- By using `inputs` and `outputs` keyword arguments of 
+  `procodile.ProcessRegistry.process()` it is now possible to also provide 
+  `gavicore.models.InputDescription` and `gavicore.models.OutputDescription` 
   that are merged into the input and output descriptions of the process.
   Also added helper function `procodile.additional_parameters()`. (#46)
 - Provided additional options to customize `cuiman`:
-  - Use `cuiman.ClientConfig` class as base class and then configure it with a custom
+  - Use `cuiman.ClientConfig` class as base class and then configure it with a custom 
     `pydantic_settings.SettingsConfigDict` instance.
   - Override class members in `cuiman.ClientConfig` to initialize custom default values,
     override model classes, and implement application-specific behaviour.
   - Create a dedicated CLI instance with customized settings.
   - The `show()` method of the `cuiman.gui.Client` now supports passing application-
-    specific parameters, e.g., to filter processes and process inputs.
-- Added a couple of common authentication methods to `cuiman` client API and CLI
-  configuration (via command `configure`): basic, login, token, api-key methods are
+    specific parameters, e.g., to filter processes and process inputs. 
+- Added a couple of common authentication methods to `cuiman` client API and CLI 
+  configuration (via command `configure`): basic, login, token, api-key methods are 
   now supported.
 - Updated documentation.
 - `Workflow Orchestration Support`: You can now define Python functions as 
@@ -80,6 +80,8 @@ The following enhancements have been applied to the main panel in `cuiman.gui.pa
   (Model–View–ViewModel) style.
 - Renamed `gavicore.util.schema.create_json_schema` into `create_schema_dict`.
 - Removed `gavicore.util.schema.create_schema_instance` with no replacement.
+- Added "S" option (= security rules enabled by Bandit) to `ruff check`
+  configuration.
 
 
 ### Breaking Changes

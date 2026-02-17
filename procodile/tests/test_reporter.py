@@ -4,12 +4,30 @@ import unittest
 from unittest.mock import MagicMock, patch
 from urllib import error
 
+import pytest
+
 from procodile.reporter import CallbackReporter
 
 
 class CallbackReporterTest(unittest.TestCase):
     def setUp(self):
         self.url = "http://localhost/callback"
+        self.bad_url = "file://localhost/callback"
+
+    def test_fails_for_inappropriate_url_schema(self):
+        with patch(
+            "urllib.request.urlopen",
+            return_value=MagicMock(__enter__=lambda s: s, __exit__=lambda s, *a: None),
+        ) as mock_urlopen:
+            reporter = CallbackReporter()
+            try:
+                with pytest.raises(
+                    ValueError, match="Only URLs using http or https schema are allowed"
+                ):
+                    reporter.report(self.bad_url, {"status": "ok"})
+            finally:
+                reporter.stop()
+            self.assertFalse(mock_urlopen.called)
 
     def test_report_and_stop_success(self):
         with patch(

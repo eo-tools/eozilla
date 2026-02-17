@@ -140,11 +140,21 @@ mkdocs serve
 mkdocs gh-deploy
 ```
 
-After changing the CLI code, always update its documentation `docs/cli.md` 
-by running
+The documentations of all Eozilla CLIs are generated.
+After changing any CLI code, always update their respective 
+documentation by running
 
 ```bash
-pixi run gen-client
+pixi run gen-cli-docs
+```
+
+Which will output something like the following:
+```
+Pixi task (gen-cli-docs): python -m tools.gen_cli_docs
+Docs saved to: eozilla/docs/cuiman/cli.md
+Docs saved to: eozilla/docs/wraptile/cli.md
+Docs saved to: eozilla/docs/procodile/cli.md
+Docs saved to: eozilla/docs/appligator/cli.md
 ```
 
 ## License

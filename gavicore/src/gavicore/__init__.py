@@ -26,7 +26,7 @@ def _patch_models():
             and issubclass(obj, BaseModel)
         ):
             # Make model object render nicely in Jupyter notebooks
-            setattr(obj, "_repr_json_", _repr_base_model_as_json)
+            obj._repr_json_ = _repr_base_model_as_json  # type: ignore[attr-defined]
 
 
 def _repr_base_model_as_json(self: BaseModel):

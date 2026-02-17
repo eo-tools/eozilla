@@ -1,4 +1,4 @@
-# Client Customization
+# Cuiman Customization
 
 Applications can create their own clients using `cuiman` under the hood. 
 For this, an application can customize the `cuiman` configuration and its

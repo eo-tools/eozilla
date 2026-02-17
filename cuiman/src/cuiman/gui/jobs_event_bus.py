@@ -71,4 +71,6 @@ class JobsEventBus:
                 # Hard to reach by unit tests.
                 pass  # pragma: no cover
             except BaseException as e:
-                warnings.warn(f"Error emitting event of type {event_type!r}: {e}")
+                warnings.warn(
+                    f"Error emitting event of type {event_type!r}: {e}", stacklevel=2
+                )

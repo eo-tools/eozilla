@@ -17,9 +17,6 @@ From an OGC API – Processes (Part 3 draft) perspective:
 Workflows allow complex execution graphs to be expressed declaratively while
 remaining compliant with the OGC process model.
 
-Each step in a workflow (main or any steps) is a OGC API Part
-1 [Process](https://eo-tools.github.io/eozilla/process-dev/#procodile.Process)
-
 ## Conceptual Model (OGC Alignment)
 
 | Concept         | Meaning                                                                                                                                             |

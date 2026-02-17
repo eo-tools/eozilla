@@ -29,6 +29,7 @@ class Transport(ABC):
             TransportError: If an attempt to reach the server failed.
         """
 
+    @abstractmethod
     def close(self):
         """Closes this transport."""
 
@@ -54,6 +55,7 @@ class AsyncTransport(ABC):
             TransportError: If an attempt to reach the server failed.
         """
 
+    @abstractmethod
     async def async_close(self):
         """Closes this transport."""
 

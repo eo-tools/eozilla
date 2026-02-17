@@ -288,6 +288,7 @@ class AirflowService(ServiceBase):
         response = requests.post(
             f"{base_url}/auth/token",
             json={"username": username, "password": password},
+            timeout=10,
         )
         try:
             response.raise_for_status()

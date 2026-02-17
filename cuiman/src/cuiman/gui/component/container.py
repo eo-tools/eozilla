@@ -43,7 +43,7 @@ class ComponentContainer:
             elif fail_mode != "ignore":
                 msg = f"Failed getting usable JSON schema for input {k!r}"
                 if fail_mode == "warn":
-                    warnings.warn(msg)
+                    warnings.warn(msg, stacklevel=2)
                 else:
                     raise ValueError(msg)
 
@@ -72,7 +72,7 @@ class ComponentContainer:
                 )
                 if fail_mode == "raise":
                     raise ValueError(msg)
-                warnings.warn(msg)
+                warnings.warn(msg, stacklevel=2)
 
     @property
     def is_empty(self) -> bool:

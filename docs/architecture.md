@@ -1,5 +1,7 @@
 # Architecture
 
+_This chapter is currently just a collection of design diagrams. Perhaps it will be of interest to some._
+
 _Note, should the following diagram code not render, copy it 
 into the [mermaid](https://www.mermaidchart.com/) editor._
 

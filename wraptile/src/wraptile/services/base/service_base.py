@@ -93,7 +93,7 @@ class ServiceBase(Service, ABC):
                 example="path.to.module:service",
             )
         except (ValueError, TypeError) as e:
-            raise ServiceConfigException(f"{e}")
+            raise ServiceConfigException(f"{e}") from e
         logger = logging.getLogger("uvicorn")
         logger.info(f"Created service instance of type {type(service).__name__}")
         service.configure(*args, **kwargs)

@@ -239,11 +239,11 @@ class Workflow:
         self,
         fn: Callable,
         workflow_id: str,
-        artifact_store: ArtifactStore = NullArtifactStore(),
+        artifact_store: ArtifactStore | None = None,
         **kwargs,
     ):
         self.id = workflow_id
-        self.artifact_store = artifact_store
+        self.artifact_store = artifact_store or NullArtifactStore()
 
         self.registry = WorkflowStepRegistry()
         self.graph: DependencyGraph | None = None

@@ -371,7 +371,9 @@ def _create_output_model_field_definitions(
                 f"function {fn_name!r}: number of outputs must match number "
                 f"of tuple[] arguments"
             )
-        for arg_type, (output_name, output_def) in zip(args, outputs.items()):
+        for arg_type, (output_name, output_def) in zip(
+            args, outputs.items(), strict=True
+        ):
             model_fields[output_name] = _create_output_model_field_value(
                 arg_type, output_def
             )

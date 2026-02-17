@@ -40,27 +40,27 @@ def import_value(
 
     try:
         module_name, attr_ref = ref.split(":", maxsplit=1)
-    except ValueError:
+    except ValueError as e:
         raise ValueError(
             f"The {name} reference must be passed in the form {example!r}, "
             f"but got {ref!r}."
-        )
+        ) from e
 
     try:
         module = importlib.import_module(module_name)
-    except ImportError:
-        raise ValueError(f"Cannot import module {module_name!r}.")
+    except ImportError as e:
+        raise ValueError(f"Cannot import module {module_name!r}.") from e
 
     value = module
     partial_spec = module_name
     for i, attr_name in enumerate(attr_ref.split(".")):
         try:
             value = getattr(value, attr_name)
-        except AttributeError:
+        except AttributeError as e:
             raise ValueError(
                 f"{'Module' if i == 0 else 'Object'} {partial_spec!r} "
                 f"has no attribute {attr_name!r}."
-            )
+            ) from e
         partial_spec += (":" if i == 0 else ".") + attr_name
 
     if not isinstance(value, type):

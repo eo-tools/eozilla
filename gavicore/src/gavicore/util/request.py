@@ -206,11 +206,11 @@ def _parse_subscribers(subscribers: list[str] | None) -> dict[str, str]:
 def _parse_subscriber_kv(kv: str) -> tuple[str, str]:
     try:
         key, value = kv.split("=", maxsplit=1)
-    except ValueError:
+    except ValueError as e:
         raise ValueError(
             f"Invalid subscriber item: "
             f"must have form `<subscriber-event>=<subscriber-url>`, but was {kv!r}"
-        )
+        ) from e
     return _parse_subscriber_event(key), _parse_subscriber_url(value)
 
 

@@ -1475,8 +1475,8 @@ packages:
   requires_python: ~=3.9
 - pypi: ./appligator
   name: appligator
-  version: 0.0.9.dev0
-  sha256: d257b8116666c35954fbbcc6f8c8d5661dcbad4224d50dc298df769a00a2c3c3
+  version: 0.1.0.dev0
+  sha256: f3564077c7bb2460982187899472be6552697debd1fdd01277731eab250d8988
   requires_dist:
   - pydantic
   - pyyaml
@@ -3151,8 +3151,8 @@ packages:
   timestamp: 1764805537696
 - pypi: ./cuiman
   name: cuiman
-  version: 0.0.9.dev0
-  sha256: e621b5e81ee99a3741c2f154789fdf768d7efa26816b2527364cf55af80d627f
+  version: 0.1.0.dev0
+  sha256: 3fb393bd8d09976253eed2154527c33c982e7bf9b0919b75b09b7ef0093cc5dd
   requires_dist:
   - click
   - panel
@@ -3479,8 +3479,8 @@ packages:
   timestamp: 1756221480651
 - pypi: ./eozilla
   name: eozilla
-  version: 0.0.9.dev0
-  sha256: fb1622c52e7752eb4496a0ad65eaf026b351e019b9aa65fc5a48d1b8f834aeb0
+  version: 0.1.0.dev0
+  sha256: f0c63d547c124f70cb6211d570d2556c1263f93ec159d538cf4c2da9e75f861c
   requires_dist:
   - appligator>=0.0.7
   - cuiman>=0.0.7
@@ -3808,8 +3808,8 @@ packages:
   timestamp: 1768000866082
 - pypi: ./gavicore
   name: gavicore
-  version: 0.0.9.dev0
-  sha256: 33b819fe8b7fce4c99bad8e3266e028b03cac32e23407811d949bd4500ec9ef3
+  version: 0.1.0.dev0
+  sha256: 37a0483705e40a2deda151b6374aceb5bde3b589c1b4dd16ddee086fe69f463d
   requires_dist:
   - click
   - pydantic
@@ -9538,8 +9538,8 @@ packages:
   timestamp: 1764896838868
 - pypi: ./procodile
   name: procodile
-  version: 0.0.9.dev0
-  sha256: 0cf211276bc8e38bce1e0c0690919da345e4954f3fcf2279652a9be41753360e
+  version: 0.1.0.dev0
+  sha256: 6282e20b04ce87988e6cc5076b89829c9a7b83f101cfcc93f613566724aed59a
   requires_dist:
   - pydantic
   - pyyaml
@@ -11950,8 +11950,8 @@ packages:
   timestamp: 1756851987645
 - pypi: ./wraptile
   name: wraptile
-  version: 0.0.9.dev0
-  sha256: 51a85d04de266f412269a8e665749bd3af43cfd132b2fba7fe3fd049fbe07e2d
+  version: 0.1.0.dev0
+  sha256: 9884326630dd5e33b4a7d42072a9bd9003905ce112ed5ed62fea106dab98c9d5
   requires_dist:
   - fastapi
   - pydantic

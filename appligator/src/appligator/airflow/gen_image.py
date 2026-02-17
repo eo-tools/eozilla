@@ -1,5 +1,6 @@
 import importlib
 import inspect
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -66,9 +67,16 @@ def gen_image(
             if src.exists():
                 shutil.copytree(src, output_dir / pkg)
 
-    subprocess.check_call(
-        ["docker", "build", "-t", image_name, "."],
-        cwd=output_dir,
+    if not re.fullmatch(r"[a-zA-Z0-9._/-]+", image_name):
+        raise ValueError("Invalid image name")
+
+    # noinspection PyDeprecation
+    docker_path = shutil.which("docker")
+    if docker_path is None:
+        raise RuntimeError("docker not found")
+
+    subprocess.check_call(  # noqa: S603
+        [docker_path, "build", "-t", image_name, "."], cwd=output_dir, shell=False
     )
 
     return image_name

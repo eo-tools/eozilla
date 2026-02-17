@@ -1,21 +1,25 @@
-# Process Development
+# Procodile Usage
 
-The Eozilla `procodile` package provides a simple Python framework that
-allows for a couple of things:
+## Installation
 
-- Registering your workflows comprising an entry-point (main) and
-  steps implemented as Python functions.
-- Querying and executing the workflow entry points via a dedicated Python API
-  and CLI.
-- Using YAML and JSON formats based on the interfaces and models
-  defined by [OGC API - Processes](https://github.com/opengeospatial/ogcapi-processes).
+Eozilla Procodile is distributed by the light-weight Python package `procodile`.
+Depending on your package manager, use one of the following:
 
-Herewith it allows later application packaging by Eozilla _Appligator_.
+```bash
+pypi install procodile
+```
 
-Processor packages developed using the provided CLI can later on be used to
-generate Docker images, Airflow DAGs, and optionally OGC Application Packages.
+```bash
+conda install procodile
+```
 
-Currently, `procodile` comprises just a few handy top-level components:
+```bash
+pixi add procodile
+```
+
+## API Overview
+
+The package `procodile` comprises just a few handy top-level components:
 
 * [class `ProcessRegistry`][procodile.ProcessRegistry] - to register your
   Python functions as processes in a central collection. Each process consists
@@ -254,49 +258,3 @@ The process request file format in detail:
   `inProgressUri`, and `failedUri` and none is required.
   See also [Subscriber][gavicore.models.Subscriber].
 
-## Framework API
-
-::: procodile.ProcessRegistry
-options:
-show_source: false
-heading_level: 3
-
-::: procodile.Process
-options:
-show_source: false
-heading_level: 3
-
-::: gavicore.models.ProcessRequest
-options:
-show_source: false
-heading_level: 3
-
-::: gavicore.models.Subscriber
-options:
-show_source: false
-heading_level: 3
-
-::: gavicore.models.Output
-options:
-show_source: false
-heading_level: 3
-
-::: gavicore.util.request.ExecutionRequest
-options:
-show_source: false
-heading_level: 3
-
-::: procodile.JobContext
-options:
-show_source: false
-heading_level: 3
-
-::: procodile.JobCancelledException
-options:
-show_source: false
-heading_level: 3
-
-::: procodile.cli.new_cli
-options:
-show_source: false
-heading_level: 3
