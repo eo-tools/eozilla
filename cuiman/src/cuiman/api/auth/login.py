@@ -71,16 +71,25 @@ def prepare_login(config: AuthConfig) -> tuple[str, dict[str, str | None]]:
         raise ValueError(
             "Username and password must be set for authentication type 'login'."
         )
-    data: dict[str, str | None] = {
-        "grant_type": config.grant_type,
-        "username": config.username,
-        "password": config.password,
-    }
+    data = _add_client_credentials(
+        config,
+        {
+            "grant_type": config.grant_type,
+            "username": config.username,
+            "password": config.password,
+        },
+    )
+    return config.auth_url, data
+
+
+def _add_client_credentials(
+    config: AuthConfig, data: dict[str, str | None]
+) -> dict[str, str | None]:
     if config.client_id:
         data["client_id"] = config.client_id
     if config.client_secret:
         data["client_secret"] = config.client_secret
-    return config.auth_url, data
+    return data
 
 
 def prepare_refresh(config: AuthConfig) -> tuple[str, dict[str, str | None]]:
@@ -88,14 +97,13 @@ def prepare_refresh(config: AuthConfig) -> tuple[str, dict[str, str | None]]:
         raise ValueError("Authentication URL must be set.")
     if not config.refresh_token:
         raise ValueError("Refresh token must be set for token refresh.")
-    data: dict[str, str | None] = {
-        "grant_type": "refresh_token",
-        "refresh_token": config.refresh_token,
-    }
-    if config.client_id:
-        data["client_id"] = config.client_id
-    if config.client_secret:
-        data["client_secret"] = config.client_secret
+    data = _add_client_credentials(
+        config,
+        {
+            "grant_type": "refresh_token",
+            "refresh_token": config.refresh_token,
+        },
+    )
     return config.auth_url, data
 
 
