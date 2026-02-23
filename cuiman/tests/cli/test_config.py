@@ -261,6 +261,49 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
             )
 
     @patch("typer.prompt")
+    def test_prompt_for_pw_uses_prev_password_on_hidden_input(
+        self, mock_prompt: MagicMock
+    ):
+        """When user enters '******' and a previous password exists, the previous
+        password is reused."""
+        # First configure with basic auth + password
+        mock_prompt.side_effect = [
+            "http://localhost:9090",
+            "basic",
+            "alice",
+            "secret123",
+        ]
+        configure_client_with_prompt()
+
+        # Now reconfigure, keeping the old password via "******"
+        mock_prompt.reset_mock()
+        mock_prompt.side_effect = [
+            "http://localhost:9090",
+            "basic",
+            "alice",
+            "******",  # sentinel → should reuse "secret123"
+        ]
+        config_path = configure_client_with_prompt()
+        config = get_config(None)
+        self.assertEqual("secret123", config.password)
+        self.assert_is_default_config_path(config_path)
+
+    @patch("typer.prompt")
+    def test_prompt_for_bool_uses_env_value(self, mock_prompt: MagicMock):
+        """When an env var provides a bool value, the prompt is skipped (line 177)."""
+        with set_env_cm(EOZILLA_USE_BEARER="True"):
+            mock_prompt.side_effect = [
+                "http://localhost:9090",
+                "token",
+                "my-token",
+            ]
+            # No typer.confirm needed — use_bearer comes from env
+            config_path = configure_client_with_prompt()
+            self.assert_is_default_config_path(config_path)
+            config = get_config(None)
+            self.assertTrue(config.use_bearer)
+
+    @patch("typer.prompt")
     def test_using_custom_config_path(self, mock_prompt: MagicMock):
         # Simulate sequential responses to typer.prompt()
         mock_prompt.side_effect = ["http://localhost:9090", "none"]

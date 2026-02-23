@@ -8,6 +8,7 @@ from cuiman.api.auth.login import (
     login_for_tokens,
     parse_token,
     prepare_refresh,
+    process_login_response,
     refresh_login,
 )
 
@@ -239,6 +240,35 @@ def test_prepare_refresh_missing_refresh_token():
 
     with pytest.raises(ValueError, match="Refresh token must be set"):
         prepare_refresh(cfg)
+
+
+def test_prepare_refresh_missing_auth_url():
+    cfg = AuthConfig(
+        auth_type="login",
+        auth_url=None,
+        refresh_token="some-token",
+    )
+    with pytest.raises(ValueError, match="Authentication URL must be set."):
+        prepare_refresh(cfg)
+
+
+def test_process_login_response_json():
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"token": "abc123"}
+    mock_response.raise_for_status.return_value = None
+
+    token = process_login_response(mock_response)
+    assert token == "abc123"
+
+
+def test_process_login_response_plaintext():
+    mock_response = MagicMock()
+    mock_response.json.side_effect = ValueError("not json")
+    mock_response.text = "  plain-token  "
+    mock_response.raise_for_status.return_value = None
+
+    token = process_login_response(mock_response)
+    assert token == "plain-token"
 
 
 def test_refresh_login():

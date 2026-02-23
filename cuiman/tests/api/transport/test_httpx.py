@@ -278,6 +278,39 @@ class HttpxSyncTokenRefreshTest(TestCase):
                 )
             )
 
+    def test_401_retry_raises_transport_error_on_http_error(self):
+        """If the retry after token refresh raises HTTPError, it becomes TransportError."""
+        response_401 = MagicMock()
+        response_401.status_code = 401
+        response_401.json.return_value = {"type": "error", "detail": "Unauthorized"}
+
+        sync_httpx = MagicMock()
+        sync_httpx.request.side_effect = [
+            response_401,
+            httpx.HTTPError("Connection lost"),
+        ]
+
+        refresher = MagicMock(return_value={"Authorization": "Bearer new-token"})
+
+        transport = HttpxTransport(
+            api_url="https://api.example.com",
+            headers={"Authorization": "Bearer old-token"},
+            token_refresher=refresher,
+        )
+        transport.sync_httpx = sync_httpx
+
+        with pytest.raises(TransportError, match="Connection lost"):
+            transport.call(
+                TransportArgs(
+                    path="/conformance",
+                    method="get",
+                    return_types={"200": ConformanceDeclaration},
+                )
+            )
+
+        refresher.assert_called_once()
+        self.assertEqual(2, sync_httpx.request.call_count)
+
     def test_non_401_error_does_not_trigger_refresh(self):
         """Non-401 errors should not trigger token refresh."""
         def panic():
@@ -340,3 +373,37 @@ class HttpxAsyncTokenRefreshTest(IsolatedAsyncioTestCase):
         self.assertEqual(2, async_httpx.request.call_count)
         self.assertEqual(new_headers, transport.headers)
         self.assertIsInstance(result, ConformanceDeclaration)
+
+    async def test_401_async_retry_raises_transport_error_on_http_error(self):
+        """If the async retry after token refresh raises HTTPError, it becomes TransportError."""
+        response_401 = MagicMock()
+        response_401.status_code = 401
+        response_401.json.return_value = {"type": "error", "detail": "Unauthorized"}
+
+        async_httpx = MagicMock()
+        async_httpx.request = AsyncMock(
+            side_effect=[response_401, httpx.HTTPError("Connection lost")]
+        )
+
+        refresher = AsyncMock(
+            return_value={"Authorization": "Bearer new-token"}
+        )
+
+        transport = HttpxTransport(
+            api_url="https://api.example.com",
+            headers={"Authorization": "Bearer old-token"},
+            async_token_refresher=refresher,
+        )
+        transport.async_httpx = async_httpx
+
+        with pytest.raises(TransportError, match="Connection lost"):
+            await transport.async_call(
+                TransportArgs(
+                    path="/conformance",
+                    method="get",
+                    return_types={"200": ConformanceDeclaration},
+                )
+            )
+
+        refresher.assert_called_once()
+        self.assertEqual(2, async_httpx.request.call_count)
