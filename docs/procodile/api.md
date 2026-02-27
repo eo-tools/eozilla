@@ -17,12 +17,27 @@ options:
 show_source: false
 heading_level: 3
 
+::: gavicore.models.ProcessSummary
+options:
+show_source: false
+heading_level: 3
+``
 ::: gavicore.models.Subscriber
 options:
 show_source: false
 heading_level: 3
 
 ::: gavicore.models.Output
+options:
+show_source: false
+heading_level: 3
+
+::: gavicore.models.InputDescription
+options:
+show_source: false
+heading_level: 3
+
+::: gavicore.util.model.extend_model
 options:
 show_source: false
 heading_level: 3
