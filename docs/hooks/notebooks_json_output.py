@@ -1,3 +1,7 @@
+#  Copyright (c) 2026 by the Eozilla team and contributors
+#  Permissions are hereby granted under the terms of the Apache 2.0 License:
+#  https://opensource.org/license/apache-2-0.
+
 import html
 import json
 import shutil
@@ -27,6 +31,7 @@ def on_pre_build(config):
         if _patch_notebook(ipynb):
             print(f"[hooks] Patched: {ipynb}")
 
+
 def _patch_notebook(path: Path):
     """
     Changes the output type of Jupyter notebook cells from
@@ -45,14 +50,17 @@ def _patch_notebook(path: Path):
         for out in cell.get("outputs", []):
             data = out.get("data", {})
             if isinstance(data, dict) and "application/json" in data:
-                pretty = html.escape(json.dumps(data["application/json"],
-                                                indent=2,
-                                                ensure_ascii=False))
-                data["text/html"] = f"<pre><code class='text-json'>{pretty}</code></pre>"
+                pretty = html.escape(
+                    json.dumps(data["application/json"], indent=2, ensure_ascii=False)
+                )
+                data["text/html"] = (
+                    f"<pre><code class='text-json'>{pretty}</code></pre>"
+                )
                 changed = True
     if changed:
         nbf.write(nb, path)
     return changed
+
 
 def _update_files_in_docs(source: Path, destination: Path):
     """
