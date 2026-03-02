@@ -5,7 +5,9 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from gavicore.models import ProcessDescription
+from cuiman import ClientConfig
+from cuiman.api.opener import OpenerContext
+from gavicore.models import ProcessDescription, JobResults
 from gavicore.util.request import ExecutionRequest
 
 
@@ -44,3 +46,9 @@ class ClientMixin(ABC):
         return ExecutionRequest.from_process_description(
             process_description, dotpath=dotpath
         )
+
+    def open_job_result(self, job_results: JobResults, **options: Any) -> Any:
+        # noinspection PyUnresolvedReferences
+        config: ClientConfig = self.config
+        ctx = OpenerContext(job_results=job_results, config=config, options=options)
+        return config.opener_registry.open_result(ctx)

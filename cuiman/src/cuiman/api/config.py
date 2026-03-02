@@ -13,6 +13,7 @@ from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 
 from .auth import AuthConfig
 from .defaults import DEFAULT_API_URL
+from .opener import OpenerRegistry
 
 
 class ClientConfig(AuthConfig, BaseSettings):
@@ -43,6 +44,16 @@ class ClientConfig(AuthConfig, BaseSettings):
     """
 
     return_type_map: ClassVar[dict[type, type]] = {}
+    """
+    A mapping from a hard-coded client return type to a 
+    custom return type. The hard-coded return type is usually a 
+    model class from `gavicore.models`. The custom return type 
+    typically extends the model class.  
+    Designed to be configured by library clients.
+    The default mapping is empty.
+    """
+
+    opener_registry: ClassVar[OpenerRegistry] = OpenerRegistry.create_default()
     """
     A mapping from a hard-coded client return type to a 
     custom return type. The hard-coded return type is usually a 
