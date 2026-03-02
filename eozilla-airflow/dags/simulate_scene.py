@@ -1,3 +1,7 @@
+#  Copyright (c) 2026 by the Eozilla team and contributors
+#  Permissions are hereby granted under the terms of the Apache 2.0 License:
+#  https://opensource.org/license/apache-2-0.
+
 # WARNING - THIS IS GENERATED CODE
 #   Generator: Eozilla Appligator v0.0.5.dev0
 #        Date: 2025-10-23T11:47:13.129306
@@ -8,26 +12,63 @@ from wraptile.services.local.testing import simulate_scene
 
 
 @dag(
-    'simulate_scene',
-    dag_display_name='Generate scene for testing',
-    description='Simulate a set scene images slices for testing. Creates an xarray dataset with `periodicity` time slices and writes it as Zarr into a temporary location. Requires installed `dask`, `xarray`, and `zarr` packages.',
+    "simulate_scene",
+    dag_display_name="Generate scene for testing",
+    description="Simulate a set scene images slices for testing. Creates an xarray dataset with `periodicity` time slices and writes it as Zarr into a temporary location. Requires installed `dask`, `xarray`, and `zarr` packages.",
     params={
-        'var_names': Param(default='a, b, c', type='string', title='Variable names', description='Comma-separated list of variable names.'),
-        'bbox': Param(default=[-180, -90, 180, 90], type='array', title='Bounding box', description='Bounding box in geographical coordinates.', format='bbox', items={'type': 'number'}, maxItems=4, minItems=4),
-        'resolution': Param(default=0.5, type='number', title='Spatial resolution', description='Spatial resolution in degree.', maximum=1.0, minimum=0.01),
-        'start_date': Param(default='2025-01-01', type='string', title='Start date', format='date'),
-        'end_date': Param(default='2025-02-01', type='string', title='End date', format='date'),
-        'periodicity': Param(default=1, type='integer', title='Periodicity', description='Size of time steps in days.', maximum=10.0, minimum=1.0),
-        'output_path': Param(type='string', title='Output path', description='Local output path or URI.', nullable=True),
+        "var_names": Param(
+            default="a, b, c",
+            type="string",
+            title="Variable names",
+            description="Comma-separated list of variable names.",
+        ),
+        "bbox": Param(
+            default=[-180, -90, 180, 90],
+            type="array",
+            title="Bounding box",
+            description="Bounding box in geographical coordinates.",
+            format="bbox",
+            items={"type": "number"},
+            maxItems=4,
+            minItems=4,
+        ),
+        "resolution": Param(
+            default=0.5,
+            type="number",
+            title="Spatial resolution",
+            description="Spatial resolution in degree.",
+            maximum=1.0,
+            minimum=0.01,
+        ),
+        "start_date": Param(
+            default="2025-01-01", type="string", title="Start date", format="date"
+        ),
+        "end_date": Param(
+            default="2025-02-01", type="string", title="End date", format="date"
+        ),
+        "periodicity": Param(
+            default=1,
+            type="integer",
+            title="Periodicity",
+            description="Size of time steps in days.",
+            maximum=10.0,
+            minimum=1.0,
+        ),
+        "output_path": Param(
+            type="string",
+            title="Output path",
+            description="Local output path or URI.",
+            nullable=True,
+        ),
     },
     is_paused_upon_creation=False,
 )
 def simulate_scene_dag():
-
     @task(multiple_outputs=False)
     def simulate_scene_task(params):
         return simulate_scene(**params)
 
     task_instance = simulate_scene_task()  # noqa: F841
+
 
 simulate_scene_dag()
