@@ -3,6 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 from unittest import TestCase
+from unittest.mock import patch
 
 import pytest
 
@@ -152,6 +153,21 @@ class ClientTest(TestCase):
         finally:
             ClientConfig.default_config = saved_default_config
             AppConfig.result_openers = saved_result_openers
+
+
+    def test_set_result_openers_sets_config_registry(self):
+        custom_openers = JobResultOpenerRegistry.create_default()
+        self.client.set_result_openers(custom_openers)
+        self.assertIs(custom_openers, type(self.client.config).result_openers)
+
+    def test_open_job_result_with_explicit_process_description_skips_lookup(self):
+        with patch.object(self.client, "get_job", side_effect=AssertionError("unexpected")):
+            with patch.object(self.client, "get_process", side_effect=AssertionError("unexpected")):
+                result = self.client.open_job_result(
+                    JobResults(root={"result": InlineOrRefValue(root={"a": 1})}),
+                    process_description=ProcessDescription(id="p1", version="1.0"),
+                )
+                self.assertEqual({"a": 1}, result)
 
     def test_close(self):
         self.assertFalse(self.transport.closed)
