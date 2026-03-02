@@ -127,19 +127,56 @@ OpenerMatcher = Callable[[OpenJobResultContext], bool]
 
 
 class JobResultOpenerRegistry:
-    """Registry for application-specific result opener callables."""
+    """Registry for opening `JobResults` values in extensible ways.
+
+    The registry supports two dispatch mechanisms:
+
+    1. Direct dispatch by `data_type` key via :meth:`register_data_type`.
+    2. Predicate-based dispatch via :meth:`register_matcher`.
+
+    If no explicit opener is found, the registry falls back to a `raw` opener
+    when available.
+    """
 
     def __init__(self):
+        """Create an empty registry with no predefined openers."""
         self._openers: dict[str, Opener] = {}
         self._matchers: list[tuple[str, OpenerMatcher, Opener]] = []
 
     def register_data_type(self, data_type: str, opener: Opener) -> None:
+        """Register an opener callable for a normalized data-type key.
+
+        Args:
+            data_type: Data type name used during opener dispatch.
+            opener: Callable receiving an :class:`OpenJobResultContext`.
+        """
         self._openers[data_type.lower()] = opener
 
     def register_matcher(self, name: str, matcher: OpenerMatcher, opener: Opener) -> None:
+        """Register a predicate-based opener evaluated after type dispatch.
+
+        Args:
+            name: Human-readable matcher name for debugging/tracing.
+            matcher: Predicate that decides if `opener` should be used.
+            opener: Callable receiving an :class:`OpenJobResultContext`.
+        """
         self._matchers.append((name, matcher, opener))
 
     def open(self, context: OpenJobResultContext) -> Any:
+        """Open a job-result value from the given context.
+
+        Dispatch order is: data-type opener, then registered matchers, then
+        `raw` fallback opener.
+
+        Args:
+            context: Opening context containing output value and metadata.
+
+        Returns:
+            Value produced by the selected opener.
+
+        Raises:
+            ValueError: If no opener matches and no `raw` fallback exists.
+        """
         opener = self._openers.get(context.data_type.lower())
         if opener is not None:
             return opener(context)
@@ -153,6 +190,14 @@ class JobResultOpenerRegistry:
 
     @classmethod
     def create_default(cls) -> JobResultOpenerRegistry:
+        """Create a registry with built-in openers.
+
+        The returned registry includes handlers for `raw`, `json`, `text`,
+        `bytes`, and `link`.
+
+        Returns:
+            A registry pre-populated with default openers.
+        """
         registry = cls()
         registry.register_data_type("raw", lambda context: context.output_value)
         registry.register_data_type("json", _open_json)
