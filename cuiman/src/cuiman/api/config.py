@@ -3,7 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 from pathlib import Path
-from typing import Annotated, Any, Callable, ClassVar, Optional, TypeAlias
+from typing import TYPE_CHECKING, Annotated, Any, Callable, ClassVar, Optional, TypeAlias
 
 import yaml
 from pydantic import Field, HttpUrl, field_validator
@@ -14,6 +14,9 @@ from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 from .auth import AuthConfig
 from .defaults import DEFAULT_API_URL
 
+
+if TYPE_CHECKING:
+    from .openers import JobResultOpenerRegistry
 
 class ClientConfig(AuthConfig, BaseSettings):
     """Client configuration.
@@ -50,6 +53,14 @@ class ClientConfig(AuthConfig, BaseSettings):
     typically extends the model class.  
     Designed to be configured by library clients.
     The default mapping is empty.
+    """
+
+    result_openers: ClassVar["JobResultOpenerRegistry | None"] = None
+    """
+    A registry of opener callables used by
+    `Client.open_job_result(...)`.
+    Designed to be configured by library clients,
+    similarly to `return_type_map`.
     """
 
     api_url: Annotated[Optional[str], Field(title="Process API URL")] = None
@@ -129,6 +140,14 @@ class ClientConfig(AuthConfig, BaseSettings):
         config_cls = type(ClientConfig.default_config)
         assert issubclass(config_cls, ClientConfig)
         return config_cls(**kwargs)
+
+    @classmethod
+    def get_result_openers(cls) -> "JobResultOpenerRegistry":
+        if cls.result_openers is None:
+            from .openers import JobResultOpenerRegistry
+
+            cls.result_openers = JobResultOpenerRegistry.create_default()
+        return cls.result_openers
 
     def to_dict(self):
         return self.model_dump(

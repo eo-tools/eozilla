@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest import TestCase
 
 from cuiman.api.config import ClientConfig
+from cuiman.api.openers import JobResultOpenerRegistry
 from cuiman.api.defaults import DEFAULT_API_URL
 from gavicore.models import (
     AdditionalParameter,
@@ -117,6 +118,25 @@ class ClientConfigTest(TestCase):
     def test_default_config(self):
         self.assertIsInstance(ClientConfig.default_config, ClientConfig)
         self.assertEqual(DEFAULT_API_URL, ClientConfig.default_config.api_url)
+
+
+    def test_get_result_openers_default(self):
+        saved = ClientConfig.result_openers
+        try:
+            ClientConfig.result_openers = None
+            openers = ClientConfig.get_result_openers()
+            self.assertIsInstance(openers, JobResultOpenerRegistry)
+            self.assertIs(openers, ClientConfig.get_result_openers())
+        finally:
+            ClientConfig.result_openers = saved
+
+    def test_get_result_openers_custom_subclass(self):
+        class AppConfig(ClientConfig):
+            pass
+
+        custom_openers = JobResultOpenerRegistry.create_default()
+        AppConfig.result_openers = custom_openers
+        self.assertIs(custom_openers, AppConfig.get_result_openers())
 
     def test_default_accept_process(self):
         # noinspection PyArgumentList

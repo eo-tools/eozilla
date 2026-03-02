@@ -6,10 +6,13 @@ from .async_client import AsyncClient
 from .client import Client
 from .config import ClientConfig
 from .exceptions import ClientError
+from .openers import OpenJobResultContext, JobResultOpenerRegistry
 
 __all__ = [
     "AsyncClient",
     "Client",
     "ClientConfig",
     "ClientError",
+    "OpenJobResultContext",
+    "JobResultOpenerRegistry",
 ]

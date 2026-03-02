@@ -7,10 +7,12 @@ from unittest import TestCase
 import pytest
 
 from cuiman import ClientConfig
+from cuiman.api.openers import JobResultOpenerRegistry
 from cuiman.api.client import Client
 from gavicore.models import (
     Capabilities,
     ConformanceDeclaration,
+    InlineOrRefValue,
     JobInfo,
     JobList,
     JobResults,
@@ -103,6 +105,53 @@ class ClientTest(TestCase):
     def test_get_job_results(self):
         result = self.client.get_job_results("job_12")
         self.assertIsInstance(result, JobResults)
+
+
+    def test_open_job_result_with_results(self):
+        result = self.client.open_job_result(
+            JobResults(root={"result": InlineOrRefValue(root={"a": 1})})
+        )
+        self.assertEqual({"a": 1}, result)
+
+    def test_open_job_result_from_job_id(self):
+        result = self.client.open_job_result("job_12")
+        self.assertIsNone(result)
+
+    def test_register_result_opener(self):
+        self.client.register_result_opener(
+            "json",
+            lambda context: {"wrapped": context.output_value},
+        )
+        result = self.client.open_job_result(
+            JobResults(root={"result": InlineOrRefValue(root={"a": 1})}),
+            data_type="json",
+        )
+        self.assertEqual({"wrapped": {"a": 1}}, result)
+
+
+    def test_open_job_result_uses_config_result_openers(self):
+        class AppConfig(ClientConfig):
+            pass
+
+        saved_default_config = ClientConfig.default_config
+        saved_result_openers = AppConfig.result_openers
+        try:
+            custom_openers = JobResultOpenerRegistry.create_default()
+            custom_openers.register_data_type(
+                "json",
+                lambda context: {"app": context.output_value},
+            )
+            AppConfig.result_openers = custom_openers
+            ClientConfig.default_config = AppConfig(api_url="https://acme.ogc.org/api")
+            client = Client(_transport=self.transport)
+            result = client.open_job_result(
+                JobResults(root={"result": InlineOrRefValue(root={"a": 1})}),
+                data_type="json",
+            )
+            self.assertEqual({"app": {"a": 1}}, result)
+        finally:
+            ClientConfig.default_config = saved_default_config
+            AppConfig.result_openers = saved_result_openers
 
     def test_close(self):
         self.assertFalse(self.transport.closed)
