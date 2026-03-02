@@ -76,11 +76,36 @@ class ClientMixin(ABC):
     ) -> Any:
         """Open or read a job result using registered opener functions.
 
+        This method resolves job results and dispatches to an opener from the
+        configured :class:`~cuiman.api.openers.JobResultOpenerRegistry`.
+
+        ## How to extend opener capabilities
+
+        Applications can add support for domain-specific result types (e.g. S3,
+        GCS, Zarr, NetCDF, GeoTIFF, xarray objects) by registering custom openers:
+
+        1. Implement an opener callable ``opener(context) -> Any`` that accepts an
+           :class:`~cuiman.api.openers.OpenJobResultContext`.
+           Use ``context.output_value`` for the normalized selected output value,
+           ``context.output_name`` for the selected output id, and
+           ``context.options`` for user-provided hints.
+        2. Register by data type key using
+           :meth:`register_result_opener` (or directly on
+           ``client.result_openers.register_data_type(...)``).
+        3. Call ``open_job_result(..., data_type="your-type")`` to force that
+           opener, or omit ``data_type`` and let inference
+           (:func:`~cuiman.api.openers.infer_data_type`) choose based on metadata.
+
+        For application-wide behavior, configure the registry on a custom
+        ``ClientConfig`` subclass via ``result_openers`` /
+        ``get_result_openers()`` and use that subclass as the default config.
+
         Args:
             job_id_or_results: Either a job identifier or a pre-fetched `JobResults`.
             data_type: Optional explicit data type key for opener dispatch.
-            **options: Optional opener hints such as `output_name`, `process_id`,
-                `process_description`, `media_type`, request `headers`, and `timeout`.
+            **options: Optional opener hints such as ``output_name``, ``process_id``,
+                ``process_description``, ``media_type``, request ``headers``, and
+                ``timeout``. Custom openers may consume additional option keys.
 
         Returns:
             Any value produced by the selected job-result opener.
