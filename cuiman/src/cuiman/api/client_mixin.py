@@ -2,15 +2,22 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import time
 from abc import ABC, abstractmethod
 from typing import Any
 
-from anyio.to_process import run_sync
-
-from cuiman.api.config import ClientConfig
-from cuiman.api.opener import OpenerContext
 from gavicore.models import ProcessDescription, JobResults, JobInfo, JobStatus
 from gavicore.util.request import ExecutionRequest
+from .config import ClientConfig
+from .defaults import (
+    DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
+    DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
+)
+from .opener import OpenerContext
+
+# -----------------------------------------------------
+# IMPORTANT: Sync changes here with AsyncClientMixin!
+# -----------------------------------------------------
 
 
 # noinspection PyShadowingBuiltins
@@ -67,6 +74,8 @@ class ClientMixin(ABC):
         job_id: str,
         data_type: type | None = None,
         output_name: str | None = None,
+        poll_interval: float = DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
+        timeout: float = DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
         **options: Any,
     ) -> Any:
         """Open the results of the job given by its ID.
@@ -76,6 +85,9 @@ class ClientMixin(ABC):
             data_type: the expected data type to be returned.
                 If provided, the return value will be of that type.
             output_name: the name of the output to be opened.
+            poll_interval: interval in seconds between job status polls.
+                Applies while job status is still "accepted" or "running".
+            timeout: maximum time in seconds to wait for job completion.
             options: additional opener-specific options.
 
         Returns:
@@ -86,6 +98,17 @@ class ClientMixin(ABC):
             OpenerError: if an opener error occurs
         """
         job_info = self.get_job(job_id)
+        deadline = time.time() + timeout
+        while True:
+            job = self.get_job(job_id)
+            if job.status not in (JobStatus.accepted, JobStatus.running):
+                break
+            if time.time() >= deadline:
+                raise TimeoutError(
+                    f"Cannot open result of job #{job_id}; "
+                    f"it did not finish within {timeout} seconds"
+                )
+            time.sleep(poll_interval)
         if job_info.status != JobStatus.successful:
             raise ValueError(
                 f"Cannot open result of job #{job_id} with status {job_info.status}."
@@ -101,4 +124,4 @@ class ClientMixin(ABC):
             output_name=output_name,
             options=options,
         )
-        return run_sync(self.config.opener_registry.open_result(ctx))
+        return self.config.opener_registry.open_result(ctx)

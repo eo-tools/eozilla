@@ -1,17 +1,24 @@
 #  Copyright (c) 2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
+
 import asyncio
 from abc import ABC, abstractmethod
 from typing import Any
 
-from cuiman.api.config import ClientConfig
-from cuiman.api.opener import OpenerContext
 from gavicore.models import ProcessDescription, JobInfo, JobResults, JobStatus
 from gavicore.util.request import ExecutionRequest
+from .config import ClientConfig
+from .defaults import (
+    DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
+    DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
+)
+from .opener import OpenerContext
 
-DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL = 500.0  # 1/2 second
-DEFAULT_OPEN_JOB_RESULT_TIMEOUT = 1800.0  # 30 minutes
+
+# -----------------------------------------------------
+# IMPORTANT: Sync changes here with ClientMixin!
+# -----------------------------------------------------
 
 
 # noinspection PyShadowingBuiltins
