@@ -3,19 +3,21 @@
 #  https://opensource.org/license/apache-2-0.
 
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from cuiman import ClientConfig
 from gavicore.models import JobResults, ProcessDescription
+
+
+if TYPE_CHECKING:
+    from cuiman.api.config import ClientConfig
 
 
 @dataclass
 class OpenerContext:
     """Context object passed to the methods of [Opener][Opener]."""
 
-    config: ClientConfig
+    config: "ClientConfig"
     """Configuration of the client."""
 
     job_id: str
@@ -41,9 +43,9 @@ class Opener(ABC):
     """Abstract base class for pluggable openers."""
 
     @abstractmethod
-    async def accept(self, ctx: OpenerContext) -> Awaitable[bool]:
+    async def accept(self, ctx: OpenerContext) -> bool:
         """Return True if this opener can open the job results."""
 
     @abstractmethod
-    async def open_result(self, ctx: OpenerContext) -> Awaitable[Any]:
+    async def open(self, ctx: OpenerContext) -> Any:
         """Open the results of a job."""

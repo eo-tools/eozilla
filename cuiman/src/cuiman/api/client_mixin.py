@@ -3,10 +3,11 @@
 #  https://opensource.org/license/apache-2-0.
 
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable
 from typing import Any
 
-from cuiman import ClientConfig
+from anyio.to_process import run_sync
+
+from cuiman.api.config import ClientConfig
 from cuiman.api.opener import OpenerContext
 from gavicore.models import ProcessDescription, JobResults, JobInfo, JobStatus
 from gavicore.util.request import ExecutionRequest
@@ -54,7 +55,7 @@ class ClientMixin(ABC):
             The execution request template.
 
         Raises:
-            ClientError: if an error occurs
+            ClientError: if an API error occurs
         """
         process_description = self.get_process(process_id)
         return ExecutionRequest.from_process_description(
@@ -76,8 +77,13 @@ class ClientMixin(ABC):
                 If provided, the return value will be of that type.
             output_name: the name of the output to be opened.
             options: additional opener-specific options.
+
         Returns:
             The job result value.
+
+        Raises:
+            ClientError: if an API error occurs
+            OpenerError: if an opener error occurs
         """
         job_info = self.get_job(job_id)
         if job_info.status != JobStatus.successful:
@@ -95,4 +101,4 @@ class ClientMixin(ABC):
             output_name=output_name,
             options=options,
         )
-        return self.config.opener_registry.open_result(ctx)
+        return run_sync(self.config.opener_registry.open_result(ctx))

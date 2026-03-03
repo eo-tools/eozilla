@@ -108,3 +108,7 @@ class ClientTest(TestCase):
         self.assertFalse(self.transport.closed)
         self.client.close()
         self.assertTrue(self.transport.closed)
+
+    def test_open_job_result(self):
+        result = self.client.open_job_result("job_12")
+        self.assertIsInstance(result, JobResults)
