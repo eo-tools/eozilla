@@ -14,6 +14,8 @@ from .defaults import (
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
 )
 from .opener import OpenerContext
+from .runsync import run_sync
+
 
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with AsyncClientMixin!
@@ -82,8 +84,10 @@ class ClientMixin(ABC):
 
         Args:
             job_id: the job ID
-            data_type: the expected data type to be returned.
+            data_type: the expected/desired data type to be returned.
                 If provided, the return value will be of that type.
+                If not provided, the return value will be the type
+                decided by the opener.
             output_name: the name of the output to be opened.
             poll_interval: interval in seconds between job status polls.
                 Applies while job status is still "accepted" or "running".
@@ -97,11 +101,10 @@ class ClientMixin(ABC):
             ClientError: if an API error occurs
             OpenerError: if an opener error occurs
         """
-        job_info = self.get_job(job_id)
         deadline = time.time() + timeout
         while True:
-            job = self.get_job(job_id)
-            if job.status not in (JobStatus.accepted, JobStatus.running):
+            job_info = self.get_job(job_id)
+            if job_info.status not in (JobStatus.accepted, JobStatus.running):
                 break
             if time.time() >= deadline:
                 raise TimeoutError(
@@ -124,4 +127,4 @@ class ClientMixin(ABC):
             output_name=output_name,
             options=options,
         )
-        return self.config.opener_registry.open_result(ctx)
+        return run_sync(self.config.opener_registry.open_result, ctx)

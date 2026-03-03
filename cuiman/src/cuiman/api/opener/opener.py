@@ -20,23 +20,33 @@ class OpenerContext:
     config: "ClientConfig"
     """Configuration of the client."""
 
-    job_id: str
-    """ID of the job."""
-
     process_description: ProcessDescription
     """Description of the process that produced the results."""
+
+    job_id: str
+    """ID of the job."""
 
     job_results: JobResults
     """Results of a job."""
 
     output_name: str | None
-    """Name of the output that should be opened."""
+    """
+    Name of the output that should be opened.
+    If given, an opener must accept that name and be able to
+    return a value of that name from the 
+    [open_result][Opener.open_result] method.
+    """
 
     data_type: type | None
-    """Data type of the output that should be opened."""
+    """
+    Data type of the output that should be opened.
+    If given, an opener must accept that value and be able to
+    return a value of that type from the 
+    [open_result][Opener.open_result] method.
+    """
 
     options: dict[str, Any]
-    """Data type of the output that should be opened."""
+    """Opener-specific options."""
 
 
 class Opener(ABC):

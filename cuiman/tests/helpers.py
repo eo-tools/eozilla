@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
 
+from cuiman.api.opener import Opener, OpenerContext
 from cuiman.api.transport import AsyncTransport, Transport, TransportArgs
 
 
@@ -86,3 +87,13 @@ class MockTransport(AsyncTransport, Transport):  # pragma: no cover
             }
             return t(**kwargs)
         return t()
+
+
+class AllOpener(Opener):
+    """An opener that can open everything."""
+
+    async def accept(self, ctx: OpenerContext) -> bool:
+        return True
+
+    async def open(self, ctx: OpenerContext) -> Any:
+        return ctx.job_results

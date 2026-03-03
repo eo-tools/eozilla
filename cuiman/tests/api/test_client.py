@@ -3,6 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 from unittest import TestCase
+from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -17,10 +18,13 @@ from gavicore.models import (
     ProcessDescription,
     ProcessList,
     ProcessRequest,
+    JobType,
+    JobStatus,
+    Link,
 )
 from gavicore.util.request import ExecutionRequest
 
-from ..helpers import MockTransport
+from ..helpers import MockTransport, AllOpener
 
 
 class ClientTest(TestCase):
@@ -109,6 +113,38 @@ class ClientTest(TestCase):
         self.client.close()
         self.assertTrue(self.transport.closed)
 
-    def test_open_job_result(self):
-        result = self.client.open_job_result("job_12")
-        self.assertIsInstance(result, JobResults)
+
+@patch.object(
+    Client,
+    "get_job",
+    side_effect=[
+        JobInfo(
+            jobID="job_12",
+            processID="test",
+            type=JobType.process,
+            status=status,
+        )
+        for status in [JobStatus.accepted, JobStatus.running, JobStatus.successful]
+    ],
+)
+@patch.object(
+    Client,
+    "get_job_results",
+    return_value=JobResults(
+        root={"dataset": Link(href="s3://cubes/cube.zarr", type="application/zarr")}
+    ),
+)
+@patch.object(
+    Client,
+    "get_process",
+    return_value=ProcessDescription(id="test", version="0.0.0"),
+)
+def test_open_job_result(
+    _get_job: MagicMock,
+    _get_job_results: MagicMock,
+    _get_process: MagicMock,
+):
+    client = Client(api_url="https://acme.ogc.org/api")
+    client.config.opener_registry.register(AllOpener())
+    result = client.open_job_result("job_12", timeout=30, poll_interval=0.01)
+    assert isinstance(result, JobResults)

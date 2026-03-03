@@ -20,7 +20,7 @@ from gavicore.models import (
 )
 from gavicore.util.request import ExecutionRequest
 
-from ..helpers import MockTransport
+from ..helpers import MockTransport, AllOpener
 
 
 class AsyncClientTest(IsolatedAsyncioTestCase):
@@ -30,6 +30,8 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
         self.client = AsyncClient(
             api_url="https://acme.ogc.org/api", _transport=self.transport
         )
+        # Register an opener that can open everything
+        self.client.config.opener_registry.register(AllOpener())
 
     def test_no_api_url(self):
         with pytest.raises(

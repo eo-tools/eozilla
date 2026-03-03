@@ -98,11 +98,10 @@ class AsyncClientMixin(ABC):
             ClientError: if an API error occurs
             OpenerError: if an opener error occurs
         """
-        job_info = await self.get_job(job_id)
         deadline = asyncio.get_running_loop().time() + timeout
         while True:
-            job = await self.get_job(job_id)
-            if job.status not in (JobStatus.accepted, JobStatus.running):
+            job_info = await self.get_job(job_id)
+            if job_info.status not in (JobStatus.accepted, JobStatus.running):
                 break
             if asyncio.get_running_loop().time() >= deadline:
                 raise TimeoutError(
