@@ -3,11 +3,12 @@
 #  https://opensource.org/license/apache-2-0.
 
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable
 from typing import Any
 
 from cuiman import ClientConfig
 from cuiman.api.opener import OpenerContext
-from gavicore.models import ProcessDescription, JobResults
+from gavicore.models import ProcessDescription, JobResults, JobInfo, JobStatus
 from gavicore.util.request import ExecutionRequest
 
 
@@ -17,8 +18,21 @@ class ClientMixin(ABC):
     Extra methods for the API client (synchronous mode).
     """
 
+    @property
+    @abstractmethod
+    def config(self) -> ClientConfig:
+        """Will be overridden by the actual client class."""
+
     @abstractmethod
     def get_process(self, process_id: str, **kwargs: Any) -> ProcessDescription:
+        """Will be overridden by the actual client class."""
+
+    @abstractmethod
+    def get_job(self, job_id: str, **kwargs: Any) -> JobInfo:
+        """Will be overridden by the actual client class."""
+
+    @abstractmethod
+    def get_job_results(self, job_id: str, **kwargs: Any) -> JobResults:
         """Will be overridden by the actual client class."""
 
     def create_execution_request(
@@ -47,8 +61,38 @@ class ClientMixin(ABC):
             process_description, dotpath=dotpath
         )
 
-    def open_job_result(self, job_results: JobResults, **options: Any) -> Any:
-        # noinspection PyUnresolvedReferences
-        config: ClientConfig = self.config
-        ctx = OpenerContext(job_results=job_results, config=config, options=options)
-        return config.opener_registry.open_result(ctx)
+    def open_job_result(
+        self,
+        job_id: str,
+        data_type: type | None = None,
+        output_name: str | None = None,
+        **options: Any,
+    ) -> Any:
+        """Open the results of the job given by its ID.
+
+        Args:
+            job_id: the job ID
+            data_type: the expected data type to be returned.
+                If provided, the return value will be of that type.
+            output_name: the name of the output to be opened.
+            options: additional opener-specific options.
+        Returns:
+            The job result value.
+        """
+        job_info = self.get_job(job_id)
+        if job_info.status != JobStatus.successful:
+            raise ValueError(
+                f"Cannot open result of job #{job_id} with status {job_info.status}."
+            )
+        job_results = self.get_job_results(job_id)
+        process_description = self.get_process(job_info.processID)
+        ctx = OpenerContext(
+            config=self.config,
+            job_id=job_id,
+            job_results=job_results,
+            process_description=process_description,
+            data_type=data_type,
+            output_name=output_name,
+            options=options,
+        )
+        return self.config.opener_registry.open_result(ctx)
