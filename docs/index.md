@@ -65,12 +65,12 @@ we will publish `conda-forge` packages soon.
 
 Large parts of the work in the Eozilla project have been made possible by the
 [ESA DTE-S2GOS project](https://dte-s2gos.rayference.eu/about/), where we
-cloudify a set of EO scene simulator applications. The [ESA Sen4CAP
-project](https://www.esa-sen4cap.org/), where we cloudify various
+cloudify a set of EO scene simulator applications. 
+The [ESA Sen4CAP project](https://www.esa-sen4cap.org/), where we cloudify various
 Sentinel-based data processors, gave us the impulse to create Eozilla as a set
 of reusable, standalone packages. Further work on Eozilla has been supported
-by the Open-Earth-Monitor Cyberinfrastructure project, which has received
-funding from the European Union's Horizon Europe research and innovation
-programme under grant agreement No. 101059548.
+by the [Open-Earth-Monitor Cyberinfrastructure project](https://earthmonitor.org/), 
+which has received funding from the European Union's Horizon Europe research 
+and innovation programme under grant agreement No. 101059548.
 
 Hopefully Eozilla can support and will be supported by other future projects.
