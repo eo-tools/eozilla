@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from cuiman.api.opener import OpenerRegistry, OpenerContext, Opener
+from cuiman.api.opener import Opener, OpenerContext, OpenerRegistry
 from cuiman.api.opener.registry import OpenerError
 
 from .test_context import new_ctx

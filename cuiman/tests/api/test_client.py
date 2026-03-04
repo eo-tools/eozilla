@@ -3,7 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -15,16 +15,16 @@ from gavicore.models import (
     JobInfo,
     JobList,
     JobResults,
+    JobStatus,
+    JobType,
+    Link,
     ProcessDescription,
     ProcessList,
     ProcessRequest,
-    JobType,
-    JobStatus,
-    Link,
 )
 from gavicore.util.request import ExecutionRequest
 
-from ..helpers import MockTransport, AllOpener
+from ..helpers import AllOpener, MockTransport
 
 
 class ClientTest(TestCase):

@@ -20,7 +20,7 @@ from gavicore.models import (
 )
 from gavicore.util.request import ExecutionRequest
 
-from ..helpers import MockTransport, AllOpener
+from ..helpers import AllOpener, MockTransport
 
 
 class AsyncClientTest(IsolatedAsyncioTestCase):

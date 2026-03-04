@@ -1,17 +1,16 @@
 from dataclasses import replace
 from typing import Any
 
-
 from cuiman import ClientConfig
 from cuiman.api.opener import OpenerContext
 from gavicore.models import (
-    ProcessDescription,
+    InlineValue,
     JobResults,
-    QualifiedValue,
     Link,
     OutputDescription,
+    ProcessDescription,
+    QualifiedValue,
     Schema,
-    InlineValue,
 )
 
 DEFAULT_JOB_RESULTS = {"a": "out.nc", "b": 2.5, "c": True}

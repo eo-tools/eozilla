@@ -4,8 +4,8 @@
 
 import asyncio
 import threading
-from collections.abc import Awaitable, Callable
-from typing import ParamSpec, TypeVar
+from collections.abc import Callable
+from typing import Coroutine, ParamSpec, TypeVar
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -33,7 +33,7 @@ P = ParamSpec("P")
 
 
 def run_sync(
-    async_fn: Callable[P, Awaitable[T]],
+    async_fn: Callable[P, Coroutine[object, object, T]],
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> T:

@@ -6,8 +6,9 @@ import time
 from abc import ABC, abstractmethod
 from typing import Any
 
-from gavicore.models import ProcessDescription, JobResults, JobInfo, JobStatus
+from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
 from gavicore.util.request import ExecutionRequest
+
 from .config import ClientConfig
 from .defaults import (
     DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
@@ -15,7 +16,6 @@ from .defaults import (
 )
 from .opener import OpenerContext
 from .runsync import run_sync
-
 
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with AsyncClientMixin!
@@ -117,7 +117,9 @@ class ClientMixin(ABC):
                 f"Cannot open result of job #{job_id} with status {job_info.status}."
             )
         job_results = self.get_job_results(job_id)
-        process_description = self.get_process(job_info.processID)
+        process_description = (
+            self.get_process(job_info.processID) if job_info.processID else None
+        )
         ctx = OpenerContext(
             config=self.config,
             job_id=job_id,

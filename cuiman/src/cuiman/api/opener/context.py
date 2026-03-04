@@ -8,13 +8,13 @@ from typing import TYPE_CHECKING, Any, TypeVar
 from pydantic import BaseModel
 
 from gavicore.models import (
-    JobResults,
-    ProcessDescription,
-    OutputDescription,
-    Link,
-    QualifiedValue,
     InlineOrRefValue,
     InlineValue,
+    JobResults,
+    Link,
+    OutputDescription,
+    ProcessDescription,
+    QualifiedValue,
 )
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ class OpenerContext:
     config: "ClientConfig"
     """Configuration of the client."""
 
-    process_description: ProcessDescription
+    process_description: ProcessDescription | None
     """Description of the process that produced the results."""
 
     job_id: str
@@ -58,8 +58,9 @@ class OpenerContext:
 
     @property
     def output_description(self) -> OutputDescription | None:
-        outputs = self.process_description.outputs
-        if outputs:
+        process_description = self.process_description
+        if process_description and isinstance(process_description.outputs, dict):
+            outputs = process_description.outputs
             output_name = _ensure_output_name(self.output_name, outputs)
             return outputs.get(output_name)
         return None
@@ -132,7 +133,7 @@ def _to_model_instance(
     # For a reason that is still unclear,
     # pydantic does not always deserialize JSON value from job results
     # into model instances.
-    raw_value: dict | None = None
+    raw_value: Any = None
     if isinstance(value, QualifiedValue):
         raw_value = value.value.model_dump()
     elif isinstance(value, InlineValue):
