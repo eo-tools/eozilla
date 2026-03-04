@@ -11,6 +11,7 @@ import click
 import pytest
 
 from cuiman import ClientConfig
+from cuiman.api.auth.login import LoginResult
 from cuiman.api.defaults import DEFAULT_CONFIG_PATH
 from cuiman.cli.config import configure_client_with_prompt, get_config
 from gavicore.util.testing import set_env, set_env_cm
@@ -110,17 +111,22 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
             config,
         )
 
-    @patch("cuiman.cli.config.login", return_value="dummy-token")
+    @patch("cuiman.cli.config.login_for_tokens")
     @patch("typer.confirm")
     @patch("typer.prompt")
     def test_auth_type_login(
         self, mock_prompt: MagicMock, mock_confirm: MagicMock, mock_login: MagicMock
     ):
+        mock_login.return_value = LoginResult(
+            access_token="dummy-token", refresh_token="dummy-refresh"
+        )
         # Simulate sequential responses to typer.prompt()
         mock_prompt.side_effect = [
             "http://localhorst:9999",
             "login",
             "http://localhorst:9999/signin",
+            "my-client",
+            "my-secret",
             "bibo",
             "1234",
             "X-Auth-Token",
@@ -132,7 +138,7 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
         actual_config_path = configure_client_with_prompt()
         mock_login.assert_called_once()
         mock_confirm.assert_called_once()
-        self.assertEqual(6, mock_prompt.call_count)
+        self.assertEqual(8, mock_prompt.call_count)
         self.assert_is_default_config_path(actual_config_path)
         config = get_config(None)
         self.assertEqual(
@@ -140,9 +146,12 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
                 api_url="http://localhorst:9999",
                 auth_type="login",
                 auth_url="http://localhorst:9999/signin",
+                client_id="my-client",
+                client_secret="my-secret",
                 username="bibo",
                 password="1234",
                 token="dummy-token",
+                refresh_token="dummy-refresh",
                 use_bearer=False,
                 token_header="X-Auth-Token",
             ),
@@ -201,12 +210,15 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
             config,
         )
 
-    @patch("cuiman.cli.config.login", return_value="dummy-token")
+    @patch("cuiman.cli.config.login_for_tokens")
     @patch("typer.confirm")
     @patch("typer.prompt")
     def test_defaults_are_used(
         self, mock_prompt: MagicMock, mock_confirm: MagicMock, mock_login: MagicMock
     ):
+        mock_login.return_value = LoginResult(
+            access_token="dummy-token", refresh_token="dummy-refresh"
+        )
         # Use default password "9823hc!"
         expected_password = "9823hc!"
         with set_env_cm(EOZILLA_PASSWORD=expected_password):
@@ -215,6 +227,8 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
                 "http://localhorst:2357",
                 "login",
                 "http://localhorst:2357/auth/login",
+                "my-client",
+                "my-secret",
                 "bibo",
                 "******",
                 "bibo",
@@ -235,13 +249,59 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
                     auth_type="login",
                     api_url="http://localhorst:2357",
                     auth_url="http://localhorst:2357/auth/login",
+                    client_id="my-client",
+                    client_secret="my-secret",
                     username="bibo",
                     password=expected_password,
                     token="dummy-token",
+                    refresh_token="dummy-refresh",
                     use_bearer=True,
                 ),
                 config,
             )
+
+    @patch("typer.prompt")
+    def test_prompt_for_pw_uses_prev_password_on_hidden_input(
+        self, mock_prompt: MagicMock
+    ):
+        """When user enters '******' and a previous password exists, the previous
+        password is reused."""
+        # First configure with basic auth + password
+        mock_prompt.side_effect = [
+            "http://localhost:9090",
+            "basic",
+            "alice",
+            "secret123",
+        ]
+        configure_client_with_prompt()
+
+        # Now reconfigure, keeping the old password via "******"
+        mock_prompt.reset_mock()
+        mock_prompt.side_effect = [
+            "http://localhost:9090",
+            "basic",
+            "alice",
+            "******",  # sentinel → should reuse "secret123"
+        ]
+        config_path = configure_client_with_prompt()
+        config = get_config(None)
+        self.assertEqual("secret123", config.password)
+        self.assert_is_default_config_path(config_path)
+
+    @patch("typer.prompt")
+    def test_prompt_for_bool_uses_env_value(self, mock_prompt: MagicMock):
+        """When an env var provides a bool value, the prompt is skipped (line 177)."""
+        with set_env_cm(EOZILLA_USE_BEARER="True"):
+            mock_prompt.side_effect = [
+                "http://localhost:9090",
+                "token",
+                "my-token",
+            ]
+            # No typer.confirm needed — use_bearer comes from env
+            config_path = configure_client_with_prompt()
+            self.assert_is_default_config_path(config_path)
+            config = get_config(None)
+            self.assertTrue(config.use_bearer)
 
     @patch("typer.prompt")
     def test_using_custom_config_path(self, mock_prompt: MagicMock):

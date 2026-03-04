@@ -3,10 +3,12 @@
 #  https://opensource.org/license/apache-2-0.
 
 import base64
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from cuiman.api.auth import AuthConfig
+from cuiman.api.auth.login import LoginResult
 
 
 def test_auth_headers_none():
@@ -86,6 +88,106 @@ def test_auth_headers_fail():
         AuthConfig(auth_type="basic", username="", password="123"),
         "username/password required for basic authentication.",
     )
+
+
+def test_make_token_refresher_returns_none_when_not_login():
+    config = AuthConfig(auth_type="token", token="abc")
+    assert config._make_token_refresher() is None
+
+
+def test_make_token_refresher_returns_none_when_no_refresh_token():
+    config = AuthConfig(auth_type="login", token="abc")
+    assert config._make_token_refresher() is None
+
+
+@patch("cuiman.api.auth.login.refresh_login")
+def test_make_token_refresher_calls_refresh_login(mock_refresh: MagicMock):
+    mock_refresh.return_value = LoginResult(
+        access_token="new-token", refresh_token="new-refresh"
+    )
+    config = AuthConfig(
+        auth_type="login",
+        auth_url="https://acme.com/token",
+        token="old-token",
+        refresh_token="old-refresh",
+        token_header="X-Auth-Token",
+    )
+    refresher = config._make_token_refresher()
+    assert refresher is not None
+    headers = refresher()
+    mock_refresh.assert_called_once_with(config)
+    assert config.token == "new-token"
+    assert config.refresh_token == "new-refresh"
+    assert headers == {"X-Auth-Token": "new-token"}
+
+
+@patch("cuiman.api.auth.login.refresh_login")
+def test_make_token_refresher_without_new_refresh_token(mock_refresh: MagicMock):
+    mock_refresh.return_value = LoginResult(
+        access_token="new-token", refresh_token=None
+    )
+    config = AuthConfig(
+        auth_type="login",
+        auth_url="https://acme.com/token",
+        token="old-token",
+        refresh_token="old-refresh",
+    )
+    refresher = config._make_token_refresher()
+    refresher()
+    assert config.token == "new-token"
+    assert config.refresh_token == "old-refresh"
+
+
+def test_make_async_token_refresher_returns_none_when_not_login():
+    config = AuthConfig(auth_type="token", token="abc")
+    assert config._make_async_token_refresher() is None
+
+
+def test_make_async_token_refresher_returns_none_when_no_refresh_token():
+    config = AuthConfig(auth_type="login", token="abc")
+    assert config._make_async_token_refresher() is None
+
+
+@pytest.mark.asyncio
+@patch("cuiman.api.auth.login_async.refresh_login_async")
+async def test_make_async_token_refresher_calls_refresh(mock_refresh: MagicMock):
+    mock_refresh.return_value = LoginResult(
+        access_token="new-token", refresh_token="new-refresh"
+    )
+    config = AuthConfig(
+        auth_type="login",
+        auth_url="https://acme.com/token",
+        token="old-token",
+        refresh_token="old-refresh",
+        token_header="X-Auth-Token",
+    )
+    refresher = config._make_async_token_refresher()
+    assert refresher is not None
+    headers = await refresher()
+    mock_refresh.assert_called_once_with(config)
+    assert config.token == "new-token"
+    assert config.refresh_token == "new-refresh"
+    assert headers == {"X-Auth-Token": "new-token"}
+
+
+@pytest.mark.asyncio
+@patch("cuiman.api.auth.login_async.refresh_login_async")
+async def test_make_async_token_refresher_without_new_refresh_token(
+    mock_refresh: MagicMock,
+):
+    mock_refresh.return_value = LoginResult(
+        access_token="new-token", refresh_token=None
+    )
+    config = AuthConfig(
+        auth_type="login",
+        auth_url="https://acme.com/token",
+        token="old-token",
+        refresh_token="old-refresh",
+    )
+    refresher = config._make_async_token_refresher()
+    await refresher()
+    assert config.token == "new-token"
+    assert config.refresh_token == "old-refresh"
 
 
 def assert_auth_headers_fail(config: AuthConfig, match: str):

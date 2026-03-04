@@ -10,6 +10,7 @@ import typer.testing
 import yaml
 
 from cuiman import Client, __version__
+from cuiman.api.auth.login import LoginResult
 from cuiman.cli.cli import cli, new_cli
 
 from ..helpers import MockTransport
@@ -34,8 +35,11 @@ class CliTest(TestCase):
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual(__version__ + "\n", result.output)
 
-    @patch("cuiman.cli.config.login", return_value="dummy-token")
+    @patch("cuiman.cli.config.login_for_tokens")
     def test_configure(self, mock_login):
+        mock_login.return_value = LoginResult(
+            access_token="dummy-token", refresh_token="dummy-refresh"
+        )
         config_path = Path("config.cfg")
         result = invoke_cli(
             "configure",
@@ -47,6 +51,10 @@ class CliTest(TestCase):
             "login",
             "--auth-url",
             "http://localhorst:2357/auth/login",
+            "--client-id",
+            "my-client",
+            "--client-secret",
+            "my-secret",
             "--username",
             "bibo",
             "--password",
@@ -63,6 +71,10 @@ class CliTest(TestCase):
                     "api_url": "http://localhorst:2357/",
                     "auth_type": "login",
                     "auth_url": "http://localhorst:2357/auth/login",
+                    "client_id": "my-client",
+                    "client_secret": "my-secret",
+                    "grant_type": "password",
+                    "refresh_token": "dummy-refresh",
                     "username": "bibo",
                     "password": "1234",
                     "token": "dummy-token",

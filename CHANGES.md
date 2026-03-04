@@ -1,3 +1,23 @@
+## Changes in version 0.1.0 (in development)
+
+### Enhancements
+
+- Added OAuth2 Resource Owner Password Credentials support to `cuiman`
+  authentication, including `client_id`, `client_secret`, and `grant_type`
+  fields in `AuthConfig` and corresponding `--client-id` / `--client-secret`
+  CLI options.
+- Added automatic OAuth2 token refresh support. When a `refresh_token` is
+  available, `cuiman` automatically refreshes expired access tokens on 401
+  responses and retries the request, for both sync and async clients.
+  Refresh tokens are persisted to the config file alongside access tokens.
+- Environment variables (prefixed `EOZILLA_`) now skip interactive prompts
+  during `cuiman configure`. This allows admins to pre-configure fields like
+  `EOZILLA_API_URL`, `EOZILLA_AUTH_URL`, `EOZILLA_CLIENT_ID`, and
+  `EOZILLA_USE_BEARER` (e.g. via Kubernetes secrets in JupyterHub
+  deployments), so users only need to provide their username and password.
+- Made `client_secret` optional during interactive `cuiman configure` for
+  OAuth2 public clients that do not require a client secret.
+
 ## Changes in version 0.0.9
 
 ### Enhancements
@@ -43,7 +63,6 @@ The following enhancements have been applied to the main panel in `cuiman.gui.pa
   workflows from `WorkflowRegistry` before DAG generation, enabling easier 
   debugging, clearer dependency inspection, and more robust and extensible 
   DAG rendering.
-- Enhanced and updated documentation.
 
 ### Fixes
 
