@@ -3,8 +3,9 @@
 #  https://opensource.org/license/apache-2-0.
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
+from pydantic import BaseModel
 
 from gavicore.models import (
     JobResults,
@@ -111,30 +112,34 @@ class OpenerContext:
 
 
 def _to_link(value: Any) -> Link | None:
-    if isinstance(value, Link):
-        return value
-    _value: dict | None = None
-    if isinstance(value, QualifiedValue):
-        _value = value.value.model_dump()
-    elif isinstance(value, InlineValue):
-        _value = value.root
-    if isinstance(_value, dict) and "href" in _value:
-        try:
-            return Link(**_value)
-        except ValueError:
-            pass
-    return None
+    return _to_model_instance(value, Link, ("href",))
 
 
 def _to_qualified_value(value: Any) -> QualifiedValue | None:
-    if isinstance(value, QualifiedValue):
+    return _to_model_instance(value, QualifiedValue, ("value",))
+
+
+T = TypeVar("T", bound=BaseModel)
+
+
+def _to_model_instance(
+    value: Any, model_cls: type[T], required: tuple[str, ...]
+) -> T | None:
+    if isinstance(value, model_cls):
         return value
-    _value: dict | None = None
-    if isinstance(value, InlineValue):
-        _value = value.root
-    if isinstance(_value, dict) and "value" in _value:
+    # Since value is not of type `model_cls`, we try to create an
+    # instance from the value's raw (JSON) value.
+    # For a reason that is still unclear,
+    # pydantic does not always deserialize JSON value from job results
+    # into model instances.
+    raw_value: dict | None = None
+    if isinstance(value, QualifiedValue):
+        raw_value = value.value.model_dump()
+    elif isinstance(value, InlineValue):
+        raw_value = value.root
+    if isinstance(raw_value, dict) and all(r in raw_value for r in required):
         try:
-            return QualifiedValue(**_value)
+            return model_cls(**raw_value)
         except ValueError:
             pass
     return None
