@@ -2,7 +2,13 @@
 
 ### Enhancements
 
-
+- Cuiman API clients have a new method `open_job_result(job_id, **options)` 
+  that is used to open the results of a job.
+  Both sync and async versions of the method are available in 
+  `cuiman.Client` and `cuiman.AsyncClient` 
+- Cuiman applications can customize how job results are opened by the adding
+  application-specific openers to an opener registry now available in the 
+  client configuration.
 
 ## Changes in version 0.0.9
 
