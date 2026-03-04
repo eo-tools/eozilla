@@ -1,0 +1,117 @@
+from dataclasses import replace
+from typing import Any
+
+
+from cuiman import ClientConfig
+from cuiman.api.opener import OpenerContext
+from gavicore.models import (
+    ProcessDescription,
+    JobResults,
+    QualifiedValue,
+    Link,
+    OutputDescription,
+    Schema,
+    InlineValue,
+)
+
+DEFAULT_JOB_RESULTS = {"a": "out.nc", "b": 2.5, "c": True}
+
+
+def new_ctx(
+    job_results: JobResults | None = None,
+    data_type: type | None = None,
+    output_name: str | None = None,
+    outputs: list[str] | None = None,
+    **options: Any,
+) -> OpenerContext:
+    return OpenerContext(
+        config=ClientConfig(api_url="http://localhost:9090"),
+        job_id="982a04ee",
+        job_results=job_results if job_results is not None else DEFAULT_JOB_RESULTS,
+        process_description=ProcessDescription(
+            id="test",
+            version="0.0.0",
+            outputs={
+                k: OutputDescription(title=f"The {k} value", schema=Schema(**{}))
+                for k in outputs
+            }
+            if outputs
+            else None,
+        ),
+        data_type=data_type,
+        output_name=output_name,
+        options=options,
+    )
+
+
+qualified_value = QualifiedValue(
+    mediaType="application/zarr", value=InlineValue(root="file://./test.zarr")
+)
+link_value = Link(type="application/cog", href="file://./test.tif")
+inline_value = InlineValue(root="file://./test.nc")
+
+ctx_qualified_1 = new_ctx(
+    job_results=JobResults(**{"a": qualified_value}), output_name=None
+)
+ctx_link_1 = new_ctx(job_results=JobResults(**{"b": link_value}), output_name=None)
+ctx_inline_1 = new_ctx(job_results=JobResults(**{"c": inline_value}), output_name=None)
+
+ctx_qualified_2 = new_ctx(
+    job_results=JobResults(**{"a": qualified_value, "f": False}), output_name="a"
+)
+ctx_link_2 = new_ctx(
+    job_results=JobResults(**{"b": link_value, "f": False}), output_name="b"
+)
+ctx_inline_2 = new_ctx(
+    job_results=JobResults(**{"c": inline_value, "f": False}), output_name="c"
+)
+
+
+def test_output_value():
+    assert ctx_qualified_1.output_value == qualified_value
+    assert ctx_qualified_2.output_value == qualified_value
+    assert ctx_link_1.output_value == link_value
+    assert ctx_link_2.output_value == link_value
+    assert ctx_inline_1.output_value == inline_value
+    assert ctx_inline_2.output_value == inline_value
+
+
+def test_output_value_yields_none():
+    assert replace(ctx_qualified_2, job_results=JobResults()).output_value is None
+    assert replace(ctx_qualified_2, output_name=None).output_value is None
+    assert replace(ctx_link_2, output_name=None).output_value is None
+    assert replace(ctx_inline_2, output_name=None).output_value is None
+
+
+def test_output_media_type():
+    assert ctx_qualified_1.output_media_type == "application/zarr"
+    assert ctx_link_1.output_media_type == "application/cog"
+    assert ctx_inline_1.output_media_type is None
+
+
+def test_output_link():
+    assert ctx_qualified_1.output_link is None
+    assert ctx_link_1.output_link == link_value
+    assert ctx_inline_1.output_link is None
+
+
+def test_output_qualified_value():
+    assert ctx_qualified_1.output_qualified_value == qualified_value
+    assert ctx_link_1.output_qualified_value is None
+    assert ctx_inline_1.output_qualified_value is None
+
+
+def test_output_description():
+    ctx = new_ctx(outputs=["a"], output_name=None)
+    assert isinstance(ctx.output_description, OutputDescription)
+    assert ctx.output_description.title == "The a value"
+    ctx = new_ctx(outputs=["a", "b"], output_name="a")
+    assert isinstance(ctx.output_description, OutputDescription)
+    assert ctx.output_description.title == "The a value"
+    ctx = new_ctx(outputs=["a", "b"], output_name="b")
+    assert isinstance(ctx.output_description, OutputDescription)
+    assert ctx.output_description.title == "The b value"
+    ctx = new_ctx(outputs=["a", "b"], output_name="c")
+    assert ctx.output_description is None
+    ctx = new_ctx(outputs=["a", "b"], output_name=None)
+    assert ctx.output_description is None

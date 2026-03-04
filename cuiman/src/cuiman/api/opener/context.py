@@ -12,6 +12,7 @@ from gavicore.models import (
     OutputDescription,
     Link,
     QualifiedValue,
+    InlineOrRefValue,
     InlineValue,
 )
 
@@ -56,24 +57,29 @@ class OpenerContext:
 
     @property
     def output_description(self) -> OutputDescription | None:
-        if self.output_name:
-            return self.process_description.outputs.get(
-                self.output_name or "return_value"
-            )
+        outputs = self.process_description.outputs
+        if outputs:
+            output_name = _ensure_output_name(self.output_name, outputs)
+            return outputs.get(output_name)
         return None
 
     @property
     def output_value(self) -> Link | QualifiedValue | InlineValue | None:
         """Output value.
-        The value of either a given `output_name`
-        or the output name `"return_value"`.
+
+        If `output_name` is given, the value of that output.
+        If `output_name` is not given, the job results must
+        comprise only a single output or contain an output value
+        named `"return_value"`.
+        Otherwise, the output value is `None`.
         """
         results = self.job_results.root
-        return (
-            results.get(self.output_name or "return_value")
-            if isinstance(results, dict)
-            else None
-        )
+        if isinstance(results, dict):
+            output_name = _ensure_output_name(self.output_name, results)
+            inline_or_ref_value = results.get(output_name)
+            if isinstance(inline_or_ref_value, InlineOrRefValue):
+                return inline_or_ref_value.root
+        return None
 
     @property
     def output_link(self) -> Link | None:
@@ -101,12 +107,42 @@ class OpenerContext:
             return value.type
         if isinstance(value, QualifiedValue) and value.mediaType:
             return value.mediaType
-        return self.options.get("media_type")
+        return None
 
 
 def _to_link(value: Any) -> Link | None:
-    return value if isinstance(value, Link) else None
+    if isinstance(value, Link):
+        return value
+    _value: dict | None = None
+    if isinstance(value, QualifiedValue):
+        _value = value.value.model_dump()
+    elif isinstance(value, InlineValue):
+        _value = value.root
+    if isinstance(_value, dict) and "href" in _value:
+        try:
+            return Link(**_value)
+        except ValueError:
+            pass
+    return None
 
 
 def _to_qualified_value(value: Any) -> QualifiedValue | None:
-    return value if isinstance(value, QualifiedValue) else None
+    if isinstance(value, QualifiedValue):
+        return value
+    _value: dict | None = None
+    if isinstance(value, InlineValue):
+        _value = value.root
+    if isinstance(_value, dict) and "value" in _value:
+        try:
+            return QualifiedValue(**_value)
+        except ValueError:
+            pass
+    return None
+
+
+def _ensure_output_name(output_name: str | None, mapping: dict[str, Any]) -> str:
+    if output_name:
+        return output_name
+    if mapping and len(mapping) == 1:
+        return next(iter(mapping))
+    return "return_value"

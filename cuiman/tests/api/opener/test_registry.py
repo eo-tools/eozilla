@@ -2,30 +2,10 @@ from typing import Any
 
 import pytest
 
-from cuiman import ClientConfig
 from cuiman.api.opener import OpenerRegistry, OpenerContext, Opener
 from cuiman.api.opener.registry import OpenerError
-from gavicore.models import ProcessDescription, JobResults
 
-
-DEFAULT_JOB_RESULTS = {"a": "out.nc", "b": 2.5, "c": True}
-
-
-def new_ctx(
-    job_results: JobResults | None = None,
-    data_type: type | None = None,
-    output_name: str | None = None,
-    **options: Any,
-) -> OpenerContext:
-    return OpenerContext(
-        config=ClientConfig(api_url="http://localhost:9090"),
-        job_id="982a04ee",
-        job_results=job_results if job_results is not None else DEFAULT_JOB_RESULTS,
-        process_description=ProcessDescription(id="test", version="0.0.0"),
-        data_type=data_type,
-        output_name=output_name,
-        options=options,
-    )
+from .test_context import new_ctx
 
 
 def test_initially_empty():
@@ -35,7 +15,7 @@ def test_initially_empty():
 
 def test_default():
     registry = OpenerRegistry.create_default()
-    # TODO: this will change
+    # Adjust here, once we've added some default openers
     assert len(registry.openers) == 0
 
 

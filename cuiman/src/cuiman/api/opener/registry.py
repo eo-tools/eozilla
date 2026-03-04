@@ -10,26 +10,38 @@ from typing import Any
 
 
 class OpenerError(RuntimeError):
-    pass
+    """A job result could not be opened.
+
+    This error is potentially raised by the
+    [OpenerRegistry.open_result()][OpenerRegistry.open_result]
+    method.
+    """
 
 
 class OpenerRegistry:
+    """A simple registry for job result openers."""
+
+    def __init__(self):
+        self._openers = []
+
     @classmethod
-    def create_default(cls):
+    def create_default(cls) -> "OpenerRegistry":
+        """Create a registry that includes default job result openers."""
         return OpenerRegistry()
 
-    def __init__(self, *openers: Opener):
-        self._openers = list(openers)
-
     def clear(self) -> None:
+        """Clears the registry.
+        Removes all job result openers.
+        """
         self._openers = []
 
     @property
     def openers(self) -> tuple[Opener, ...]:
+        """The tuple registered of job result openers."""
         return tuple(self._openers)
 
     def register(self, opener: Opener) -> Callable[[], None]:
-        """Register a job results opener.
+        """Register a job result opener.
 
         Args:
             opener: The opener.
@@ -39,21 +51,39 @@ class OpenerRegistry:
         """
 
         def unregister():
-            self._openers.remove(opener)
+            try:
+                self._openers.remove(opener)
+            except ValueError:
+                pass
 
-        self._openers.append(opener)
+        # Insert at the beginning so that openers
+        # added last are used first.
+        self._openers.insert(0, opener)
         return unregister
 
     async def open_result(self, ctx: OpenerContext) -> Any:
         """
         Open a job result.
 
-        All actual logic lives here.
+        The method iterates registered openers to find any opener
+        that accepts the given `ctx`, and if so, will open it
+        without raising.
+        Last added openers are used first.
+
+        Args:
+            ctx: The context used by the openers to check whether
+                an output can be opened and, if so, to open it.
+
+        Returns:
+            The result of opening a job result.
+
+        Raises:
+            OpenerError: If the `ctx` object could not be opened.
         """
-        return await open_result(ctx, *self._openers)
+        return await _open_result(ctx, *self._openers)
 
 
-async def open_result(ctx: OpenerContext, *openers: Opener) -> Any:
+async def _open_result(ctx: OpenerContext, *openers: Opener) -> Any:
     """
     Open a job result.
 
