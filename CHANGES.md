@@ -1,3 +1,9 @@
+## Changes in version 0.1.0 (in development)
+
+### Enhancements
+
+
+
 ## Changes in version 0.0.9
 
 ### Enhancements
