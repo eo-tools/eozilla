@@ -3,54 +3,21 @@
 #  https://opensource.org/license/apache-2-0.
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from gavicore.models import JobResults, ProcessDescription
-
-
-if TYPE_CHECKING:
-    from cuiman.api.config import ClientConfig
-
-
-@dataclass
-class OpenerContext:
-    """Context object passed to the methods of [Opener][Opener]."""
-
-    config: "ClientConfig"
-    """Configuration of the client."""
-
-    process_description: ProcessDescription
-    """Description of the process that produced the results."""
-
-    job_id: str
-    """ID of the job."""
-
-    job_results: JobResults
-    """Results of a job."""
-
-    output_name: str | None
-    """
-    Name of the output that should be opened.
-    If given, an opener must accept that name and be able to
-    return a value of that name from the 
-    [open_result][Opener.open_result] method.
-    """
-
-    data_type: type | None
-    """
-    Data type of the output that should be opened.
-    If given, an opener must accept that value and be able to
-    return a value of that type from the 
-    [open_result][Opener.open_result] method.
-    """
-
-    options: dict[str, Any]
-    """Opener-specific options."""
+from .context import OpenerContext
 
 
 class Opener(ABC):
-    """Abstract base class for pluggable openers."""
+    """Abstract base class for pluggable job result openers.
+
+    An opener implementation is free to use the information
+    in the [context object](OpenerContext) `ctx` passed to the
+    methods [accept()][accept] and [open()][open].
+    However, if `data_type` or `output_name` are provided an
+    opener MUST be able to deal with them, otherwise [accept()][accept]
+    should return `False`.
+    """
 
     @abstractmethod
     async def accept(self, ctx: OpenerContext) -> bool:
