@@ -15,7 +15,7 @@ from .defaults import (
     DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
 )
-from .opener import JobResultOpenContext
+from .opener import JobResultOpenContext, JobResultStatusError
 
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with AsyncClientMixin!
@@ -99,7 +99,9 @@ class ClientMixin(ABC):
 
         Raises:
             ClientError: if an API error occurs
-            OpenerError: if an opener error occurs
+            JobResultOpenError: if an opener error occurs
+            JobResultStatusError: if the job failed or was canceled
+            TimeoutError: if the job does not finish within the timeout
         """
         deadline = time.time() + timeout
         while True:
@@ -113,9 +115,7 @@ class ClientMixin(ABC):
                 )
             time.sleep(poll_interval)
         if job_info.status != JobStatus.successful:
-            raise ValueError(
-                f"Cannot open result of job #{job_id} with status {job_info.status}."
-            )
+            raise JobResultStatusError(job_info)
         job_results = self.get_job_results(job_id)
         process_description = (
             self.get_process(job_info.processID) if job_info.processID else None
@@ -129,4 +129,4 @@ class ClientMixin(ABC):
             output_name=output_name,
             options=options,
         )
-        return run_sync(self.config.opener_registry.open_result, ctx)
+        return run_sync(self.config.opener_registry.open_job_result, ctx)

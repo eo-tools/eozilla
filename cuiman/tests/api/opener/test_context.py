@@ -15,22 +15,26 @@ from gavicore.models import (
 
 DEFAULT_JOB_RESULTS = {"a": "out.nc", "b": 2.5, "c": True}
 
+_UNSET_PROCESS_DESCRIPTION = ProcessDescription(id="_", version="0")
+
 
 def new_ctx(
     job_results: JobResults | None = None,
     data_type: type | None = None,
     output_name: str | None = None,
     outputs: list[str] | None = None,
-    process_description: ProcessDescription | None = None,
+    process_description: ProcessDescription | None = _UNSET_PROCESS_DESCRIPTION,
     **options: Any,
 ) -> JobResultOpenContext:
     return JobResultOpenContext(
         config=ClientConfig(api_url="http://localhost:9090"),
         job_id="982a04ee",
-        job_results=job_results if job_results is not None else DEFAULT_JOB_RESULTS,
+        job_results=job_results
+        if job_results is not None
+        else JobResults(**DEFAULT_JOB_RESULTS),
         process_description=(
             process_description
-            if process_description is not None
+            if process_description is not _UNSET_PROCESS_DESCRIPTION
             else ProcessDescription(
                 id="test",
                 version="0.0.0",
@@ -114,6 +118,13 @@ def test_output_link_fom_inline_value():
 
     # missing "href"
     link_data = {"path": "s3://xcube/test.zarr", "type": "application/zarr"}
+    ctx = new_ctx(
+        job_results=JobResults(**{"a": InlineValue(root=link_data)}),
+    )
+    assert ctx.output_link is None
+
+    # "href" of wong type
+    link_data = {"href": 137, "type": "application/zarr"}
     ctx = new_ctx(
         job_results=JobResults(**{"a": InlineValue(root=link_data)}),
     )

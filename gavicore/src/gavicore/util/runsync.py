@@ -99,16 +99,18 @@ def _ensure_runner_thread() -> asyncio.AbstractEventLoop:
         and _runner_thread is not None
         and _runner_thread.is_alive()
     ):
-        return _runner_loop
+        return _runner_loop  # pragma: no cover
 
-    # Slow path: initialize once, safely, even if multiple threads call run_sync() at once
+    # Slow path: initialize once, safely,
+    # even if multiple threads call run_sync() at once.
+    # Note, some parts are hard to reach from tests (pragma: no cover).
     with _runner_lock:
         if (
             _runner_loop is not None
             and _runner_thread is not None
             and _runner_thread.is_alive()
         ):
-            return _runner_loop
+            return _runner_loop  # pragma: no cover
 
         loop_ready = threading.Event()
 

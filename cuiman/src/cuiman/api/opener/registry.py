@@ -5,16 +5,8 @@
 import warnings
 from typing import Any, Callable
 
+from .errors import JobResultOpenError
 from .opener import JobResultOpenContext, JobResultOpener
-
-
-class OpenerError(RuntimeError):
-    """A job result could not be opened.
-
-    This error is potentially raised by the
-    [OpenerRegistry.open_result()][OpenerRegistry.open_result]
-    method.
-    """
 
 
 class JobResultOpenerRegistry:
@@ -60,7 +52,7 @@ class JobResultOpenerRegistry:
         self._openers.insert(0, opener)
         return unregister
 
-    async def open_result(self, ctx: JobResultOpenContext) -> Any:
+    async def open_job_result(self, ctx: JobResultOpenContext) -> Any:
         """
         Open a job result.
 
@@ -79,17 +71,17 @@ class JobResultOpenerRegistry:
         Raises:
             OpenerError: If the `ctx` object could not be opened.
         """
-        return await _open_result(ctx, *self._openers)
+        return await _open_job_result(ctx, *self._openers)
 
 
-async def _open_result(ctx: JobResultOpenContext, *openers: JobResultOpener) -> Any:
+async def _open_job_result(ctx: JobResultOpenContext, *openers: JobResultOpener) -> Any:
     """
     Open a job result.
 
     All actual logic lives here.
     """
     if not openers:
-        raise OpenerError("No job result openers registered")
+        raise JobResultOpenError("No job result openers registered")
 
     # Use first matching opener, otherwise try next
     errors: list[Exception] = []
@@ -112,7 +104,7 @@ async def _open_result(ctx: JobResultOpenContext, *openers: JobResultOpener) -> 
 
     # Error management
     if not errors:
-        raise OpenerError(f"No job result opener found for {ctx.job_results}")
+        raise JobResultOpenError(f"No job result opener found for {ctx.job_results}")
     first_error = errors[0]
     num_other_openers = len(errors) - 1
     msg_detail = ""
@@ -120,6 +112,6 @@ async def _open_result(ctx: JobResultOpenContext, *openers: JobResultOpener) -> 
         msg_detail = " (one other opener failed too)"
     elif num_other_openers > 1:
         msg_detail = f" ({num_other_openers} other openers failed too)"
-    raise OpenerError(
+    raise JobResultOpenError(
         f"Job result opener failure{msg_detail}: {first_error}"
     ) from first_error

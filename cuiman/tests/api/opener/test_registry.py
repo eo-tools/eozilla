@@ -6,8 +6,9 @@ from cuiman.api.opener import (
     JobResultOpenContext,
     JobResultOpener,
     JobResultOpenerRegistry,
+    JobResultOpenError,
 )
-from cuiman.api.opener.registry import OpenerError
+from gavicore.models import InlineOrRefValue, InlineValue
 
 from .test_context import new_ctx
 
@@ -16,15 +17,16 @@ class MyGoodOpener(JobResultOpener):
     async def accept(self, ctx: JobResultOpenContext) -> bool:
         return (
             ctx.data_type is dict
-            and isinstance(ctx.job_results, dict)
-            and sorted(ctx.job_results.keys()) == ["a", "b", "c"]
+            and isinstance(ctx.job_results.root, dict)
+            and sorted(ctx.job_results.root.keys()) == ["a", "b", "c"]
         )
 
     async def open(self, ctx: JobResultOpenContext) -> Any:
+        results_root = ctx.job_results.root
         if ctx.output_name in ["a", "b", "c"]:
-            return ctx.job_results[ctx.output_name]
-        else:
-            return dict(ctx.job_results)
+            if results_root is not None:
+                return results_root.get(ctx.output_name)
+        return results_root
 
 
 class MyFailingAcceptOpener(JobResultOpener):
@@ -72,84 +74,103 @@ def test_clear():
 
 def test_register():
     registry = JobResultOpenerRegistry()
-    my_opener = MyGoodOpener()
+    my_opener_1 = MyGoodOpener()
+    my_opener_2 = MyGoodOpener()
 
-    unregister = registry.register(my_opener)
+    unregister_1 = registry.register(my_opener_1)
+    unregister_2 = registry.register(my_opener_2)
 
-    assert callable(unregister)
-    assert my_opener in registry.openers
+    assert callable(unregister_1)
+    assert callable(unregister_2)
+    assert unregister_1 is not unregister_2
 
-    unregister()
-    assert my_opener not in registry.openers
+    assert my_opener_1 in registry.openers
+    assert my_opener_2 in registry.openers
+
+    unregister_1()
+
+    assert my_opener_1 not in registry.openers
+    assert my_opener_2 in registry.openers
+
+    unregister_2()
+
+    assert my_opener_1 not in registry.openers
+    assert my_opener_2 not in registry.openers
+
+    # should not harm
+    unregister_1()
+    unregister_2()
 
 
 @pytest.mark.asyncio
-async def test_open_result():
+async def test_open_job_result_ok():
     registry = JobResultOpenerRegistry()
     registry.register(MyGoodOpener())
 
     ctx = new_ctx(data_type=dict)
-    assert await registry.open_result(ctx) == ctx.job_results
+    assert await registry.open_job_result(ctx) == ctx.job_results.root
 
     ctx = new_ctx(data_type=dict, output_name="b")
-    assert await registry.open_result(ctx) == 2.5
+    assert await registry.open_job_result(ctx) == InlineOrRefValue(InlineValue(2.5))
 
 
 @pytest.mark.asyncio
-async def test_open_result_fails():
+async def test_open_job_result_fails():
     registry = JobResultOpenerRegistry()
     registry.register(MyFailingOpenOpener())
 
     ctx = new_ctx(data_type=dict)
 
-    with pytest.raises(OpenerError, match="Job result opener failure: File not found"):
-        await registry.open_result(ctx)
+    with pytest.raises(
+        JobResultOpenError, match="Job result opener failure: File not found"
+    ):
+        await registry.open_job_result(ctx)
 
     registry.register(MyFailingOpenOpener())
 
     with pytest.raises(
-        OpenerError,
+        JobResultOpenError,
         match=(
             r"Job result opener failure \(one other opener failed too\): "
             r"File not found"
         ),
     ):
-        await registry.open_result(ctx)
+        await registry.open_job_result(ctx)
 
     registry.register(MyFailingOpenOpener())
     registry.register(MyFailingOpenOpener())
 
     with pytest.raises(
-        OpenerError,
+        JobResultOpenError,
         match=(
             r"Job result opener failure \(3 other openers failed too\): "
             r"File not found"
         ),
     ):
-        await registry.open_result(ctx)
+        await registry.open_job_result(ctx)
 
 
 @pytest.mark.asyncio
-async def test_no_opener_found():
+async def test_open_job_result_no_opener_found():
     registry = JobResultOpenerRegistry()
-    with pytest.raises(OpenerError, match="No job result openers registered"):
-        await registry.open_result(new_ctx())
+    with pytest.raises(JobResultOpenError, match="No job result openers registered"):
+        await registry.open_job_result(new_ctx())
 
     registry.register(MyUnableOpener())
     registry.register(MyUnableOpener())
     registry.register(MyUnableOpener())
 
     with pytest.raises(
-        OpenerError,
+        JobResultOpenError,
         match="No job result opener found for ",
     ):
-        await registry.open_result(new_ctx())
+        await registry.open_job_result(new_ctx())
 
 
 @pytest.mark.asyncio
-async def test_accept_result_fails():
+async def test_open_job_result_accept_result_fails():
     registry = JobResultOpenerRegistry()
-    registry.register(MyFailingAcceptOpener())
     registry.register(MyGoodOpener())
+    registry.register(MyFailingAcceptOpener())
     ctx = new_ctx(data_type=dict, output_name="b")
-    assert await registry.open_result(ctx) == 2.5
+    assert await registry.open_job_result(ctx) == InlineOrRefValue(InlineValue(2.5))

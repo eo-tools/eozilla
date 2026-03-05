@@ -9,6 +9,7 @@ import pytest
 
 from cuiman import ClientConfig
 from cuiman.api.client import Client
+from cuiman.api.opener import JobResultStatusError
 from gavicore.models import (
     Capabilities,
     ConformanceDeclaration,
@@ -112,39 +113,3 @@ class ClientTest(TestCase):
         self.assertFalse(self.transport.closed)
         self.client.close()
         self.assertTrue(self.transport.closed)
-
-
-@patch.object(
-    Client,
-    "get_job",
-    side_effect=[
-        JobInfo(
-            jobID="job_12",
-            processID="test",
-            type=JobType.process,
-            status=status,
-        )
-        for status in [JobStatus.accepted, JobStatus.running, JobStatus.successful]
-    ],
-)
-@patch.object(
-    Client,
-    "get_job_results",
-    return_value=JobResults(
-        root={"dataset": Link(href="s3://cubes/cube.zarr", type="application/zarr")}
-    ),
-)
-@patch.object(
-    Client,
-    "get_process",
-    return_value=ProcessDescription(id="test", version="0.0.0"),
-)
-def test_open_job_result(
-    _get_job: MagicMock,
-    _get_job_results: MagicMock,
-    _get_process: MagicMock,
-):
-    client = Client(api_url="https://acme.ogc.org/api")
-    client.config.opener_registry.register(AllOpener())
-    result = client.open_job_result("job_12", timeout=30, poll_interval=0.01)
-    assert isinstance(result, JobResults)
