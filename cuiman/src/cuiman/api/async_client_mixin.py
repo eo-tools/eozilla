@@ -84,8 +84,10 @@ class AsyncClientMixin(ABC):
 
         Args:
             job_id: the job ID
-            data_type: the expected data type to be returned.
+            data_type: the expected/desired data type to be returned.
                 If provided, the return value will be of that type.
+                If not provided, the return value will be the type
+                decided by the opener.
             output_name: the name of the output to be opened.
             poll_interval: interval in seconds between job status polls.
                 Applies while job status is still "accepted" or "running".
@@ -97,7 +99,9 @@ class AsyncClientMixin(ABC):
 
         Raises:
             ClientError: if an API error occurs
-            OpenerError: if an opener error occurs
+            JobResultOpenError: if an opener error occurs
+            JobResultStatusError: if the job failed or was canceled
+            TimeoutError: if the job does not finish within the timeout
         """
         deadline = asyncio.get_running_loop().time() + timeout
         while True:

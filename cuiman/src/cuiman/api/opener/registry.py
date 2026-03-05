@@ -69,7 +69,7 @@ class JobResultOpenerRegistry:
             The result of opening a job result.
 
         Raises:
-            OpenerError: If the `ctx` object could not be opened.
+            JobResultOpenError: If the `ctx` object could not be opened.
         """
         return await _open_job_result(ctx, *self._openers)
 

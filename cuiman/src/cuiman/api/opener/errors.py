@@ -9,7 +9,7 @@ class JobResultOpenError(Exception):
     """A job result could not be opened.
 
     This error is potentially raised by the
-    [OpenerRegistry.open_result()][OpenerRegistry.open_result]
+    [JobResultOpenerRegistry.open_job_result()][JobResultOpenerRegistry.open_result]
     method.
     """
 
@@ -18,7 +18,7 @@ class JobResultStatusError(JobResultOpenError):
     """A job result could not be opened.
 
     This error is potentially raised by the
-    [OpenerRegistry.open_result()][OpenerRegistry.open_result]
+    [JobResultOpenerRegistry.open_job_result()][JobResultOpenerRegistry.open_result]
     method.
     """
 

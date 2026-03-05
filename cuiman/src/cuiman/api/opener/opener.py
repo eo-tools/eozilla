@@ -12,7 +12,7 @@ class JobResultOpener(ABC):
     """Abstract base class for pluggable job result openers.
 
     An opener implementation is free to use the information
-    in the [context object](OpenerContext) `ctx` passed to the
+    in the [context object](JobResultOpenContext) `ctx` passed to the
     methods [accept()][accept] and [open()][open].
     However, if `data_type` or `output_name` are provided, an
     opener MUST be able to deal with them, otherwise [accept()][accept]
