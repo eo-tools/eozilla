@@ -12,7 +12,7 @@ that eases working with the results of a process job:
     adding application-specific openers to an opener registry now available 
     in the client configuration.
   - Added a new `notebooks/cuiman-openers.ipynb`. 
-  - Added a new section in Cuiman usage documentation .
+  - Added a new section in Cuiman usage documentation.
 
 ## Changes in version 0.0.9
 

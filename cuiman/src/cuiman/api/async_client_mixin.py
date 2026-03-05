@@ -15,6 +15,7 @@ from .defaults import (
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
 )
 from .opener import JobResultOpenContext, JobResultStatusError
+from .opener.opener import open_job_result
 
 
 # -----------------------------------------------------
@@ -129,4 +130,4 @@ class AsyncClientMixin(ABC):
             output_name=output_name,
             options=options,
         )
-        return await self.config.opener_registry.open_job_result(ctx)
+        return await open_job_result(ctx, *self.config.opener_registry.openers)

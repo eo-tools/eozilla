@@ -16,6 +16,8 @@ from .defaults import (
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
 )
 from .opener import JobResultOpenContext, JobResultStatusError
+from .opener.opener import open_job_result
+
 
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with AsyncClientMixin!
@@ -129,4 +131,4 @@ class ClientMixin(ABC):
             output_name=output_name,
             options=options,
         )
-        return run_sync(self.config.opener_registry.open_job_result, ctx)
+        return run_sync(open_job_result, ctx, *self.config.opener_registry.openers)
