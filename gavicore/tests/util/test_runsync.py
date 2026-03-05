@@ -7,7 +7,7 @@ import threading
 
 import pytest
 
-import cuiman.api.runsync as m
+import gavicore.util.runsync as m
 
 
 async def _async_return(value):

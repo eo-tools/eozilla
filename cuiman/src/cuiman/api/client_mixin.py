@@ -8,6 +8,7 @@ from typing import Any
 
 from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
 from gavicore.util.request import ExecutionRequest
+from gavicore.util.runsync import run_sync
 
 from .config import ClientConfig
 from .defaults import (
@@ -15,7 +16,6 @@ from .defaults import (
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
 )
 from .opener import OpenerContext
-from .runsync import run_sync
 
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with AsyncClientMixin!

@@ -78,6 +78,8 @@ def run_sync(
     return future.result()
 
 
+__all__ = ["run_sync"]
+
 _runner_lock = threading.Lock()
 _runner_loop: asyncio.AbstractEventLoop | None = None
 _runner_thread: threading.Thread | None = None
