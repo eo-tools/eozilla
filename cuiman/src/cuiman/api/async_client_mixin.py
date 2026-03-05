@@ -14,7 +14,7 @@ from .defaults import (
     DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
 )
-from .opener import OpenerContext
+from .opener import JobResultOpenContext
 
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with ClientMixin!
@@ -117,7 +117,7 @@ class AsyncClientMixin(ABC):
         process_description = (
             (await self.get_process(job_info.processID)) if job_info.processID else None
         )
-        ctx = OpenerContext(
+        ctx = JobResultOpenContext(
             config=self.config,
             job_id=job_id,
             job_results=job_results,

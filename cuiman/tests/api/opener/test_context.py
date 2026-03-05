@@ -2,7 +2,7 @@ from dataclasses import replace
 from typing import Any
 
 from cuiman import ClientConfig
-from cuiman.api.opener import OpenerContext
+from cuiman.api.opener import JobResultOpenContext
 from gavicore.models import (
     InlineValue,
     JobResults,
@@ -23,8 +23,8 @@ def new_ctx(
     outputs: list[str] | None = None,
     process_description: ProcessDescription | None = None,
     **options: Any,
-) -> OpenerContext:
-    return OpenerContext(
+) -> JobResultOpenContext:
+    return JobResultOpenContext(
         config=ClientConfig(api_url="http://localhost:9090"),
         job_id="982a04ee",
         job_results=job_results if job_results is not None else DEFAULT_JOB_RESULTS,

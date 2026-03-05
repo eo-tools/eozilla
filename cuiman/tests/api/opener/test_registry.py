@@ -2,64 +2,68 @@ from typing import Any
 
 import pytest
 
-from cuiman.api.opener import Opener, OpenerContext, OpenerRegistry
+from cuiman.api.opener import (
+    JobResultOpenContext,
+    JobResultOpener,
+    JobResultOpenerRegistry,
+)
 from cuiman.api.opener.registry import OpenerError
 
 from .test_context import new_ctx
 
 
-class MyGoodOpener(Opener):
-    async def accept(self, ctx: OpenerContext) -> bool:
+class MyGoodOpener(JobResultOpener):
+    async def accept(self, ctx: JobResultOpenContext) -> bool:
         return (
             ctx.data_type is dict
             and isinstance(ctx.job_results, dict)
             and sorted(ctx.job_results.keys()) == ["a", "b", "c"]
         )
 
-    async def open(self, ctx: OpenerContext) -> Any:
+    async def open(self, ctx: JobResultOpenContext) -> Any:
         if ctx.output_name in ["a", "b", "c"]:
             return ctx.job_results[ctx.output_name]
         else:
             return dict(ctx.job_results)
 
 
-class MyFailingAcceptOpener(Opener):
-    async def accept(self, ctx: OpenerContext) -> bool:
+class MyFailingAcceptOpener(JobResultOpener):
+    async def accept(self, ctx: JobResultOpenContext) -> bool:
         raise KeyError("Key not found")
 
-    async def open(self, ctx: OpenerContext) -> Any:
+    async def open(self, ctx: JobResultOpenContext) -> Any:
         return 137
 
 
-class MyFailingOpenOpener(Opener):
-    async def accept(self, ctx: OpenerContext) -> bool:
+class MyFailingOpenOpener(JobResultOpener):
+    async def accept(self, ctx: JobResultOpenContext) -> bool:
         return True
 
-    async def open(self, ctx: OpenerContext) -> Any:
+    async def open(self, ctx: JobResultOpenContext) -> Any:
         raise FileNotFoundError("File not found")
 
 
-class MyUnableOpener(Opener):
-    async def accept(self, ctx: OpenerContext) -> bool:
+class MyUnableOpener(JobResultOpener):
+    async def accept(self, ctx: JobResultOpenContext) -> bool:
         return False
 
-    async def open(self, ctx: OpenerContext) -> Any:
+    async def open(self, ctx: JobResultOpenContext) -> Any:
         return ctx.job_results
 
 
 def test_initially_empty():
-    registry = OpenerRegistry()
+    registry = JobResultOpenerRegistry()
     assert len(registry.openers) == 0
 
 
 def test_default():
-    registry = OpenerRegistry.create_default()
+    registry = JobResultOpenerRegistry.create_default()
     # Adjust here, once we've added some default openers
     assert len(registry.openers) == 0
 
 
 def test_clear():
-    registry = OpenerRegistry()
+    registry = JobResultOpenerRegistry()
     registry.register(MyGoodOpener())
     assert len(registry.openers) == 1
     registry.clear()
@@ -67,7 +71,7 @@ def test_clear():
 
 
 def test_register():
-    registry = OpenerRegistry()
+    registry = JobResultOpenerRegistry()
     my_opener = MyGoodOpener()
 
     unregister = registry.register(my_opener)
@@ -81,7 +85,7 @@ def test_register():
 
 @pytest.mark.asyncio
 async def test_open_result():
-    registry = OpenerRegistry()
+    registry = JobResultOpenerRegistry()
     registry.register(MyGoodOpener())
 
     ctx = new_ctx(data_type=dict)
@@ -93,7 +97,7 @@ async def test_open_result():
 
 @pytest.mark.asyncio
 async def test_open_result_fails():
-    registry = OpenerRegistry()
+    registry = JobResultOpenerRegistry()
     registry.register(MyFailingOpenOpener())
 
     ctx = new_ctx(data_type=dict)
@@ -127,7 +131,7 @@ async def test_open_result_fails():
 
 @pytest.mark.asyncio
 async def test_no_opener_found():
-    registry = OpenerRegistry()
+    registry = JobResultOpenerRegistry()
     with pytest.raises(OpenerError, match="No job result openers registered"):
         await registry.open_result(new_ctx())
 
@@ -144,7 +148,7 @@ async def test_no_opener_found():
 
 @pytest.mark.asyncio
 async def test_accept_result_fails():
-    registry = OpenerRegistry()
+    registry = JobResultOpenerRegistry()
     registry.register(MyFailingAcceptOpener())
     registry.register(MyGoodOpener())
     ctx = new_ctx(data_type=dict, output_name="b")

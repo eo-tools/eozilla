@@ -5,7 +5,7 @@
 import warnings
 from typing import Any, Callable
 
-from .opener import Opener, OpenerContext
+from .opener import JobResultOpenContext, JobResultOpener
 
 
 class OpenerError(RuntimeError):
@@ -17,16 +17,16 @@ class OpenerError(RuntimeError):
     """
 
 
-class OpenerRegistry:
+class JobResultOpenerRegistry:
     """A simple registry for job result openers."""
 
     def __init__(self):
-        self._openers = []
+        self._openers: list[JobResultOpener] = []
 
     @classmethod
-    def create_default(cls) -> "OpenerRegistry":
+    def create_default(cls) -> "JobResultOpenerRegistry":
         """Create a registry that includes default job result openers."""
-        return OpenerRegistry()
+        return JobResultOpenerRegistry()
 
     def clear(self) -> None:
         """Clears the registry.
@@ -35,11 +35,11 @@ class OpenerRegistry:
         self._openers = []
 
     @property
-    def openers(self) -> tuple[Opener, ...]:
+    def openers(self) -> tuple[JobResultOpener, ...]:
         """The tuple registered of job result openers."""
         return tuple(self._openers)
 
-    def register(self, opener: Opener) -> Callable[[], None]:
+    def register(self, opener: JobResultOpener) -> Callable[[], None]:
         """Register a job result opener.
 
         Args:
@@ -60,7 +60,7 @@ class OpenerRegistry:
         self._openers.insert(0, opener)
         return unregister
 
-    async def open_result(self, ctx: OpenerContext) -> Any:
+    async def open_result(self, ctx: JobResultOpenContext) -> Any:
         """
         Open a job result.
 
@@ -82,7 +82,7 @@ class OpenerRegistry:
         return await _open_result(ctx, *self._openers)
 
 
-async def _open_result(ctx: OpenerContext, *openers: Opener) -> Any:
+async def _open_result(ctx: JobResultOpenContext, *openers: JobResultOpener) -> Any:
     """
     Open a job result.
 

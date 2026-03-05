@@ -13,7 +13,7 @@ from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 
 from .auth import AuthConfig
 from .defaults import DEFAULT_API_URL
-from .opener import OpenerRegistry
+from .opener import JobResultOpenerRegistry
 
 
 class ClientConfig(AuthConfig, BaseSettings):
@@ -53,7 +53,9 @@ class ClientConfig(AuthConfig, BaseSettings):
     The default mapping is empty.
     """
 
-    opener_registry: ClassVar[OpenerRegistry] = OpenerRegistry.create_default()
+    opener_registry: ClassVar[JobResultOpenerRegistry] = (
+        JobResultOpenerRegistry.create_default()
+    )
     """
     A mapping from a hard-coded client return type to a 
     custom return type. The hard-coded return type is usually a 

@@ -22,8 +22,13 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class OpenerContext:
-    """Context object passed to the methods of [Opener][Opener]."""
+class JobResultOpenContext:
+    """The context around the results of a process job that allows opening
+    the job results or a particular job result.
+    Includes `job_results` of type [JobResults][JobResults] and the
+    context surrounding it.
+    The context object is passed to the methods of [Opener][Opener].
+    """
 
     config: "ClientConfig"
     """Configuration of the client."""

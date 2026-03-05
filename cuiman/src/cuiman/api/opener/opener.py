@@ -5,10 +5,10 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from .context import OpenerContext
+from .context import JobResultOpenContext
 
 
-class Opener(ABC):
+class JobResultOpener(ABC):
     """Abstract base class for pluggable job result openers.
 
     An opener implementation is free to use the information
@@ -20,27 +20,27 @@ class Opener(ABC):
     """
 
     @abstractmethod
-    async def accept(self, ctx: OpenerContext) -> bool:
+    async def accept(self, ctx: JobResultOpenContext) -> bool:
         """Checks if this opener can open the given job results.
 
         The method is not expected to raise any errors.
 
         Args:
-            ctx: The job results context used to check.
+            ctx: The job results open context used to check.
 
         Returns:
             `True` if this opener can open the job results, `False` otherwise.
         """
 
     @abstractmethod
-    async def open(self, ctx: OpenerContext) -> Any:
+    async def open(self, ctx: JobResultOpenContext) -> Any:
         """Open the results of a job.
 
         The method is expected to raise an appropriate error
         if it is not possible to open the job results.
 
         Args:
-            ctx: The job results context used to open.
+            ctx: The job results open context used to open.
 
         Returns:
             The value from opening the job result.
