@@ -13,6 +13,9 @@ that eases working with the results of a process job:
     in the client configuration.
   - Added a new `notebooks/cuiman-openers.ipynb`. 
   - Added a new section in Cuiman usage documentation.
+  - Added some default openers for `xarray.Dataset`, 
+    `pandas.DataFrame`, and `geopandas.GeoDataFrame` 
+    given that respective job result is as link.
 
 ## Changes in version 0.0.9
 
