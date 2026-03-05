@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import warnings
 from typing import Any, Callable
 
 from .opener import Opener, OpenerContext
@@ -96,7 +97,11 @@ async def _open_result(ctx: OpenerContext, *openers: Opener) -> Any:
         # noinspection PyBroadException
         try:
             accepted = await opener.accept(ctx)
-        except Exception:
+        except Exception as e:
+            warnings.warn(
+                f"Exception caught in opener {type(opener).__name__}.accept(), please fix: {e}",
+                stacklevel=2,
+            )
             accepted = False
 
         if accepted:

@@ -8,6 +8,45 @@ from cuiman.api.opener.registry import OpenerError
 from .test_context import new_ctx
 
 
+class MyGoodOpener(Opener):
+    async def accept(self, ctx: OpenerContext) -> bool:
+        return (
+            ctx.data_type is dict
+            and isinstance(ctx.job_results, dict)
+            and sorted(ctx.job_results.keys()) == ["a", "b", "c"]
+        )
+
+    async def open(self, ctx: OpenerContext) -> Any:
+        if ctx.output_name in ["a", "b", "c"]:
+            return ctx.job_results[ctx.output_name]
+        else:
+            return dict(ctx.job_results)
+
+
+class MyFailingAcceptOpener(Opener):
+    async def accept(self, ctx: OpenerContext) -> bool:
+        raise KeyError("Key not found")
+
+    async def open(self, ctx: OpenerContext) -> Any:
+        return 137
+
+
+class MyFailingOpenOpener(Opener):
+    async def accept(self, ctx: OpenerContext) -> bool:
+        return True
+
+    async def open(self, ctx: OpenerContext) -> Any:
+        raise FileNotFoundError("File not found")
+
+
+class MyUnableOpener(Opener):
+    async def accept(self, ctx: OpenerContext) -> bool:
+        return False
+
+    async def open(self, ctx: OpenerContext) -> Any:
+        return ctx.job_results
+
+
 def test_initially_empty():
     registry = OpenerRegistry()
     assert len(registry.openers) == 0
@@ -19,9 +58,17 @@ def test_default():
     assert len(registry.openers) == 0
 
 
+def test_clear():
+    registry = OpenerRegistry()
+    registry.register(MyGoodOpener())
+    assert len(registry.openers) == 1
+    registry.clear()
+    assert len(registry.openers) == 0
+
+
 def test_register():
     registry = OpenerRegistry()
-    my_opener = MyOpener()
+    my_opener = MyGoodOpener()
 
     unregister = registry.register(my_opener)
 
@@ -35,7 +82,7 @@ def test_register():
 @pytest.mark.asyncio
 async def test_open_result():
     registry = OpenerRegistry()
-    registry.register(MyOpener())
+    registry.register(MyGoodOpener())
 
     ctx = new_ctx(data_type=dict)
     assert await registry.open_result(ctx) == ctx.job_results
@@ -47,14 +94,14 @@ async def test_open_result():
 @pytest.mark.asyncio
 async def test_open_result_fails():
     registry = OpenerRegistry()
-    registry.register(MyFailingOpener())
+    registry.register(MyFailingOpenOpener())
 
     ctx = new_ctx(data_type=dict)
 
     with pytest.raises(OpenerError, match="Job result opener failure: File not found"):
         await registry.open_result(ctx)
 
-    registry.register(MyFailingOpener())
+    registry.register(MyFailingOpenOpener())
 
     with pytest.raises(
         OpenerError,
@@ -65,8 +112,8 @@ async def test_open_result_fails():
     ):
         await registry.open_result(ctx)
 
-    registry.register(MyFailingOpener())
-    registry.register(MyFailingOpener())
+    registry.register(MyFailingOpenOpener())
+    registry.register(MyFailingOpenOpener())
 
     with pytest.raises(
         OpenerError,
@@ -95,32 +142,10 @@ async def test_no_opener_found():
         await registry.open_result(new_ctx())
 
 
-class MyOpener(Opener):
-    async def accept(self, ctx: OpenerContext) -> bool:
-        return (
-            ctx.data_type is dict
-            and isinstance(ctx.job_results, dict)
-            and sorted(ctx.job_results.keys()) == ["a", "b", "c"]
-        )
-
-    async def open(self, ctx: OpenerContext) -> Any:
-        if ctx.output_name in ["a", "b", "c"]:
-            return ctx.job_results[ctx.output_name]
-        else:
-            return dict(ctx.job_results)
-
-
-class MyFailingOpener(Opener):
-    async def accept(self, ctx: OpenerContext) -> bool:
-        return True
-
-    async def open(self, ctx: OpenerContext) -> Any:
-        raise FileNotFoundError("File not found")
-
-
-class MyUnableOpener(Opener):
-    async def accept(self, ctx: OpenerContext) -> bool:
-        return False
-
-    async def open(self, ctx: OpenerContext) -> Any:
-        return ctx.job_results
+@pytest.mark.asyncio
+async def test_accept_result_fails():
+    registry = OpenerRegistry()
+    registry.register(MyFailingAcceptOpener())
+    registry.register(MyGoodOpener())
+    ctx = new_ctx(data_type=dict, output_name="b")
+    assert await registry.open_result(ctx) == 2.5

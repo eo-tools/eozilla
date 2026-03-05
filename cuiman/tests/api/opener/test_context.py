@@ -21,21 +21,26 @@ def new_ctx(
     data_type: type | None = None,
     output_name: str | None = None,
     outputs: list[str] | None = None,
+    process_description: ProcessDescription | None = None,
     **options: Any,
 ) -> OpenerContext:
     return OpenerContext(
         config=ClientConfig(api_url="http://localhost:9090"),
         job_id="982a04ee",
         job_results=job_results if job_results is not None else DEFAULT_JOB_RESULTS,
-        process_description=ProcessDescription(
-            id="test",
-            version="0.0.0",
-            outputs={
-                k: OutputDescription(title=f"The {k} value", schema=Schema(**{}))
-                for k in outputs
-            }
-            if outputs
-            else None,
+        process_description=(
+            process_description
+            if process_description is not None
+            else ProcessDescription(
+                id="test",
+                version="0.0.0",
+                outputs={
+                    k: OutputDescription(title=f"The {k} value", schema=Schema(**{}))
+                    for k in outputs
+                }
+                if outputs
+                else None,
+            )
         ),
         data_type=data_type,
         output_name=output_name,
@@ -88,16 +93,31 @@ def test_output_media_type():
     assert ctx_inline_1.output_media_type is None
 
 
+def test_output_qualified_value():
+    assert ctx_qualified_1.output_qualified_value == qualified_value
+    assert ctx_link_1.output_qualified_value is None
+    assert ctx_inline_1.output_qualified_value is None
+
+
 def test_output_link():
     assert ctx_qualified_1.output_link is None
     assert ctx_link_1.output_link == link_value
     assert ctx_inline_1.output_link is None
 
 
-def test_output_qualified_value():
-    assert ctx_qualified_1.output_qualified_value == qualified_value
-    assert ctx_link_1.output_qualified_value is None
-    assert ctx_inline_1.output_qualified_value is None
+def test_output_link_fom_inline_value():
+    link_data = {"href": "s3://xcube/test.zarr", "type": "application/zarr"}
+    ctx = new_ctx(
+        job_results=JobResults(**{"a": InlineValue(root=link_data)}),
+    )
+    assert ctx.output_link == Link(**link_data)
+
+    # missing "href"
+    link_data = {"path": "s3://xcube/test.zarr", "type": "application/zarr"}
+    ctx = new_ctx(
+        job_results=JobResults(**{"a": InlineValue(root=link_data)}),
+    )
+    assert ctx.output_link is None
 
 
 def test_output_description():
@@ -113,4 +133,6 @@ def test_output_description():
     ctx = new_ctx(outputs=["a", "b"], output_name="c")
     assert ctx.output_description is None
     ctx = new_ctx(outputs=["a", "b"], output_name=None)
+    assert ctx.output_description is None
+    ctx = new_ctx(outputs=["a", "b"], output_name=None, process_description=None)
     assert ctx.output_description is None
