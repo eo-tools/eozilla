@@ -1,5 +1,7 @@
 from typing import Any
 
+import pytest
+
 from cuiman.api.opener import (
     JobResultOpenContext,
     JobResultOpener,
@@ -72,6 +74,13 @@ def test_register_unregister():
     # should not harm
     unregister_1()
     unregister_2()
+
+
+def test_register_with_invalid_type():
+    registry = JobResultOpenerRegistry()
+    with pytest.raises(TypeError, match="sss"):
+        # noinspection PyTypeChecker
+        registry.register(DummyOpener1())
 
 
 def test_clear():

@@ -90,11 +90,7 @@ async def open_job_result(
     # Use first matching opener, otherwise try next
     errors: list[Exception] = []
     for opener_type in opener_types:
-        if not isclass(opener_type):
-            raise TypeError(
-                f"Type compatible with {JobResultOpener.__name__} expected, "
-                f"but got {opener_type}"
-            )
+        assert_opener_type_valid(opener_type)
 
         opener: JobResultOpener | None = None
         try:
@@ -141,3 +137,11 @@ def _warn(opener_type: type[JobResultOpener], error: Exception):
         UserWarning,
         stacklevel=2,
     )
+
+
+def assert_opener_type_valid(opener_type: type[JobResultOpener]):
+    if not isclass(opener_type):
+        raise TypeError(
+            f"Type compatible with {JobResultOpener.__name__} expected, "
+            f"but got {opener_type}"
+        )

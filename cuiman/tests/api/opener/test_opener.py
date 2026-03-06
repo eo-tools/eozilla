@@ -83,6 +83,14 @@ async def test_open_job_result_ok():
 
 
 @pytest.mark.asyncio
+async def test_open_job_result_ok_others_failing():
+    ctx = new_ctx(data_type=dict, output_name="b")
+    assert await open_job_result(
+        ctx, MyAcceptRaisesOpener, MyIsUsableRaisesOpener, MyGoodOpener
+    ) == InlineOrRefValue(InlineValue(2.5))
+
+
+@pytest.mark.asyncio
 async def test_open_job_result_fails():
     ctx = new_ctx(data_type=dict)
 
@@ -151,8 +159,13 @@ async def test_open_job_result_no_opener_found():
 
 
 @pytest.mark.asyncio
-async def test_open_job_result_accept_result_fails():
-    ctx = new_ctx(data_type=dict, output_name="b")
-    assert await open_job_result(
-        ctx, MyAcceptRaisesOpener, MyGoodOpener
-    ) == InlineOrRefValue(InlineValue(2.5))
+async def test_open_job_result_checks_openers():
+    with pytest.raises(
+        TypeError, match="Type compatible with JobResultOpener expected, but got 123"
+    ):
+        # noinspection PyTypeChecker
+        await open_job_result(
+            new_ctx(),
+            MyUnusableOpener,
+            123,
+        )
