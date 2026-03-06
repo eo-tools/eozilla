@@ -2,13 +2,13 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from unittest import TestCase, IsolatedAsyncioTestCase
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cuiman.api.client import Client
 from cuiman.api.async_client import AsyncClient
+from cuiman.api.client import Client
 from cuiman.api.opener import JobResultStatusError
 from gavicore.models import (
     JobInfo,
@@ -71,7 +71,7 @@ class ClientOpenJobResultTest(TestCase):
         _get_process: MagicMock,
     ):
         client = Client(api_url="https://acme.ogc.org/api")
-        client.config.opener_registry.register(AllOpener())
+        client.config.register_job_result_opener(AllOpener)
         result = client.open_job_result("job_12", timeout=30, poll_interval=0.01)
         self.assertIsInstance(result, JobResults)
 
@@ -85,7 +85,7 @@ class ClientOpenJobResultTest(TestCase):
         _get_process: MagicMock,
     ):
         client = Client(api_url="https://acme.ogc.org/api")
-        client.config.opener_registry.register(AllOpener())
+        client.config.register_job_result_opener(AllOpener)
         with pytest.raises(
             JobResultStatusError,
             match=(
@@ -108,7 +108,7 @@ class ClientOpenJobResultTest(TestCase):
         poll_interval = timeout / (len(endless_run) // 2)
 
         client = Client(api_url="https://acme.ogc.org/api")
-        client.config.opener_registry.register(AllOpener())
+        client.config.register_job_result_opener(AllOpener)
         with pytest.raises(
             TimeoutError,
             match=(
@@ -147,7 +147,7 @@ class AsyncClientOpenJobResultTest(IsolatedAsyncioTestCase):
         _get_process: MagicMock,
     ):
         client = AsyncClient(api_url="https://acme.ogc.org/api")
-        client.config.opener_registry.register(AllOpener())
+        client.config.register_job_result_opener(AllOpener)
         result = await client.open_job_result("job_12", timeout=30, poll_interval=0.01)
         self.assertIsInstance(result, JobResults)
 
@@ -176,7 +176,7 @@ class AsyncClientOpenJobResultTest(IsolatedAsyncioTestCase):
         _get_process: MagicMock,
     ):
         client = AsyncClient(api_url="https://acme.ogc.org/api")
-        client.config.opener_registry.register(AllOpener())
+        client.config.register_job_result_opener(AllOpener)
         with pytest.raises(
             JobResultStatusError,
             match=(
@@ -214,7 +214,7 @@ class AsyncClientOpenJobResultTest(IsolatedAsyncioTestCase):
         poll_interval = timeout / (len(endless_run) // 2)
 
         client = AsyncClient(api_url="https://acme.ogc.org/api")
-        client.config.opener_registry.register(AllOpener())
+        client.config.register_job_result_opener(AllOpener)
         with pytest.raises(
             TimeoutError,
             match=(

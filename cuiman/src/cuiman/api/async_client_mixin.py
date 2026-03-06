@@ -17,7 +17,6 @@ from .defaults import (
 from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
 
-
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with ClientMixin!
 # -----------------------------------------------------

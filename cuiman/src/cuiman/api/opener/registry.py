@@ -2,38 +2,39 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Callable
+from typing import Callable, TypeAlias
 
 from .opener import JobResultOpener
+
+JobResultOpenerType: TypeAlias = type[JobResultOpener]
 
 
 class JobResultOpenerRegistry:
     """A simple registry for job result openers."""
 
     def __init__(self):
-        self._openers: list[JobResultOpener] = []
+        self._opener_types: list[JobResultOpenerType] = []
 
     @classmethod
     def create_default(cls) -> "JobResultOpenerRegistry":
         """Create a registry that includes default job result openers."""
         return JobResultOpenerRegistry()
 
-    def clear(self) -> None:
-        """Clears the registry.
-        Removes all job result openers.
-        """
-        self._openers = []
+    @property
+    def opener_types(self) -> tuple[JobResultOpenerType, ...]:
+        """The tuple of registered job result openers."""
+        return tuple(self._opener_types)
 
     @property
     def openers(self) -> tuple[JobResultOpener, ...]:
-        """The tuple registered of job result openers."""
-        return tuple(self._openers)
+        """The tuple of job result openers usable in the current environment."""
+        return tuple(t() for t in self._opener_types if t.is_usable())
 
-    def register(self, opener: JobResultOpener) -> Callable[[], None]:
+    def register(self, opener_type: JobResultOpenerType) -> Callable[[], None]:
         """Register a job result opener.
 
         Args:
-            opener: The opener.
+            opener_type: The type of the opener to be registered.
 
         Returns:
             A function that can be called to unregister the opener.
@@ -41,11 +42,20 @@ class JobResultOpenerRegistry:
 
         def unregister():
             try:
-                self._openers.remove(opener)
+                self._opener_types.remove(opener_type)
             except ValueError:
                 pass
 
+        # Remove an already registered opener type
+        unregister()
+
         # Insert at the beginning so that openers
         # added last are used first.
-        self._openers.insert(0, opener)
+        self._opener_types.insert(0, opener_type)
         return unregister
+
+    def clear(self) -> None:
+        """Clears the registry.
+        Removes registered all job result openers.
+        """
+        self._opener_types = []

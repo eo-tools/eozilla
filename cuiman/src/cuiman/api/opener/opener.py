@@ -21,6 +21,13 @@ class JobResultOpener(ABC):
     should return `False`.
     """
 
+    @classmethod
+    def is_usable(cls) -> bool:
+        """Check whether this opener is usable in the
+        current OS or Python environment.
+        """
+        return True
+
     @abstractmethod
     async def accept(self, ctx: JobResultOpenContext) -> bool:
         """Checks if this opener can open the given job results.

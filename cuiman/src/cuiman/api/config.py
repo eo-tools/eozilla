@@ -13,7 +13,7 @@ from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 
 from .auth import AuthConfig
 from .defaults import DEFAULT_API_URL
-from .opener import JobResultOpenerRegistry
+from .opener import JobResultOpener, JobResultOpenerRegistry
 
 
 class ClientConfig(AuthConfig, BaseSettings):
@@ -255,6 +255,19 @@ class ClientConfig(AuthConfig, BaseSettings):
                     if p.name == "level" and p.value == ["advanced"]:
                         return True
         return False
+
+    def register_job_result_opener(
+        self, opener_type: type[JobResultOpener]
+    ) -> Callable[[], None]:
+        """Register a job result opener.
+
+        Args:
+            opener_type: The type of the opener to be registered.
+
+        Returns:
+            A function that can be called to unregister the opener.
+        """
+        return self.opener_registry.register(opener_type)
 
 
 # Set Eozilla defaults.
