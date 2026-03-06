@@ -2,7 +2,17 @@
 
 ### Enhancements
 
-
+The Cuiman client package has been enhanced by job result openers
+that eases working with the results of a process job:
+  - Client classes now have a method 
+    `open_job_result(job_id, **options)` that is used to open the results 
+    of a job. Both sync and async versions of the method are available in 
+    `cuiman.Client` and `cuiman.AsyncClient`. 
+  - Applications can customize how job results are opened by  
+    adding application-specific openers to an opener registry now available 
+    in the client configuration.
+  - Added a new `notebooks/cuiman-openers.ipynb`. 
+  - Added a new section in Cuiman usage documentation.
 
 ## Changes in version 0.0.9
 
