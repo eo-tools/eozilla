@@ -130,4 +130,4 @@ class ClientMixin(ABC):
             output_name=output_name,
             options=options,
         )
-        return run_sync(open_job_result, ctx, *self.config.opener_registry.openers)
+        return run_sync(open_job_result, ctx, *self.config.opener_registry.opener_types)
