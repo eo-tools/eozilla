@@ -23,21 +23,15 @@ class DummyOpener3(DummyOpener1):
     pass
 
 
-class UnusableDummyOpener(DummyOpener1):
-    @classmethod
-    def is_usable(cls) -> bool:
-        return False
-
-
 def test_initially_empty():
     registry = JobResultOpenerRegistry()
-    assert len(registry.openers) == 0
+    assert len(registry.opener_types) == 0
 
 
 def test_default():
     registry = JobResultOpenerRegistry.create_default()
     # Adjust here, once we've added some default openers
-    assert len(registry.openers) == 0
+    assert len(registry.opener_types) == 0
 
 
 def test_register():
@@ -88,19 +82,3 @@ def test_clear():
     assert len(registry.opener_types) == 3
     registry.clear()
     assert len(registry.opener_types) == 0
-
-
-def test_openers():
-    registry = JobResultOpenerRegistry()
-    registry.register(DummyOpener1)
-    registry.register(UnusableDummyOpener)
-    registry.register(DummyOpener2)
-    registry.register(UnusableDummyOpener)
-    registry.register(DummyOpener3)
-    openers = registry.openers
-    assert len(openers) == 3
-    assert [type(o) for o in registry.openers] == [
-        DummyOpener3,
-        DummyOpener2,
-        DummyOpener1,
-    ]

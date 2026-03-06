@@ -1,7 +1,6 @@
 #  Copyright (c) 2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-
 from typing import Callable, TypeAlias
 
 from .opener import JobResultOpener
@@ -24,11 +23,6 @@ class JobResultOpenerRegistry:
     def opener_types(self) -> tuple[JobResultOpenerType, ...]:
         """The tuple of registered job result openers."""
         return tuple(self._opener_types)
-
-    @property
-    def openers(self) -> tuple[JobResultOpener, ...]:
-        """The tuple of job result openers usable in the current environment."""
-        return tuple(t() for t in self._opener_types if t.is_usable())
 
     def register(self, opener_type: JobResultOpenerType) -> Callable[[], None]:
         """Register a job result opener.

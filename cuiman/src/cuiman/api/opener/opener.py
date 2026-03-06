@@ -4,6 +4,7 @@
 
 import warnings
 from abc import ABC, abstractmethod
+from inspect import isclass
 from typing import Any
 
 from .context import JobResultOpenContext
@@ -64,7 +65,9 @@ class JobResultOpener(ABC):
         """
 
 
-async def open_job_result(ctx: JobResultOpenContext, *openers: JobResultOpener) -> Any:
+async def open_job_result(
+    ctx: JobResultOpenContext, *opener_types: type[JobResultOpener]
+) -> Any:
     """
     Open a job result.
 
@@ -86,29 +89,36 @@ async def open_job_result(ctx: JobResultOpenContext, *openers: JobResultOpener) 
     """
     # Use first matching opener, otherwise try next
     errors: list[Exception] = []
-    for opener in openers:
-        # noinspection PyBroadException
-        try:
-            accepted = await opener.accept_job_result(ctx)
-        except Exception as e:
-            warnings.warn(
-                (
-                    f"Exception caught in opener {type(opener).__name__}.accept(), "
-                    f"please fix: {e}"
-                ),
-                stacklevel=2,
+    for opener_type in opener_types:
+        if not isclass(opener_type):
+            raise TypeError(
+                f"Type compatible with {JobResultOpener.__name__} expected, "
+                f"but got {opener_type}"
             )
-            accepted = False
 
-        if accepted:
+        opener: JobResultOpener | None = None
+        try:
+            if opener_type.is_usable():
+                opener = opener_type()
+        except Exception as e:
+            _warn(opener_type, e)
+
+        if opener is not None:
             try:
-                return await opener.open_job_result(ctx)
+                accepted = await opener.accept_job_result(ctx)
             except Exception as e:
-                errors.append(e)
+                _warn(type(opener), e)
+                accepted = False
+
+            if accepted:
+                try:
+                    return await opener.open_job_result(ctx)
+                except Exception as e:
+                    errors.append(e)
 
     # Error management
     if not errors:
-        if not openers:
+        if not opener_types:
             raise JobResultOpenError("No job result openers provided")
         else:
             raise JobResultOpenError("No job result opener found")
@@ -122,3 +132,12 @@ async def open_job_result(ctx: JobResultOpenContext, *openers: JobResultOpener) 
     raise JobResultOpenError(
         f"Job result opener failure{msg_detail}: {first_error}"
     ) from first_error
+
+
+def _warn(opener_type: type[JobResultOpener], error: Exception):
+    warnings.warn(
+        "Unexpected error occurred in "
+        f"{opener_type.__name__}: {type(error).__name__}: {error}",
+        UserWarning,
+        stacklevel=2,
+    )
