@@ -6,10 +6,10 @@ from typing import Any, Callable
 
 from cuiman.api.opener import JobResultOpenContext
 
-from .base import PathOrUrlOpener
+from .base import BasePathOpener
 
 
-class GeoPandasGeoDataFrameOpener(PathOrUrlOpener):
+class GeopandasDataFrameOpener(BasePathOpener):
     def accept_data_type(self, data_type: type) -> bool:
         try:
             import geopandas as gpd
@@ -51,6 +51,7 @@ class GeoPandasGeoDataFrameOpener(PathOrUrlOpener):
         except ImportError:
             return {}
         return {
+            "application/parquet": gpd.read_parquet,
             "application/geoparquet": gpd.read_parquet,
             "application/vnd.apache.parquet": gpd.read_parquet,
             "application/x-feather": gpd.read_feather,
@@ -64,5 +65,6 @@ class GeoPandasGeoDataFrameOpener(PathOrUrlOpener):
             return {}
         return {
             ".parquet": gpd.read_parquet,
+            ".geoparquet": gpd.read_parquet,
             ".feather": gpd.read_feather,
         }

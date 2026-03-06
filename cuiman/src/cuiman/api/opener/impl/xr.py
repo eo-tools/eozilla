@@ -6,10 +6,10 @@ from typing import Any
 
 from cuiman.api.opener import JobResultOpenContext
 
-from .base import PathOrUrlOpener
+from .base import BasePathOpener
 
 
-class XarrayDatasetOpener(PathOrUrlOpener):
+class XarrayDatasetOpener(BasePathOpener):
     def accept_data_type(self, data_type: type) -> bool:
         try:
             import xarray as xr

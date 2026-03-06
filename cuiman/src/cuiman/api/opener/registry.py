@@ -18,14 +18,14 @@ class JobResultOpenerRegistry:
     @classmethod
     def create_default(cls) -> "JobResultOpenerRegistry":
         """Create a registry that includes default job result openers."""
-        from .impl.gpd import GeoPandasGeoDataFrameOpener
+        from .impl.gpd import GeopandasDataFrameOpener
         from .impl.pd import PandasDataFrameOpener
         from .impl.xr import XarrayDatasetOpener
 
         registry = JobResultOpenerRegistry()
-        registry.register(GeoPandasGeoDataFrameOpener())
-        registry.register(PandasDataFrameOpener())
-        registry.register(XarrayDatasetOpener())
+        registry.register(GeopandasDataFrameOpener)
+        registry.register(PandasDataFrameOpener)
+        registry.register(XarrayDatasetOpener)
         return registry
 
     @property

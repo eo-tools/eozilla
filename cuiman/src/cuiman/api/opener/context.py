@@ -1,8 +1,7 @@
 #  Copyright (c) 2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import BaseModel
@@ -33,16 +32,16 @@ class JobResultOpenContext:
     config: "ClientConfig"
     """Configuration of the client."""
 
-    process_description: ProcessDescription | None
-    """Description of the process that produced the results."""
-
     job_id: str
     """ID of the job."""
 
     job_results: JobResults
     """Results of a job."""
 
-    output_name: str | None
+    process_description: ProcessDescription | None = None
+    """Description of the process that produced the results."""
+
+    output_name: str | None = None
     """
     Name of the output that should be opened.
     If given, an opener must accept that name and be able to
@@ -50,7 +49,7 @@ class JobResultOpenContext:
     [open_result][JobResultOpener.open_result] method.
     """
 
-    data_type: type | None
+    data_type: type | None = None
     """
     Data type of the output that should be opened.
     If given, an opener must accept that value and be able to
@@ -58,7 +57,7 @@ class JobResultOpenContext:
     [open_result][JobResultOpener.open_result] method.
     """
 
-    options: dict[str, Any]
+    options: dict[str, Any] = field(default_factory=lambda: {})
     """Opener-specific options."""
 
     @property

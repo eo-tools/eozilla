@@ -12,13 +12,15 @@ _PATH_LIKE_KEYS = ("href", "url", "path")
 _PATH_LIKE_TYPES = (str, Path)
 
 
-class PathOrUrlOpener(JobResultOpener):
+class BasePathOpener(JobResultOpener):
     """
     Abstract base class for job results that use a path
     or URL to reference an output dataset.
+    Their output values are typically provided as
+    `gavicore.models.Link`.
     """
 
-    async def accept(self, ctx: JobResultOpenContext) -> bool:
+    async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
         path_or_url = get_path_or_url(ctx)
         if not path_or_url:
             return False
@@ -45,12 +47,12 @@ class PathOrUrlOpener(JobResultOpener):
     def accept_data_type(self, data_type: type) -> bool:
         """Check whether given data type is accepted."""
 
-    async def open(self, ctx: JobResultOpenContext) -> Any:
+    async def open_job_result(self, ctx: JobResultOpenContext) -> Any:
         path_or_url = get_path_or_url(ctx)
         assert path_or_url  # from accept() we know we have path_or_url
         filename_ext = get_filename_ext(path_or_url)
         media_type = ctx.output_media_type
-        return self.open_path_or_url(path_or_url, filename_ext, media_type, ctx)
+        return await self.open_path_or_url(path_or_url, filename_ext, media_type, ctx)
 
     @abstractmethod
     async def open_path_or_url(
@@ -64,16 +66,19 @@ class PathOrUrlOpener(JobResultOpener):
 
 
 def get_path_or_url(ctx: JobResultOpenContext) -> str | None:
-    if ctx.output_link:
-        return ctx.output_link.href
-    output_value = ctx.output_value.model_dump()
-    if isinstance(output_value, _PATH_LIKE_TYPES):
-        return str(output_value)
-    elif isinstance(output_value, dict):
-        for k in _PATH_LIKE_KEYS:
-            v = output_value.get(k)
-            if v is not None and isinstance(v, _PATH_LIKE_TYPES):
-                return str(v)
+    output_link = ctx.output_link
+    if output_link:
+        return output_link.href
+    output_value = ctx.output_value
+    if output_value is not None:
+        value = output_value.model_dump()
+        if isinstance(value, _PATH_LIKE_TYPES):
+            return str(value)
+        elif isinstance(value, dict):
+            for k in _PATH_LIKE_KEYS:
+                v = value.get(k)
+                if v is not None and isinstance(v, _PATH_LIKE_TYPES):
+                    return str(v)
     return None
 
 

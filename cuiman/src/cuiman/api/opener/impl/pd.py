@@ -6,10 +6,10 @@ from typing import Any, Callable
 
 from cuiman.api.opener import JobResultOpenContext, JobResultOpenError
 
-from .base import PathOrUrlOpener
+from .base import BasePathOpener
 
 
-class PandasDataFrameOpener(PathOrUrlOpener):
+class PandasDataFrameOpener(BasePathOpener):
     def accept_data_type(self, data_type: type) -> bool:
         try:
             import pandas as pd
