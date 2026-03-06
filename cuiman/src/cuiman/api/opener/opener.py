@@ -140,7 +140,7 @@ def _warn(opener_type: type[JobResultOpener], error: Exception):
 
 
 def assert_opener_type_valid(opener_type: type[JobResultOpener]):
-    if not isclass(opener_type):
+    if not isclass(opener_type) or not issubclass(opener_type, JobResultOpener):
         raise TypeError(
             f"Type compatible with {JobResultOpener.__name__} expected, "
             f"but got {opener_type}"

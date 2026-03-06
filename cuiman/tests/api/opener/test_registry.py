@@ -78,9 +78,12 @@ def test_register_unregister():
 
 def test_register_with_invalid_type():
     registry = JobResultOpenerRegistry()
-    with pytest.raises(TypeError, match="sss"):
+    with pytest.raises(
+        TypeError,
+        match="Type compatible with JobResultOpener expected, but got <class 'int'>",
+    ):
         # noinspection PyTypeChecker
-        registry.register(DummyOpener1())
+        registry.register(int)
 
 
 def test_clear():
