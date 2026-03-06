@@ -2,13 +2,13 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from unittest import TestCase, IsolatedAsyncioTestCase
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cuiman.api.client import Client
 from cuiman.api.async_client import AsyncClient
+from cuiman.api.client import Client
 from cuiman.api.opener import JobResultStatusError
 from gavicore.models import (
     JobInfo,

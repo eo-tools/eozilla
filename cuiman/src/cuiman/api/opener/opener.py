@@ -23,7 +23,15 @@ class JobResultOpener(ABC):
 
     @abstractmethod
     async def accept(self, ctx: JobResultOpenContext) -> bool:
-        """Checks if this opener can open the given job results.
+        """Check if this opener can potentially be used to open
+        the given job results.
+
+        More specifically, the method is used to exclude this opener
+        from the list of potential openers for the given job results.
+
+        For performance reasons, an implementation should focus on
+        determining the unability to open the job results and early
+        return `False` in this case.
 
         The method is not expected to raise any errors.
 

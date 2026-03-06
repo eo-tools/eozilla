@@ -1,6 +1,5 @@
 from typing import Any
 
-
 from cuiman.api.opener import (
     JobResultOpenContext,
     JobResultOpener,
@@ -24,7 +23,7 @@ def test_initially_empty():
 def test_default():
     registry = JobResultOpenerRegistry.create_default()
     # Adjust here, once we've added some default openers
-    assert len(registry.openers) == 0
+    assert len(registry.openers) == 3
 
 
 def test_clear():
