@@ -8,10 +8,10 @@ from cuiman.api.opener import (
 
 
 class DummyOpener1(JobResultOpener):
-    async def accept(self, _ctx: JobResultOpenContext) -> bool:
+    async def accept_job_result(self, _ctx: JobResultOpenContext) -> bool:
         return False
 
-    async def open(self, _ctx: JobResultOpenContext) -> Any:
+    async def open_job_result(self, _ctx: JobResultOpenContext) -> Any:
         return None
 
 

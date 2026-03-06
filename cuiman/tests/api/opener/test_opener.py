@@ -14,14 +14,14 @@ from .test_context import new_ctx
 
 
 class MyGoodOpener(JobResultOpener):
-    async def accept(self, ctx: JobResultOpenContext) -> bool:
+    async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
         return (
             ctx.data_type is dict
             and isinstance(ctx.job_results.root, dict)
             and sorted(ctx.job_results.root.keys()) == ["a", "b", "c"]
         )
 
-    async def open(self, ctx: JobResultOpenContext) -> Any:
+    async def open_job_result(self, ctx: JobResultOpenContext) -> Any:
         results_root = ctx.job_results.root
         if ctx.output_name in ["a", "b", "c"]:
             if results_root is not None:
@@ -30,26 +30,26 @@ class MyGoodOpener(JobResultOpener):
 
 
 class MyFailingAcceptOpener(JobResultOpener):
-    async def accept(self, ctx: JobResultOpenContext) -> bool:
+    async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
         raise KeyError("Key not found")
 
-    async def open(self, ctx: JobResultOpenContext) -> Any:
+    async def open_job_result(self, ctx: JobResultOpenContext) -> Any:
         return 137
 
 
 class MyFailingOpenOpener(JobResultOpener):
-    async def accept(self, ctx: JobResultOpenContext) -> bool:
+    async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
         return True
 
-    async def open(self, ctx: JobResultOpenContext) -> Any:
+    async def open_job_result(self, ctx: JobResultOpenContext) -> Any:
         raise FileNotFoundError("File not found")
 
 
 class MyUnableOpener(JobResultOpener):
-    async def accept(self, ctx: JobResultOpenContext) -> bool:
+    async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
         return False
 
-    async def open(self, ctx: JobResultOpenContext) -> Any:
+    async def open_job_result(self, ctx: JobResultOpenContext) -> Any:
         return ctx.job_results
 
 

@@ -29,8 +29,16 @@ class JobResultOpener(ABC):
         return True
 
     @abstractmethod
-    async def accept(self, ctx: JobResultOpenContext) -> bool:
-        """Checks if this opener can open the given job results.
+    async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
+        """Check if this opener can potentially be used to open
+        the given job result.
+
+        More specifically, the method is used to exclude this opener
+        from the list of potential openers for the given job results.
+
+        For performance reasons, an implementation should focus on
+        determining the unability to open the job results and early
+        return `False` in this case.
 
         The method is not expected to raise any errors.
 
@@ -42,8 +50,8 @@ class JobResultOpener(ABC):
         """
 
     @abstractmethod
-    async def open(self, ctx: JobResultOpenContext) -> Any:
-        """Open the results of a job.
+    async def open_job_result(self, ctx: JobResultOpenContext) -> Any:
+        """Open the result of a job.
 
         The method is expected to raise an appropriate error
         if it is not possible to open the job results.
@@ -81,7 +89,7 @@ async def open_job_result(ctx: JobResultOpenContext, *openers: JobResultOpener) 
     for opener in openers:
         # noinspection PyBroadException
         try:
-            accepted = await opener.accept(ctx)
+            accepted = await opener.accept_job_result(ctx)
         except Exception as e:
             warnings.warn(
                 (
@@ -94,7 +102,7 @@ async def open_job_result(ctx: JobResultOpenContext, *openers: JobResultOpener) 
 
         if accepted:
             try:
-                return await opener.open(ctx)
+                return await opener.open_job_result(ctx)
             except Exception as e:
                 errors.append(e)
 
