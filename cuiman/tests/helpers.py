@@ -92,8 +92,8 @@ class MockTransport(AsyncTransport, Transport):  # pragma: no cover
 class AllOpener(JobResultOpener):
     """An opener that can open everything."""
 
-    async def accept(self, ctx: JobResultOpenContext) -> bool:
+    async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
         return True
 
-    async def open(self, ctx: JobResultOpenContext) -> Any:
+    async def open_job_result(self, ctx: JobResultOpenContext) -> Any:
         return ctx.job_results

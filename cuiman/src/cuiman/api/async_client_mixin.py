@@ -129,4 +129,4 @@ class AsyncClientMixin(ABC):
             output_name=output_name,
             options=options,
         )
-        return await open_job_result(ctx, *self.config.opener_registry.openers)
+        return await open_job_result(ctx, *self.config.opener_registry.opener_types)
