@@ -4,7 +4,7 @@
 
 import xarray as xr
 
-from cuiman.api.opener.impl.xr import XarrayDatasetOpener
+from cuiman.api.opener.impl._xr import XarrayDatasetOpener
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import patch
 

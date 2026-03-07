@@ -3,7 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 import pandas as pd
 
-from cuiman.api.opener.impl.pd import PandasDataFrameOpener
+from cuiman.api.opener.impl._pd import PandasDataFrameOpener
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import patch
 

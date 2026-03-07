@@ -4,7 +4,7 @@
 
 import geopandas as gpd
 
-from cuiman.api.opener.impl.gpd import GeopandasDataFrameOpener
+from cuiman.api.opener.impl._gpd import GeopandasDataFrameOpener
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import patch
 

@@ -4,19 +4,16 @@
 
 from typing import Any, Callable
 
+import geopandas as gpd
+
 from cuiman.api.opener import JobResultOpenContext
 
 from .base import BasePathOpener
 
 
-class GeopandasDataFrameOpener(BasePathOpener):
+class GeopandasDataFrameOpenerImpl(BasePathOpener):
     def accept_data_type(self, data_type: type) -> bool:
-        try:
-            import geopandas as gpd
-
-            return data_type is gpd.GeoDataFrame
-        except ImportError:
-            return False
+        return data_type is gpd.GeoDataFrame
 
     def accept_media_type(self, media_type: str) -> bool:
         return True
@@ -38,18 +35,11 @@ class GeopandasDataFrameOpener(BasePathOpener):
         if read_x is not None:
             return read_x(path_or_url, **ctx.options)
 
-        # noinspection PyUnresolvedReferences
-        import geopandas as gpd
-
         # Use geopandas's generic read function
         return gpd.read_file(path_or_url, **ctx.options)
 
     @property
     def media_type_readers(self) -> dict[str, Callable]:
-        try:
-            import geopandas as gpd
-        except ImportError:
-            return {}
         return {
             "application/parquet": gpd.read_parquet,
             "application/geoparquet": gpd.read_parquet,
@@ -59,10 +49,6 @@ class GeopandasDataFrameOpener(BasePathOpener):
 
     @property
     def filename_ext_readers(self) -> dict[str, Callable]:
-        try:
-            import geopandas as gpd
-        except ImportError:
-            return {}
         return {
             ".parquet": gpd.read_parquet,
             ".geoparquet": gpd.read_parquet,

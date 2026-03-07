@@ -4,19 +4,16 @@
 
 from typing import Any
 
+import xarray as xr
+
 from cuiman.api.opener import JobResultOpenContext
 
 from .base import BasePathOpener
 
 
-class XarrayDatasetOpener(BasePathOpener):
+class XarrayDatasetOpenerImpl(BasePathOpener):
     def accept_data_type(self, data_type: type) -> bool:
-        try:
-            import xarray as xr
-
-            return data_type is xr.Dataset
-        except ImportError:
-            return False
+        return data_type is xr.Dataset
 
     def accept_media_type(self, media_type: str) -> bool:
         return True
@@ -31,7 +28,5 @@ class XarrayDatasetOpener(BasePathOpener):
         media_type: str | None,
         ctx: JobResultOpenContext,
     ) -> Any:
-        import xarray as xr
-
         # Use xarray's generic read function
         return xr.open_dataset(path_or_url, **ctx.options)

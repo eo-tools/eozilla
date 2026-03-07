@@ -4,19 +4,16 @@
 
 from typing import Any, Callable
 
+import pandas as pd
+
 from cuiman.api.opener import JobResultOpenContext, JobResultOpenError
 
 from .base import BasePathOpener
 
 
-class PandasDataFrameOpener(BasePathOpener):
+class PandasDataFrameOpenerImpl(BasePathOpener):
     def accept_data_type(self, data_type: type) -> bool:
-        try:
-            import pandas as pd
-
-            return data_type is pd.DataFrame
-        except ImportError:
-            return False
+        return data_type is pd.DataFrame
 
     def accept_media_type(self, media_type: str) -> bool:
         return media_type in self.media_type_readers
@@ -41,10 +38,6 @@ class PandasDataFrameOpener(BasePathOpener):
 
     @property
     def media_type_readers(self) -> dict[str, Callable]:
-        try:
-            import pandas as pd
-        except ImportError:
-            return {}
         return {
             "text/csv": pd.read_csv,
             "text/json": pd.read_json,
@@ -58,10 +51,6 @@ class PandasDataFrameOpener(BasePathOpener):
 
     @property
     def filename_ext_readers(self) -> dict[str, Callable]:
-        try:
-            import pandas as pd
-        except ImportError:
-            return {}
         return {
             ".csv": pd.read_csv,
             ".parquet": pd.read_parquet,
