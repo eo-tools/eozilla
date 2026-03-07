@@ -19,6 +19,7 @@ nav:
       - notebooks/cuiman-gui.ipynb
       # - notebooks/cuiman-api-airflow.ipynb
       - notebooks/cuiman-cli.ipynb
+      - notebooks/cuiman-openers.ipynb
     - CLI: cuiman/cli.md
     - API: cuiman/api.md
   - Wraptile:

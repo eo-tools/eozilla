@@ -47,6 +47,8 @@ panel = "*"
 watchfiles = "*"
 # Use cases testing
 dask = "*"
+geopandas = "*"
+pandas = "*"
 xarray = "*"
 zarr = "*"
 # Needed in /tools
