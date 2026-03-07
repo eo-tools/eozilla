@@ -2,13 +2,14 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-import xarray as xr
-
-from cuiman.api.opener.impl._xr import XarrayDatasetOpener
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import patch
 
+import xarray as xr
+
+from cuiman.api.opener.impl import XarrayDatasetOpener
 from gavicore.models import Link
+
 from .test_base import create_ctx
 
 zarr_link = Link(

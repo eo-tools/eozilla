@@ -4,9 +4,9 @@
 
 from abc import abstractmethod
 from functools import cached_property
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
-from importlib.util import find_spec
 
 from cuiman.api.opener import JobResultOpenContext, JobResultOpener
 

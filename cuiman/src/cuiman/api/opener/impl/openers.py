@@ -3,6 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 from cuiman.api.opener import JobResultOpener
+
 from .base import OptionalModuleOpener
 
 

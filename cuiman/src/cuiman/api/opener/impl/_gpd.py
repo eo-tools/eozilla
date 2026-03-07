@@ -29,7 +29,7 @@ class GeopandasDataFrameOpenerImpl(BasePathOpener):
         ctx: JobResultOpenContext,
     ) -> Any:
         # See if we need a special geopandas read function
-        read_x = self.media_type_readers.get(media_type)
+        read_x = self.media_type_readers.get(media_type) if media_type else None
         if read_x is None:
             read_x = self.filename_ext_readers.get(filename_ext)
         if read_x is not None:

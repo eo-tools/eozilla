@@ -8,16 +8,12 @@ import pytest
 
 from cuiman.api.config import ClientConfig
 from cuiman.api.opener import JobResultOpenContext
-from cuiman.api.opener.impl.base import (
-    BasePathOpener,
-    get_path_or_url,
-    get_filename_ext,
-)
+from cuiman.api.opener.impl.base import BasePathOpener
 from gavicore.models import (
-    JobResults,
     InlineOrRefValue,
-    Link,
     InlineValue,
+    JobResults,
+    Link,
 )
 
 
@@ -149,19 +145,24 @@ async def test_base_opener_open_job_result():
 
 def test_get_path_or_url():
     ctx = create_ctx(nc_link)
-    assert get_path_or_url(ctx) == "https://example.com/cube.nc?off=0x64ea"
+    assert (
+        BasePathOpener.get_path_or_url(ctx) == "https://example.com/cube.nc?off=0x64ea"
+    )
 
     ctx = create_ctx(int_value)
-    assert get_path_or_url(ctx) is None
+    assert BasePathOpener.get_path_or_url(ctx) is None
 
     ctx = create_ctx(InlineValue(root="regions.gpckg"))
-    assert get_path_or_url(ctx) == "regions.gpckg"
+    assert BasePathOpener.get_path_or_url(ctx) == "regions.gpckg"
 
     ctx = create_ctx(InlineValue(root={"path": "./dataset.zarr"}))
-    assert get_path_or_url(ctx) == "./dataset.zarr"
+    assert BasePathOpener.get_path_or_url(ctx) == "./dataset.zarr"
 
 
 def test_get_filename_ext():
-    assert get_filename_ext("https://example.com/cube.nc?off=0x64ea") == ".nc"
-    assert get_filename_ext("dataset.gpckg") == ".gpckg"
-    assert get_filename_ext("./data.set.zarr") == ".zarr"
+    assert (
+        BasePathOpener.get_filename_ext("https://example.com/cube.nc?off=0x64ea")
+        == ".nc"
+    )
+    assert BasePathOpener.get_filename_ext("dataset.gpckg") == ".gpckg"
+    assert BasePathOpener.get_filename_ext("./data.set.zarr") == ".zarr"

@@ -3,10 +3,9 @@
 #  https://opensource.org/license/apache-2-0.
 
 from .base import (
-    OptionalModuleOpener,
     BasePathOpener,
+    OptionalModuleOpener,
 )
-
 from .openers import (
     GeopandasDataFrameOpener,
     PandasDataFrameOpener,
@@ -14,6 +13,8 @@ from .openers import (
 )
 
 __all__ = [
+    "BasePathOpener",
+    "OptionalModuleOpener",
     "GeopandasDataFrameOpener",
     "PandasDataFrameOpener",
     "XarrayDatasetOpener",

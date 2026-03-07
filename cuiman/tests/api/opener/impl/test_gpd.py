@@ -2,13 +2,14 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-import geopandas as gpd
-
-from cuiman.api.opener.impl._gpd import GeopandasDataFrameOpener
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import patch
 
+import geopandas as gpd
+
+from cuiman.api.opener.impl import GeopandasDataFrameOpener
 from gavicore.models import Link
+
 from .test_base import create_ctx
 
 
