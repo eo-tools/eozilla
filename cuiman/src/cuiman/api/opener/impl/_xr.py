@@ -8,10 +8,10 @@ import xarray as xr
 
 from cuiman.api.opener import JobResultOpenContext
 
-from .base import BasePathOpener
+from .base import PathOpener
 
 
-class XarrayDatasetOpenerImpl(BasePathOpener):
+class XarrayDatasetOpenerImpl(PathOpener):
     def accept_data_type(self, data_type: type) -> bool:
         return data_type is xr.Dataset
 
@@ -21,12 +21,12 @@ class XarrayDatasetOpenerImpl(BasePathOpener):
     def accept_filename_ext(self, filename_ext: str) -> bool:
         return True
 
-    async def open_path_or_url(
+    async def open_path_like(
         self,
-        path_or_url: str,
+        path_like: str,
         filename_ext: str,
         media_type: str | None,
         ctx: JobResultOpenContext,
     ) -> Any:
         # Use xarray's generic read function
-        return xr.open_dataset(path_or_url, **ctx.options)
+        return xr.open_dataset(path_like, **ctx.options)

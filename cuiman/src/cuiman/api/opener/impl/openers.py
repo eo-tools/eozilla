@@ -8,27 +8,27 @@ from .base import OptionalModuleOpener
 
 
 class GeopandasDataFrameOpener(OptionalModuleOpener):
-    module_names = ("geopandas",)
+    required = ("geopandas",)
 
-    def create_implementing_opener(self) -> JobResultOpener:
+    def _create_implementing_opener(self) -> JobResultOpener:
         from ._gpd import GeopandasDataFrameOpenerImpl
 
         return GeopandasDataFrameOpenerImpl()
 
 
 class PandasDataFrameOpener(OptionalModuleOpener):
-    module_names = ("pandas",)
+    required = ("pandas",)
 
-    def create_implementing_opener(self) -> JobResultOpener:
+    def _create_implementing_opener(self) -> JobResultOpener:
         from ._pd import PandasDataFrameOpenerImpl
 
         return PandasDataFrameOpenerImpl()
 
 
 class XarrayDatasetOpener(OptionalModuleOpener):
-    module_names = ("xarray",)
+    required = ("xarray",)
 
-    def create_implementing_opener(self) -> JobResultOpener:
+    def _create_implementing_opener(self) -> JobResultOpener:
         from ._xr import XarrayDatasetOpenerImpl
 
         return XarrayDatasetOpenerImpl()
