@@ -16,9 +16,11 @@ class JobResultOpener(ABC):
 
     An opener implementation is free to use the information
     in the [context object](JobResultOpenContext) `ctx` passed to the
-    methods [accept()][accept] and [open()][open].
+    methods [accept_job_result()][accept_job_result]
+    and [open_job_result()][open_job_result].
     However, if `data_type` or `output_name` are provided, an
-    opener MUST be able to deal with them, otherwise [accept()][accept]
+    opener MUST be able to deal with them,
+    otherwise [accept_job_result()][accept_job_result]
     should return `False`.
     """
 

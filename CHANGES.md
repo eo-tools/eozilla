@@ -9,8 +9,8 @@ that eases working with the results of a process job:
     of a job. Both sync and async versions of the method are available in 
     `cuiman.Client` and `cuiman.AsyncClient`. 
   - Applications can customize how job results are opened by  
-    adding application-specific openers to an opener registry now available 
-    in the client configuration.
+    adding their application-specific openers using the new 
+    `register_job_result_opener(opener)` in class `cuiman.ClientConfig`.
   - Added a new `notebooks/cuiman-openers.ipynb`. 
   - Added a new section in Cuiman usage documentation.
   - Added some default openers for `xarray.Dataset`, 
