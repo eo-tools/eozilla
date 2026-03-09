@@ -15,7 +15,7 @@ that eases working with the results of a process job:
   - Added a new section in Cuiman usage documentation.
   - Added some default openers for `xarray.Dataset`, 
     `pandas.DataFrame`, and `geopandas.GeoDataFrame` 
-    given that respective job result is as link.
+    given that a respective job result is a link.
 
 ## Changes in version 0.0.9
 
