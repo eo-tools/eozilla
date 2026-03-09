@@ -13,6 +13,9 @@ that eases working with the results of a process job:
     `register_job_result_opener(opener)` in class `cuiman.ClientConfig`.
   - Added a new `notebooks/cuiman-openers.ipynb`. 
   - Added a new section in Cuiman usage documentation.
+  - Added some default openers for `xarray.Dataset`, 
+    `pandas.DataFrame`, and `geopandas.GeoDataFrame` 
+    given that a respective job result is a link.
 
 ## Changes in version 0.0.9
 

@@ -1,3 +1,7 @@
+#  Copyright (c) 2026 by the Eozilla team and contributors
+#  Permissions are hereby granted under the terms of the Apache 2.0 License:
+#  https://opensource.org/license/apache-2-0.
+
 from typing import Any
 
 import pytest
@@ -33,7 +37,7 @@ def test_initially_empty():
 def test_default():
     registry = JobResultOpenerRegistry.create_default()
     # Adjust here, once we've added some default openers
-    assert len(registry.opener_types) == 0
+    assert len(registry.opener_types) == 3
 
 
 def test_register():
