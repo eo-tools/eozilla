@@ -100,6 +100,91 @@ classDiagram
 
 ```
 
+## Eozilla Cuiman Client - API 
+
+### Job Result Openers
+
+```mermaid
+---
+config:
+    class:
+        hideEmptyMembersBox: true    
+---
+classDiagram
+    Client o..> "1" ClientConfig
+    ClientConfig o..> "1" JobResultOpenerRegistry
+    JobResultOpenerRegistry *..> "0 .. N" JobResultOpener 
+    JobResultOpener ..> JobResultOpenerContext: use
+    Client ..> JobResultOpenerContext: create
+
+    class JobResultOpener 
+    <<interface>> JobResultOpener
+
+    class JobResultOpener {
+      +is_usable()*
+      +accept_job_result(ctx)*
+      +open_job_result(ctx)*
+    }
+
+    class JobResultOpenerContext {
+      +job_id: str
+      +job_results: JobResults  
+      +data_type: type | None
+      +media_type: str | None
+    }
+
+    class Client {
+      +config ClientConfig
+      +open_job_result(job_id, ...)
+      +register_job_result_opener(opener_type)
+    }
+
+    class ClientConfig {
+      opener_registry: JobResultOpenerRegistry 
+      +default_config_class: type[ClientConfig]$
+    }
+
+    class JobResultOpenerRegistry {
+      +opener_types: list[type[JobResultOpener]]
+      +open_job_result(job_id, ...)
+      +register_job_result_opener(opener_type)
+    }
+    
+```
+
+### Implementation
+
+```mermaid
+---
+config:
+    class:
+        hideEmptyMembersBox: true
+---
+classDiagram
+    PathOpener --|> JobResultOpener
+    OptionalModuleOpener --|> JobResultOpener
+
+    class JobResultOpener 
+    <<interface>> JobResultOpener
+    
+    JobResultOpenerRegistry ..> "1" GeopandasGeoDataFrameOpener
+    JobResultOpenerRegistry ..> "1" PandasDataFrameOpener
+    JobResultOpenerRegistry ..> "1" XarrayDatasetOpener
+    
+    GeopandasGeoDataFrameOpener --|> OptionalModuleOpener
+    GeopandasGeoDataFrameOpener ..> GeopandasGeoDataFrameOpenerImpl : create and cache  
+    GeopandasGeoDataFrameOpenerImpl --|> PathOpener  
+
+    PandasDataFrameOpener --|> OptionalModuleOpener
+    PandasDataFrameOpener ..> PandasDataFrameOpenerImpl : create and cache    
+    PandasDataFrameOpenerImpl --|> PathOpener 
+
+    XarrayDatasetOpener --|> OptionalModuleOpener
+    XarrayDatasetOpener ..> XarrayDatasetOpenerImpl : create and cache    
+    XarrayDatasetOpenerImpl --|> PathOpener
+
+```
+
 ## Eozilla Cuiman Client - GUI
 
 Given here is the design used in package `cuiman.gui.component`.
