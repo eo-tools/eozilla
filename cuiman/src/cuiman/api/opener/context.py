@@ -1,7 +1,7 @@
 #  Copyright (c) 2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-from dataclasses import dataclass, field
+
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import BaseModel
@@ -20,8 +20,7 @@ if TYPE_CHECKING:
     from cuiman.api.config import ClientConfig
 
 
-@dataclass
-class JobResultOpenContext:
+class JobResultOpenContext(BaseModel):
     """The context around the results of a process job that allows opening
     the job results or a particular job result.
     Includes `job_results` of type [JobResults][JobResults] and the
@@ -57,7 +56,14 @@ class JobResultOpenContext:
     [open_result][JobResultOpener.open_result] method.
     """
 
-    options: dict[str, Any] = field(default_factory=lambda: {})
+    media_type: str | None = None
+    """The user-provided media type of the output produced.
+    If given, provides or overrides the output's media type.
+    Use [output_media_type][output_media_type] to make use of 
+    the effective media type.  
+    """
+
+    options: dict[str, Any] = {}
     """Opener-specific options."""
 
     @property
@@ -109,6 +115,8 @@ class JobResultOpenContext:
         a media type assigned.
         """
         value = self.output_value
+        if self._media_type is not None:
+            return self._media_type
         if isinstance(value, Link) and value.type:
             return value.type
         if isinstance(value, QualifiedValue) and value.mediaType:
