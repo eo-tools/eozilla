@@ -24,8 +24,8 @@ _UNSET_PROCESS_DESCRIPTION = ProcessDescription(id="_", version="0")
 
 def new_ctx(
     job_results: JobResults | None = None,
-    data_type: type | None = None,
     output_name: str | None = None,
+    data_type: type | None = None,
     outputs: list[str] | None = None,
     process_description: ProcessDescription | None = _UNSET_PROCESS_DESCRIPTION,
     **options: Any,
@@ -33,9 +33,11 @@ def new_ctx(
     return JobResultOpenContext(
         config=ClientConfig(api_url="http://localhost:9090"),
         job_id="982a04ee",
-        job_results=job_results
-        if job_results is not None
-        else JobResults(**DEFAULT_JOB_RESULTS),
+        job_results=(
+            job_results
+            if job_results is not None
+            else JobResults(**DEFAULT_JOB_RESULTS)
+        ),
         process_description=(
             process_description
             if process_description is not _UNSET_PROCESS_DESCRIPTION
@@ -50,8 +52,9 @@ def new_ctx(
                 else None,
             )
         ),
-        data_type=data_type,
         output_name=output_name,
+        data_type=data_type,
+        _media_type=None,
         options=options,
     )
 
@@ -99,6 +102,11 @@ def test_output_media_type():
     assert ctx_qualified_1.output_media_type == "application/zarr"
     assert ctx_link_1.output_media_type == "application/cog"
     assert ctx_inline_1.output_media_type is None
+
+    ctx = new_ctx()
+    assert ctx.output_media_type is None
+    ctx._media_type = "text/plain"
+    assert ctx.output_media_type == "text/plain"
 
 
 def test_output_qualified_value():

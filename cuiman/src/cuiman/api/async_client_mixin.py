@@ -74,8 +74,9 @@ class AsyncClientMixin(ABC):
     async def open_job_result(
         self,
         job_id: str,
-        data_type: type | None = None,
         output_name: str | None = None,
+        data_type: type | None = None,
+        media_type: str | None = None,
         poll_interval: float = DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
         timeout: float = DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
         **options: Any,
@@ -84,11 +85,14 @@ class AsyncClientMixin(ABC):
 
         Args:
             job_id: the job ID
+            output_name: the name of the output to be opened.
             data_type: the expected/desired data type to be returned.
                 If provided, the return value will be of that type.
                 If not provided, the return value will be the type
                 decided by the opener.
-            output_name: the name of the output to be opened.
+            media_type: the media type of the output produced.
+                Only needed, if the output does not provide its
+                media type or if its media type should be overridden.
             poll_interval: interval in seconds between job status polls.
                 Applies while job status is still "accepted" or "running".
             timeout: maximum time in seconds to wait for job completion.
@@ -125,8 +129,9 @@ class AsyncClientMixin(ABC):
             job_id=job_id,
             job_results=job_results,
             process_description=process_description,
-            data_type=data_type,
             output_name=output_name,
+            data_type=data_type,
+            _media_type=media_type,
             options=options,
         )
         return await open_job_result(ctx, *self.config.opener_registry.opener_types)

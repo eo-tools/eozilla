@@ -1,6 +1,7 @@
 #  Copyright (c) 2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
+
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -57,7 +58,14 @@ class JobResultOpenContext:
     [open_job_result()][JobResultOpener.open_job_result] method.
     """
 
-    options: dict[str, Any] = field(default_factory=lambda: {})
+    _media_type: str | None = None
+    """The user-provided media type of the output produced.
+    If given, provides or overrides the output's media type.
+    Use [output_media_type][output_media_type] to make use of 
+    the effective media type.  
+    """
+
+    options: dict[str, Any] = field(default_factory=dict)
     """Opener-specific options."""
 
     @property
@@ -109,6 +117,8 @@ class JobResultOpenContext:
         a media type assigned.
         """
         value = self.output_value
+        if self._media_type is not None:
+            return self._media_type
         if isinstance(value, Link) and value.type:
             return value.type
         if isinstance(value, QualifiedValue) and value.mediaType:

@@ -3,7 +3,14 @@
 #  https://opensource.org/license/apache-2-0.
 
 from pathlib import Path
-from typing import Annotated, Any, Callable, ClassVar, Optional, TypeAlias
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    ClassVar,
+    Optional,
+    TypeAlias,
+)
 
 import yaml
 from pydantic import Field, HttpUrl, field_validator
