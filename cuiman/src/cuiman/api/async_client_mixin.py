@@ -85,11 +85,14 @@ class AsyncClientMixin(ABC):
 
         Args:
             job_id: the job ID
+            output_name: the name of the output to be opened.
             data_type: the expected/desired data type to be returned.
                 If provided, the return value will be of that type.
                 If not provided, the return value will be the type
                 decided by the opener.
-            output_name: the name of the output to be opened.
+            media_type: the media type of the output produced.
+                Only needed, if the output does not provide its
+                media type or if its media type should be overridden.
             poll_interval: interval in seconds between job status polls.
                 Applies while job status is still "accepted" or "running".
             timeout: maximum time in seconds to wait for job completion.
@@ -126,8 +129,8 @@ class AsyncClientMixin(ABC):
             job_id=job_id,
             job_results=job_results,
             process_description=process_description,
-            data_type=data_type,
             output_name=output_name,
+            data_type=data_type,
             _media_type=media_type,
             options=options,
         )
