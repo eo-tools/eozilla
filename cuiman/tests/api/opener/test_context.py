@@ -54,7 +54,7 @@ def new_ctx(
         ),
         output_name=output_name,
         data_type=data_type,
-        media_type=None,
+        _media_type=None,
         options=options,
     )
 
@@ -105,7 +105,7 @@ def test_output_media_type():
 
     ctx = new_ctx()
     assert ctx.output_media_type is None
-    ctx.media_type = "text/plain"
+    ctx._media_type = "text/plain"
     assert ctx.output_media_type == "text/plain"
 
 

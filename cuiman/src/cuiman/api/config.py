@@ -3,7 +3,15 @@
 #  https://opensource.org/license/apache-2-0.
 
 from pathlib import Path
-from typing import Annotated, Any, Callable, ClassVar, Optional, TypeAlias
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    ClassVar,
+    Optional,
+    TypeAlias,
+    TYPE_CHECKING,
+)
 
 import yaml
 from pydantic import Field, HttpUrl, field_validator
@@ -14,6 +22,9 @@ from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 from .auth import AuthConfig
 from .defaults import DEFAULT_API_URL
 from .opener import JobResultOpener, JobResultOpenerRegistry
+
+if TYPE_CHECKING:
+    from cuiman.api.opener import JobResultOpenContext
 
 
 class ClientConfig(AuthConfig, BaseSettings):

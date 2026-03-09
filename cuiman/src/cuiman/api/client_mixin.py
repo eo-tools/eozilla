@@ -132,7 +132,7 @@ class ClientMixin(ABC):
             process_description=process_description,
             output_name=output_name,
             data_type=data_type,
-            media_type=media_type,
+            _media_type=media_type,
             options=options,
         )
         return run_sync(open_job_result, ctx, *self.config.opener_registry.opener_types)

@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import BaseModel
@@ -20,7 +21,8 @@ if TYPE_CHECKING:
     from cuiman.api.config import ClientConfig
 
 
-class JobResultOpenContext(BaseModel):
+@dataclass
+class JobResultOpenContext:
     """The context around the results of a process job that allows opening
     the job results or a particular job result.
     Includes `job_results` of type [JobResults][JobResults] and the
@@ -56,14 +58,14 @@ class JobResultOpenContext(BaseModel):
     [open_result][JobResultOpener.open_result] method.
     """
 
-    media_type: str | None = None
+    _media_type: str | None = None
     """The user-provided media type of the output produced.
     If given, provides or overrides the output's media type.
     Use [output_media_type][output_media_type] to make use of 
     the effective media type.  
     """
 
-    options: dict[str, Any] = {}
+    options: dict[str, Any] = field(default_factory=dict)
     """Opener-specific options."""
 
     @property
