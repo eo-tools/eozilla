@@ -47,7 +47,7 @@ class JobResultOpenContext:
     Name of the output that should be opened.
     If given, an opener must accept that name and be able to
     return a value of that name from the 
-    [open_result][JobResultOpener.open_result] method.
+    [open_job_result()][JobResultOpener.open_job_result] method.
     """
 
     data_type: type | None = None
@@ -55,7 +55,7 @@ class JobResultOpenContext:
     Data type of the output that should be opened.
     If given, an opener must accept that value and be able to
     return a value of that type from the 
-    [open_result][JobResultOpener.open_result] method.
+    [open_job_result()][JobResultOpener.open_job_result] method.
     """
 
     _media_type: str | None = None
