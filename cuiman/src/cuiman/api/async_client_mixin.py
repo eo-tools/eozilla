@@ -74,8 +74,9 @@ class AsyncClientMixin(ABC):
     async def open_job_result(
         self,
         job_id: str,
-        data_type: type | None = None,
         output_name: str | None = None,
+        data_type: type | None = None,
+        media_type: str | None = None,
         poll_interval: float = DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
         timeout: float = DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
         **options: Any,
@@ -127,6 +128,7 @@ class AsyncClientMixin(ABC):
             process_description=process_description,
             data_type=data_type,
             output_name=output_name,
+            _media_type=media_type,
             options=options,
         )
         return await open_job_result(ctx, *self.config.opener_registry.opener_types)

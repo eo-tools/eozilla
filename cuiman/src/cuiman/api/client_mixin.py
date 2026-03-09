@@ -75,9 +75,9 @@ class ClientMixin(ABC):
     def open_job_result(
         self,
         job_id: str,
-        media_type: str | None = None,
         output_name: str | None = None,
         data_type: type | None = None,
+        media_type: str | None = None,
         poll_interval: float = DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
         timeout: float = DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
         **options: Any,
