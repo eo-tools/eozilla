@@ -13,6 +13,7 @@ from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 
 from .auth import AuthConfig
 from .defaults import DEFAULT_API_URL
+from .opener import JobResultOpener, JobResultOpenerRegistry
 
 
 class ClientConfig(AuthConfig, BaseSettings):
@@ -43,6 +44,18 @@ class ClientConfig(AuthConfig, BaseSettings):
     """
 
     return_type_map: ClassVar[dict[type, type]] = {}
+    """
+    A mapping from a hard-coded client return type to a 
+    custom return type. The hard-coded return type is usually a 
+    model class from `gavicore.models`. The custom return type 
+    typically extends the model class.  
+    Designed to be configured by library clients.
+    The default mapping is empty.
+    """
+
+    opener_registry: ClassVar[JobResultOpenerRegistry] = (
+        JobResultOpenerRegistry.create_default()
+    )
     """
     A mapping from a hard-coded client return type to a 
     custom return type. The hard-coded return type is usually a 
@@ -242,6 +255,19 @@ class ClientConfig(AuthConfig, BaseSettings):
                     if p.name == "level" and p.value == ["advanced"]:
                         return True
         return False
+
+    def register_job_result_opener(
+        self, opener_type: type[JobResultOpener]
+    ) -> Callable[[], None]:
+        """Register a job result opener.
+
+        Args:
+            opener_type: The type of the opener to be registered.
+
+        Returns:
+            A function that can be called to unregister the opener.
+        """
+        return self.opener_registry.register(opener_type)
 
 
 # Set Eozilla defaults.
