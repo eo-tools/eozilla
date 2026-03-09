@@ -10,7 +10,6 @@ from typing import (
     ClassVar,
     Optional,
     TypeAlias,
-    TYPE_CHECKING,
 )
 
 import yaml
@@ -22,9 +21,6 @@ from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 from .auth import AuthConfig
 from .defaults import DEFAULT_API_URL
 from .opener import JobResultOpener, JobResultOpenerRegistry
-
-if TYPE_CHECKING:
-    from cuiman.api.opener import JobResultOpenContext
 
 
 class ClientConfig(AuthConfig, BaseSettings):
