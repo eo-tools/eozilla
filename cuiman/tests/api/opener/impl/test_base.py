@@ -11,7 +11,6 @@ from cuiman.api.config import ClientConfig
 from cuiman.api.opener import JobResultOpenContext, JobResultOpener
 from cuiman.api.opener.impl.base import OptionalModuleOpener, PathOpener
 from gavicore.models import (
-    InlineOrRefValue,
     InlineValue,
     JobResults,
     Link,
@@ -59,12 +58,12 @@ class PathTestOpener(PathOpener):
 
 
 def create_ctx(
-    return_value: InlineValue | Link,
+    return_value: Link | InlineValue,
 ):
     return JobResultOpenContext(
         config=ClientConfig(api_url="https://example.com/"),
         job_id="job_10",
-        job_results=JobResults(**{"return_value": InlineOrRefValue(root=return_value)}),
+        job_results=JobResults(**{"return_value": return_value}),
         data_type=int,
     )
 
@@ -79,7 +78,7 @@ nc_link = Link(
     type="application/x-netcdf",
 )
 
-int_value = InlineValue(root=45763)
+int_value = 45763
 
 
 class OptionalModuleOpenerTest(IsolatedAsyncioTestCase):
@@ -189,10 +188,10 @@ class PathOpenerTest(IsolatedAsyncioTestCase):
         ctx = create_ctx(int_value)
         self.assertIsNone(PathOpener.get_path_like(ctx))
 
-        ctx = create_ctx(InlineValue(root="regions.gpckg"))
+        ctx = create_ctx("regions.gpckg")
         self.assertEqual("regions.gpckg", PathOpener.get_path_like(ctx))
 
-        ctx = create_ctx(InlineValue(root={"path": "./dataset.zarr"}))
+        ctx = create_ctx({"path": "./dataset.zarr"})
         self.assertEqual("./dataset.zarr", PathOpener.get_path_like(ctx))
 
     def test_get_filename_ext(self):
