@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import date
 from enum import Enum
-from typing import Annotated, Any, Optional, TypeAlias, Union
+from typing import Annotated, Any, TypeAlias, Union
 
 from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 
@@ -29,54 +29,54 @@ class Schema(BaseModel):
         extra="forbid",
     )
     # general
-    type: Optional[DataType] = None
-    title: Optional[str] = None
-    description: Optional[str] = None
-    enum: Optional[list] = Field(None, min_length=1)
-    default: Optional[Any] = None
-    nullable: Optional[bool] = False
-    readOnly: Optional[bool] = False
-    writeOnly: Optional[bool] = False
-    example: Optional[Any] = None
-    examples: Optional[Any] = None
-    deprecated: Optional[bool] = False
-    field_ref: Optional[str] = Field(None, alias="$ref")
+    type: DataType | None = None
+    title: str | None = None
+    description: str | None = None
+    enum: list | None = Field(None, min_length=1)
+    default: Any | None = None
+    nullable: bool | None = False
+    readOnly: bool | None = False
+    writeOnly: bool | None = False
+    example: Any | None = None
+    examples: Any | None = None
+    deprecated: bool | None = False
+    field_ref: str | None = Field(None, alias="$ref")
     # type "number" and "integer"
-    minimum: Optional[float] = None
-    maximum: Optional[float] = None
-    exclusiveMinimum: Optional[bool] = False
-    exclusiveMaximum: Optional[bool] = False
-    multipleOf: Optional[float] = Field(None, gt=0.0)
+    minimum: float | None = None
+    maximum: float | None = None
+    exclusiveMinimum: bool | None = False
+    exclusiveMaximum: bool | None = False
+    multipleOf: float | None = Field(None, gt=0.0)
     # type "string"
-    minLength: Optional[int] = Field(0, ge=0)
-    maxLength: Optional[int] = Field(None, ge=0)
-    format: Optional[str] = None
-    pattern: Optional[str] = None
-    contentMediaType: Optional[str] = None
-    contentEncoding: Optional[str] = None
-    contentSchema: Optional[str] = None
+    minLength: int | None = Field(0, ge=0)
+    maxLength: int | None = Field(None, ge=0)
+    format: str | None = None
+    pattern: str | None = None
+    contentMediaType: str | None = None
+    contentEncoding: str | None = None
+    contentSchema: str | None = None
     # type "array"
-    items: Optional[Union[list[Schema], Schema]] = None
-    minItems: Optional[int] = Field(0, ge=0)
-    maxItems: Optional[int] = Field(None, ge=0)
-    uniqueItems: Optional[bool] = False
+    items: list[Schema] | Schema | None = None
+    minItems: int | None = Field(0, ge=0)
+    maxItems: int | None = Field(None, ge=0)
+    uniqueItems: bool | None = False
     # type "object"
-    properties: Optional[dict[str, Schema]] = None
-    required: Optional[list[str]] = Field(None, min_length=1)
-    minProperties: Optional[int] = Field(0, ge=0)
-    maxProperties: Optional[int] = Field(None, ge=0)
-    additionalProperties: Optional[Union[Schema, bool]] = True
+    properties: dict[str, Schema] | None = None
+    required: list[str] | None = Field(None, min_length=1)
+    minProperties: int | None = Field(0, ge=0)
+    maxProperties: int | None = Field(None, ge=0)
+    additionalProperties: Union[Schema, bool] | None = True
     # operators
-    not_: Optional[Schema] = Field(None, alias="not")
-    allOf: Optional[list[Schema]] = None
-    oneOf: Optional[list[Schema]] = None
-    anyOf: Optional[list[Schema]] = None
-    discriminator: Optional[Discriminator] = None
+    not_: Schema | None = Field(None, alias="not")
+    allOf: list[Schema] | None = None
+    oneOf: list[Schema] | None = None
+    anyOf: list[Schema] | None = None
+    discriminator: Discriminator | None = None
 
 
 class Discriminator(BaseModel):
-    propertyName: Optional[str] = Field(None, min_length=1)
-    mapping: Optional[dict[str, Schema]] = None
+    propertyName: str | None = Field(None, min_length=1)
+    mapping: dict[str, Schema] | None = None
 
 
 # ---------------------------------------------------------------------
@@ -86,10 +86,10 @@ class Discriminator(BaseModel):
 
 class Link(BaseModel):
     href: str
-    rel: Optional[str] = Field(None, examples=["service"])
-    type: Optional[str] = Field(None, examples=["application/json"])
-    hreflang: Optional[str] = Field(None, examples=["en"])
-    title: Optional[str] = None
+    rel: str | None = Field(None, examples=["service"])
+    type: str | None = Field(None, examples=["application/json"])
+    hreflang: str | None = Field(None, examples=["en"])
+    title: str | None = None
 
 
 # ---------------------------------------------------------------------
@@ -98,8 +98,8 @@ class Link(BaseModel):
 
 
 class Capabilities(BaseModel):
-    title: Optional[str] = Field(None, examples=["Example processing server"])
-    description: Optional[str] = Field(
+    title: str | None = Field(None, examples=["Example processing server"])
+    description: str | None = Field(
         None,
         examples=["Example server implementing the OGC API - Processes 1.0 Standard"],
     )
@@ -117,7 +117,7 @@ class CRS(Enum):
 
 class Bbox(BaseModel):
     bbox: list[float] = Field(..., max_length=4, min_length=4)
-    crs: Optional[CRS] = CRS.CRS84
+    crs: CRS | None = CRS.CRS84
 
 
 InlineValue: TypeAlias = Union[
@@ -137,32 +137,32 @@ InlineValue: TypeAlias = Union[
 
 
 class Metadata(BaseModel):
-    title: Optional[str] = None
-    role: Optional[str] = None
-    href: Optional[str] = None
+    title: str | None = None
+    role: str | None = None
+    href: str | None = None
 
 
 class AdditionalParameter(BaseModel):
     name: str
-    value: list[Union[str, float, int, list[dict[str, Any]], dict[str, Any]]]
+    value: list[str | float | int | list[dict[str, Any]] | dict[str, Any]]
 
 
 class AdditionalParameters(Metadata):
-    parameters: Optional[list[AdditionalParameter]] = None
+    parameters: list[AdditionalParameter] | None = None
 
 
 class DescriptionType(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    keywords: Optional[list[str]] = None
-    metadata: Optional[list[Metadata]] = None
-    additionalParameters: Optional[AdditionalParameters] = None
+    title: str | None = None
+    description: str | None = None
+    keywords: list[str] | None = None
+    metadata: list[Metadata] | None = None
+    additionalParameters: AdditionalParameters | None = None
 
 
 class Format(BaseModel):
-    mediaType: Optional[str] = None
-    encoding: Optional[str] = None
-    schema_: Optional[Union[AnyUrl, Schema]] = Field(None, alias="schema")
+    mediaType: str | None = None
+    encoding: str | None = None
+    schema_: Union[AnyUrl, Schema] | None = Field(None, alias="schema")
 
 
 # ---------------------------------------------------------------------
@@ -175,8 +175,8 @@ class MaxOccurs(Enum):
 
 
 class InputDescription(DescriptionType):
-    minOccurs: Optional[int] = 1
-    maxOccurs: Optional[Union[int, MaxOccurs]] = None
+    minOccurs: int | None = 1
+    maxOccurs: Union[int, MaxOccurs] | None = None
     schema_: Schema = Field(..., alias="schema")
 
 
@@ -192,9 +192,9 @@ class TransmissionMode(Enum):
 class ProcessSummary(DescriptionType):
     id: str
     version: str
-    jobControlOptions: Optional[list[JobControlOptions]] = None
-    outputTransmission: Optional[list[TransmissionMode]] = None
-    links: Optional[list[Link]] = None
+    jobControlOptions: list[JobControlOptions] | None = None
+    outputTransmission: list[TransmissionMode] | None = None
+    links: list[Link] | None = None
 
 
 class ProcessList(BaseModel):
@@ -203,13 +203,13 @@ class ProcessList(BaseModel):
 
 
 class ProcessDescription(ProcessSummary):
-    inputs: Optional[dict[str, InputDescription]] = None
-    outputs: Optional[dict[str, OutputDescription]] = None
+    inputs: dict[str, InputDescription] | None = None
+    outputs: dict[str, OutputDescription] | None = None
 
 
 class Output(BaseModel):
-    format: Optional[Format] = None
-    transmissionMode: Optional[TransmissionMode] = TransmissionMode.value
+    format: Format | None = None
+    transmissionMode: TransmissionMode | None = TransmissionMode.value
 
 
 class ResponseType(Enum):
@@ -226,16 +226,16 @@ class Subscriber(BaseModel):
     is not listed in the conformance declaration under `/conformance`.
     """
 
-    successUri: Optional[AnyUrl] = None
-    inProgressUri: Optional[AnyUrl] = None
-    failedUri: Optional[AnyUrl] = None
+    successUri: AnyUrl | None = None
+    inProgressUri: AnyUrl | None = None
+    failedUri: AnyUrl | None = None
 
 
 class ProcessRequest(BaseModel):
-    inputs: Optional[dict[str, Any]] = None
-    outputs: Optional[dict[str, Output]] = None
-    response: Optional[ResponseType] = ResponseType.raw
-    subscriber: Optional[Subscriber] = None
+    inputs: dict[str, Any] | None = None
+    outputs: dict[str, Output] | None = None
+    response: ResponseType | None = ResponseType.raw
+    subscriber: Subscriber | None = None
 
 
 # ---------------------------------------------------------------------
@@ -266,20 +266,20 @@ class JobInfo(BaseModel):
         extra="allow",
     )
 
-    processID: Optional[str] = None
+    processID: str | None = None
     type: JobType
     jobID: str
     status: JobStatus
-    message: Optional[str] = None
-    created: Optional[AwareDatetime] = None
-    started: Optional[AwareDatetime] = None
-    finished: Optional[AwareDatetime] = None
-    updated: Optional[AwareDatetime] = None
+    message: str | None = None
+    created: AwareDatetime | None = None
+    started: AwareDatetime | None = None
+    finished: AwareDatetime | None = None
+    updated: AwareDatetime | None = None
     # noinspection Pydantic
     progress: Annotated[int | None, Field(None, ge=0, le=100)] = None
-    links: Optional[list[Link]] = None
+    links: list[Link] | None = None
     # --- Enhancements to the standard
-    traceback: Optional[list[str]] = None
+    traceback: list[str] | None = None
 
 
 class JobList(BaseModel):
@@ -291,12 +291,12 @@ class QualifiedValue(Format):
     value: InlineValue
 
 
-InlineOrRefValue: TypeAlias = Link | QualifiedValue | InlineValue
+JobResult: TypeAlias = Link | QualifiedValue | InlineValue
 
 
-# JobResults: TypeAlias = dict[str, InlineOrRefValue]
-class JobResults(RootModel[Optional[dict[str, InlineOrRefValue]]]):
-    root: Optional[dict[str, InlineOrRefValue]] = None
+# noinspection PyTypeChecker
+class JobResults(RootModel[dict[str, JobResult] | None]):
+    root: dict[str, JobResult] | None = None
 
 
 # ---------------------------------------------------------------------
@@ -314,12 +314,12 @@ class ApiError(BaseModel):
     )
 
     type: str
-    title: Optional[str] = None
-    status: Optional[int] = None
-    detail: Optional[str] = None
-    instance: Optional[str] = None
+    title: str | None = None
+    status: int | None = None
+    detail: str | None = None
+    instance: str | None = None
     # --- Enhancements to the standard
-    traceback: Optional[list[str]] = None
+    traceback: list[str] | None = None
 
 
 Format.model_rebuild()
