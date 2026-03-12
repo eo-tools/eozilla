@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, TypeVar
 from pydantic import BaseModel
 
 from gavicore.models import (
-    InlineOrRefValue,
     InlineValue,
     JobResults,
     Link,
@@ -90,9 +89,7 @@ class JobResultOpenContext:
         results = self.job_results.root
         if isinstance(results, dict):
             output_name = _ensure_output_name(self.output_name, results)
-            inline_or_ref_value = results.get(output_name)
-            if isinstance(inline_or_ref_value, InlineOrRefValue):
-                return inline_or_ref_value.root
+            return results.get(output_name)
         return None
 
     @property
@@ -149,9 +146,9 @@ def _to_model_instance(
     # into model instances.
     raw_value: Any = None
     if isinstance(value, QualifiedValue):
-        raw_value = value.value.model_dump()
-    elif isinstance(value, InlineValue):
-        raw_value = value.root
+        raw_value = value.model_dump().get("value")
+    else:
+        raw_value = value
     if isinstance(raw_value, dict) and all(r in raw_value for r in required):
         try:
             return model_cls(**raw_value)

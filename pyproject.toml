@@ -278,14 +278,17 @@ cmd = "mypy ."
 
 [tool.pixi.tasks.generate]
 depends-on = [
-    "gen-models",
+    # We no longer generate models
+    # "gen-models",
     "gen-server",
     "gen-client",
     "gen-cli-docs",
 ]
 
+# Use with caution,
+# we no longer use generated models
 [tool.pixi.tasks.gen-models]
-cmd = "python -m tools.gen_models"
+cmd = "echo 'WARNING: We no longer use generated models' && python -m tools.gen_models"
 
 [tool.pixi.tasks.gen-server]
 cmd = "python -m tools.gen_server"

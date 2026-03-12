@@ -8,7 +8,6 @@ from typing import Any
 from cuiman import ClientConfig
 from cuiman.api.opener import JobResultOpenContext
 from gavicore.models import (
-    InlineValue,
     JobResults,
     Link,
     OutputDescription,
@@ -60,10 +59,10 @@ def new_ctx(
 
 
 qualified_value = QualifiedValue(
-    mediaType="application/zarr", value=InlineValue(root="file://./test.zarr")
+    mediaType="application/zarr", value="file://./test.zarr"
 )
 link_value = Link(type="application/cog", href="file://./test.tif")
-inline_value = InlineValue(root="file://./test.nc")
+inline_value = "file://./test.nc"
 
 ctx_qualified_1 = new_ctx(
     job_results=JobResults(**{"a": qualified_value}), output_name=None
@@ -124,21 +123,21 @@ def test_output_link():
 def test_output_link_fom_inline_value():
     link_data = {"href": "s3://xcube/test.zarr", "type": "application/zarr"}
     ctx = new_ctx(
-        job_results=JobResults(**{"a": InlineValue(root=link_data)}),
+        job_results=JobResults(**{"a": link_data}),
     )
     assert ctx.output_link == Link(**link_data)
 
     # missing "href"
     link_data = {"path": "s3://xcube/test.zarr", "type": "application/zarr"}
     ctx = new_ctx(
-        job_results=JobResults(**{"a": InlineValue(root=link_data)}),
+        job_results=JobResults(**{"a": link_data}),
     )
     assert ctx.output_link is None
 
     # "href" of wong type
     link_data = {"href": 137, "type": "application/zarr"}
     ctx = new_ctx(
-        job_results=JobResults(**{"a": InlineValue(root=link_data)}),
+        job_results=JobResults(**{"a": link_data}),
     )
     assert ctx.output_link is None
 

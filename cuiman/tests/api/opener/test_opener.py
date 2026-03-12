@@ -8,7 +8,6 @@ from cuiman.api.opener import (
     JobResultOpenError,
 )
 from cuiman.api.opener.opener import open_job_result
-from gavicore.models import InlineOrRefValue, InlineValue
 
 from .test_context import new_ctx
 
@@ -77,17 +76,18 @@ async def test_open_job_result_ok():
     assert await open_job_result(ctx, MyGoodOpener) == ctx.job_results.root
 
     ctx = new_ctx(data_type=dict, output_name="b")
-    assert await open_job_result(ctx, MyGoodOpener) == InlineOrRefValue(
-        InlineValue(2.5)
-    )
+    assert await open_job_result(ctx, MyGoodOpener) == 2.5
 
 
 @pytest.mark.asyncio
 async def test_open_job_result_ok_others_failing():
     ctx = new_ctx(data_type=dict, output_name="b")
-    assert await open_job_result(
-        ctx, MyAcceptRaisesOpener, MyIsUsableRaisesOpener, MyGoodOpener
-    ) == InlineOrRefValue(InlineValue(2.5))
+    assert (
+        await open_job_result(
+            ctx, MyAcceptRaisesOpener, MyIsUsableRaisesOpener, MyGoodOpener
+        )
+        == 2.5
+    )
 
 
 @pytest.mark.asyncio
