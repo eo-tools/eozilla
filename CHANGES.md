@@ -24,6 +24,11 @@ be more user-friendly (#71):
   - `InlineValue` is now a simple type alias instead of a `pydantic.RootModel`.
   - Same for `InlineValueOrRef` which has also been renamed to `JobResult`.
   - Replaced type of optional fields `Optional[T]` by `T | None`.
+  - The following models are now extendable, e.g., using `"x-"` prefixed fields:
+    - `gavicore.models.InputDescription` (e.g., extra "x-ui")
+    - `gavicore.models.OutputDescription` (e.g., extra "x-ui")
+    - `gavicore.models.JobStatus`  (e.g., extra "x-traceback")
+    - `gavicore.models.ApiError`  (e.g., extra "x-traceback")
 
 
 ## Changes in version 0.0.9
