@@ -7,7 +7,7 @@ from typing import TypeAlias, Literal
 import pydantic
 from pydantic import ConfigDict
 
-from gavicore.models import InputDescription, OutputDescription
+from gavicore.models import InputDescription, OutputDescription, DescriptionType
 
 DefaultWidget: TypeAlias = Literal[
     "checkbox",
@@ -51,23 +51,40 @@ class UIFieldInfo(pydantic.BaseModel):
     @classmethod
     def from_input_description(
         cls,
-        input_description: InputDescription,
-    ) -> "UIField":
+        name: str,
+        description: InputDescription,
+    ) -> "UIFieldInfo":
         """Extract a UI-field from the input description."""
-        return _from_input_description(input_description)
+        return _from_input_description(name, description)
 
     @classmethod
     def from_output_description(
         cls,
-        output_description: OutputDescription,
-    ) -> "UIField":
+        name: str,
+        description: OutputDescription,
+    ) -> "UIFieldInfo":
         """Extract a UI-field from the input description."""
-        return _from_output_description(output_description)
+        return _from_output_description(name, description)
 
 
-def _from_input_description(input_description: InputDescription) -> UIFieldInfo:
+def _from_input_description(
+    input_name: str, input_description: InputDescription
+) -> UIFieldInfo:
     return UIFieldInfo()
 
 
-def _from_output_description(output_description: OutputDescription) -> UIFieldInfo:
+def _from_output_description(
+    output_name: str, output_description: OutputDescription
+) -> UIFieldInfo:
+    return UIFieldInfo()
+
+
+def _parse_from_description(name: str, description: DescriptionType) -> UIFieldInfo:
+    description_dict = description.model_dump()
+    schema_dict = description_dict.get("schema") or {}
+    ui_dict = any(description_dict.get("x-ui") or {}
+
+    for field_name, field_info in description.model_fields.items():
+        field_value = field_info.get("value") or field_info.get("default")
+
     return UIFieldInfo()

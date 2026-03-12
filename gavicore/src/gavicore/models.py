@@ -182,6 +182,10 @@ class AdditionalParameters(Metadata):
 
 
 class DescriptionType(BaseModel):
+    model_config = ConfigDict(
+        extra="allow",
+    )
+
     title: Optional[str] = None
     description: Optional[str] = None
     keywords: Optional[list[str]] = None
@@ -234,7 +238,7 @@ class Discriminator(BaseModel):
 
 class Schema(BaseModel):
     model_config = ConfigDict(
-        extra="forbid",
+        extra="allow",
     )
     field_ref: Optional[str] = Field(None, alias="$ref")
     title: Optional[str] = None
