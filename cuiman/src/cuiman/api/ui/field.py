@@ -2,14 +2,17 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import TypeAlias, Literal
+from typing import Any, Literal, TypeAlias
 
 import pydantic
 from pydantic import ConfigDict
 
-from gavicore.models import InputDescription, OutputDescription, DescriptionType
+from gavicore.models import DescriptionType, InputDescription, OutputDescription
 
-DefaultWidget: TypeAlias = Literal[
+UI_KEYS = ["x-ui", "ui", "xUI", "xUi"]
+UI_KEY_PREFIXES = [f"{k}:" for k in UI_KEYS]
+
+UIFieldWidget: TypeAlias = Literal[
     "checkbox",
     "password",
     "number",
@@ -35,16 +38,18 @@ class UIFieldInfo(pydantic.BaseModel):
         extra="allow",
     )
 
-    widget: DefaultWidget | str | None = None
-    label: str | None = None
+    name: str
+    widget: UIFieldWidget | str | None = None
+    title: str | None = None
     description: str | None = None
     tooltip: str | None = None
     placeholder: str | None = None
     group: str | None = None
     order: int | str | None = None
     advanced: bool | None = None
+    required: bool | None = None
     password: bool | None = None
-    # For slider, they default to values from JSON schema
+    # For slider, the default to values from JSON schema
     minimum: int | float | None = None
     maximum: int | float | None = None
 
@@ -55,7 +60,7 @@ class UIFieldInfo(pydantic.BaseModel):
         description: InputDescription,
     ) -> "UIFieldInfo":
         """Extract a UI-field from the input description."""
-        return _from_input_description(name, description)
+        return _ui_field_info_from_input_description(name, description)
 
     @classmethod
     def from_output_description(
@@ -63,28 +68,72 @@ class UIFieldInfo(pydantic.BaseModel):
         name: str,
         description: OutputDescription,
     ) -> "UIFieldInfo":
-        """Extract a UI-field from the input description."""
-        return _from_output_description(name, description)
+        """Extract a UI-field from the output description."""
+        return _ui_field_info_from_output_description(name, description)
 
 
-def _from_input_description(
-    input_name: str, input_description: InputDescription
+def _ui_field_info_from_input_description(
+    name: str,
+    description: InputDescription,
 ) -> UIFieldInfo:
-    return UIFieldInfo()
+    return _ui_field_info_from_description(name, description)
 
 
-def _from_output_description(
-    output_name: str, output_description: OutputDescription
+def _ui_field_info_from_output_description(
+    name: str,
+    description: OutputDescription,
 ) -> UIFieldInfo:
-    return UIFieldInfo()
+    return _ui_field_info_from_description(name, description)
 
 
-def _parse_from_description(name: str, description: DescriptionType) -> UIFieldInfo:
-    description_dict = description.model_dump()
+def _ui_field_info_from_description(
+    name: str, description: DescriptionType
+) -> UIFieldInfo:
+    description_dict = description.model_dump(
+        exclude_none=True,
+        exclude_defaults=True,
+        exclude_unset=True,
+        by_alias=True,
+    )
     schema_dict = description_dict.get("schema") or {}
-    ui_dict = any(description_dict.get("x-ui") or {}
 
-    for field_name, field_info in description.model_fields.items():
-        field_value = field_info.get("value") or field_info.get("default")
+    # later override earlier
+    sources = [schema_dict, description_dict]
+    ui_props: dict[str, Any] = {}
+    for source in sources:
+        # update properties in ui_dict by yet unset UIFieldInfo values
+        _update_ui_props_from_field_props(source, ui_props)
+        # update properties in ui_dict from UI object with UI properties
+        _update_ui_props_from_ui_object(source, UI_KEYS, ui_props)
+        # update properties in ui_dict from values of prefixed UI properties
+        _update_ui_props_from_prefixed_ui_keys(source, UI_KEY_PREFIXES, ui_props)
 
-    return UIFieldInfo()
+    return UIFieldInfo(name=name, **ui_props)
+
+
+def _update_ui_props_from_field_props(
+    source: dict[str, Any], ui_props: dict[str, Any]
+) -> None:
+    for field_name, _field_info in UIFieldInfo.model_fields.items():
+        if field_name in source:
+            ui_props[field_name] = source[field_name]
+
+
+def _update_ui_props_from_ui_object(
+    source: dict[str, Any], ui_keys: list[str], ui_props: dict[str, Any]
+) -> None:
+    for k in ui_keys:
+        v = source.get(k)
+        if isinstance(v, dict):
+            ui_props.update(v)
+
+
+def _update_ui_props_from_prefixed_ui_keys(
+    source: dict[str, Any], ui_key_prefixes: list[str], ui_props: dict[str, Any]
+) -> None:
+    def extract_extras(d: dict[str, Any], p: str) -> dict[str, Any]:
+        return {k[len(p) :]: v for k, v in d.items() if k.startswith(p)}
+
+    for prefix in ui_key_prefixes:
+        extras = extract_extras(source, prefix)
+        ui_props.update(extras)

@@ -8,19 +8,162 @@ from unittest import TestCase
 import pydantic
 
 from cuiman.api.ui import UIFieldInfo
-from gavicore.models import InputDescription, OutputDescription
+from gavicore.models import InputDescription, OutputDescription, Schema
 
 
 class FromInputDescriptionTest(TestCase):
-    def test_empty_input(self):
-        field_info = UIFieldInfo.from_input_description(InputDescription(schema={}))
-        self.assertEqual(UIFieldInfo(), field_info)
+    def test_precedence(self):
+        _assert_source_precedence(self, InputDescription)
 
 
 class FromOutputDescriptionTest(TestCase):
-    def test_empty_output(self):
-        field_info = UIFieldInfo.from_output_description(OutputDescription(schema={}))
-        self.assertEqual(UIFieldInfo(), field_info)
+    def test_precedence(self):
+        _assert_source_precedence(self, OutputDescription)
+
+
+def _assert_source_precedence(
+    test: TestCase, description_cls: type[InputDescription] | type[OutputDescription]
+):
+    _assert_description(
+        test,
+        description_cls,
+        description_props={
+            "title": "The threshold D.1",
+            "x-ui": {"title": "The threshold D.2"},
+            "x-ui:title": "The threshold D.3",
+        },
+        schema_props={
+            "title": "The threshold S.1",
+            "x-ui": {"title": "The threshold S.2"},
+            "x-ui:title": "The threshold S.3",
+        },
+        expected_props={"title": "The threshold D.3"},
+    )
+
+    _assert_description(
+        test,
+        description_cls,
+        description_props={
+            "title": "The threshold D.1",
+            "x-ui": {"title": "The threshold D.2"},
+            # "x-ui:title": "The threshold D.3",
+        },
+        schema_props={
+            "title": "The threshold S.1",
+            "x-ui": {"title": "The threshold S.2"},
+            "x-ui:title": "The threshold S.3",
+        },
+        expected_props={"title": "The threshold D.2"},
+    )
+
+    _assert_description(
+        test,
+        description_cls,
+        description_props={
+            "title": "The threshold D.1",
+            # "x-ui": {"title": "The threshold D.2"},
+            # "x-ui:title": "The threshold D.3",
+        },
+        schema_props={
+            "title": "The threshold S.1",
+            "x-ui": {"title": "The threshold S.2"},
+            "x-ui:title": "The threshold S.3",
+        },
+        expected_props={"title": "The threshold D.1"},
+    )
+
+    _assert_description(
+        test,
+        description_cls,
+        description_props={
+            # "title": "The threshold D.1",
+            # "x-ui": {"title": "The threshold D.2"},
+            # "x-ui:title": "The threshold D.3",
+        },
+        schema_props={
+            "title": "The threshold S.1",
+            "x-ui": {"title": "The threshold S.2"},
+            "x-ui:title": "The threshold S.3",
+        },
+        expected_props={"title": "The threshold S.3"},
+    )
+
+    _assert_description(
+        test,
+        description_cls,
+        description_props={
+            # "title": "The threshold D.1",
+            # "x-ui": {"title": "The threshold D.2"},
+            # "x-ui:title": "The threshold D.3",
+        },
+        schema_props={
+            "title": "The threshold S.1",
+            "x-ui": {"title": "The threshold S.2"},
+            # "x-ui:title": "The threshold S.3",
+        },
+        expected_props={"title": "The threshold S.2"},
+    )
+
+    _assert_description(
+        test,
+        description_cls,
+        description_props={
+            # "title": "The threshold D.1",
+            # "x-ui": {"title": "The threshold D.2"},
+            # "x-ui:title": "The threshold D.3",
+        },
+        schema_props={
+            "title": "The threshold S.1",
+            # "x-ui": {"title": "The threshold S.2"},
+            # "x-ui:title": "The threshold S.3",
+        },
+        expected_props={"title": "The threshold S.1"},
+    )
+
+    _assert_description(
+        test,
+        description_cls,
+        description_props={
+            # "title": "The threshold D.1",
+            # "x-ui": {"title": "The threshold D.2"},
+            # "x-ui:title": "The threshold D.3",
+        },
+        schema_props={
+            # "title": "The threshold S.1",
+            # "x-ui": {"title": "The threshold S.2"},
+            # "x-ui:title": "The threshold S.3",
+        },
+        expected_props={},
+    )
+
+
+def _assert_description(
+    test: TestCase,
+    description_cls: type[InputDescription] | type[OutputDescription],
+    description_props: dict[str, Any],
+    schema_props: dict[str, Any],
+    expected_props: dict[str, Any],
+):
+    kwargs = {
+        **description_props,
+        "schema": Schema(
+            **schema_props,
+        ),
+    }
+    if issubclass(description_cls, InputDescription):
+        field_info = UIFieldInfo.from_input_description(
+            "threshold", InputDescription(**kwargs)
+        )
+    else:
+        field_info = UIFieldInfo.from_output_description(
+            "threshold",
+            OutputDescription(**kwargs),
+        )
+
+    test.assertEqual(
+        UIFieldInfo(name="threshold", **expected_props),
+        field_info,
+    )
 
 
 def test_pydantic_deserialization_with_extra_fields():
