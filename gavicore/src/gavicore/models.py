@@ -278,8 +278,10 @@ class JobInfo(BaseModel):
     # noinspection Pydantic
     progress: Annotated[int | None, Field(None, ge=0, le=100)] = None
     links: list[Link] | None = None
-    # --- Enhancements to the standard
-    traceback: list[str] | None = None
+    # -- recognized extensions
+    traceback: Annotated[str | list[str] | None, Field(None, alias="x-traceback")] = (
+        None
+    )
 
 
 class JobList(BaseModel):
@@ -318,8 +320,10 @@ class ApiError(BaseModel):
     status: int | None = None
     detail: str | None = None
     instance: str | None = None
-    # --- Enhancements to the standard
-    traceback: list[str] | None = None
+    # -- recognized extensions
+    traceback: Annotated[str | list[str] | None, Field(None, alias="x-traceback")] = (
+        None
+    )
 
 
 Format.model_rebuild()
