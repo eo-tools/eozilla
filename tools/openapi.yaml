@@ -479,9 +479,9 @@ components:
             $ref: '#/components/schemas/InlineValue'
     InlineOrRefValue:
       oneOf:
-      - $ref: '#/components/schemas/InlineValue'
-      - $ref: '#/components/schemas/QualifiedValue'
       - $ref: '#/components/schemas/Link'
+      - $ref: '#/components/schemas/QualifiedValue'
+      - $ref: '#/components/schemas/InlineValue'
     Bbox:
       type: object
       required:
@@ -522,12 +522,12 @@ components:
     DataType:
       type: string
       enum:
-      - array
       - boolean
       - integer
       - number
-      - object
       - string
+      - array
+      - object
     Schema:
       type: object
       properties:

@@ -8,6 +8,8 @@ from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
 
+import pydantic
+
 from cuiman.api.opener import JobResultOpenContext, JobResultOpener
 
 _PATH_LIKE_KEYS = ("href", "url", "path")
@@ -113,15 +115,18 @@ class PathOpener(JobResultOpener):
         if output_link:
             return output_link.href
         output_value = ctx.output_value
-        if output_value is not None:
-            value = output_value.model_dump()
-            if isinstance(value, _PATH_LIKE_TYPES):
-                return str(value)
-            elif isinstance(value, dict):
-                for k in _PATH_LIKE_KEYS:
-                    v = value.get(k)
-                    if v is not None and isinstance(v, _PATH_LIKE_TYPES):
-                        return str(v)
+        value = (
+            output_value.model_dump()
+            if isinstance(output_value, pydantic.BaseModel)
+            else output_value
+        )
+        if isinstance(value, _PATH_LIKE_TYPES):
+            return str(value)
+        elif isinstance(value, dict):
+            for k in _PATH_LIKE_KEYS:
+                v = value.get(k)
+                if v is not None and isinstance(v, _PATH_LIKE_TYPES):
+                    return str(v)
         return None
 
     @classmethod
