@@ -26,8 +26,10 @@ class DataType(Enum):
 
 class Schema(BaseModel):
     model_config = ConfigDict(
-        extra="forbid",
+        # allow for extensions usually prefixed by "x-", e.g., "x-ui"
+        extra="allow",
     )
+
     # general
     type: DataType | None = None
     title: str | None = None
@@ -152,6 +154,11 @@ class AdditionalParameters(Metadata):
 
 
 class DescriptionType(BaseModel):
+    model_config = ConfigDict(
+        # allow for extensions usually prefixed by "x-", e.g., "x-ui"
+        extra="allow",
+    )
+
     title: str | None = None
     description: str | None = None
     keywords: list[str] | None = None
@@ -263,6 +270,7 @@ class JobControlOptions(Enum):
 
 class JobInfo(BaseModel):
     model_config = ConfigDict(
+        # allow for extensions prefixed by "x-"
         extra="allow",
     )
 
