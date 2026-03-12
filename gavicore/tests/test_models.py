@@ -4,6 +4,7 @@
 
 import inspect
 from enum import Enum
+from typing import TypeVar, Any
 from unittest import TestCase
 
 from pydantic import BaseModel
@@ -36,6 +37,8 @@ REQUIRED_CLASSES = {
     "ProcessSummary",
     "Schema",
 }
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class ModelsTest(TestCase):
@@ -76,61 +79,54 @@ class ModelsTest(TestCase):
         )
 
     def test_models_with_extensions(self):
-        error = m.ApiError(
-            **{
-                "title": "Key not found",
-                "status": 500,
-                "type": "KeyError",
-                "x-traceback": ["hello", "world"],
-            },
-        )
-        self.assertEqual(
+        api_error = self._assert_extendable_model(
+            m.ApiError,
             {
                 "title": "Key not found",
                 "status": 500,
                 "type": "KeyError",
                 "x-traceback": ["hello", "world"],
             },
-            error.model_dump(mode="json", by_alias=True, exclude_unset=True),
         )
-        self.assertEqual(["hello", "world"], error.traceback)
+        self.assertEqual(["hello", "world"], api_error.traceback)
 
-        job_info = m.JobInfo(
-            **{
-                "type": "process",
-                "jobID": "job_1",
-                "status": "failed",
-                "x-traceback": "hello\nworld",
-            },
-        )
-        self.assertEqual(
+        job_info = self._assert_extendable_model(
+            m.JobInfo,
             {
                 "type": "process",
                 "jobID": "job_1",
                 "status": "failed",
                 "x-traceback": "hello\nworld",
             },
-            job_info.model_dump(mode="json", by_alias=True, exclude_unset=True),
         )
         self.assertEqual("hello\nworld", job_info.traceback)
 
-        input_description = m.InputDescription(
-            **{
-                "title": "Threshold",
-                "schema": {"type": "number"},
-                "x-ui": {"widget": "slider"},
-            }
-        )
-        self.assertEqual(
+        input_description = self._assert_extendable_model(
+            m.InputDescription,
             {
                 "title": "Threshold",
                 "schema": {"type": "number"},
                 "x-ui": {"widget": "slider"},
             },
-            input_description.model_dump(
-                mode="json", by_alias=True, exclude_unset=True
-            ),
         )
         self.assertEqual(
             {"widget": "slider"}, input_description.model_extra.get("x-ui")
         )
+
+        output_description = self._assert_extendable_model(
+            m.OutputDescription,
+            {
+                "title": "Output URL",
+                "schema": {"type": "string", "format": "uri"},
+                "x-ui": {"widget": "text"},
+            },
+        )
+        self.assertEqual({"widget": "text"}, output_description.model_extra.get("x-ui"))
+
+    def _assert_extendable_model(self, model_cls: type[T], data: dict[str, Any]) -> T:
+        model_instance = model_cls(**data)
+        self.assertEqual(
+            data,
+            model_instance.model_dump(mode="json", by_alias=True, exclude_unset=True),
+        )
+        return model_instance
