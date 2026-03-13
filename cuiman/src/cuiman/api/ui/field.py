@@ -4,10 +4,9 @@
 
 from typing import Any, Literal, TypeAlias
 
-import pydantic
-from pydantic import ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-from gavicore.models import DescriptionType, InputDescription, OutputDescription
+from gavicore.models import DescriptionType, InputDescription, OutputDescription, Schema
 
 UI_KEYS = ["x-ui", "ui", "xUI", "xUi"]
 UI_KEY_PREFIXES = [f"{k}:" for k in UI_KEYS]
@@ -26,7 +25,7 @@ UIFieldWidget: TypeAlias = Literal[
 ]
 
 
-class UIFieldInfo(pydantic.BaseModel):
+class UIFieldInfo(BaseModel):
     """Information used to generate a GUI field like a widget or panel.
 
     It has been collected from a process input/output description,
@@ -36,9 +35,13 @@ class UIFieldInfo(pydantic.BaseModel):
 
     model_config = ConfigDict(
         extra="allow",
+        frozen=True,
     )
 
     name: str
+    schema_: Schema = Field(..., alias="schema")
+
+    # optional values
     widget: UIFieldWidget | str | None = None
     title: str | None = None
     description: str | None = None
@@ -87,7 +90,7 @@ def _ui_field_info_from_output_description(
 
 
 def _ui_field_info_from_description(
-    name: str, description: DescriptionType
+    name: str, description: InputDescription | OutputDescription
 ) -> UIFieldInfo:
     description_dict = description.model_dump(
         exclude_none=True,
@@ -108,7 +111,7 @@ def _ui_field_info_from_description(
         # update properties in ui_dict from values of prefixed UI properties
         _update_ui_props_from_prefixed_ui_keys(source, UI_KEY_PREFIXES, ui_props)
 
-    return UIFieldInfo(name=name, **ui_props)
+    return UIFieldInfo(name=name, schema=description.schema_, **ui_props)
 
 
 def _update_ui_props_from_field_props(

@@ -144,12 +144,8 @@ def _assert_description(
     schema_props: dict[str, Any],
     expected_props: dict[str, Any],
 ):
-    kwargs = {
-        **description_props,
-        "schema": Schema(
-            **schema_props,
-        ),
-    }
+    schema = Schema(**schema_props)
+    kwargs = {**description_props, "schema": schema}
     if issubclass(description_cls, InputDescription):
         field_info = UIFieldInfo.from_input_description(
             "threshold", InputDescription(**kwargs)
@@ -161,7 +157,7 @@ def _assert_description(
         )
 
     test.assertEqual(
-        UIFieldInfo(name="threshold", **expected_props),
+        UIFieldInfo(name="threshold", schema=schema, **expected_props),
         field_info,
     )
 
