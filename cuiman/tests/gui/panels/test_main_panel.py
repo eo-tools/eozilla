@@ -13,7 +13,6 @@ from gavicore.models import (
     JobInfo,
     JobResults,
     JobStatus,
-    JobType,
     ProcessDescription,
     ProcessList,
     ProcessRequest,
@@ -86,9 +85,8 @@ def _create_main_panel(process_inputs: dict[str, InputDescription]) -> MainPanel
 
     def on_execute_process(process_id: str, _request: ProcessRequest):
         return JobInfo(
-            processID=process_id,
             jobID="job_8",
-            type=JobType.process,
+            processID=process_id,
             status=JobStatus.successful,
         )
 

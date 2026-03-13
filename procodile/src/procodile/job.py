@@ -17,7 +17,6 @@ from gavicore.models import (
     JobInfo,
     JobResults,
     JobStatus,
-    JobType,
     ProcessRequest,
     Schema,
     Subscriber,
@@ -195,9 +194,8 @@ class Job(JobContext):
         self.process = process
         # noinspection PyTypeChecker
         self.job_info = JobInfo(  # noqa [call-arg]
-            type=JobType.process,
-            processID=process.description.id,
             jobID=job_id,
+            processID=process.description.id,
             status=JobStatus.accepted,
             created=self._now(),
         )
