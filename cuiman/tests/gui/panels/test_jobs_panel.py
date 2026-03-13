@@ -8,7 +8,7 @@ from panel.layout import Panel
 
 from cuiman.gui.jobs_observer import JobsObserver
 from cuiman.gui.panels import JobsPanelView, JobsPanelViewModel
-from gavicore.models import JobInfo, JobList, JobStatus, JobType
+from gavicore.models import JobInfo, JobList, JobStatus
 
 
 class JobsFormTest(TestCase):
@@ -25,30 +25,26 @@ def _create_jobs_form() -> JobsPanelView:
     job_list = JobList(
         jobs=[
             JobInfo(
-                type=JobType.process,
-                processID="gen_scene",
                 jobID="job_1",
+                processID="gen_scene",
                 status=JobStatus.successful,
                 progress=100,
             ),
             JobInfo(
-                type=JobType.process,
-                processID="gen_scene",
                 jobID="job_2",
+                processID="gen_scene",
                 status=JobStatus.running,
                 progress=23,
             ),
             JobInfo(
-                type=JobType.process,
-                processID="gen_scene",
                 jobID="job_3",
+                processID="gen_scene",
                 status=JobStatus.failed,
                 progress=97,
             ),
             JobInfo(
-                type=JobType.process,
-                processID="gen_scene",
                 jobID="job_4",
+                processID="gen_scene",
                 status=JobStatus.accepted,
             ),
         ],
