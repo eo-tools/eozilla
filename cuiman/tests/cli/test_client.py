@@ -36,7 +36,7 @@ class UseClientTest(TestCase):
                         title="Not found",
                         status=404,
                         detail="Something was not found",
-                        traceback=["a", "b", "c"],
+                        **{"x-traceback": ["a", "b", "c"]},
                     ),
                 )
 
@@ -51,7 +51,7 @@ class UseClientTest(TestCase):
                         title="Not found",
                         status=404,
                         detail="Something was not found",
-                        traceback=["a", "b", "c"],
+                        **{"x-traceback": ["a", "b", "c"]},
                     ),
                 )
 

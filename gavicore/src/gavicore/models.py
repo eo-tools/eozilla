@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import date
 from enum import Enum
-from typing import Annotated, Any, TypeAlias, Union
+from typing import Any, TypeAlias, Union
 
 from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 
@@ -152,6 +152,11 @@ class AdditionalParameters(Metadata):
 
 
 class DescriptionType(BaseModel):
+    model_config = ConfigDict(
+        # allow for extensions, e.g., using field name prefix "x-"
+        extra="allow",
+    )
+
     title: str | None = None
     description: str | None = None
     keywords: list[str] | None = None
@@ -263,6 +268,7 @@ class JobControlOptions(Enum):
 
 class JobInfo(BaseModel):
     model_config = ConfigDict(
+        # allow for extensions, e.g., using field name prefix "x-"
         extra="allow",
     )
 
@@ -276,10 +282,10 @@ class JobInfo(BaseModel):
     finished: AwareDatetime | None = None
     updated: AwareDatetime | None = None
     # noinspection Pydantic
-    progress: Annotated[int | None, Field(None, ge=0, le=100)] = None
+    progress: int | None = Field(None, ge=0, le=100)
     links: list[Link] | None = None
-    # --- Enhancements to the standard
-    traceback: list[str] | None = None
+    # -- recognized extensions
+    traceback: str | list[str] | None = Field(None, alias="x-traceback")
 
 
 class JobList(BaseModel):
@@ -310,6 +316,7 @@ class ApiError(BaseModel):
     """
 
     model_config = ConfigDict(
+        # allow for extensions, e.g., using field name prefix "x-"
         extra="allow",
     )
 
@@ -318,8 +325,8 @@ class ApiError(BaseModel):
     status: int | None = None
     detail: str | None = None
     instance: str | None = None
-    # --- Enhancements to the standard
-    traceback: list[str] | None = None
+    # -- recognized extensions
+    traceback: str | list[str] | None = Field(None, alias="x-traceback")
 
 
 Format.model_rebuild()
