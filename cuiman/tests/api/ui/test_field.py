@@ -16,36 +16,83 @@ class FromInputDescriptionTest(TestCase):
         _assert_source_precedence(self, InputDescription)
 
     def test_min_occurs_0_max_occurs_1(self):
-        schema = Schema(type="string", format="uri", title="Input datasets")
+        schema = Schema(type="string", format="uri", title="Input dataset")
         description = InputDescription(schema=schema, minOccurs=0, maxOccurs=1)
         ui_field_info = UIFieldInfo.from_input_description("datasets", description)
         self.assertEqual(
             UIFieldInfo(
-                name="datasets", schema=schema, title="Input datasets", required=False
+                name="datasets", schema=schema, title="Input dataset", required=False
             ),
             ui_field_info,
         )
 
     def test_min_occurs_1_max_occurs_1(self):
-        schema = Schema(type="string", format="uri", title="Input datasets")
+        schema = Schema(type="string", format="uri", title="Input dataset")
         description = InputDescription(schema=schema, minOccurs=1, maxOccurs=1)
         ui_field_info = UIFieldInfo.from_input_description("datasets", description)
         self.assertEqual(
             UIFieldInfo(
-                name="datasets", schema=schema, title="Input datasets", required=True
+                name="datasets", schema=schema, title="Input dataset", required=True
             ),
             ui_field_info,
         )
 
     def test_min_occurs_1_max_occurs_unbounded(self):
-        schema = Schema(type="string", format="uri", title="Input datasets")
+        schema = Schema(type="string", format="uri")
         description = InputDescription(
-            schema=schema, minOccurs=1, maxOccurs="unbounded"
+            schema=schema, minOccurs=1, maxOccurs="unbounded", title="Input datasets"
         )
         ui_field_info = UIFieldInfo.from_input_description("datasets", description)
         self.assertEqual(
             UIFieldInfo(
-                name="datasets", schema=schema, title="Input datasets", required=True
+                name="datasets",
+                title="Input datasets",
+                schema=Schema(type="array", items=schema, minItems=1),
+                required=True,
+                children=[
+                    UIFieldInfo(
+                        name="datasets_item",
+                        schema=schema,
+                        required=True,
+                    )
+                ],
+            ),
+            ui_field_info,
+        )
+
+    def test_object_schema(self):
+        schema_prop_1 = Schema(**{"type": "number", "x-ui": {"widget": "slider"}})
+        schema_prop_2 = Schema(**{"type": "boolean", "x-ui": {"widget": "switch"}})
+        schema = Schema(
+            type="object",
+            properties={
+                "threshold": schema_prop_1,
+                "boost": schema_prop_2,
+            },
+            required=["threshold"],
+        )
+        description = InputDescription(schema=schema, title="Performance settings")
+        ui_field_info = UIFieldInfo.from_input_description("performance", description)
+        self.assertEqual(
+            UIFieldInfo(
+                name="performance",
+                title="Performance settings",
+                schema=schema,
+                required=True,
+                children=[
+                    UIFieldInfo(
+                        name="threshold",
+                        widget="slider",
+                        schema=schema_prop_1,
+                        required=True,
+                    ),
+                    UIFieldInfo(
+                        name="boost",
+                        widget="switch",
+                        schema=schema_prop_2,
+                        required=False,
+                    ),
+                ],
             ),
             ui_field_info,
         )

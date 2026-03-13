@@ -194,9 +194,15 @@ def _extract_ui_props_from_sources(
 def _update_ui_props_from_field_props(
     source: dict[str, Any], ui_props: dict[str, Any]
 ) -> None:
-    for field_name, _field_info in UIFieldInfo.model_fields.items():
+    for field_name, field_info in UIFieldInfo.model_fields.items():
         if field_name in source:
-            ui_props[field_name] = source[field_name]
+            value = source[field_name]
+            data_type = field_info.annotation
+            # Note, the following guard prevents assigning values of
+            # unexpected type (e.g. "required" of type bool vs. list[str])
+            # This my become an issue if we start using non-primitive types.
+            if data_type is not None and isinstance(value, data_type):
+                ui_props[field_name] = value
 
 
 def _update_ui_props_from_ui_object(
