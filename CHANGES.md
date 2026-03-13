@@ -29,6 +29,8 @@
         - `gavicore.models.OutputDescription` (e.g., extra "x-ui")
         - `gavicore.models.JobStatus`  (e.g., extra "x-traceback")
         - `gavicore.models.ApiError`  (e.g., extra "x-traceback")
+    - Replaced one-element enums `JobType`, `MaxOccurs` by string literals. 
+    - Replaced `Union[]` by `|` operator.
 
 - Lifted some mypy restrictions and enabled mypy pydantic plugin.
 

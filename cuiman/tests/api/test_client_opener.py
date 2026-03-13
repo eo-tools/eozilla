@@ -14,7 +14,6 @@ from gavicore.models import (
     JobInfo,
     JobResults,
     JobStatus,
-    JobType,
     Link,
     ProcessDescription,
 )
@@ -26,7 +25,6 @@ def mk_job_info(status: JobStatus, message: str | None = None):
     return JobInfo(
         jobID="job_12",
         processID="test",
-        type=JobType.process,
         status=status,
         message=message,
     )

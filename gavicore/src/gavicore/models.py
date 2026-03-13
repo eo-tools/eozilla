@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import date
 from enum import Enum
-from typing import Any, TypeAlias, Union
+from typing import Any, Literal, TypeAlias
 
 from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 
@@ -65,7 +65,7 @@ class Schema(BaseModel):
     required: list[str] | None = Field(None, min_length=1)
     minProperties: int | None = Field(0, ge=0)
     maxProperties: int | None = Field(None, ge=0)
-    additionalProperties: Union[Schema, bool] | None = True
+    additionalProperties: Schema | bool | None = True
     # operators
     not_: Schema | None = Field(None, alias="not")
     allOf: list[Schema] | None = None
@@ -120,20 +120,20 @@ class Bbox(BaseModel):
     crs: CRS | None = CRS.CRS84
 
 
-InlineValue: TypeAlias = Union[
-    Any,
-    bool,
-    bytes,
-    AnyUrl,
-    date,
-    AwareDatetime,
-    str,
-    int,
-    float,
-    list,
-    dict[str, Any],
-    Bbox,
-]
+InlineValue: TypeAlias = (
+    Any
+    | bool
+    | bytes
+    | AnyUrl
+    | date
+    | AwareDatetime
+    | str
+    | int
+    | float
+    | list
+    | dict[str, Any]
+    | Bbox
+)
 
 
 class Metadata(BaseModel):
@@ -167,7 +167,7 @@ class DescriptionType(BaseModel):
 class Format(BaseModel):
     mediaType: str | None = None
     encoding: str | None = None
-    schema_: Union[AnyUrl, Schema] | None = Field(None, alias="schema")
+    schema_: AnyUrl | Schema | None = Field(None, alias="schema")
 
 
 # ---------------------------------------------------------------------
@@ -175,13 +175,9 @@ class Format(BaseModel):
 # ---------------------------------------------------------------------
 
 
-class MaxOccurs(Enum):
-    unbounded = "unbounded"
-
-
 class InputDescription(DescriptionType):
     minOccurs: int | None = 1
-    maxOccurs: Union[int, MaxOccurs] | None = None
+    maxOccurs: int | Literal["unbounded"] | None = None
     schema_: Schema = Field(..., alias="schema")
 
 
@@ -256,10 +252,6 @@ class JobStatus(Enum):
     dismissed = "dismissed"
 
 
-class JobType(Enum):
-    process = "process"
-
-
 class JobControlOptions(Enum):
     sync_execute = "sync-execute"
     async_execute = "async-execute"
@@ -272,9 +264,9 @@ class JobInfo(BaseModel):
         extra="allow",
     )
 
-    processID: str | None = None
-    type: JobType
     jobID: str
+    processID: str | None = None
+    type: Literal["process"] = "process"
     status: JobStatus
     message: str | None = None
     created: AwareDatetime | None = None
