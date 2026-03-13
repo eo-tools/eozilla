@@ -10,6 +10,7 @@ from gavicore.models import (
     InputDescription,
     OutputDescription,
     Schema,
+    DataType,
 )
 
 UI_KEYS = ["x-ui", "ui", "xUI", "xUi"]
@@ -39,13 +40,20 @@ class UIFieldInfo(BaseModel):
 
     model_config = ConfigDict(
         extra="allow",
-        frozen=True,
     )
+
+    # --- required
 
     name: str
     schema_: Schema = Field(..., alias="schema")
 
-    # optional values
+    # --- optional
+
+    # If shema.type == "array" then this is a one-element list
+    # with the first element describing the array items.
+    # If shema.type == "object" then this is list of UI fields
+    # of the object properties.
+    children: list["UIFieldInfo"] | None = None
     widget: UIFieldWidget | str | None = None
     title: str | None = None
     description: str | None = None
@@ -83,47 +91,21 @@ def _ui_field_info_from_input_description(
     name: str,
     description: InputDescription,
 ) -> UIFieldInfo:
-    # How we deal with minOccurs/maxOccurs:
-    #  1. If schema.type == "array" → multiplicity handled by JSON Schema.
-    #  2. If schema is not array → minOccurs/maxOccurs determine repetition.
-    #  3. minOccurs/maxOccurs missing → assume minOccurs=1, maxOccurs=1.
-
-    ui_field_info = _ui_field_info_from_description(name, description)
-    if ui_field_info.schema_.type == "array":
-        # If schema.type == "array" we ignore minOccurs/maxOccurs
-        return ui_field_info
-
-    # Return modified field info w.r.t. minOccurs/maxOccurs
-    return __ui_field_info_from_min_max_occurs(ui_field_info, description)
-
-
-def __ui_field_info_from_min_max_occurs(
-    ui_field_info: UIFieldInfo, description: InputDescription
-):
-    ui_field_info_dict = ui_field_info.model_dump(mode="python", by_alias=True)
-
-    min_occurs = description.minOccurs
-    max_occurs = description.maxOccurs
-
-    if min_occurs is None:
-        min_occurs = 1
-    if max_occurs is None:
-        max_occurs = 1
+    min_occurs = 1 if description.minOccurs is None else description.minOccurs
+    max_occurs = 1 if description.maxOccurs is None else description.maxOccurs
 
     if min_occurs > 1 or max_occurs == "unbounded" or max_occurs > 1:
-        item_schema = description.schema_
         schema = Schema(
             type="array",
-            items=item_schema,
+            items=description.schema_,
             minItems=min_occurs,
             maxItems=max_occurs if max_occurs != "unbounded" else None,
         )
-        ui_field_info_dict["schema"] = schema
-        ui_field_info_dict["required"] = True
-    else:
-        ui_field_info_dict["required"] = min_occurs != 0
+        description = InputDescription(
+            schema=schema, **_make_description_dict(description)
+        )
 
-    return UIFieldInfo(**ui_field_info_dict)
+    return _ui_field_info_from_description(name, description, required=min_occurs > 0)
 
 
 def _ui_field_info_from_output_description(
@@ -134,18 +116,70 @@ def _ui_field_info_from_output_description(
 
 
 def _ui_field_info_from_description(
-    name: str, description: InputDescription | OutputDescription
+    name: str,
+    description: InputDescription | OutputDescription,
+    required: bool | None = None,
 ) -> UIFieldInfo:
-    description_dict = description.model_dump(
-        exclude_none=True,
-        exclude_defaults=True,
-        exclude_unset=True,
-        by_alias=True,
+    return _ui_field_info_from_schema(
+        name=name,
+        schema=description.schema_,
+        overrides=_make_description_dict(description),
+        required=required,
     )
-    schema_dict = description_dict.get("schema") or {}
 
-    # later override earlier
-    sources = [schema_dict, description_dict]
+
+def _ui_field_info_from_schema(
+    name: str,
+    schema: Schema,
+    overrides: dict[str, Any] | None = None,
+    required: bool | None = None,
+) -> UIFieldInfo:
+    schema_dict = _make_schema_dict(schema)
+    ui_props = _extract_ui_props_from_sources(
+        [schema_dict, overrides] if overrides else [schema_dict]
+    )
+    required = ui_props.pop("required", required)
+    children = _ui_field_info_children_from_schema(name, schema)
+    return UIFieldInfo(
+        name=name, schema=schema, required=required, children=children, **ui_props
+    )
+
+
+def _ui_field_info_children_from_schema(
+    name: str, schema: Schema
+) -> list[UIFieldInfo] | None:
+    if schema.type == DataType.array:
+        item_name = f"{name}_item"
+        if isinstance(schema.items, list):
+            return [
+                _ui_field_info_from_schema(f"{item_name}_{i}", s, required=True)
+                for i, s in enumerate(schema.items)
+            ]
+        else:
+            item_schema = (
+                schema.items if isinstance(schema.items, Schema) else Schema(**{})
+            )
+            return [
+                _ui_field_info_from_schema(
+                    item_name,
+                    item_schema,
+                    required=schema.minItems is not None and schema.minItems > 0,
+                )
+            ]
+    elif schema.type == DataType.object:
+        required = set(schema.required) if schema.required else set()
+        return [
+            _ui_field_info_from_schema(
+                prop_name, prop_schema, required=prop_name in required
+            )
+            for prop_name, prop_schema in schema.properties.items()
+        ]
+    return None
+
+
+def _extract_ui_props_from_sources(
+    sources: list[dict[Any, Any] | dict[str, Any] | Any],
+) -> dict[str, Any]:
     ui_props: dict[str, Any] = {}
     for source in sources:
         # update properties in ui_dict by yet unset UIFieldInfo values
@@ -154,8 +188,7 @@ def _ui_field_info_from_description(
         _update_ui_props_from_ui_object(source, UI_KEYS, ui_props)
         # update properties in ui_dict from values of prefixed UI properties
         _update_ui_props_from_prefixed_ui_keys(source, UI_KEY_PREFIXES, ui_props)
-
-    return UIFieldInfo(name=name, schema=description.schema_, **ui_props)
+    return ui_props
 
 
 def _update_ui_props_from_field_props(
@@ -184,3 +217,27 @@ def _update_ui_props_from_prefixed_ui_keys(
     for prefix in ui_key_prefixes:
         extras = extract_extras(source, prefix)
         ui_props.update(extras)
+
+
+def _make_schema_dict(schema: Schema | Literal[True] | None) -> dict[str, Any]:
+    return (
+        schema.model_dump(
+            mode="python",
+            exclude_none=True,
+            exclude_defaults=True,
+            exclude_unset=True,
+        )
+        if isinstance(schema, Schema)
+        else {}
+    )
+
+
+def _make_description_dict(
+    description: InputDescription | OutputDescription,
+) -> dict[str, Any]:
+    return description.model_dump(
+        exclude={"schema", "schema_"},  # !
+        exclude_none=True,
+        exclude_defaults=True,
+        exclude_unset=True,
+    )

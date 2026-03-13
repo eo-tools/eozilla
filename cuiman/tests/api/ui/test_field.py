@@ -37,6 +37,19 @@ class FromInputDescriptionTest(TestCase):
             ui_field_info,
         )
 
+    def test_min_occurs_1_max_occurs_unbounded(self):
+        schema = Schema(type="string", format="uri", title="Input datasets")
+        description = InputDescription(
+            schema=schema, minOccurs=1, maxOccurs="unbounded"
+        )
+        ui_field_info = UIFieldInfo.from_input_description("datasets", description)
+        self.assertEqual(
+            UIFieldInfo(
+                name="datasets", schema=schema, title="Input datasets", required=True
+            ),
+            ui_field_info,
+        )
+
 
 class FromOutputDescriptionTest(TestCase):
     def test_precedence(self):
