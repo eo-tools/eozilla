@@ -14,7 +14,6 @@ import gavicore.models as m
 REQUIRED_ENUMS = {
     "CRS",
     "DataType",
-    "MaxOccurs",
     "JobControlOptions",
     "JobStatus",
 }
