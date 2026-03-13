@@ -143,7 +143,8 @@ omit = [
 [tool.mypy]
 python_version = "3.10"
 check_untyped_defs = true
-disable_error_code = ["valid-type", "import-untyped"]
+disable_error_code = ["import-untyped"]
+plugins = ["pydantic.mypy"]
 exclude = [
     "appligator/tests",
     "cuiman/tests",
@@ -156,9 +157,6 @@ exclude = [
     "tools",
     "_pkg_reservations",
 ]
-[[tool.mypy.overrides]]
-module = "gavicore.models"
-disable_error_code = ["valid-type"]
 
 ########################## Tasks ###############################
 
