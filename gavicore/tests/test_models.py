@@ -4,7 +4,7 @@
 
 import inspect
 from enum import Enum
-from typing import TypeVar, Any
+from typing import Any, TypeVar
 from unittest import TestCase
 
 from pydantic import BaseModel
