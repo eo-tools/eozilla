@@ -15,6 +15,28 @@ class FromInputDescriptionTest(TestCase):
     def test_precedence(self):
         _assert_source_precedence(self, InputDescription)
 
+    def test_min_occurs_0_max_occurs_1(self):
+        schema = Schema(type="string", format="uri", title="Input datasets")
+        description = InputDescription(schema=schema, minOccurs=0, maxOccurs=1)
+        ui_field_info = UIFieldInfo.from_input_description("datasets", description)
+        self.assertEqual(
+            UIFieldInfo(
+                name="datasets", schema=schema, title="Input datasets", required=False
+            ),
+            ui_field_info,
+        )
+
+    def test_min_occurs_1_max_occurs_1(self):
+        schema = Schema(type="string", format="uri", title="Input datasets")
+        description = InputDescription(schema=schema, minOccurs=1, maxOccurs=1)
+        ui_field_info = UIFieldInfo.from_input_description("datasets", description)
+        self.assertEqual(
+            UIFieldInfo(
+                name="datasets", schema=schema, title="Input datasets", required=True
+            ),
+            ui_field_info,
+        )
+
 
 class FromOutputDescriptionTest(TestCase):
     def test_precedence(self):
@@ -150,14 +172,18 @@ def _assert_description(
         field_info = UIFieldInfo.from_input_description(
             "threshold", InputDescription(**kwargs)
         )
+        required = True
     else:
         field_info = UIFieldInfo.from_output_description(
             "threshold",
             OutputDescription(**kwargs),
         )
+        required = None
 
     test.assertEqual(
-        UIFieldInfo(name="threshold", schema=schema, **expected_props),
+        UIFieldInfo(
+            name="threshold", schema=schema, required=required, **expected_props
+        ),
         field_info,
     )
 

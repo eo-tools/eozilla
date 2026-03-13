@@ -6,7 +6,11 @@ from typing import Any, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from gavicore.models import DescriptionType, InputDescription, OutputDescription, Schema
+from gavicore.models import (
+    InputDescription,
+    OutputDescription,
+    Schema,
+)
 
 UI_KEYS = ["x-ui", "ui", "xUI", "xUi"]
 UI_KEY_PREFIXES = [f"{k}:" for k in UI_KEYS]
@@ -79,7 +83,47 @@ def _ui_field_info_from_input_description(
     name: str,
     description: InputDescription,
 ) -> UIFieldInfo:
-    return _ui_field_info_from_description(name, description)
+    # How we deal with minOccurs/maxOccurs:
+    #  1. If schema.type == "array" → multiplicity handled by JSON Schema.
+    #  2. If schema is not array → minOccurs/maxOccurs determine repetition.
+    #  3. minOccurs/maxOccurs missing → assume minOccurs=1, maxOccurs=1.
+
+    ui_field_info = _ui_field_info_from_description(name, description)
+    if ui_field_info.schema_.type == "array":
+        # If schema.type == "array" we ignore minOccurs/maxOccurs
+        return ui_field_info
+
+    # Return modified field info w.r.t. minOccurs/maxOccurs
+    return __ui_field_info_from_min_max_occurs(ui_field_info, description)
+
+
+def __ui_field_info_from_min_max_occurs(
+    ui_field_info: UIFieldInfo, description: InputDescription
+):
+    ui_field_info_dict = ui_field_info.model_dump(mode="python", by_alias=True)
+
+    min_occurs = description.minOccurs
+    max_occurs = description.maxOccurs
+
+    if min_occurs is None:
+        min_occurs = 1
+    if max_occurs is None:
+        max_occurs = 1
+
+    if min_occurs > 1 or max_occurs == "unbounded" or max_occurs > 1:
+        item_schema = description.schema_
+        schema = Schema(
+            type="array",
+            items=item_schema,
+            minItems=min_occurs,
+            maxItems=max_occurs if max_occurs != "unbounded" else None,
+        )
+        ui_field_info_dict["schema"] = schema
+        ui_field_info_dict["required"] = True
+    else:
+        ui_field_info_dict["required"] = min_occurs != 0
+
+    return UIFieldInfo(**ui_field_info_dict)
 
 
 def _ui_field_info_from_output_description(
