@@ -7,10 +7,10 @@ from typing import Any, Literal, TypeAlias
 from pydantic import BaseModel, ConfigDict, Field
 
 from gavicore.models import (
+    DataType,
     InputDescription,
     OutputDescription,
     Schema,
-    DataType,
 )
 
 UI_KEYS = ["x-ui", "ui", "xUI", "xUi"]
@@ -172,7 +172,7 @@ def _ui_field_info_children_from_schema(
             _ui_field_info_from_schema(
                 prop_name, prop_schema, required=prop_name in required
             )
-            for prop_name, prop_schema in schema.properties.items()
+            for prop_name, prop_schema in (schema.properties or {}).items()
         ]
     return None
 
