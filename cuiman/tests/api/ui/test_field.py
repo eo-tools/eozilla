@@ -60,9 +60,55 @@ class FromInputDescriptionTest(TestCase):
             ui_field_info,
         )
 
+    def test_tuple_schema(self):
+        schema_item_1 = Schema(
+            **{"type": "number", "title": "Threshold", "x-ui": {"widget": "slider"}}
+        )
+        schema_item_2 = Schema(
+            **{"type": "boolean", "title": "Boost", "x-ui": {"widget": "switch"}}
+        )
+        schema = Schema(
+            type="array",
+            items=[
+                schema_item_1,
+                schema_item_2,
+            ],
+        )
+        description = InputDescription(schema=schema, title="Performance settings")
+        ui_field_info = UIFieldInfo.from_input_description("performance", description)
+        self.assertEqual(
+            UIFieldInfo(
+                name="performance",
+                title="Performance settings",
+                schema=schema,
+                required=True,
+                children=[
+                    UIFieldInfo(
+                        name="performance_item_0",
+                        title="Threshold",
+                        widget="slider",
+                        schema=schema_item_1,
+                        required=True,
+                    ),
+                    UIFieldInfo(
+                        name="performance_item_1",
+                        title="Boost",
+                        widget="switch",
+                        schema=schema_item_2,
+                        required=True,
+                    ),
+                ],
+            ),
+            ui_field_info,
+        )
+
     def test_object_schema(self):
-        schema_prop_1 = Schema(**{"type": "number", "x-ui": {"widget": "slider"}})
-        schema_prop_2 = Schema(**{"type": "boolean", "x-ui": {"widget": "switch"}})
+        schema_prop_1 = Schema(
+            **{"type": "number", "title": "Threshold", "x-ui": {"widget": "slider"}}
+        )
+        schema_prop_2 = Schema(
+            **{"type": "boolean", "title": "Boost", "x-ui": {"widget": "switch"}}
+        )
         schema = Schema(
             type="object",
             properties={
@@ -82,12 +128,14 @@ class FromInputDescriptionTest(TestCase):
                 children=[
                     UIFieldInfo(
                         name="threshold",
+                        title="Threshold",
                         widget="slider",
                         schema=schema_prop_1,
                         required=True,
                     ),
                     UIFieldInfo(
                         name="boost",
+                        title="Boost",
                         widget="switch",
                         schema=schema_prop_2,
                         required=False,

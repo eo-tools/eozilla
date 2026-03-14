@@ -151,11 +151,15 @@ def _ui_field_info_children_from_schema(
     if schema.type == DataType.array:
         item_name = f"{name}_item"
         if isinstance(schema.items, list):
+            # Tuple of schemas:
+            # Also JSON Schema allows for it, OpenAPI 3.0 explicitly does not.
+            # We cover it here for the future.
             return [
                 _ui_field_info_from_schema(f"{item_name}_{i}", s, required=True)
                 for i, s in enumerate(schema.items)
             ]
         else:
+            # "Normal" array with item type
             item_schema = (
                 schema.items if isinstance(schema.items, Schema) else Schema(**{})
             )
