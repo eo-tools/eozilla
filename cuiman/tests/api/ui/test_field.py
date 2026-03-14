@@ -6,58 +6,165 @@ from typing import Annotated, Any
 from unittest import TestCase
 
 import pydantic
+from pydantic import BaseModel
 
 from cuiman.api.ui import UIFieldInfo
 from gavicore.models import InputDescription, OutputDescription, Schema
 
+dict_kwargs = dict(
+    exclude_none=True, exclude_defaults=True, exclude_unset=True, by_alias=True
+)
 
-class FromInputDescriptionTest(TestCase):
-    def test_precedence(self):
-        _assert_source_precedence(self, InputDescription)
 
-    def test_min_occurs_0_max_occurs_1(self):
-        schema = Schema(type="string", format="uri", title="Input dataset")
-        description = InputDescription(schema=schema, minOccurs=0, maxOccurs=1)
-        ui_field_info = UIFieldInfo.from_input_description("datasets", description)
-        self.assertEqual(
-            UIFieldInfo(
-                name="datasets", schema=schema, title="Input dataset", required=False
-            ),
-            ui_field_info,
+def to_json(model: BaseModel, exclude: set[str] | None = None):
+    return model.model_dump(
+        mode="json",
+        exclude=exclude,
+        exclude_none=True,
+        exclude_defaults=True,
+        exclude_unset=True,
+        by_alias=True,
+    )
+
+
+class UIFieldInfoTest(TestCase):
+    def test_from_input_descriptions(self):
+        ui_field_info = UIFieldInfo.from_input_descriptions(
+            {
+                "datasets": InputDescription(
+                    schema=Schema(type="string", format="uri", title="Input dataset"),
+                    minOccurs=1,
+                    maxOccurs="unbounded",
+                ),
+                "threshold": InputDescription(
+                    schema=Schema(type="number", default=0.5),
+                    minOccurs=0,
+                    maxOccurs=1,
+                ),
+                "boost": InputDescription(
+                    schema=Schema(type="boolean"), title="Use fast path"
+                ),
+            }
         )
+        self.maxDiff = None
+        self.assertIsInstance(ui_field_info, UIFieldInfo)
 
-    def test_min_occurs_1_max_occurs_1(self):
-        schema = Schema(type="string", format="uri", title="Input dataset")
-        description = InputDescription(schema=schema, minOccurs=1, maxOccurs=1)
-        ui_field_info = UIFieldInfo.from_input_description("datasets", description)
+        schema_1 = {
+            "type": "string",
+            "format": "uri",
+            "title": "Input dataset",
+        }
+        schema_2 = {
+            "type": "number",
+            "default": 0.5,
+            "title": "Threshold",
+        }
+        schema_3 = {"type": "boolean", "title": "Use fast path"}
         self.assertEqual(
-            UIFieldInfo(
-                name="datasets", schema=schema, title="Input dataset", required=True
-            ),
-            ui_field_info,
-        )
-
-    def test_min_occurs_1_max_occurs_unbounded(self):
-        schema = Schema(type="string", format="uri")
-        description = InputDescription(
-            schema=schema, minOccurs=1, maxOccurs="unbounded", title="Input datasets"
-        )
-        ui_field_info = UIFieldInfo.from_input_description("datasets", description)
-        self.assertEqual(
-            UIFieldInfo(
-                name="datasets",
-                title="Input datasets",
-                schema=Schema(type="array", items=schema, minItems=1),
-                required=True,
-                children=[
-                    UIFieldInfo(
-                        name="datasets_item",
-                        schema=schema,
-                        required=True,
-                    )
+            {
+                "children": [
+                    {
+                        "name": "datasets",
+                        "schema": {
+                            "type": "array",
+                            "items": schema_1,
+                            "minItems": 1,
+                            "title": "Datasets",
+                        },
+                        "children": [
+                            {
+                                "name": "datasets_item",
+                                "schema": schema_1,
+                                "required": True,
+                                "title": "Input dataset",
+                            }
+                        ],
+                        "required": True,
+                        "title": "Datasets",
+                    },
+                    {
+                        "name": "threshold",
+                        "schema": schema_2,
+                        "required": False,
+                        "title": "Threshold",
+                    },
+                    {
+                        "name": "boost",
+                        "schema": schema_3,
+                        "required": True,
+                        "title": "Use fast path",
+                    },
                 ],
-            ),
-            ui_field_info,
+                "name": "inputs",
+                "required": True,
+                "schema": {
+                    "type": "object",
+                    "required": ["datasets", "boost"],
+                    "properties": {
+                        "datasets": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "format": "uri",
+                                "title": "Input dataset",
+                            },
+                            "minItems": 1,
+                            "title": "Datasets",
+                        },
+                        "threshold": schema_2,
+                        "boost": schema_3,
+                    },
+                    "title": "Inputs",
+                },
+                "title": "Inputs",
+            },
+            to_json(ui_field_info),
+        )
+
+    def test_from_output_descriptions(self):
+        ui_field_info = UIFieldInfo.from_output_descriptions(
+            {
+                "dataset": OutputDescription(
+                    schema=Schema(type="string", title="Output dataset path"),
+                ),
+                "logs": OutputDescription(
+                    schema=Schema(type="string", title="Log file path"),
+                ),
+            }
+        )
+        self.maxDiff = None
+        self.assertIsInstance(ui_field_info, UIFieldInfo)
+
+        schema_1 = {"type": "string", "title": "Output dataset path"}
+        schema_2 = {"type": "string", "title": "Log file path"}
+        self.assertEqual(
+            {
+                "name": "outputs",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "dataset": schema_1,
+                        "logs": schema_2,
+                    },
+                    "title": "Outputs",
+                },
+                "title": "Outputs",
+                "children": [
+                    {
+                        "name": "dataset",
+                        "schema": schema_1,
+                        "title": "Output dataset path",
+                        "required": False,
+                    },
+                    {
+                        "name": "logs",
+                        "schema": schema_2,
+                        "title": "Log file path",
+                        "required": False,
+                    },
+                ],
+            },
+            to_json(ui_field_info),
         )
 
     def test_tuple_schema(self):
@@ -73,33 +180,50 @@ class FromInputDescriptionTest(TestCase):
                 schema_item_1,
                 schema_item_2,
             ],
+            title="Performance settings",
         )
-        description = InputDescription(schema=schema, title="Performance settings")
-        ui_field_info = UIFieldInfo.from_input_description("performance", description)
+        ui_field_info = UIFieldInfo.from_schema("performance", schema)
+        self.assertIsInstance(ui_field_info, UIFieldInfo)
+        schema_1 = {
+            "title": "Threshold",
+            "type": "number",
+            "x-ui": {"widget": "slider"},
+        }
+        schema_2 = {
+            "title": "Boost",
+            "type": "boolean",
+            "x-ui": {"widget": "switch"},
+        }
         self.assertEqual(
-            UIFieldInfo(
-                name="performance",
-                title="Performance settings",
-                schema=schema,
-                required=True,
-                children=[
-                    UIFieldInfo(
-                        name="performance_item_0",
-                        title="Threshold",
-                        widget="slider",
-                        schema=schema_item_1,
-                        required=True,
-                    ),
-                    UIFieldInfo(
-                        name="performance_item_1",
-                        title="Boost",
-                        widget="switch",
-                        schema=schema_item_2,
-                        required=True,
-                    ),
+            {
+                "name": "performance",
+                "schema": {
+                    "type": "array",
+                    "items": [
+                        schema_1,
+                        schema_2,
+                    ],
+                    "title": "Performance settings",
+                },
+                "title": "Performance settings",
+                "children": [
+                    {
+                        "name": "performance_item_0",
+                        "schema": schema_1,
+                        "widget": "slider",
+                        "required": True,
+                        "title": "Threshold",
+                    },
+                    {
+                        "name": "performance_item_1",
+                        "schema": schema_2,
+                        "widget": "switch",
+                        "required": True,
+                        "title": "Boost",
+                    },
                 ],
-            ),
-            ui_field_info,
+            },
+            to_json(ui_field_info),
         )
 
     def test_object_schema(self):
@@ -117,207 +241,214 @@ class FromInputDescriptionTest(TestCase):
             },
             required=["threshold"],
         )
-        description = InputDescription(schema=schema, title="Performance settings")
-        ui_field_info = UIFieldInfo.from_input_description("performance", description)
+        ui_field_info = UIFieldInfo.from_schema("performance", schema)
+        schema_1 = {
+            "title": "Threshold",
+            "type": "number",
+            "x-ui": {"widget": "slider"},
+        }
+        schema_2 = {
+            "title": "Boost",
+            "type": "boolean",
+            "x-ui": {"widget": "switch"},
+        }
         self.assertEqual(
-            UIFieldInfo(
-                name="performance",
-                title="Performance settings",
-                schema=schema,
-                required=True,
-                children=[
-                    UIFieldInfo(
-                        name="threshold",
-                        title="Threshold",
-                        widget="slider",
-                        schema=schema_prop_1,
-                        required=True,
-                    ),
-                    UIFieldInfo(
-                        name="boost",
-                        title="Boost",
-                        widget="switch",
-                        schema=schema_prop_2,
-                        required=False,
-                    ),
+            {
+                "name": "performance",
+                "schema": {
+                    "type": "object",
+                    "required": ["threshold"],
+                    "properties": {
+                        "threshold": schema_1,
+                        "boost": schema_2,
+                    },
+                },
+                "children": [
+                    {
+                        "name": "threshold",
+                        "required": True,
+                        "schema": schema_1,
+                        "title": "Threshold",
+                        "widget": "slider",
+                    },
+                    {
+                        "name": "boost",
+                        "required": False,
+                        "schema": schema_2,
+                        "title": "Boost",
+                        "widget": "switch",
+                    },
                 ],
-            ),
-            ui_field_info,
+            },
+            to_json(ui_field_info),
         )
 
+    def test_input_precedence(self):
+        self._assert_source_precedence(InputDescription)
 
-class FromOutputDescriptionTest(TestCase):
-    def test_precedence(self):
-        _assert_source_precedence(self, OutputDescription)
+    def test_output_precedence(self):
+        self._assert_source_precedence(OutputDescription)
 
-
-def _assert_source_precedence(
-    test: TestCase, description_cls: type[InputDescription] | type[OutputDescription]
-):
-    _assert_description(
-        test,
-        description_cls,
-        description_props={
-            "title": "The threshold D.1",
-            "x-ui": {"title": "The threshold D.2"},
-            "x-ui:title": "The threshold D.3",
-        },
-        schema_props={
-            "title": "The threshold S.1",
-            "x-ui": {"title": "The threshold S.2"},
-            "x-ui:title": "The threshold S.3",
-        },
-        expected_props={"title": "The threshold D.3"},
-    )
-
-    _assert_description(
-        test,
-        description_cls,
-        description_props={
-            "title": "The threshold D.1",
-            "x-ui": {"title": "The threshold D.2"},
-            # "x-ui:title": "The threshold D.3",
-        },
-        schema_props={
-            "title": "The threshold S.1",
-            "x-ui": {"title": "The threshold S.2"},
-            "x-ui:title": "The threshold S.3",
-        },
-        expected_props={"title": "The threshold D.2"},
-    )
-
-    _assert_description(
-        test,
-        description_cls,
-        description_props={
-            "title": "The threshold D.1",
-            # "x-ui": {"title": "The threshold D.2"},
-            # "x-ui:title": "The threshold D.3",
-        },
-        schema_props={
-            "title": "The threshold S.1",
-            "x-ui": {"title": "The threshold S.2"},
-            "x-ui:title": "The threshold S.3",
-        },
-        expected_props={"title": "The threshold D.1"},
-    )
-
-    _assert_description(
-        test,
-        description_cls,
-        description_props={
-            # "title": "The threshold D.1",
-            # "x-ui": {"title": "The threshold D.2"},
-            # "x-ui:title": "The threshold D.3",
-        },
-        schema_props={
-            "title": "The threshold S.1",
-            "x-ui": {"title": "The threshold S.2"},
-            "x-ui:title": "The threshold S.3",
-        },
-        expected_props={"title": "The threshold S.3"},
-    )
-
-    _assert_description(
-        test,
-        description_cls,
-        description_props={
-            # "title": "The threshold D.1",
-            # "x-ui": {"title": "The threshold D.2"},
-            # "x-ui:title": "The threshold D.3",
-        },
-        schema_props={
-            "title": "The threshold S.1",
-            "x-ui": {"title": "The threshold S.2"},
-            # "x-ui:title": "The threshold S.3",
-        },
-        expected_props={"title": "The threshold S.2"},
-    )
-
-    _assert_description(
-        test,
-        description_cls,
-        description_props={
-            # "title": "The threshold D.1",
-            # "x-ui": {"title": "The threshold D.2"},
-            # "x-ui:title": "The threshold D.3",
-        },
-        schema_props={
-            "title": "The threshold S.1",
-            # "x-ui": {"title": "The threshold S.2"},
-            # "x-ui:title": "The threshold S.3",
-        },
-        expected_props={"title": "The threshold S.1"},
-    )
-
-    _assert_description(
-        test,
-        description_cls,
-        description_props={
-            # "title": "The threshold D.1",
-            # "x-ui": {"title": "The threshold D.2"},
-            # "x-ui:title": "The threshold D.3",
-        },
-        schema_props={
-            # "title": "The threshold S.1",
-            # "x-ui": {"title": "The threshold S.2"},
-            # "x-ui:title": "The threshold S.3",
-        },
-        expected_props={},
-    )
-
-
-def _assert_description(
-    test: TestCase,
-    description_cls: type[InputDescription] | type[OutputDescription],
-    description_props: dict[str, Any],
-    schema_props: dict[str, Any],
-    expected_props: dict[str, Any],
-):
-    schema = Schema(**schema_props)
-    kwargs = {**description_props, "schema": schema}
-    if issubclass(description_cls, InputDescription):
-        field_info = UIFieldInfo.from_input_description(
-            "threshold", InputDescription(**kwargs)
+    def _assert_source_precedence(
+        self,
+        description_cls: type[InputDescription] | type[OutputDescription],
+    ):
+        self._assert_description(
+            description_cls,
+            description_props={
+                "title": "The threshold D.1",
+                "x-ui": {"title": "The threshold D.2"},
+                "x-ui:title": "The threshold D.3",
+            },
+            schema_props={
+                "title": "The threshold S.1",
+                "x-ui": {"title": "The threshold S.2"},
+                "x-ui:title": "The threshold S.3",
+            },
+            expected_props={"title": "The threshold D.3"},
         )
-        required = True
-    else:
-        field_info = UIFieldInfo.from_output_description(
-            "threshold",
-            OutputDescription(**kwargs),
+
+        self._assert_description(
+            description_cls,
+            description_props={
+                "title": "The threshold D.1",
+                "x-ui": {"title": "The threshold D.2"},
+                # "x-ui:title": "The threshold D.3",
+            },
+            schema_props={
+                "title": "The threshold S.1",
+                "x-ui": {"title": "The threshold S.2"},
+                "x-ui:title": "The threshold S.3",
+            },
+            expected_props={"title": "The threshold S.3"},
         )
-        required = None
 
-    test.assertEqual(
-        UIFieldInfo(
-            name="threshold", schema=schema, required=required, **expected_props
-        ),
-        field_info,
-    )
-
-
-def test_pydantic_deserialization_with_extra_fields():
-    """Ensure, pydantic deserializes extra fields as expected."""
-
-    class MyModel(pydantic.BaseModel):
-        model_config = pydantic.ConfigDict(
-            extra="allow",
+        self._assert_description(
+            description_cls,
+            description_props={
+                "title": "The threshold D.1",
+                "x-ui": {"title": "The threshold D.2"},
+                # "x-ui:title": "The threshold D.3",
+            },
+            schema_props={
+                "title": "The threshold S.1",
+                "x-ui": {"title": "The threshold S.2"},
+                # "x-ui:title": "The threshold S.3",
+            },
+            expected_props={"title": "The threshold D.2"},
         )
-        xGui: Annotated[dict[str, Any] | None, pydantic.Field(None, alias="x-gui")]
 
-    model = MyModel(
-        **{
-            "x-gui": {"widget": "slider"},
+        self._assert_description(
+            description_cls,
+            description_props={
+                "title": "The threshold D.1",
+                # "x-ui": {"title": "The threshold D.2"},
+                # "x-ui:title": "The threshold D.3",
+            },
+            schema_props={
+                "title": "The threshold S.1",
+                "x-ui": {"title": "The threshold S.2"},
+                # "x-ui:title": "The threshold S.3",
+            },
+            expected_props={"title": "The threshold S.2"},
+        )
+
+        self._assert_description(
+            description_cls,
+            description_props={
+                "title": "The threshold D.1",
+                # "x-ui": {"title": "The threshold D.2"},
+                # "x-ui:title": "The threshold D.3",
+            },
+            schema_props={
+                "title": "The threshold S.1",
+                # "x-ui": {"title": "The threshold S.2"},
+                # "x-ui:title": "The threshold S.3",
+            },
+            expected_props={"title": "The threshold D.1"},
+        )
+
+        self._assert_description(
+            description_cls,
+            description_props={
+                # "title": "The threshold D.1",
+                # "x-ui": {"title": "The threshold D.2"},
+                # "x-ui:title": "The threshold D.3",
+            },
+            schema_props={
+                "title": "The threshold S.1",
+                # "x-ui": {"title": "The threshold S.2"},
+                # "x-ui:title": "The threshold S.3",
+            },
+            expected_props={"title": "The threshold S.1"},
+        )
+
+        self._assert_description(
+            description_cls,
+            description_props={
+                # "title": "The threshold D.1",
+                # "x-ui": {"title": "The threshold D.2"},
+                # "x-ui:title": "The threshold D.3",
+            },
+            schema_props={
+                # "title": "The threshold S.1",
+                # "x-ui": {"title": "The threshold S.2"},
+                # "x-ui:title": "The threshold S.3",
+            },
+            expected_props={"title": "Threshold"},
+        )
+
+    def _assert_description(
+        self,
+        description_cls: type[InputDescription] | type[OutputDescription],
+        description_props: dict[str, Any],
+        schema_props: dict[str, Any],
+        expected_props: dict[str, Any],
+    ):
+        kwargs = {**description_props, "schema": schema_props}
+        if issubclass(description_cls, InputDescription):
+            field_info = UIFieldInfo.from_input_descriptions(
+                {"threshold": InputDescription(**kwargs)}
+            )
+            required = True
+        else:
+            field_info = UIFieldInfo.from_output_descriptions(
+                {"threshold": OutputDescription(**kwargs)},
+            )
+            required = None
+
+        self.assertIsNotNone(field_info.children)
+        self.assertEqual(1, len(field_info.children))
+        self.assertEqual(
+            {
+                "name": "threshold",
+                **expected_props,
+            },
+            to_json(field_info.children[0], exclude={"schema_", "required"}),
+        )
+
+    def test_pydantic_deserialization_with_extra_fields(self):
+        """Ensure, pydantic deserializes extra fields as expected."""
+
+        class MyModel(pydantic.BaseModel):
+            model_config = pydantic.ConfigDict(
+                extra="allow",
+            )
+            xGui: Annotated[dict[str, Any] | None, pydantic.Field(None, alias="x-gui")]
+
+        model = MyModel(
+            **{
+                "x-gui": {"widget": "slider"},
+                "x-ui": {"widget": "select"},
+                "x-ui:widget": "select",
+            }
+        )
+
+        assert model.xGui == {"widget": "slider"}
+        assert model.model_extra["x-ui"] == {"widget": "select"}
+        assert model.model_extra["x-ui:widget"] == "select"
+        assert model.model_dump() == {
             "x-ui": {"widget": "select"},
             "x-ui:widget": "select",
+            "xGui": {"widget": "slider"},
         }
-    )
-
-    assert model.xGui == {"widget": "slider"}
-    assert model.model_extra["x-ui"] == {"widget": "select"}
-    assert model.model_extra["x-ui:widget"] == "select"
-    assert model.model_dump() == {
-        "x-ui": {"widget": "select"},
-        "x-ui:widget": "select",
-        "xGui": {"widget": "slider"},
-    }

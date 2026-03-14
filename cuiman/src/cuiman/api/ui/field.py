@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import re
 from typing import Any, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -69,75 +70,116 @@ class UIFieldInfo(BaseModel):
     maximum: int | float | None = None
 
     @classmethod
-    def from_input_description(
+    def from_input_descriptions(
         cls,
-        name: str,
-        description: InputDescription,
+        input_descriptions: dict[str, InputDescription],
+        name: str = "inputs",
+        title: str | None = None,
+        description: str | None = None,
     ) -> "UIFieldInfo":
         """Extract a UI-field from the input description."""
-        return _ui_field_info_from_input_description(name, description)
+        properties = {}
+        required_names = []
+        for input_name, input_description in input_descriptions.items():
+            schema, required = _schema_from_input_description(
+                input_name, input_description
+            )
+            properties[input_name] = schema
+            if required:
+                required_names.append(input_name)
+
+        schema_dict = {
+            "type": "object",
+            "properties": properties,
+            "required": required_names or None,
+            "title": title or _make_title(name),
+            "description": description,
+        }
+        return cls.from_schema(
+            name,
+            Schema(**schema_dict),
+            required=True if len(required_names) > 0 else None,
+        )
 
     @classmethod
-    def from_output_description(
+    def from_output_descriptions(
+        cls,
+        output_descriptions: dict[str, OutputDescription],
+        name: str = "outputs",
+        title: str | None = None,
+        description: str | None = None,
+    ) -> "UIFieldInfo":
+        """Extract a UI-field from the input description."""
+        properties = {
+            output_name: _schema_from_output_description(
+                output_name, output_description
+            )
+            for output_name, output_description in output_descriptions.items()
+        }
+        schema_dict = {
+            "type": "object",
+            "properties": properties,
+            "title": title or _make_title(name),
+            "description": description,
+        }
+        return cls.from_schema(name, Schema(**schema_dict))
+
+    @classmethod
+    def from_schema(
         cls,
         name: str,
-        description: OutputDescription,
+        schema: Schema,
+        required: bool | None = None,
     ) -> "UIFieldInfo":
-        """Extract a UI-field from the output description."""
-        return _ui_field_info_from_output_description(name, description)
+        return _ui_field_info_from_schema(name, schema, required=required)
 
 
-def _ui_field_info_from_input_description(
-    name: str,
-    description: InputDescription,
-) -> UIFieldInfo:
-    min_occurs = 1 if description.minOccurs is None else description.minOccurs
-    max_occurs = 1 if description.maxOccurs is None else description.maxOccurs
-
-    if min_occurs > 1 or max_occurs == "unbounded" or max_occurs > 1:
-        schema = Schema(
-            type="array",
-            items=description.schema_,
-            minItems=min_occurs,
-            maxItems=max_occurs if max_occurs != "unbounded" else None,
-        )
-        description = InputDescription(
-            schema=schema, **_make_description_dict(description)
-        )
-
-    return _ui_field_info_from_description(name, description, required=min_occurs > 0)
-
-
-def _ui_field_info_from_output_description(
-    name: str,
-    description: OutputDescription,
-) -> UIFieldInfo:
-    return _ui_field_info_from_description(name, description)
-
-
-def _ui_field_info_from_description(
-    name: str,
-    description: InputDescription | OutputDescription,
-    required: bool | None = None,
-) -> UIFieldInfo:
-    return _ui_field_info_from_schema(
-        name=name,
-        schema=description.schema_,
-        overrides=_make_description_dict(description),
-        required=required,
+def _schema_from_input_description(
+    input_name: str,
+    input_description: InputDescription,
+) -> tuple[Schema, bool]:
+    description_dict = _make_description_dict(input_description)
+    min_occurs = description_dict.pop("minOccurs", None)
+    max_occurs = description_dict.pop("maxOccurs", None)
+    min_items = 1 if min_occurs is None else min_occurs
+    max_items = (
+        1 if max_occurs is None else (None if max_occurs == "unbounded" else max_occurs)
     )
+    input_schema = input_description.schema_
+    if min_items > 1 or max_items is None or max_items > 1:
+        schema_dict = {
+            "type": "array",
+            "items": input_schema,
+            "minItems": min_items,
+            "maxItems": max_items,
+        }
+    else:
+        schema_dict = _make_schema_dict(input_schema)
+    schema_dict.update(description_dict)
+    if "title" not in schema_dict:
+        schema_dict["title"] = _make_title(input_name)
+    return Schema(**schema_dict), min_items > 0
+
+
+def _schema_from_output_description(
+    output_name: str,
+    output_description: OutputDescription,
+) -> Schema:
+    description_dict = _make_description_dict(output_description)
+    schema_dict = _make_schema_dict(output_description.schema_)
+    schema_dict.update(description_dict)
+    if "title" not in schema_dict:
+        schema_dict["title"] = _make_title(output_name)
+    return Schema(**schema_dict)
 
 
 def _ui_field_info_from_schema(
     name: str,
     schema: Schema,
-    overrides: dict[str, Any] | None = None,
     required: bool | None = None,
 ) -> UIFieldInfo:
     schema_dict = _make_schema_dict(schema)
-    ui_props = _extract_ui_props_from_sources(
-        [schema_dict, overrides] if overrides else [schema_dict]
-    )
+    ui_props = _extract_ui_props_from_schema_dict(schema_dict)
     required = ui_props.pop("required", required)
     children = _ui_field_info_children_from_schema(name, schema)
     return UIFieldInfo(
@@ -181,17 +223,16 @@ def _ui_field_info_children_from_schema(
     return None
 
 
-def _extract_ui_props_from_sources(
-    sources: list[dict[Any, Any] | dict[str, Any] | Any],
+def _extract_ui_props_from_schema_dict(
+    schema_dict: dict[str, Any],
 ) -> dict[str, Any]:
     ui_props: dict[str, Any] = {}
-    for source in sources:
-        # update properties in ui_dict by yet unset UIFieldInfo values
-        _update_ui_props_from_field_props(source, ui_props)
-        # update properties in ui_dict from UI object with UI properties
-        _update_ui_props_from_ui_object(source, UI_KEYS, ui_props)
-        # update properties in ui_dict from values of prefixed UI properties
-        _update_ui_props_from_prefixed_ui_keys(source, UI_KEY_PREFIXES, ui_props)
+    # update properties in ui_dict by yet unset UIFieldInfo values
+    _update_ui_props_from_field_props(schema_dict, ui_props)
+    # update properties in ui_dict from UI object with UI properties
+    _update_ui_props_from_ui_object(schema_dict, UI_KEYS, ui_props)
+    # update properties in ui_dict from values of prefixed UI properties
+    _update_ui_props_from_prefixed_ui_keys(schema_dict, UI_KEY_PREFIXES, ui_props)
     return ui_props
 
 
@@ -251,3 +292,7 @@ def _make_description_dict(
         exclude_defaults=True,
         exclude_unset=True,
     )
+
+
+def _make_title(name: str) -> str:
+    return " ".join(p.capitalize() for p in re.split(r"[_-]|(?<=[a-z])(?=[A-Z])", name))
