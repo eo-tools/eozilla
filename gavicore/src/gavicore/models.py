@@ -26,8 +26,10 @@ class DataType(Enum):
 
 class Schema(BaseModel):
     model_config = ConfigDict(
-        extra="forbid",
+        # allow for extensions usually prefixed by "x-", e.g., "x-ui"
+        extra="allow",
     )
+
     # general
     type: DataType | None = None
     title: str | None = None
@@ -153,7 +155,7 @@ class AdditionalParameters(Metadata):
 
 class DescriptionType(BaseModel):
     model_config = ConfigDict(
-        # allow for extensions, e.g., using field name prefix "x-"
+        # allow for extensions usually prefixed by "x-", e.g., "x-ui"
         extra="allow",
     )
 
