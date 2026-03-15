@@ -25,6 +25,42 @@ class DataType(Enum):
 
 
 class Schema(BaseModel):
+    """Simple representation of OpenAPI Schema 3.0.
+
+    The OpenAPI 3.0 Schema is not pure JSON Schema.
+    It is a modified subset + extensions of JSON Schema.
+
+    This schema has some differences with common JSON Schema:
+
+    Most importantly, `type` is not allowed to be an array of types.
+    and it is not allowed to be `"null"`. To indicate a value that can
+    be `None`, `nullable=True` is used to allow a value to be `None`,
+    instead of `type=["string", "null"]` in JSON Schema.
+
+    Keywords and constructs that do not exist in JSON Schema:
+
+        - `nullable = True`
+        - `deprecated == True`
+        - `readOnly = True`
+        - `writeOnly = True`
+        - `discriminator`
+        - `xml`
+        - `example`
+
+    Keywords and constructs supported in JSON Schema,
+    but not in OpenAPI 3.0 Schema:
+
+        - `const`
+        - `if` / `then` / `else`
+        - `contains`
+        - `patternProperties`
+        - `dependencies`
+
+    Note that OpenAPI Schemas are extendable;
+    application-specific fields are usually prefixed
+    by `"x-"`. For example, `x-ui` or `x-ui:widget`.
+    """
+
     model_config = ConfigDict(
         # allow for extensions usually prefixed by "x-", e.g., "x-ui"
         extra="allow",
