@@ -66,15 +66,16 @@ pytest
 ## Example
 
 ```python
-from uifield_project.models import Schema, UIFieldInfo
-from uifield_project.core.builder import NodeBuilder
-from uifield_project.adapters.param_state import ParamStateFactory
-from uifield_project.views.base import ViewRegistry
-from uifield_project.adapters.panel_views import register_default_panel_factories
+from gavicore.models import DataType, Schema
+from cuiman.api.ui.field import UIFieldInfo
+from cuiman.api.ui.builder import NodeBuilder
+from cuiman.api.ui.view import ViewRegistry
+from cuiman.gui.adapters.param_state import ParamState
+from cuiman.gui.adapters.panel_views import  register_default_panel_factories
 
 root_field = UIFieldInfo(
     name="inputs",
-    schema=Schema(type="object"),
+    schema=Schema(type=DataType.object),
     children=[
         UIFieldInfo(
             name="threshold",
@@ -82,18 +83,18 @@ root_field = UIFieldInfo(
             widget="slider",
             minimum=0.0,
             maximum=1.0,
-            schema=Schema(type="number", default=0.5),
+            schema=Schema(type=DataType.number, default=0.5),
         ),
         UIFieldInfo(
             name="verbose",
             title="Verbose",
             widget="checkbox",
-            schema=Schema(type="boolean", default=False),
+            schema=Schema(type=DataType.boolean, default=False),
         ),
     ],
 )
 
-builder = NodeBuilder(state_factory=ParamStateFactory())
+builder = NodeBuilder(state_cls=ParamState)
 root = builder.build(root_field)
 
 registry = ViewRegistry()

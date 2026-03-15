@@ -54,12 +54,10 @@ class ArrayNode(FieldNode):
         self,
         field: UIFieldInfo,
         state: ValueState,
-        item_state_factory,
         parent: FieldNode | None = None,
     ):
         super().__init__(field=field, state=state, parent=parent)
         self.items: list[FieldNode] = []
-        self._item_state_factory = item_state_factory
 
     def add_item(self, item: FieldNode) -> None:
         item.parent = self

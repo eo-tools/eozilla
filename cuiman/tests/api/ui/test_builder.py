@@ -1,7 +1,7 @@
 from cuiman.api.ui.builder import NodeBuilder
 from cuiman.api.ui.field import UIFieldInfo
 
-# from cuiman.gui.adapters.param_state import ParamStateFactory
+from cuiman.gui.adapters.param_state import ParamState
 from gavicore.models import Schema, DataType
 
 
@@ -29,5 +29,5 @@ def test_build_and_serialize_object_tree_param():
         ],
     )
 
-    root = NodeBuilder(state_factory=ParamStateFactory()).build(root_field)
+    root = NodeBuilder(state_cls=ParamState).build(root_field)
     assert root.to_python() == {"a": 1.5, "b": True}

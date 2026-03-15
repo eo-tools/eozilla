@@ -5,32 +5,31 @@ from typing import Any
 from gavicore.models import DataType
 from .field import UIFieldInfo
 from .nodes import ArrayNode, FieldNode, ObjectNode, PrimitiveNode
-from .state import PlainStateFactory, StateFactory
+from .state import DefaultValueState, ValueState
 
 
 class NodeBuilder:
-    def __init__(self, state_factory: StateFactory | None = None):
-        self.state_factory = state_factory or PlainStateFactory()
+    def __init__(self, state_cls: type[ValueState] | None = None):
+        self.state_cls = state_cls or DefaultValueState
 
     def build(self, field: UIFieldInfo, parent: FieldNode | None = None) -> FieldNode:
         initial = field.schema_.default
-        kind = field.schema_.type
+        schema_type = field.schema_.type
 
-        if kind == DataType.object:
+        if schema_type == DataType.object:
             node = ObjectNode(
                 field=field,
-                state=self.state_factory.create(initial=initial, field=field),
+                state=self.state_cls.create(field),
                 parent=parent,
             )
             for child_field in field.children or []:
                 node.add_child(self.build(child_field, parent=node))
             return node
 
-        if kind == DataType.array:
+        if schema_type == DataType.array:
             node = ArrayNode(
                 field=field,
-                state=self.state_factory.create(initial=initial or [], field=field),
-                item_state_factory=self.state_factory,
+                state=self.state_cls.create(field),
                 parent=parent,
             )
             defaults = initial or []
@@ -45,7 +44,7 @@ class NodeBuilder:
 
         return PrimitiveNode(
             field=field,
-            state=self.state_factory.create(initial=initial, field=field),
+            state=self.state_cls.create(field),
             parent=parent,
         )
 
