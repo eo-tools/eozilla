@@ -25,10 +25,11 @@
     - Same for `InlineValueOrRef` which has also been renamed to `JobResult`.
     - Replaced type of optional fields `Optional[T]` by `T | None`.
     - The following models are now extendable, e.g., using `"x-"` prefixed fields:
-        - `gavicore.models.InputDescription` (e.g., extra "x-ui")
-        - `gavicore.models.OutputDescription` (e.g., extra "x-ui")
-        - `gavicore.models.JobStatus`  (e.g., extra "x-traceback")
-        - `gavicore.models.ApiError`  (e.g., extra "x-traceback")
+        - `gavicore.models.Schema` 
+        - `gavicore.models.InputDescription`
+        - `gavicore.models.OutputDescription`
+        - `gavicore.models.JobStatus` (extra "x-traceback")
+        - `gavicore.models.ApiError` (extra "x-traceback")
     - Replaced one-element enums `JobType`, `MaxOccurs` by string literals. 
     - Replaced `Union[]` by `|` operator.
 
