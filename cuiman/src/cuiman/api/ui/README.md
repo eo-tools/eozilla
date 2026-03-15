@@ -1,6 +1,5 @@
-# uifield-project
 
-A small Python project that shows how to integrate:
+A small Python UI-generating framework:
 
 - `UIFieldInfo` as the normalized schema/UI metadata layer
 - a GUI-independent node tree
@@ -34,44 +33,24 @@ OGC API / JSON Schema / x-ui metadata
 
 ## Package layout
 
-- `uifield_project.models`: `Schema`, `UIFieldInfo`
-- `uifield_project.core.state`: generic state protocol + plain in-memory state
-- `uifield_project.adapters.param_state`: optional `param`-based state
-- `uifield_project.core.nodes`: node tree classes
-- `uifield_project.core.builder`: builds a node tree from `UIFieldInfo`
-- `uifield_project.views.base`: `ViewFactory`, `ViewRegistry`
-- `uifield_project.adapters.panel_views`: example Panel widget factories
+- `cuiman.api.ui.field`:  `UIFieldInfo`
+- `cuiman.api.ui.state`: generic state protocol + plain in-memory state
+- `cuiman.api.ui.nodes`: node tree classes
+- `cuiman.api.ui.builder`: builds a node tree from `UIFieldInfo`
+- `cuiman.api.ui.state`: `ViewFactory`, `ViewRegistry`
+- `cuiman.gui.adapters.param_state`: optional `param`-based state
+- `cuiman.gui.adapters.panel_views`: example Panel widget factories
 
-## Install
-
-Core only:
-
-```bash
-pip install -e .
-```
-
-With Panel + Param support:
-
-```bash
-pip install -e .[param_panel]
-```
-
-With tests:
-
-```bash
-pip install -e .[test]
-pytest
-```
 
 ## Example
 
 ```python
-from gavicore.models import DataType, Schema
 from cuiman.api.ui.field import UIFieldInfo
 from cuiman.api.ui.builder import NodeBuilder
 from cuiman.api.ui.view import ViewRegistry
 from cuiman.gui.adapters.param_state import ParamState
 from cuiman.gui.adapters.panel_views import  register_default_panel_factories
+from gavicore.models import DataType, Schema
 
 root_field = UIFieldInfo(
     name="inputs",

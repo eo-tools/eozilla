@@ -1,4 +1,6 @@
-from __future__ import annotations
+#  Copyright (c) 2026 by the Eozilla team and contributors
+#  Permissions are hereby granted under the terms of the Apache 2.0 License:
+#  https://opensource.org/license/apache-2-0.
 
 import panel as pn
 
@@ -15,6 +17,7 @@ class PanelObjectFactory(ViewFactory):
         return 100 if isinstance(node, ObjectNode) else -1
 
     def create(self, node: FieldNode, registry: ViewRegistry):
+        assert isinstance(node, ObjectNode)
         children = [registry.render(child) for child in node.children]
         return pn.Column(*children, name=_field_label(node))
 
@@ -24,6 +27,7 @@ class PanelArrayFactory(ViewFactory):
         return 100 if isinstance(node, ArrayNode) else -1
 
     def create(self, node: FieldNode, registry: ViewRegistry):
+        assert isinstance(node, ArrayNode)
         item_views = [registry.render(item) for item in node.items]
         header = pn.pane.Markdown(f"**{_field_label(node)}**")
         return pn.Column(header, *item_views)

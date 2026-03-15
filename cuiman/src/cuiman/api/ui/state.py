@@ -1,4 +1,6 @@
-from __future__ import annotations
+#  Copyright (c) 2026 by the Eozilla team and contributors
+#  Permissions are hereby granted under the terms of the Apache 2.0 License:
+#  https://opensource.org/license/apache-2-0.
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -15,9 +17,7 @@ class ValueState(Generic[T], ABC):
 
     @classmethod
     @abstractmethod
-    def create(
-        cls, field: UIFieldInfo, initial_value: T | None = None
-    ) -> "ValueState[T]":
+    def create(cls, field: UIFieldInfo, initial_value: Any = None) -> "ValueState[T]":
         """Create an instance of this class given the initial value
         and UI field metadata.
         """
@@ -50,7 +50,7 @@ class DefaultValueState(ValueState):
         self._observers: list[Observer] = []
 
     @classmethod
-    def create(cls, field: UIFieldInfo = None, initial_value: Any = None) -> ValueState:
+    def create(cls, field: UIFieldInfo, initial_value: Any = None) -> ValueState:
         return DefaultValueState(initial_value)
 
     def get(self) -> Any:
