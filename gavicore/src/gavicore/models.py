@@ -16,6 +16,8 @@ from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootMo
 
 
 class DataType(Enum):
+    """The data type of a value to be validated by the [Schema][Schema]."""
+
     boolean = "boolean"
     integer = "integer"
     number = "number"
@@ -25,17 +27,20 @@ class DataType(Enum):
 
 
 class Schema(BaseModel):
-    """Simple representation of OpenAPI Schema 3.0.
+    """Representation of the OpenAPI 3.0 Schema.
 
-    The OpenAPI 3.0 Schema is not pure JSON Schema.
-    It is a modified subset + extensions of JSON Schema.
+    The OpenAPI 3.0 Schema is a subset of JSON Schema draft-05
+    with some noticeable extensions.
 
-    This schema has some differences with common JSON Schema:
+    Most importantly,
 
-    Most importantly, `type` is not allowed to be an array of types.
-    and it is not allowed to be `"null"`. To indicate a value that can
-    be `None`, `nullable=True` is used to allow a value to be `None`,
-    instead of `type=["string", "null"]` in JSON Schema.
+    - `type` is not allowed to be an array of types, and
+      it is not allowed to be `"null"`. To indicate a value that can
+      be `None`, `nullable=True` is used to allow a value to be `None`,
+      instead of `type=["string", "null"]` in JSON Schema.
+    - `items` must a schema, which means _tuples_ are not supported.
+      (tuple = a schema of type "array" with fixed-length `items` being an
+      array of possibly distinct schemas.
 
     Keywords and constructs that do not exist in JSON Schema:
 
@@ -47,7 +52,7 @@ class Schema(BaseModel):
         - `xml`
         - `example`
 
-    Keywords and constructs supported in JSON Schema,
+    Keywords and constructs that are supported in JSON Schema,
     but not in OpenAPI 3.0 Schema:
 
         - `const`
