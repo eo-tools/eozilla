@@ -99,7 +99,7 @@ class Schema(BaseModel):
     contentEncoding: str | None = None
     contentSchema: str | None = None
     # type "array"
-    items: list[Schema] | Schema | None = None
+    items: Schema | None = None
     minItems: int | None = Field(0, ge=0)
     maxItems: int | None = Field(None, ge=0)
     uniqueItems: bool | None = False
