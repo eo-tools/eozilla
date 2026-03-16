@@ -3,7 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 import re
-from typing import Any, Literal, TypeAlias
+from typing import Any, Literal, TypeAlias, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -31,6 +31,39 @@ UIFieldWidget: TypeAlias = Literal[
 ]
 
 
+class Group(BaseModel):
+    """Definition of a group of complex UI components.
+
+    Example:
+
+    ```python
+    Group(
+        type="row",
+        items=[
+            Group(type="column", items=["field_a", "field_b"]),
+            Group(type="column", items=["field_c", "field_d"]),
+        ]
+    )
+    ```
+
+    Items can be other `Group` objects or the names of the
+    fields that should be part of the layout. Another possibility
+    for a field to join a layout is to set its `group` property
+    to the `name` of the target group.
+    Children of a complex field whose names do not occur in any group
+    of a layout tree, and do not have the `group` property set
+    will be appended to the root group of a layout tree.
+    Their order will be determined by the value of the `order`
+    property, if any, or the value of the `name` property.
+    """
+
+    direction: Literal["column", "row"]
+    items: list[Union["Group", str]] | None = None
+    id: str | None = None
+    title: str | None = None
+    style: dict[str, Any] | None = None
+
+
 class UIFieldInfo(BaseModel):
     """Information used to generate a GUI field like a widget or panel.
 
@@ -55,6 +88,7 @@ class UIFieldInfo(BaseModel):
     # If shema.type == "object" then this is list of UI fields
     # of the object properties.
     children: list["UIFieldInfo"] | None = None
+    layout: Group | Literal["column", "row"] | None = None
     widget: UIFieldWidget | str | None = None
     title: str | None = None
     description: str | None = None
@@ -287,7 +321,7 @@ def _make_description_dict(
     description: InputDescription | OutputDescription,
 ) -> dict[str, Any]:
     return description.model_dump(
-        exclude={"schema", "schema_"},  # !
+        exclude={"schema_"},  # !
         exclude_none=True,
         exclude_defaults=True,
         exclude_unset=True,
