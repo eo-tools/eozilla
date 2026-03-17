@@ -70,6 +70,13 @@ class UIFieldInfo(BaseModel):
     It has been collected from a process input/output description,
     the respective JSON schema, and from possible extension fields
     either contained in the descriptions or the JSON schemas.
+
+    This class should not be instantiated from its constructor,
+    instead, use one of the factory methods
+
+    - [from_input_descriptions][from_input_descriptions]
+    - [from_output_descriptions][from_output_descriptions]
+    - [from_schema][from_schema]
     """
 
     model_config = ConfigDict(
