@@ -1,97 +1,124 @@
 #  Copyright (c) 2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-from abc import ABC, abstractmethod
-from typing import Any, TypeAlias, TypeVar, Callable
+
+from abc import ABC
+from typing import Any, Callable, Generic, TypeAlias, TypeVar
+from weakref import WeakSet
 
 from .field import UIFieldInfo
-from .state import ValueState
-
 
 T = TypeVar("T")
 
-FieldNodeObserver: TypeAlias = Callable[["FieldNode.ChangeEvent"], None]
+
+class _Undefined:
+    """Represents an undefined value."""
 
 
-class FieldNode(ABC):
-    UNDEFINED = object()
+_UNDEFINED = _Undefined()
 
-    class ChangeEvent:
-        def __init__(self, source: "FieldNode", new_value: Any, old_value: Any):
-            self.source = source
-            self.new_value = new_value
-            self.old_value = old_value
 
+FieldValueFactory: TypeAlias = Callable[[T], Any]
+
+
+class FieldNodeChangeEvent:
+    def __init__(self, source: "FieldNode"):
+        self.source = source
+
+
+FieldNodeObserver: TypeAlias = Callable[[FieldNodeChangeEvent], None]
+
+
+class FieldNode(Generic[T], ABC):
     def __init__(
         self,
         field: UIFieldInfo,
         parent: "FieldNode | None" = None,
+        initial_value: T | _Undefined = _UNDEFINED,
     ):
         self.field = field
         self.parent = parent
-        self._observers: list[FieldNodeObserver] = []
+        self._value = initial_value
+        self._observers: WeakSet[FieldNodeObserver] = WeakSet()
 
-    @abstractmethod
-    def get(self) -> Any:
+    def get(self) -> T:
         """Get the current value."""
+        if isinstance(self._value, _Undefined):
+            raise ValueError("Value is undefined")
+        return self._value
 
-    def set(self, new_value: Any) -> None:
+    def set(self, value: T) -> None:
         """Set the current value."""
-        old_value = self.get()
-        if new_value != old_value:
-            self._set(new_value)
-            for observer in self._observers:
-                observer(self.ChangeEvent(self, new_value, old_value))
+        self._value = value
+        self._notify()
 
-    @abstractmethod
-    def _set(self, value: Any) -> None:
-        """Set the current value."""
+    def watch(self, *observers: FieldNodeObserver) -> Callable[[], None]:
+        def unwatch():
+            for o_ in observers:
+                self._observers.remove(o_)
+
+        for o in observers:
+            if o not in self._observers:
+                self._observers.add(o)
+        return unwatch
+
+    def _notify(self) -> None:
+        event = FieldNodeChangeEvent(self)
+        for observer in self._observers:
+            observer(event)
 
 
-class PrimitiveNode(FieldNode):
+class PrimitiveNode(FieldNode[T]):
     def __init__(
         self,
         field: UIFieldInfo,
         parent: "FieldNode | None" = None,
-        initial_value: Any = None,
+        initial_value: T | _Undefined = _UNDEFINED,
     ):
-        super().__init__(field, parent)
-        self._value = initial_value
-
-    def get(self):
-        return self._value
-
-    def _set(self, value: Any) -> None:
-        self._value = value
+        super().__init__(field, parent=parent, initial_value=initial_value)
 
 
-class ObjectNode(FieldNode):
-    def __init__(
-        self, field: UIFieldInfo, parent: FieldNode | None = None, *children: FieldNode, initial_value: Any = None
-    ):
-        super().__init__(field=field, parent=parent)
-        self._children = children
-
-    def get(self) -> dict[str, Any]:
-        return {node.field.name: node.get() for node in self._children}
-
-    def _set(self, value: dict[str, Any]) -> :
-        return value
-
-
-class ArrayNode(FieldNode):
+class ObjectNode(FieldNode[dict[str, FieldNode]]):
     def __init__(
         self,
         field: UIFieldInfo,
-        state: ValueState,
         parent: FieldNode | None = None,
+        initial_value: dict[str, FieldNode] | _Undefined = _UNDEFINED,
     ):
-        super().__init__(field=field, state=state, parent=parent)
-        self.items: list[FieldNode] = []
+        super().__init__(field, parent=parent, initial_value=initial_value)
+        if not isinstance(self._value, _Undefined):
+            self._watch_properties(self._value)
 
-    def add_item(self, item: FieldNode) -> None:
-        item.parent = self
-        self.items.append(item)
+    def set(self, value: dict[str, FieldNode]) -> None:
+        super().set(value)
+        self._watch_properties(value)
 
-    def _compute_value(self) -> list[Any]:
-        return [item._compute_value() for item in self.items]
+    def _watch_properties(self, value: dict[str, FieldNode]):
+        def property_observer(_event: FieldNodeChangeEvent):
+            self._notify()
+
+        for n in value.values():
+            n.watch(property_observer)
+
+
+class ArrayNode(FieldNode[list[FieldNode[T]]]):
+    def __init__(
+        self,
+        field: UIFieldInfo,
+        parent: FieldNode | None = None,
+        initial_value: list[FieldNode[T]] | _Undefined = _UNDEFINED,
+    ):
+        super().__init__(field, parent=parent, initial_value=initial_value)
+        if not isinstance(self._value, _Undefined):
+            self._watch_items(self._value)
+
+    def set(self, value: list[FieldNode[T]]) -> None:
+        super().set(value)
+        self._watch_items(value)
+
+    def _watch_items(self, value: list[FieldNode[T]]):
+        def item_observer(_event: FieldNodeChangeEvent):
+            self._notify()
+
+        for n in value:
+            n.watch(item_observer)
