@@ -64,8 +64,8 @@ class Group(BaseModel):
     style: dict[str, Any] | None = None
 
 
-class UIFieldInfo(BaseModel):
-    """Information used to generate a GUI field like a widget or panel.
+class UIFieldMeta(BaseModel):
+    """Metadata used to generate a GUI field like a widget or panel.
 
     It has been collected from a process input/output description,
     the respective JSON schema, and from possible extension fields
@@ -94,7 +94,7 @@ class UIFieldInfo(BaseModel):
     # with the first element describing the array items.
     # If shema.type == "object" then this is list of UI fields
     # of the object properties.
-    children: list["UIFieldInfo"] | None = None
+    children: list["UIFieldMeta"] | None = None
     layout: Group | Literal["column", "row"] | None = None
     widget: UIFieldWidget | str | None = None
     title: str | None = None
@@ -117,7 +117,7 @@ class UIFieldInfo(BaseModel):
         name: str = "inputs",
         title: str | None = None,
         description: str | None = None,
-    ) -> "UIFieldInfo":
+    ) -> "UIFieldMeta":
         """Extract a UI-field from the input description."""
         properties = {}
         required_names = []
@@ -149,7 +149,7 @@ class UIFieldInfo(BaseModel):
         name: str = "outputs",
         title: str | None = None,
         description: str | None = None,
-    ) -> "UIFieldInfo":
+    ) -> "UIFieldMeta":
         """Extract a UI-field from the input description."""
         properties = {
             output_name: _schema_from_output_description(
@@ -171,8 +171,8 @@ class UIFieldInfo(BaseModel):
         name: str,
         schema: Schema,
         required: bool | None = None,
-    ) -> "UIFieldInfo":
-        return _ui_field_info_from_schema(name, schema, required=required)
+    ) -> "UIFieldMeta":
+        return _ui_field_meta_from_schema(name, schema, required=required)
 
 
 def _schema_from_input_description(
@@ -214,23 +214,23 @@ def _schema_from_output_description(
     return Schema(**schema_dict)
 
 
-def _ui_field_info_from_schema(
+def _ui_field_meta_from_schema(
     name: str,
     schema: Schema,
     required: bool | None = None,
-) -> UIFieldInfo:
+) -> UIFieldMeta:
     schema_dict = _make_schema_dict(schema)
     ui_props = _extract_ui_props_from_schema_dict(schema_dict)
     required = ui_props.pop("required", required)
-    children = _ui_field_info_children_from_schema(name, schema)
-    return UIFieldInfo(
+    children = _ui_field_meta_children_from_schema(name, schema)
+    return UIFieldMeta(
         name=name, schema=schema, required=required, children=children, **ui_props
     )
 
 
-def _ui_field_info_children_from_schema(
+def _ui_field_meta_children_from_schema(
     name: str, schema: Schema
-) -> list[UIFieldInfo] | None:
+) -> list[UIFieldMeta] | None:
     if schema.type == DataType.array:
         item_name = f"{name}_item"
         if isinstance(schema.items, list):
@@ -238,7 +238,7 @@ def _ui_field_info_children_from_schema(
             # Also JSON Schema allows for it, OpenAPI 3.0 explicitly does not.
             # We cover it here for the future.
             return [
-                _ui_field_info_from_schema(f"{item_name}_{i}", s, required=True)
+                _ui_field_meta_from_schema(f"{item_name}_{i}", s, required=True)
                 for i, s in enumerate(schema.items)
             ]
         else:
@@ -247,7 +247,7 @@ def _ui_field_info_children_from_schema(
                 schema.items if isinstance(schema.items, Schema) else Schema(**{})
             )
             return [
-                _ui_field_info_from_schema(
+                _ui_field_meta_from_schema(
                     item_name,
                     item_schema,
                     required=schema.minItems is not None and schema.minItems > 0,
@@ -256,7 +256,7 @@ def _ui_field_info_children_from_schema(
     elif schema.type == DataType.object:
         required = set(schema.required) if schema.required else set()
         return [
-            _ui_field_info_from_schema(
+            _ui_field_meta_from_schema(
                 prop_name, prop_schema, required=prop_name in required
             )
             for prop_name, prop_schema in (schema.properties or {}).items()
@@ -268,7 +268,7 @@ def _extract_ui_props_from_schema_dict(
     schema_dict: dict[str, Any],
 ) -> dict[str, Any]:
     ui_props: dict[str, Any] = {}
-    # update properties in ui_dict by yet unset UIFieldInfo values
+    # update properties in ui_dict by yet unset UIFieldMeta values
     _update_ui_props_from_field_props(schema_dict, ui_props)
     # update properties in ui_dict from UI object with UI properties
     _update_ui_props_from_ui_object(schema_dict, UI_KEYS, ui_props)
@@ -280,10 +280,10 @@ def _extract_ui_props_from_schema_dict(
 def _update_ui_props_from_field_props(
     source: dict[str, Any], ui_props: dict[str, Any]
 ) -> None:
-    for field_name, field_info in UIFieldInfo.model_fields.items():
+    for field_name, field_meta in UIFieldMeta.model_fields.items():
         if field_name in source:
             value = source[field_name]
-            data_type = field_info.annotation
+            data_type = field_meta.annotation
             # Note, the following guard prevents assigning values of
             # unexpected type (e.g. "required" of type bool vs. list[str])
             # This my become an issue if we start using non-primitive types.

@@ -2,13 +2,29 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from .uifieldinfo import UIFieldInfo
-from .uifield import UIField, UIFieldFactory, UIBuilder, UIBuilderContext
+from .field import UIBuilder, UIBuilderContext, UIField, UIFieldFactory
+from .fieldmeta import UIFieldMeta
+from .vm import (
+    ArrayViewModel,
+    CompositeViewModel,
+    ObjectViewModel,
+    PrimitiveViewModel,
+    ViewModel,
+    ViewModelChangeEvent,
+    ViewModelObserver,
+)
 
 __all__ = [
+    "ArrayViewModel",
+    "CompositeViewModel",
+    "ObjectViewModel",
+    "PrimitiveViewModel",
     "UIBuilder",
     "UIBuilderContext",
     "UIField",
     "UIFieldFactory",
-    "UIFieldInfo",
+    "UIFieldMeta",
+    "ViewModel",
+    "ViewModelChangeEvent",
+    "ViewModelObserver",
 ]

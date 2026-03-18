@@ -8,7 +8,7 @@ from unittest import TestCase
 import pydantic
 from pydantic import BaseModel
 
-from cuiman.api.ui import UIFieldInfo
+from cuiman.api.ui import UIFieldMeta
 from gavicore.models import InputDescription, OutputDescription, Schema
 
 dict_kwargs = dict(
@@ -27,9 +27,9 @@ def to_json(model: BaseModel, exclude: set[str] | None = None):
     )
 
 
-class UIFieldInfoTest(TestCase):
+class UIFieldMetaTest(TestCase):
     def test_from_input_descriptions(self):
-        ui_field_info = UIFieldInfo.from_input_descriptions(
+        field_meta = UIFieldMeta.from_input_descriptions(
             {
                 "datasets": InputDescription(
                     schema=Schema(type="string", format="uri", title="Input dataset"),
@@ -47,7 +47,7 @@ class UIFieldInfoTest(TestCase):
             }
         )
         self.maxDiff = None
-        self.assertIsInstance(ui_field_info, UIFieldInfo)
+        self.assertIsInstance(field_meta, UIFieldMeta)
 
         schema_1 = {
             "type": "string",
@@ -118,11 +118,11 @@ class UIFieldInfoTest(TestCase):
                 },
                 "title": "Inputs",
             },
-            to_json(ui_field_info),
+            to_json(field_meta),
         )
 
     def test_from_output_descriptions(self):
-        ui_field_info = UIFieldInfo.from_output_descriptions(
+        field_meta = UIFieldMeta.from_output_descriptions(
             {
                 "dataset": OutputDescription(
                     schema=Schema(type="string", title="Output dataset path"),
@@ -133,7 +133,7 @@ class UIFieldInfoTest(TestCase):
             }
         )
         self.maxDiff = None
-        self.assertIsInstance(ui_field_info, UIFieldInfo)
+        self.assertIsInstance(field_meta, UIFieldMeta)
 
         schema_1 = {"type": "string", "title": "Output dataset path"}
         schema_2 = {"type": "string", "title": "Log file path"}
@@ -164,7 +164,7 @@ class UIFieldInfoTest(TestCase):
                     },
                 ],
             },
-            to_json(ui_field_info),
+            to_json(field_meta),
         )
 
     def test_tuple_schema(self):
@@ -182,8 +182,8 @@ class UIFieldInfoTest(TestCase):
             ],
             title="Performance settings",
         )
-        ui_field_info = UIFieldInfo.from_schema("performance", schema)
-        self.assertIsInstance(ui_field_info, UIFieldInfo)
+        field_meta = UIFieldMeta.from_schema("performance", schema)
+        self.assertIsInstance(field_meta, UIFieldMeta)
         schema_1 = {
             "title": "Threshold",
             "type": "number",
@@ -223,7 +223,7 @@ class UIFieldInfoTest(TestCase):
                     },
                 ],
             },
-            to_json(ui_field_info),
+            to_json(field_meta),
         )
 
     def test_object_schema(self):
@@ -241,7 +241,7 @@ class UIFieldInfoTest(TestCase):
             },
             required=["threshold"],
         )
-        ui_field_info = UIFieldInfo.from_schema("performance", schema)
+        field_meta = UIFieldMeta.from_schema("performance", schema)
         schema_1 = {
             "title": "Threshold",
             "type": "number",
@@ -280,7 +280,7 @@ class UIFieldInfoTest(TestCase):
                     },
                 ],
             },
-            to_json(ui_field_info),
+            to_json(field_meta),
         )
 
     def test_input_precedence(self):
@@ -407,24 +407,22 @@ class UIFieldInfoTest(TestCase):
     ):
         kwargs = {**description_props, "schema": schema_props}
         if issubclass(description_cls, InputDescription):
-            field_info = UIFieldInfo.from_input_descriptions(
+            field_meta = UIFieldMeta.from_input_descriptions(
                 {"threshold": InputDescription(**kwargs)}
             )
-            required = True
         else:
-            field_info = UIFieldInfo.from_output_descriptions(
+            field_meta = UIFieldMeta.from_output_descriptions(
                 {"threshold": OutputDescription(**kwargs)},
             )
-            required = None
 
-        self.assertIsNotNone(field_info.children)
-        self.assertEqual(1, len(field_info.children))
+        self.assertIsNotNone(field_meta.children)
+        self.assertEqual(1, len(field_meta.children))
         self.assertEqual(
             {
                 "name": "threshold",
                 **expected_props,
             },
-            to_json(field_info.children[0], exclude={"schema_", "required"}),
+            to_json(field_meta.children[0], exclude={"schema_", "required"}),
         )
 
     def test_pydantic_deserialization_with_extra_fields(self):

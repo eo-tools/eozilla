@@ -15,7 +15,6 @@ workspaces = [
     "procodile",
     "procodile-example",
     "wraptile",
-    "cuiman",
 ]
 
 
