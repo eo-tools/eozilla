@@ -174,6 +174,10 @@ class UIFieldMeta(BaseModel):
     ) -> "UIFieldMeta":
         return _ui_field_meta_from_schema(name, schema, required=required)
 
+    def get_initial_value(self) -> Any:
+        """Compute an initial value for this UI field metadata."""
+        return _get_initial_value(self)
+
 
 def _schema_from_input_description(
     input_name: str,
@@ -309,6 +313,50 @@ def _update_ui_props_from_prefixed_ui_keys(
     for prefix in ui_key_prefixes:
         extras = extract_extras(source, prefix)
         ui_props.update(extras)
+
+
+def _get_initial_value(field_meta: UIFieldMeta) -> Any:
+    schema = field_meta.schema_
+    if schema.default is not None:
+        return schema.default
+    if schema.nullable:
+        return None
+    match schema.type:
+        case DataType.boolean:
+            return False
+        case DataType.integer:
+            return int(_get_initial_number(schema))
+        case DataType.number:
+            return float(_get_initial_number(schema))
+        case DataType.string:
+            min_length = schema.minLength if schema.minLength is not None else 0
+            return "a" * min_length
+        case DataType.array:
+            min_items = schema.minItems if schema.minItems is not None else 0
+            assert field_meta.children is not None and len(field_meta.children) == 1
+            item_meta = field_meta.children[0]
+            return [_get_initial_value(item_meta) for _i in range(min_items)]
+        case DataType.object:
+            # TODO: consider minProperties, additionalProperties
+            required = set(schema.required or [])
+            return {
+                item_meta.name: _get_initial_value(item_meta)
+                for item_meta in (field_meta.children or [])
+                if item_meta.name in required
+            }
+        case _:
+            raise ValueError(
+                f"Unsupported schema {schema.type} in field {field_meta.name!r}"
+            )
+
+
+def _get_initial_number(schema: Schema) -> int | float:
+    v: int | float = 0
+    if schema.minimum is not None:
+        v = min(v, schema.minimum)
+    if schema.maximum is not None:
+        v = min(v, schema.maximum)
+    return v
 
 
 def _make_schema_dict(schema: Schema | Literal[True] | None) -> dict[str, Any]:

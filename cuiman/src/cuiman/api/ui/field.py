@@ -3,9 +3,11 @@
 #  https://opensource.org/license/apache-2-0.
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from gavicore.models import DataType, Schema
+
+from ._util import Undefined
 from .fieldmeta import UIFieldMeta
 from .vm import ViewModel
 
@@ -20,12 +22,16 @@ class UIField(Generic[VMT, VT], ABC):
     """
 
     @abstractmethod
+    def get_meta(self) -> UIFieldMeta:
+        """Return the field metadata used by this field."""
+
+    @abstractmethod
     def get_view_model(self) -> VMT:
-        """Return the node use by this field."""
+        """Return the view model used by this field."""
 
     @abstractmethod
     def get_view(self) -> VT:
-        """Return the node use by this field."""
+        """Return the view used by this field."""
 
 
 class UIFieldBase(Generic[VMT, VT], UIField[VMT, VT], ABC):
@@ -34,25 +40,27 @@ class UIFieldBase(Generic[VMT, VT], UIField[VMT, VT], ABC):
     def __init__(self, field_meta: UIFieldMeta):
         self._meta = field_meta
 
-    @property
-    def meta(self) -> UIFieldMeta:
+    def get_meta(self) -> UIFieldMeta:
         return self._meta
 
 
 class UIBuilderContext:
     def __init__(
         self,
+        *,
         builder: "UIFieldBuilder",
         field_meta: UIFieldMeta,
+        initial_value: Any = Undefined.value,
         parent_ctx: "UIBuilderContext | None" = None,
     ):
         self._parent_ctx = parent_ctx
         self._builder = builder
         self._field_meta = field_meta
-
-    @property
-    def builder(self) -> "UIFieldBuilder":
-        return self._builder
+        self._value = (
+            initial_value
+            if Undefined.is_defined(initial_value)
+            else field_meta.get_initial_value()
+        )
 
     @property
     def field_meta(self) -> UIFieldMeta:
@@ -67,15 +75,37 @@ class UIBuilderContext:
         return self._field_meta.schema_
 
     @property
+    def initial_value(self) -> Any:
+        return self._value
+
+    @property
     def path(self) -> list[str]:
         if self._parent_ctx is not None:
             return self._parent_ctx.path + [self.name]
         return [self.name]
 
-    def create_field(self, field_meta: UIFieldMeta):
+    def create_child_field(self, child_field_meta: UIFieldMeta) -> UIField:
         """Create a new field for the given field metadata."""
-        ctx = UIBuilderContext(self._builder, field_meta, parent_ctx=self)
-        return self._builder.create_field(ctx)
+        child_ctx = self._create_child_ctx(child_field_meta)
+        return self._builder.create_field_for_ctx(child_ctx)
+
+    def _create_child_ctx(self, child_field_meta: UIFieldMeta) -> "UIBuilderContext":
+        initial_value = self.initial_value
+        child_name = child_field_meta.name
+        if (
+            self.schema.type == DataType.object
+            and isinstance(initial_value, dict)
+            and child_name in initial_value
+        ):
+            child_value = initial_value[child_name]
+        else:
+            child_value = child_field_meta.get_initial_value()
+        return UIBuilderContext(
+            builder=self._builder,
+            field_meta=child_field_meta,
+            initial_value=child_value,
+            parent_ctx=self,
+        )
 
 
 class UIFieldFactory(ABC):
@@ -103,8 +133,13 @@ class UIFieldFactoryBase(UIFieldFactory, ABC):
     By default, all `create_{type}_field()` raise a `NotImplementedError`.
     """
 
+    def __init__(self, exclude_nullable: bool = False):
+        self._exclude_nullable = exclude_nullable
+
     def get_score(self, field_meta: UIFieldMeta) -> int:
         """Get the score for a field based on its data type."""
+        if self._exclude_nullable and field_meta.schema_.nullable:
+            return 0
         match field_meta.schema_.type:
             case DataType.object:
                 return self.get_object_score(field_meta)
@@ -214,12 +249,20 @@ class UIFieldBuilder:
                 best_factory = f
         return best_factory
 
-    def create_ctx(
-        self, field_meta: UIFieldMeta, parent_ctx: UIBuilderContext | None = None
-    ) -> UIBuilderContext:
-        return UIBuilderContext(self, field_meta, parent_ctx=parent_ctx)
+    def create_field(
+        self,
+        field_meta: UIFieldMeta,
+        initial_value: Any = Undefined.value,
+    ) -> UIField:
+        ctx = UIBuilderContext(
+            builder=self,
+            field_meta=field_meta,
+            initial_value=initial_value,
+            parent_ctx=None,
+        )
+        return self.create_field_for_ctx(ctx)
 
-    def create_field(self, ctx: UIBuilderContext) -> UIField:
+    def create_field_for_ctx(self, ctx: UIBuilderContext) -> UIField:
         factory = self.find_factory(ctx.field_meta)
         if factory is None:
             raise ValueError(

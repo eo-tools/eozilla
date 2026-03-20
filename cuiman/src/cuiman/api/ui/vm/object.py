@@ -4,47 +4,61 @@
 
 from typing import Any
 
-from .base import UIFieldMeta, ViewModel, get_initial_value
+from ..fieldmeta import UIFieldMeta
+from .base import ViewModel
 from .composite import CompositeViewModel
 
 
 class ObjectViewModel(CompositeViewModel[str, dict[str, Any]]):
-    def __init__(self, field_meta: UIFieldMeta, parent: ViewModel | None, value: Any):
-        super().__init__(field_meta, parent, value, dict)
+    """
+    A view model for a nullable, static object
+    comprising view models for each of its properties.
+    """
+
+    def __init__(
+        self,
+        field_meta: UIFieldMeta,
+        initial_value: Any,
+        item_view_models: dict[str, ViewModel] | None = None,
+    ):
+        super().__init__(field_meta, initial_value, dict)
         # initialize item view models
-        for item_meta in field_meta.children:
-            k = item_meta.name
-            if isinstance(value, dict) and k in value:
-                v = value[k]
+        for child_meta in field_meta.children or []:
+            k = child_meta.name
+            vm = item_view_models.get(k) if item_view_models else None
+            if vm is not None:
+                if vm.field_meta is not child_meta:
+                    raise ValueError(
+                        f"View model for field {field_meta.name}: "
+                        f"invalid view model passed for property {k!r}"
+                    )
+                vm.watch(self._on_child_change)
             else:
-                v = get_initial_value(item_meta)
-            self._item_vms[k] = self._create_item_vm(item_meta, v)
+                if isinstance(initial_value, dict) and k in initial_value:
+                    v = initial_value[k]
+                else:
+                    v = child_meta.get_initial_value()
+                vm = self._create_child(child_meta, v)
+            self._children[k] = vm
 
-    def get(self) -> dict[str, Any] | None:
-        if self._stale:
-            self._stale = False
-            self._value = {k: vm.get() for k, vm in self._item_vms.items()}
-        return self._value
+    def _assemble_value(self) -> dict[str, Any]:
+        return {k: vm.get() for k, vm in self._children.items()}
 
-    def set(self, value: dict[str, Any] | None) -> None:
-        self._assert_value_is_valid(self._field_meta, value, dict)
-        if value is not None:
-            for k, v in value.items():
-                vm = self._item_vms[k]
-                vm.set(v)
-        self._stale = value is not None
-        self._value = None
+    def _distribute_value(self, value: dict[str, Any]) -> None:
+        for k, v in value.items():
+            vm = self._children[k]
+            vm.set(v)
 
     def __len__(self) -> int:
         self._assert_not_null()
-        return len(self._item_vms)
+        return len(self._children)
 
     def __getitem__(self, key: str) -> Any:
         self._assert_not_null()
-        vm = self._item_vms[key]
+        vm = self._children[key]
         return vm.get()
 
     def __setitem__(self, key: str, value: Any) -> None:
         self._assert_not_null()
-        vm = self._item_vms[key]
+        vm = self._children[key]
         vm.set(value)

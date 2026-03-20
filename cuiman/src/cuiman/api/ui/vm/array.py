@@ -4,47 +4,59 @@
 
 from typing import Any
 
-from .base import UIFieldMeta, ViewModel, get_initial_value
+from ..fieldmeta import UIFieldMeta
 from .composite import CompositeViewModel
 
 
 class ArrayViewModel(CompositeViewModel[int, list[Any]]):
-    def __init__(self, field_meta: UIFieldMeta, parent: ViewModel | None, value: Any):
-        super().__init__(field_meta, parent, value, list)
+    """A view model for a nullable, growable, sparse array."""
+
+    def __init__(self, field_meta: UIFieldMeta, initial_value: Any):
+        super().__init__(field_meta, initial_value, list)
         # initialize item view models
-        item_fi = self.item_meta
+        item_meta = self.item_meta
         self._length: int = 0
-        if isinstance(value, list):
-            self._length = len(value)
-            for i, v in enumerate(value):
-                self._item_vms[i] = self._create_item_vm(item_fi, v)
+        if isinstance(initial_value, list):
+            self._length = len(initial_value)
+            for i, v in enumerate(initial_value):
+                self._children[i] = self._create_child(item_meta, v)
 
     @property
     def item_meta(self) -> UIFieldMeta:
+        assert (
+            self._field_meta.children is not None
+            and len(self._field_meta.children) == 1
+        )
         return self._field_meta.children[0]
 
-    def get(self) -> list[Any] | None:
-        if self._stale:
-            item_meta = self.item_meta
-            self._stale = False
-            self._value = []
-            for i in range(self._length):
-                if i in self._item_vms:
-                    vm = self._item_vms[i]
-                    v = vm.get()
-                else:
-                    # or raise?
-                    v = get_initial_value(item_meta)
-                self._value.append(v)
-        return self._value
+    def _assemble_value(self) -> list[Any]:
+        item_meta = self.item_meta
+        value = []
+        for i in range(self._length):
+            if i in self._children:
+                vm = self._children[i]
+                v = vm.get()
+            else:
+                # or raise?
+                v = item_meta.get_initial_value()
+            value.append(v)
+        return value
 
-    def set(self, value: list[Any] | None) -> None:
-        self._assert_value_is_valid(self._field_meta, value, list)
-        if value is not None:
-            for i, v in enumerate(value):
-                self._set_item(i, v)
-        self._stale = value is not None
-        self._value = None
+    def _distribute_value(self, value: list[Any]) -> None:
+        new_length = len(value)
+        old_length = self._length
+        if new_length < old_length:
+            # truncate array
+            for i in range(new_length, old_length):
+                if i in self._children:
+                    vm = self._children[i]
+                    if vm is not None:
+                        vm.dispose()
+                    del self._children[i]
+            self._length = new_length
+
+        for i, v in enumerate(value):
+            self._set_item(i, v)
 
     def __len__(self) -> int:
         self._assert_not_null()
@@ -52,20 +64,21 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
 
     def __getitem__(self, index: int) -> Any:
         self._assert_not_null()
-        if index in self._item_vms:
-            vm = self._item_vms[index]
+        if index in self._children:
+            vm = self._children[index]
             return vm.get()
-        item_meta = self._field_meta.children[0]
-        return get_initial_value(item_meta)
+        item_meta = self.item_meta
+        return item_meta.get_initial_value()
 
     def __setitem__(self, index: int, value: Any) -> None:
         self._assert_not_null()
         self._set_item(index, value)
 
     def _set_item(self, index: int, value: Any) -> None:
-        if index in self._item_vms:
-            vm = self._item_vms[index]
-            vm.set(value)
+        if index in self._children:
+            child_vm = self._children[index]
+            child_vm.set(value)
         else:
-            self._item_vms[index] = self._create_item_vm(self.item_meta, value)
-            self._length = max(self._length, index + 1)
+            child_vm = self._create_child(self.item_meta, value)
+            self._children[index] = child_vm
+        self._length = max(self._length, index + 1)

@@ -7,7 +7,7 @@ from inspect import ismethod
 from typing import Any, Callable, Generic, TypeAlias, TypeVar
 from weakref import WeakMethod, WeakSet
 
-from gavicore.models import DataType, Schema
+from gavicore.models import DataType
 
 from ..fieldmeta import UIFieldMeta
 
@@ -19,11 +19,7 @@ class ViewModelChangeEvent:
         self.source = source
 
 
-_ViewModelObserverBase: TypeAlias = Callable[[ViewModelChangeEvent], None]
-
-ViewModelObserver: TypeAlias = (
-    _ViewModelObserverBase | WeakMethod[_ViewModelObserverBase]
-)
+ViewModelObserver: TypeAlias = Callable[[ViewModelChangeEvent], None]
 """
 Type of on observer function or method passed to the [watch][ViewModel.watch] method.
 """
@@ -35,9 +31,7 @@ class ViewModel(Generic[T], ABC):
     """Abstract base class for all view models."""
 
     @classmethod
-    def create(
-        cls, field_meta: UIFieldMeta, parent: "ViewModel | None", value: Any
-    ) -> "ViewModel":
+    def create(cls, field_meta: UIFieldMeta, value: Any) -> "ViewModel":
         """Create a new view model instance for the given field metadata
         and initial value.
         """
@@ -46,29 +40,24 @@ class ViewModel(Generic[T], ABC):
         if schema.type == DataType.object:
             from .object import ObjectViewModel
 
-            return ObjectViewModel(field_meta, parent, value)
+            return ObjectViewModel(field_meta, value)
 
         if schema.type == DataType.array:
             from .array import ArrayViewModel
 
-            return ArrayViewModel(field_meta, parent, value)
+            return ArrayViewModel(field_meta, value)
 
         if schema.type is not None:
             from .primitive import PrimitiveViewModel
 
-            return PrimitiveViewModel(field_meta, parent, value)
+            return PrimitiveViewModel(field_meta, value)
 
         raise ValueError(f"Missing type in schema for {field_meta.name!r}")
 
-    def __init__(
-        self,
-        field_meta: UIFieldMeta,
-        parent: "ViewModel | None",
-    ):
+    def __init__(self, field_meta: UIFieldMeta):
         """Constructor. Never call directly, use [create][create] instead."""
         self._field_meta = field_meta
-        self._parent = parent
-        self._observers: WeakSet[ViewModelObserver] = WeakSet()
+        self._observers: WeakSet[Callable] = WeakSet()
 
     @property
     def field_meta(self) -> UIFieldMeta:
@@ -97,55 +86,14 @@ class ViewModel(Generic[T], ABC):
                 self._observers.add(o3)
         return unwatch
 
+    def dispose(self):
+        """Dispose this view model.
+        The default implementation removes all registered observers.
+        """
+        self._observers.clear()
+
     def _notify_observers(self) -> None:
         # Notify own observers, if any
         event = ViewModelChangeEvent(self)
         for observer in self._observers:
             observer(event)
-        # Also notify parent, if any
-        if self._parent is not None:
-            self._parent._notify_observers()
-
-
-def get_initial_value(field_meta: UIFieldMeta) -> Any:
-    schema = field_meta.schema_
-    if schema.default is not None:
-        return schema.default
-    if schema.nullable:
-        return None
-    match schema.type:
-        case DataType.boolean:
-            return False
-        case DataType.integer:
-            return int(get_initial_number(schema))
-        case DataType.number:
-            return float(get_initial_number(schema))
-        case DataType.string:
-            min_length = schema.minLength if schema.minLength is not None else 0
-            return "a" * min_length
-        case DataType.array:
-            min_items = schema.minItems if schema.minItems is not None else 0
-            assert len(field_meta.children) == 1
-            item_meta = field_meta.children[0]
-            return [get_initial_value(item_meta) for _i in range(min_items)]
-        case DataType.object:
-            # TODO: consider minProperties, additionalProperties
-            required = set(schema.required or [])
-            return {
-                item_meta.name: get_initial_value(item_meta)
-                for item_meta in field_meta.children
-                if item_meta.name in required
-            }
-        case _:
-            raise ValueError(
-                f"Unsupported schema {schema.type} in field {field_meta.name!r}"
-            )
-
-
-def get_initial_number(schema: Schema) -> int | float:
-    v = 0
-    if schema.minimum is not None:
-        v = min(v, schema.minimum)
-    if schema.maximum is not None:
-        v = min(v, schema.maximum)
-    return v

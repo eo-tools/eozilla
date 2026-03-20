@@ -32,17 +32,25 @@ class UIFieldMetaTest(TestCase):
         field_meta = UIFieldMeta.from_input_descriptions(
             {
                 "datasets": InputDescription(
-                    schema=Schema(type="string", format="uri", title="Input dataset"),
-                    minOccurs=1,
-                    maxOccurs="unbounded",
+                    **{
+                        "schema": {
+                            "type": "string",
+                            "format": "uri",
+                            "title": "Input dataset",
+                        },
+                        "minOccurs": 1,
+                        "maxOccurs": "unbounded",
+                    }
                 ),
                 "threshold": InputDescription(
-                    schema=Schema(type="number", default=0.5),
-                    minOccurs=0,
-                    maxOccurs=1,
+                    **{
+                        "schema": {"type": "number", "default": 0.5},
+                        "minOccurs": 0,
+                        "maxOccurs": 1,
+                    }
                 ),
                 "boost": InputDescription(
-                    schema=Schema(type="boolean"), title="Use fast path"
+                    **{"schema": {"type": "boolean"}, "title": "Use fast path"}
                 ),
             }
         )
@@ -125,10 +133,10 @@ class UIFieldMetaTest(TestCase):
         field_meta = UIFieldMeta.from_output_descriptions(
             {
                 "dataset": OutputDescription(
-                    schema=Schema(type="string", title="Output dataset path"),
+                    **{"schema": {"type": "string", "title": "Output dataset path"}},
                 ),
                 "logs": OutputDescription(
-                    schema=Schema(type="string", title="Log file path"),
+                    **{"schema": {"type": "string", "title": "Log file path"}},
                 ),
             }
         )
@@ -167,65 +175,6 @@ class UIFieldMetaTest(TestCase):
             to_json(field_meta),
         )
 
-    def test_tuple_schema(self):
-        schema_item_1 = Schema(
-            **{"type": "number", "title": "Threshold", "x-ui": {"widget": "slider"}}
-        )
-        schema_item_2 = Schema(
-            **{"type": "boolean", "title": "Boost", "x-ui": {"widget": "switch"}}
-        )
-        schema = Schema(
-            type="array",
-            items=[
-                schema_item_1,
-                schema_item_2,
-            ],
-            title="Performance settings",
-        )
-        field_meta = UIFieldMeta.from_schema("performance", schema)
-        self.assertIsInstance(field_meta, UIFieldMeta)
-        schema_1 = {
-            "title": "Threshold",
-            "type": "number",
-            "x-ui": {"widget": "slider"},
-        }
-        schema_2 = {
-            "title": "Boost",
-            "type": "boolean",
-            "x-ui": {"widget": "switch"},
-        }
-        self.assertEqual(
-            {
-                "name": "performance",
-                "schema": {
-                    "type": "array",
-                    "items": [
-                        schema_1,
-                        schema_2,
-                    ],
-                    "title": "Performance settings",
-                },
-                "title": "Performance settings",
-                "children": [
-                    {
-                        "name": "performance_item_0",
-                        "schema": schema_1,
-                        "widget": "slider",
-                        "required": True,
-                        "title": "Threshold",
-                    },
-                    {
-                        "name": "performance_item_1",
-                        "schema": schema_2,
-                        "widget": "switch",
-                        "required": True,
-                        "title": "Boost",
-                    },
-                ],
-            },
-            to_json(field_meta),
-        )
-
     def test_object_schema(self):
         schema_prop_1 = Schema(
             **{"type": "number", "title": "Threshold", "x-ui": {"widget": "slider"}}
@@ -234,12 +183,14 @@ class UIFieldMetaTest(TestCase):
             **{"type": "boolean", "title": "Boost", "x-ui": {"widget": "switch"}}
         )
         schema = Schema(
-            type="object",
-            properties={
-                "threshold": schema_prop_1,
-                "boost": schema_prop_2,
-            },
-            required=["threshold"],
+            **{
+                "type": "object",
+                "properties": {
+                    "threshold": schema_prop_1,
+                    "boost": schema_prop_2,
+                },
+                "required": ["threshold"],
+            }
         )
         field_meta = UIFieldMeta.from_schema("performance", schema)
         schema_1 = {

@@ -4,7 +4,8 @@
 
 from typing import Any, TypeVar
 
-from .base import UIFieldMeta, ViewModel
+from ..fieldmeta import UIFieldMeta
+from .base import ViewModel
 
 T = TypeVar("T")
 
@@ -12,8 +13,8 @@ T = TypeVar("T")
 class PrimitiveViewModel(ViewModel[T]):
     """A view model that represents a primitive value."""
 
-    def __init__(self, field_meta: UIFieldMeta, parent: ViewModel | None, value: Any):
-        super().__init__(field_meta, parent)
+    def __init__(self, field_meta: UIFieldMeta, value: Any):
+        super().__init__(field_meta)
         self._value = value
 
     def get(self) -> T:

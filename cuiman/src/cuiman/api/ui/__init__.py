@@ -3,9 +3,9 @@
 #  https://opensource.org/license/apache-2-0.
 
 from .field import (
-    UIFieldBuilder,
     UIBuilderContext,
     UIField,
+    UIFieldBuilder,
     UIFieldFactory,
     UIFieldFactoryBase,
 )

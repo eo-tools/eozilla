@@ -2,14 +2,13 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Any
 from unittest import TestCase
 
 from cuiman.api.ui import UIBuilderContext
 from cuiman.api.ui.field import (
-    UIFieldBuilder,
     UIField,
     UIFieldBase,
+    UIFieldBuilder,
     UIFieldFactoryBase,
 )
 from cuiman.api.ui.fieldmeta import UIFieldMeta
@@ -47,48 +46,53 @@ class TextComponent(Component):
 class MyObjectField(UIFieldBase[ObjectViewModel, PanelComponent]):
     def __init__(
         self,
-        field_meta: UIFieldMeta,
-        child_ui_fields: list[UIField],
-        value: dict[str, Any] | None = None,
+        ctx: UIBuilderContext,
     ):
-        super().__init__(field_meta)
-        views = [f.get_view() for f in child_ui_fields]
-        view_models = [f.get_view_model() for f in child_ui_fields]
-        # TODO: we should pass the dict of view_models to ObjectViewModel
-        self.vm = ObjectViewModel(field_meta, None, value)
-        self.panel = PanelComponent(views=views)
+        super().__init__(ctx.field_meta)
+        child_fields = [
+            ctx.create_child_field(item_meta)
+            for item_meta in (ctx.field_meta.children or [])
+        ]
+        views = [f.get_view() for f in child_fields]
+        view_models = {f.get_meta().name: f.get_view_model() for f in child_fields}
+        self._vm = ObjectViewModel(
+            ctx.field_meta,
+            initial_value=ctx.initial_value,
+            item_view_models=view_models,
+        )
+        self._panel = PanelComponent(views=views)
 
     def get_view_model(self) -> ObjectViewModel:
-        return self.vm
+        return self._vm
 
     def get_view(self) -> PanelComponent:
-        return self.panel
+        return self._panel
 
 
 class MyArrayField(UIFieldBase[ArrayViewModel, ListEditorComponent]):
-    def __init__(self, field_meta: UIFieldMeta):
-        super().__init__(field_meta)
-        self.vm = ArrayViewModel(field_meta, None, None)
-        self.view = ListEditorComponent(field_meta, None, None)
+    def __init__(self, ctx: UIBuilderContext):
+        super().__init__(ctx.field_meta)
+        self._vm = ArrayViewModel(ctx.field_meta, ctx.initial_value)
+        self._list_editor = ListEditorComponent()
 
     def get_view_model(self) -> ArrayViewModel:
-        return self.vm
+        return self._vm
 
     def get_view(self) -> ListEditorComponent:
-        return self.view
+        return self._list_editor
 
 
 class MyTextField(UIFieldBase[PrimitiveViewModel[str], TextComponent]):
-    def __init__(self, field_meta: UIFieldMeta):
-        super().__init__(field_meta)
-        self.node = PrimitiveViewModel(field_meta, None, None)
-        self.text_field = TextComponent()
+    def __init__(self, ctx: UIBuilderContext):
+        super().__init__(ctx.field_meta)
+        self._vm = PrimitiveViewModel(ctx.field_meta, ctx.initial_value)
+        self._text_field = TextComponent()
 
     def get_view_model(self) -> PrimitiveViewModel[str]:
-        return self.node
+        return self._vm
 
     def get_view(self) -> TextComponent:
-        return self.text_field
+        return self._text_field
 
 
 # --- Factories for the field adapters --------
@@ -99,10 +103,7 @@ class MyObjectFactory(UIFieldFactoryBase):
         return 1
 
     def create_object_field(self, ctx: UIBuilderContext) -> UIField:
-        child_ui_fields = [
-            ctx.create_field(item_meta) for item_meta in (ctx.field_meta.children or [])
-        ]
-        return MyObjectField(ctx.field_meta, child_ui_fields)
+        return MyObjectField(ctx)
 
 
 class MyArrayFactory(UIFieldFactoryBase):
@@ -110,7 +111,7 @@ class MyArrayFactory(UIFieldFactoryBase):
         return 1
 
     def create_array_field(self, ctx: UIBuilderContext) -> UIField:
-        return MyArrayField(ctx.field_meta)
+        return MyArrayField(ctx)
 
 
 class MyTextFactory(UIFieldFactoryBase):
@@ -118,7 +119,7 @@ class MyTextFactory(UIFieldFactoryBase):
         return 1
 
     def create_string_field(self, ctx: UIBuilderContext) -> UIField:
-        return MyTextField(ctx.field_meta)
+        return MyTextField(ctx)
 
 
 # --- UI field builder usage --------
@@ -145,6 +146,11 @@ class UIFieldBuilderTest(TestCase):
             ),
         )
 
-        ctx = b.create_ctx(field_meta, value={"dataset": []})
-        field = b.create_field(ctx)
+        field = b.create_field(
+            field_meta, initial_value={"dataset": [], "config": "my-config.yaml"}
+        )
         self.assertIsInstance(field, MyObjectField)
+        view_model = field.get_view_model()
+        view = field.get_view()
+        self.assertIsInstance(view_model, ObjectViewModel)
+        self.assertIsInstance(view, PanelComponent)
