@@ -5,7 +5,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar
 
-from .._util import UndefinedType, UNDEFINED
+from .._util import UNDEFINED, UndefinedType
 from ..fieldmeta import UIFieldMeta
 from .base import ViewModel, ViewModelChangeEvent
 
@@ -23,7 +23,7 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
         self,
         field_meta: UIFieldMeta,
         composite_type: type[T],
-        initial_value: Any | UndefinedType,
+        initial_value: T | UndefinedType,
     ):
         super().__init__(field_meta)
         if field_meta.nullable:
@@ -31,14 +31,16 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
         CompositeViewModel._assert_value_is_valid(
             field_meta, composite_type, initial_value
         )
-        self._composite_type = composite_type
-        self._cached_value = initial_value
+        self._composite_type: type[T] = composite_type
+        self._cached_value: T | UndefinedType = initial_value
 
     def get(self) -> T:
-        if self._cached_value is UNDEFINED:
-            self._cached_value = self._assemble_value()
-            assert self._cached_value is not UNDEFINED
-        return self._cached_value
+        if not isinstance(self._cached_value, UndefinedType):
+            return self._cached_value
+        cached_value = self._assemble_value()
+        assert cached_value is not UNDEFINED
+        self._cached_value = cached_value
+        return cached_value
 
     def set(self, value: T) -> None:
         self._assert_value_is_valid(self._field_meta, self._composite_type, value)

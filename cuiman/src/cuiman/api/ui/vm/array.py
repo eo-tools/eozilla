@@ -4,7 +4,7 @@
 
 from typing import Any
 
-from .._util import UndefinedType, UNDEFINED
+from .._util import UNDEFINED, UndefinedType
 from ..fieldmeta import UIFieldMeta
 from .base import ViewModel
 from .composite import CompositeViewModel
@@ -20,7 +20,7 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
     ):
         super().__init__(field_meta, list, initial_value)
         assert field_meta.children is not None and len(field_meta.children) == 1
-        self._item_meta = self._field_meta.children[0]
+        self._item_meta = field_meta.children[0]
         # initialize item view models
         self._item_view_models: dict[int, ViewModel] = {}
         self._length: int = 0

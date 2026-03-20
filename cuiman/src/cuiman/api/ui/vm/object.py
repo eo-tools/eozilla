@@ -4,9 +4,7 @@
 
 from typing import Any
 
-from pydantic.v1.fields import UndefinedType
-
-from .._util import UNDEFINED
+from .._util import UNDEFINED, UndefinedType
 from ..fieldmeta import UIFieldMeta
 from .base import ViewModel
 from .composite import CompositeViewModel

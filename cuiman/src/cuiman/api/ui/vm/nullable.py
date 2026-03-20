@@ -4,7 +4,7 @@
 
 from typing import Any, Generic, TypeVar
 
-from .._util import UndefinedType, UNDEFINED
+from .._util import UNDEFINED, UndefinedType
 from ..fieldmeta import UIFieldMeta
 from .base import ViewModel, ViewModelChangeEvent
 

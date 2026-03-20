@@ -9,12 +9,13 @@ from gavicore.models import DataType, Schema
 
 from ._util import UNDEFINED
 from .fieldmeta import UIFieldMeta
-from .vm import ViewModel
-from .vm import NullableViewModel
-from .vm import ObjectViewModel
-from .vm import ArrayViewModel
-from .vm import PrimitiveViewModel
-
+from .vm import (
+    ArrayViewModel,
+    NullableViewModel,
+    ObjectViewModel,
+    PrimitiveViewModel,
+    ViewModel,
+)
 
 View: TypeAlias = Any
 

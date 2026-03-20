@@ -101,6 +101,7 @@ class UIFieldMeta(BaseModel):
     description: str | None = None
     tooltip: str | None = None
     placeholder: str | None = None
+    nullable_parent: bool | None = None
     group: str | None = None
     order: int | str | None = None
     advanced: bool | None = None
@@ -181,11 +182,11 @@ class UIFieldMeta(BaseModel):
     def to_non_nullable(self) -> "UIFieldMeta":
         if not self.schema_.nullable:
             return self
+        new_schema = self.schema_.model_copy(update={"nullable": False})
         return self.model_copy(
             update={
-                "schema": self.schema_.model_copy(
-                    update={"nullable": False, "x-ui": {"hasNullableParent": True}}
-                )
+                "schema_": new_schema,
+                "nullable_parent": True,
             }
         )
 
@@ -348,8 +349,9 @@ def _get_initial_value(field_meta: UIFieldMeta) -> Any:
             return "a" * min_length
         case DataType.array:
             min_items = schema.minItems if schema.minItems is not None else 0
-            assert field_meta.children is not None and len(field_meta.children) == 1
-            item_meta = field_meta.children[0]
+            assert field_meta.children is not None
+            assert len(field_meta.children) == 1
+            item_meta: UIFieldMeta = field_meta.children[0]
             return [_get_initial_value(item_meta) for _i in range(min_items)]
         case DataType.object:
             # TODO: consider minProperties, additionalProperties
