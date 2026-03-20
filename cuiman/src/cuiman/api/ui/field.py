@@ -3,19 +3,23 @@
 #  https://opensource.org/license/apache-2-0.
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeAlias
 
 from gavicore.models import DataType, Schema
 
-from ._util import Undefined
+from ._util import UNDEFINED
 from .fieldmeta import UIFieldMeta
 from .vm import ViewModel
+from .vm import NullableViewModel
+from .vm import ObjectViewModel
+from .vm import ArrayViewModel
+from .vm import PrimitiveViewModel
 
-VMT = TypeVar("VMT", bound=ViewModel)
-VT = TypeVar("VT")
+
+View: TypeAlias = Any
 
 
-class UIField(Generic[VMT, VT], ABC):
+class UIField(ABC):
     """
     Adapter that allows using a view `V` from some UI component library
     together with a view model `VMT` of type `ViewModel`.
@@ -26,15 +30,15 @@ class UIField(Generic[VMT, VT], ABC):
         """Return the field metadata used by this field."""
 
     @abstractmethod
-    def get_view_model(self) -> VMT:
+    def get_view_model(self) -> ViewModel:
         """Return the view model used by this field."""
 
     @abstractmethod
-    def get_view(self) -> VT:
+    def get_view(self) -> View:
         """Return the view used by this field."""
 
 
-class UIFieldBase(Generic[VMT, VT], UIField[VMT, VT], ABC):
+class UIFieldBase(UIField, ABC):
     """Abstract base class for UI fields."""
 
     def __init__(self, field_meta: UIFieldMeta):
@@ -44,21 +48,55 @@ class UIFieldBase(Generic[VMT, VT], UIField[VMT, VT], ABC):
         return self._meta
 
 
+class UIViewModelBuilder:
+    def __init__(self, ctx: "UIBuilderContext"):
+        self._ctx = ctx
+
+    def object(
+        self,
+        property_view_models: dict[str, ViewModel] | None = None,
+    ) -> ObjectViewModel:
+        return ObjectViewModel(
+            self._ctx.field_meta,
+            initial_value=(
+                self._ctx.initial_value if property_view_models is None else UNDEFINED
+            ),
+            property_view_models=property_view_models,
+        )
+
+    def array(self) -> ArrayViewModel:
+        return ArrayViewModel(self._ctx.field_meta, self._ctx.initial_value)
+
+    def primitive(self) -> PrimitiveViewModel:
+        return PrimitiveViewModel(self._ctx.field_meta, self._ctx.initial_value)
+
+    def nullable(
+        self,
+        non_nullable_view_model: ViewModel | None = None,
+    ) -> NullableViewModel:
+        return NullableViewModel(
+            self._ctx.field_meta,
+            initial_value=self._ctx.initial_value,
+            non_nullable_view_model=non_nullable_view_model,
+        )
+
+
 class UIBuilderContext:
     def __init__(
         self,
         *,
         builder: "UIFieldBuilder",
         field_meta: UIFieldMeta,
-        initial_value: Any = Undefined.value,
+        initial_value: Any = UNDEFINED,
         parent_ctx: "UIBuilderContext | None" = None,
     ):
         self._parent_ctx = parent_ctx
         self._builder = builder
+        self._vm_builder = UIViewModelBuilder(self)
         self._field_meta = field_meta
         self._value = (
             initial_value
-            if Undefined.is_defined(initial_value)
+            if initial_value is UNDEFINED
             else field_meta.get_initial_value()
         )
 
@@ -75,6 +113,10 @@ class UIBuilderContext:
         return self._field_meta.schema_
 
     @property
+    def vm(self) -> UIViewModelBuilder:
+        return self._vm_builder
+
+    @property
     def initial_value(self) -> Any:
         return self._value
 
@@ -83,6 +125,12 @@ class UIBuilderContext:
         if self._parent_ctx is not None:
             return self._parent_ctx.path + [self.name]
         return [self.name]
+
+    def create_child_fields(self) -> dict[str, UIField]:
+        return {
+            child_meta.name: self.create_child_field(child_meta)
+            for child_meta in (self.field_meta.children or [])
+        }
 
     def create_child_field(self, child_field_meta: UIFieldMeta) -> UIField:
         """Create a new field for the given field metadata."""
@@ -131,16 +179,16 @@ class UIFieldFactoryBase(UIFieldFactory, ABC):
     Make sure to also implement any `create_{type}_field()` method
     for which `get_{type}_score()` returns a value greater zero.
     By default, all `create_{type}_field()` raise a `NotImplementedError`.
-    """
 
-    def __init__(self, exclude_nullable: bool = False):
-        self._exclude_nullable = exclude_nullable
+    TODO: explain special treatment of nullable fields
+    """
 
     def get_score(self, field_meta: UIFieldMeta) -> int:
         """Get the score for a field based on its data type."""
-        if self._exclude_nullable and field_meta.schema_.nullable:
-            return 0
-        match field_meta.schema_.type:
+        schema = field_meta.schema_
+        if schema.nullable:
+            return self.get_null_score(field_meta)
+        match schema.type:
             case DataType.object:
                 return self.get_object_score(field_meta)
             case DataType.array:
@@ -180,14 +228,19 @@ class UIFieldFactoryBase(UIFieldFactory, ABC):
         """Get the score for a field of type "boolean"."""
         return 0
 
+    def get_null_score(self, field_meta: UIFieldMeta) -> int:
+        """Get the score for a nullable field."""
+        return 0
+
     def get_untyped_score(self, field_meta: UIFieldMeta) -> int:
         """Get the score for a field that has no explicit type."""
         return 0
 
     def create_field(self, ctx: UIBuilderContext) -> UIField:
         """Create a UI field based on its data type."""
-        schema_type = ctx.schema.type
-        match schema_type:
+        if ctx.schema.nullable:
+            return self.create_null_field(ctx)
+        match ctx.schema.type:
             case DataType.object:
                 return self.create_object_field(ctx)
             case DataType.array:
@@ -227,6 +280,10 @@ class UIFieldFactoryBase(UIFieldFactory, ABC):
         """Create a UI field for a value of type "boolean"."""
         raise NotImplementedError
 
+    def create_null_field(self, ctx: UIBuilderContext) -> UIField:
+        """Create a UI field for a value that is nullable."""
+        raise NotImplementedError
+
     def create_untyped_field(self, ctx: UIBuilderContext) -> UIField:
         """Create a UI field for a value with no explicit type given."""
         raise NotImplementedError
@@ -252,7 +309,7 @@ class UIFieldBuilder:
     def create_field(
         self,
         field_meta: UIFieldMeta,
-        initial_value: Any = Undefined.value,
+        initial_value: Any = UNDEFINED,
     ) -> UIField:
         ctx = UIBuilderContext(
             builder=self,

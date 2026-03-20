@@ -15,8 +15,11 @@ from ..fieldmeta import UIFieldMeta
 class ViewModelChangeEvent:
     """An event emitted when a [ViewModel][ViewModel] changes."""
 
-    def __init__(self, source: "ViewModel"):
+    def __init__(
+        self, source: "ViewModel", cause: "ViewModelChangeEvent | None" = None
+    ):
         self.source = source
+        self.cause = cause
 
 
 ViewModelObserver: TypeAlias = Callable[[ViewModelChangeEvent], None]
@@ -30,12 +33,25 @@ T = TypeVar("T")
 class ViewModel(Generic[T], ABC):
     """Abstract base class for all view models."""
 
+    def __init__(self, field_meta: UIFieldMeta):
+        """Base class constructor."""
+        if not isinstance(field_meta, UIFieldMeta):
+            raise TypeError(f"field_meta must have type {UIFieldMeta.__name__!r}")
+        self._field_meta = field_meta
+        self._observers: WeakSet[Callable] = WeakSet()
+
     @classmethod
     def create(cls, field_meta: UIFieldMeta, value: Any) -> "ViewModel":
-        """Create a new view model instance for the given field metadata
+        """
+        Create a new view model instance for the given field metadata
         and initial value.
         """
         schema = field_meta.schema_
+
+        if schema.nullable:
+            from .nullable import NullableViewModel
+
+            return NullableViewModel(field_meta, value)
 
         if schema.type == DataType.object:
             from .object import ObjectViewModel
@@ -54,18 +70,10 @@ class ViewModel(Generic[T], ABC):
 
         raise ValueError(f"Missing type in schema for {field_meta.name!r}")
 
-    def __init__(self, field_meta: UIFieldMeta):
-        """Constructor. Never call directly, use [create][create] instead."""
-        self._field_meta = field_meta
-        self._observers: WeakSet[Callable] = WeakSet()
-
     @property
     def field_meta(self) -> UIFieldMeta:
+        """The field metadata."""
         return self._field_meta
-
-    @property
-    def nullable(self) -> bool:
-        return self._field_meta.schema_.nullable is True
 
     @abstractmethod
     def get(self) -> T:
@@ -76,6 +84,15 @@ class ViewModel(Generic[T], ABC):
         """Set the current value."""
 
     def watch(self, *observers: ViewModelObserver) -> Callable[[], None]:
+        """
+        Watch this view model by adding one or more observers to it.
+
+        Args:
+            observers: The observer(s) to add.
+        Returns:
+            A function `unwatch()` that, when called, removes the added observer(s).
+        """
+
         def unwatch():
             for o1 in observers:
                 self._observers.remove(o1)
@@ -87,13 +104,17 @@ class ViewModel(Generic[T], ABC):
         return unwatch
 
     def dispose(self):
-        """Dispose this view model.
+        """
+        Dispose this view model.
         The default implementation removes all registered observers.
         """
         self._observers.clear()
 
-    def _notify_observers(self) -> None:
-        # Notify own observers, if any
-        event = ViewModelChangeEvent(self)
+    def _notify_observers(self, cause: ViewModelChangeEvent | None = None) -> None:
+        """
+        Notify own observers, if any.
+        To be used by derived classes only.
+        """
+        event = ViewModelChangeEvent(self, cause=cause)
         for observer in self._observers:
             observer(event)

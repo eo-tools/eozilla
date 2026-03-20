@@ -2,20 +2,24 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Any, TypeVar
+from typing import Any, TypeVar, Generic
 
 from ..fieldmeta import UIFieldMeta
 from .base import ViewModel
 
-T = TypeVar("T")
+T = TypeVar("T", bool, int, float, str)
 
 
-class PrimitiveViewModel(ViewModel[T]):
-    """A view model that represents a primitive value."""
+class PrimitiveViewModel(Generic[T], ViewModel[T]):
+    """
+    A view model that represents a non-nullable, primitive value.
+    """
 
-    def __init__(self, field_meta: UIFieldMeta, value: Any):
+    def __init__(self, field_meta: UIFieldMeta, initial_value: Any):
         super().__init__(field_meta)
-        self._value = value
+        if field_meta.nullable:
+            raise ValueError("field_meta must not be nullable")
+        self._value = initial_value
 
     def get(self) -> T:
         return self._value

@@ -5,33 +5,19 @@
 from .field import (
     UIBuilderContext,
     UIField,
+    UIFieldBase,
     UIFieldBuilder,
     UIFieldFactory,
     UIFieldFactoryBase,
 )
 from .fieldmeta import UIFieldMeta
-from .vm import (
-    ArrayViewModel,
-    CompositeViewModel,
-    ObjectViewModel,
-    PrimitiveViewModel,
-    ViewModel,
-    ViewModelChangeEvent,
-    ViewModelObserver,
-)
 
 __all__ = [
-    "ArrayViewModel",
-    "CompositeViewModel",
-    "ObjectViewModel",
-    "PrimitiveViewModel",
     "UIFieldBuilder",
     "UIBuilderContext",
     "UIField",
+    "UIFieldBase",
     "UIFieldFactory",
     "UIFieldFactoryBase",
     "UIFieldMeta",
-    "ViewModel",
-    "ViewModelChangeEvent",
-    "ViewModelObserver",
 ]

@@ -2,22 +2,14 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Any
 
-
-class Undefined:
+class UndefinedType:
     """Represents an undefined value."""
 
-    value: "Undefined"
-    """An instance of the undefined."""
+    __slots__ = ()
 
-    @classmethod
-    def is_undefined(cls, value: Any) -> bool:
-        return isinstance(value, Undefined)
-
-    @classmethod
-    def is_defined(cls, value: Any) -> bool:
-        return not isinstance(value, Undefined)
+    def __repr__(self):
+        return "UNDEFINED"
 
 
-Undefined.value = Undefined()
+UNDEFINED = UndefinedType()

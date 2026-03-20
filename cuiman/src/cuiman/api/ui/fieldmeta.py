@@ -110,6 +110,10 @@ class UIFieldMeta(BaseModel):
     minimum: int | float | None = None
     maximum: int | float | None = None
 
+    @property
+    def nullable(self) -> bool:
+        return self.schema_.nullable is True
+
     @classmethod
     def from_input_descriptions(
         cls,
@@ -173,6 +177,17 @@ class UIFieldMeta(BaseModel):
         required: bool | None = None,
     ) -> "UIFieldMeta":
         return _ui_field_meta_from_schema(name, schema, required=required)
+
+    def to_non_nullable(self) -> "UIFieldMeta":
+        if not self.schema_.nullable:
+            return self
+        return self.model_copy(
+            update={
+                "schema": self.schema_.model_copy(
+                    update={"nullable": False, "x-ui": {"hasNullableParent": True}}
+                )
+            }
+        )
 
     def get_initial_value(self) -> Any:
         """Compute an initial value for this UI field metadata."""
