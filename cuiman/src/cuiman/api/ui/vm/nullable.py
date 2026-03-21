@@ -58,15 +58,17 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
         return self._non_nullable_view_model.get()
 
     def set(self, value: T | None) -> None:
+        was_null = self._is_null
         if value is None:
-            if self._is_null:
-                # no change
-                return
             self._is_null = True
-            self._notify()
+            if not was_null:
+                self._notify()
         else:
             self._is_null = False
-            self._non_nullable_view_model.set(value)
+            if self._non_nullable_view_model.get() != value:
+                self._non_nullable_view_model.set(value)
+            elif was_null:
+                self._notify()
 
     def _on_non_nullable_change(self, event: ViewModelChangeEvent):
         self._notify(cause=event)

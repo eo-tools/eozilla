@@ -28,7 +28,6 @@ from .libui import (
     Panel,
     TextInput,
     View,
-    Widget,
     Switch,
     Checkbox,
 )
@@ -50,18 +49,14 @@ class LibuiAdapter(UIFieldBase):
         return self._view
 
     def _bind_bidi(self):
-        vm = self._view_model
-        if isinstance(self._view, Widget):
-            widget: Widget = self._view
+        def observe_vm(_e):
+            self._view.value = self._view_model.get()
 
-            def observe_vm(_e):
-                widget.value = vm.get()
+        def observe_view():
+            self._view_model.set(self._view.value)
 
-            def observe_view():
-                vm.set(widget.value)
-
-            vm.watch(observe_vm)
-            widget.watch(observe_view)
+        self._view_model.watch(observe_vm)
+        self._view.watch(observe_view)
 
 
 # --- Factories for field adapters --------
