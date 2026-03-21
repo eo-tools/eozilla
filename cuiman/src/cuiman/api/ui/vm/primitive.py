@@ -21,10 +21,10 @@ class PrimitiveViewModel(Generic[T], ViewModel[T]):
             raise ValueError("field_meta must not be nullable")
         self._value = initial_value
 
-    def get(self) -> T:
+    def _get_value(self) -> T:
         return self._value
 
-    def set(self, value: T) -> None:
+    def _set_value(self, value: T) -> None:
         if value != self._value:
             self._value = value
             self._notify()

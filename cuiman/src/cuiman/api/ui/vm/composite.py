@@ -34,7 +34,7 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
         self._composite_type: type[T] = composite_type
         self._cached_value: T | UndefinedType = initial_value
 
-    def get(self) -> T:
+    def _get_value(self) -> T:
         if not isinstance(self._cached_value, UndefinedType):
             return self._cached_value
         cached_value = self._assemble_value()
@@ -42,7 +42,7 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
         self._cached_value = cached_value
         return cached_value
 
-    def set(self, value: T) -> None:
+    def _set_value(self, value: T) -> None:
         self._assert_value_is_valid(self._field_meta, self._composite_type, value)
         if self._cached_value is not UNDEFINED and self._cached_value == value:
             # No change

@@ -3,8 +3,9 @@
 #  https://opensource.org/license/apache-2-0.
 
 from abc import ABC, abstractmethod
-from inspect import ismethod
-from typing import Any, Callable, Generic, TypeAlias, TypeVar, Protocol
+from collections.abc import Generator
+from contextlib import contextmanager
+from typing import Any, Callable, Generic, Protocol, TypeVar
 
 from gavicore.models import DataType
 
@@ -78,12 +79,22 @@ class ViewModel(Generic[T], ABC):
         """The field metadata."""
         return self._field_meta
 
+    @property
+    def value(self) -> T:
+        """Get the current value."""
+        return self._get_value()
+
+    @value.setter
+    def value(self, value: T) -> None:
+        """Set the current value."""
+        self._set_value(value)
+
     @abstractmethod
-    def get(self) -> T:
+    def _get_value(self) -> T:
         """Get the current value."""
 
     @abstractmethod
-    def set(self, value: T) -> None:
+    def _set_value(self, value: T) -> None:
         """Set the current value."""
 
     def watch(self, *observers: ViewModelObserver) -> Callable[[], None]:
@@ -119,3 +130,29 @@ class ViewModel(Generic[T], ABC):
         event = ViewModelChangeEvent(self, cause=cause)
         for observer in list(self._observers):
             observer(event)
+
+    @contextmanager
+    def record_changes(self) -> Generator[list[ViewModelChangeEvent]]:
+        """
+        A context manager that can be used to temporarily record changes
+        in this view model.
+        """
+        recorder = _ViewModelChangeRecorder()
+        unwatch = self.watch(recorder)
+        try:
+            yield recorder.change_events
+        finally:
+            unwatch()
+
+
+class _ViewModelChangeRecorder:
+    """
+    Result of the contextmanager method
+    [ViewModel.record_changes][ViewModel.record_changes].
+    """
+
+    def __init__(self):
+        self.change_events: list[ViewModelChangeEvent] = []
+
+    def __call__(self, event: ViewModelChangeEvent) -> None:
+        self.change_events.append(event)

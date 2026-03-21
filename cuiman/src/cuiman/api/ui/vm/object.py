@@ -44,12 +44,12 @@ class ObjectViewModel(CompositeViewModel[str, dict[str, Any]]):
             self._property_view_models[k] = vm
 
     def _assemble_value(self) -> dict[str, Any]:
-        return {k: vm.get() for k, vm in self._property_view_models.items()}
+        return {k: vm._get_value() for k, vm in self._property_view_models.items()}
 
     def _distribute_value(self, value: dict[str, Any]) -> None:
         for k, v in value.items():
             vm = self._property_view_models[k]
-            vm.set(v)
+            vm._set_value(v)
 
     @property
     def property_view_models(self) -> dict[str, ViewModel]:
@@ -60,8 +60,8 @@ class ObjectViewModel(CompositeViewModel[str, dict[str, Any]]):
 
     def __getitem__(self, key: str) -> Any:
         vm = self._property_view_models[key]
-        return vm.get()
+        return vm._get_value()
 
     def __setitem__(self, key: str, value: Any) -> None:
         vm = self._property_view_models[key]
-        vm.set(value)
+        vm._set_value(value)

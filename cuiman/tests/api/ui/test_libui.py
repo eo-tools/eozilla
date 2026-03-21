@@ -10,12 +10,12 @@ from .libui import (
     NullableView,
     NumberInput,
     Panel,
-    TextInput,
-    Switch,
-    View,
-    Slider,
     Select,
+    Slider,
+    Switch,
     TextArea,
+    TextInput,
+    View,
 )
 
 # --- Test the mock component library Libui --------
@@ -87,5 +87,6 @@ class LibuiTest(TestCase):
         view.unwatch(observe_view)
         view.value = other_value
         self.assertEqual(3, change_count)
+        self.assertEqual(other_value, view.value)
 
         return view

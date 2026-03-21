@@ -13,23 +13,23 @@ from cuiman.api.ui import (
     UIFieldMeta,
 )
 from cuiman.api.ui.vm import (
-    ObjectViewModel,
-    ViewModel,
     ArrayViewModel,
-    PrimitiveViewModel,
     NullableViewModel,
+    ObjectViewModel,
+    PrimitiveViewModel,
+    ViewModel,
 )
 from gavicore.models import Schema
 
 from .libui import (
+    Checkbox,
     ListEditor,
     NullableView,
     NumberInput,
     Panel,
+    Switch,
     TextInput,
     View,
-    Switch,
-    Checkbox,
 )
 
 # --- UI field adapter --------
@@ -50,10 +50,10 @@ class LibuiAdapter(UIFieldBase):
 
     def _bind_bidi(self):
         def observe_vm(_e):
-            self._view.value = self._view_model.get()
+            self._view.value = self._view_model.value
 
         def observe_view():
-            self._view_model.set(self._view.value)
+            self._view_model.value = self._view.value
 
         self._view_model.watch(observe_vm)
         self._view.watch(observe_view)
@@ -83,7 +83,7 @@ class ArrayFieldFactory(UIFieldFactoryBase):
 
     def create_array_field(self, ctx: UIBuilderContext) -> UIField:
         view_model = ctx.vm.array()
-        view = ListEditor(value=view_model.get())
+        view = ListEditor(value=view_model._get_value())
         return LibuiAdapter(ctx.field_meta, view_model, view=view)
 
 
@@ -93,7 +93,7 @@ class StringFieldFactory(UIFieldFactoryBase):
 
     def create_string_field(self, ctx: UIBuilderContext) -> UIField:
         view_model = ctx.vm.primitive()
-        view = TextInput(value=view_model.get())
+        view = TextInput(value=view_model._get_value())
         return LibuiAdapter(ctx.field_meta, view_model, view=view)
 
 
@@ -103,7 +103,7 @@ class NumberFieldFactory(UIFieldFactoryBase):
 
     def create_number_field(self, ctx: UIBuilderContext) -> UIField:
         view_model = ctx.vm.primitive()
-        view = NumberInput(value=view_model.get())
+        view = NumberInput(value=view_model._get_value())
         return LibuiAdapter(ctx.field_meta, view_model, view=view)
 
 
@@ -113,7 +113,7 @@ class BooleanFieldFactory(UIFieldFactoryBase):
 
     def create_boolean_field(self, ctx: UIBuilderContext) -> UIField:
         view_model = ctx.vm.primitive()
-        view = Checkbox(value=view_model.get())
+        view = Checkbox(value=view_model._get_value())
         return LibuiAdapter(ctx.field_meta, view_model, view=view)
 
 
@@ -232,7 +232,7 @@ class UIFieldBuilderTest(TestCase):
                 "threshold": 0.75,
                 "verbose": False,
             },
-            view_model.get(),
+            view_model._get_value(),
         )
 
         # Simulate user clicks the "verbose" checkbox
@@ -245,7 +245,7 @@ class UIFieldBuilderTest(TestCase):
                 "threshold": 0.75,
                 "verbose": True,
             },
-            view_model.get(),
+            view_model._get_value(),
         )
 
         # Simulate user clicks the "enabled" checkbox
@@ -258,7 +258,7 @@ class UIFieldBuilderTest(TestCase):
                 "threshold": None,
                 "verbose": True,
             },
-            view_model.get(),
+            view_model._get_value(),
         )
 
         # Simulate user clicks the "enabled" checkbox once more
@@ -271,7 +271,7 @@ class UIFieldBuilderTest(TestCase):
                 "threshold": 0.75,
                 "verbose": True,
             },
-            view_model.get(),
+            view_model._get_value(),
         )
 
         # Simulate user sets a new "threshold value"
@@ -284,5 +284,5 @@ class UIFieldBuilderTest(TestCase):
                 "threshold": 0.25,
                 "verbose": True,
             },
-            view_model.get(),
+            view_model._get_value(),
         )

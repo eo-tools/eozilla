@@ -30,11 +30,11 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
         if non_nullable_view_model is not None:
             if non_nullable_view_model.field_meta.nullable:
                 raise ValueError("non_nullable_view_model must not be nullable")
-            self._non_nullable_view_model = non_nullable_view_model
-            self._non_nullable_view_model.watch(self._on_non_nullable_change)
+            self._non_nullable = non_nullable_view_model
+            self._non_nullable.watch(self._on_non_nullable_change)
         else:
             non_nullable_meta = field_meta.to_non_nullable()
-            self._non_nullable_view_model = ViewModel.create(
+            self._non_nullable = ViewModel.create(
                 non_nullable_meta,
                 (
                     non_nullable_meta.get_initial_value()
@@ -50,14 +50,14 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
 
     @property
     def property_view_models(self) -> ViewModel:
-        return self._non_nullable_view_model
+        return self._non_nullable
 
-    def get(self) -> T | None:
+    def _get_value(self) -> T | None:
         if self._is_null:
             return None
-        return self._non_nullable_view_model.get()
+        return self._non_nullable._get_value()
 
-    def set(self, value: T | None) -> None:
+    def _set_value(self, value: T | None) -> None:
         was_null = self._is_null
         if value is None:
             self._is_null = True
@@ -65,9 +65,9 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
                 self._notify()
         else:
             self._is_null = False
-            if self._non_nullable_view_model.get() != value:
-                self._non_nullable_view_model.set(value)
-            elif was_null:
+            with self.record_changes() as changes:
+                self._non_nullable._set_value(value)
+            if not changes and was_null:
                 self._notify()
 
     def _on_non_nullable_change(self, event: ViewModelChangeEvent):

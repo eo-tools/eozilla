@@ -39,7 +39,7 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
         for i in range(self._length):
             if i in item_view_models:
                 vm = item_view_models[i]
-                v = vm.get()
+                v = vm._get_value()
             else:
                 # or raise?
                 v = self._item_meta.get_initial_value()
@@ -60,8 +60,11 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
                     del item_view_models[i]
             self._length = new_length
 
-        for i, v in enumerate(value):
-            self._set_item(i, v)
+        with self.record_changes() as changes:
+            for i, v in enumerate(value):
+                self._set_item(i, v)
+        if not changes and old_length != new_length:
+            self._notify()
 
     def __len__(self) -> int:
         return self._length
@@ -70,7 +73,7 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
         item_view_models = self._item_view_models
         if index in item_view_models:
             vm = item_view_models[index]
-            return vm.get()
+            return vm._get_value()
         return self._item_meta.get_initial_value()
 
     def __setitem__(self, index: int, value: Any) -> None:
@@ -79,7 +82,7 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
     def _set_item(self, index: int, value: Any) -> None:
         if index in self._item_view_models:
             child_vm = self._item_view_models[index]
-            child_vm.set(value)
+            child_vm._set_value(value)
         else:
             child_vm = self._create_child(self._item_meta, value)
             self._item_view_models[index] = child_vm
