@@ -27,4 +27,4 @@ class PrimitiveViewModel(Generic[T], ViewModel[T]):
     def set(self, value: T) -> None:
         if value != self._value:
             self._value = value
-            self._notify_observers()
+            self._notify()

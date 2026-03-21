@@ -29,6 +29,10 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
             for i, v in enumerate(initial_value):
                 self._item_view_models[i] = self._create_child(self._item_meta, v)
 
+    @property
+    def item_view_models(self) -> list[ViewModel | None]:
+        return [self._item_view_models.get(i) for i in range(self._length)]
+
     def _assemble_value(self) -> list[Any]:
         item_view_models = self._item_view_models
         value = []

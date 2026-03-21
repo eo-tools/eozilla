@@ -44,6 +44,14 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
             )
         self._is_null = initial_value is None
 
+    @property
+    def is_null(self) -> bool:
+        return self._is_null
+
+    @property
+    def property_view_models(self) -> ViewModel:
+        return self._non_nullable_view_model
+
     def get(self) -> T | None:
         if self._is_null:
             return None
@@ -55,10 +63,10 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
                 # no change
                 return
             self._is_null = True
-            self._notify_observers()
+            self._notify()
         else:
             self._is_null = False
             self._non_nullable_view_model.set(value)
 
     def _on_non_nullable_change(self, event: ViewModelChangeEvent):
-        self._notify_observers(cause=event)
+        self._notify(cause=event)

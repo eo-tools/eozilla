@@ -4,8 +4,7 @@
 
 from abc import ABC, abstractmethod
 from inspect import ismethod
-from typing import Any, Callable, Generic, TypeAlias, TypeVar
-from weakref import WeakMethod, WeakSet
+from typing import Any, Callable, Generic, TypeAlias, TypeVar, Protocol
 
 from gavicore.models import DataType
 
@@ -22,10 +21,14 @@ class ViewModelChangeEvent:
         self.cause = cause
 
 
-ViewModelObserver: TypeAlias = Callable[[ViewModelChangeEvent], None]
-"""
-Type of on observer function or method passed to the [watch][ViewModel.watch] method.
-"""
+class ViewModelObserver(Protocol):
+    """
+    Type of on observer callable passed
+    to the [watch][ViewModel.watch] method.
+    """
+
+    def __call__(self, event: ViewModelChangeEvent) -> None: ...
+
 
 T = TypeVar("T")
 
@@ -38,7 +41,7 @@ class ViewModel(Generic[T], ABC):
         if not isinstance(field_meta, UIFieldMeta):
             raise TypeError(f"field_meta must have type {UIFieldMeta.__name__!r}")
         self._field_meta = field_meta
-        self._observers: WeakSet[Callable] = WeakSet()
+        self._observers: set[ViewModelObserver] = set()
 
     @classmethod
     def create(cls, field_meta: UIFieldMeta, value: Any) -> "ViewModel":
@@ -95,12 +98,10 @@ class ViewModel(Generic[T], ABC):
 
         def unwatch():
             for o1 in observers:
-                self._observers.remove(o1)
+                self._observers.discard(o1)
 
         for o2 in observers:
-            o3 = WeakMethod(o2) if ismethod(o2) else o2
-            if o3 not in self._observers:
-                self._observers.add(o3)
+            self._observers.add(o2)
         return unwatch
 
     def dispose(self):
@@ -110,11 +111,11 @@ class ViewModel(Generic[T], ABC):
         """
         self._observers.clear()
 
-    def _notify_observers(self, cause: ViewModelChangeEvent | None = None) -> None:
+    def _notify(self, cause: ViewModelChangeEvent | None = None) -> None:
         """
-        Notify own observers, if any.
+        Notify registered observers, if any.
         To be used by derived classes only.
         """
         event = ViewModelChangeEvent(self, cause=cause)
-        for observer in self._observers:
+        for observer in list(self._observers):
             observer(event)

@@ -15,10 +15,12 @@ T = TypeVar("T")
 
 # noinspection PyMethodMayBeStatic
 class View(Generic[T], ABC):
+    """Abstract base class for all Libui views."""
+
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
-        self.observers: list[Observer] = []
+        self.observers: set[Observer] = set()
 
     @property
     def value(self) -> T:
@@ -38,20 +40,22 @@ class View(Generic[T], ABC):
 
     def render(self):
         """Render the UI"""
-        return None
+        raise NotImplementedError
 
     def watch(self, observer: Observer) -> None:
-        self.observers.append(observer)
+        self.observers.add(observer)
 
     def unwatch(self, observer: Observer) -> None:
-        self.observers.remove(observer)
+        self.observers.discard(observer)
 
-    def notify(self) -> None:
-        for observer in self.observers:
+    def _notify(self) -> None:
+        for observer in list(self.observers):
             observer()
 
 
 class Panel(View[dict[str, Any]]):
+    """A panel that arranges named child views."""
+
     def __init__(self, children: dict[str, View], **kwargs) -> None:
         super().__init__(**kwargs)
         self.children = children
@@ -78,10 +82,48 @@ class Panel(View[dict[str, Any]]):
                 v.unwatch(on_child_change)
 
         if changed:
-            self.notify()
+            self._notify()
 
 
-class Widget(Generic[T], View[T]):
+class NullableView(Generic[T], View[T | None]):
+    """A view used to enable/disable another child view.
+    If the child is enabled, this view's value is the value of the child view.
+    Otherwise, the value of this view is `None`.
+    """
+
+    def __init__(self, value: T | None, child: View, **kwargs) -> None:
+        super().__init__(value=value, **kwargs)
+        self.child_enabled_switch = Switch(value=value is not None)
+        self.child = child
+        if value is not None:
+            child.value = value
+        self.child_enabled_switch.watch(self.on_switch_change)
+        self.child.watch(self.on_child_change)
+
+    def _get_value(self) -> T | None:
+        if self.child_enabled_switch.value:
+            return self.child.value
+        else:
+            return None
+
+    def _set_value(self, value: T | None):
+        if value is not None:
+            self.child_enabled_switch.value = True
+            self.child.value = value
+        else:
+            self.child_enabled_switch.value = False
+
+    def on_switch_change(self):
+        self._notify()
+
+    def on_child_change(self):
+        if self.child_enabled_switch.value:
+            self._notify()
+
+
+class Widget(Generic[T], View[T], ABC):
+    """Abstract base class for views that have a primary value."""
+
     def __init__(self, *args, value: T, **kwargs):
         super().__init__(*args, **kwargs)
         self._value = value
@@ -93,63 +135,46 @@ class Widget(Generic[T], View[T]):
         if value == self._value:
             return
         self._value = value
-        self.notify()
-
-
-class NullableView(Generic[T], View[T | None]):
-    def __init__(self, value: T | None, view: View, **kwargs) -> None:
-        super().__init__(value=value, **kwargs)
-        self.checkbox = Checkbox(value=value is None)
-        self.child_view = view
-        if value is not None:
-            view.value = value
-        self.checkbox.watch(self.on_checkbox_change)
-        self.child_view.watch(self.on_child_view_change)
-
-    def _get_value(self) -> T | None:
-        if self.checkbox.value:
-            return None
-        else:
-            return self.child_view.value
-
-    def _set_value(self, value: T | None):
-        if value is None:
-            self.checkbox.value = False
-        else:
-            self.checkbox.value = True
-            self.child_view.value = value
-
-    def on_checkbox_change(self):
-        self.notify()
-
-    def on_child_view_change(self):
-        if self.checkbox.value:
-            self.notify()
+        self._notify()
 
 
 class ListEditor(Widget[list[Any]]):
-    pass
+    """An editor that can add/remove/change items of a value of type `list`."""
 
 
-class TextField(Widget[str]):
-    pass
+class TextArea(Widget[str]):
+    """A text area field."""
 
 
-class IntegerField(Widget[int]):
-    pass
+class TextInput(Widget[str]):
+    """A text input field."""
 
 
-class NumberField(Widget[int | float]):
-    pass
+class NumberInput(Widget[int | float]):
+    """A number input field."""
 
 
 class Slider(Widget[int | float]):
-    pass
+    """A slider that has values between a given min/max."""
 
 
 class Checkbox(Widget[bool]):
-    pass
+    """Checkbox field."""
+
+    def toggle(self):
+        self.value = not self.value
 
 
 class Switch(Widget[bool]):
-    pass
+    """A switch."""
+
+    def toggle(self):
+        self.value = not self.value
+
+
+class Select(Generic[T], Widget[T]):
+    """A select (dropdown)."""
+
+    def __init__(self, *args, value: T, options: list[T], **kwargs) -> None:
+        super().__init__(*args, value=value, **kwargs)
+        self.options = options

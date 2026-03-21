@@ -7,7 +7,7 @@ from typing import Any, TypeAlias
 
 from gavicore.models import DataType, Schema
 
-from ._util import UNDEFINED
+from ._util import UNDEFINED, UndefinedType
 from .fieldmeta import UIFieldMeta
 from .vm import (
     ArrayViewModel,
@@ -88,7 +88,7 @@ class UIBuilderContext:
         *,
         builder: "UIFieldBuilder",
         field_meta: UIFieldMeta,
-        initial_value: Any = UNDEFINED,
+        initial_value: Any | UndefinedType = UNDEFINED,
         parent_ctx: "UIBuilderContext | None" = None,
     ):
         self._parent_ctx = parent_ctx
@@ -96,9 +96,9 @@ class UIBuilderContext:
         self._vm_builder = UIViewModelBuilder(self)
         self._field_meta = field_meta
         self._value = (
-            initial_value
-            if initial_value is UNDEFINED
-            else field_meta.get_initial_value()
+            field_meta.get_initial_value()
+            if isinstance(initial_value, UndefinedType)
+            else initial_value
         )
 
     @property
@@ -310,7 +310,7 @@ class UIFieldBuilder:
     def create_field(
         self,
         field_meta: UIFieldMeta,
-        initial_value: Any = UNDEFINED,
+        initial_value: Any | UndefinedType = UNDEFINED,
     ) -> UIField:
         ctx = UIBuilderContext(
             builder=self,

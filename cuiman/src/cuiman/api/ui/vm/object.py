@@ -51,6 +51,10 @@ class ObjectViewModel(CompositeViewModel[str, dict[str, Any]]):
             vm = self._property_view_models[k]
             vm.set(v)
 
+    @property
+    def property_view_models(self) -> dict[str, ViewModel]:
+        return dict(self._property_view_models)
+
     def __len__(self) -> int:
         return len(self._property_view_models)
 

@@ -77,7 +77,7 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
 
     def _on_child_change(self, event: ViewModelChangeEvent):
         self._cached_value = UNDEFINED
-        self._notify_observers(cause=event)
+        self._notify(cause=event)
 
     @classmethod
     def _assert_value_is_valid(
