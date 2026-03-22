@@ -192,12 +192,12 @@ class UIFieldBuilderTest(TestCase):
         self.assertEqual(4, len(view_model))
         self.assertEqual(
             ["ds_paths", "config_path", "threshold", "verbose"],
-            list(view_model.property_view_models),
+            list(view_model.properties),
         )
-        vm_1 = view_model.property_view_models["ds_paths"]
-        vm_2 = view_model.property_view_models["config_path"]
-        vm_3 = view_model.property_view_models["threshold"]
-        vm_4 = view_model.property_view_models["verbose"]
+        vm_1 = view_model.properties["ds_paths"]
+        vm_2 = view_model.properties["config_path"]
+        vm_3 = view_model.properties["threshold"]
+        vm_4 = view_model.properties["verbose"]
         self.assertIsInstance(vm_1, ArrayViewModel)
         self.assertIsInstance(vm_2, PrimitiveViewModel)
         self.assertIsInstance(vm_3, NullableViewModel)

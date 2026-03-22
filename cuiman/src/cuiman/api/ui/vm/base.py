@@ -15,11 +15,9 @@ from ..fieldmeta import UIFieldMeta
 class ViewModelChangeEvent:
     """An event emitted when a [ViewModel][ViewModel] changes."""
 
-    def __init__(
-        self, source: "ViewModel", cause: "ViewModelChangeEvent | None" = None
-    ):
+    def __init__(self, source: "ViewModel", *causes: "ViewModelChangeEvent"):
         self.source = source
-        self.cause = cause
+        self.causes = causes
 
 
 class ViewModelObserver(Protocol):
@@ -122,33 +120,34 @@ class ViewModel(Generic[T], ABC):
         """
         self._observers.clear()
 
-    def _notify(self, cause: ViewModelChangeEvent | None = None) -> None:
+    def _notify(self, *causes: ViewModelChangeEvent) -> None:
         """
         Notify registered observers, if any.
         To be used by derived classes only.
         """
-        event = ViewModelChangeEvent(self, cause=cause)
+        event = ViewModelChangeEvent(self, *causes)
         for observer in list(self._observers):
             observer(event)
 
     @contextmanager
-    def record_changes(self) -> Generator[list[ViewModelChangeEvent]]:
+    def intercept_changes(self) -> Generator[list[ViewModelChangeEvent]]:
         """
-        A context manager that can be used to temporarily record changes
-        in this view model.
+        A context manager that is used to temporarily disable
+        change events fired by this view model and return all
+        collected events, if any, in the order they have been collected.
         """
-        recorder = _ViewModelChangeRecorder()
-        unwatch = self.watch(recorder)
+        prev_observers = self._observers
+        recorder = ViewModelChangeRecorder()
+        self._observers = {recorder}
         try:
             yield recorder.change_events
         finally:
-            unwatch()
+            self._observers = prev_observers
 
 
-class _ViewModelChangeRecorder:
+class ViewModelChangeRecorder:
     """
-    Result of the contextmanager method
-    [ViewModel.record_changes][ViewModel.record_changes].
+    An observer that records all observed changes.
     """
 
     def __init__(self):

@@ -22,23 +22,23 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
         assert field_meta.children is not None and len(field_meta.children) == 1
         self._item_meta = field_meta.children[0]
         # initialize item view models
-        self._item_view_models: dict[int, ViewModel] = {}
+        self._items: dict[int, ViewModel] = {}
         self._length: int = 0
         if isinstance(initial_value, list):
             self._length = len(initial_value)
             for i, v in enumerate(initial_value):
-                self._item_view_models[i] = self._create_child(self._item_meta, v)
+                self._items[i] = self._create_child(self._item_meta, v)
 
     @property
-    def item_view_models(self) -> list[ViewModel | None]:
-        return [self._item_view_models.get(i) for i in range(self._length)]
+    def items(self) -> list[ViewModel | None]:
+        return [self._items.get(i) for i in range(self._length)]
 
     def _assemble_value(self) -> list[Any]:
-        item_view_models = self._item_view_models
+        items = self._items
         value = []
         for i in range(self._length):
-            if i in item_view_models:
-                vm = item_view_models[i]
+            if i in items:
+                vm = items[i]
                 v = vm._get_value()
             else:
                 # or raise?
@@ -51,28 +51,30 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
         old_length = self._length
         if new_length < old_length:
             # truncate array
-            item_view_models = self._item_view_models
+            items = self._items
             for i in range(new_length, old_length):
-                if i in item_view_models:
-                    vm = item_view_models[i]
+                if i in items:
+                    vm = items[i]
                     if vm is not None:
                         vm.dispose()
-                    del item_view_models[i]
+                    del items[i]
             self._length = new_length
 
-        with self.record_changes() as changes:
+        with self.intercept_changes() as changes:
             for i, v in enumerate(value):
                 self._set_item(i, v)
-        if not changes and old_length != new_length:
-            self._notify()
+
+        if changes or old_length != new_length:
+            self._invalidate()
+            self._notify(*changes)
 
     def __len__(self) -> int:
         return self._length
 
     def __getitem__(self, index: int) -> Any:
-        item_view_models = self._item_view_models
-        if index in item_view_models:
-            vm = item_view_models[index]
+        items = self._items
+        if index in items:
+            vm = items[index]
             return vm._get_value()
         return self._item_meta.get_initial_value()
 
@@ -80,10 +82,18 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
         self._set_item(index, value)
 
     def _set_item(self, index: int, value: Any) -> None:
-        if index in self._item_view_models:
-            child_vm = self._item_view_models[index]
-            child_vm._set_value(value)
+        old_length = self._length
+        new_length = max(old_length, index + 1)
+        self._length = new_length
+        if index in self._items:
+            child_vm = self._items[index]
+            with child_vm.intercept_changes() as changes:
+                child_vm._set_value(value)
+            if changes or new_length != old_length:
+                self._invalidate()
+                self._notify(*changes)
         else:
             child_vm = self._create_child(self._item_meta, value)
-            self._item_view_models[index] = child_vm
-        self._length = max(self._length, index + 1)
+            self._items[index] = child_vm
+            self._invalidate()
+            self._notify()

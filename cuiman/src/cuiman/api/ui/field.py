@@ -62,7 +62,7 @@ class UIViewModelBuilder:
             initial_value=(
                 self._ctx.initial_value if property_view_models is None else UNDEFINED
             ),
-            property_view_models=property_view_models,
+            properties=property_view_models,
         )
 
     def array(self) -> ArrayViewModel:

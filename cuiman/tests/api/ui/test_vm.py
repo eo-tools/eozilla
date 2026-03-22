@@ -43,12 +43,25 @@ class ViewModelTest(TestCase):
             ArrayViewModel(meta, [10, 11]), [10, 11], [10, 11, 12]
         )
 
-        items = vm.item_view_models
+        self.assertEqual(3, len(vm))
+        items = vm.items
         self.assertIsInstance(items, list)
         self.assertEqual(3, len(items))
         self.assertIsInstance(items[0], PrimitiveViewModel)
         self.assertIsInstance(items[1], PrimitiveViewModel)
         self.assertIsInstance(items[2], PrimitiveViewModel)
+        vm[5] = 100
+        self.assertEqual(6, len(vm))
+        self.assertEqual([10, 11, 12, 0, 0, 100], vm.value)
+        items = vm.items
+        self.assertIsInstance(items, list)
+        self.assertEqual(6, len(items))
+        self.assertIsInstance(items[0], PrimitiveViewModel)
+        self.assertIsInstance(items[1], PrimitiveViewModel)
+        self.assertIsInstance(items[2], PrimitiveViewModel)
+        self.assertIsNone(items[3])
+        self.assertIsNone(items[4])
+        self.assertIsInstance(items[5], PrimitiveViewModel)
 
     def test_object(self):
         meta = UIFieldMeta.from_schema(
@@ -65,7 +78,7 @@ class ViewModelTest(TestCase):
             {"a": True, "b": "ds.zarr"},
             {"a": False, "b": "ds.zarr"},
         )
-        properties = vm.property_view_models
+        properties = vm.properties
         self.assertIsInstance(properties, dict)
         self.assertEqual(["a", "b"], list(properties.keys()))
         self.assertIsInstance(properties["a"], PrimitiveViewModel)

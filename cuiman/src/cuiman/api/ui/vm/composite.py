@@ -38,16 +38,15 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
         if not isinstance(self._cached_value, UndefinedType):
             return self._cached_value
         cached_value = self._assemble_value()
-        assert cached_value is not UNDEFINED
+        assert UndefinedType.is_defined(cached_value)
         self._cached_value = cached_value
         return cached_value
 
     def _set_value(self, value: T) -> None:
         self._assert_value_is_valid(self._field_meta, self._composite_type, value)
-        if self._cached_value is not UNDEFINED and self._cached_value == value:
+        if self._is_valid() and self._cached_value == value:
             # No change
             return
-        self._cached_value = UNDEFINED
         self._distribute_value(value)
 
     @abstractmethod
@@ -76,8 +75,8 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
         return child_vm
 
     def _on_child_change(self, event: ViewModelChangeEvent):
-        self._cached_value = UNDEFINED
-        self._notify(cause=event)
+        self._invalidate()
+        self._notify(event)
 
     @classmethod
     def _assert_value_is_valid(
@@ -92,3 +91,9 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
                 f"Value must be a {composite_type.__name__} "
                 f"for field {field_meta.name!r} but was {value!r}"
             )
+
+    def _is_valid(self) -> bool:
+        return UndefinedType.is_defined(self._cached_value)
+
+    def _invalidate(self) -> None:
+        self._cached_value = UNDEFINED
