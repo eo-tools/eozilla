@@ -4,8 +4,8 @@
 from typing import TypeVar
 from unittest import TestCase
 
-from cuiman.api.ui import UIFieldMeta
-from cuiman.api.ui.vm import (
+from cuiman.ui import UIFieldMeta
+from cuiman.ui.vm import (
     ArrayViewModel,
     NullableViewModel,
     ObjectViewModel,

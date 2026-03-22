@@ -8,7 +8,7 @@ from unittest import TestCase
 import pydantic
 from pydantic import BaseModel
 
-from cuiman.api.ui import UIFieldMeta
+from cuiman.ui import UIFieldMeta
 from gavicore.models import InputDescription, OutputDescription, Schema
 
 dict_kwargs = dict(

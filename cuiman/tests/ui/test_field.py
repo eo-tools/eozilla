@@ -4,7 +4,7 @@
 
 from unittest import TestCase
 
-from cuiman.api.ui import (
+from cuiman.ui import (
     UIBuilderContext,
     UIField,
     UIFieldBase,
@@ -12,7 +12,7 @@ from cuiman.api.ui import (
     UIFieldFactoryBase,
     UIFieldMeta,
 )
-from cuiman.api.ui.vm import (
+from cuiman.ui.vm import (
     ArrayViewModel,
     NullableViewModel,
     ObjectViewModel,
