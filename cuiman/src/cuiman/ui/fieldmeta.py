@@ -115,6 +115,10 @@ class UIFieldMeta(BaseModel):
     def nullable(self) -> bool:
         return self.schema_.nullable is True
 
+    @property
+    def default(self) -> Any:
+        return self.schema_.default
+
     @classmethod
     def from_input_descriptions(
         cls,

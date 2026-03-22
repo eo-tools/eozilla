@@ -7,7 +7,10 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any, Callable, Generic, Protocol, TypeVar
 
+from bokeh.core.property.singletons import UndefinedType
+
 from gavicore.models import DataType
+from .._util import UNDEFINED
 
 from ..fieldmeta import UIFieldMeta
 
@@ -38,12 +41,14 @@ class ViewModel(Generic[T], ABC):
     def __init__(self, field_meta: UIFieldMeta):
         """Base class constructor."""
         if not isinstance(field_meta, UIFieldMeta):
-            raise TypeError(f"field_meta must have type {UIFieldMeta.__name__!r}")
+            raise TypeError(f"field_meta must have type {UIFieldMeta.__name__}")
         self._field_meta = field_meta
         self._observers: set[ViewModelObserver] = set()
 
     @classmethod
-    def create(cls, field_meta: UIFieldMeta, value: Any) -> "ViewModel":
+    def create(
+        cls, field_meta: UIFieldMeta, *, value: Any | UndefinedType = UNDEFINED
+    ) -> "ViewModel":
         """
         Create a new view model instance for the given field metadata
         and initial value.
@@ -53,24 +58,24 @@ class ViewModel(Generic[T], ABC):
         if schema.nullable:
             from .nullable import NullableViewModel
 
-            return NullableViewModel(field_meta, value)
+            return NullableViewModel(field_meta, value=value)
 
         if schema.type == DataType.object:
             from .object import ObjectViewModel
 
-            return ObjectViewModel(field_meta, value)
+            return ObjectViewModel(field_meta, value=value)
 
         if schema.type == DataType.array:
             from .array import ArrayViewModel
 
-            return ArrayViewModel(field_meta, value)
+            return ArrayViewModel(field_meta, value=value)
 
         if schema.type is not None:
             from .primitive import PrimitiveViewModel
 
-            return PrimitiveViewModel(field_meta, value)
+            return PrimitiveViewModel(field_meta, value=value)
 
-        raise ValueError(f"Missing type in schema for {field_meta.name!r}")
+        raise ValueError(f"missing type in schema for field {field_meta.name!r}")
 
     @property
     def field_meta(self) -> UIFieldMeta:

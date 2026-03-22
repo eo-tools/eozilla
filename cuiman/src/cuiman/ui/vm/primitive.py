@@ -4,6 +4,7 @@
 
 from typing import Any, Generic, TypeVar
 
+from .._util import UNDEFINED, UndefinedType
 from ..fieldmeta import UIFieldMeta
 from .base import ViewModel
 
@@ -15,11 +16,19 @@ class PrimitiveViewModel(Generic[T], ViewModel[T]):
     A view model that represents a non-nullable, primitive value.
     """
 
-    def __init__(self, field_meta: UIFieldMeta, initial_value: Any):
+    def __init__(
+        self, field_meta: UIFieldMeta, *, value: Any | UndefinedType = UNDEFINED
+    ):
         super().__init__(field_meta)
         if field_meta.nullable:
             raise ValueError("field_meta must not be nullable")
-        self._value = initial_value
+        self._value: T
+        if UndefinedType.is_defined(value):
+            if value is None:
+                raise ValueError("value must not be None")
+            self._value = value  # type: ignore[assignment]
+        else:
+            self._value = UIFieldMeta.get_initial_value(field_meta)
 
     def _get_value(self) -> T:
         return self._value

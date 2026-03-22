@@ -16,17 +16,17 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
     """
 
     def __init__(
-        self, field_meta: UIFieldMeta, initial_value: Any | UndefinedType = UNDEFINED
+        self, field_meta: UIFieldMeta, *, value: Any | UndefinedType = UNDEFINED
     ):
-        super().__init__(field_meta, list, initial_value)
+        super().__init__(field_meta, list, value)
         assert field_meta.children is not None and len(field_meta.children) == 1
         self._item_meta = field_meta.children[0]
         # initialize item view models
         self._items: dict[int, ViewModel] = {}
         self._length: int = 0
-        if isinstance(initial_value, list):
-            self._length = len(initial_value)
-            for i, v in enumerate(initial_value):
+        if isinstance(value, list):
+            self._length = len(value)
+            for i, v in enumerate(value):
                 self._items[i] = self._create_child(self._item_meta, v)
 
     @property
@@ -76,7 +76,9 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
         if index in items:
             vm = items[index]
             return vm._get_value()
-        return self._item_meta.get_initial_value()
+        if index < self._length:
+            return self._item_meta.get_initial_value()
+        raise IndexError(f"index out of range for field {self.field_meta.name!r}")
 
     def __setitem__(self, index: int, value: Any) -> None:
         self._set_item(index, value)

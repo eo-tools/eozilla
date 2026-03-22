@@ -59,17 +59,17 @@ class UIViewModelBuilder:
     ) -> ObjectViewModel:
         return ObjectViewModel(
             self._ctx.field_meta,
-            initial_value=(
+            value=(
                 self._ctx.initial_value if property_view_models is None else UNDEFINED
             ),
             properties=property_view_models,
         )
 
     def array(self) -> ArrayViewModel:
-        return ArrayViewModel(self._ctx.field_meta, self._ctx.initial_value)
+        return ArrayViewModel(self._ctx.field_meta, value=self._ctx.initial_value)
 
     def primitive(self) -> PrimitiveViewModel:
-        return PrimitiveViewModel(self._ctx.field_meta, self._ctx.initial_value)
+        return PrimitiveViewModel(self._ctx.field_meta, value=self._ctx.initial_value)
 
     def nullable(
         self,
@@ -77,8 +77,8 @@ class UIViewModelBuilder:
     ) -> NullableViewModel:
         return NullableViewModel(
             self._ctx.field_meta,
-            initial_value=self._ctx.initial_value,
-            non_nullable_view_model=non_nullable_view_model,
+            value=self._ctx.initial_value,
+            non_nullable=non_nullable_view_model,
         )
 
 
@@ -324,6 +324,6 @@ class UIFieldBuilder:
         factory = self.find_factory(ctx.field_meta)
         if factory is None:
             raise ValueError(
-                f"No factory found for creating a UI for field {'.'.join(ctx.path)!r}"
+                f"no factory found for creating a UI for field {'.'.join(ctx.path)!r}"
             )
         return factory.create_field(ctx)

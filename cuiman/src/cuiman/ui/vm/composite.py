@@ -23,16 +23,18 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
         self,
         field_meta: UIFieldMeta,
         composite_type: type[T],
-        initial_value: T | UndefinedType,
+        value: T | UndefinedType,
     ):
         super().__init__(field_meta)
         if field_meta.nullable:
             raise ValueError("field_meta must not be nullable")
-        CompositeViewModel._assert_value_is_valid(
-            field_meta, composite_type, initial_value
-        )
+        CompositeViewModel._assert_value_is_valid(field_meta, composite_type, value)
         self._composite_type: type[T] = composite_type
-        self._cached_value: T | UndefinedType = initial_value
+        self._cached_value: T | UndefinedType = (
+            value
+            if UndefinedType.is_defined(value)
+            else (field_meta.default if field_meta.default is not None else value)
+        )
 
     def _get_value(self) -> T:
         if not isinstance(self._cached_value, UndefinedType):
@@ -44,7 +46,7 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
 
     def _set_value(self, value: T) -> None:
         self._assert_value_is_valid(self._field_meta, self._composite_type, value)
-        if self._is_valid() and self._cached_value == value:
+        if self._get_value() == value:
             # No change
             return
         self._distribute_value(value)
@@ -70,7 +72,7 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
         """Set item by key and value."""
 
     def _create_child(self, child_meta: UIFieldMeta, child_value: Any) -> ViewModel:
-        child_vm = self.create(child_meta, child_value)
+        child_vm = self.create(child_meta, value=child_value)
         child_vm.watch(self._on_child_change)
         return child_vm
 
@@ -87,13 +89,10 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
     ) -> None:
         # noinspection PyTypeHints
         if not isinstance(value, (composite_type, UndefinedType)):
-            raise ValueError(
-                f"Value must be a {composite_type.__name__} "
+            raise TypeError(
+                f"value must be a {composite_type.__name__} "
                 f"for field {field_meta.name!r} but was {value!r}"
             )
-
-    def _is_valid(self) -> bool:
-        return UndefinedType.is_defined(self._cached_value)
 
     def _invalidate(self) -> None:
         self._cached_value = UNDEFINED

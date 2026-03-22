@@ -21,28 +21,33 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
     def __init__(
         self,
         field_meta: UIFieldMeta,
-        initial_value: Any | UndefinedType = UNDEFINED,
-        non_nullable_view_model: ViewModel[T] | None = None,
+        *,
+        value: Any | UndefinedType = UNDEFINED,
+        non_nullable: ViewModel[T] | None = None,
     ):
         super().__init__(field_meta)
         if not field_meta.nullable:
             raise ValueError("field_meta must be nullable")
-        if non_nullable_view_model is not None:
-            if non_nullable_view_model.field_meta.nullable:
-                raise ValueError("non_nullable_view_model must not be nullable")
-            self._non_nullable = non_nullable_view_model
+        if non_nullable is not None:
+            if non_nullable.field_meta.nullable:
+                raise ValueError("non_nullable view model must not be nullable")
+            self._non_nullable = non_nullable
             self._non_nullable.watch(self._on_non_nullable_change)
         else:
             non_nullable_meta = field_meta.to_non_nullable()
-            self._non_nullable = ViewModel.create(
+            self._non_nullable = self.create(
                 non_nullable_meta,
-                (
+                value=(
                     non_nullable_meta.get_initial_value()
-                    if initial_value is None or initial_value is UNDEFINED
-                    else initial_value
+                    if value is None or not UndefinedType.is_defined(value)
+                    else value
                 ),
             )
-        self._is_null = initial_value is None
+        self._is_null = (
+            value is None
+            if UndefinedType.is_defined(value)
+            else field_meta.default is None
+        )
 
     @property
     def is_null(self) -> bool:
