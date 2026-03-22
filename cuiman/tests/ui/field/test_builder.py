@@ -5,10 +5,10 @@
 from unittest import TestCase
 
 from cuiman.ui import (
-    UIBuilderContext,
     UIField,
     UIFieldBase,
     UIFieldBuilder,
+    UIFieldContext,
     UIFieldFactoryBase,
     UIFieldMeta,
 )
@@ -17,7 +17,6 @@ from cuiman.ui.vm import (
     NullableViewModel,
     ObjectViewModel,
     PrimitiveViewModel,
-    ViewModel,
 )
 from gavicore.models import Schema
 
@@ -29,106 +28,91 @@ from .libui import (
     Panel,
     Switch,
     TextInput,
-    View,
 )
 
 # --- UI field adapter --------
 
 
 class LibuiAdapter(UIFieldBase):
-    def __init__(self, field_meta: UIFieldMeta, view_model: ViewModel, view: View):
-        super().__init__(field_meta)
-        self._view_model = view_model
-        self._view = view
-        self._bind_bidi()
-
-    def get_view_model(self) -> ViewModel:
-        return self._view_model
-
-    def get_view(self) -> View:
-        return self._view
-
-    def _bind_bidi(self):
+    def _bind_mutually(self):
         def observe_vm(_e):
-            self._view.value = self._view_model.value
+            self.view.value = self.view_model.value
 
         def observe_view():
-            self._view_model.value = self._view.value
+            self.view_model.value = self.view.value
 
-        self._view_model.watch(observe_vm)
-        self._view.watch(observe_view)
+        self.view_model.watch(observe_vm)
+        self.view.watch(observe_view)
 
 
 # --- Factories for field adapters --------
 
 
 class ObjectFieldFactory(UIFieldFactoryBase):
-    def get_object_score(self, ctx: UIBuilderContext) -> int:
+    def get_object_score(self, ctx: UIFieldContext) -> int:
         return 1
 
-    def create_object_field(self, ctx: UIBuilderContext) -> UIField:
+    def create_object_field(self, ctx: UIFieldContext) -> UIField:
         child_fields = ctx.create_child_fields()
-        view_models = {k: f.get_view_model() for k, f in child_fields.items()}
-        views = {k: f.get_view() for k, f in child_fields.items()}
-        view_model = ctx.vm.object(
-            property_view_models=view_models,
-        )
+        view_models = {k: f.view_model for k, f in child_fields.items()}
+        views = {k: f.view for k, f in child_fields.items()}
+        view_model = ctx.vm.object(properties=view_models)
         view = Panel(children=views)
-        return LibuiAdapter(ctx.field_meta, view_model, view=view)
+        return LibuiAdapter(view_model, view=view)
 
 
 class ArrayFieldFactory(UIFieldFactoryBase):
-    def get_array_score(self, ctx: UIBuilderContext) -> int:
+    def get_array_score(self, ctx: UIFieldContext) -> int:
         return 1
 
-    def create_array_field(self, ctx: UIBuilderContext) -> UIField:
+    def create_array_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.array()
-        view = ListEditor(value=view_model._get_value())
-        return LibuiAdapter(ctx.field_meta, view_model, view=view)
+        view = ListEditor(value=view_model.value)
+        return LibuiAdapter(view_model, view=view)
 
 
 class StringFieldFactory(UIFieldFactoryBase):
     def get_string_score(self, field_meta: UIFieldMeta) -> int:
         return 1
 
-    def create_string_field(self, ctx: UIBuilderContext) -> UIField:
+    def create_string_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.primitive()
-        view = TextInput(value=view_model._get_value())
-        return LibuiAdapter(ctx.field_meta, view_model, view=view)
+        view = TextInput(value=view_model.value)
+        return LibuiAdapter(view_model, view=view)
 
 
 class NumberFieldFactory(UIFieldFactoryBase):
     def get_number_score(self, field_meta: UIFieldMeta) -> int:
         return 1
 
-    def create_number_field(self, ctx: UIBuilderContext) -> UIField:
+    def create_number_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.primitive()
-        view = NumberInput(value=view_model._get_value())
-        return LibuiAdapter(ctx.field_meta, view_model, view=view)
+        view = NumberInput(value=view_model.value)
+        return LibuiAdapter(view_model, view=view)
 
 
 class BooleanFieldFactory(UIFieldFactoryBase):
     def get_boolean_score(self, field_meta: UIFieldMeta) -> int:
         return 1
 
-    def create_boolean_field(self, ctx: UIBuilderContext) -> UIField:
+    def create_boolean_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.primitive()
-        view = Checkbox(value=view_model._get_value())
-        return LibuiAdapter(ctx.field_meta, view_model, view=view)
+        view = Checkbox(value=view_model.value)
+        return LibuiAdapter(view_model, view=view)
 
 
 class NullFieldFactory(UIFieldFactoryBase):
     def get_null_score(self, field_meta: UIFieldMeta) -> int:
         return 1
 
-    def create_null_field(self, ctx: UIBuilderContext) -> UIField:
-        non_nullable_meta = ctx.field_meta.to_non_nullable()
+    def create_null_field(self, ctx: UIFieldContext) -> UIField:
+        non_nullable_meta = ctx.meta.to_non_nullable()
         non_nullable_field = ctx.create_child_field(non_nullable_meta)
-        non_nullable_view_model = non_nullable_field.get_view_model()
-        non_nullable_view = non_nullable_field.get_view()
-        view_model = ctx.vm.nullable(non_nullable_view_model=non_nullable_view_model)
+        non_nullable_view_model = non_nullable_field.view_model
+        non_nullable_view = non_nullable_field.view
+        view_model = ctx.vm.nullable(non_nullable=non_nullable_view_model)
         view = NullableView(value=ctx.initial_value, child=non_nullable_view)
-        return LibuiAdapter(ctx.field_meta, view_model, view=view)
+        return LibuiAdapter(view_model, view=view)
 
 
 # --- UI field builder usage --------
@@ -181,8 +165,8 @@ class UIFieldBuilderTest(TestCase):
             },
         )
         self.assertIsInstance(field, LibuiAdapter)
-        view_model = field.get_view_model()
-        view = field.get_view()
+        view_model = field.view_model
+        view = field.view
 
         #
         # assert that UI composition is as expected

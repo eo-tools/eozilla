@@ -5,8 +5,9 @@
 from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar
 
-from .._util import UNDEFINED, UndefinedType
-from ..fieldmeta import UIFieldMeta
+from gavicore.util.undefined import UNDEFINED, UndefinedType
+
+from ..field.meta import UIFieldMeta
 from .base import ViewModel, ViewModelChangeEvent
 
 K = TypeVar("K", str, int)

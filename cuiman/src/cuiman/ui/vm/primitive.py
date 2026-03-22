@@ -4,8 +4,9 @@
 
 from typing import Any, Generic, TypeVar
 
-from .._util import UNDEFINED, UndefinedType
-from ..fieldmeta import UIFieldMeta
+from gavicore.util.undefined import UNDEFINED, UndefinedType
+
+from ..field.meta import UIFieldMeta
 from .base import ViewModel
 
 T = TypeVar("T", bool, int, float, str)

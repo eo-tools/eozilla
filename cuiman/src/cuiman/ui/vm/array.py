@@ -4,8 +4,9 @@
 
 from typing import Any
 
-from .._util import UNDEFINED, UndefinedType
-from ..fieldmeta import UIFieldMeta
+from gavicore.util.undefined import UNDEFINED, UndefinedType
+
+from ..field.meta import UIFieldMeta
 from .base import ViewModel
 from .composite import CompositeViewModel
 

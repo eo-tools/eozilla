@@ -10,9 +10,9 @@ from typing import Any, Callable, Generic, Protocol, TypeVar
 from bokeh.core.property.singletons import UndefinedType
 
 from gavicore.models import DataType
-from .._util import UNDEFINED
+from gavicore.util.undefined import UNDEFINED
 
-from ..fieldmeta import UIFieldMeta
+from ..field.meta import UIFieldMeta
 
 
 class ViewModelChangeEvent:
