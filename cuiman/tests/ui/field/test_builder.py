@@ -14,6 +14,7 @@ from cuiman.ui import (
     UIFieldFactoryBase,
     UIFieldMeta,
 )
+from cuiman.ui.field.meta import UIFieldGroup
 from cuiman.ui.vm import (
     ArrayViewModel,
     NullableViewModel,
@@ -278,6 +279,7 @@ class UIFieldBuilderTest(TestCase):
 
     def test_builder_ok_with_layout(self):
         builder = self.builder
+        builder.register_factory()
 
         meta = UIFieldMeta.from_schema(
             "root",
@@ -334,3 +336,22 @@ class UIFieldBuilderTest(TestCase):
             ValueError, match="no factory found for creating a UI for field 'x'"
         ):
             builder.create_field(meta)
+
+
+class NestedPanelFactory(UIFieldFactoryBase):
+    def get_object_score(self, field_meta: UIFieldMeta) -> int:
+        return 10 if field_meta.layout is not None else 0
+
+    def create_object_field(self, ctx: UIFieldContext) -> UIField:
+        layout = ctx.meta.layout
+        assert layout is not None
+        group: UIFieldGroup
+        if layout == "row":
+            group = UIFieldGroup(type="row")
+        elif layout == "column":
+            group = UIFieldGroup(type="column")
+        else:
+            assert isinstance(layout, UIFieldGroup)
+            group = layout
+
+    def

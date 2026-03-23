@@ -48,8 +48,8 @@ class UIFieldGroup(BaseModel):
 
     Items can be other `Group` objects or the names of the
     fields that should be part of the layout. Another possibility
-    for a field to join a layout is to set its `group` property
-    to the `name` of the target group.
+    for a field to join a layout is to set its `group_name` property
+    to the target group's `name`.
     Children of a complex field whose names do not occur in any group
     of a layout tree, and do not have the `group` property set
     will be appended to the root group of a layout tree.
@@ -62,6 +62,9 @@ class UIFieldGroup(BaseModel):
     name: str | None = None
     title: str | None = None
     style: dict[str, Any] | None = None
+
+
+UIFieldLayout: TypeAlias = UIFieldGroup | Literal["column", "row"]
 
 
 class UIFieldMeta(BaseModel):
@@ -98,14 +101,14 @@ class UIFieldMeta(BaseModel):
     #   properties: dict[str, UIFieldMeta] | None
     #   items: UIFieldMeta | None
     children: list["UIFieldMeta"] | None = None
-    layout: UIFieldGroup | Literal["column", "row"] | None = None
+    layout: UIFieldLayout | None = None
     widget: UIFieldWidget | str | None = None
     title: str | None = None
     description: str | None = None
     tooltip: str | None = None
     placeholder: str | None = None
     nullable_parent: bool | None = None
-    group: str | None = None
+    group_name: str | None = None
     order: int | str | None = None
     advanced: bool | None = None
     required: bool | None = None
