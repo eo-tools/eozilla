@@ -74,14 +74,14 @@ class UIFieldContext:
             for child_meta in (self.meta.children or [])
         }
 
-    def create_child_field(self, child_field_meta: UIFieldMeta) -> UIField:
+    def create_child_field(self, child_meta: UIFieldMeta) -> UIField:
         """Create a new field for the given field metadata."""
-        child_ctx = self._create_child_ctx(child_field_meta)
+        child_ctx = self._create_child_ctx(child_meta)
         return self._builder.create_field_for_ctx(child_ctx)
 
-    def _create_child_ctx(self, child_field_meta: UIFieldMeta) -> "UIFieldContext":
+    def _create_child_ctx(self, child_meta: UIFieldMeta) -> "UIFieldContext":
         initial_value = self.initial_value
-        child_name = child_field_meta.name
+        child_name = child_meta.name
         if (
             self.schema.type == DataType.object
             and isinstance(initial_value, dict)
@@ -89,10 +89,10 @@ class UIFieldContext:
         ):
             child_value = initial_value[child_name]
         else:
-            child_value = child_field_meta.get_initial_value()
+            child_value = child_meta.get_initial_value()
         return UIFieldContext(
             builder=self._builder,
-            meta=child_field_meta,
+            meta=child_meta,
             initial_value=child_value,
             parent_ctx=self,
         )
