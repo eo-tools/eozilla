@@ -256,8 +256,8 @@ class ViewModelTest(TestCase):
             ObjectViewModel(
                 meta,
                 properties={
-                    "a": PrimitiveViewModel(meta.children[0]),
-                    "b": PrimitiveViewModel(meta.children[0]),
+                    "a": PrimitiveViewModel(meta.properties["a"]),
+                    "b": PrimitiveViewModel(meta.properties["a"]),
                 },
             )
 

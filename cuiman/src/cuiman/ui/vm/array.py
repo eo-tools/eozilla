@@ -18,8 +18,7 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
 
     def __init__(self, meta: UIFieldMeta, *, value: Any | UndefinedType = UNDEFINED):
         super().__init__(meta, list, value)
-        assert meta.children is not None and len(meta.children) == 1
-        self._item_meta = meta.children[0]
+        self._item_meta = meta.item
         # initialize item view models
         self._items: dict[int, ViewModel] = {}
         self._length: int = 0

@@ -415,21 +415,25 @@ class UIFieldMetaTest(TestCase):
             meta = UIFieldMeta.from_input_descriptions(
                 {"threshold": InputDescription(**kwargs)}
             )
-        else:
+        elif issubclass(description_cls, OutputDescription):
             meta = UIFieldMeta.from_output_descriptions(
                 {"threshold": OutputDescription(**kwargs)},
             )
+        else:
+            raise TypeError(f"Unsupported description class: {description_cls}")
 
-        self.assertIsNotNone(meta.children)
-        self.assertEqual(1, len(meta.children))
+        properties = meta.properties
+        self.assertIsInstance(properties, dict)
+        self.assertEqual(1, len(properties))
         self.assertEqual(
             {
                 "name": "threshold",
                 **expected_props,
             },
-            to_json(meta.children[0], exclude={"schema_", "required"}),
+            to_json(properties.get("threshold"), exclude={"schema_", "required"}),
         )
 
+    # noinspection PyMethodMayBeStatic
     def test_pydantic_deserialization_with_extra_fields(self):
         """Ensure, pydantic deserializes extra fields as expected."""
 

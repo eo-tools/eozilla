@@ -7,6 +7,7 @@ from unittest import TestCase
 import pytest
 
 from cuiman.ui import (
+    NestedObjectFactory,
     UIField,
     UIFieldBase,
     UIFieldBuilder,
@@ -14,29 +15,39 @@ from cuiman.ui import (
     UIFieldFactoryBase,
     UIFieldMeta,
 )
-from cuiman.ui.field.meta import UIFieldGroup
 from cuiman.ui.vm import (
     ArrayViewModel,
     NullableViewModel,
     ObjectViewModel,
     PrimitiveViewModel,
+    ViewModel,
 )
 from gavicore.models import Schema
 
 from .libui import (
     Checkbox,
+    Column,
     ListEditor,
     NullableView,
     NumberInput,
     Panel,
+    Row,
     Switch,
     TextInput,
+    View,
 )
 
 # --- UI field adapter --------
 
 
-class LibuiAdapter(UIFieldBase):
+class LibuiViewAdapter(UIFieldBase):
+    def __init__(
+        self,
+        view_model: ViewModel,
+        view: View,
+    ):
+        super().__init__(view_model, view)
+
     def _bind_mutually(self):
         def observe_vm(_e):
             self.view.value = self.view_model.value
@@ -61,7 +72,7 @@ class ObjectFieldFactory(UIFieldFactoryBase):
         views = {k: f.view for k, f in child_fields.items()}
         view_model = ctx.vm.object(properties=view_models)
         view = Panel(children=views)
-        return LibuiAdapter(view_model, view=view)
+        return LibuiViewAdapter(view_model, view=view)
 
 
 class ArrayFieldFactory(UIFieldFactoryBase):
@@ -71,7 +82,7 @@ class ArrayFieldFactory(UIFieldFactoryBase):
     def create_array_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.array()
         view = ListEditor(value=view_model.value)
-        return LibuiAdapter(view_model, view=view)
+        return LibuiViewAdapter(view_model, view=view)
 
 
 class StringFieldFactory(UIFieldFactoryBase):
@@ -81,7 +92,7 @@ class StringFieldFactory(UIFieldFactoryBase):
     def create_string_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.primitive()
         view = TextInput(value=view_model.value)
-        return LibuiAdapter(view_model, view=view)
+        return LibuiViewAdapter(view_model, view=view)
 
 
 class NumberFieldFactory(UIFieldFactoryBase):
@@ -91,7 +102,7 @@ class NumberFieldFactory(UIFieldFactoryBase):
     def create_number_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.primitive()
         view = NumberInput(value=view_model.value)
-        return LibuiAdapter(view_model, view=view)
+        return LibuiViewAdapter(view_model, view=view)
 
 
 class BooleanFieldFactory(UIFieldFactoryBase):
@@ -101,7 +112,7 @@ class BooleanFieldFactory(UIFieldFactoryBase):
     def create_boolean_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.primitive()
         view = Checkbox(value=view_model.value)
-        return LibuiAdapter(view_model, view=view)
+        return LibuiViewAdapter(view_model, view=view)
 
 
 class NullFieldFactory(UIFieldFactoryBase):
@@ -115,7 +126,7 @@ class NullFieldFactory(UIFieldFactoryBase):
         non_nullable_view = non_nullable_field.view
         view_model = ctx.vm.nullable(non_nullable=non_nullable_view_model)
         view = NullableView(value=ctx.initial_value, child=non_nullable_view)
-        return LibuiAdapter(view_model, view=view)
+        return LibuiViewAdapter(view_model, view=view)
 
 
 # --- UI field builder usage --------
@@ -170,7 +181,7 @@ class UIFieldBuilderTest(TestCase):
                 "verbose": False,
             },
         )
-        self.assertIsInstance(field, LibuiAdapter)
+        self.assertIsInstance(field, LibuiViewAdapter)
         view_model = field.view_model
         view = field.view
 
@@ -279,7 +290,7 @@ class UIFieldBuilderTest(TestCase):
 
     def test_builder_ok_with_layout(self):
         builder = self.builder
-        # builder.register_factory(NestedPanelFactory())
+        builder.register_factory(MyNestedObjectFactory())
 
         meta = UIFieldMeta.from_schema(
             "root",
@@ -325,9 +336,11 @@ class UIFieldBuilderTest(TestCase):
                 "config_path": "my-config.yaml",
             },
         )
-        self.assertIsInstance(field, LibuiAdapter)
+        self.assertIsInstance(field, LibuiViewAdapter)
         view_model = field.view_model
         view = field.view
+        self.assertIsInstance(view_model, ObjectViewModel)
+        self.assertIsInstance(view, ObjectViewModel)
 
     def test_builder_failing(self):
         builder = self.builder
@@ -338,19 +351,15 @@ class UIFieldBuilderTest(TestCase):
             builder.create_field(meta)
 
 
-class NestedPanelFactory(UIFieldFactoryBase):
-    def get_object_score(self, meta: UIFieldMeta) -> int:
-        return 10 if meta.layout is not None else 0
+class MyNestedObjectFactory(NestedObjectFactory):
+    def create_row_field(
+        self, ctx: UIFieldContext, view_model: ViewModel, children: list[UIField]
+    ) -> UIField:
+        view = Row(children={child.meta.name: child.view for child in children})
+        return LibuiViewAdapter(view_model=view_model, view=view)
 
-    def create_object_field(self, ctx: UIFieldContext) -> UIField:
-        layout = ctx.meta.layout
-        assert layout is not None
-        group: UIFieldGroup
-        if layout == "row":
-            group = UIFieldGroup(type="row")
-        elif layout == "column":
-            group = UIFieldGroup(type="column")
-        else:
-            assert isinstance(layout, UIFieldGroup)
-            group = layout
-        return super().create_field(ctx)
+    def create_column_field(
+        self, ctx: UIFieldContext, view_model: ViewModel, children: list[UIField]
+    ) -> UIField:
+        view = Column(children={child.meta.name: child.view for child in children})
+        return LibuiViewAdapter(view_model=view_model, view=view)

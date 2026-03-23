@@ -11,7 +11,7 @@ from .base import ViewModel
 from .composite import CompositeViewModel
 
 
-class ObjectViewModel(CompositeViewModel[str, dict[str, Any]]):
+class ObjectViewModelBase(CompositeViewModel[str, dict[str, Any]]):
     """
     A view model for a non-nullable, static object
     comprising view models for each of its properties.
@@ -20,30 +20,10 @@ class ObjectViewModel(CompositeViewModel[str, dict[str, Any]]):
     def __init__(
         self,
         meta: UIFieldMeta,
-        *,
-        value: Any | UndefinedType = UNDEFINED,
-        properties: dict[str, ViewModel] | None = None,
+        value: Any | UndefinedType,
     ):
         super().__init__(meta, dict, value)
         self._properties: dict[str, ViewModel] = {}
-        # initialize item view models
-        for child_meta in meta.children or []:
-            k = child_meta.name
-            vm = properties.get(k) if properties else None
-            if vm is not None:
-                if vm.meta is not child_meta:
-                    raise ValueError(
-                        f"invalid view model passed for property {k!r} "
-                        f"of field {meta.name!r}"
-                    )
-                vm.watch(self._on_child_change)
-            else:
-                if isinstance(value, dict) and k in value:
-                    v = value[k]
-                else:
-                    v = child_meta.get_initial_value()
-                vm = self._create_child(child_meta, v)
-            self._properties[k] = vm
 
     @property
     def properties(self) -> dict[str, ViewModel]:
@@ -67,3 +47,67 @@ class ObjectViewModel(CompositeViewModel[str, dict[str, Any]]):
     def __setitem__(self, key: str, value: Any) -> None:
         vm = self._properties[key]
         vm._set_value(value)
+
+
+class ObjectViewModel(ObjectViewModelBase):
+    """
+    A view model for a non-nullable, static object
+    comprising view models for each of its properties.
+    """
+
+    def __init__(
+        self,
+        meta: UIFieldMeta,
+        *,
+        value: Any | UndefinedType = UNDEFINED,
+        properties: dict[str, ViewModel] | None = None,
+    ):
+        super().__init__(meta, value)
+        # initialize item view models
+        for k, child_meta in meta.properties.items():
+            vm = properties.get(k) if properties else None
+            if vm is not None:
+                if vm.meta is not child_meta:
+                    raise ValueError(
+                        f"invalid view model passed for property {k!r} "
+                        f"of field {meta.name!r}"
+                    )
+                vm.watch(self._on_child_change)
+            else:
+                if isinstance(value, dict) and k in value:
+                    v = value[k]
+                else:
+                    v = child_meta.get_initial_value()
+                vm = self._create_child(child_meta, v)
+            self._properties[k] = vm
+
+
+class DynamicObjectViewModel(ObjectViewModelBase):
+    """
+    A view model for a non-nullable, static object
+    comprising view models for each of its properties.
+    """
+
+    def __init__(self, meta: UIFieldMeta):
+        super().__init__(meta, UNDEFINED)
+        self._frozen = False
+
+    def define_property(self, prop_name: str, prop_vm: ViewModel) -> None:
+        if self._frozen:
+            raise ValueError("cannot define properties after freeze() was called")
+        if prop_name not in self.meta.properties:
+            raise ValueError(
+                f"property {prop_name!r} not found in field {self.meta.name!r}"
+            )
+        self._properties[prop_name] = prop_vm
+        self._invalidate()
+
+    def freeze(self):
+        # Define all yet undefined properties from meta.properties
+        properties = dict(self.meta.properties)
+        for prop_name, prop_meta in properties.items():
+            if prop_name not in properties:
+                v = prop_meta.get_initial_value()
+                prop_vm = self._create_child(prop_meta, v)
+                self.define_property(prop_name, prop_vm)
+        self._frozen = True

@@ -99,7 +99,7 @@ class UIFieldMeta(BaseModel):
     # of the object properties.
     # TODO: split into properties and
     #   properties: dict[str, UIFieldMeta] | None
-    #   items: UIFieldMeta | None
+    #   item: UIFieldMeta | None
     children: list["UIFieldMeta"] | None = None
     layout: UIFieldLayout | None = None
     widget: UIFieldWidget | str | None = None
@@ -116,6 +116,19 @@ class UIFieldMeta(BaseModel):
     # For slider, the default to values from JSON schema
     minimum: int | float | None = None
     maximum: int | float | None = None
+
+    @property
+    def properties(self) -> dict[str, "UIFieldMeta"]:
+        assert self.schema_.type == DataType.object
+        assert isinstance(self.children, list)
+        return {v.name: v for v in self.children}
+
+    @property
+    def item(self) -> "UIFieldMeta":
+        assert self.schema_.type == DataType.array
+        assert isinstance(self.children, list) and len(self.children) == 1
+        # noinspection PyTypeChecker
+        return self.children[0]
 
     @property
     def nullable(self) -> bool:
@@ -351,17 +364,14 @@ def _get_initial_value(meta: UIFieldMeta) -> Any:
             return "a" * min_length
         case DataType.array:
             min_items = schema.minItems if schema.minItems is not None else 0
-            assert meta.children is not None
-            assert len(meta.children) == 1
-            item_meta: UIFieldMeta = meta.children[0]
+            item_meta = meta.item
             return [_get_initial_value(item_meta) for _i in range(min_items)]
         case DataType.object:
             # TODO: consider minProperties, additionalProperties
             required = set(schema.required or [])
+            properties = meta.properties
             return {
-                item_meta.name: _get_initial_value(item_meta)
-                for item_meta in (meta.children or [])
-                if item_meta.name in required
+                k: m.get_initial_value() for k, m in properties.items() if k in required
             }
         case _:
             # TODO: handle other cases here: oneOf, anyOf, allOf, discriminator

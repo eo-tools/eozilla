@@ -6,9 +6,11 @@ from abc import ABC, abstractmethod
 
 from gavicore.models import DataType
 
+from ..vm import ViewModel
+from ..vm.object import DynamicObjectViewModel
 from .base import UIField
 from .context import UIFieldContext
-from .meta import UIFieldMeta
+from .meta import UIFieldGroup, UIFieldMeta
 
 
 class UIFieldFactory(ABC):
@@ -142,3 +144,91 @@ class UIFieldFactoryBase(UIFieldFactory, ABC):
     def create_untyped_field(self, ctx: UIFieldContext) -> UIField:
         """Create a UI field for a value with no explicit type given."""
         raise NotImplementedError
+
+
+class NestedObjectFactory(UIFieldFactory):
+    """
+    A convenient base class for UI field factories that can create
+    container UI fields like panels that align their items
+    either in a row or column.
+    """
+
+    def get_score(self, meta: UIFieldMeta) -> int:
+        """
+        Compute the score. Will return 0 for all fields except of type "object".
+        Will return 10 if the layout is specified, otherwise 1.
+        """
+        if meta.schema_.type != DataType.object:
+            return 0
+        return 10 if meta.layout is not None else 1
+
+    def create_field(self, ctx: UIFieldContext) -> UIField:
+        """
+        Create a UI field for a value of type "object".
+        """
+        assert ctx.schema.type == DataType.object
+        assert ctx.meta.layout is not None
+        group: UIFieldGroup
+        if ctx.meta.layout == "row":
+            group = UIFieldGroup(type="row")
+        elif ctx.meta.layout == "column":
+            group = UIFieldGroup(type="column")
+        else:
+            assert isinstance(ctx.meta.layout, UIFieldGroup)
+            group = ctx.meta.layout
+        view_model = DynamicObjectViewModel(ctx.meta)
+        return self._from_group(ctx, group, view_model, dict(ctx.meta.properties))
+
+    @abstractmethod
+    def create_row_field(
+        self, ctx: UIFieldContext, view_model: ViewModel, children: list[UIField]
+    ) -> UIField:
+        """Create a panel field with given children aligned in a row."""
+
+    @abstractmethod
+    def create_column_field(
+        self, ctx: UIFieldContext, view_model: ViewModel, children: list[UIField]
+    ) -> UIField:
+        """Create a panel field with given children aligned in a column."""
+
+    def _from_group(
+        self,
+        ctx: UIFieldContext,
+        group: UIFieldGroup,
+        view_model: DynamicObjectViewModel,
+        properties: dict[str, UIFieldMeta],
+    ) -> UIField:
+        child_fields: list[UIField]
+        if not group.items:
+            child_fields = [
+                ctx.create_child_field(prop_meta) for prop_meta in properties.values()
+            ]
+            properties.clear()
+        else:
+            child_fields = []
+            for group_item in group.items:
+                if isinstance(group_item, UIFieldGroup):
+                    child_field = self._from_group(
+                        ctx, group_item, view_model, properties
+                    )
+                else:
+                    assert isinstance(group_item, str)
+                    assert isinstance(ctx.meta.properties, dict)
+                    prop_name: str = group_item
+                    prop_meta = ctx.meta.properties.get(prop_name)
+                    if prop_meta is None:
+                        raise ValueError(
+                            f"property {prop_name!r} not found in object "
+                            f"field {ctx.meta.name!r}"
+                        )
+                    child_field = ctx.create_child_field(prop_meta)
+                    properties.pop(prop_name)
+                child_fields.append(child_field)
+
+        for child_field in child_fields:
+            view_model.define_property(child_field.meta.name, child_field.view_model)
+
+        if group.type == "row":
+            return self.create_row_field(ctx, view_model, child_fields)
+        else:
+            return self.create_column_field(ctx, view_model, child_fields)

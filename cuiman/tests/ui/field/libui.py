@@ -3,7 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 
-"""A mock UI component library."""
+"""A minimal mock UI component library."""
 
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Generic, TypeVar
@@ -83,6 +83,14 @@ class Panel(View[dict[str, Any]]):
 
         if changed:
             self._notify()
+
+
+class Row(Panel):
+    """Container for views arranged in a row."""
+
+
+class Column(Panel):
+    """Container for views arranged in a column."""
 
 
 class NullableView(Generic[T], View[T | None]):
