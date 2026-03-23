@@ -21,11 +21,11 @@ class UIFieldBuilder:
     def register_factory(self, factory: "UIFieldFactory"):
         self._factories.append(factory)
 
-    def find_factory(self, field_meta: UIFieldMeta) -> "UIFieldFactory | None":
+    def find_factory(self, meta: UIFieldMeta) -> "UIFieldFactory | None":
         max_score = 0
         best_factory: UIFieldFactory | None = None
         for f in self._factories:
-            s = f.get_score(field_meta)
+            s = f.get_score(meta)
             if s > max_score:
                 max_score = s
                 best_factory = f
@@ -33,14 +33,14 @@ class UIFieldBuilder:
 
     def create_field(
         self,
-        field_meta: UIFieldMeta,
+        meta: UIFieldMeta,
         initial_value: Any | UndefinedType = UNDEFINED,
     ) -> UIField:
         from .context import UIFieldContext
 
         ctx = UIFieldContext(
             builder=self,
-            meta=field_meta,
+            meta=meta,
             initial_value=initial_value,
             parent_ctx=None,
         )

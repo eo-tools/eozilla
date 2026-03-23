@@ -22,19 +22,19 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
 
     def __init__(
         self,
-        field_meta: UIFieldMeta,
+        meta: UIFieldMeta,
         composite_type: type[T],
         value: T | UndefinedType,
     ):
-        super().__init__(field_meta)
-        if field_meta.nullable:
-            raise ValueError("field_meta must not be nullable")
-        CompositeViewModel._assert_value_is_valid(field_meta, composite_type, value)
+        super().__init__(meta)
+        if meta.nullable:
+            raise ValueError("meta must not be nullable")
+        CompositeViewModel._assert_value_is_valid(meta, composite_type, value)
         self._composite_type: type[T] = composite_type
         self._cached_value: T | UndefinedType = (
             value
             if UndefinedType.is_defined(value)
-            else (field_meta.default if field_meta.default is not None else value)
+            else (meta.default if meta.default is not None else value)
         )
 
     def _get_value(self) -> T:
@@ -46,7 +46,7 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
         return cached_value
 
     def _set_value(self, value: T) -> None:
-        self._assert_value_is_valid(self._field_meta, self._composite_type, value)
+        self._assert_value_is_valid(self._meta, self._composite_type, value)
         if self._get_value() == value:
             # No change
             return
@@ -84,7 +84,7 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
     @classmethod
     def _assert_value_is_valid(
         cls,
-        field_meta: UIFieldMeta,
+        meta: UIFieldMeta,
         composite_type: type[T],
         value: Any | UndefinedType,
     ) -> None:
@@ -92,7 +92,7 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
         if not isinstance(value, (composite_type, UndefinedType)):
             raise TypeError(
                 f"value must be a {composite_type.__name__} "
-                f"for field {field_meta.name!r} but was {value!r}"
+                f"for field {meta.name!r} but was {value!r}"
             )
 
     def _invalidate(self) -> None:

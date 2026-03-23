@@ -38,49 +38,49 @@ T = TypeVar("T")
 class ViewModel(Generic[T], ABC):
     """Abstract base class for all view models."""
 
-    def __init__(self, field_meta: UIFieldMeta):
+    def __init__(self, meta: UIFieldMeta):
         """Base class constructor."""
-        if not isinstance(field_meta, UIFieldMeta):
-            raise TypeError(f"field_meta must have type {UIFieldMeta.__name__}")
-        self._field_meta = field_meta
+        if not isinstance(meta, UIFieldMeta):
+            raise TypeError(f"meta must have type {UIFieldMeta.__name__}")
+        self._meta = meta
         self._observers: set[ViewModelObserver] = set()
 
     @classmethod
     def create(
-        cls, field_meta: UIFieldMeta, *, value: Any | UndefinedType = UNDEFINED
+        cls, meta: UIFieldMeta, *, value: Any | UndefinedType = UNDEFINED
     ) -> "ViewModel":
         """
         Create a new view model instance for the given field metadata
         and initial value.
         """
-        schema = field_meta.schema_
+        schema = meta.schema_
 
         if schema.nullable:
             from .nullable import NullableViewModel
 
-            return NullableViewModel(field_meta, value=value)
+            return NullableViewModel(meta, value=value)
 
         if schema.type == DataType.object:
             from .object import ObjectViewModel
 
-            return ObjectViewModel(field_meta, value=value)
+            return ObjectViewModel(meta, value=value)
 
         if schema.type == DataType.array:
             from .array import ArrayViewModel
 
-            return ArrayViewModel(field_meta, value=value)
+            return ArrayViewModel(meta, value=value)
 
         if schema.type is not None:
             from .primitive import PrimitiveViewModel
 
-            return PrimitiveViewModel(field_meta, value=value)
+            return PrimitiveViewModel(meta, value=value)
 
-        raise ValueError(f"missing type in schema for field {field_meta.name!r}")
+        raise ValueError(f"missing type in schema for field {meta.name!r}")
 
     @property
-    def field_meta(self) -> UIFieldMeta:
+    def meta(self) -> UIFieldMeta:
         """The field metadata."""
-        return self._field_meta
+        return self._meta
 
     @property
     def value(self) -> T:

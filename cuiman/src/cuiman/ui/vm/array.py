@@ -16,12 +16,10 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
     A view model for a non-nullable, growable, sparse array value.
     """
 
-    def __init__(
-        self, field_meta: UIFieldMeta, *, value: Any | UndefinedType = UNDEFINED
-    ):
-        super().__init__(field_meta, list, value)
-        assert field_meta.children is not None and len(field_meta.children) == 1
-        self._item_meta = field_meta.children[0]
+    def __init__(self, meta: UIFieldMeta, *, value: Any | UndefinedType = UNDEFINED):
+        super().__init__(meta, list, value)
+        assert meta.children is not None and len(meta.children) == 1
+        self._item_meta = meta.children[0]
         # initialize item view models
         self._items: dict[int, ViewModel] = {}
         self._length: int = 0
@@ -79,7 +77,7 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
             return vm._get_value()
         if index < self._length:
             return self._item_meta.get_initial_value()
-        raise IndexError(f"index out of range for field {self.field_meta.name!r}")
+        raise IndexError(f"index out of range for field {self.meta.name!r}")
 
     def __setitem__(self, index: int, value: Any) -> None:
         self._set_item(index, value)

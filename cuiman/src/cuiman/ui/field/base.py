@@ -43,7 +43,7 @@ class UIFieldBase(UIField, ABC):
 
     @property
     def meta(self) -> UIFieldMeta:
-        return self.view_model.field_meta
+        return self.view_model.meta
 
     @property
     def view_model(self) -> ViewModel:

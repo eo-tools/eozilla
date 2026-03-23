@@ -13,7 +13,7 @@ from .meta import UIFieldMeta
 
 class UIFieldFactory(ABC):
     @abstractmethod
-    def get_score(self, field_meta: UIFieldMeta) -> int:
+    def get_score(self, meta: UIFieldMeta) -> int:
         """Get the score of this factory for the given field metadata."""
 
     @abstractmethod
@@ -38,56 +38,56 @@ class UIFieldFactoryBase(UIFieldFactory, ABC):
     TODO: explain special treatment of nullable fields
     """
 
-    def get_score(self, field_meta: UIFieldMeta) -> int:
+    def get_score(self, meta: UIFieldMeta) -> int:
         """Get the score for a field based on its data type."""
-        schema = field_meta.schema_
+        schema = meta.schema_
         if schema.nullable:
-            return self.get_null_score(field_meta)
+            return self.get_null_score(meta)
         match schema.type:
             case DataType.object:
-                return self.get_object_score(field_meta)
+                return self.get_object_score(meta)
             case DataType.array:
-                return self.get_array_score(field_meta)
+                return self.get_array_score(meta)
             case DataType.string:
-                return self.get_string_score(field_meta)
+                return self.get_string_score(meta)
             case DataType.number:
-                return self.get_number_score(field_meta)
+                return self.get_number_score(meta)
             case DataType.integer:
-                return self.get_integer_score(field_meta)
+                return self.get_integer_score(meta)
             case DataType.boolean:
-                return self.get_boolean_score(field_meta)
+                return self.get_boolean_score(meta)
             case _:
-                return self.get_untyped_score(field_meta)
+                return self.get_untyped_score(meta)
 
-    def get_object_score(self, field_meta: UIFieldMeta) -> int:
+    def get_object_score(self, meta: UIFieldMeta) -> int:
         """Get the score for a field of type "object"."""
         return 0
 
-    def get_array_score(self, field_meta: UIFieldMeta) -> int:
+    def get_array_score(self, meta: UIFieldMeta) -> int:
         """Get the score for a field of type "array"."""
         return 0
 
-    def get_string_score(self, field_meta: UIFieldMeta) -> int:
+    def get_string_score(self, meta: UIFieldMeta) -> int:
         """Get the score for a field of type "string"."""
         return 0
 
-    def get_number_score(self, field_meta: UIFieldMeta) -> int:
+    def get_number_score(self, meta: UIFieldMeta) -> int:
         """Get the score for a field of type "number"."""
         return 0
 
-    def get_integer_score(self, field_meta: UIFieldMeta) -> int:
+    def get_integer_score(self, meta: UIFieldMeta) -> int:
         """Get the score for a field of type "integer"."""
         return 0
 
-    def get_boolean_score(self, field_meta: UIFieldMeta) -> int:
+    def get_boolean_score(self, meta: UIFieldMeta) -> int:
         """Get the score for a field of type "boolean"."""
         return 0
 
-    def get_null_score(self, field_meta: UIFieldMeta) -> int:
+    def get_null_score(self, meta: UIFieldMeta) -> int:
         """Get the score for a nullable field."""
         return 0
 
-    def get_untyped_score(self, field_meta: UIFieldMeta) -> int:
+    def get_untyped_score(self, meta: UIFieldMeta) -> int:
         """Get the score for a field that has no explicit type."""
         return 0
 

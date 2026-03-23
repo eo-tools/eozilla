@@ -21,21 +21,21 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
 
     def __init__(
         self,
-        field_meta: UIFieldMeta,
+        meta: UIFieldMeta,
         *,
         value: Any | UndefinedType = UNDEFINED,
         non_nullable: ViewModel[T] | None = None,
     ):
-        super().__init__(field_meta)
-        if not field_meta.nullable:
-            raise ValueError("field_meta must be nullable")
+        super().__init__(meta)
+        if not meta.nullable:
+            raise ValueError("meta must be nullable")
         if non_nullable is not None:
-            if non_nullable.field_meta.nullable:
+            if non_nullable.meta.nullable:
                 raise ValueError("non_nullable view model must not be nullable")
             self._non_nullable = non_nullable
             self._non_nullable.watch(self._on_non_nullable_change)
         else:
-            non_nullable_meta = field_meta.to_non_nullable()
+            non_nullable_meta = meta.to_non_nullable()
             self._non_nullable = self.create(
                 non_nullable_meta,
                 value=(
@@ -45,9 +45,7 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
                 ),
             )
         self._is_null = (
-            value is None
-            if UndefinedType.is_defined(value)
-            else field_meta.default is None
+            value is None if UndefinedType.is_defined(value) else meta.default is None
         )
 
     @property

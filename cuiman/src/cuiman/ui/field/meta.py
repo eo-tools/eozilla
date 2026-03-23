@@ -302,15 +302,15 @@ def _extract_ui_props_from_schema_dict(
 def _update_ui_props_from_field_props(
     source: dict[str, Any], ui_props: dict[str, Any]
 ) -> None:
-    for field_name, field_meta in UIFieldMeta.model_fields.items():
-        if field_name in source:
-            value = source[field_name]
-            data_type = field_meta.annotation
+    for name, meta in UIFieldMeta.model_fields.items():
+        if name in source:
+            value = source[name]
+            data_type = meta.annotation
             # Note, the following guard prevents assigning values of
             # unexpected type (e.g. "required" of type bool vs. list[str])
             # This my become an issue if we start using non-primitive types.
             if data_type is not None and isinstance(value, data_type):
-                ui_props[field_name] = value
+                ui_props[name] = value
 
 
 def _update_ui_props_from_ui_object(
@@ -333,8 +333,8 @@ def _update_ui_props_from_prefixed_ui_keys(
         ui_props.update(extras)
 
 
-def _get_initial_value(field_meta: UIFieldMeta) -> Any:
-    schema = field_meta.schema_
+def _get_initial_value(meta: UIFieldMeta) -> Any:
+    schema = meta.schema_
     if schema.default is not None:
         return schema.default
     if schema.nullable:
@@ -351,22 +351,22 @@ def _get_initial_value(field_meta: UIFieldMeta) -> Any:
             return "a" * min_length
         case DataType.array:
             min_items = schema.minItems if schema.minItems is not None else 0
-            assert field_meta.children is not None
-            assert len(field_meta.children) == 1
-            item_meta: UIFieldMeta = field_meta.children[0]
+            assert meta.children is not None
+            assert len(meta.children) == 1
+            item_meta: UIFieldMeta = meta.children[0]
             return [_get_initial_value(item_meta) for _i in range(min_items)]
         case DataType.object:
             # TODO: consider minProperties, additionalProperties
             required = set(schema.required or [])
             return {
                 item_meta.name: _get_initial_value(item_meta)
-                for item_meta in (field_meta.children or [])
+                for item_meta in (meta.children or [])
                 if item_meta.name in required
             }
         case _:
             # TODO: handle other cases here: oneOf, anyOf, allOf, discriminator
             # raise ValueError(
-            #     f"Unsupported untyped schema in field {field_meta.name!r}"
+            #     f"Unsupported untyped schema in field {meta.name!r}"
             # )
             return None
 

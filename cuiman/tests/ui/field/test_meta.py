@@ -30,7 +30,7 @@ def to_json(model: BaseModel, exclude: set[str] | None = None):
 
 class UIFieldMetaTest(TestCase):
     def test_from_input_descriptions(self):
-        field_meta = UIFieldMeta.from_input_descriptions(
+        meta = UIFieldMeta.from_input_descriptions(
             {
                 "datasets": InputDescription(
                     **{
@@ -56,7 +56,7 @@ class UIFieldMetaTest(TestCase):
             }
         )
         self.maxDiff = None
-        self.assertIsInstance(field_meta, UIFieldMeta)
+        self.assertIsInstance(meta, UIFieldMeta)
 
         schema_1 = {
             "type": "string",
@@ -127,11 +127,11 @@ class UIFieldMetaTest(TestCase):
                 },
                 "title": "Inputs",
             },
-            to_json(field_meta),
+            to_json(meta),
         )
 
     def test_from_output_descriptions(self):
-        field_meta = UIFieldMeta.from_output_descriptions(
+        meta = UIFieldMeta.from_output_descriptions(
             {
                 "dataset": OutputDescription(
                     **{"schema": {"type": "string", "title": "Output dataset path"}},
@@ -142,7 +142,7 @@ class UIFieldMetaTest(TestCase):
             }
         )
         self.maxDiff = None
-        self.assertIsInstance(field_meta, UIFieldMeta)
+        self.assertIsInstance(meta, UIFieldMeta)
 
         schema_1 = {"type": "string", "title": "Output dataset path"}
         schema_2 = {"type": "string", "title": "Log file path"}
@@ -173,7 +173,7 @@ class UIFieldMetaTest(TestCase):
                     },
                 ],
             },
-            to_json(field_meta),
+            to_json(meta),
         )
 
     def test_object_schema(self):
@@ -193,7 +193,7 @@ class UIFieldMetaTest(TestCase):
                 "required": ["threshold"],
             }
         )
-        field_meta = UIFieldMeta.from_schema("performance", schema)
+        meta = UIFieldMeta.from_schema("performance", schema)
         schema_1 = {
             "title": "Threshold",
             "type": "number",
@@ -232,11 +232,11 @@ class UIFieldMetaTest(TestCase):
                     },
                 ],
             },
-            to_json(field_meta),
+            to_json(meta),
         )
 
     def test_object_schema_with_layout(self):
-        field_meta = UIFieldMeta.from_schema(
+        meta = UIFieldMeta.from_schema(
             "root",
             Schema(
                 **{
@@ -272,8 +272,8 @@ class UIFieldMetaTest(TestCase):
                 }
             ),
         )
-        self.assertIsInstance(field_meta, UIFieldMeta)
-        self.assertIsInstance(field_meta.layout, UIFieldGroup)
+        self.assertIsInstance(meta, UIFieldMeta)
+        self.assertIsInstance(meta.layout, UIFieldGroup)
         self.assertEqual(
             UIFieldGroup(
                 type="row",
@@ -285,7 +285,7 @@ class UIFieldMetaTest(TestCase):
                     ),
                 ],
             ),
-            field_meta.layout,
+            meta.layout,
         )
 
     def test_input_precedence(self):
@@ -412,22 +412,22 @@ class UIFieldMetaTest(TestCase):
     ):
         kwargs = {**description_props, "schema": schema_props}
         if issubclass(description_cls, InputDescription):
-            field_meta = UIFieldMeta.from_input_descriptions(
+            meta = UIFieldMeta.from_input_descriptions(
                 {"threshold": InputDescription(**kwargs)}
             )
         else:
-            field_meta = UIFieldMeta.from_output_descriptions(
+            meta = UIFieldMeta.from_output_descriptions(
                 {"threshold": OutputDescription(**kwargs)},
             )
 
-        self.assertIsNotNone(field_meta.children)
-        self.assertEqual(1, len(field_meta.children))
+        self.assertIsNotNone(meta.children)
+        self.assertEqual(1, len(meta.children))
         self.assertEqual(
             {
                 "name": "threshold",
                 **expected_props,
             },
-            to_json(field_meta.children[0], exclude={"schema_", "required"}),
+            to_json(meta.children[0], exclude={"schema_", "required"}),
         )
 
     def test_pydantic_deserialization_with_extra_fields(self):

@@ -96,14 +96,14 @@ class ViewModelTest(TestCase):
         self._assert_vm_commons(vm, 137, 138)
 
     def test_primitive_failing(self):
-        with pytest.raises(TypeError, match="field_meta must have type UIFieldMeta"):
+        with pytest.raises(TypeError, match="meta must have type UIFieldMeta"):
             # noinspection PyTypeChecker
             PrimitiveViewModel(bool, value=True)
 
         meta = UIFieldMeta.from_schema(
             "x", Schema(**{"type": "integer", "nullable": True})
         )
-        with pytest.raises(ValueError, match="field_meta must not be nullable"):
+        with pytest.raises(ValueError, match="meta must not be nullable"):
             PrimitiveViewModel(meta, value=137)
 
         meta = UIFieldMeta.from_schema("x", Schema(**{"type": "integer"}))
@@ -151,7 +151,7 @@ class ViewModelTest(TestCase):
             "x",
             Schema(**{"type": "array", "nullable": True, "items": {"type": "integer"}}),
         )
-        with pytest.raises(ValueError, match="field_meta must not be nullable"):
+        with pytest.raises(ValueError, match="meta must not be nullable"):
             ArrayViewModel(meta)
 
         meta = UIFieldMeta.from_schema(
@@ -216,7 +216,7 @@ class ViewModelTest(TestCase):
                 }
             ),
         )
-        with pytest.raises(ValueError, match="field_meta must not be nullable"):
+        with pytest.raises(ValueError, match="meta must not be nullable"):
             ObjectViewModel(meta)
 
         meta = UIFieldMeta.from_schema(
@@ -288,7 +288,7 @@ class ViewModelTest(TestCase):
                 }
             ),
         )
-        with pytest.raises(ValueError, match="field_meta must be nullable"):
+        with pytest.raises(ValueError, match="meta must be nullable"):
             NullableViewModel(meta, value=None)
 
         meta = UIFieldMeta.from_schema(

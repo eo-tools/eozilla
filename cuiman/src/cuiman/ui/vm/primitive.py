@@ -17,19 +17,17 @@ class PrimitiveViewModel(Generic[T], ViewModel[T]):
     A view model that represents a non-nullable, primitive value.
     """
 
-    def __init__(
-        self, field_meta: UIFieldMeta, *, value: Any | UndefinedType = UNDEFINED
-    ):
-        super().__init__(field_meta)
-        if field_meta.nullable:
-            raise ValueError("field_meta must not be nullable")
+    def __init__(self, meta: UIFieldMeta, *, value: Any | UndefinedType = UNDEFINED):
+        super().__init__(meta)
+        if meta.nullable:
+            raise ValueError("meta must not be nullable")
         self._value: T
         if UndefinedType.is_defined(value):
             if value is None:
                 raise ValueError("value must not be None")
             self._value = value  # type: ignore[assignment]
         else:
-            self._value = UIFieldMeta.get_initial_value(field_meta)
+            self._value = UIFieldMeta.get_initial_value(meta)
 
     def _get_value(self) -> T:
         return self._value

@@ -75,7 +75,7 @@ class ArrayFieldFactory(UIFieldFactoryBase):
 
 
 class StringFieldFactory(UIFieldFactoryBase):
-    def get_string_score(self, field_meta: UIFieldMeta) -> int:
+    def get_string_score(self, meta: UIFieldMeta) -> int:
         return 1
 
     def create_string_field(self, ctx: UIFieldContext) -> UIField:
@@ -85,7 +85,7 @@ class StringFieldFactory(UIFieldFactoryBase):
 
 
 class NumberFieldFactory(UIFieldFactoryBase):
-    def get_number_score(self, field_meta: UIFieldMeta) -> int:
+    def get_number_score(self, meta: UIFieldMeta) -> int:
         return 1
 
     def create_number_field(self, ctx: UIFieldContext) -> UIField:
@@ -95,7 +95,7 @@ class NumberFieldFactory(UIFieldFactoryBase):
 
 
 class BooleanFieldFactory(UIFieldFactoryBase):
-    def get_boolean_score(self, field_meta: UIFieldMeta) -> int:
+    def get_boolean_score(self, meta: UIFieldMeta) -> int:
         return 1
 
     def create_boolean_field(self, ctx: UIFieldContext) -> UIField:
@@ -105,7 +105,7 @@ class BooleanFieldFactory(UIFieldFactoryBase):
 
 
 class NullFieldFactory(UIFieldFactoryBase):
-    def get_null_score(self, field_meta: UIFieldMeta) -> int:
+    def get_null_score(self, meta: UIFieldMeta) -> int:
         return 1
 
     def create_null_field(self, ctx: UIFieldContext) -> UIField:
@@ -279,7 +279,7 @@ class UIFieldBuilderTest(TestCase):
 
     def test_builder_ok_with_layout(self):
         builder = self.builder
-        builder.register_factory()
+        # builder.register_factory(NestedPanelFactory())
 
         meta = UIFieldMeta.from_schema(
             "root",
@@ -339,8 +339,8 @@ class UIFieldBuilderTest(TestCase):
 
 
 class NestedPanelFactory(UIFieldFactoryBase):
-    def get_object_score(self, field_meta: UIFieldMeta) -> int:
-        return 10 if field_meta.layout is not None else 0
+    def get_object_score(self, meta: UIFieldMeta) -> int:
+        return 10 if meta.layout is not None else 0
 
     def create_object_field(self, ctx: UIFieldContext) -> UIField:
         layout = ctx.meta.layout
@@ -353,5 +353,4 @@ class NestedPanelFactory(UIFieldFactoryBase):
         else:
             assert isinstance(layout, UIFieldGroup)
             group = layout
-
-    def
+        return super().create_field(ctx)

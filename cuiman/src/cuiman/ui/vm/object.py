@@ -19,22 +19,22 @@ class ObjectViewModel(CompositeViewModel[str, dict[str, Any]]):
 
     def __init__(
         self,
-        field_meta: UIFieldMeta,
+        meta: UIFieldMeta,
         *,
         value: Any | UndefinedType = UNDEFINED,
         properties: dict[str, ViewModel] | None = None,
     ):
-        super().__init__(field_meta, dict, value)
+        super().__init__(meta, dict, value)
         self._properties: dict[str, ViewModel] = {}
         # initialize item view models
-        for child_meta in field_meta.children or []:
+        for child_meta in meta.children or []:
             k = child_meta.name
             vm = properties.get(k) if properties else None
             if vm is not None:
-                if vm.field_meta is not child_meta:
+                if vm.meta is not child_meta:
                     raise ValueError(
                         f"invalid view model passed for property {k!r} "
-                        f"of field {field_meta.name!r}"
+                        f"of field {meta.name!r}"
                     )
                 vm.watch(self._on_child_change)
             else:
