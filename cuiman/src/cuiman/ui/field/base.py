@@ -36,10 +36,11 @@ class UIField(ABC):
 class UIFieldBase(UIField, ABC):
     """Abstract base class for UI fields."""
 
-    def __init__(self, view_model: ViewModel, view: View):
+    def __init__(self, view_model: ViewModel, view: View, *, no_bind: bool = False):
         self._view_model = view_model
         self._view = view
-        self._bind_mutually()
+        if not no_bind:
+            self._bind_mutually()
 
     @property
     def meta(self) -> UIFieldMeta:
@@ -53,6 +54,5 @@ class UIFieldBase(UIField, ABC):
     def view(self) -> View:
         return self._view
 
-    @abstractmethod
     def _bind_mutually(self) -> None:
         """Bind view and view model mutually."""

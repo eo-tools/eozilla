@@ -22,6 +22,7 @@ from cuiman.ui.vm import (
     PrimitiveViewModel,
     ViewModel,
 )
+from cuiman.ui.vm.object import DynamicObjectViewModel
 from gavicore.models import Schema
 
 from .libui import (
@@ -34,20 +35,12 @@ from .libui import (
     Row,
     Switch,
     TextInput,
-    View,
 )
 
 # --- UI field adapter --------
 
 
 class LibuiViewAdapter(UIFieldBase):
-    def __init__(
-        self,
-        view_model: ViewModel,
-        view: View,
-    ):
-        super().__init__(view_model, view)
-
     def _bind_mutually(self):
         def observe_vm(_e):
             self.view.value = self.view_model.value
@@ -72,7 +65,7 @@ class ObjectFieldFactory(UIFieldFactoryBase):
         views = {k: f.view for k, f in child_fields.items()}
         view_model = ctx.vm.object(properties=view_models)
         view = Panel(children=views)
-        return LibuiViewAdapter(view_model, view=view)
+        return LibuiViewAdapter(view_model, view=view, no_bind=True)
 
 
 class ArrayFieldFactory(UIFieldFactoryBase):
@@ -339,8 +332,22 @@ class UIFieldBuilderTest(TestCase):
         self.assertIsInstance(field, LibuiViewAdapter)
         view_model = field.view_model
         view = field.view
-        self.assertIsInstance(view_model, ObjectViewModel)
-        self.assertIsInstance(view, ObjectViewModel)
+        self.assertIsInstance(view_model, DynamicObjectViewModel)
+        self.assertIsInstance(view, Row)
+        row_children = list(view.children.values())
+        self.assertEqual(2, len(row_children))
+        row_child_1 = row_children[0]
+        row_child_2 = row_children[1]
+        self.assertIsInstance(row_child_1, ListEditor)
+        self.assertIsInstance(row_child_2, Column)
+        col_children = list(row_child_2.children.values())
+        self.assertEqual(3, len(col_children))
+        col_child_1 = col_children[0]
+        col_child_2 = col_children[1]
+        col_child_3 = col_children[2]
+        self.assertIsInstance(col_child_1, TextInput)
+        self.assertIsInstance(col_child_2, NullableView)
+        self.assertIsInstance(col_child_3, Checkbox)
 
     def test_builder_failing(self):
         builder = self.builder
@@ -356,10 +363,10 @@ class MyNestedObjectFactory(NestedObjectFactory):
         self, ctx: UIFieldContext, view_model: ViewModel, children: list[UIField]
     ) -> UIField:
         view = Row(children={child.meta.name: child.view for child in children})
-        return LibuiViewAdapter(view_model=view_model, view=view)
+        return LibuiViewAdapter(view_model=view_model, view=view, no_bind=True)
 
     def create_column_field(
         self, ctx: UIFieldContext, view_model: ViewModel, children: list[UIField]
     ) -> UIField:
         view = Column(children={child.meta.name: child.view for child in children})
-        return LibuiViewAdapter(view_model=view_model, view=view)
+        return LibuiViewAdapter(view_model=view_model, view=view, no_bind=True)

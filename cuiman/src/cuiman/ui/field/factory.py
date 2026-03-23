@@ -226,7 +226,13 @@ class NestedObjectFactory(UIFieldFactory):
                 child_fields.append(child_field)
 
         for child_field in child_fields:
-            view_model.define_property(child_field.meta.name, child_field.view_model)
+            child_name = child_field.meta.name
+            child_model = child_field.view_model
+            if (
+                child_name in view_model.meta.properties
+                and child_model is not view_model
+            ):
+                view_model.define_property(child_name, child_model)
 
         if group.type == "row":
             return self.create_row_field(ctx, view_model, child_fields)
