@@ -94,6 +94,9 @@ class UIFieldMeta(BaseModel):
     # with the first element describing the array items.
     # If shema.type == "object" then this is list of UI fields
     # of the object properties.
+    # TODO: split into properties and
+    #   properties: dict[str, UIFieldMeta] | None
+    #   items: UIFieldMeta | None
     children: list["UIFieldMeta"] | None = None
     layout: Group | Literal["column", "row"] | None = None
     widget: UIFieldWidget | str | None = None
@@ -256,29 +259,21 @@ def _ui_field_meta_children_from_schema(
     name: str, schema: Schema
 ) -> list[UIFieldMeta] | None:
     if schema.type == DataType.array:
+        items = schema.items
+        assert items is None or isinstance(items, Schema)
         item_name = f"{name}_item"
-        if isinstance(schema.items, list):
-            # Tuple of schemas:
-            # Also JSON Schema allows for it, OpenAPI 3.0 explicitly does not.
-            # We cover it here for the future.
-            return [
-                _ui_field_meta_from_schema(f"{item_name}_{i}", s, required=True)
-                for i, s in enumerate(schema.items)
-            ]
-        else:
-            # "Normal" array with item type
-            item_schema = (
-                schema.items if isinstance(schema.items, Schema) else Schema(**{})
+        item_schema = items if isinstance(items, Schema) else Schema(**{})
+        # create one-element children array
+        return [
+            _ui_field_meta_from_schema(
+                item_name,
+                item_schema,
+                required=schema.minItems is not None and schema.minItems > 0,
             )
-            return [
-                _ui_field_meta_from_schema(
-                    item_name,
-                    item_schema,
-                    required=schema.minItems is not None and schema.minItems > 0,
-                )
-            ]
+        ]
     elif schema.type == DataType.object:
         required = set(schema.required) if schema.required else set()
+        # create one-element children array
         return [
             _ui_field_meta_from_schema(
                 prop_name, prop_schema, required=prop_name in required
@@ -366,9 +361,11 @@ def _get_initial_value(field_meta: UIFieldMeta) -> Any:
                 if item_meta.name in required
             }
         case _:
-            raise ValueError(
-                f"Unsupported schema {schema.type} in field {field_meta.name!r}"
-            )
+            # TODO: handle other cases here: oneOf, anyOf, allOf, discriminator
+            # raise ValueError(
+            #     f"Unsupported untyped schema in field {field_meta.name!r}"
+            # )
+            return None
 
 
 def _get_initial_number(schema: Schema) -> int | float:
