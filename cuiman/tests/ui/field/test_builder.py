@@ -4,6 +4,8 @@
 
 from unittest import TestCase
 
+import pytest
+
 from cuiman.ui import (
     UIField,
     UIFieldBase,
@@ -119,16 +121,20 @@ class NullFieldFactory(UIFieldFactoryBase):
 
 
 class UIFieldBuilderTest(TestCase):
-    def test_builder(self):
-        b = UIFieldBuilder()
-        b.register_factory(ArrayFieldFactory())
-        b.register_factory(NullFieldFactory())
-        b.register_factory(NumberFieldFactory())
-        b.register_factory(BooleanFieldFactory())
-        b.register_factory(ObjectFieldFactory())
-        b.register_factory(StringFieldFactory())
+    def setUp(self):
+        builder = UIFieldBuilder()
+        builder.register_factory(NullFieldFactory())
+        builder.register_factory(ObjectFieldFactory())
+        builder.register_factory(ArrayFieldFactory())
+        builder.register_factory(StringFieldFactory())
+        builder.register_factory(NumberFieldFactory())
+        builder.register_factory(BooleanFieldFactory())
+        self.builder = builder
 
-        field_meta = UIFieldMeta.from_schema(
+    def test_builder_ok(self):
+        builder = self.builder
+
+        meta = UIFieldMeta.from_schema(
             "root",
             Schema(
                 **{
@@ -155,8 +161,8 @@ class UIFieldBuilderTest(TestCase):
             ),
         )
 
-        field = b.create_field(
-            field_meta,
+        field = builder.create_field(
+            meta,
             initial_value={
                 "ds_paths": [],
                 "config_path": "my-config.yaml",
@@ -270,3 +276,11 @@ class UIFieldBuilderTest(TestCase):
             },
             view_model._get_value(),
         )
+
+    def test_builder_failing(self):
+        builder = self.builder
+        meta = UIFieldMeta.from_schema("x", Schema(**{}))
+        with pytest.raises(
+            ValueError, match="no factory found for creating a UI for field 'x'"
+        ):
+            builder.create_field(meta)
