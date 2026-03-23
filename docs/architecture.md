@@ -100,6 +100,40 @@ classDiagram
 
 ```
 
+## Eozilla Cuiman Client - UI
+
+```mermaid
+classDiagram
+    UIField <|-- UIFieldBase
+    UIFieldFactory <|-- UIFieldFactoryBase
+    UIFieldContext <.. UIFieldFactory
+    UIFieldContext <.. UIFieldBuilder
+    UIFieldBuilder *--> UIFieldFactory
+    UIField <.. UIFieldFactory
+    UIField --> ViewModel
+    ViewModelObserver <--* ViewModel
+
+    class ViewModel {
+        value
+        watch(observer)
+    }
+
+    class UIField {
+        view_model
+        view
+    }
+    
+    class UIFieldBase {
+        _bind_mutually()
+    }
+
+    class UIFieldFactory {
+        get_score(field_meta)
+        create_field(ctx) 
+    }
+
+```
+
 ## Eozilla Cuiman Client - GUI
 
 Given here is the design used in package `cuiman.gui.component`.
