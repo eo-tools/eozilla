@@ -156,7 +156,6 @@ class UIFieldBuilderTest(TestCase):
                         },
                         "verbose": {"type": "boolean"},
                     },
-                    "x-layout": "column",
                 }
             ),
         )
@@ -276,6 +275,57 @@ class UIFieldBuilderTest(TestCase):
             },
             view_model._get_value(),
         )
+
+    def test_builder_ok_with_layout(self):
+        builder = self.builder
+
+        meta = UIFieldMeta.from_schema(
+            "root",
+            Schema(
+                **{
+                    "type": "object",
+                    "x-ui:layout": {
+                        "type": "row",
+                        "items": [
+                            "ds_paths",
+                            {
+                                "type": "column",
+                                "items": ["config_path", "threshold", "verbose"],
+                            },
+                        ],
+                    },
+                    "properties": {
+                        "ds_paths": {
+                            "type": "array",
+                            "items": {"type": "string", "format": "uri"},
+                        },
+                        "config_path": {
+                            "type": "string",
+                            "format": "uri",
+                        },
+                        "threshold": {
+                            "type": "number",
+                            "nullable": True,
+                            "minimum": 0.0,
+                            "maximum": 1.0,
+                            "default": 0.5,
+                        },
+                        "verbose": {"type": "boolean"},
+                    },
+                }
+            ),
+        )
+
+        field = builder.create_field(
+            meta,
+            initial_value={
+                "ds_paths": [],
+                "config_path": "my-config.yaml",
+            },
+        )
+        self.assertIsInstance(field, LibuiAdapter)
+        view_model = field.view_model
+        view = field.view
 
     def test_builder_failing(self):
         builder = self.builder

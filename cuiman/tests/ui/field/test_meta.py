@@ -9,6 +9,7 @@ import pydantic
 from pydantic import BaseModel
 
 from cuiman.ui import UIFieldMeta
+from cuiman.ui.field.meta import UIFieldGroup
 from gavicore.models import InputDescription, OutputDescription, Schema
 
 dict_kwargs = dict(
@@ -232,6 +233,59 @@ class UIFieldMetaTest(TestCase):
                 ],
             },
             to_json(field_meta),
+        )
+
+    def test_object_schema_with_layout(self):
+        field_meta = UIFieldMeta.from_schema(
+            "root",
+            Schema(
+                **{
+                    "type": "object",
+                    "x-ui:layout": {
+                        "type": "row",
+                        "items": [
+                            "ds_paths",
+                            {
+                                "type": "column",
+                                "items": ["config_path", "threshold", "verbose"],
+                            },
+                        ],
+                    },
+                    "properties": {
+                        "ds_paths": {
+                            "type": "array",
+                            "items": {"type": "string", "format": "uri"},
+                        },
+                        "config_path": {
+                            "type": "string",
+                            "format": "uri",
+                        },
+                        "threshold": {
+                            "type": "number",
+                            "nullable": True,
+                            "minimum": 0.0,
+                            "maximum": 1.0,
+                            "default": 0.5,
+                        },
+                        "verbose": {"type": "boolean"},
+                    },
+                }
+            ),
+        )
+        self.assertIsInstance(field_meta, UIFieldMeta)
+        self.assertIsInstance(field_meta.layout, UIFieldGroup)
+        self.assertEqual(
+            UIFieldGroup(
+                type="row",
+                items=[
+                    "ds_paths",
+                    UIFieldGroup(
+                        type="column",
+                        items=["config_path", "threshold", "verbose"],
+                    ),
+                ],
+            ),
+            field_meta.layout,
         )
 
     def test_input_precedence(self):

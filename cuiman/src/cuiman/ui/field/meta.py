@@ -31,17 +31,17 @@ UIFieldWidget: TypeAlias = Literal[
 ]
 
 
-class Group(BaseModel):
+class UIFieldGroup(BaseModel):
     """Definition of a group of complex UI components.
 
     Example:
 
     ```python
-    Group(
+    UIFieldGroup(
         type="row",
         items=[
-            Group(type="column", items=["field_a", "field_b"]),
-            Group(type="column", items=["field_c", "field_d"]),
+            UIFieldGroup(type="column", items=["field_a", "field_b"]),
+            UIFieldGroup(type="column", items=["field_c", "field_d"]),
         ]
     )
     ```
@@ -57,9 +57,9 @@ class Group(BaseModel):
     property, if any, or the value of the `name` property.
     """
 
-    direction: Literal["column", "row"]
-    items: list[Union["Group", str]] | None = None
-    id: str | None = None
+    type: Literal["column", "row"]
+    items: list[Union["UIFieldGroup", str]] | None = None
+    name: str | None = None
     title: str | None = None
     style: dict[str, Any] | None = None
 
@@ -98,7 +98,7 @@ class UIFieldMeta(BaseModel):
     #   properties: dict[str, UIFieldMeta] | None
     #   items: UIFieldMeta | None
     children: list["UIFieldMeta"] | None = None
-    layout: Group | Literal["column", "row"] | None = None
+    layout: UIFieldGroup | Literal["column", "row"] | None = None
     widget: UIFieldWidget | str | None = None
     title: str | None = None
     description: str | None = None
