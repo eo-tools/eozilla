@@ -68,7 +68,7 @@ class ObjectFieldFactory(UIFieldFactoryBase):
         view_models = {k: f.view_model for k, f in prop_fields.items()}
         view_model = ctx.vm.object(properties=view_models)
         views = [f.view for f in prop_fields.values()]
-        view = Column(children=views)
+        view = Column(*views, label=view_model.meta.title)
         return LibuiViewAdapter(view_model, view=view)
 
 
@@ -78,7 +78,7 @@ class ArrayFieldFactory(UIFieldFactoryBase):
 
     def create_array_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.array()
-        view = ListEditor(value=view_model.value)
+        view = ListEditor(value=view_model.value, label=view_model.meta.title)
         return LibuiWidgetAdapter(view_model, view=view)
 
 
@@ -88,7 +88,7 @@ class StringFieldFactory(UIFieldFactoryBase):
 
     def create_string_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.primitive()
-        view = TextInput(value=view_model.value)
+        view = TextInput(value=view_model.value, label=view_model.meta.title)
         return LibuiWidgetAdapter(view_model, view=view)
 
 
@@ -98,7 +98,7 @@ class NumberFieldFactory(UIFieldFactoryBase):
 
     def create_number_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.primitive()
-        view = NumberInput(value=view_model.value)
+        view = NumberInput(value=view_model.value, label=view_model.meta.title)
         return LibuiWidgetAdapter(view_model, view=view)
 
 
@@ -108,7 +108,7 @@ class BooleanFieldFactory(UIFieldFactoryBase):
 
     def create_boolean_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.primitive()
-        view = Checkbox(value=view_model.value)
+        view = Checkbox(value=view_model.value, label=view_model.meta.title)
         return LibuiWidgetAdapter(view_model, view=view)
 
 
@@ -122,7 +122,11 @@ class NullFieldFactory(UIFieldFactoryBase):
         non_nullable_view_model = non_nullable_field.view_model
         non_nullable_view = non_nullable_field.view
         view_model = ctx.vm.nullable(non_nullable=non_nullable_view_model)
-        view = NullableWidget(value=ctx.initial_value, child=non_nullable_view)
+        view = NullableWidget(
+            value=ctx.initial_value,
+            child=non_nullable_view,
+            label=view_model.meta.title,
+        )
         return LibuiWidgetAdapter(view_model, view=view)
 
 
@@ -304,10 +308,12 @@ class UIFieldBuilderTest(TestCase):
                         "ds_paths": {
                             "type": "array",
                             "items": {"type": "string", "format": "uri"},
+                            "title": "Inputs",
                         },
                         "config_path": {
                             "type": "string",
                             "format": "uri",
+                            "title": "Configuration",
                         },
                         "threshold": {
                             "type": "number",
@@ -315,8 +321,9 @@ class UIFieldBuilderTest(TestCase):
                             "minimum": 0.0,
                             "maximum": 1.0,
                             "default": 0.5,
+                            "title": "Threshold",
                         },
-                        "verbose": {"type": "boolean"},
+                        "verbose": {"type": "boolean", "title": "Verbose logs"},
                     },
                 }
             ),
@@ -325,8 +332,10 @@ class UIFieldBuilderTest(TestCase):
         field = builder.create_field(
             meta,
             initial_value={
-                "ds_paths": [],
+                "ds_paths": ["SST-20260301.nc", "SST-20260302.nc", "SST-20260303.nc"],
                 "config_path": "my-config.yaml",
+                "threshold": 0.3,
+                "verbose": True,
             },
         )
         self.assertIsInstance(field, LibuiViewAdapter)
@@ -349,6 +358,19 @@ class UIFieldBuilderTest(TestCase):
         self.assertIsInstance(col_child_2, NullableWidget)
         self.assertIsInstance(col_child_3, Checkbox)
 
+        self.assertEqual(
+            [
+                "Inputs              Configuration             ",
+                "------------------- my-config.yaml______      ",
+                "| SST-20260301.nc | ( |o) Threshold           ",
+                "| SST-20260302.nc |       0.3_________________",
+                "| SST-20260303.nc | [x] Verbose logs          ",
+                "-------------------                           ",
+                "[+] [-]                                       ",
+            ],
+            view.render().lines,
+        )
+
     def test_builder_failing(self):
         builder = self.builder
         meta = UIFieldMeta.from_schema("x", Schema(**{}))
@@ -362,11 +384,9 @@ class MyNestedObjectFactory(NestedObjectFactory):
     def create_row_field(
         self, ctx: UIFieldContext, view_model: ViewModel, children: list[View]
     ) -> UIField:
-        view = Row(children=children)
-        return LibuiViewAdapter(view_model=view_model, view=view)
+        return LibuiViewAdapter(view_model=view_model, view=Row(*children))
 
     def create_column_field(
         self, ctx: UIFieldContext, view_model: ViewModel, children: list[View]
     ) -> UIField:
-        view = Column(children=children)
-        return LibuiViewAdapter(view_model=view_model, view=view)
+        return LibuiViewAdapter(view_model=view_model, view=Column(*children))

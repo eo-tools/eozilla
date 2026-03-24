@@ -26,29 +26,78 @@ from .libui import (
 class LibuiTest(TestCase):
     def test_text_area(self):
         self._assert_widget(TextArea(value="# Abstract"), "# Abstract", "## Abstract\n")
+        self.assertEqual(
+            [
+                "# Abstract                     ",
+                "                               ",
+                "Total suspended matter measured",
+                "0.5m below the surface.        ",
+            ],
+            TextArea(
+                value=(
+                    "# Abstract\n"
+                    "\n"
+                    "Total suspended matter measured\n"
+                    "0.5m below the surface."
+                )
+            )
+            .render()
+            .lines,
+        )
 
     def test_text_input(self):
-        self._assert_widget(
-            TextInput(value="/data/ds.zarr"), "/data/ds.zarr", "/data/ds.nc"
+        self._assert_widget(TextInput("/data/ds.zarr"), "/data/ds.zarr", "/data/ds.nc")
+        self.assertEqual(
+            [
+                "Output              ",
+                "/data/ds.zarr_______",
+            ],
+            TextInput("/data/ds.zarr", label="Output").render().lines,
         )
 
     def test_number_input(self):
         self._assert_widget(NumberInput(value=3.7), 3.7, 3.8)
+        self.assertEqual(
+            [
+                "Threshold           ",
+                "3.7_________________",
+            ],
+            NumberInput(3.7, label="Threshold").render().lines,
+        )
 
     def test_slider(self):
         self._assert_widget(Slider(value=10), 10, 20)
+        self.assertEqual(
+            [
+                "Percentage          ",
+                "------------()------",
+            ],
+            Slider(value=60, minimum=0, maximum=100, label="Percentage").render().lines,
+        )
 
     def test_checkbox(self):
-        self._assert_widget(Checkbox(value=False), False, True)
+        self._assert_widget(Checkbox(False), False, True)
 
     def test_switch(self):
-        self._assert_widget(Switch(value=False), False, True)
+        self._assert_widget(Switch(False), False, True)
 
     def test_select(self):
-        self._assert_widget(Select(value="A", options=["A", "B"]), "A", "B")
+        self._assert_widget(Select("A", options=["A", "B"]), "A", "B")
 
     def test_list_editor(self):
-        self._assert_widget(ListEditor(value=[1, 2, 3]), [1, 2, 3], [1, 2, 3, 4])
+        self._assert_widget(ListEditor([1, 2, 3]), [1, 2, 3], [1, 2, 3, 4])
+        self.assertEqual(
+            [
+                "--------",
+                "| 1    |",
+                "| 10   |",
+                "| 100  |",
+                "| 1000 |",
+                "--------",
+                "[+] [-] ",
+            ],
+            ListEditor([1, 10, 100, 1000]).render().lines,
+        )
 
     def test_nullable_view(self):
         self._assert_widget(
@@ -87,11 +136,33 @@ class LibuiTest(TestCase):
         return widget
 
     def test_container(self):
-        child_1 = Switch(value=False)
-        child_2 = Slider(value=50)
+        child_1 = Switch(value=True, label="Verbose")
+        child_2 = Slider(value=0.75, label="Threshold")
+        child_3 = TextInput(value="/my-outputs", label="Directory")
 
-        view = Column(children=[child_1, child_2])
-        self.assertEqual([child_1, child_2], view.children)
+        view = Column(child_1, child_2, child_3, border="-")
+        self.assertEqual([child_1, child_2, child_3], view.children)
+        self.assertEqual(
+            [
+                "------------------------",
+                "| ( |o) Verbose        |",
+                "| Threshold            |",
+                "| ---------------()--- |",
+                "| Directory            |",
+                "| /my-outputs_________ |",
+                "------------------------",
+            ],
+            view.render().lines,
+        )
 
-        view = Row(children=[child_1, child_2])
-        self.assertEqual([child_1, child_2], view.children)
+        view = Row(child_1, child_2, child_3, border="-")
+        self.assertEqual([child_1, child_2, child_3], view.children)
+        self.assertEqual(
+            [
+                "-----------------------------------------------------------",
+                "| ( |o) Verbose Threshold            Directory            |",
+                "|               ---------------()--- /my-outputs_________ |",
+                "-----------------------------------------------------------",
+            ],
+            view.render().lines,
+        )
