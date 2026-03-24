@@ -13,13 +13,53 @@ Observer = Callable[[], None]
 T = TypeVar("T")
 
 
+class RenderResult:
+    """The result of a rendering of a UIField."""
+
+    def __init__(self, lines: list[str]):
+        self.lines = lines
+
+
 # noinspection PyMethodMayBeStatic
-class View(Generic[T], ABC):
+class View(ABC):
     """Abstract base class for all Libui views."""
 
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
+
+    @abstractmethod
+    def render(self) -> RenderResult:
+        """Render the UI"""
+
+
+class Container(View, ABC):
+    """A container that arranges child views."""
+
+    def __init__(self, children: list[View], **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.children = children
+
+
+class Row(Container):
+    """Container for views arranged in a row."""
+
+    def render(self) -> RenderResult:
+        return RenderResult([])
+
+
+class Column(Container):
+    """Container for views arranged in a column."""
+
+    def render(self) -> RenderResult:
+        return RenderResult([])
+
+
+class Widget(Generic[T], View, ABC):
+    """Abstract base class for views that have a primary value."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.observers: set[Observer] = set()
 
     @property
@@ -27,20 +67,16 @@ class View(Generic[T], ABC):
         return self._get_value()
 
     @value.setter
-    def value(self, value: T) -> None:
-        self._set_value(value)
+    def value(self, v: T) -> None:
+        self._set_value(v)
 
     @abstractmethod
     def _get_value(self) -> T:
-        pass
+        """Get the current value."""
 
     @abstractmethod
     def _set_value(self, value: T) -> None:
-        pass
-
-    def render(self):
-        """Render the UI"""
-        raise NotImplementedError
+        """Set a new value."""
 
     def watch(self, observer: Observer) -> None:
         self.observers.add(observer)
@@ -53,53 +89,30 @@ class View(Generic[T], ABC):
             observer()
 
 
-class Panel(View[dict[str, Any]]):
-    """A panel that arranges named child views."""
+class WidgetBase(Generic[T], Widget[T], ABC):
+    """Abstract base class for views that have a primary value."""
 
-    def __init__(self, children: dict[str, View], **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.children = children
+    def __init__(self, *args, value: T, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._value = value
 
-    def _get_value(self) -> dict[str, Any]:
-        return {k: v.value for k, v in self.children.items()}
+    def _get_value(self) -> T:
+        return self._value
 
-    def _set_value(self, value: dict[str, Any]) -> None:
-        assert isinstance(value, dict)
-
-        changed: bool = False
-
-        def on_child_change():
-            nonlocal changed
-            changed = True
-
-        try:
-            for v in self.children.values():
-                v.watch(on_child_change)
-            for k, v in value.items():
-                self.children[k].value = v
-        finally:
-            for v in self.children.values():
-                v.unwatch(on_child_change)
-
-        if changed:
-            self._notify()
+    def _set_value(self, value: T) -> None:
+        if value == self._value:
+            return
+        self._value = value
+        self._notify()
 
 
-class Row(Panel):
-    """Container for views arranged in a row."""
-
-
-class Column(Panel):
-    """Container for views arranged in a column."""
-
-
-class NullableView(Generic[T], View[T | None]):
+class NullableWidget(Generic[T], Widget[T | None]):
     """A view used to enable/disable another child view.
     If the child is enabled, this view's value is the value of the child view.
     Otherwise, the value of this view is `None`.
     """
 
-    def __init__(self, value: T | None, child: View, **kwargs) -> None:
+    def __init__(self, value: T | None, child: Widget[T], **kwargs) -> None:
         super().__init__(value=value, **kwargs)
         self.child_enabled_switch = Switch(value=value is not None)
         self.child = child
@@ -128,61 +141,71 @@ class NullableView(Generic[T], View[T | None]):
         if self.child_enabled_switch.value:
             self._notify()
 
-
-class Widget(Generic[T], View[T], ABC):
-    """Abstract base class for views that have a primary value."""
-
-    def __init__(self, *args, value: T, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._value = value
-
-    def _get_value(self) -> T:
-        return self._value
-
-    def _set_value(self, value: T) -> None:
-        if value == self._value:
-            return
-        self._value = value
-        self._notify()
+    def render(self) -> RenderResult:
+        return RenderResult([])
 
 
-class ListEditor(Widget[list[Any]]):
+class ListEditor(WidgetBase[list[Any]]):
     """An editor that can add/remove/change items of a value of type `list`."""
 
+    def render(self) -> RenderResult:
+        return RenderResult([])
 
-class TextArea(Widget[str]):
+
+class TextArea(WidgetBase[str]):
     """A text area field."""
 
+    def render(self) -> RenderResult:
+        return RenderResult([])
 
-class TextInput(Widget[str]):
+
+class TextInput(WidgetBase[str]):
     """A text input field."""
 
+    def render(self) -> RenderResult:
+        return RenderResult([])
 
-class NumberInput(Widget[int | float]):
+
+class NumberInput(WidgetBase[int | float]):
     """A number input field."""
 
+    def render(self) -> RenderResult:
+        return RenderResult([])
 
-class Slider(Widget[int | float]):
+
+class Slider(WidgetBase[int | float]):
     """A slider that has values between a given min/max."""
 
+    def render(self) -> RenderResult:
+        return RenderResult([])
 
-class Checkbox(Widget[bool]):
+
+class Checkbox(WidgetBase[bool]):
     """Checkbox field."""
 
     def toggle(self):
         self.value = not self.value
 
+    def render(self) -> RenderResult:
+        return RenderResult([])
 
-class Switch(Widget[bool]):
+
+class Switch(WidgetBase[bool]):
     """A switch."""
 
     def toggle(self):
         self.value = not self.value
 
+    def render(self) -> RenderResult:
+        return RenderResult([])
 
-class Select(Generic[T], Widget[T]):
+
+class Select(Generic[T], WidgetBase[T]):
     """A select (dropdown)."""
 
     def __init__(self, *args, value: T, options: list[T], **kwargs) -> None:
         super().__init__(*args, value=value, **kwargs)
         self.options = options
+
+    def render(self) -> RenderResult:
+        return RenderResult([])

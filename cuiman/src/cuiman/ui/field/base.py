@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from typing import Any, TypeAlias
 
 from ..vm import ViewModel
-from .meta import UIFieldMeta
 
 View: TypeAlias = Any
 
@@ -16,11 +15,6 @@ class UIField(ABC):
     Adapter that allows using a component or view from some UI component library
     together with a view model of type `ViewModel`.
     """
-
-    @property
-    @abstractmethod
-    def meta(self) -> UIFieldMeta:
-        """The metadata of this field."""
 
     @property
     @abstractmethod
@@ -36,15 +30,10 @@ class UIField(ABC):
 class UIFieldBase(UIField, ABC):
     """Abstract base class for UI fields."""
 
-    def __init__(self, view_model: ViewModel, view: View, *, no_bind: bool = False):
+    def __init__(self, view_model: ViewModel, view: View):
         self._view_model = view_model
         self._view = view
-        if not no_bind:
-            self._bind_mutually()
-
-    @property
-    def meta(self) -> UIFieldMeta:
-        return self.view_model.meta
+        self._bind()
 
     @property
     def view_model(self) -> ViewModel:
@@ -54,5 +43,9 @@ class UIFieldBase(UIField, ABC):
     def view(self) -> View:
         return self._view
 
-    def _bind_mutually(self) -> None:
-        """Bind view and view model mutually."""
+    def _bind(self) -> None:
+        """
+        Bind view and view model, optionally mutually.
+        Called from constructor.
+        The default does nothing.
+        """

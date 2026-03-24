@@ -8,7 +8,7 @@ from gavicore.models import DataType
 
 from ..vm import ViewModel
 from ..vm.object import DynamicObjectViewModel
-from .base import UIField
+from .base import UIField, View
 from .context import UIFieldContext
 from .meta import UIFieldGroup, UIFieldMeta
 
@@ -181,13 +181,13 @@ class NestedObjectFactory(UIFieldFactory):
 
     @abstractmethod
     def create_row_field(
-        self, ctx: UIFieldContext, view_model: ViewModel, children: list[UIField]
+        self, ctx: UIFieldContext, view_model: ViewModel, children: list[View]
     ) -> UIField:
         """Create a panel field with given children aligned in a row."""
 
     @abstractmethod
     def create_column_field(
-        self, ctx: UIFieldContext, view_model: ViewModel, children: list[UIField]
+        self, ctx: UIFieldContext, view_model: ViewModel, children: list[View]
     ) -> UIField:
         """Create a panel field with given children aligned in a column."""
 
@@ -226,15 +226,16 @@ class NestedObjectFactory(UIFieldFactory):
                 child_fields.append(child_field)
 
         for child_field in child_fields:
-            child_name = child_field.meta.name
             child_model = child_field.view_model
+            child_name = child_model.meta.name
             if (
                 child_name in view_model.meta.properties
                 and child_model is not view_model
             ):
                 view_model.define_property(child_name, child_model)
 
+        child_views = [child_field.view for child_field in child_fields]
         if group.type == "row":
-            return self.create_row_field(ctx, view_model, child_fields)
+            return self.create_row_field(ctx, view_model, child_views)
         else:
-            return self.create_column_field(ctx, view_model, child_fields)
+            return self.create_column_field(ctx, view_model, child_views)

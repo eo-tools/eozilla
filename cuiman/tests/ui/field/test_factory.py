@@ -17,7 +17,7 @@ from gavicore.models import Schema
 
 
 class MyField(UIFieldBase):
-    def _bind_mutually(self) -> None:
+    def _bind(self) -> None:
         pass
 
 

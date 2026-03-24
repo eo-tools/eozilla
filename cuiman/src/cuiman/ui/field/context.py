@@ -74,6 +74,12 @@ class UIFieldContext:
             for child_meta in (self.meta.children or [])
         }
 
+    def create_property_fields(self) -> dict[str, UIField]:
+        return {
+            prop_name: self.create_child_field(prop_meta)
+            for prop_name, prop_meta in (self.meta.properties.items())
+        }
+
     def create_child_field(self, child_meta: UIFieldMeta) -> UIField:
         """Create a new field for the given field metadata."""
         child_ctx = self._create_child_ctx(child_meta)

@@ -13,7 +13,7 @@ from gavicore.models import Schema
 
 
 class MyField(UIFieldBase):
-    def _bind_mutually(self) -> None:
+    def _bind(self) -> None:
         self.bound = True
 
 
@@ -33,14 +33,7 @@ class UIFieldBaseTest(TestCase):
         view_model = PrimitiveViewModel(meta)
         view = object()
         f = MyField(view_model, view)
-        self.assertIs(view_model.meta, f.meta)
         self.assertIs(view_model, f.view_model)
         self.assertIs(view, f.view)
         self.assertTrue(hasattr(f, "bound"))
         self.assertTrue(f.bound)
-
-        f = MyField(view_model, view, no_bind=True)
-        self.assertIs(view_model.meta, f.meta)
-        self.assertIs(view_model, f.view_model)
-        self.assertIs(view, f.view)
-        self.assertFalse(hasattr(f, "bound"))

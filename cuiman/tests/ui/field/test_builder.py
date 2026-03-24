@@ -29,19 +29,23 @@ from .libui import (
     Checkbox,
     Column,
     ListEditor,
-    NullableView,
+    NullableWidget,
     NumberInput,
-    Panel,
     Row,
     Switch,
     TextInput,
+    View,
 )
 
 # --- UI field adapter --------
 
 
 class LibuiViewAdapter(UIFieldBase):
-    def _bind_mutually(self):
+    """A view adapter."""
+
+
+class LibuiWidgetAdapter(UIFieldBase):
+    def _bind(self):
         def observe_vm(_e):
             self.view.value = self.view_model.value
 
@@ -60,12 +64,12 @@ class ObjectFieldFactory(UIFieldFactoryBase):
         return 1
 
     def create_object_field(self, ctx: UIFieldContext) -> UIField:
-        child_fields = ctx.create_child_fields()
-        view_models = {k: f.view_model for k, f in child_fields.items()}
-        views = {k: f.view for k, f in child_fields.items()}
+        prop_fields = ctx.create_property_fields()
+        view_models = {k: f.view_model for k, f in prop_fields.items()}
         view_model = ctx.vm.object(properties=view_models)
-        view = Panel(children=views)
-        return LibuiViewAdapter(view_model, view=view, no_bind=True)
+        views = [f.view for f in prop_fields.values()]
+        view = Column(children=views)
+        return LibuiViewAdapter(view_model, view=view)
 
 
 class ArrayFieldFactory(UIFieldFactoryBase):
@@ -75,7 +79,7 @@ class ArrayFieldFactory(UIFieldFactoryBase):
     def create_array_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.array()
         view = ListEditor(value=view_model.value)
-        return LibuiViewAdapter(view_model, view=view)
+        return LibuiWidgetAdapter(view_model, view=view)
 
 
 class StringFieldFactory(UIFieldFactoryBase):
@@ -85,7 +89,7 @@ class StringFieldFactory(UIFieldFactoryBase):
     def create_string_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.primitive()
         view = TextInput(value=view_model.value)
-        return LibuiViewAdapter(view_model, view=view)
+        return LibuiWidgetAdapter(view_model, view=view)
 
 
 class NumberFieldFactory(UIFieldFactoryBase):
@@ -95,7 +99,7 @@ class NumberFieldFactory(UIFieldFactoryBase):
     def create_number_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.primitive()
         view = NumberInput(value=view_model.value)
-        return LibuiViewAdapter(view_model, view=view)
+        return LibuiWidgetAdapter(view_model, view=view)
 
 
 class BooleanFieldFactory(UIFieldFactoryBase):
@@ -105,7 +109,7 @@ class BooleanFieldFactory(UIFieldFactoryBase):
     def create_boolean_field(self, ctx: UIFieldContext) -> UIField:
         view_model = ctx.vm.primitive()
         view = Checkbox(value=view_model.value)
-        return LibuiViewAdapter(view_model, view=view)
+        return LibuiWidgetAdapter(view_model, view=view)
 
 
 class NullFieldFactory(UIFieldFactoryBase):
@@ -118,8 +122,8 @@ class NullFieldFactory(UIFieldFactoryBase):
         non_nullable_view_model = non_nullable_field.view_model
         non_nullable_view = non_nullable_field.view
         view_model = ctx.vm.nullable(non_nullable=non_nullable_view_model)
-        view = NullableView(value=ctx.initial_value, child=non_nullable_view)
-        return LibuiViewAdapter(view_model, view=view)
+        view = NullableWidget(value=ctx.initial_value, child=non_nullable_view)
+        return LibuiWidgetAdapter(view_model, view=view)
 
 
 # --- UI field builder usage --------
@@ -196,21 +200,17 @@ class UIFieldBuilderTest(TestCase):
         self.assertIsInstance(vm_2, PrimitiveViewModel)
         self.assertIsInstance(vm_3, NullableViewModel)
         self.assertIsInstance(vm_4, PrimitiveViewModel)
-        self.assertIsInstance(view, Panel)
+        self.assertIsInstance(view, Column)
         self.assertIsNotNone(view.children)
         self.assertEqual(4, len(view.children))
-        self.assertEqual(
-            ["ds_paths", "config_path", "threshold", "verbose"],
-            list(view.children.keys()),
-        )
-        children = list(view.children.values())
+        children = view.children
         child_1 = children[0]
         child_2 = children[1]
         child_3 = children[2]
         child_4 = children[3]
         self.assertIsInstance(child_1, ListEditor)
         self.assertIsInstance(child_2, TextInput)
-        self.assertIsInstance(child_3, NullableView)
+        self.assertIsInstance(child_3, NullableWidget)
         self.assertIsInstance(child_3.child_enabled_switch, Switch)
         self.assertIsInstance(child_3.child, NumberInput)
         self.assertIsInstance(child_4, Checkbox)
@@ -334,19 +334,19 @@ class UIFieldBuilderTest(TestCase):
         view = field.view
         self.assertIsInstance(view_model, DynamicObjectViewModel)
         self.assertIsInstance(view, Row)
-        row_children = list(view.children.values())
+        row_children = view.children
         self.assertEqual(2, len(row_children))
         row_child_1 = row_children[0]
         row_child_2 = row_children[1]
         self.assertIsInstance(row_child_1, ListEditor)
         self.assertIsInstance(row_child_2, Column)
-        col_children = list(row_child_2.children.values())
+        col_children = row_child_2.children
         self.assertEqual(3, len(col_children))
         col_child_1 = col_children[0]
         col_child_2 = col_children[1]
         col_child_3 = col_children[2]
         self.assertIsInstance(col_child_1, TextInput)
-        self.assertIsInstance(col_child_2, NullableView)
+        self.assertIsInstance(col_child_2, NullableWidget)
         self.assertIsInstance(col_child_3, Checkbox)
 
     def test_builder_failing(self):
@@ -360,13 +360,13 @@ class UIFieldBuilderTest(TestCase):
 
 class MyNestedObjectFactory(NestedObjectFactory):
     def create_row_field(
-        self, ctx: UIFieldContext, view_model: ViewModel, children: list[UIField]
+        self, ctx: UIFieldContext, view_model: ViewModel, children: list[View]
     ) -> UIField:
-        view = Row(children={child.meta.name: child.view for child in children})
-        return LibuiViewAdapter(view_model=view_model, view=view, no_bind=True)
+        view = Row(children=children)
+        return LibuiViewAdapter(view_model=view_model, view=view)
 
     def create_column_field(
-        self, ctx: UIFieldContext, view_model: ViewModel, children: list[UIField]
+        self, ctx: UIFieldContext, view_model: ViewModel, children: list[View]
     ) -> UIField:
-        view = Column(children={child.meta.name: child.view for child in children})
-        return LibuiViewAdapter(view_model=view_model, view=view, no_bind=True)
+        view = Column(children=children)
+        return LibuiViewAdapter(view_model=view_model, view=view)
