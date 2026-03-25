@@ -17,12 +17,12 @@ from cuiman.ui import (
 )
 from cuiman.ui.vm import (
     ArrayViewModel,
+    DynamicObjectViewModel,
     NullableViewModel,
     ObjectViewModel,
     PrimitiveViewModel,
     ViewModel,
 )
-from cuiman.ui.vm.object import DynamicObjectViewModel
 from gavicore.models import Schema
 
 from .libui import (
@@ -113,10 +113,10 @@ class BooleanFieldFactory(UIFieldFactoryBase):
 
 
 class NullFieldFactory(UIFieldFactoryBase):
-    def get_null_score(self, meta: UIFieldMeta) -> int:
+    def get_nullable_score(self, meta: UIFieldMeta) -> int:
         return 1
 
-    def create_null_field(self, ctx: UIFieldContext) -> UIField:
+    def create_nullable_field(self, ctx: UIFieldContext) -> UIField:
         non_nullable_meta = ctx.meta.to_non_nullable()
         non_nullable_field = ctx.create_child_field(non_nullable_meta)
         non_nullable_view_model = non_nullable_field.view_model

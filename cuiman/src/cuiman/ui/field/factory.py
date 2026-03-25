@@ -44,7 +44,7 @@ class UIFieldFactoryBase(UIFieldFactory, ABC):
         """Get the score for a field based on its data type."""
         schema = meta.schema_
         if schema.nullable:
-            return self.get_null_score(meta)
+            return self.get_nullable_score(meta)
         match schema.type:
             case DataType.object:
                 return self.get_object_score(meta)
@@ -85,7 +85,7 @@ class UIFieldFactoryBase(UIFieldFactory, ABC):
         """Get the score for a field of type "boolean"."""
         return 0
 
-    def get_null_score(self, meta: UIFieldMeta) -> int:
+    def get_nullable_score(self, meta: UIFieldMeta) -> int:
         """Get the score for a nullable field."""
         return 0
 
@@ -96,7 +96,7 @@ class UIFieldFactoryBase(UIFieldFactory, ABC):
     def create_field(self, ctx: UIFieldContext) -> UIField:
         """Create a UI field based on its data type."""
         if ctx.schema.nullable:
-            return self.create_null_field(ctx)
+            return self.create_nullable_field(ctx)
         match ctx.schema.type:
             case DataType.object:
                 return self.create_object_field(ctx)
@@ -137,12 +137,12 @@ class UIFieldFactoryBase(UIFieldFactory, ABC):
         """Create a UI field for a value of type "boolean"."""
         raise NotImplementedError
 
-    def create_null_field(self, ctx: UIFieldContext) -> UIField:
+    def create_nullable_field(self, ctx: UIFieldContext) -> UIField:
         """Create a UI field for a value that is nullable."""
         raise NotImplementedError
 
     def create_untyped_field(self, ctx: UIFieldContext) -> UIField:
-        """Create a UI field for a value with no explicit type given."""
+        """Create a UI field for a value with no explicit type specified."""
         raise NotImplementedError
 
 
@@ -150,13 +150,14 @@ class NestedObjectFactory(UIFieldFactory):
     """
     A convenient base class for UI field factories that can create
     container UI fields like panels that align their items
-    either in a row or column.
+    either in a row or column using the [meta.layout][UIFieldMeta.layout]
+    property.
     """
 
     def get_score(self, meta: UIFieldMeta) -> int:
         """
         Compute the score. Will return 0 for all fields except of type "object".
-        Will return 10 if the layout is specified, otherwise 1.
+        Will return 10 if the meta's layout is specified, otherwise 1.
         """
         if meta.schema_.type != DataType.object:
             return 0

@@ -6,12 +6,13 @@ from .array import ArrayViewModel
 from .base import ViewModel, ViewModelChangeEvent, ViewModelObserver
 from .composite import CompositeViewModel
 from .nullable import NullableViewModel
-from .object import ObjectViewModel
+from .object import ObjectViewModel, DynamicObjectViewModel
 from .primitive import PrimitiveViewModel
 
 __all__ = [
     "ArrayViewModel",
     "CompositeViewModel",
+    "DynamicObjectViewModel",
     "NullableViewModel",
     "ObjectViewModel",
     "PrimitiveViewModel",

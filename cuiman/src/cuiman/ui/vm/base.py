@@ -9,7 +9,7 @@ from typing import Any, Callable, Generic, Protocol, TypeVar
 
 from bokeh.core.property.singletons import UndefinedType
 
-from gavicore.models import DataType
+from gavicore.models import DataType, Schema
 from gavicore.util.undefined import UNDEFINED
 
 from ..field.meta import UIFieldMeta
@@ -79,8 +79,13 @@ class ViewModel(Generic[T], ABC):
 
     @property
     def meta(self) -> UIFieldMeta:
-        """The field metadata."""
+        """The field's metadata."""
         return self._meta
+
+    @property
+    def schema(self) -> Schema:
+        """The field's OpenAPI schema."""
+        return self._meta.schema_
 
     @property
     def value(self) -> T:
