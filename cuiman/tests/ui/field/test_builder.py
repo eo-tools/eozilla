@@ -121,7 +121,7 @@ class NullFieldFactory(UIFieldFactoryBase):
         non_nullable_field = ctx.create_child_field(non_nullable_meta)
         non_nullable_view_model = non_nullable_field.view_model
         non_nullable_view = non_nullable_field.view
-        view_model = ctx.vm.nullable(non_nullable=non_nullable_view_model)
+        view_model = ctx.vm.nullable(inner=non_nullable_view_model)
         view = NullableWidget(
             value=ctx.initial_value,
             child=non_nullable_view,

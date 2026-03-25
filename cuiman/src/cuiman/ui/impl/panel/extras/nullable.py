@@ -5,10 +5,9 @@
 import param
 import panel as pn
 
-pn.extension()
-
-
 # TODO: This is AI-generated. Verify & test!
+
+pn.extension()
 
 
 class NullableWidget(pn.widgets.Widget):

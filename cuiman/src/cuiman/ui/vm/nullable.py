@@ -24,19 +24,19 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
         meta: UIFieldMeta,
         *,
         value: Any | UndefinedType = UNDEFINED,
-        non_nullable: ViewModel[T] | None = None,
+        inner: ViewModel[T] | None = None,
     ):
         super().__init__(meta)
         if not meta.nullable:
             raise ValueError("meta must be nullable")
-        if non_nullable is not None:
-            if non_nullable.meta.nullable:
-                raise ValueError("non_nullable view model must not be nullable")
-            self._non_nullable = non_nullable
-            self._non_nullable.watch(self._on_non_nullable_change)
+        if inner is not None:
+            if inner.meta.nullable:
+                raise ValueError("inner view model must not be nullable")
+            self._inner = inner
+            self._inner.watch(self._on_inner_change)
         else:
             non_nullable_meta = meta.to_non_nullable()
-            self._non_nullable = self.create(
+            self._inner = self.create(
                 non_nullable_meta,
                 value=(
                     non_nullable_meta.get_initial_value()
@@ -53,13 +53,13 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
         return self._is_null
 
     @property
-    def non_nullable(self) -> ViewModel:
-        return self._non_nullable
+    def inner(self) -> ViewModel:
+        return self._inner
 
     def _get_value(self) -> T | None:
         if self._is_null:
             return None
-        return self._non_nullable._get_value()
+        return self._inner._get_value()
 
     def _set_value(self, value: T | None) -> None:
         was_null = self._is_null
@@ -70,9 +70,9 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
         else:
             self._is_null = False
             with self.intercept_changes() as changes:
-                self._non_nullable._set_value(value)
+                self._inner._set_value(value)
             if changes or was_null:
                 self._notify(*changes)
 
-    def _on_non_nullable_change(self, event: ViewModelChangeEvent):
+    def _on_inner_change(self, event: ViewModelChangeEvent):
         self._notify(event)

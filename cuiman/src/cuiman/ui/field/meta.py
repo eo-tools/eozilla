@@ -70,9 +70,29 @@ UIFieldLayout: TypeAlias = UIFieldGroup | Literal["column", "row"]
 class UIFieldMeta(BaseModel):
     """Metadata used to generate a GUI field like a widget or panel.
 
-    It has been collected from a process input/output description,
-    the respective JSON schema, and from possible extension fields
-    either contained in the descriptions or the JSON schemas.
+    The properties of instances of this class have been collected
+    from a process input/output description, the respective JSON schema,
+    and from dedicated UI-related extension property values.
+
+    For example, if a UI should use a dedicated enum value, it could be
+    specified using the property named "x-ui:enum" or as a property "enum"
+    in an object that is the value of the "x-ui" property.
+
+    ```json
+    {
+        "schema": {"type": "number", "minimum": 0.1},
+        "x-ui:enum": [0.1, 0.25, 0.5, 1.0]
+    }
+    ```
+
+    or
+
+    ```json
+    {
+        "schema": {"type": "number", "minimum": 0.1},
+        "x-ui": {"enum": [0.1, 0.25, 0.5, 1.0]}
+    }
+    ```
 
     This class should not be instantiated from its constructor,
     instead, use one of the factory methods
@@ -113,9 +133,13 @@ class UIFieldMeta(BaseModel):
     advanced: bool | None = None
     required: bool | None = None
     password: bool | None = None
-    # For slider, the default to values from JSON schema
+    # Other properties with default values initialized from schema.
+    # They may be overridden and will be used in the UI instead.
     minimum: int | float | None = None
     maximum: int | float | None = None
+    # enum: list[Any] | None = None
+    # default: Any | None = None
+    # nullable: bool | None = None
 
     @property
     def properties(self) -> dict[str, "UIFieldMeta"]:

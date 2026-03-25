@@ -131,10 +131,10 @@ class UIViewModelBuilder:
 
     def nullable(
         self,
-        non_nullable: ViewModel | None = None,
+        inner: ViewModel | None = None,
     ) -> NullableViewModel:
         return NullableViewModel(
             self._ctx.meta,
             value=self._ctx.initial_value,
-            non_nullable=non_nullable,
+            inner=inner,
         )

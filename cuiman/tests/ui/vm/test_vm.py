@@ -273,7 +273,7 @@ class ViewModelTest(TestCase):
         )
         vm = NullableViewModel(meta, value=None)
         self._assert_vm_commons(vm, None, 2.1)
-        self.assertIsInstance(vm.non_nullable, PrimitiveViewModel)
+        self.assertIsInstance(vm.inner, PrimitiveViewModel)
         self.assertEqual(False, vm.is_null)
         vm.value = None
         self.assertEqual(True, vm.is_null)
@@ -300,10 +300,8 @@ class ViewModelTest(TestCase):
                 }
             ),
         )
-        with pytest.raises(
-            ValueError, match="non_nullable view model must not be nullable"
-        ):
-            NullableViewModel(meta, non_nullable=NullableViewModel(meta))
+        with pytest.raises(ValueError, match="inner view model must not be nullable"):
+            NullableViewModel(meta, inner=NullableViewModel(meta))
 
     def _assert_vm_commons(self, vm: ViewModel, initial_value, other_value):
         self.assertEqual(initial_value, vm.value)
