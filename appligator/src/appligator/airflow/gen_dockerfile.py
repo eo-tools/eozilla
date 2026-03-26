@@ -3,8 +3,13 @@
 #  https://opensource.org/license/apache-2-0.
 
 import shutil
-import tomllib
+import sys
 from pathlib import Path
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib  # type: ignore[no-retyped-def]
 
 from jinja2 import Environment, PackageLoader
 
@@ -120,6 +125,7 @@ def generate(
     # ── packages directory ────────────────────────────────────────────────────
     has_packages_dir = packages_dir is not None and packages_dir.is_dir()
     if has_packages_dir:
+        assert packages_dir is not None  # narrowing for type checker
         packages_to_copy = local_packages or []
         for pkg in packages_to_copy:
             src = packages_dir / pkg
@@ -144,6 +150,7 @@ def generate(
     # ── non-editable local package installs ──────────────────────────────────
     resolved_post_install = list(post_install_commands or [])
     if local_packages:
+        assert packages_dir is not None  # narrowing for type checker; enforced by validation above
         pip = f"{workdir}/.pixi/envs/{pixi_env}/bin/pip"
         pkgs = " \\\n    ".join(
             f"./{packages_dir.name}/{pkg}" for pkg in local_packages

@@ -42,6 +42,7 @@ dependencies = [
   "pydantic",
   "pyyaml",
   "tomli-w",
+  "tomli; python_version < '3.11'",
   "typer",
   # local dependency
   "gavicore >=0.0.7",
