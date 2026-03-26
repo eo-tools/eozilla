@@ -159,6 +159,7 @@ def generate(
         trim_blocks=True,
         lstrip_blocks=True,
         keep_trailing_newline=True,
+        autoescape=False,  # noqa: S701 — Dockerfile output, not HTML
     )
     template = env.get_template(f"{package_manager}.Dockerfile.j2")
     content = template.render(
