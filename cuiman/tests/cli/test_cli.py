@@ -125,9 +125,7 @@ class CliTest(TestCase):
             "execute-process", "sleep_a_while", "-i", "duration=120", "-i", "fail=true"
         )
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
-        self.assertEqual(
-            "jobID: ''\nstatus: accepted\ntype: process\n\n", result.output
-        )
+        self.assertEqual("jobID: ''\nstatus: accepted\n\n", result.output)
 
     def test_list_jobs(self):
         result = invoke_cli("list-jobs")
@@ -137,16 +135,12 @@ class CliTest(TestCase):
     def test_get_job(self):
         result = invoke_cli("get-job", "job_4")
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
-        self.assertEqual(
-            "jobID: ''\nstatus: accepted\ntype: process\n\n", result.output
-        )
+        self.assertEqual("jobID: ''\nstatus: accepted\n\n", result.output)
 
     def test_dismiss_job(self):
         result = invoke_cli("dismiss-job", "job_4")
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
-        self.assertEqual(
-            "jobID: ''\nstatus: accepted\ntype: process\n\n", result.output
-        )
+        self.assertEqual("jobID: ''\nstatus: accepted\n\n", result.output)
 
     def test_get_job_results(self):
         result = invoke_cli("get-job-results", "job_4")

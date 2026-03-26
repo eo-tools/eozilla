@@ -8,6 +8,36 @@
 - Updated `appligator.airflow.run_step` with `coerce_inputs` (casts Airflow
   Jinja string params to their declared types) and `_XComEncoder` (serialises
   Pydantic models and other non-JSON-native objects for XCom output).
+- The Cuiman client package has been enhanced by _job result openers_,
+  which ease working with the results of a process job (#65):
+    - Client classes now have a method 
+      `open_job_result(job_id, **options)` that is used to open the results 
+      of a job. Both sync and async versions of the method are available in 
+      `cuiman.Client` and `cuiman.AsyncClient`. 
+    - Applications can customize how job results are opened by  
+      adding their application-specific openers using the new 
+      `register_job_result_opener(opener)` in class `cuiman.ClientConfig`.
+    - Added a new `notebooks/cuiman-openers.ipynb` that demonstrates a
+      custom opener. 
+    - Added a new section in Cuiman usage documentation.
+    - Added some default openers for `xarray.Dataset`, 
+      `pandas.DataFrame`, and `geopandas.GeoDataFrame` 
+      given that a respective job result is a link.
+- The model classes that correspond to the OGC API - Processes in 
+  `gavicore.models` are no longer generated and have been adjusted to
+  be more user-friendly (#71):
+    - `InlineValue` is now a simple type alias instead of a `pydantic.RootModel`.
+    - Same for `InlineValueOrRef` which has also been renamed to `JobResult`.
+    - Replaced type of optional fields `Optional[T]` by `T | None`.
+    - The following models are now extendable, e.g., using `"x-"` prefixed fields:
+        - `gavicore.models.Schema` 
+        - `gavicore.models.InputDescription`
+        - `gavicore.models.OutputDescription`
+        - `gavicore.models.JobStatus` (extra "x-traceback")
+        - `gavicore.models.ApiError` (extra "x-traceback")
+    - Replaced one-element enums `JobType`, `MaxOccurs` by string literals. 
+    - Replaced `Union[]` by `|` operator.
+- Lifted some mypy restrictions and enabled mypy pydantic plugin.
 
 ## Changes in version 0.0.9
 

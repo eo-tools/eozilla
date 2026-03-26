@@ -47,6 +47,8 @@ panel = "*"
 watchfiles = "*"
 # Use cases testing
 dask = "*"
+geopandas = "*"
+pandas = "*"
 xarray = "*"
 zarr = "*"
 # Needed in /tools
@@ -141,7 +143,8 @@ omit = [
 [tool.mypy]
 python_version = "3.10"
 check_untyped_defs = true
-disable_error_code = ["valid-type", "import-untyped"]
+disable_error_code = ["import-untyped"]
+plugins = ["pydantic.mypy"]
 exclude = [
     "appligator/tests",
     "cuiman/tests",
@@ -154,9 +157,6 @@ exclude = [
     "tools",
     "_pkg_reservations",
 ]
-[[tool.mypy.overrides]]
-module = "gavicore.models"
-disable_error_code = ["valid-type"]
 
 ########################## Tasks ###############################
 
@@ -276,14 +276,17 @@ cmd = "mypy ."
 
 [tool.pixi.tasks.generate]
 depends-on = [
-    "gen-models",
+    # We no longer generate models
+    # "gen-models",
     "gen-server",
     "gen-client",
     "gen-cli-docs",
 ]
 
+# Use with caution,
+# we no longer use generated models
 [tool.pixi.tasks.gen-models]
-cmd = "python -m tools.gen_models"
+cmd = "echo 'WARNING: We no longer use generated models' && python -m tools.gen_models"
 
 [tool.pixi.tasks.gen-server]
 cmd = "python -m tools.gen_server"
