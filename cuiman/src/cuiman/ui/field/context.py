@@ -14,23 +14,23 @@ from ..vm import (
     PrimitiveViewModel,
     ViewModel,
 )
-from .base import UIField
-from .meta import UIFieldMeta
+from .base import Field
+from .meta import FieldMeta
 
 if TYPE_CHECKING:
-    from .builder import UIFieldBuilder
+    from .builder import FieldBuilder
 
 
-class UIFieldContext:
+class FieldContext:
     """The context object passed to the UI field factories."""
 
     def __init__(
         self,
         *,
-        builder: "UIFieldBuilder",
-        meta: UIFieldMeta,
+        builder: "FieldBuilder",
+        meta: FieldMeta,
         initial_value: Any | UndefinedType = UNDEFINED,
-        parent_ctx: "UIFieldContext | None" = None,
+        parent_ctx: "FieldContext | None" = None,
     ):
         self._parent_ctx = parent_ctx
         self._builder = builder
@@ -43,7 +43,7 @@ class UIFieldContext:
         )
 
     @property
-    def meta(self) -> UIFieldMeta:
+    def meta(self) -> FieldMeta:
         return self._meta
 
     @property
@@ -68,24 +68,24 @@ class UIFieldContext:
             return self._parent_ctx.path + [self.name]
         return [self.name]
 
-    def create_child_fields(self) -> dict[str, UIField]:
+    def create_child_fields(self) -> dict[str, Field]:
         return {
             child_meta.name: self.create_child_field(child_meta)
             for child_meta in (self.meta.children or [])
         }
 
-    def create_property_fields(self) -> dict[str, UIField]:
+    def create_property_fields(self) -> dict[str, Field]:
         return {
             prop_name: self.create_child_field(prop_meta)
             for prop_name, prop_meta in (self.meta.properties.items())
         }
 
-    def create_child_field(self, child_meta: UIFieldMeta) -> UIField:
+    def create_child_field(self, child_meta: FieldMeta) -> Field:
         """Create a new field for the given field metadata."""
         child_ctx = self._create_child_ctx(child_meta)
         return self._builder.create_field_for_ctx(child_ctx)
 
-    def _create_child_ctx(self, child_meta: UIFieldMeta) -> "UIFieldContext":
+    def _create_child_ctx(self, child_meta: FieldMeta) -> "FieldContext":
         initial_value = self.initial_value
         child_name = child_meta.name
         if (
@@ -96,7 +96,7 @@ class UIFieldContext:
             child_value = initial_value[child_name]
         else:
             child_value = child_meta.get_initial_value()
-        return UIFieldContext(
+        return FieldContext(
             builder=self._builder,
             meta=child_meta,
             initial_value=child_value,
@@ -110,7 +110,7 @@ class UIViewModelBuilder:
     from the [UIBuilderContext][UIBuilderContext].
     """
 
-    def __init__(self, ctx: UIFieldContext):
+    def __init__(self, ctx: FieldContext):
         self._ctx = ctx
 
     def primitive(self) -> PrimitiveViewModel:

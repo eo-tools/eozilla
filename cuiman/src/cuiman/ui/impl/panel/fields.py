@@ -10,7 +10,7 @@ import cuiman.ui.vm as cvm
 from .json import JsonCodec, JsonIdentityCodec
 
 
-class PanelViewableField(cui.UIFieldBase):
+class PanelViewableField(cui.FieldBase):
     """A view adapter."""
 
     def __init__(self, view_model: cvm.ViewModel, view: pn.viewable.Viewable):
@@ -23,7 +23,7 @@ class PanelViewableField(cui.UIFieldBase):
         return self.view
 
 
-class PanelWidgetField(cui.UIFieldBase):
+class PanelWidgetField(cui.FieldBase):
     def __init__(
         self,
         view_model: cvm.ViewModel,

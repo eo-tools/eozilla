@@ -6,15 +6,25 @@ from abc import ABC, abstractmethod
 from typing import Any, TypeAlias
 
 from ..vm import ViewModel
+from .meta import FieldMeta
 
 View: TypeAlias = Any
+"""
+A concrete piece of UI of typically data-bound UI 
+(`view` such as widget, panel, control).
+"""
 
 
-class UIField(ABC):
+class Field(ABC):
     """
-    Adapter that allows using a component or view from some UI component library
-    together with a view model of type `ViewModel`.
+    A binding unit between data (`view_model`) and a concrete piece of UI
+    of typically data-bound UI (`view` such as widget, panel, control).
     """
+
+    @property
+    def meta(self) -> FieldMeta:
+        """The field metadata."""
+        return self.view_model.meta
 
     @property
     @abstractmethod
@@ -27,7 +37,7 @@ class UIField(ABC):
         """The view used by this field."""
 
 
-class UIFieldBase(UIField, ABC):
+class FieldBase(Field, ABC):
     """Abstract base class for UI fields."""
 
     def __init__(self, view_model: ViewModel, view: View):
@@ -46,6 +56,6 @@ class UIFieldBase(UIField, ABC):
     def _bind(self) -> None:
         """
         Bind view and view model, optionally mutually.
-        Called from constructor.
-        The default does nothing.
+        Called from this class' constructor.
+        The default implementation does nothing.
         """

@@ -2,21 +2,23 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from .base import UIField, UIFieldBase
-from .builder import UIFieldBuilder
-from .context import UIFieldContext
-from .factory import NestedObjectFactory, UIFieldFactory, UIFieldFactoryBase
-from .meta import UIFieldGroup, UIFieldLayout, UIFieldMeta
+from .base import Field, FieldBase
+from .builder import FieldBuilder
+from .context import FieldContext
+from .factory import FieldFactory, FieldFactoryBase, FieldGroupFactory
+from .meta import FieldGroup, FieldLayout, FieldMeta
+from .registry import FieldFactoryRegistry
 
 __all__ = [
-    "NestedObjectFactory",
-    "UIFieldBuilder",
-    "UIFieldContext",
-    "UIField",
-    "UIFieldBase",
-    "UIFieldGroup",
-    "UIFieldFactory",
-    "UIFieldFactoryBase",
-    "UIFieldLayout",
-    "UIFieldMeta",
+    "Field",
+    "FieldBase",
+    "FieldBuilder",
+    "FieldContext",
+    "FieldFactory",
+    "FieldFactoryBase",
+    "FieldFactoryRegistry",
+    "FieldGroup",
+    "FieldGroupFactory",
+    "FieldLayout",
+    "FieldMeta",
 ]

@@ -8,8 +8,8 @@ from unittest import TestCase
 import pydantic
 from pydantic import BaseModel
 
-from cuiman.ui import UIFieldMeta
-from cuiman.ui.field.meta import UIFieldGroup
+from cuiman.ui import FieldMeta
+from cuiman.ui.field.meta import FieldGroup
 from gavicore.models import InputDescription, OutputDescription, Schema
 
 dict_kwargs = dict(
@@ -28,9 +28,9 @@ def to_json(model: BaseModel, exclude: set[str] | None = None):
     )
 
 
-class UIFieldMetaTest(TestCase):
+class FieldMetaTest(TestCase):
     def test_from_input_descriptions(self):
-        meta = UIFieldMeta.from_input_descriptions(
+        meta = FieldMeta.from_input_descriptions(
             {
                 "datasets": InputDescription(
                     **{
@@ -56,7 +56,7 @@ class UIFieldMetaTest(TestCase):
             }
         )
         self.maxDiff = None
-        self.assertIsInstance(meta, UIFieldMeta)
+        self.assertIsInstance(meta, FieldMeta)
 
         schema_1 = {
             "type": "string",
@@ -131,7 +131,7 @@ class UIFieldMetaTest(TestCase):
         )
 
     def test_from_output_descriptions(self):
-        meta = UIFieldMeta.from_output_descriptions(
+        meta = FieldMeta.from_output_descriptions(
             {
                 "dataset": OutputDescription(
                     **{"schema": {"type": "string", "title": "Output dataset path"}},
@@ -142,7 +142,7 @@ class UIFieldMetaTest(TestCase):
             }
         )
         self.maxDiff = None
-        self.assertIsInstance(meta, UIFieldMeta)
+        self.assertIsInstance(meta, FieldMeta)
 
         schema_1 = {"type": "string", "title": "Output dataset path"}
         schema_2 = {"type": "string", "title": "Log file path"}
@@ -193,7 +193,7 @@ class UIFieldMetaTest(TestCase):
                 "required": ["threshold"],
             }
         )
-        meta = UIFieldMeta.from_schema("performance", schema)
+        meta = FieldMeta.from_schema("performance", schema)
         schema_1 = {
             "title": "Threshold",
             "type": "number",
@@ -236,7 +236,7 @@ class UIFieldMetaTest(TestCase):
         )
 
     def test_object_schema_with_layout(self):
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "root",
             Schema(
                 **{
@@ -272,14 +272,14 @@ class UIFieldMetaTest(TestCase):
                 }
             ),
         )
-        self.assertIsInstance(meta, UIFieldMeta)
-        self.assertIsInstance(meta.layout, UIFieldGroup)
+        self.assertIsInstance(meta, FieldMeta)
+        self.assertIsInstance(meta.layout, FieldGroup)
         self.assertEqual(
-            UIFieldGroup(
+            FieldGroup(
                 type="row",
                 items=[
                     "ds_paths",
-                    UIFieldGroup(
+                    FieldGroup(
                         type="column",
                         items=["config_path", "threshold", "verbose"],
                     ),
@@ -412,11 +412,11 @@ class UIFieldMetaTest(TestCase):
     ):
         kwargs = {**description_props, "schema": schema_props}
         if issubclass(description_cls, InputDescription):
-            meta = UIFieldMeta.from_input_descriptions(
+            meta = FieldMeta.from_input_descriptions(
                 {"threshold": InputDescription(**kwargs)}
             )
         elif issubclass(description_cls, OutputDescription):
-            meta = UIFieldMeta.from_output_descriptions(
+            meta = FieldMeta.from_output_descriptions(
                 {"threshold": OutputDescription(**kwargs)},
             )
         else:

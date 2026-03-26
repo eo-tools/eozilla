@@ -6,7 +6,7 @@ from unittest import TestCase
 
 import pytest
 
-from cuiman.ui import UIFieldMeta
+from cuiman.ui import FieldMeta
 from cuiman.ui.vm import (
     ArrayViewModel,
     NullableViewModel,
@@ -33,14 +33,12 @@ class MyViewModelObserver:
 # noinspection PyMethodMayBeStatic
 class ViewModelTest(TestCase):
     def test_create_ok(self):
-        meta = UIFieldMeta.from_schema(
-            "x", Schema(**{"type": "integer", "default": -1})
-        )
+        meta = FieldMeta.from_schema("x", Schema(**{"type": "integer", "default": -1}))
         vm = ViewModel.create(meta)
         self.assertIsInstance(vm, PrimitiveViewModel)
         self.assertEqual(-1, vm.value)
 
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "x",
             Schema(
                 **{
@@ -54,7 +52,7 @@ class ViewModelTest(TestCase):
         self.assertIsInstance(vm, ArrayViewModel)
         self.assertEqual([0.1, 0.5], vm.value)
 
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "x",
             Schema(
                 **{
@@ -71,7 +69,7 @@ class ViewModelTest(TestCase):
         self.assertIsInstance(vm, ObjectViewModel)
         self.assertEqual({"x": 10, "y": -20}, vm.value)
 
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "x",
             Schema(
                 **{
@@ -86,32 +84,32 @@ class ViewModelTest(TestCase):
         self.assertEqual(None, vm.value)
 
     def test_create_failing(self):
-        meta = UIFieldMeta.from_schema("x", Schema(**{}))
+        meta = FieldMeta.from_schema("x", Schema(**{}))
         with pytest.raises(ValueError, match="missing type in schema for field 'x'"):
             ViewModel.create(meta)
 
     def test_primitive_ok(self):
-        meta = UIFieldMeta.from_schema("x", Schema(**{"type": "integer"}))
+        meta = FieldMeta.from_schema("x", Schema(**{"type": "integer"}))
         vm = PrimitiveViewModel(meta, value=137)
         self._assert_vm_commons(vm, 137, 138)
 
     def test_primitive_failing(self):
-        with pytest.raises(TypeError, match="meta must have type UIFieldMeta"):
+        with pytest.raises(TypeError, match="meta must have type FieldMeta"):
             # noinspection PyTypeChecker
             PrimitiveViewModel(bool, value=True)
 
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "x", Schema(**{"type": "integer", "nullable": True})
         )
         with pytest.raises(ValueError, match="meta must not be nullable"):
             PrimitiveViewModel(meta, value=137)
 
-        meta = UIFieldMeta.from_schema("x", Schema(**{"type": "integer"}))
+        meta = FieldMeta.from_schema("x", Schema(**{"type": "integer"}))
         with pytest.raises(ValueError, match="value must not be None"):
             PrimitiveViewModel(meta, value=None)
 
     def test_array_ok(self):
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "x", Schema(**{"type": "array", "items": {"type": "integer"}})
         )
         vm = ArrayViewModel(meta, value=[10, 11])
@@ -147,14 +145,14 @@ class ViewModelTest(TestCase):
         self.assertIsInstance(items[5], PrimitiveViewModel)
 
     def test_array_failing(self):
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "x",
             Schema(**{"type": "array", "nullable": True, "items": {"type": "integer"}}),
         )
         with pytest.raises(ValueError, match="meta must not be nullable"):
             ArrayViewModel(meta)
 
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "x", Schema(**{"type": "array", "items": {"type": "integer"}})
         )
         with pytest.raises(
@@ -171,7 +169,7 @@ class ViewModelTest(TestCase):
             _x = vm[5]
 
     def test_object_ok(self):
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "x",
             Schema(
                 **{
@@ -203,7 +201,7 @@ class ViewModelTest(TestCase):
         self.assertEqual({"a": False, "b": ""}, vm.value)
 
     def test_object_failing(self):
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "x",
             Schema(
                 **{
@@ -219,7 +217,7 @@ class ViewModelTest(TestCase):
         with pytest.raises(ValueError, match="meta must not be nullable"):
             ObjectViewModel(meta)
 
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "x",
             Schema(
                 **{
@@ -237,7 +235,7 @@ class ViewModelTest(TestCase):
         ):
             ObjectViewModel(meta, value=[True, "ds.zarr"])
 
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "x",
             Schema(
                 **{
@@ -262,7 +260,7 @@ class ViewModelTest(TestCase):
             )
 
     def test_nullable_ok(self):
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "x",
             Schema(
                 **{
@@ -279,7 +277,7 @@ class ViewModelTest(TestCase):
         self.assertEqual(True, vm.is_null)
 
     def test_nullable_failing(self):
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "x",
             Schema(
                 **{
@@ -291,7 +289,7 @@ class ViewModelTest(TestCase):
         with pytest.raises(ValueError, match="meta must be nullable"):
             NullableViewModel(meta, value=None)
 
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "x",
             Schema(
                 **{

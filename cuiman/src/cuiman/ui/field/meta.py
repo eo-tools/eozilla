@@ -17,7 +17,7 @@ from gavicore.models import (
 UI_KEYS = ["x-ui", "ui", "xUI", "xUi"]
 UI_KEY_PREFIXES = [f"{k}:" for k in UI_KEYS]
 
-UIFieldWidget: TypeAlias = Literal[
+FieldWidgetType: TypeAlias = Literal[
     "checkbox",
     "password",
     "number",
@@ -31,17 +31,17 @@ UIFieldWidget: TypeAlias = Literal[
 ]
 
 
-class UIFieldGroup(pydantic.BaseModel):
-    """Definition of a group of complex UI components.
+class FieldGroup(pydantic.BaseModel):
+    """Definition of a group of complex UI fields.
 
     Example:
 
     ```python
-    UIFieldGroup(
+    FieldGroup(
         type="row",
         items=[
-            UIFieldGroup(type="column", items=["field_a", "field_b"]),
-            UIFieldGroup(type="column", items=["field_c", "field_d"]),
+            FieldGroup(type="column", items=["field_a", "field_b"]),
+            FieldGroup(type="column", items=["field_c", "field_d"]),
         ]
     )
     ```
@@ -51,23 +51,23 @@ class UIFieldGroup(pydantic.BaseModel):
     for a field to join a layout is to set its `group_name` property
     to the target group's `name`.
     Children of a complex field whose names do not occur in any group
-    of a layout tree, and do not have the `group` property set
+    of a layout tree and do not have the `group` property set
     will be appended to the root group of a layout tree.
     Their order will be determined by the value of the `order`
     property, if any, or the value of the `name` property.
     """
 
     type: Literal["column", "row"]
-    items: list[Union["UIFieldGroup", str]] | None = None
+    items: list[Union["FieldGroup", str]] | None = None
     name: str | None = None
     title: str | None = None
     style: dict[str, Any] | None = None
 
 
-UIFieldLayout: TypeAlias = UIFieldGroup | Literal["column", "row"]
+FieldLayout: TypeAlias = FieldGroup | Literal["column", "row"]
 
 
-class UIFieldMeta(pydantic.BaseModel):
+class FieldMeta(pydantic.BaseModel):
     """Metadata used to generate a GUI field like a widget or panel.
 
     The properties of instances of this class have been collected
@@ -118,11 +118,11 @@ class UIFieldMeta(pydantic.BaseModel):
     # If shema.type == "object" then this is list of UI fields
     # of the object properties.
     # TODO: split into properties and
-    #   properties: dict[str, UIFieldMeta] | None
-    #   item: UIFieldMeta | None
-    children: list["UIFieldMeta"] | None = None
-    layout: UIFieldLayout | None = None
-    widget: UIFieldWidget | str | None = None
+    #   properties: dict[str, FieldMeta] | None
+    #   item: FieldMeta | None
+    children: list["FieldMeta"] | None = None
+    layout: FieldLayout | None = None
+    widget: FieldWidgetType | str | None = None
     title: str | None = None
     description: str | None = None
     tooltip: str | None = None
@@ -142,13 +142,13 @@ class UIFieldMeta(pydantic.BaseModel):
     # nullable: bool | None = None
 
     @property
-    def properties(self) -> dict[str, "UIFieldMeta"]:
+    def properties(self) -> dict[str, "FieldMeta"]:
         assert self.schema_.type == DataType.object
         assert isinstance(self.children, list)
         return {v.name: v for v in self.children}
 
     @property
-    def item(self) -> "UIFieldMeta":
+    def item(self) -> "FieldMeta":
         assert self.schema_.type == DataType.array
         assert isinstance(self.children, list) and len(self.children) == 1
         # noinspection PyTypeChecker
@@ -169,7 +169,7 @@ class UIFieldMeta(pydantic.BaseModel):
         name: str = "inputs",
         title: str | None = None,
         description: str | None = None,
-    ) -> "UIFieldMeta":
+    ) -> "FieldMeta":
         """Extract a UI-field from the input description."""
         properties = {}
         required_names = []
@@ -201,7 +201,7 @@ class UIFieldMeta(pydantic.BaseModel):
         name: str = "outputs",
         title: str | None = None,
         description: str | None = None,
-    ) -> "UIFieldMeta":
+    ) -> "FieldMeta":
         """Extract a UI-field from the input description."""
         properties = {
             output_name: _schema_from_output_description(
@@ -223,10 +223,10 @@ class UIFieldMeta(pydantic.BaseModel):
         name: str,
         schema: Schema,
         required: bool | None = None,
-    ) -> "UIFieldMeta":
+    ) -> "FieldMeta":
         return _ui_field_meta_from_schema(name, schema, required=required)
 
-    def to_non_nullable(self) -> "UIFieldMeta":
+    def to_non_nullable(self) -> "FieldMeta":
         if not self.schema_.nullable:
             return self
         new_schema = self.schema_.model_copy(update={"nullable": False})
@@ -285,19 +285,19 @@ def _ui_field_meta_from_schema(
     name: str,
     schema: Schema,
     required: bool | None = None,
-) -> UIFieldMeta:
+) -> FieldMeta:
     schema_dict = _make_schema_dict(schema)
     ui_props = _extract_ui_props_from_schema_dict(schema_dict)
     required = ui_props.pop("required", required)
     children = _ui_field_meta_children_from_schema(name, schema)
-    return UIFieldMeta(
+    return FieldMeta(
         name=name, schema=schema, required=required, children=children, **ui_props
     )
 
 
 def _ui_field_meta_children_from_schema(
     name: str, schema: Schema
-) -> list[UIFieldMeta] | None:
+) -> list[FieldMeta] | None:
     if schema.type == DataType.array:
         items = schema.items
         assert items is None or isinstance(items, Schema)
@@ -327,7 +327,7 @@ def _extract_ui_props_from_schema_dict(
     schema_dict: dict[str, Any],
 ) -> dict[str, Any]:
     ui_props: dict[str, Any] = {}
-    # update properties in ui_dict by yet unset UIFieldMeta values
+    # update properties in ui_dict by yet unset FieldMeta values
     _update_ui_props_from_field_props(schema_dict, ui_props)
     # update properties in ui_dict from UI object with UI properties
     _update_ui_props_from_ui_object(schema_dict, UI_KEYS, ui_props)
@@ -339,7 +339,7 @@ def _extract_ui_props_from_schema_dict(
 def _update_ui_props_from_field_props(
     source: dict[str, Any], ui_props: dict[str, Any]
 ) -> None:
-    for name, meta in UIFieldMeta.model_fields.items():
+    for name, meta in FieldMeta.model_fields.items():
         if name in source:
             value = source[name]
             data_type = meta.annotation
@@ -370,7 +370,7 @@ def _update_ui_props_from_prefixed_ui_keys(
         ui_props.update(extras)
 
 
-def _get_initial_value(meta: UIFieldMeta) -> Any:
+def _get_initial_value(meta: FieldMeta) -> Any:
     schema = meta.schema_
     if schema.default is not None:
         return schema.default

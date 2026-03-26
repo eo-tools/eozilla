@@ -7,13 +7,14 @@ from unittest import TestCase
 import pytest
 
 from cuiman.ui import (
-    NestedObjectFactory,
-    UIField,
-    UIFieldBase,
-    UIFieldBuilder,
-    UIFieldContext,
-    UIFieldFactoryBase,
-    UIFieldMeta,
+    Field,
+    FieldBase,
+    FieldBuilder,
+    FieldContext,
+    FieldFactoryBase,
+    FieldFactoryRegistry,
+    FieldGroupFactory,
+    FieldMeta,
 )
 from cuiman.ui.vm import (
     ArrayViewModel,
@@ -40,11 +41,11 @@ from .libui import (
 # --- UI field adapter --------
 
 
-class LibuiViewAdapter(UIFieldBase):
+class LibuiViewAdapter(FieldBase):
     """A view adapter."""
 
 
-class LibuiWidgetAdapter(UIFieldBase):
+class LibuiWidgetAdapter(FieldBase):
     def _bind(self):
         def observe_vm(_e):
             self.view.value = self.view_model.value
@@ -59,11 +60,11 @@ class LibuiWidgetAdapter(UIFieldBase):
 # --- Factories for field adapters --------
 
 
-class ObjectFieldFactory(UIFieldFactoryBase):
-    def get_object_score(self, ctx: UIFieldContext) -> int:
+class ObjectFieldFactory(FieldFactoryBase):
+    def get_object_score(self, ctx: FieldContext) -> int:
         return 1
 
-    def create_object_field(self, ctx: UIFieldContext) -> UIField:
+    def create_object_field(self, ctx: FieldContext) -> Field:
         prop_fields = ctx.create_property_fields()
         view_models = {k: f.view_model for k, f in prop_fields.items()}
         view_model = ctx.vm.object(properties=view_models)
@@ -72,51 +73,51 @@ class ObjectFieldFactory(UIFieldFactoryBase):
         return LibuiViewAdapter(view_model, view=view)
 
 
-class ArrayFieldFactory(UIFieldFactoryBase):
-    def get_array_score(self, ctx: UIFieldContext) -> int:
+class ArrayFieldFactory(FieldFactoryBase):
+    def get_array_score(self, ctx: FieldContext) -> int:
         return 1
 
-    def create_array_field(self, ctx: UIFieldContext) -> UIField:
+    def create_array_field(self, ctx: FieldContext) -> Field:
         view_model = ctx.vm.array()
         view = ListEditor(value=view_model.value, label=view_model.meta.title)
         return LibuiWidgetAdapter(view_model, view=view)
 
 
-class StringFieldFactory(UIFieldFactoryBase):
-    def get_string_score(self, meta: UIFieldMeta) -> int:
+class StringFieldFactory(FieldFactoryBase):
+    def get_string_score(self, meta: FieldMeta) -> int:
         return 1
 
-    def create_string_field(self, ctx: UIFieldContext) -> UIField:
+    def create_string_field(self, ctx: FieldContext) -> Field:
         view_model = ctx.vm.primitive()
         view = TextInput(value=view_model.value, label=view_model.meta.title)
         return LibuiWidgetAdapter(view_model, view=view)
 
 
-class NumberFieldFactory(UIFieldFactoryBase):
-    def get_number_score(self, meta: UIFieldMeta) -> int:
+class NumberFieldFactory(FieldFactoryBase):
+    def get_number_score(self, meta: FieldMeta) -> int:
         return 1
 
-    def create_number_field(self, ctx: UIFieldContext) -> UIField:
+    def create_number_field(self, ctx: FieldContext) -> Field:
         view_model = ctx.vm.primitive()
         view = NumberInput(value=view_model.value, label=view_model.meta.title)
         return LibuiWidgetAdapter(view_model, view=view)
 
 
-class BooleanFieldFactory(UIFieldFactoryBase):
-    def get_boolean_score(self, meta: UIFieldMeta) -> int:
+class BooleanFieldFactory(FieldFactoryBase):
+    def get_boolean_score(self, meta: FieldMeta) -> int:
         return 1
 
-    def create_boolean_field(self, ctx: UIFieldContext) -> UIField:
+    def create_boolean_field(self, ctx: FieldContext) -> Field:
         view_model = ctx.vm.primitive()
         view = Checkbox(value=view_model.value, label=view_model.meta.title)
         return LibuiWidgetAdapter(view_model, view=view)
 
 
-class NullFieldFactory(UIFieldFactoryBase):
-    def get_nullable_score(self, meta: UIFieldMeta) -> int:
+class NullFieldFactory(FieldFactoryBase):
+    def get_nullable_score(self, meta: FieldMeta) -> int:
         return 1
 
-    def create_nullable_field(self, ctx: UIFieldContext) -> UIField:
+    def create_nullable_field(self, ctx: FieldContext) -> Field:
         non_nullable_meta = ctx.meta.to_non_nullable()
         non_nullable_field = ctx.create_child_field(non_nullable_meta)
         non_nullable_view_model = non_nullable_field.view_model
@@ -133,21 +134,22 @@ class NullFieldFactory(UIFieldFactoryBase):
 # --- UI field builder usage --------
 
 
-class UIFieldBuilderTest(TestCase):
+class FieldBuilderTest(TestCase):
     def setUp(self):
-        builder = UIFieldBuilder()
-        builder.register_factory(NullFieldFactory())
-        builder.register_factory(ObjectFieldFactory())
-        builder.register_factory(ArrayFieldFactory())
-        builder.register_factory(StringFieldFactory())
-        builder.register_factory(NumberFieldFactory())
-        builder.register_factory(BooleanFieldFactory())
+        registry = FieldFactoryRegistry()
+        registry.register(NullFieldFactory())
+        registry.register(ObjectFieldFactory())
+        registry.register(ArrayFieldFactory())
+        registry.register(StringFieldFactory())
+        registry.register(NumberFieldFactory())
+        registry.register(BooleanFieldFactory())
+        builder = FieldBuilder(registry)
         self.builder = builder
 
     def test_builder_ok(self):
         builder = self.builder
 
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "root",
             Schema(
                 **{
@@ -287,9 +289,9 @@ class UIFieldBuilderTest(TestCase):
 
     def test_builder_ok_with_layout(self):
         builder = self.builder
-        builder.register_factory(MyNestedObjectFactory())
+        builder.registry.register(MyFieldGroupFactory())
 
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "root",
             Schema(
                 **{
@@ -373,20 +375,20 @@ class UIFieldBuilderTest(TestCase):
 
     def test_builder_failing(self):
         builder = self.builder
-        meta = UIFieldMeta.from_schema("x", Schema(**{}))
+        meta = FieldMeta.from_schema("x", Schema(**{}))
         with pytest.raises(
             ValueError, match="no factory found for creating a UI for field 'x'"
         ):
             builder.create_field(meta)
 
 
-class MyNestedObjectFactory(NestedObjectFactory):
+class MyFieldGroupFactory(FieldGroupFactory):
     def create_row_field(
-        self, ctx: UIFieldContext, view_model: ViewModel, children: list[View]
-    ) -> UIField:
+        self, ctx: FieldContext, view_model: ViewModel, children: list[View]
+    ) -> Field:
         return LibuiViewAdapter(view_model=view_model, view=Row(*children))
 
     def create_column_field(
-        self, ctx: UIFieldContext, view_model: ViewModel, children: list[View]
-    ) -> UIField:
+        self, ctx: FieldContext, view_model: ViewModel, children: list[View]
+    ) -> Field:
         return LibuiViewAdapter(view_model=view_model, view=Column(*children))

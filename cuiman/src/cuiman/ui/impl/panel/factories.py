@@ -18,18 +18,11 @@ from .fields import PanelViewableField, PanelWidgetField
 from .json import JsonDateCodec
 
 
-def create_panel_ui_builder():
-    builder = cui.UIFieldBuilder()
-    builder.register_factory(PanelWidgetFieldFactory())
-    builder.register_factory(PanelListPanelFactory())
-    return builder
-
-
-class PanelWidgetFieldFactory(cui.UIFieldFactoryBase):
-    def get_object_score(self, meta: cui.UIFieldMeta) -> int:
+class PanelWidgetFieldFactory(cui.FieldFactoryBase):
+    def get_object_score(self, meta: cui.FieldMeta) -> int:
         return 1
 
-    def create_object_field(self, ctx: cui.UIFieldContext) -> cui.UIField:
+    def create_object_field(self, ctx: cui.FieldContext) -> cui.Field:
         prop_fields = ctx.create_property_fields()
         view_models = {k: f.view_model for k, f in prop_fields.items()}
         view_model = ctx.vm.object(properties=view_models)
@@ -37,10 +30,10 @@ class PanelWidgetFieldFactory(cui.UIFieldFactoryBase):
         view = pn.Column(*views, label=view_model.meta.title)
         return PanelViewableField(view_model, view=view)
 
-    def get_array_score(self, meta: cui.UIFieldMeta) -> int:
+    def get_array_score(self, meta: cui.FieldMeta) -> int:
         return 1
 
-    def create_array_field(self, ctx: cui.UIFieldContext) -> cui.UIField:
+    def create_array_field(self, ctx: cui.FieldContext) -> cui.Field:
         view_model = ctx.vm.array()
         format_ = view_model.schema.format
         if format_ is not None and format_.lower() == "bbox":
@@ -57,10 +50,10 @@ class PanelWidgetFieldFactory(cui.UIFieldFactoryBase):
         )
         return PanelWidgetField(view_model, view=view)
 
-    def get_string_score(self, meta: cui.UIFieldMeta) -> int:
+    def get_string_score(self, meta: cui.FieldMeta) -> int:
         return 1
 
-    def create_string_field(self, ctx: cui.UIFieldContext) -> cui.UIField:
+    def create_string_field(self, ctx: cui.FieldContext) -> cui.Field:
         view_model = ctx.vm.primitive()
         value = view_model.value
         label = view_model.meta.title
@@ -96,22 +89,22 @@ class PanelWidgetFieldFactory(cui.UIFieldFactoryBase):
             ),
         )
 
-    def get_integer_score(self, meta: cui.UIFieldMeta) -> int:
+    def get_integer_score(self, meta: cui.FieldMeta) -> int:
         return 1
 
-    def get_number_score(self, meta: cui.UIFieldMeta) -> int:
+    def get_number_score(self, meta: cui.FieldMeta) -> int:
         return 1
 
-    def create_integer_field(self, ctx: cui.UIFieldContext) -> cui.UIField:
+    def create_integer_field(self, ctx: cui.FieldContext) -> cui.Field:
         return self._create_numeric_field(ctx, is_int=True)
 
-    def create_number_field(self, ctx: cui.UIFieldContext) -> cui.UIField:
+    def create_number_field(self, ctx: cui.FieldContext) -> cui.Field:
         return self._create_numeric_field(ctx)
 
     @classmethod
     def _create_numeric_field(
-        cls, ctx: cui.UIFieldContext, *, is_int: bool | None = None
-    ) -> cui.UIField:
+        cls, ctx: cui.FieldContext, *, is_int: bool | None = None
+    ) -> cui.Field:
         view_model = ctx.vm.primitive()
         value = view_model.value
         title = view_model.meta.title
@@ -162,10 +155,10 @@ class PanelWidgetFieldFactory(cui.UIFieldFactoryBase):
             view_model, view=input_cls(name=title, value=value, description=description)
         )
 
-    def get_boolean_score(self, _meta: cui.UIFieldMeta) -> int:
+    def get_boolean_score(self, _meta: cui.FieldMeta) -> int:
         return 1
 
-    def create_boolean_field(self, ctx: cui.UIFieldContext) -> cui.UIField:
+    def create_boolean_field(self, ctx: cui.FieldContext) -> cui.Field:
         view_model = ctx.vm.primitive()
         if view_model.meta.widget == "switch":
             view = pn.widgets.Switch(value=view_model.value, name=view_model.meta.title)
@@ -175,10 +168,10 @@ class PanelWidgetFieldFactory(cui.UIFieldFactoryBase):
             )
         return PanelWidgetField(view_model, view=view)
 
-    def get_nullable_score(self, meta: cui.UIFieldMeta) -> int:
+    def get_nullable_score(self, meta: cui.FieldMeta) -> int:
         return 1
 
-    def create_nullable_field(self, ctx: cui.UIFieldContext) -> cui.UIField:
+    def create_nullable_field(self, ctx: cui.FieldContext) -> cui.Field:
         non_nullable_meta = ctx.meta.to_non_nullable()
         non_nullable_field = ctx.create_child_field(non_nullable_meta)
         view_model = ctx.vm.nullable(
@@ -194,19 +187,19 @@ class PanelWidgetFieldFactory(cui.UIFieldFactoryBase):
         )
 
 
-class PanelListPanelFactory(cui.NestedObjectFactory):
+class PanelListPanelFactory(cui.FieldGroupFactory):
     def create_row_field(
         self,
-        ctx: cui.UIFieldContext,
+        ctx: cui.FieldContext,
         view_model: cvm.ViewModel,
         children: list[param.Parameterized],
-    ) -> cui.UIField:
+    ) -> cui.Field:
         return PanelViewableField(view_model=view_model, view=pn.Row(*children))
 
     def create_column_field(
         self,
-        ctx: cui.UIFieldContext,
+        ctx: cui.FieldContext,
         view_model: cvm.ViewModel,
         children: list[param.Parameterized],
-    ) -> cui.UIField:
+    ) -> cui.Field:
         return PanelViewableField(view_model=view_model, view=pn.Column(*children))

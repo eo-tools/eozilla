@@ -5,21 +5,21 @@
 from unittest import TestCase
 
 from cuiman.ui import (
-    UIFieldBase,
-    UIFieldMeta,
+    FieldBase,
+    FieldMeta,
 )
 from cuiman.ui.vm import PrimitiveViewModel
 from gavicore.models import Schema
 
 
-class MyField(UIFieldBase):
+class MyField(FieldBase):
     def _bind(self) -> None:
         self.bound = True
 
 
-class UIFieldBaseTest(TestCase):
+class FieldBaseTest(TestCase):
     def test_builder(self):
-        meta = UIFieldMeta.from_schema(
+        meta = FieldMeta.from_schema(
             "threshold",
             Schema(
                 **{

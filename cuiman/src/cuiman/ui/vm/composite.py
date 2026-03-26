@@ -7,7 +7,7 @@ from typing import Any, Generic, TypeVar
 
 from gavicore.util.undefined import UNDEFINED, UndefinedType
 
-from ..field.meta import UIFieldMeta
+from ..field.meta import FieldMeta
 from .base import ViewModel, ViewModelChangeEvent
 
 K = TypeVar("K", str, int)
@@ -22,7 +22,7 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
 
     def __init__(
         self,
-        meta: UIFieldMeta,
+        meta: FieldMeta,
         composite_type: type[T],
         value: T | UndefinedType,
     ):
@@ -72,7 +72,7 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
     def __setitem__(self, key: K, value: Any) -> None:
         """Set item by key and value."""
 
-    def _create_child(self, child_meta: UIFieldMeta, child_value: Any) -> ViewModel:
+    def _create_child(self, child_meta: FieldMeta, child_value: Any) -> ViewModel:
         child_vm = self.create(child_meta, value=child_value)
         child_vm.watch(self._on_child_change)
         return child_vm
@@ -84,7 +84,7 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
     @classmethod
     def _assert_value_is_valid(
         cls,
-        meta: UIFieldMeta,
+        meta: FieldMeta,
         composite_type: type[T],
         value: Any | UndefinedType,
     ) -> None:

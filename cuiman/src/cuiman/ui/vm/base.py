@@ -12,7 +12,7 @@ from bokeh.core.property.singletons import UndefinedType
 from gavicore.models import DataType, Schema
 from gavicore.util.undefined import UNDEFINED
 
-from ..field.meta import UIFieldMeta
+from ..field.meta import FieldMeta
 
 
 class ViewModelChangeEvent:
@@ -38,16 +38,16 @@ T = TypeVar("T")
 class ViewModel(Generic[T], ABC):
     """Abstract base class for all view models."""
 
-    def __init__(self, meta: UIFieldMeta):
+    def __init__(self, meta: FieldMeta):
         """Base class constructor."""
-        if not isinstance(meta, UIFieldMeta):
-            raise TypeError(f"meta must have type {UIFieldMeta.__name__}")
+        if not isinstance(meta, FieldMeta):
+            raise TypeError(f"meta must have type {FieldMeta.__name__}")
         self._meta = meta
         self._observers: set[ViewModelObserver] = set()
 
     @classmethod
     def create(
-        cls, meta: UIFieldMeta, *, value: Any | UndefinedType = UNDEFINED
+        cls, meta: FieldMeta, *, value: Any | UndefinedType = UNDEFINED
     ) -> "ViewModel":
         """
         Create a new view model instance for the given field metadata
@@ -78,7 +78,7 @@ class ViewModel(Generic[T], ABC):
         raise ValueError(f"missing type in schema for field {meta.name!r}")
 
     @property
-    def meta(self) -> UIFieldMeta:
+    def meta(self) -> FieldMeta:
         """The field's metadata."""
         return self._meta
 

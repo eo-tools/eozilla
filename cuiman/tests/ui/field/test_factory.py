@@ -7,41 +7,41 @@ from unittest import TestCase
 import pytest
 
 from cuiman.ui import (
-    UIFieldBase,
-    UIFieldBuilder,
-    UIFieldContext,
-    UIFieldFactoryBase,
-    UIFieldMeta,
+    FieldBase,
+    FieldBuilder,
+    FieldContext,
+    FieldFactoryBase,
+    FieldMeta,
 )
 from gavicore.models import Schema
 
 
-class MyField(UIFieldBase):
+class MyField(FieldBase):
     def _bind(self) -> None:
         pass
 
 
-class MyFieldFactory(UIFieldFactoryBase):
+class MyFieldFactory(FieldFactoryBase):
     pass
 
 
-def make_ctx(meta: UIFieldMeta):
-    builder = UIFieldBuilder()
-    return UIFieldContext(builder=builder, meta=meta)
+def make_ctx(meta: FieldMeta):
+    builder = FieldBuilder()
+    return FieldContext(builder=builder, meta=meta)
 
 
-class UIFieldFactoryBaseTest(TestCase):
+class FieldFactoryBaseTest(TestCase):
     factory = MyFieldFactory()
-    meta_nullable = UIFieldMeta.from_schema(
+    meta_nullable = FieldMeta.from_schema(
         "x", Schema(**{"type": "array", "nullable": True})
     )
-    meta_object = UIFieldMeta.from_schema("x", Schema(**{"type": "object"}))
-    meta_array = UIFieldMeta.from_schema("x", Schema(**{"type": "array"}))
-    meta_string = UIFieldMeta.from_schema("x", Schema(**{"type": "string"}))
-    meta_number = UIFieldMeta.from_schema("x", Schema(**{"type": "number"}))
-    meta_integer = UIFieldMeta.from_schema("x", Schema(**{"type": "integer"}))
-    meta_boolean = UIFieldMeta.from_schema("x", Schema(**{"type": "boolean"}))
-    meta_untyped = UIFieldMeta.from_schema("x", Schema(**{}))
+    meta_object = FieldMeta.from_schema("x", Schema(**{"type": "object"}))
+    meta_array = FieldMeta.from_schema("x", Schema(**{"type": "array"}))
+    meta_string = FieldMeta.from_schema("x", Schema(**{"type": "string"}))
+    meta_number = FieldMeta.from_schema("x", Schema(**{"type": "number"}))
+    meta_integer = FieldMeta.from_schema("x", Schema(**{"type": "integer"}))
+    meta_boolean = FieldMeta.from_schema("x", Schema(**{"type": "boolean"}))
+    meta_untyped = FieldMeta.from_schema("x", Schema(**{}))
 
     def test_get_score(self):
         f = self.factory

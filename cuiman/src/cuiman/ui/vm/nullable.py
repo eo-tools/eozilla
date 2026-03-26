@@ -6,7 +6,7 @@ from typing import Any, Generic, TypeVar
 
 from gavicore.util.undefined import UNDEFINED, UndefinedType
 
-from ..field.meta import UIFieldMeta
+from ..field.meta import FieldMeta
 from .base import ViewModel, ViewModelChangeEvent
 
 K = TypeVar("K", bound=str | int)
@@ -21,7 +21,7 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
 
     def __init__(
         self,
-        meta: UIFieldMeta,
+        meta: FieldMeta,
         *,
         value: Any | UndefinedType = UNDEFINED,
         inner: ViewModel[T] | None = None,

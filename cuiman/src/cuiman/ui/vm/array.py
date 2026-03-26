@@ -6,7 +6,7 @@ from typing import Any
 
 from gavicore.util.undefined import UNDEFINED, UndefinedType
 
-from ..field.meta import UIFieldMeta
+from ..field.meta import FieldMeta
 from .base import ViewModel
 from .composite import CompositeViewModel
 
@@ -16,7 +16,7 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
     A view model for a non-nullable, growable, sparse array value.
     """
 
-    def __init__(self, meta: UIFieldMeta, *, value: Any | UndefinedType = UNDEFINED):
+    def __init__(self, meta: FieldMeta, *, value: Any | UndefinedType = UNDEFINED):
         super().__init__(meta, list, value)
         self._item_meta = meta.item
         # initialize item view models
