@@ -11,8 +11,8 @@ import param
 import cuiman.ui as cui
 import cuiman.ui.vm as cvm
 
-from .extras.bbox import BBoxEditor
 from .extras.array import ArrayEditor
+from .extras.bbox import BBoxEditor
 from .extras.nullable import NullableWidget
 from .fields import PanelViewableField, PanelWidgetField
 from .json import JsonDateCodec
@@ -26,7 +26,7 @@ def create_panel_ui_builder():
 
 
 class PanelWidgetFieldFactory(cui.UIFieldFactoryBase):
-    def get_object_score(self, ctx: cui.UIFieldContext) -> int:
+    def get_object_score(self, meta: cui.UIFieldMeta) -> int:
         return 1
 
     def create_object_field(self, ctx: cui.UIFieldContext) -> cui.UIField:
@@ -37,13 +37,13 @@ class PanelWidgetFieldFactory(cui.UIFieldFactoryBase):
         view = pn.Column(*views, label=view_model.meta.title)
         return PanelViewableField(view_model, view=view)
 
-    def get_array_score(self, ctx: cui.UIFieldContext) -> int:
+    def get_array_score(self, meta: cui.UIFieldMeta) -> int:
         return 1
 
     def create_array_field(self, ctx: cui.UIFieldContext) -> cui.UIField:
         view_model = ctx.vm.array()
         format_ = view_model.schema.format
-        if format_.lower() == "bbox":
+        if format_ is not None and format_.lower() == "bbox":
             # TODO: this cannot work yet
             return PanelWidgetField(view_model, view=BBoxEditor())
 
@@ -63,8 +63,8 @@ class PanelWidgetFieldFactory(cui.UIFieldFactoryBase):
     def create_string_field(self, ctx: cui.UIFieldContext) -> cui.UIField:
         view_model = ctx.vm.primitive()
         value = view_model.value
-        schema = view_model.schema
         label = view_model.meta.title
+        enum = view_model.meta.enum
         description = view_model.meta.description
         format_ = view_model.schema.format
         if format_ == "date":
@@ -77,13 +77,13 @@ class PanelWidgetFieldFactory(cui.UIFieldFactoryBase):
                 ),
                 json_codec=json_codec,
             )
-        if "enum" in schema:
+        if enum is not None:
             return PanelWidgetField(
                 view_model,
                 view=(
                     pn.widgets.Select(
                         name=label,
-                        options=schema["enum"],
+                        options=enum,
                         value=value,
                         description=description,
                     )

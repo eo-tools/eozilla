@@ -2,9 +2,10 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from typing import Callable, Generic, Optional, TypeVar
+
 import panel as pn
 import param
-from typing import Callable, Generic, TypeVar, Optional
 
 # TODO: This is AI-generated. Verify & test!
 

@@ -6,7 +6,7 @@ from .array import ArrayViewModel
 from .base import ViewModel, ViewModelChangeEvent, ViewModelObserver
 from .composite import CompositeViewModel
 from .nullable import NullableViewModel
-from .object import ObjectViewModel, DynamicObjectViewModel
+from .object import DynamicObjectViewModel, ObjectViewModel
 from .primitive import PrimitiveViewModel
 
 __all__ = [

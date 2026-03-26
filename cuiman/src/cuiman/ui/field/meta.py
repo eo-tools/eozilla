@@ -5,7 +5,7 @@
 import re
 from typing import Any, Literal, TypeAlias, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+import pydantic
 
 from gavicore.models import (
     DataType,
@@ -31,7 +31,7 @@ UIFieldWidget: TypeAlias = Literal[
 ]
 
 
-class UIFieldGroup(BaseModel):
+class UIFieldGroup(pydantic.BaseModel):
     """Definition of a group of complex UI components.
 
     Example:
@@ -67,7 +67,7 @@ class UIFieldGroup(BaseModel):
 UIFieldLayout: TypeAlias = UIFieldGroup | Literal["column", "row"]
 
 
-class UIFieldMeta(BaseModel):
+class UIFieldMeta(pydantic.BaseModel):
     """Metadata used to generate a GUI field like a widget or panel.
 
     The properties of instances of this class have been collected
@@ -102,14 +102,14 @@ class UIFieldMeta(BaseModel):
     - [from_schema][from_schema]
     """
 
-    model_config = ConfigDict(
+    model_config = pydantic.ConfigDict(
         extra="allow",
     )
 
     # --- required
 
     name: str
-    schema_: Schema = Field(..., alias="schema")
+    schema_: Schema = pydantic.Field(..., alias="schema")
 
     # --- optional
 
@@ -137,7 +137,7 @@ class UIFieldMeta(BaseModel):
     # They may be overridden and will be used in the UI instead.
     minimum: int | float | None = None
     maximum: int | float | None = None
-    # enum: list[Any] | None = None
+    enum: list[Any] | None = None
     # default: Any | None = None
     # nullable: bool | None = None
 
