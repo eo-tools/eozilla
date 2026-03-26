@@ -26,13 +26,15 @@ class ServiceException(HTTPException):
             status=status_code,
             title=HTTPStatus(status_code).phrase,
             detail=detail,
-            traceback=(
-                traceback.format_exception(
-                    type(exception), exception, exception.__traceback__
+            **{
+                "x-traceback": (
+                    traceback.format_exception(
+                        type(exception), exception, exception.__traceback__
+                    )
+                    if exception is not None
+                    else None
                 )
-                if exception is not None
-                else None
-            ),
+            },
         )
 
 

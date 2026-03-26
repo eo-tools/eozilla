@@ -7,7 +7,7 @@ from typing import Any
 from cuiman import ClientError
 from cuiman.gui.jobs_event_bus import JobsEventBus
 from cuiman.gui.jobs_observer import JobsObserver
-from gavicore.models import ApiError, JobInfo, JobList, JobStatus, JobType
+from gavicore.models import ApiError, JobInfo, JobList, JobStatus
 
 client_error = ClientError("Argh!", ApiError(**{"type": "server"}))
 
@@ -48,8 +48,8 @@ def test_job_added():
     obs = MyJobsObserver()
     bus.register(obs)
 
-    job_1 = JobInfo(type=JobType.process, jobID="1", status=JobStatus.accepted)
-    job_2 = JobInfo(type=JobType.process, jobID="2", status=JobStatus.running)
+    job_1 = JobInfo(jobID="1", status=JobStatus.accepted)
+    job_2 = JobInfo(jobID="2", status=JobStatus.running)
     job_list = JobList(jobs=[job_1, job_2], links=[])
     # noinspection PyTypeChecker
     bus.poll(ClientMock(job_list))
@@ -70,13 +70,13 @@ def test_job_changed():
     obs = MyJobsObserver()
     bus.register(obs)
 
-    job_1 = JobInfo(type=JobType.process, jobID="1", status=JobStatus.accepted)
-    job_2a = JobInfo(type=JobType.process, jobID="2", status=JobStatus.running)
+    job_1 = JobInfo(jobID="1", status=JobStatus.accepted)
+    job_2a = JobInfo(jobID="2", status=JobStatus.running)
     job_list_1 = JobList(jobs=[job_1, job_2a], links=[])
     # noinspection PyTypeChecker
     bus.poll(ClientMock(job_list_1))
 
-    job_2b = JobInfo(type=JobType.process, jobID="2", status=JobStatus.successful)
+    job_2b = JobInfo(jobID="2", status=JobStatus.successful)
     job_list_2 = JobList(jobs=[job_1, job_2b], links=[])
     # noinspection PyTypeChecker
     bus.poll(ClientMock(job_list_2))
@@ -99,8 +99,8 @@ def test_job_removed():
     obs = MyJobsObserver()
     bus.register(obs)
 
-    job_1 = JobInfo(type=JobType.process, jobID="1", status=JobStatus.accepted)
-    job_2 = JobInfo(type=JobType.process, jobID="2", status=JobStatus.running)
+    job_1 = JobInfo(jobID="1", status=JobStatus.accepted)
+    job_2 = JobInfo(jobID="2", status=JobStatus.running)
     job_list_1 = JobList(jobs=[job_1, job_2], links=[])
     # noinspection PyTypeChecker
     bus.poll(ClientMock(job_list_1))
@@ -143,8 +143,8 @@ def test_error_in_observer():
     obs = MyJobsObserverWithError()
     bus.register(obs)
 
-    job_1 = JobInfo(type=JobType.process, jobID="1", status=JobStatus.accepted)
-    job_2 = JobInfo(type=JobType.process, jobID="2", status=JobStatus.successful)
+    job_1 = JobInfo(jobID="1", status=JobStatus.accepted)
+    job_2 = JobInfo(jobID="2", status=JobStatus.successful)
     job_list = JobList(jobs=[job_1, job_2], links=[])
     # noinspection PyTypeChecker
     bus.poll(ClientMock(job_list))

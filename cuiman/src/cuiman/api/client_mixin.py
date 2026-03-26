@@ -2,11 +2,25 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import time
 from abc import ABC, abstractmethod
 from typing import Any
 
-from gavicore.models import ProcessDescription
+from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
 from gavicore.util.request import ExecutionRequest
+from gavicore.util.runsync import run_sync
+
+from .config import ClientConfig
+from .defaults import (
+    DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
+    DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
+)
+from .opener import JobResultOpenContext, JobResultStatusError
+from .opener.opener import open_job_result
+
+# -----------------------------------------------------
+# IMPORTANT: Sync changes here with AsyncClientMixin!
+# -----------------------------------------------------
 
 
 # noinspection PyShadowingBuiltins
@@ -15,8 +29,21 @@ class ClientMixin(ABC):
     Extra methods for the API client (synchronous mode).
     """
 
+    @property
+    @abstractmethod
+    def config(self) -> ClientConfig:
+        """Will be overridden by the actual client class."""
+
     @abstractmethod
     def get_process(self, process_id: str, **kwargs: Any) -> ProcessDescription:
+        """Will be overridden by the actual client class."""
+
+    @abstractmethod
+    def get_job(self, job_id: str, **kwargs: Any) -> JobInfo:
+        """Will be overridden by the actual client class."""
+
+    @abstractmethod
+    def get_job_results(self, job_id: str, **kwargs: Any) -> JobResults:
         """Will be overridden by the actual client class."""
 
     def create_execution_request(
@@ -38,9 +65,74 @@ class ClientMixin(ABC):
             The execution request template.
 
         Raises:
-            ClientError: if an error occurs
+            ClientError: if an API error occurs
         """
         process_description = self.get_process(process_id)
         return ExecutionRequest.from_process_description(
             process_description, dotpath=dotpath
         )
+
+    def open_job_result(
+        self,
+        job_id: str,
+        output_name: str | None = None,
+        data_type: type | None = None,
+        media_type: str | None = None,
+        poll_interval: float = DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
+        timeout: float = DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
+        **options: Any,
+    ) -> Any:
+        """Open the results of the job given by its ID.
+
+        Args:
+            job_id: the job ID
+            output_name: the name of the output to be opened.
+            data_type: the expected/desired data type to be returned.
+                If provided, the return value will be of that type.
+                If not provided, the return value will be the type
+                decided by the opener.
+            media_type: the media type of the output produced.
+                Only needed, if the output does not provide its
+                media type or if its media type should be overridden.
+            poll_interval: interval in seconds between job status polls.
+                Applies while job status is still "accepted" or "running".
+            timeout: maximum time in seconds to wait for job completion.
+            options: additional opener-specific options.
+
+        Returns:
+            The job result value.
+
+        Raises:
+            ClientError: if an API error occurs
+            JobResultOpenError: if an opener error occurs
+            JobResultStatusError: if the job failed or was canceled
+            TimeoutError: if the job does not finish within the timeout
+        """
+        deadline = time.time() + timeout
+        while True:
+            job_info = self.get_job(job_id)
+            if job_info.status not in (JobStatus.accepted, JobStatus.running):
+                break
+            if time.time() >= deadline:
+                raise TimeoutError(
+                    f"Cannot open result of job #{job_id}; "
+                    f"it did not finish within {timeout} seconds"
+                )
+            time.sleep(poll_interval)
+        if job_info.status != JobStatus.successful:
+            raise JobResultStatusError(job_info)
+        job_results = self.get_job_results(job_id)
+        process_description = (
+            self.get_process(job_info.processID) if job_info.processID else None
+        )
+        ctx = JobResultOpenContext(
+            config=self.config,
+            job_id=job_id,
+            job_results=job_results,
+            process_description=process_description,
+            output_name=output_name,
+            data_type=data_type,
+            _media_type=media_type,
+            options=options,
+        )
+        return run_sync(open_job_result, ctx, *self.config.opener_registry.opener_types)
