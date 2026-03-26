@@ -13,8 +13,13 @@ if TYPE_CHECKING:
 class FieldFactoryRegistry:
     """A registry of field factories."""
 
-    def __init__(self):
-        self._factories = set()
+    def __init__(self, *factories: "FieldFactory"):
+        self._factories = set(factories)
+
+    @property
+    def factories(self) -> set["FieldFactory"]:
+        """The factories registered in this registry."""
+        return set(self._factories)
 
     def register(self, factory: "FieldFactory") -> Callable[[], None]:
         """Register a given factory."""
@@ -31,10 +36,10 @@ class FieldFactoryRegistry:
 
     def find(self, meta: FieldMeta) -> "FieldFactory | None":
         """Find a factory for the given field metadata."""
-        max_score = 0
+        max_score: int = 0
         best_factory: FieldFactory | None = None
         for f in self._factories:
-            s = f.get_score(meta)
+            s = max(0, f.get_score(meta))
             if s > max_score:
                 max_score = s
                 best_factory = f
