@@ -11,15 +11,23 @@ from .context import FieldContext
 from .meta import FieldMeta
 from .registry import FieldFactoryRegistry
 
+# Note: `FieldBuilder` could implement `FieldFactoryRegistry`, but then we must
+# change the factory method support the `initial_value` kwarg:
+#     def create_field(
+#           self,
+#           meta: FieldMeta,
+#           initial_value: Any | UndefinedType = UNDEFINED,
+#     ) -> Field: ...
+
 
 class FieldBuilder:
     """A builder for UI fields."""
 
-    def __init__(self, registry: "FieldFactoryRegistry | None" = None):
+    def __init__(self, registry: FieldFactoryRegistry | None = None):
         self._registry = registry if registry is not None else FieldFactoryRegistry()
 
     @property
-    def registry(self) -> "FieldFactoryRegistry":
+    def registry(self) -> FieldFactoryRegistry:
         return self._registry
 
     def create_field(
@@ -27,17 +35,15 @@ class FieldBuilder:
         meta: FieldMeta,
         initial_value: Any | UndefinedType = UNDEFINED,
     ) -> Field:
-        from .context import FieldContext
-
         ctx = FieldContext(
             builder=self,
             meta=meta,
             initial_value=initial_value,
             parent_ctx=None,
         )
-        return self.create_field_for_ctx(ctx)
+        return self._create_field(ctx)
 
-    def create_field_for_ctx(self, ctx: "FieldContext") -> Field:
+    def _create_field(self, ctx: "FieldContext") -> Field:
         factory = self._registry.find(ctx.meta)
         if factory is None:
             raise ValueError(

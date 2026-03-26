@@ -83,7 +83,8 @@ class FieldContext:
     def create_child_field(self, child_meta: FieldMeta) -> Field:
         """Create a new field for the given field metadata."""
         child_ctx = self._create_child_ctx(child_meta)
-        return self._builder.create_field_for_ctx(child_ctx)
+        # noinspection PyProtectedMember
+        return self._builder._create_field(child_ctx)
 
     def _create_child_ctx(self, child_meta: FieldMeta) -> "FieldContext":
         initial_value = self.initial_value
