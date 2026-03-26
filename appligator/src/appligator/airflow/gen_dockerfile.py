@@ -9,7 +9,7 @@ from pathlib import Path
 if sys.version_info >= (3, 11):
     import tomllib
 else:
-    import tomli as tomllib  # type: ignore[no-retyped-def]
+    import tomli as tomllib  # type: ignore[no-retyped-def]  # pragma: no cover
 
 from jinja2 import Environment, PackageLoader
 
