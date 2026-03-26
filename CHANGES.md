@@ -2,7 +2,12 @@
 
 ### Enhancements
 
-
+- Added `appligator.airflow.gen_dockerfile.generate` for Jinja2-template-based
+  Dockerfile generation. Produces a two-stage pixi build with support for
+  non-editable local package installs. 
+- Updated `appligator.airflow.run_step` with `coerce_inputs` (casts Airflow
+  Jinja string params to their declared types) and `_XComEncoder` (serialises
+  Pydantic models and other non-JSON-native objects for XCom output).
 
 ## Changes in version 0.0.9
 
