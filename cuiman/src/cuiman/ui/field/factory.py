@@ -151,17 +151,20 @@ class FieldGroupFactory(FieldFactory):
     A convenient base class for UI field factories that can create
     container UI fields like panels that align their items
     either in a row or column using the [meta.layout][FieldMeta.layout]
-    property. The factory applies to fields of data type "object".
+    property. The factory applies only to fields
+
+    - of data type "object" and
+    - that have a defined [meta.layout][FieldMeta.layout].
     """
 
     def get_score(self, meta: FieldMeta) -> int:
         """
-        Compute the score. Will return 0 for all fields except of type "object".
-        Will return 10 if the meta's layout is specified, otherwise 1.
+        Compute the score: Will return 10 for fields of type "object"
+        and (!) a specified layout, otherwise 0.
         """
-        if meta.schema_.type != DataType.object:
+        if meta.schema_.type != DataType.object or meta.layout is None:
             return 0
-        return 10 if meta.layout is not None else 1
+        return 10
 
     def create_field(self, ctx: FieldContext) -> Field:
         """
