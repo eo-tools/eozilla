@@ -4,7 +4,8 @@
 
 
 from cuiman.ui import FieldBuilder, FieldFactoryRegistry
-from .factories import PanelWidgetFieldFactory, PanelListPanelFactory
+
+from .factories import PanelListPanelFactory, PanelWidgetFieldFactory
 
 
 def create_field_builder() -> FieldBuilder:
