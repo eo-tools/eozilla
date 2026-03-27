@@ -132,18 +132,20 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
             and isinstance(maximum, (int, float))
             and minimum < maximum
         ):
+            step: int | float = pow(10.0, int(math.log10(maximum - minimum)) - 1.0)
             if is_int:
                 slider_cls = pn.widgets.IntSlider
+                step = round(step)
             else:
                 slider_cls = pn.widgets.FloatSlider
             return PanelWidgetField(
                 view_model,
                 view=slider_cls(
                     name=label,
+                    value=value,
                     start=minimum,
                     end=maximum,
-                    value=value,
-                    step=pow(10.0, int(math.log10(maximum - minimum)) - 1.0),
+                    step=step,
                 ),
             )
 

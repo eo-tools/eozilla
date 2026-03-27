@@ -1,0 +1,7 @@
+type: object
+properties:
+  checkbox:
+    type: boolean
+  switch:
+    type: boolean
+    "x-ui:widget": "switch"

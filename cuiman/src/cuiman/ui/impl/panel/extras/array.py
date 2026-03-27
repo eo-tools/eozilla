@@ -1,11 +1,12 @@
 #  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-
-from typing import Callable, Generic, Optional, TypeVar
+from abc import ABC, abstractmethod
+from typing import Callable, Optional, Any, Generic, TypeVar
 
 import panel as pn
 import param
+
 
 # TODO: This is AI-generated. Verify & test!
 
@@ -14,21 +15,91 @@ pn.extension()
 T = TypeVar("T")
 
 
-class ArrayEditor(pn.widgets.Widget, Generic[T]):
+# noinspection PyMethodMayBeStatic
+class ArrayTextConverter(Generic[T], ABC):
+    @abstractmethod
+    def parse_item(self, value: str) -> T:
+        """Parse a value from text."""
+
+    def format_item(self, value: T) -> str:
+        """Format a value into text."""
+        return str(value)
+
+    def parse_array(self, text: str, sep: str = ",") -> list[T]:
+        parts = [p.strip() for p in " ".join(text.split("\n")).split(sep)]
+        value: list = []
+        for i, p in enumerate(parts):
+            try:
+                v = self.parse_item(p)
+            except (TypeError, ValueError) as e:
+                raise ValueError(f"Invalid array item {i + 1}.") from e
+            value.extend(v)
+        return value
+
+    def format_array(self, value: list[T], sep: str = ",") -> str:
+        sep_ = f"{sep} " if sep and not sep.isspace() else (sep if sep else " ")
+        return sep_.join(self.format_item(v) for v in value)
+
+
+class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
     value = param.List(default=[])
 
     def __init__(
         self,
-        value: list[T],
-        value_factory: Callable[[], T],
-        item_editor: pn.widgets.Widget,
+        value: list,
+        converter: ArrayTextConverter,
+        separator: str = ",",
+        name: str = "",
+        **params,
+    ):
+        super().__init__(name="", **params)
+
+        self.value = value
+        self._converter = converter
+        self._separator = separator
+
+        # --- UI components
+
+        initial_text = converter.format_array(value)
+        self._text = pn.widgets.TextAreaInput(
+            value=initial_text, cols=16, rows=1, name=name
+        )
+        self._text.param.watch(self._on_text_value_change, "value")
+
+        # --- value <-> internal
+
+    def _on_text_value_change(self, event):
+        assert isinstance(event.new, str)
+        text = event.new
+        try:
+            value = self._converter.parse_array(text, sep=self._separator)
+            if value != self.value:
+                self.value = value
+        except ValueError as e:
+            self.error_message = f"{e}."
+
+    # --- rendering
+
+    def __panel__(self):
+        return self._text
+
+
+# TODO: This is an experimental construction site. Don't use ArrayEditor yet.
+class ArrayEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
+    value = param.List(default=[])
+
+    def __init__(
+        self,
+        value: list,
+        value_factory: Callable[[], Any],
+        item_editor: pn.widgets.WidgetBase,
         **params,
     ):
         super().__init__(**params)
 
         self.value = value
         self._value_factory = value_factory
-        self._editor = item_editor
+        self._item_editor = item_editor
 
         self._selected_index: Optional[int] = None
 
@@ -57,7 +128,7 @@ class ArrayEditor(pn.widgets.Widget, Generic[T]):
         )
 
         right = pn.Column(
-            self._editor,
+            self._item_editor,
             self._apply_btn,
         )
 
@@ -82,7 +153,7 @@ class ArrayEditor(pn.widgets.Widget, Generic[T]):
     def _on_select(self, event):
         self._selected_index = event.new
         if self._selected_index is not None:
-            self._editor.value = self.value[self._selected_index]
+            self._item_editor.value = self.value[self._selected_index]
 
     # --- actions
 
@@ -106,7 +177,7 @@ class ArrayEditor(pn.widgets.Widget, Generic[T]):
             return
 
         updated = list(self.value)
-        updated[self._selected_index] = self._editor.value
+        updated[self._selected_index] = self._item_editor.value
         self.value = updated
 
     # --- rendering

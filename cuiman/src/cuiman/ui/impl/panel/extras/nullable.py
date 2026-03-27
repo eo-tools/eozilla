@@ -10,7 +10,7 @@ import param
 pn.extension()
 
 
-class NullableWidget(pn.widgets.Widget):
+class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
     """A widget that provides a UI for values that can be null."""
 
     value = param.Parameter(default=None, allow_None=True)
@@ -18,8 +18,13 @@ class NullableWidget(pn.widgets.Widget):
     def __init__(self, inner: pn.widgets.Widget, **params):
         super().__init__(**params)
 
+        self._toggle = pn.widgets.Switch(
+            name=inner.name,
+            value=self.value is not None,
+            styles={"margin-bottom": "0px"},
+        )
         self._inner = inner
-        self._toggle = pn.widgets.Switch(name="", value=self.value is not None)
+        self._inner.name = ""
 
         # --- init inner value if needed
         if self.value is not None:
@@ -64,4 +69,4 @@ class NullableWidget(pn.widgets.Widget):
 
     # --- Panel rendering hook
     def __panel__(self):
-        return pn.Column(self._toggle, self._inner)
+        return pn.Column(self._toggle, self._inner, styles={"gap": "0px"})

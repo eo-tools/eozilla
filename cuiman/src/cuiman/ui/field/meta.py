@@ -105,6 +105,7 @@ class FieldMeta(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(
         extra="allow",
+        validate_assignment=True,
     )
 
     # --- required
@@ -337,7 +338,7 @@ def _extract_ui_props_from_schema_dict(
 ) -> dict[str, Any]:
     ui_props: dict[str, Any] = {}
     # update properties in ui_dict by yet unset FieldMeta values
-    _update_ui_props_from_field_props(schema_dict, ui_props)
+    _update_ui_props_from_schema_props(schema_dict, ui_props)
     # update properties in ui_dict from UI object with UI properties
     _update_ui_props_from_ui_object(schema_dict, UI_KEYS, ui_props)
     # update properties in ui_dict from values of prefixed UI properties
@@ -345,17 +346,20 @@ def _extract_ui_props_from_schema_dict(
     return ui_props
 
 
-def _update_ui_props_from_field_props(
+_VALIDATION_META = FieldMeta(name="validation_meta", schema=Schema(**{}))
+
+
+def _update_ui_props_from_schema_props(
     source: dict[str, Any], ui_props: dict[str, Any]
 ) -> None:
-    for name, meta in FieldMeta.model_fields.items():
-        if name in source:
-            value = source[name]
-            data_type = meta.annotation
-            # Note, the following guard prevents assigning values of
-            # unexpected type (e.g. "required" of type bool vs. list[str])
-            # This my become an issue if we start using non-primitive types.
-            if data_type is not None and isinstance(value, data_type):
+    for name, value in source.items():
+        if name in FieldMeta.model_fields:
+            valid = True
+            try:
+                setattr(_VALIDATION_META, name, value)
+            except (TypeError, ValueError):
+                valid = False
+            if valid:
                 ui_props[name] = value
 
 

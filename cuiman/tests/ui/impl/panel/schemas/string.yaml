@@ -1,4 +1,11 @@
 type: object
 properties:
-  input:
+  plain:
     type: string
+    format: date
+  date:
+    type: string
+    format: date
+  text_block:
+    type: string
+    "x-ui:widget": "textarea"

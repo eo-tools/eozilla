@@ -3,17 +3,17 @@ properties:
   input_1:
     title: "Required"
     type: string
-  input_2:
-    title: "Not required"
-    type: string
   input_3:
-    title: "Nullable"
+    title: "Required + Nullable "
     type: string
     nullable: true
+  input_2:
+    title: "Optional"
+    type: string
   input_4:
-    title: "Nullable, required"
+    title: "Optional + Nullable"
     type: string
     nullable: true
 required:
   - input_1
-  - input_4
+  - input_2

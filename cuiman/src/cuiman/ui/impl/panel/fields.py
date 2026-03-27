@@ -17,36 +17,38 @@ class PanelViewableField(cui.FieldBase):
         super().__init__(view_model, view)
 
     @property
-    def viewable(self) -> pn.viewable.Viewable:
+    def view(self) -> pn.viewable.Viewable:
         """The panel viewable."""
+        isinstance(self._view, pn.viewable.Viewable)
         return self._view
 
 
 class PanelWidgetField(cui.FieldBase):
-    """A panel widget field."""
+    """A panel widget-like field."""
 
     def __init__(
         self,
         view_model: cvm.ViewModel,
-        view: pn.widgets.Widget,
+        view: pn.widgets.WidgetBase,
         *,
         json_codec: JsonCodec | None = None,
     ):
-        assert isinstance(view, pn.widgets.Widget)
+        isinstance(view, pn.widgets.WidgetBase)
         super().__init__(view_model, view)
         self.json_codec = json_codec or JsonIdentityCodec()
 
     @property
-    def widget(self) -> pn.widgets.Widget:
-        """The widget."""
+    def view(self) -> pn.widgets.WidgetBase:
+        """The panel widget-like."""
+        isinstance(self._view, pn.widgets.WidgetBase)
         return self._view
 
     def _bind(self):
         def observe_vm(_e):
-            self.widget.value = self.json_codec.from_json(self.view_model.value)
+            self.view.value = self.json_codec.from_json(self.view_model.value)
 
         def observe_view(_e):
-            self.view_model.value = self.json_codec.to_json(self.widget.value)
+            self.view_model.value = self.json_codec.to_json(self.view.value)
 
         self.view_model.watch(observe_vm)
-        self.widget.param.watch(observe_view, "value")
+        self.view.param.watch(observe_view, "value")

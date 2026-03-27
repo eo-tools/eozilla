@@ -20,7 +20,7 @@ pn.extension()
 schemas_dir = Path(__file__).parent / "schemas"
 
 app = typer.Typer()
-app_name = "panel-form-tester"
+app_name = "render-shema"
 
 
 @app.command(name=app_name)

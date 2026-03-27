@@ -6,26 +6,26 @@ import panel as pn
 import param
 from ipyleaflet import DrawControl, GeoJSON, Map
 
-# TODO: This is AI-generated. Verify & test!
-
 pn.extension()
 
-BBox = tuple[float, float, float, float]
+BBox = list[float]
 
 
-class BBoxEditor(pn.widgets.Widget):
-    value = param.Tuple(default=None, allow_None=True, length=4)
+class BBoxEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
+    value = param.List(default=[0, 40, 20, 60], allow_None=False)
 
-    def __init__(self, center=(0, 0), zoom: int = 2, **params):
+    def __init__(self, center: tuple[float, float] = (0, 0), zoom: int = 2, **params):
         super().__init__(**params)
 
         # --- draw control
-        draw_control = DrawControl(rectangle={"shapeOptions": {"color": "#0000FF"}})
-        draw_control.rectangle = {"shapeOptions": {"color": "#0000FF"}}
-        draw_control.circle = {}
-        draw_control.polyline = {}
-        draw_control.polygon = {}
-        draw_control.point = {}
+        enabled_tool = {"shapeOptions": {"color": "#0000FF"}}
+        disabled_tool = {}
+        draw_control = DrawControl()
+        draw_control.rectangle = enabled_tool
+        draw_control.circle = enabled_tool
+        draw_control.polygon = enabled_tool
+        draw_control.polyline = disabled_tool
+        draw_control.circlemarker = disabled_tool
         draw_control.on_draw(self._handle_draw)
 
         # --- map
@@ -35,15 +35,17 @@ class BBoxEditor(pn.widgets.Widget):
         map_widget = pn.pane.IPyWidget(self._map, width=400)
 
         # --- value display
+        # TODO: replace by text box to let user enter the 4 coordinates
         self._value_display = pn.widgets.StaticText()
 
+        def on_value_change(e):
+            self._update_display(e.new)
+
         # react to value changes
-        self.param.watch(self._update_display, "value")
+        self.param.watch(on_value_change, "value")
 
         # initial display
-        self._update_display(
-            param.parameterized.Event(new=self.value, old=None, name="value", obj=self)
-        )
+        self._update_display(self.value)
 
         # layout
         self._panel = pn.Column(map_widget, self._value_display)
@@ -53,8 +55,9 @@ class BBoxEditor(pn.widgets.Widget):
         return self._panel
 
     # --- value → UI
-    def _update_display(self, event):
-        self._value_display.value = f"Selected bbox: {event.new}"
+
+    def _update_display(self, value):
+        self._value_display.value = f"Selected bbox: {value}"
 
     # --- map → value
     def _handle_draw(self, target: DrawControl, action: str, geo_json: dict):
@@ -70,7 +73,7 @@ class BBoxEditor(pn.widgets.Widget):
         lons = [c[0] for c in coords]
         lats = [c[1] for c in coords]
 
-        bbox: BBox = (min(lons), min(lats), max(lons), max(lats))
+        bbox: BBox = [min(lons), min(lats), max(lons), max(lats)]
         self.value = bbox
 
         # replace user layer

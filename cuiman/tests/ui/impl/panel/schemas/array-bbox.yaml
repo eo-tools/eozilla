@@ -1,0 +1,11 @@
+type: object
+properties:
+  array:
+    type: array
+    items:
+      type: number
+    minItems: 4
+    maxItems: 4
+    format: bbox
+    # or better:
+    # "x-ui:widget": map
