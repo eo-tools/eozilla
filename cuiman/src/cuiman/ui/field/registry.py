@@ -22,7 +22,13 @@ class FieldFactoryRegistry:
         return set(self._factories)
 
     def register(self, factory: "FieldFactory") -> Callable[[], None]:
-        """Register a given factory."""
+        """Register the given field factory.
+
+        Args:
+            factory: A field factory.
+        Returns:
+            An callable that can be used to register the added factory.
+        """
 
         def _unregister():
             self.unregister(factory)
@@ -34,7 +40,7 @@ class FieldFactoryRegistry:
         """Unregister a given factory."""
         self._factories.discard(factory)
 
-    def find(self, meta: FieldMeta) -> "FieldFactory | None":
+    def lookup(self, meta: FieldMeta) -> "FieldFactory | None":
         """Find a factory for the given field metadata."""
         max_score: int = 0
         best_factory: FieldFactory | None = None

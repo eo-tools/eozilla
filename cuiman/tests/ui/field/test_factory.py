@@ -8,10 +8,10 @@ import pytest
 
 from cuiman.ui import (
     FieldBase,
-    FieldBuilder,
     FieldContext,
     FieldFactoryBase,
     FieldMeta,
+    FormFactory,
 )
 from gavicore.models import Schema
 
@@ -26,7 +26,7 @@ class MyFieldFactory(FieldFactoryBase):
 
 
 def make_ctx(meta: FieldMeta):
-    builder = FieldBuilder()
+    builder = FormFactory()
     return FieldContext(builder=builder, meta=meta)
 
 

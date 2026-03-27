@@ -140,7 +140,7 @@ class MainPanelViewModel(param.Parameterized):
         # )
         input_field_meta = FieldMeta.from_input_descriptions(filtered_inputs)
         input_field_builder = create_field_builder()
-        self.inputs_field = input_field_builder.create_field(
+        self.inputs_field = input_field_builder.create_form(
             input_field_meta, initial_value=last_values
         )
 

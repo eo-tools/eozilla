@@ -18,7 +18,7 @@ from .base import Field
 from .meta import FieldMeta
 
 if TYPE_CHECKING:
-    from .builder import FieldBuilder
+    from .form import FormFactory
 
 
 class FieldContext:
@@ -27,7 +27,7 @@ class FieldContext:
     def __init__(
         self,
         *,
-        builder: "FieldBuilder",
+        builder: "FormFactory",
         meta: FieldMeta,
         initial_value: Any | UndefinedType = UNDEFINED,
         parent_ctx: "FieldContext | None" = None,

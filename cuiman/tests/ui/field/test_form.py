@@ -9,12 +9,12 @@ import pytest
 from cuiman.ui import (
     Field,
     FieldBase,
-    FieldBuilder,
     FieldContext,
     FieldFactoryBase,
     FieldFactoryRegistry,
     FieldGroupFactory,
     FieldMeta,
+    FormFactory,
 )
 from cuiman.ui.vm import (
     ArrayViewModel,
@@ -134,7 +134,7 @@ class NullFieldFactory(FieldFactoryBase):
 # --- UI field builder usage --------
 
 
-class FieldBuilderTest(TestCase):
+class FormFactoryTest(TestCase):
     def setUp(self):
         registry = FieldFactoryRegistry()
         registry.register(NullFieldFactory())
@@ -143,11 +143,10 @@ class FieldBuilderTest(TestCase):
         registry.register(StringFieldFactory())
         registry.register(NumberFieldFactory())
         registry.register(BooleanFieldFactory())
-        builder = FieldBuilder(registry)
-        self.builder = builder
+        self.form_factory = FormFactory(registry)
 
-    def test_builder_ok(self):
-        builder = self.builder
+    def test_form_factory_plain(self):
+        builder = self.form_factory
 
         meta = FieldMeta.from_schema(
             "root",
@@ -175,7 +174,7 @@ class FieldBuilderTest(TestCase):
             ),
         )
 
-        field = builder.create_field(
+        field = builder.create_form(
             meta,
             initial_value={
                 "ds_paths": [],
@@ -287,9 +286,8 @@ class FieldBuilderTest(TestCase):
             view_model._get_value(),
         )
 
-    def test_builder_ok_with_layout(self):
-        builder = self.builder
-        builder.registry.register(MyFieldGroupFactory())
+    def test_form_factory_with_layout(self):
+        self.form_factory.register_field_factory(MyFieldGroupFactory())
 
         meta = FieldMeta.from_schema(
             "root",
@@ -331,7 +329,7 @@ class FieldBuilderTest(TestCase):
             ),
         )
 
-        field = builder.create_field(
+        field = self.form_factory.create_form(
             meta,
             initial_value={
                 "ds_paths": ["SST-20260301.nc", "SST-20260302.nc", "SST-20260303.nc"],
@@ -373,13 +371,12 @@ class FieldBuilderTest(TestCase):
             view.render().lines,
         )
 
-    def test_builder_failing(self):
-        builder = self.builder
+    def test_form_factory_fails(self):
         meta = FieldMeta.from_schema("x", Schema(**{}))
         with pytest.raises(
             ValueError, match="no factory found for creating a UI for field 'x'"
         ):
-            builder.create_field(meta)
+            self.form_factory.create_form(meta)
 
 
 class MyFieldGroupFactory(FieldGroupFactory):
