@@ -77,7 +77,7 @@ class FieldContext:
     def create_property_fields(self) -> dict[str, Field]:
         return {
             prop_name: self.create_child_field(prop_meta)
-            for prop_name, prop_meta in (self.meta.properties.items())
+            for prop_name, prop_meta in self.meta.properties.items()
         }
 
     def create_child_field(self, child_meta: FieldMeta) -> Field:

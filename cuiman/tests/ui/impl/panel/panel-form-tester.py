@@ -1,10 +1,10 @@
-#  Copyright (c) 2025-2026 by the Eozilla team and contributors
+#  Copyright (c) 2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
 import sys
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import panel as pn
 import typer
@@ -12,6 +12,7 @@ import yaml
 
 from cuiman.ui import FieldMeta
 from cuiman.ui.impl.panel import PanelFormFactory
+from cuiman.ui.vm import ViewModelChangeEvent
 from gavicore.models import Schema
 
 pn.extension()
@@ -19,9 +20,10 @@ pn.extension()
 schemas_dir = Path(__file__).parent / "schemas"
 
 app = typer.Typer()
+app_name = "panel-form-tester"
 
 
-@app.command(name="panel-form-tester")
+@app.command(name=app_name)
 def main(
     schema_spec: Annotated[
         str, typer.Argument(help="Path to the schema YAML file or a known schema name.")
@@ -42,10 +44,10 @@ def main(
     form_field.view_model.watch(_on_value_change)
 
     # print initial value
-    _on_value_change(form_field.view_model.value)
+    _show_current_value(form_field.view_model.value)
 
     # --- show UI ---
-    pn.serve(form_field.view)
+    pn.serve(form_field.view, title=f"{app_name} - {schema_spec}")
 
 
 def _load_schema(path) -> Schema:
@@ -54,7 +56,11 @@ def _load_schema(path) -> Schema:
     return Schema(**schema_dict)
 
 
-def _on_value_change(value) -> None:
+def _on_value_change(event: ViewModelChangeEvent) -> None:
+    _show_current_value(event.source.value)
+
+
+def _show_current_value(value: Any) -> None:
     print(80 * "-")
     print(yaml.safe_dump(value, sort_keys=False), end="")
     sys.stdout.flush()
