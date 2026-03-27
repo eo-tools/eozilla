@@ -5,7 +5,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar
 
-from gavicore.util.undefined import UNDEFINED, UndefinedType
+from gavicore.util.undefined import Undefined
 
 from ..field.meta import FieldMeta
 from .base import ViewModel, ViewModelChangeEvent
@@ -24,24 +24,24 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
         self,
         meta: FieldMeta,
         composite_type: type[T],
-        value: T | UndefinedType,
+        value: T | Undefined,
     ):
         super().__init__(meta)
         if meta.nullable:
             raise ValueError("meta must not be nullable")
         CompositeViewModel._assert_value_is_valid(meta, composite_type, value)
         self._composite_type: type[T] = composite_type
-        self._cached_value: T | UndefinedType = (
+        self._cached_value: T | Undefined = (
             value
-            if UndefinedType.is_defined(value)
+            if Undefined.is_defined(value)
             else (meta.default if meta.default is not None else value)
         )
 
     def _get_value(self) -> T:
-        if not isinstance(self._cached_value, UndefinedType):
+        if not isinstance(self._cached_value, Undefined):
             return self._cached_value
         cached_value = self._assemble_value()
-        assert UndefinedType.is_defined(cached_value)
+        assert Undefined.is_defined(cached_value)
         self._cached_value = cached_value
         return cached_value
 
@@ -86,14 +86,14 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
         cls,
         meta: FieldMeta,
         composite_type: type[T],
-        value: Any | UndefinedType,
+        value: Any | Undefined,
     ) -> None:
         # noinspection PyTypeHints
-        if not isinstance(value, (composite_type, UndefinedType)):
+        if not isinstance(value, (composite_type, Undefined)):
             raise TypeError(
                 f"value must be a {composite_type.__name__} "
                 f"for field {meta.name!r} but was {value!r}"
             )
 
     def _invalidate(self) -> None:
-        self._cached_value = UNDEFINED
+        self._cached_value = Undefined.value

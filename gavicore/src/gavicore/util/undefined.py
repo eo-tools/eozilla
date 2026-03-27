@@ -5,17 +5,27 @@
 from typing import Any
 
 
-class UndefinedType:
-    """Represents an undefined value."""
+class Undefined:
+    """The type of an undefined value."""
 
     __slots__ = ()
 
+    value: "Undefined"
+    """The value of an undefined value."""
+
+    @staticmethod
+    def is_undefined(value: Any) -> bool:
+        """Test if the given value is undefined."""
+        return isinstance(value, Undefined)
+
     @staticmethod
     def is_defined(value: Any) -> bool:
-        return not isinstance(value, UndefinedType)
+        """Test if the given value is not undefined."""
+        return not isinstance(value, Undefined)
 
     def __repr__(self):
         return "UNDEFINED"
 
 
-UNDEFINED = UndefinedType()
+UNDEFINED = Undefined()
+Undefined.value = Undefined()

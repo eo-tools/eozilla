@@ -9,7 +9,7 @@ import param
 from cuiman.api.config import AdvancedInputPredicate
 from cuiman.api.exceptions import ClientError
 from cuiman.ui import Field, FieldMeta
-from cuiman.ui.impl.panel import create_field_builder
+from cuiman.ui.impl.panel import PanelFormFactory
 from gavicore.models import (
     Format,
     InputDescription,
@@ -91,6 +91,7 @@ class MainPanelViewModel(param.Parameterized):
         self._get_process = get_process
         self._execute_process = execute_process
         self._is_advanced_input = is_advanced_input
+        self._form_factory = PanelFormFactory()
 
         self.processes = [p for p in process_list.processes if accept_process(p)]
         self.error = process_list_error
@@ -139,8 +140,7 @@ class MainPanelViewModel(param.Parameterized):
         #    last_values,
         # )
         input_field_meta = FieldMeta.from_input_descriptions(filtered_inputs)
-        input_field_builder = create_field_builder()
-        self.inputs_field = input_field_builder.create_form(
+        self.inputs_field = self._form_factory.create_form(
             input_field_meta, initial_value=last_values
         )
 

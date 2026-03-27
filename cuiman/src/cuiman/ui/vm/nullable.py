@@ -4,7 +4,7 @@
 
 from typing import Any, Generic, TypeVar
 
-from gavicore.util.undefined import UNDEFINED, UndefinedType
+from gavicore.util.undefined import UNDEFINED, Undefined
 
 from ..field.meta import FieldMeta
 from .base import ViewModel, ViewModelChangeEvent
@@ -23,7 +23,7 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
         self,
         meta: FieldMeta,
         *,
-        value: Any | UndefinedType = UNDEFINED,
+        value: Any | Undefined = UNDEFINED,
         inner: ViewModel[T] | None = None,
     ):
         super().__init__(meta)
@@ -40,12 +40,12 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
                 non_nullable_meta,
                 value=(
                     non_nullable_meta.get_initial_value()
-                    if value is None or not UndefinedType.is_defined(value)
+                    if value is None or Undefined.is_undefined(value)
                     else value
                 ),
             )
         self._is_null = (
-            value is None if UndefinedType.is_defined(value) else meta.default is None
+            value is None if Undefined.is_defined(value) else meta.default is None
         )
 
     @property

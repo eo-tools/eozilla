@@ -4,7 +4,7 @@
 
 from typing import Any, Callable
 
-from gavicore.util.undefined import UNDEFINED, UndefinedType
+from gavicore.util.undefined import Undefined
 
 from .base import Field
 from .context import FieldContext
@@ -37,7 +37,7 @@ class FormFactory:
     def create_form(
         self,
         meta: FieldMeta,
-        initial_value: Any | UndefinedType = UNDEFINED,
+        initial_value: Any | Undefined = Undefined.value,
     ) -> Field:
         """Create a new form field."""
         ctx = FieldContext(

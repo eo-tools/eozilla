@@ -4,7 +4,7 @@
 
 from typing import Any, Generic, TypeVar
 
-from gavicore.util.undefined import UNDEFINED, UndefinedType
+from gavicore.util.undefined import Undefined
 
 from ..field.meta import FieldMeta
 from .base import ViewModel
@@ -17,12 +17,14 @@ class PrimitiveViewModel(Generic[T], ViewModel[T]):
     A view model that represents a non-nullable, primitive value.
     """
 
-    def __init__(self, meta: FieldMeta, *, value: Any | UndefinedType = UNDEFINED):
+    def __init__(
+        self, meta: FieldMeta, *, value: Any | Undefined = Undefined.value
+    ) -> None:
         super().__init__(meta)
         if meta.nullable:
             raise ValueError("meta must not be nullable")
         self._value: T
-        if UndefinedType.is_defined(value):
+        if Undefined.is_defined(value):
             if value is None:
                 raise ValueError("value must not be None")
             self._value = value  # type: ignore[assignment]

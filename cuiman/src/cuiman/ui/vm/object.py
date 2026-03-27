@@ -4,7 +4,7 @@
 
 from typing import Any
 
-from gavicore.util.undefined import UNDEFINED, UndefinedType
+from gavicore.util.undefined import Undefined
 
 from ..field.meta import FieldMeta
 from .base import ViewModel
@@ -20,7 +20,7 @@ class ObjectViewModelBase(CompositeViewModel[str, dict[str, Any]]):
     def __init__(
         self,
         meta: FieldMeta,
-        value: Any | UndefinedType,
+        value: Any | Undefined,
     ):
         super().__init__(meta, dict, value)
         self._properties: dict[str, ViewModel] = {}
@@ -59,7 +59,7 @@ class ObjectViewModel(ObjectViewModelBase):
         self,
         meta: FieldMeta,
         *,
-        value: Any | UndefinedType = UNDEFINED,
+        value: Any | Undefined = Undefined.value,
         properties: dict[str, ViewModel] | None = None,
     ):
         super().__init__(meta, value)
@@ -89,7 +89,7 @@ class DynamicObjectViewModel(ObjectViewModelBase):
     """
 
     def __init__(self, meta: FieldMeta):
-        super().__init__(meta, UNDEFINED)
+        super().__init__(meta, Undefined.value)
         self._frozen = False
 
     def define_property(self, prop_name: str, prop_vm: ViewModel) -> None:

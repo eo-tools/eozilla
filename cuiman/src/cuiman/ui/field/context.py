@@ -5,7 +5,7 @@
 from typing import TYPE_CHECKING, Any
 
 from gavicore.models import DataType, Schema
-from gavicore.util.undefined import UNDEFINED, UndefinedType
+from gavicore.util.undefined import Undefined
 
 from ..vm import (
     ArrayViewModel,
@@ -29,7 +29,7 @@ class FieldContext:
         *,
         builder: "FormFactory",
         meta: FieldMeta,
-        initial_value: Any | UndefinedType = UNDEFINED,
+        initial_value: Any | Undefined = Undefined.value,
         parent_ctx: "FieldContext | None" = None,
     ):
         self._parent_ctx = parent_ctx
@@ -38,7 +38,7 @@ class FieldContext:
         self._vm_builder = UIViewModelBuilder(self)
         self._initial_value = (
             meta.get_initial_value()
-            if isinstance(initial_value, UndefinedType)
+            if isinstance(initial_value, Undefined)
             else initial_value
         )
 
@@ -126,7 +126,7 @@ class UIViewModelBuilder:
     ) -> ObjectViewModel:
         return ObjectViewModel(
             self._ctx.meta,
-            value=(self._ctx.initial_value if properties is None else UNDEFINED),
+            value=(self._ctx.initial_value if properties is None else Undefined.value),
             properties=properties,
         )
 
