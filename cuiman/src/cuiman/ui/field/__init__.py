@@ -3,16 +3,15 @@
 #  https://opensource.org/license/apache-2-0.
 
 from .base import Field, FieldBase
-from .builder import FieldBuilder
 from .context import FieldContext
 from .factory import FieldFactory, FieldFactoryBase, FieldGroupFactory
+from .form import FormFactory
 from .meta import FieldGroup, FieldLayout, FieldMeta
 from .registry import FieldFactoryRegistry
 
 __all__ = [
     "Field",
     "FieldBase",
-    "FieldBuilder",
     "FieldContext",
     "FieldFactory",
     "FieldFactoryBase",
@@ -21,4 +20,5 @@ __all__ = [
     "FieldGroupFactory",
     "FieldLayout",
     "FieldMeta",
+    "FormFactory",
 ]

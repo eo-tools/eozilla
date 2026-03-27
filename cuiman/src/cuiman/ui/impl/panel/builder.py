@@ -3,11 +3,12 @@
 #  https://opensource.org/license/apache-2-0.
 
 
-from cuiman.ui import FieldBuilder, FieldFactoryRegistry
-from .factories import PanelWidgetFieldFactory, PanelListPanelFactory
+from cuiman.ui import FieldFactoryRegistry, FormFactory
+
+from .factories import PanelListPanelFactory, PanelWidgetFieldFactory
 
 
-def create_field_builder() -> FieldBuilder:
+def create_field_builder() -> FormFactory:
     """
     Create a new builder for fields that create views
     using [Panel](https://panel.holoviz.org/) UI library.
@@ -16,4 +17,4 @@ def create_field_builder() -> FieldBuilder:
         PanelWidgetFieldFactory(),
         PanelListPanelFactory(),
     )
-    return FieldBuilder(registry)
+    return FormFactory(registry)

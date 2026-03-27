@@ -72,19 +72,19 @@ class FieldFactoryRegistryTest(TestCase):
         r = FieldFactoryRegistry(f1, f2, f3)
 
         meta = _meta_from_schema({"type": "string"})
-        self.assertEqual(f1, r.find(meta))
+        self.assertEqual(f1, r.lookup(meta))
 
         meta = _meta_from_schema({"type": "string", "format": "uri"})
-        self.assertEqual(f2, r.find(meta))
+        self.assertEqual(f2, r.lookup(meta))
 
         meta = _meta_from_schema({"type": "string", "format": "date"})
-        self.assertEqual(f3, r.find(meta))
+        self.assertEqual(f3, r.lookup(meta))
 
         meta = _meta_from_schema({"type": "string", "format": "bbox"})
-        self.assertEqual(f1, r.find(meta))
+        self.assertEqual(f1, r.lookup(meta))
 
         meta = _meta_from_schema({"type": "array", "format": "bbox"})
-        self.assertEqual(None, r.find(meta))
+        self.assertEqual(None, r.lookup(meta))
 
 
 def _meta_from_schema(d: dict) -> FieldMeta:

@@ -6,8 +6,7 @@ import panel as pn
 
 import cuiman.ui as cui
 import cuiman.ui.vm as cvm
-
-from .json import JsonCodec, JsonIdentityCodec
+from gavicore.util.json import JsonCodec, JsonIdentityCodec
 
 
 class PanelViewableField(cui.FieldBase):

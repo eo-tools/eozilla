@@ -2,39 +2,44 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Any
+from typing import Any, Callable
 
 from gavicore.util.undefined import UNDEFINED, UndefinedType
 
 from .base import Field
 from .context import FieldContext
+from .factory import FieldFactory
 from .meta import FieldMeta
 from .registry import FieldFactoryRegistry
 
-# Note: `FieldBuilder` could implement `FieldFactoryRegistry`, but then we must
-# change the factory method support the `initial_value` kwarg:
-#     def create_field(
-#           self,
-#           meta: FieldMeta,
-#           initial_value: Any | UndefinedType = UNDEFINED,
-#     ) -> Field: ...
 
+class FormFactory:
+    """Entry point for creating form fields."""
 
-class FieldBuilder:
-    """A builder for UI fields."""
+    def __init__(self, field_factory_registry: FieldFactoryRegistry | None = None):
+        self._field_factory_registry = (
+            field_factory_registry
+            if field_factory_registry is not None
+            else FieldFactoryRegistry()
+        )
 
-    def __init__(self, registry: FieldFactoryRegistry | None = None):
-        self._registry = registry if registry is not None else FieldFactoryRegistry()
+    def register_field_factory(self, field_factory: FieldFactory) -> Callable[[], None]:
+        """
+        Register a new field factory.
 
-    @property
-    def registry(self) -> FieldFactoryRegistry:
-        return self._registry
+        Args:
+            field_factory: A field factory.
+        Returns:
+            An callable that can be used to register the added field factory.
+        """
+        return self._field_factory_registry.register(field_factory)
 
-    def create_field(
+    def create_form(
         self,
         meta: FieldMeta,
         initial_value: Any | UndefinedType = UNDEFINED,
     ) -> Field:
+        """Create a new form field."""
         ctx = FieldContext(
             builder=self,
             meta=meta,
@@ -44,7 +49,7 @@ class FieldBuilder:
         return self._create_field(ctx)
 
     def _create_field(self, ctx: "FieldContext") -> Field:
-        factory = self._registry.find(ctx.meta)
+        factory = self._field_factory_registry.lookup(ctx.meta)
         if factory is None:
             raise ValueError(
                 f"no factory found for creating a UI for field {'.'.join(ctx.path)!r}"

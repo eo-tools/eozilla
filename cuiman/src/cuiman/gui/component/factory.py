@@ -7,8 +7,9 @@ from abc import ABC, abstractmethod
 from types import FunctionType
 from typing import TYPE_CHECKING, Literal
 
+from gavicore.util.json import JSON_TYPE_NAMES, JsonSchemaDict, JsonType, JsonValue
+
 from .component import Component
-from .json import JSON_TYPE_NAMES, JsonSchemaDict, JsonType, JsonValue
 
 if TYPE_CHECKING:
     from .registry import ComponentFactoryRegistry
