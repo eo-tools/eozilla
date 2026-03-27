@@ -1,44 +1,16 @@
 #  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-from abc import ABC, abstractmethod
-from typing import Callable, Optional, Any, Generic, TypeVar
+from typing import Callable, Optional, Any, TypeVar
 
 import panel as pn
 import param
 
-
-# TODO: This is AI-generated. Verify & test!
+from ..util import ArrayTextConverter
 
 pn.extension()
 
 T = TypeVar("T")
-
-
-# noinspection PyMethodMayBeStatic
-class ArrayTextConverter(Generic[T], ABC):
-    @abstractmethod
-    def parse_item(self, value: str) -> T:
-        """Parse a value from text."""
-
-    def format_item(self, value: T) -> str:
-        """Format a value into text."""
-        return str(value)
-
-    def parse_array(self, text: str, sep: str = ",") -> list[T]:
-        parts = [p.strip() for p in " ".join(text.split("\n")).split(sep)]
-        value: list = []
-        for i, p in enumerate(parts):
-            try:
-                v = self.parse_item(p)
-            except (TypeError, ValueError) as e:
-                raise ValueError(f"Invalid array item {i + 1}.") from e
-            value.extend(v)
-        return value
-
-    def format_array(self, value: list[T], sep: str = ",") -> str:
-        sep_ = f"{sep} " if sep and not sep.isspace() else (sep if sep else " ")
-        return sep_.join(self.format_item(v) for v in value)
 
 
 class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
@@ -60,7 +32,7 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
 
         # --- UI components
 
-        initial_text = converter.format_array(value)
+        initial_text = converter.format_array(value, sep=self._separator)
         self._text = pn.widgets.TextAreaInput(
             value=initial_text, cols=16, rows=1, name=name
         )

@@ -10,12 +10,21 @@ import param
 
 import cuiman.ui as cui
 import cuiman.ui.vm as cvm
+from gavicore.models import DataType
 from gavicore.util.json import JsonDateCodec
 
-from .extras.array import ArrayEditor
+from .extras.array import ArrayWidget
 from .extras.bbox import BBoxEditor
 from .extras.nullable import NullableWidget
+from .util import ArrayTextConverter
 from .fields import PanelViewableField, PanelWidgetField
+
+_ARRAY_CONVERTERS: dict[DataType, ArrayTextConverter] = {
+    DataType.boolean: ArrayTextConverter.Boolean(),
+    DataType.integer: ArrayTextConverter.Integer(),
+    DataType.number: ArrayTextConverter.Number(),
+    DataType.string: ArrayTextConverter.String(),
+}
 
 
 class PanelWidgetFieldFactory(cui.FieldFactoryBase):
@@ -31,22 +40,43 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         return PanelViewableField(view_model, view=view)
 
     def get_array_score(self, meta: cui.FieldMeta) -> int:
-        return 1
+        if meta.item is None:
+            return None
+        format_ = meta.schema_.format
+        if format_ is not None and format_.lower() == "bbox":
+            return 10
+        array_converter = _ARRAY_CONVERTERS.get(meta.item.schema_.type)
+        if array_converter is not None:
+            return 1
+        return 0
 
     def create_array_field(self, ctx: cui.FieldContext) -> cui.Field:
         view_model = ctx.vm.array()
-        format_ = view_model.schema.format
+
+        assert ctx.meta.item is not None
+
+        format_ = ctx.schema.format
         if format_ is not None and format_.lower() == "bbox":
-            # TODO: this cannot work yet
             return PanelWidgetField(view_model, view=BBoxEditor())
 
-        # TODO: this cannot work yet
-        item_editor = ctx.create_child_field(ctx.meta.item)
-        view = ArrayEditor(
+        array_converter = _ARRAY_CONVERTERS.get(ctx.meta.item.schema_.type)
+        assert array_converter is not None
+
+        # if view_model.meta.widget == "editor" or array_converter is None:
+        #     item_editor = ctx.create_child_field(ctx.meta.item)
+        #     view = ArrayEditor(
+        #         value=view_model.value,
+        #         item_editor=item_editor.view,
+        #         name=view_model.meta.label,
+        #         value_factory=ctx.meta.get_initial_value,
+        #     )
+        #     return PanelWidgetField(view_model, view=view)
+
+        view = ArrayWidget(
             value=view_model.value,
-            item_editor=item_editor.view,
+            converter=array_converter,
+            separator=view_model.meta.model_extra.get("sep", ","),
             name=view_model.meta.label,
-            value_factory=ctx.meta.get_initial_value,
         )
         return PanelWidgetField(view_model, view=view)
 
