@@ -27,7 +27,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         view_models = {k: f.view_model for k, f in prop_fields.items()}
         view_model = ctx.vm.object(properties=view_models)
         views = [f.view for f in prop_fields.values()]
-        view = pn.Column(*views, label=view_model.meta.title)
+        view = pn.Column(*views)
         return PanelViewableField(view_model, view=view)
 
     def get_array_score(self, meta: cui.FieldMeta) -> int:
@@ -45,7 +45,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         view = ArrayEditor(
             value=view_model.value,
             item_editor=item_editor.view,
-            name=view_model.meta.title,
+            name=view_model.meta.label,
             value_factory=ctx.meta.get_initial_value,
         )
         return PanelWidgetField(view_model, view=view)
@@ -56,7 +56,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
     def create_string_field(self, ctx: cui.FieldContext) -> cui.Field:
         view_model = ctx.vm.primitive()
         value = view_model.value
-        label = view_model.meta.title
+        label = view_model.meta.label
         enum = view_model.meta.enum
         description = view_model.meta.description
         format_ = view_model.schema.format
@@ -107,7 +107,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
     ) -> cui.Field:
         view_model = ctx.vm.primitive()
         value = view_model.value
-        title = view_model.meta.title
+        label = view_model.meta.label
         description = view_model.meta.description
         widget_hint = view_model.meta.widget
         minimum = view_model.meta.minimum
@@ -118,13 +118,13 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
                 return PanelWidgetField(
                     view_model,
                     view=pn.widgets.DiscreteSlider(
-                        name=title, value=value, options=enum
+                        name=label, value=value, options=enum
                     ),
                 )
             if widget_hint in ("select", None):
                 return PanelWidgetField(
                     view_model,
-                    view=pn.widgets.Select(name=title, value=value, options=enum),
+                    view=pn.widgets.Select(name=label, value=value, options=enum),
                 )
         if (
             widget_hint == "slider"
@@ -139,7 +139,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
             return PanelWidgetField(
                 view_model,
                 view=slider_cls(
-                    name=title,
+                    name=label,
                     start=minimum,
                     end=maximum,
                     value=value,
@@ -152,7 +152,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         else:
             input_cls = pn.widgets.FloatInput
         return PanelWidgetField(
-            view_model, view=input_cls(name=title, value=value, description=description)
+            view_model, view=input_cls(name=label, value=value, description=description)
         )
 
     def get_boolean_score(self, _meta: cui.FieldMeta) -> int:
@@ -161,10 +161,10 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
     def create_boolean_field(self, ctx: cui.FieldContext) -> cui.Field:
         view_model = ctx.vm.primitive()
         if view_model.meta.widget == "switch":
-            view = pn.widgets.Switch(value=view_model.value, name=view_model.meta.title)
+            view = pn.widgets.Switch(value=view_model.value, name=view_model.meta.label)
         else:
             view = pn.widgets.Checkbox(
-                value=view_model.value, name=view_model.meta.title
+                value=view_model.value, name=view_model.meta.label
             )
         return PanelWidgetField(view_model, view=view)
 
@@ -187,7 +187,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         )
 
 
-class PanelListPanelFactory(cui.FieldGroupFactory):
+class PanelFieldGroupFactory(cui.FieldGroupFactory):
     def create_row_field(
         self,
         ctx: cui.FieldContext,

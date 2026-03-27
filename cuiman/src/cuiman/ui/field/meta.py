@@ -3,6 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 import re
+from functools import cached_property
 from typing import Any, Literal, TypeAlias, Union
 
 import pydantic
@@ -162,6 +163,14 @@ class FieldMeta(pydantic.BaseModel):
     def default(self) -> Any:
         return self.schema_.default
 
+    @cached_property
+    def label(self) -> str:
+        """
+        The label is the title, if the title is provided.
+        Otherwise, a label is created from the name.
+        """
+        return self.title or _make_label(self.name)
+
     @classmethod
     def from_input_descriptions(
         cls,
@@ -185,7 +194,7 @@ class FieldMeta(pydantic.BaseModel):
             "type": "object",
             "properties": properties,
             "required": required_names or None,
-            "title": title or _make_title(name),
+            "title": title or _make_label(name),
             "description": description,
         }
         return cls.from_schema(
@@ -212,7 +221,7 @@ class FieldMeta(pydantic.BaseModel):
         schema_dict = {
             "type": "object",
             "properties": properties,
-            "title": title or _make_title(name),
+            "title": title or _make_label(name),
             "description": description,
         }
         return cls.from_schema(name, Schema(**schema_dict))
@@ -265,7 +274,7 @@ def _schema_from_input_description(
         schema_dict = _make_schema_dict(input_schema)
     schema_dict.update(description_dict)
     if "title" not in schema_dict:
-        schema_dict["title"] = _make_title(input_name)
+        schema_dict["title"] = _make_label(input_name)
     return Schema(**schema_dict), min_items > 0
 
 
@@ -277,7 +286,7 @@ def _schema_from_output_description(
     schema_dict = _make_schema_dict(output_description.schema_)
     schema_dict.update(description_dict)
     if "title" not in schema_dict:
-        schema_dict["title"] = _make_title(output_name)
+        schema_dict["title"] = _make_label(output_name)
     return Schema(**schema_dict)
 
 
@@ -438,5 +447,5 @@ def _make_description_dict(
     )
 
 
-def _make_title(name: str) -> str:
+def _make_label(name: str) -> str:
     return " ".join(p.capitalize() for p in re.split(r"[_-]|(?<=[a-z])(?=[A-Z])", name))
