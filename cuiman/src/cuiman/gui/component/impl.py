@@ -8,10 +8,11 @@ from typing import Any, Callable
 
 import panel as pn
 
+from gavicore.util.json import JsonDateCodec, JsonSchemaDict, JsonValue
+
 from .bbox import BboxSelector
 from .component import Component, WidgetComponent
 from .factory import ComponentFactoryBase
-from .json import JsonDateCodec, JsonSchemaDict, JsonValue
 from .registry import ComponentFactoryRegistry
 
 

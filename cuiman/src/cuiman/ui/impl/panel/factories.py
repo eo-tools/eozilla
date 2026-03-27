@@ -10,12 +10,12 @@ import param
 
 import cuiman.ui as cui
 import cuiman.ui.vm as cvm
+from gavicore.util.json import JsonDateCodec
 
 from .extras.array import ArrayEditor
 from .extras.bbox import BBoxEditor
 from .extras.nullable import NullableWidget
 from .fields import PanelViewableField, PanelWidgetField
-from .json import JsonDateCodec
 
 
 class PanelWidgetFieldFactory(cui.FieldFactoryBase):

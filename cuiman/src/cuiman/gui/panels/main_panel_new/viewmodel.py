@@ -10,7 +10,6 @@ from cuiman.api.config import AdvancedInputPredicate
 from cuiman.api.exceptions import ClientError
 from cuiman.ui import Field, FieldMeta
 from cuiman.ui.impl.panel import create_field_builder
-from cuiman.ui.impl.panel.json import JsonValue  # TODO: move into gavicore.util
 from gavicore.models import (
     Format,
     InputDescription,
@@ -23,6 +22,7 @@ from gavicore.models import (
     ProcessSummary,
     TransmissionMode,
 )
+from gavicore.util.json import JsonValue
 from gavicore.util.request import ExecutionRequest
 
 GetProcessAction: TypeAlias = Callable[[str], ProcessDescription]

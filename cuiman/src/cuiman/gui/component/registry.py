@@ -4,8 +4,9 @@
 
 from collections import defaultdict
 
+from gavicore.util.json import JsonSchemaDict
+
 from .factory import ComponentFactory
-from .json import JsonSchemaDict
 
 KeyType = tuple[str | None, str | None]
 
