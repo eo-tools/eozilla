@@ -1,0 +1,10 @@
+type: object
+properties:
+  plain:
+    type: string
+  date:
+    type: string
+    format: date
+  text_area:
+    type: string
+    "x-ui:widget": "textarea"

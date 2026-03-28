@@ -22,7 +22,7 @@ typer = "*"
 uri-template = "*"
 uvicorn = "*"
 # IDE integration
-pixi-pycharm = ">=0.0.8,<0.0.9"
+pixi-pycharm = ">=0.0.8"
 # Development & build tools
 pip = "*"
 hatch = "*"
@@ -418,6 +418,11 @@ cmd = "python -m twine upload dist/*"
 [tool.pixi.tasks.sync-versions]
 cmd = "python -m tools.sync_versions"
 
+# pixi run schema2ui
+
+[tool.pixi.tasks.schema2ui]
+cmd = "python ./cuiman/tests/ui/impl/panel/schema2ui.py"
+
 # docs
 
 [tool.pixi.tasks.docs-serve]
@@ -432,3 +437,5 @@ cmd = "mkdocs build"
 omit = [
     'appligator/src/appligator/airflow/gen_image.py'
 ]
+
+

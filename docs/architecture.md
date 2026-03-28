@@ -100,6 +100,80 @@ classDiagram
 
 ```
 
+## Eozilla Cuiman Client - UI
+
+```mermaid
+---
+config:
+    class:
+        hideEmptyMembersBox: true
+    theme: default
+---
+classDiagram
+    direction LR
+    UIField <|-- UIFieldBase
+    UIField --> UIFieldMeta
+    UIFieldFactory <|-- UIFieldFactoryBase
+    UIFieldContext <.. UIFieldFactory : use
+    UIFieldContext <.. UIFieldBuilder : create
+    UIFieldContext --> UIFieldMeta
+    UIFieldBuilder *--> UIFieldFactory
+    UIField <.. UIFieldFactory : create
+    UIField --> ViewModel
+
+    class UIField {
+        meta: UIFieldMeta
+        view_model: ViewModel
+        view: Any
+    }
+    
+    class UIFieldBase {
+        _bind_mutually()
+    }
+
+    class UIFieldMeta {
+        name: str
+        schema: Schema
+        widget: str
+        layout: UIFieldLayout
+        order: int
+        title: str
+        description: str
+        from_schema(schema)
+        from_input_descriptions(inputs)
+        from_output_descriptions(outputs)
+    }
+
+    class UIFieldFactory {
+        register_factory(factory)
+        get_score(field_meta)
+        create_field(ctx) 
+    }
+
+    class UIFieldContext {
+        meta: UIFieldMeta
+        vm_builder: ViewModelBuilder 
+        create_child_fields()
+        create_child_field(child_meta)
+    }
+
+    class UIFieldBuilder {
+        find_factory(meta)
+        create_field(meta, initial_value)  
+    }
+
+    ViewModel --> UIFieldMeta
+    ViewModel *--> ViewModelObserver 
+
+    class ViewModel {
+        meta: UIFieldMeta
+        value: Any
+        watch(observer)
+    }
+
+
+```
+
 ## Eozilla Cuiman Client - GUI
 
 Given here is the design used in package `cuiman.gui.component`.

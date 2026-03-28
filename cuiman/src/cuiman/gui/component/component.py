@@ -7,7 +7,7 @@ from typing import Any, Callable, Optional
 import panel as pn
 import param
 
-from .json import (
+from gavicore.util.json import (
     JsonCodec,
     JsonIdentityCodec,
     JsonValue,

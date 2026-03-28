@@ -2,10 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from .component import Component, WidgetComponent
-from .container import ComponentContainer
-from .factory import ComponentFactory, ComponentFactoryBase
-from .json import (
+from gavicore.util.json import (
     JsonCodec,
     JsonDateCodec,
     JsonIdentityCodec,
@@ -13,6 +10,10 @@ from .json import (
     JsonType,
     JsonValue,
 )
+
+from .component import Component, WidgetComponent
+from .container import ComponentContainer
+from .factory import ComponentFactory, ComponentFactoryBase
 from .registry import ComponentFactoryRegistry
 
 __all__ = [

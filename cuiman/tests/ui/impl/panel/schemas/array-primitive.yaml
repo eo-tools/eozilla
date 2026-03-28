@@ -1,0 +1,23 @@
+type: object
+properties:
+  boolean_array:
+    type: array
+    items:
+      type: boolean
+  integer_array:
+    type: array
+    items:
+      type: integer
+  number_array:
+    type: array
+    items:
+      type: number
+  string_array:
+    type: array
+    items:
+      type: string
+  date_array:
+    type: array
+    items:
+      type: string
+      format: date

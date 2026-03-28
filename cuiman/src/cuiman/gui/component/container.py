@@ -9,10 +9,10 @@ from typing import Any, Callable, Literal, TypeAlias
 import param
 
 from gavicore.models import InputDescription, Schema
+from gavicore.util.json import JsonSchemaDict, JsonValue
 
 from .component import Component
 from .impl import register_all
-from .json import JsonSchemaDict, JsonValue
 from .registry import ComponentFactoryRegistry
 
 FailMode: TypeAlias = Literal["raise", "warn", "ignore"]
