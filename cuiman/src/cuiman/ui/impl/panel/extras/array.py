@@ -1,7 +1,7 @@
 #  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-from typing import Callable, Optional, Any, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 import panel as pn
 import param
@@ -20,8 +20,9 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
         self,
         value: list,
         converter: ArrayTextConverter,
-        separator: str = ",",
+        separator: str | None = ",",
         name: str = "",
+        description: str | None = None,
         **params,
     ):
         super().__init__(name="", **params)
@@ -32,9 +33,18 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
 
         # --- UI components
 
-        initial_text = converter.format_array(value, sep=self._separator)
+        initial_text = converter.format_array(value, sep=separator)
+        sep_text = (
+            "space or newline"
+            if not separator or not separator.strip()
+            else f"{separator!r}"
+        )
         self._text = pn.widgets.TextAreaInput(
-            value=initial_text, cols=16, rows=1, name=name
+            value=initial_text,
+            cols=16,
+            rows=1,
+            name=name,
+            description=description or f"Use {sep_text} as separator.",
         )
         self._text.param.watch(self._on_text_value_change, "value")
 
@@ -53,7 +63,7 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
     # --- rendering
 
     def __panel__(self):
-        return self._text
+        return pn.Column(self._text)
 
 
 # TODO: This is an experimental construction site. Don't use ArrayEditor yet.

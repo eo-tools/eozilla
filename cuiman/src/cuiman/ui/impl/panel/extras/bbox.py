@@ -2,6 +2,8 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from typing import Any
+
 import panel as pn
 import param
 from ipyleaflet import DrawControl, GeoJSON, Map
@@ -14,12 +16,17 @@ BBox = list[float]
 class BBoxEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
     value = param.List(default=[0, 40, 20, 60], allow_None=False)
 
-    def __init__(self, center: tuple[float, float] = (0, 0), zoom: int = 2, **params):
+    def __init__(
+        self,
+        center: tuple[float, float] = (0, 0),
+        zoom: int = 2,
+        **params,
+    ):
         super().__init__(**params)
 
         # --- draw control
-        enabled_tool = {"shapeOptions": {"color": "#0000FF"}}
-        disabled_tool = {}
+        enabled_tool: dict[str, Any] = {"shapeOptions": {"color": "#0000FF"}}
+        disabled_tool: dict[str, Any] = {}
         draw_control = DrawControl()
         draw_control.rectangle = enabled_tool
         draw_control.circle = enabled_tool

@@ -54,15 +54,3 @@ class PanelFormFactory(FormFactory):
     ) -> Field:
         factory = PanelFormFactory()
         return factory.create_form(form_meta, initial_value=initial_value)
-
-
-def create_form_factory() -> FormFactory:
-    """
-    Create a new builder for fields that create views
-    using [Panel](https://panel.holoviz.org/) UI library.
-    """
-    registry = FieldFactoryRegistry(
-        PanelWidgetFieldFactory(),
-        PanelFieldGroupFactory(),
-    )
-    return FormFactory(registry)

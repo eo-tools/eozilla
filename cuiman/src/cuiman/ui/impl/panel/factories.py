@@ -13,11 +13,12 @@ import cuiman.ui.vm as cvm
 from gavicore.models import DataType
 from gavicore.util.json import JsonDateCodec
 
+from ...vm import ViewModel
 from .extras.array import ArrayWidget
 from .extras.bbox import BBoxEditor
 from .extras.nullable import NullableWidget
-from .util import ArrayTextConverter
 from .fields import PanelViewableField, PanelWidgetField
+from .util import ArrayTextConverter
 
 _ARRAY_CONVERTERS: dict[DataType, ArrayTextConverter] = {
     DataType.boolean: ArrayTextConverter.Boolean(),
@@ -37,15 +38,18 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         view_model = ctx.vm.object(properties=view_models)
         views = [f.view for f in prop_fields.values()]
         view = pn.Column(*views)
-        return PanelViewableField(view_model, view=view)
+        return PanelViewableField(view_model, view)
 
     def get_array_score(self, meta: cui.FieldMeta) -> int:
         if meta.item is None:
-            return None
+            return 0
+        item_type = meta.item.schema_.type
+        if item_type is None:
+            return 0
         format_ = meta.schema_.format
         if format_ is not None and format_.lower() == "bbox":
             return 10
-        array_converter = _ARRAY_CONVERTERS.get(meta.item.schema_.type)
+        array_converter = _ARRAY_CONVERTERS.get(item_type)
         if array_converter is not None:
             return 1
         return 0
@@ -57,9 +61,11 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
 
         format_ = ctx.schema.format
         if format_ is not None and format_.lower() == "bbox":
-            return PanelWidgetField(view_model, view=BBoxEditor())
+            return PanelWidgetField(view_model, BBoxEditor())
 
-        array_converter = _ARRAY_CONVERTERS.get(ctx.meta.item.schema_.type)
+        item_type = ctx.meta.item.schema_.type
+        assert item_type is not None
+        array_converter = _ARRAY_CONVERTERS.get(item_type)
         assert array_converter is not None
 
         # if view_model.meta.widget == "editor" or array_converter is None:
@@ -75,10 +81,11 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         view = ArrayWidget(
             value=view_model.value,
             converter=array_converter,
-            separator=view_model.meta.model_extra.get("sep", ","),
+            separator=view_model.meta.separator,
             name=view_model.meta.label,
+            description=view_model.meta.description,
         )
-        return PanelWidgetField(view_model, view=view)
+        return PanelWidgetField(view_model, view)
 
     def get_string_score(self, meta: cui.FieldMeta) -> int:
         return 1
@@ -94,30 +101,27 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
             json_codec = JsonDateCodec()
             date = json_codec.from_json(value) or datetime.date.today()
             return PanelWidgetField(
-                view_model=view_model,
-                view=pn.widgets.DatePicker(
-                    name=label, value=date, description=description
-                ),
+                view_model,
+                pn.widgets.DatePicker(name=label, value=date, description=description),
                 json_codec=json_codec,
             )
         if enum is not None:
-            return PanelWidgetField(
-                view_model,
-                view=(
-                    pn.widgets.Select(
-                        name=label,
-                        options=enum,
-                        value=value,
-                        description=description,
-                    )
-                ),
+            # TODO: check widget == "radio"
+            view = pn.widgets.Select(
+                name=label,
+                options=enum,
+                value=value,
+                description=description,
             )
-        return PanelWidgetField(
-            view_model,
-            view=(
-                pn.widgets.TextInput(name=label, value=value, description=description)
-            ),
-        )
+        elif ctx.meta.widget == "textarea":
+            view = pn.widgets.TextAreaInput(
+                name=label, value=value, description=description
+            )
+        else:
+            view = pn.widgets.TextInput(
+                name=label, value=value, description=description
+            )
+        return PanelWidgetField(view_model, view)
 
     def get_integer_score(self, meta: cui.FieldMeta) -> int:
         return 1
@@ -126,16 +130,19 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         return 1
 
     def create_integer_field(self, ctx: cui.FieldContext) -> cui.Field:
-        return self._create_numeric_field(ctx, is_int=True)
+        view_model = ctx.vm.primitive()
+        return PanelWidgetField(
+            view_model, self._create_numeric_view(view_model, is_int=True)
+        )
 
     def create_number_field(self, ctx: cui.FieldContext) -> cui.Field:
-        return self._create_numeric_field(ctx)
+        view_model = ctx.vm.primitive()
+        return PanelWidgetField(view_model, self._create_numeric_view(view_model))
 
     @classmethod
-    def _create_numeric_field(
-        cls, ctx: cui.FieldContext, *, is_int: bool | None = None
-    ) -> cui.Field:
-        view_model = ctx.vm.primitive()
+    def _create_numeric_view(
+        cls, view_model: ViewModel, *, is_int: bool | None = None
+    ) -> pn.widgets.WidgetBase:
         value = view_model.value
         label = view_model.meta.label
         description = view_model.meta.description
@@ -143,19 +150,14 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         minimum = view_model.meta.minimum
         maximum = view_model.meta.maximum
         enum = view_model.meta.enum
+
         if enum:
+            # TODO: check widget == "radio"
             if widget_hint == "slider":
-                return PanelWidgetField(
-                    view_model,
-                    view=pn.widgets.DiscreteSlider(
-                        name=label, value=value, options=enum
-                    ),
-                )
+                return pn.widgets.DiscreteSlider(name=label, value=value, options=enum)
             if widget_hint in ("select", None):
-                return PanelWidgetField(
-                    view_model,
-                    view=pn.widgets.Select(name=label, value=value, options=enum),
-                )
+                return pn.widgets.Select(name=label, value=value, options=enum)
+
         if (
             widget_hint == "slider"
             and isinstance(minimum, (int, float))
@@ -168,24 +170,19 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
                 step = round(step)
             else:
                 slider_cls = pn.widgets.FloatSlider
-            return PanelWidgetField(
-                view_model,
-                view=slider_cls(
-                    name=label,
-                    value=value,
-                    start=minimum,
-                    end=maximum,
-                    step=step,
-                ),
+            return slider_cls(
+                name=label,
+                value=value,
+                start=minimum,
+                end=maximum,
+                step=step,
             )
 
         if is_int:
             input_cls = pn.widgets.IntInput
         else:
             input_cls = pn.widgets.FloatInput
-        return PanelWidgetField(
-            view_model, view=input_cls(name=label, value=value, description=description)
-        )
+        return input_cls(name=label, value=value, description=description)
 
     def get_boolean_score(self, _meta: cui.FieldMeta) -> int:
         return 1
@@ -198,7 +195,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
             view = pn.widgets.Checkbox(
                 value=view_model.value, name=view_model.meta.label
             )
-        return PanelWidgetField(view_model, view=view)
+        return PanelWidgetField(view_model, view)
 
     def get_nullable_score(self, meta: cui.FieldMeta) -> int:
         return 1
@@ -211,7 +208,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         )
         return PanelWidgetField(
             view_model,
-            view=NullableWidget(
+            NullableWidget(
                 name=ctx.name,
                 value=ctx.initial_value,
                 inner=non_nullable_field.view,
@@ -226,7 +223,7 @@ class PanelFieldGroupFactory(cui.FieldGroupFactory):
         view_model: cvm.ViewModel,
         children: list[param.Parameterized],
     ) -> cui.Field:
-        return PanelViewableField(view_model=view_model, view=pn.Row(*children))
+        return PanelViewableField(view_model, pn.Row(*children))
 
     def create_column_field(
         self,
@@ -234,4 +231,4 @@ class PanelFieldGroupFactory(cui.FieldGroupFactory):
         view_model: cvm.ViewModel,
         children: list[param.Parameterized],
     ) -> cui.Field:
-        return PanelViewableField(view_model=view_model, view=pn.Column(*children))
+        return PanelViewableField(view_model, pn.Column(*children))

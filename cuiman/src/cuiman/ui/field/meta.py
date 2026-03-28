@@ -135,6 +135,7 @@ class FieldMeta(pydantic.BaseModel):
     advanced: bool | None = None
     required: bool | None = None
     password: bool | None = None
+    separator: str | None = None
     # Other properties with default values initialized from schema.
     # They may be overridden and will be used in the UI instead.
     minimum: int | float | None = None

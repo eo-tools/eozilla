@@ -2,10 +2,9 @@ type: object
 properties:
   plain:
     type: string
-    format: date
   date:
     type: string
     format: date
-  text_block:
+  text_area:
     type: string
     "x-ui:widget": "textarea"

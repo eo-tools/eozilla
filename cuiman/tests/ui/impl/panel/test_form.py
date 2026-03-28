@@ -10,9 +10,18 @@ from cuiman.ui import FieldMeta
 from cuiman.ui.impl.panel import PanelFormFactory
 from gavicore.models import Schema
 
+from .schema2ui import load_schemas
+
 
 # noinspection PyMethodMayBeStatic
 class PanelFormFactoryTest(TestCase):
+    def test_schemas(self):
+        factory = PanelFormFactory()
+        schemas = load_schemas()
+        for _title, schema in schemas:
+            print(f"Testing schema {_title}")
+            factory.create_form(_meta_from_schema(schema))
+
     def test_empty_schema(self):
         factory = PanelFormFactory()
         with pytest.raises(
@@ -21,5 +30,7 @@ class PanelFormFactoryTest(TestCase):
             factory.create_form(_meta_from_schema({}))
 
 
-def _meta_from_schema(d: dict) -> FieldMeta:
-    return FieldMeta.from_schema("root", Schema(**d))
+def _meta_from_schema(schema: Schema | dict) -> FieldMeta:
+    return FieldMeta.from_schema(
+        "root", schema if isinstance(schema, Schema) else Schema(**schema)
+    )

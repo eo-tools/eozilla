@@ -16,3 +16,8 @@ properties:
     type: array
     items:
       type: string
+  date_array:
+    type: array
+    items:
+      type: string
+      format: date
