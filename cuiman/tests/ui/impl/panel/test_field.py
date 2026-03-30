@@ -7,25 +7,25 @@ from unittest import TestCase
 import pytest
 
 from cuiman.ui import FieldMeta
-from cuiman.ui.impl.panel import PanelFormFactory
+from cuiman.ui.impl.panel import PanelField
 from gavicore.models import Schema
 
 from .schema2ui import load_schemas
 
 
 # noinspection PyMethodMayBeStatic
-class PanelFormFactoryTest(TestCase):
-    def test_all_schemas(self):
+class PanelFieldTest(TestCase):
+    def test_with_all_schemas(self):
         # TODO: test type="discriminator"
         # TODO: test type="anyOf"
         # TODO: test type="allOf"
         # TODO: test type="oneOf"
 
-        factory = PanelFormFactory()
         schemas = load_schemas()
         for path, schema in schemas:
+            name = path.stem.replace("-", "_")
             try:
-                factory.create_form(_meta_from_schema(schema))
+                PanelField.from_schema(name, schema)
             except Exception as e:
                 import traceback
 
@@ -37,11 +37,10 @@ class PanelFormFactoryTest(TestCase):
                 )
 
     def test_empty_schema(self):
-        factory = PanelFormFactory()
         with pytest.raises(
             ValueError, match="no factory found for creating a UI for field 'root'"
         ):
-            factory.create_form(_meta_from_schema({}))
+            PanelField.from_meta(_meta_from_schema({}))
 
 
 def _meta_from_schema(schema: Schema | dict) -> FieldMeta:

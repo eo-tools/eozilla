@@ -10,8 +10,8 @@ from cuiman.ui import (
     FieldBase,
     FieldContext,
     FieldFactoryBase,
+    FieldGenerator,
     FieldMeta,
-    FormFactory,
 )
 from gavicore.models import Schema
 
@@ -26,7 +26,7 @@ class MyFieldFactory(FieldFactoryBase):
 
 
 def make_ctx(meta: FieldMeta):
-    builder = FormFactory()
+    builder = FieldGenerator()
     return FieldContext(builder=builder, meta=meta)
 
 

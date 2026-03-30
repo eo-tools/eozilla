@@ -18,7 +18,7 @@ from .base import Field, View
 from .meta import FieldMeta
 
 if TYPE_CHECKING:
-    from .form import FormFactory
+    from .generator import FieldGenerator
     from .layout import LayoutFunction
 
 
@@ -28,7 +28,7 @@ class FieldContext:
     def __init__(
         self,
         *,
-        builder: "FormFactory",
+        builder: "FieldGenerator",
         meta: FieldMeta,
         initial_value: Any | Undefined = Undefined.value,
         parent_ctx: "FieldContext | None" = None,
@@ -90,7 +90,7 @@ class FieldContext:
         """Create a new field for the given field metadata."""
         child_ctx = self._create_child_ctx(child_meta)
         # noinspection PyProtectedMember
-        return self._builder._create_field(child_ctx)
+        return self._builder._generate_field(child_ctx)
 
     def _create_child_ctx(self, child_meta: FieldMeta) -> "FieldContext":
         initial_value = self.initial_value

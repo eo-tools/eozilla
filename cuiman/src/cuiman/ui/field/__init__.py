@@ -5,7 +5,7 @@
 from .base import Field, FieldBase
 from .context import FieldContext
 from .factory import FieldFactory, FieldFactoryBase
-from .form import FormFactory
+from .generator import FieldGenerator
 from .layout import LayoutFunction, LayoutManager
 from .meta import FieldGroup, FieldLayout, FieldMeta
 from .registry import FieldFactoryRegistry
@@ -17,10 +17,10 @@ __all__ = [
     "FieldFactory",
     "FieldFactoryBase",
     "FieldFactoryRegistry",
+    "FieldGenerator",
     "FieldGroup",
     "FieldLayout",
     "FieldMeta",
-    "FormFactory",
     "LayoutFunction",
     "LayoutManager",
 ]

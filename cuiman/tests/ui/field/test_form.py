@@ -13,8 +13,8 @@ from cuiman.ui import (
     FieldContext,
     FieldFactoryBase,
     FieldFactoryRegistry,
+    FieldGenerator,
     FieldMeta,
-    FormFactory,
 )
 from cuiman.ui.vm import (
     ArrayViewModel,
@@ -152,7 +152,7 @@ class FormFactoryTest(TestCase):
         registry.register(StringFieldFactory())
         registry.register(NumberFieldFactory())
         registry.register(BooleanFieldFactory())
-        self.form_factory = FormFactory(registry)
+        self.form_factory = FieldGenerator(registry)
 
     def test_form_factory_plain(self):
         builder = self.form_factory
@@ -183,7 +183,7 @@ class FormFactoryTest(TestCase):
             ),
         )
 
-        field = builder.create_form(
+        field = builder.generate_field(
             meta,
             initial_value={
                 "ds_paths": [],
@@ -336,7 +336,7 @@ class FormFactoryTest(TestCase):
             ),
         )
 
-        field = self.form_factory.create_form(
+        field = self.form_factory.generate_field(
             meta,
             initial_value={
                 "ds_paths": ["SST-20260301.nc", "SST-20260302.nc", "SST-20260303.nc"],
@@ -383,4 +383,4 @@ class FormFactoryTest(TestCase):
         with pytest.raises(
             ValueError, match="no factory found for creating a UI for field 'x'"
         ):
-            self.form_factory.create_form(meta)
+            self.form_factory.generate_field(meta)

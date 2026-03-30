@@ -13,8 +13,11 @@ from .meta import FieldMeta
 from .registry import FieldFactoryRegistry
 
 
-class FormFactory:
-    """Entry point for creating form fields."""
+class FieldGenerator:
+    """
+    Entry point for generating fields and field
+    forms from field metadata.
+    """
 
     def __init__(self, field_factory_registry: FieldFactoryRegistry | None = None):
         self._field_factory_registry = (
@@ -34,21 +37,29 @@ class FormFactory:
         """
         return self._field_factory_registry.register(field_factory)
 
-    def create_form(
+    def generate_field(
         self,
         meta: FieldMeta,
         initial_value: Any | Undefined = Undefined.value,
     ) -> Field:
-        """Create a new form field."""
+        """
+        Generate a field or form from the given field metadata.
+
+        Args:
+            meta: The field metadata.
+            initial_value: The optional, initial value for the field.
+        Returns:
+            The generated a field or form.
+        """
         ctx = FieldContext(
             builder=self,
             meta=meta,
             initial_value=initial_value,
             parent_ctx=None,
         )
-        return self._create_field(ctx)
+        return self._generate_field(ctx)
 
-    def _create_field(self, ctx: "FieldContext") -> Field:
+    def _generate_field(self, ctx: FieldContext) -> Field:
         factory = self._field_factory_registry.lookup(ctx.meta)
         if factory is None:
             # TODO: if a factory cannot be found, the default behaviour

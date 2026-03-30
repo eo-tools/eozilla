@@ -9,15 +9,15 @@ from typing import Literal
 import panel as pn
 
 import cuiman.ui as cui
+import cuiman.ui.vm as cvm
 from gavicore.models import DataType
 from gavicore.util.json import JsonDateCodec
 
-from ...vm import ViewModel
 from .extras.array import ArrayWidget
 from .extras.bbox import BBoxEditor
 from .extras.nullable import NullableWidget
 from .extras.object import ObjectWidget
-from .fields import PanelWidgetField
+from .field import PanelField
 from .util import ArrayTextConverter
 
 _ARRAY_CONVERTERS: dict[DataType, ArrayTextConverter] = {
@@ -33,7 +33,7 @@ _ARRAY_CONVERTERS: dict[DataType, ArrayTextConverter] = {
 # TODO: handle type="oneOf"
 
 
-class PanelWidgetFieldFactory(cui.FieldFactoryBase):
+class PanelFieldFactory(cui.FieldFactoryBase):
     def get_nullable_score(self, meta: cui.FieldMeta) -> int:
         return 1
 
@@ -41,7 +41,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         non_nullable_meta = ctx.meta.to_non_nullable()
         non_nullable_field = ctx.create_child_field(non_nullable_meta)
         view_model = ctx.vm.nullable(non_nullable_field.view_model)
-        return PanelWidgetField(
+        return PanelField(
             view_model,
             NullableWidget(
                 name=ctx.name,
@@ -59,12 +59,12 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         view_model = ctx.vm.object(properties=view_models)
         if ctx.meta.layout is not None:
             inner_viewable = ctx.layout(
-                layout_views,  # type: ignore[arg-type]
+                _layout_views,  # type: ignore[arg-type]
                 {k: f.view for k, f in prop_fields.items()},
             )
         else:
             inner_viewable = pn.Column(*[f.view for f in prop_fields.values()])
-        return PanelWidgetField(
+        return PanelField(
             view_model,
             ObjectWidget(name=view_model.meta.label, inner_viewable=inner_viewable),
         )
@@ -90,7 +90,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
 
         format_ = ctx.schema.format
         if format_ is not None and format_.lower() == "bbox":
-            return PanelWidgetField(view_model, BBoxEditor())
+            return PanelField(view_model, BBoxEditor())
 
         item_type = ctx.meta.item.schema_.type
         assert item_type is not None
@@ -115,7 +115,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
             label=view_model.meta.label,
             description=view_model.meta.description,
         )
-        return PanelWidgetField(view_model, view)
+        return PanelField(view_model, view)
 
     def get_string_score(self, meta: cui.FieldMeta) -> int:
         return 1
@@ -130,7 +130,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         if format_ == "date":
             json_codec = JsonDateCodec()
             date = json_codec.from_json(value) or datetime.date.today()
-            return PanelWidgetField(
+            return PanelField(
                 view_model,
                 pn.widgets.DatePicker(name=label, value=date, description=description),
                 json_codec=json_codec,
@@ -151,7 +151,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
             view = pn.widgets.TextInput(
                 name=label, value=value, description=description
             )
-        return PanelWidgetField(view_model, view)
+        return PanelField(view_model, view)
 
     def get_integer_score(self, meta: cui.FieldMeta) -> int:
         return 1
@@ -161,17 +161,17 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
 
     def create_integer_field(self, ctx: cui.FieldContext) -> cui.Field:
         view_model = ctx.vm.primitive()
-        return PanelWidgetField(
+        return PanelField(
             view_model, self._create_numeric_view(view_model, is_int=True)
         )
 
     def create_number_field(self, ctx: cui.FieldContext) -> cui.Field:
         view_model = ctx.vm.primitive()
-        return PanelWidgetField(view_model, self._create_numeric_view(view_model))
+        return PanelField(view_model, self._create_numeric_view(view_model))
 
     @classmethod
     def _create_numeric_view(
-        cls, view_model: ViewModel, *, is_int: bool | None = None
+        cls, view_model: cvm.ViewModel, *, is_int: bool | None = None
     ) -> pn.widgets.WidgetBase:
         value = view_model.value
         label = view_model.meta.label
@@ -225,10 +225,10 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
             view = pn.widgets.Checkbox(
                 value=view_model.value, name=view_model.meta.label
             )
-        return PanelWidgetField(view_model, view)
+        return PanelField(view_model, view)
 
 
-def layout_views(
+def _layout_views(
     _ctx: cui.FieldContext,
     direction: Literal["row", "column"],
     views: list[pn.viewable.Viewable],

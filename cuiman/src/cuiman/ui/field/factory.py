@@ -12,13 +12,25 @@ from .meta import FieldMeta
 
 
 class FieldFactory(ABC):
+    """
+    Field factories are used to create UI fields from
+    field metadata and other context data.
+    The applicability of a factory for given field
+    metadata is determined by an integer score value.
+    """
+
     @abstractmethod
     def get_score(self, meta: FieldMeta) -> int:
-        """Get the score of this factory for the given field metadata."""
+        """
+        Get the score of this factory for the given field metadata.
+        The score is proportional to the factory's ability to create
+        a field for the field metadata.
+        A negative or zero score indicates the factory's unability.
+        """
 
     @abstractmethod
     def create_field(self, ctx: FieldContext) -> Field:
-        """Create the UI field for the given builder context."""
+        """Create the UI field for the given field context."""
 
 
 # noinspection PyMethodMayBeStatic,PyUnusedLocal

@@ -12,7 +12,7 @@ import typer
 import yaml
 
 from cuiman.ui import FieldMeta
-from cuiman.ui.impl.panel import PanelFormFactory
+from cuiman.ui.impl.panel import PanelField
 from cuiman.ui.vm import ViewModelChangeEvent
 from gavicore.models import Schema
 
@@ -33,7 +33,6 @@ def main(
 ) -> None:
     """Convert a selected schema into a Panel UI."""
 
-    form_factory = PanelFormFactory()
     schemas = load_schemas(schema_spec)
     schema_dict = {p.stem.title(): s for p, s in schemas}
     schema_names = list(schema_dict.keys())
@@ -72,7 +71,7 @@ def main(
         schema = schema_dict[selected_schema_name]
         schema.title = schema.title or ""  # Force no title if not explicitly set
         field_meta = FieldMeta.from_schema("root", schema)
-        form_field = form_factory.create_form(field_meta)
+        form_field = PanelField.from_meta(field_meta)
         form_field.view_model.watch(_on_view_model_change)
         ui_column[1] = form_field.view
         _change_current_value(form_field.view_model.value)
