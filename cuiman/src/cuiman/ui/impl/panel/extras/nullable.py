@@ -5,7 +5,6 @@
 import panel as pn
 import param
 
-# TODO: This is AI-generated. Verify & test!
 
 pn.extension()
 
@@ -15,8 +14,11 @@ class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
 
     value = param.Parameter(default=None, allow_None=True)
 
-    def __init__(self, inner: pn.widgets.Widget, **params):
+    def __init__(self, inner: pn.widgets.WidgetBase, **params):
         super().__init__(**params)
+
+        if "value" not in inner.param:
+            raise ValueError("inner must have a writable 'value' parameter")
 
         self._toggle = pn.widgets.Switch(
             name=inner.name,
@@ -24,26 +26,30 @@ class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
             styles={"margin-bottom": "0px"},
         )
         self._inner = inner
-        self._inner.name = ""
+        try:
+            self._inner.name = ""
+        except TypeError:
+            # For some widget-like elements we get:
+            # TypeError: Constant parameter 'name' cannot be modified
+            pass
 
         # --- init inner value if needed
         if self.value is not None:
             self._inner.value = self.value
 
         # --- sync toggle → value
-        self._toggle.param.watch(self._on_toggle, "value")
+        self._toggle.param.watch(self._on_toggle_change, "value")
 
-        # --- sync inner → value
-        self._inner.param.watch(self._on_inner, "value")
+        self._inner.param.watch(self._on_inner_change, "value")
 
         # --- sync external value → UI
-        self.param.watch(self._on_value, "value")
+        self.param.watch(self._on_value_change, "value")
 
         self._update_visibility()
 
     # --- reactions
 
-    def _on_toggle(self, event):
+    def _on_toggle_change(self, event):
         if event.new:
             # enable → take inner value
             self.value = self._inner.value
@@ -51,11 +57,11 @@ class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
             # disable → null
             self.value = None
 
-    def _on_inner(self, event):
+    def _on_inner_change(self, event):
         if self._toggle.value:
             self.value = event.new
 
-    def _on_value(self, event):
+    def _on_value_change(self, event):
         if event.new is None:
             self._toggle.value = False
         else:

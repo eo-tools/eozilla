@@ -1,0 +1,17 @@
+type: object
+properties:
+  inner_plain:
+    type: object
+    properties:
+      property_1:
+        type: string
+      property_2:
+        type: string
+  inner_nullable:
+    type: object
+    nullable: true
+    properties:
+      property_1:
+        type: string
+      property_2:
+        type: string
