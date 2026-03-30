@@ -17,7 +17,8 @@ from ...vm import ViewModel
 from .extras.array import ArrayWidget
 from .extras.bbox import BBoxEditor
 from .extras.nullable import NullableWidget
-from .fields import PanelViewableField, PanelWidgetField
+from .extras.object import ObjectWidget
+from .fields import PanelLayoutField, PanelWidgetField
 from .util import ArrayTextConverter
 
 _ARRAY_CONVERTERS: dict[DataType, ArrayTextConverter] = {
@@ -26,6 +27,11 @@ _ARRAY_CONVERTERS: dict[DataType, ArrayTextConverter] = {
     DataType.number: ArrayTextConverter.Number(),
     DataType.string: ArrayTextConverter.String(),
 }
+
+# TODO: handle type="discriminator"
+# TODO: handle type="anyOf"
+# TODO: handle type="allOf"
+# TODO: handle type="oneOf"
 
 
 class PanelWidgetFieldFactory(cui.FieldFactoryBase):
@@ -37,8 +43,10 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         view_models = {k: f.view_model for k, f in prop_fields.items()}
         view_model = ctx.vm.object(properties=view_models)
         views = [f.view for f in prop_fields.values()]
-        view = pn.Column(*views)
-        return PanelViewableField(view_model, view)
+        # view = pn.Column(*views)
+        # return PanelViewableField(view_model, view)
+        view = ObjectWidget(name=view_model.meta.label, inner_widgets=views)
+        return PanelWidgetField(view_model, view, unbound=True)
 
     def get_array_score(self, meta: cui.FieldMeta) -> int:
         if meta.item is None:
@@ -68,6 +76,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         array_converter = _ARRAY_CONVERTERS.get(item_type)
         assert array_converter is not None
 
+        # TODO: handle type="array" complex types or with widget="editor"
         # if view_model.meta.widget == "editor" or array_converter is None:
         #     item_editor = ctx.create_child_field(ctx.meta.item)
         #     view = ArrayEditor(
@@ -211,7 +220,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
             NullableWidget(
                 name=ctx.name,
                 value=ctx.initial_value,
-                inner=non_nullable_field.view,
+                inner_widget=non_nullable_field.view,
             ),
         )
 
@@ -223,7 +232,7 @@ class PanelFieldGroupFactory(cui.FieldGroupFactory):
         view_model: cvm.ViewModel,
         children: list[param.Parameterized],
     ) -> cui.Field:
-        return PanelViewableField(view_model, pn.Row(*children))
+        return PanelLayoutField(view_model, pn.Row(*children))
 
     def create_column_field(
         self,
@@ -231,4 +240,4 @@ class PanelFieldGroupFactory(cui.FieldGroupFactory):
         view_model: cvm.ViewModel,
         children: list[param.Parameterized],
     ) -> cui.Field:
-        return PanelViewableField(view_model, pn.Column(*children))
+        return PanelLayoutField(view_model, pn.Column(*children))

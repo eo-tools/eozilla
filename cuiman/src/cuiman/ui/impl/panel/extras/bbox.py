@@ -14,6 +14,7 @@ BBox = list[float]
 
 
 class BBoxEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
+    # TODO: check: better reuse `value` from base class
     value = param.List(default=[0, 40, 20, 60], allow_None=False)
 
     def __init__(

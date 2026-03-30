@@ -15,7 +15,12 @@ from .schema2ui import load_schemas
 
 # noinspection PyMethodMayBeStatic
 class PanelFormFactoryTest(TestCase):
-    def test_schemas(self):
+    def test_all_schemas(self):
+        # TODO: test type="discriminator"
+        # TODO: test type="anyOf"
+        # TODO: test type="allOf"
+        # TODO: test type="oneOf"
+
         factory = PanelFormFactory()
         schemas = load_schemas()
         for path, schema in schemas:

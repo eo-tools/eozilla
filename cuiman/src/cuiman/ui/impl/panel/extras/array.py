@@ -14,6 +14,7 @@ T = TypeVar("T")
 
 
 class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
+    # TODO: check: better reuse `value` from base class
     value = param.List(default=[])
 
     def __init__(

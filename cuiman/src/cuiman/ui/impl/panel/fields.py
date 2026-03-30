@@ -9,20 +9,6 @@ import cuiman.ui.vm as cvm
 from gavicore.util.json import JsonCodec, JsonIdentityCodec
 
 
-class PanelViewableField(cui.FieldBase):
-    """A panel viewable field."""
-
-    def __init__(self, view_model: cvm.ViewModel, view: pn.viewable.Viewable):
-        assert isinstance(view, pn.viewable.Viewable)
-        super().__init__(view_model, view)
-
-    @property
-    def view(self) -> pn.viewable.Viewable:
-        """The panel viewable."""
-        isinstance(self._view, pn.viewable.Viewable)
-        return self._view
-
-
 class PanelWidgetField(cui.FieldBase):
     """A panel widget-like field."""
 
@@ -32,18 +18,23 @@ class PanelWidgetField(cui.FieldBase):
         view: pn.widgets.WidgetBase,
         *,
         json_codec: JsonCodec | None = None,
+        unbound: bool = False,
     ):
         isinstance(view, pn.widgets.WidgetBase)
         super().__init__(view_model, view)
         self.json_codec = json_codec or JsonIdentityCodec()
+        self.unbound = unbound
 
     @property
     def view(self) -> pn.widgets.WidgetBase:
-        """The panel widget-like."""
+        """The Panel widget-like viewable."""
         isinstance(self._view, pn.widgets.WidgetBase)
         return self._view
 
     def _bind(self):
+        if self.unbound:
+            return
+
         def observe_vm(_e):
             self.view.value = self.json_codec.from_json(self.view_model.value)
 
@@ -52,3 +43,17 @@ class PanelWidgetField(cui.FieldBase):
 
         self.view_model.watch(observe_vm)
         self.view.param.watch(observe_view, "value")
+
+
+class PanelLayoutField(cui.FieldBase):
+    """An unbound panel field that is used for layout only."""
+
+    def __init__(self, view_model: cvm.ViewModel, view: pn.viewable.Viewable):
+        assert isinstance(view, pn.viewable.Viewable)
+        super().__init__(view_model, view)
+
+    @property
+    def view(self) -> pn.viewable.Viewable:
+        """The Panel viewable used for the layout."""
+        isinstance(self._view, pn.viewable.Viewable)
+        return self._view

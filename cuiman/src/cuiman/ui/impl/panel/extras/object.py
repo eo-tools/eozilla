@@ -3,8 +3,6 @@
 #  https://opensource.org/license/apache-2-0.
 
 import panel as pn
-import param
-
 
 pn.extension()
 
@@ -17,14 +15,14 @@ class ObjectWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
     Its value is a dummy for compatibility only.
     """
 
-    def __init__(self, name: str, properties: list[param.Parameterized], **params):
+    def __init__(self, name: str, inner_widgets: list[pn.widgets.WidgetBase], **params):
         super().__init__(**params)
         self.name = name
-        self.properties = properties
+        self._inner_widgets = inner_widgets
 
     def __panel__(self):
         return pn.Column(
             f"### {self.name}",
             pn.layout.Divider(margin=(0, 0, 0, 0)),
-            *self.properties,
+            *self._inner_widgets,
         )

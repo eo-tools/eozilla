@@ -14,20 +14,20 @@ class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
 
     value = param.Parameter(default=None, allow_None=True)
 
-    def __init__(self, inner: pn.widgets.WidgetBase, **params):
+    def __init__(self, inner_widget: pn.widgets.WidgetBase, **params):
         super().__init__(**params)
 
-        if "value" not in inner.param:
+        if "value" not in inner_widget.param:
             raise ValueError("inner must have a writable 'value' parameter")
 
         self._toggle = pn.widgets.Switch(
-            name=inner.name,
+            name=inner_widget.name,
             value=self.value is not None,
             styles={"margin-bottom": "0px"},
         )
-        self._inner = inner
+        self._inner_widget = inner_widget
         try:
-            self._inner.name = ""
+            self._inner_widget.name = ""
         except TypeError:
             # For some widget-like elements we get:
             # TypeError: Constant parameter 'name' cannot be modified
@@ -35,12 +35,12 @@ class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
 
         # --- init inner value if needed
         if self.value is not None:
-            self._inner.value = self.value
+            self._inner_widget.value = self.value
 
         # --- sync toggle → value
         self._toggle.param.watch(self._on_toggle_change, "value")
 
-        self._inner.param.watch(self._on_inner_change, "value")
+        self._inner_widget.param.watch(self._on_inner_change, "value")
 
         # --- sync external value → UI
         self.param.watch(self._on_value_change, "value")
@@ -52,7 +52,7 @@ class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
     def _on_toggle_change(self, event):
         if event.new:
             # enable → take inner value
-            self.value = self._inner.value
+            self.value = self._inner_widget.value
         else:
             # disable → null
             self.value = None
@@ -66,13 +66,13 @@ class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
             self._toggle.value = False
         else:
             self._toggle.value = True
-            self._inner.value = event.new
+            self._inner_widget.value = event.new
 
         self._update_visibility()
 
     def _update_visibility(self):
-        self._inner.visible = self._toggle.value
+        self._inner_widget.visible = self._toggle.value
 
     # --- Panel rendering hook
     def __panel__(self):
-        return pn.Column(self._toggle, self._inner, styles={"gap": "0px"})
+        return pn.Column(self._toggle, self._inner_widget, styles={"gap": "0px"})
