@@ -18,9 +18,18 @@ class PanelFormFactoryTest(TestCase):
     def test_schemas(self):
         factory = PanelFormFactory()
         schemas = load_schemas()
-        for _title, schema in schemas:
-            print(f"Testing schema {_title}")
-            factory.create_form(_meta_from_schema(schema))
+        for path, schema in schemas:
+            try:
+                factory.create_form(_meta_from_schema(schema))
+            except Exception as e:
+                import traceback
+
+                print(80 * "-")
+                traceback.print_exc()
+                print(80 * "-")
+                self.fail(
+                    f"Exception for schema {path.name!r}: {type(e).__name__}: {e}"
+                )
 
     def test_empty_schema(self):
         factory = PanelFormFactory()

@@ -35,8 +35,8 @@ def main(
 
     form_factory = PanelFormFactory()
     schemas = load_schemas(schema_spec)
-    schema_names = list(n for n, _s in schemas)
-    schema_dict = dict(schemas)
+    schema_dict = {p.stem.title(): s for p, s in schemas}
+    schema_names = list(schema_dict.keys())
 
     selected_schema_name = schema_names[0]
 
@@ -70,26 +70,29 @@ def main(
     pn.serve(panel, title=f"{app_name}")
 
 
-def load_schemas(schema_spec: str | None = None) -> list[tuple[str, Schema]]:
-    schemas: list[tuple[str, Schema]]
+def load_schemas(schema_spec: str | None = None) -> list[tuple[Path, Schema]]:
+    schemas: list[tuple[Path, Schema]]
     if schema_spec:
         schema_path: Path = Path(schema_spec)
         if len(schema_path.parts) == 1 and schema_path.suffix == "":
             schema_path = schemas_dir / f"{schema_spec}.yaml"
-        schemas = [load_schema(schema_path)]
+        schemas = [(schema_path, load_schema(schema_path))]
     else:
-        schemas = [load_schema(schema_path) for schema_path in schemas_dir.iterdir()]
+        schemas = [
+            (schema_path, load_schema(schema_path))
+            for schema_path in schemas_dir.iterdir()
+        ]
     return schemas
 
 
-def load_schema(path: Path) -> tuple[str, Schema]:
+def load_schema(path: Path) -> Schema:
     suffix = path.suffix.lower()
     with open(path) as f:
         if suffix in (".yaml", ".yml"):
             schema_dict = yaml.safe_load(f)
         else:
             schema_dict = json.load(f)
-    return path.stem.title(), Schema(**schema_dict)
+    return Schema(**schema_dict)
 
 
 def _on_view_model_change(event: ViewModelChangeEvent) -> None:
