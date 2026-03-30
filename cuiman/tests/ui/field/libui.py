@@ -77,6 +77,7 @@ class View(ABC):
 
     def __init__(self, **props: Any):
         self.props = props
+        self.observers: set[Observer] = set()
 
     @property
     def label(self) -> str | None:
@@ -87,6 +88,16 @@ class View(ABC):
     @abstractmethod
     def render(self) -> Rendering:
         """Render the UI"""
+
+    def watch(self, observer: Observer) -> None:
+        self.observers.add(observer)
+
+    def unwatch(self, observer: Observer) -> None:
+        self.observers.discard(observer)
+
+    def _notify(self) -> None:
+        for observer in list(self.observers):
+            observer()
 
 
 class Container(View, ABC):
@@ -134,7 +145,7 @@ class Column(Container):
             return Rendering.empty()
         boxes = [r.box(width=target_width) for r in renderings]
         lines: list[str] = []
-        for i, box in enumerate(boxes):
+        for box in boxes:
             lines.extend(box.lines)
         return Rendering(lines).box(**self.props)
 
@@ -144,7 +155,6 @@ class Widget(Generic[T], View, ABC):
 
     def __init__(self, **props):
         super().__init__(**props)
-        self.observers: set[Observer] = set()
 
     @property
     def value(self) -> T:
@@ -161,16 +171,6 @@ class Widget(Generic[T], View, ABC):
     @abstractmethod
     def _set_value(self, value: T) -> None:
         """Set a new value."""
-
-    def watch(self, observer: Observer) -> None:
-        self.observers.add(observer)
-
-    def unwatch(self, observer: Observer) -> None:
-        self.observers.discard(observer)
-
-    def _notify(self) -> None:
-        for observer in list(self.observers):
-            observer()
 
 
 class WidgetBase(Generic[T], Widget[T], ABC):

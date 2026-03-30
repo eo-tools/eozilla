@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from typing import Literal
 from unittest import TestCase
 
 import pytest
@@ -12,17 +13,14 @@ from cuiman.ui import (
     FieldContext,
     FieldFactoryBase,
     FieldFactoryRegistry,
-    FieldGroupFactory,
     FieldMeta,
     FormFactory,
 )
 from cuiman.ui.vm import (
     ArrayViewModel,
-    DynamicObjectViewModel,
     NullableViewModel,
     ObjectViewModel,
     PrimitiveViewModel,
-    ViewModel,
 )
 from gavicore.models import Schema
 
@@ -41,11 +39,7 @@ from .libui import (
 # --- UI field adapter --------
 
 
-class LibuiViewAdapter(FieldBase):
-    """A view adapter."""
-
-
-class LibuiWidgetAdapter(FieldBase):
+class LibuiField(FieldBase):
     def _bind(self):
         def observe_vm(_e):
             self.view.value = self.view_model.value
@@ -68,9 +62,24 @@ class ObjectFieldFactory(FieldFactoryBase):
         prop_fields = ctx.create_property_fields()
         view_models = {k: f.view_model for k, f in prop_fields.items()}
         view_model = ctx.vm.object(properties=view_models)
-        views = [f.view for f in prop_fields.values()]
-        view = Column(*views, label=view_model.meta.title)
-        return LibuiViewAdapter(view_model, view=view)
+        if ctx.meta.layout is None:
+            views = [f.view for f in prop_fields.values()]
+            view = Column(*views, label=view_model.meta.title)
+        else:
+            views = {k: f.view for k, f in prop_fields.items()}
+            view = ctx.layout(layout_views, views)
+        return LibuiField(view_model, view=view)
+
+
+def layout_views(
+    _ctx: FieldContext,
+    direction: Literal["row", "column"],
+    views: list[View],
+) -> Row | Column:
+    if direction == "row":
+        return Row(*views)
+    else:
+        return Column(*views)
 
 
 class ArrayFieldFactory(FieldFactoryBase):
@@ -80,7 +89,7 @@ class ArrayFieldFactory(FieldFactoryBase):
     def create_array_field(self, ctx: FieldContext) -> Field:
         view_model = ctx.vm.array()
         view = ListEditor(value=view_model.value, label=view_model.meta.title)
-        return LibuiWidgetAdapter(view_model, view=view)
+        return LibuiField(view_model, view=view)
 
 
 class StringFieldFactory(FieldFactoryBase):
@@ -90,7 +99,7 @@ class StringFieldFactory(FieldFactoryBase):
     def create_string_field(self, ctx: FieldContext) -> Field:
         view_model = ctx.vm.primitive()
         view = TextInput(value=view_model.value, label=view_model.meta.title)
-        return LibuiWidgetAdapter(view_model, view=view)
+        return LibuiField(view_model, view=view)
 
 
 class NumberFieldFactory(FieldFactoryBase):
@@ -100,7 +109,7 @@ class NumberFieldFactory(FieldFactoryBase):
     def create_number_field(self, ctx: FieldContext) -> Field:
         view_model = ctx.vm.primitive()
         view = NumberInput(value=view_model.value, label=view_model.meta.title)
-        return LibuiWidgetAdapter(view_model, view=view)
+        return LibuiField(view_model, view=view)
 
 
 class BooleanFieldFactory(FieldFactoryBase):
@@ -110,7 +119,7 @@ class BooleanFieldFactory(FieldFactoryBase):
     def create_boolean_field(self, ctx: FieldContext) -> Field:
         view_model = ctx.vm.primitive()
         view = Checkbox(value=view_model.value, label=view_model.meta.title)
-        return LibuiWidgetAdapter(view_model, view=view)
+        return LibuiField(view_model, view=view)
 
 
 class NullFieldFactory(FieldFactoryBase):
@@ -128,7 +137,7 @@ class NullFieldFactory(FieldFactoryBase):
             child=non_nullable_view,
             label=view_model.meta.title,
         )
-        return LibuiWidgetAdapter(view_model, view=view)
+        return LibuiField(view_model, view=view)
 
 
 # --- UI field builder usage --------
@@ -183,7 +192,7 @@ class FormFactoryTest(TestCase):
                 "verbose": False,
             },
         )
-        self.assertIsInstance(field, LibuiViewAdapter)
+        self.assertIsInstance(field, LibuiField)
         view_model = field.view_model
         view = field.view
 
@@ -287,8 +296,6 @@ class FormFactoryTest(TestCase):
         )
 
     def test_form_factory_with_layout(self):
-        self.form_factory.register_field_factory(MyFieldGroupFactory())
-
         meta = FieldMeta.from_schema(
             "root",
             Schema(
@@ -338,10 +345,10 @@ class FormFactoryTest(TestCase):
                 "verbose": True,
             },
         )
-        self.assertIsInstance(field, LibuiViewAdapter)
+        self.assertIsInstance(field, LibuiField)
         view_model = field.view_model
         view = field.view
-        self.assertIsInstance(view_model, DynamicObjectViewModel)
+        self.assertIsInstance(view_model, ObjectViewModel)
         self.assertIsInstance(view, Row)
         row_children = view.children
         self.assertEqual(2, len(row_children))
@@ -377,15 +384,3 @@ class FormFactoryTest(TestCase):
             ValueError, match="no factory found for creating a UI for field 'x'"
         ):
             self.form_factory.create_form(meta)
-
-
-class MyFieldGroupFactory(FieldGroupFactory):
-    def create_row_field(
-        self, ctx: FieldContext, view_model: ViewModel, children: list[View]
-    ) -> Field:
-        return LibuiViewAdapter(view_model=view_model, view=Row(*children))
-
-    def create_column_field(
-        self, ctx: FieldContext, view_model: ViewModel, children: list[View]
-    ) -> Field:
-        return LibuiViewAdapter(view_model=view_model, view=Column(*children))

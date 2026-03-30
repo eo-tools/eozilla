@@ -80,34 +80,3 @@ class ObjectViewModel(ObjectViewModelBase):
                     v = child_meta.get_initial_value()
                 vm = self._create_child(child_meta, v)
             self._properties[k] = vm
-
-
-class DynamicObjectViewModel(ObjectViewModelBase):
-    """
-    A view model for a non-nullable, static object
-    comprising view models for each of its properties.
-    """
-
-    def __init__(self, meta: FieldMeta):
-        super().__init__(meta, Undefined.value)
-        self._frozen = False
-
-    def define_property(self, prop_name: str, prop_vm: ViewModel) -> None:
-        if self._frozen:
-            raise ValueError("cannot define properties after freeze() was called")
-        if prop_name not in self.meta.properties:
-            raise ValueError(
-                f"property {prop_name!r} not found in field {self.meta.name!r}"
-            )
-        self._properties[prop_name] = prop_vm
-        self._invalidate()
-
-    def freeze(self):
-        # Define all yet undefined properties from meta.properties
-        properties = dict(self.meta.properties)
-        for prop_name, prop_meta in properties.items():
-            if prop_name not in properties:
-                v = prop_meta.get_initial_value()
-                prop_vm = self._create_child(prop_meta, v)
-                self.define_property(prop_name, prop_vm)
-        self._frozen = True

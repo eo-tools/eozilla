@@ -7,7 +7,7 @@ from cuiman.ui import Field, FieldFactoryRegistry, FieldMeta, FormFactory
 from gavicore.models import InputDescription, Schema
 from gavicore.util.undefined import Undefined
 
-from .factories import PanelFieldGroupFactory, PanelWidgetFieldFactory
+from .factories import PanelWidgetFieldFactory
 
 
 class PanelFormFactory(FormFactory):
@@ -20,7 +20,6 @@ class PanelFormFactory(FormFactory):
         super().__init__(
             FieldFactoryRegistry(
                 PanelWidgetFieldFactory(),
-                PanelFieldGroupFactory(),
             )
         )
 

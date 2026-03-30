@@ -6,11 +6,9 @@ from abc import ABC, abstractmethod
 
 from gavicore.models import DataType
 
-from ..vm import ViewModel
-from ..vm.object import DynamicObjectViewModel
-from .base import Field, View
+from .base import Field
 from .context import FieldContext
-from .meta import FieldGroup, FieldMeta
+from .meta import FieldMeta
 
 
 class FieldFactory(ABC):
@@ -146,102 +144,3 @@ class FieldFactoryBase(FieldFactory, ABC):
     def create_untyped_field(self, ctx: FieldContext) -> Field:
         """Create a UI field for a value with no explicit type specified."""
         raise NotImplementedError
-
-
-class FieldGroupFactory(FieldFactory):
-    """
-    A convenient base class for UI field factories that can create
-    container UI fields like panels that align their items
-    either in a row or column using the [meta.layout][FieldMeta.layout]
-    property. The factory applies only to fields
-
-    - of data type "object" and
-    - that have a defined [meta.layout][FieldMeta.layout].
-    """
-
-    def get_score(self, meta: FieldMeta) -> int:
-        """
-        Compute the score: Will return 10 for fields of type "object"
-        and (!) a specified layout, otherwise 0.
-        """
-        if meta.schema_.type != DataType.object or meta.layout is None:
-            return 0
-        return 10
-
-    def create_field(self, ctx: FieldContext) -> Field:
-        """
-        Create a UI field for a value of type "object".
-        """
-        assert ctx.schema.type == DataType.object
-        assert ctx.meta.layout is not None
-        group: FieldGroup
-        if ctx.meta.layout == "row":
-            group = FieldGroup(type="row")
-        elif ctx.meta.layout == "column":
-            group = FieldGroup(type="column")
-        else:
-            assert isinstance(ctx.meta.layout, FieldGroup)
-            group = ctx.meta.layout
-        view_model = DynamicObjectViewModel(ctx.meta)
-        return self._from_group(ctx, group, view_model, dict(ctx.meta.properties))
-
-    @abstractmethod
-    def create_row_field(
-        self, ctx: FieldContext, view_model: ViewModel, children: list[View]
-    ) -> Field:
-        """Create a panel field with given children aligned in a row."""
-
-    @abstractmethod
-    def create_column_field(
-        self, ctx: FieldContext, view_model: ViewModel, children: list[View]
-    ) -> Field:
-        """Create a panel field with given children aligned in a column."""
-
-    def _from_group(
-        self,
-        ctx: FieldContext,
-        group: FieldGroup,
-        view_model: DynamicObjectViewModel,
-        properties: dict[str, FieldMeta],
-    ) -> Field:
-        child_fields: list[Field]
-        if not group.items:
-            child_fields = [
-                ctx.create_child_field(prop_meta) for prop_meta in properties.values()
-            ]
-            properties.clear()
-        else:
-            child_fields = []
-            for group_item in group.items:
-                if isinstance(group_item, FieldGroup):
-                    child_field = self._from_group(
-                        ctx, group_item, view_model, properties
-                    )
-                else:
-                    assert isinstance(group_item, str)
-                    assert isinstance(ctx.meta.properties, dict)
-                    prop_name: str = group_item
-                    prop_meta = ctx.meta.properties.get(prop_name)
-                    if prop_meta is None:
-                        raise ValueError(
-                            f"property {prop_name!r} not found in object "
-                            f"field {ctx.meta.name!r}"
-                        )
-                    child_field = ctx.create_child_field(prop_meta)
-                    properties.pop(prop_name)
-                child_fields.append(child_field)
-
-        for child_field in child_fields:
-            child_model = child_field.view_model
-            child_name = child_model.meta.name
-            if (
-                child_name in view_model.meta.properties
-                and child_model is not view_model
-            ):
-                view_model.define_property(child_name, child_model)
-
-        child_views = [child_field.view for child_field in child_fields]
-        if group.type == "row":
-            return self.create_row_field(ctx, view_model, child_views)
-        else:
-            return self.create_column_field(ctx, view_model, child_views)

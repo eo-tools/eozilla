@@ -14,11 +14,12 @@ from ..vm import (
     PrimitiveViewModel,
     ViewModel,
 )
-from .base import Field
+from .base import Field, View
 from .meta import FieldMeta
 
 if TYPE_CHECKING:
     from .form import FormFactory
+    from .layout import LayoutFunction
 
 
 class FieldContext:
@@ -67,6 +68,11 @@ class FieldContext:
         if self._parent_ctx is not None:
             return self._parent_ctx.path + [self.name]
         return [self.name]
+
+    def layout(self, layout_function: "LayoutFunction", views: dict[str, View]) -> View:
+        from .layout import LayoutManager
+
+        return LayoutManager(layout_function, views).layout(self)
 
     def create_child_fields(self) -> dict[str, Field]:
         return {

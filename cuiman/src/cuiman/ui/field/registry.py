@@ -2,18 +2,20 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import TYPE_CHECKING, Callable
+from typing import Callable
 
+from gavicore.util.ensure import ensure_type
+
+from .factory import FieldFactory
 from .meta import FieldMeta
-
-if TYPE_CHECKING:
-    from .factory import FieldFactory
 
 
 class FieldFactoryRegistry:
     """A registry of field factories."""
 
     def __init__(self, *factories: "FieldFactory"):
+        for i, f in enumerate(factories):
+            ensure_type(f"factory[{i}]", f, FieldFactory)
         self._factories = set(factories)
 
     @property
@@ -29,6 +31,7 @@ class FieldFactoryRegistry:
         Returns:
             An callable that can be used to register the added factory.
         """
+        ensure_type("factory", factory, FieldFactory)
 
         def _unregister():
             self.unregister(factory)

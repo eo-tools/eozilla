@@ -4,8 +4,9 @@
 
 from .base import Field, FieldBase
 from .context import FieldContext
-from .factory import FieldFactory, FieldFactoryBase, FieldGroupFactory
+from .factory import FieldFactory, FieldFactoryBase
 from .form import FormFactory
+from .layout import LayoutFunction, LayoutManager
 from .meta import FieldGroup, FieldLayout, FieldMeta
 from .registry import FieldFactoryRegistry
 
@@ -17,8 +18,9 @@ __all__ = [
     "FieldFactoryBase",
     "FieldFactoryRegistry",
     "FieldGroup",
-    "FieldGroupFactory",
     "FieldLayout",
     "FieldMeta",
     "FormFactory",
+    "LayoutFunction",
+    "LayoutManager",
 ]

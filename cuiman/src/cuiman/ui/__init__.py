@@ -10,14 +10,14 @@ from .field import (
     FieldFactoryBase,
     FieldFactoryRegistry,
     FieldGroup,
-    FieldGroupFactory,
     FieldLayout,
     FieldMeta,
     FormFactory,
+    LayoutFunction,
+    LayoutManager,
 )
 
 __all__ = [
-    "FieldGroupFactory",
     "FieldContext",
     "Field",
     "FieldBase",
@@ -28,4 +28,6 @@ __all__ = [
     "FieldLayout",
     "FieldMeta",
     "FormFactory",
+    "LayoutFunction",
+    "LayoutManager",
 ]

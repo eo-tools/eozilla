@@ -4,12 +4,11 @@
 
 import datetime
 import math
+from typing import Literal
 
 import panel as pn
-import param
 
 import cuiman.ui as cui
-import cuiman.ui.vm as cvm
 from gavicore.models import DataType
 from gavicore.util.json import JsonDateCodec
 
@@ -18,7 +17,7 @@ from .extras.array import ArrayWidget
 from .extras.bbox import BBoxEditor
 from .extras.nullable import NullableWidget
 from .extras.object import ObjectWidget
-from .fields import PanelLayoutField, PanelWidgetField
+from .fields import PanelWidgetField
 from .util import ArrayTextConverter
 
 _ARRAY_CONVERTERS: dict[DataType, ArrayTextConverter] = {
@@ -58,11 +57,17 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         prop_fields = ctx.create_property_fields()
         view_models = {k: f.view_model for k, f in prop_fields.items()}
         view_model = ctx.vm.object(properties=view_models)
-        views = [f.view for f in prop_fields.values()]
-        # view = pn.Column(*views)
-        # return PanelViewableField(view_model, view)
-        view = ObjectWidget(name=view_model.meta.label, inner_widgets=views)
-        return PanelWidgetField(view_model, view)
+        if ctx.meta.layout is not None:
+            inner_viewable = ctx.layout(
+                layout_views,  # type: ignore[arg-type]
+                {k: f.view for k, f in prop_fields.items()},
+            )
+        else:
+            inner_viewable = pn.Column(*[f.view for f in prop_fields.values()])
+        return PanelWidgetField(
+            view_model,
+            ObjectWidget(name=view_model.meta.label, inner_viewable=inner_viewable),
+        )
 
     def get_array_score(self, meta: cui.FieldMeta) -> int:
         if meta.item is None:
@@ -223,19 +228,12 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         return PanelWidgetField(view_model, view)
 
 
-class PanelFieldGroupFactory(cui.FieldGroupFactory):
-    def create_row_field(
-        self,
-        ctx: cui.FieldContext,
-        view_model: cvm.ViewModel,
-        children: list[param.Parameterized],
-    ) -> cui.Field:
-        return PanelLayoutField(view_model, pn.Row(*children))
-
-    def create_column_field(
-        self,
-        ctx: cui.FieldContext,
-        view_model: cvm.ViewModel,
-        children: list[param.Parameterized],
-    ) -> cui.Field:
-        return PanelLayoutField(view_model, pn.Column(*children))
+def layout_views(
+    _ctx: cui.FieldContext,
+    direction: Literal["row", "column"],
+    views: list[pn.viewable.Viewable],
+) -> pn.Row | pn.Column:
+    if direction == "row":
+        return pn.Row(*views)
+    else:
+        return pn.Column(*views)
