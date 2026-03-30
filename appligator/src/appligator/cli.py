@@ -44,6 +44,10 @@ def main(
         bool,
         typer.Option(..., help="Show version and exit."),
     ] = False,
+    skip_build: Annotated[
+        bool,
+        typer.Option(..., help="Skip building the Docker image and only generate DAG files."),
+    ] = False,
 ):
     """
     Generate various application formats from your processes.
@@ -87,11 +91,12 @@ def main(
 
     for process_id, _process in process_registry.items():
         # TODO: implement this better later
-        image_name = gen_image(
-            process_registry.get_workflow(process_id).registry,
-            image_name=image_name,
-            use_local_packages=True,
-        )
+        if not skip_build:
+            image_name = gen_image(
+                process_registry.get_workflow(process_id).registry,
+                image_name=image_name,
+                use_local_packages=True,
+            )
         dag_code = gen_workflow_dag(
             dag_id=process_id,
             registry=process_registry.get_workflow(process_id).registry,

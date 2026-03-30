@@ -2,6 +2,8 @@
 
 ### Enhancements
 
+- Added `--skip-build` flag to the `appligator` CLI to skip Docker image
+  building and only generate DAG files, using the provided `--image-name` directly.
 - Added `appligator.airflow.gen_dockerfile.generate` for Jinja2-template-based
   Dockerfile generation. Produces a two-stage pixi build with support for
   non-editable local package installs. 
