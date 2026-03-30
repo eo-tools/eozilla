@@ -35,6 +35,22 @@ _ARRAY_CONVERTERS: dict[DataType, ArrayTextConverter] = {
 
 
 class PanelWidgetFieldFactory(cui.FieldFactoryBase):
+    def get_nullable_score(self, meta: cui.FieldMeta) -> int:
+        return 1
+
+    def create_nullable_field(self, ctx: cui.FieldContext) -> cui.Field:
+        non_nullable_meta = ctx.meta.to_non_nullable()
+        non_nullable_field = ctx.create_child_field(non_nullable_meta)
+        view_model = ctx.vm.nullable(non_nullable_field.view_model)
+        return PanelWidgetField(
+            view_model,
+            NullableWidget(
+                name=ctx.name,
+                value=ctx.initial_value,
+                inner_widget=non_nullable_field.view,
+            ),
+        )
+
     def get_object_score(self, meta: cui.FieldMeta) -> int:
         return 1
 
@@ -46,7 +62,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
         # view = pn.Column(*views)
         # return PanelViewableField(view_model, view)
         view = ObjectWidget(name=view_model.meta.label, inner_widgets=views)
-        return PanelWidgetField(view_model, view, unbound=True)
+        return PanelWidgetField(view_model, view)
 
     def get_array_score(self, meta: cui.FieldMeta) -> int:
         if meta.item is None:
@@ -91,7 +107,7 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
             value=view_model.value,
             converter=array_converter,
             separator=view_model.meta.separator,
-            name=view_model.meta.label,
+            label=view_model.meta.label,
             description=view_model.meta.description,
         )
         return PanelWidgetField(view_model, view)
@@ -205,24 +221,6 @@ class PanelWidgetFieldFactory(cui.FieldFactoryBase):
                 value=view_model.value, name=view_model.meta.label
             )
         return PanelWidgetField(view_model, view)
-
-    def get_nullable_score(self, meta: cui.FieldMeta) -> int:
-        return 1
-
-    def create_nullable_field(self, ctx: cui.FieldContext) -> cui.Field:
-        non_nullable_meta = ctx.meta.to_non_nullable()
-        non_nullable_field = ctx.create_child_field(non_nullable_meta)
-        view_model = ctx.vm.nullable(
-            inner=non_nullable_field.view_model,
-        )
-        return PanelWidgetField(
-            view_model,
-            NullableWidget(
-                name=ctx.name,
-                value=ctx.initial_value,
-                inner_widget=non_nullable_field.view,
-            ),
-        )
 
 
 class PanelFieldGroupFactory(cui.FieldGroupFactory):

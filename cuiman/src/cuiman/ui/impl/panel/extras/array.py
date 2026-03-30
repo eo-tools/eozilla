@@ -1,6 +1,7 @@
 #  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
+
 from typing import Any, Callable, Optional, TypeVar
 
 import panel as pn
@@ -14,6 +15,8 @@ T = TypeVar("T")
 
 
 class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
+    """A text input or text area for editing array items."""
+
     # TODO: check: better reuse `value` from base class
     value = param.List(default=[])
 
@@ -22,7 +25,7 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
         value: list,
         converter: ArrayTextConverter,
         separator: str | None = ",",
-        name: str = "",
+        label: str | None = None,
         description: str | None = None,
         **params,
     ):
@@ -31,8 +34,6 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
         self.value = value
         self._converter = converter
         self._separator = separator
-
-        # --- UI components
 
         initial_text = converter.format_array(value, sep=separator)
         sep_text = (
@@ -44,12 +45,10 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
             value=initial_text,
             cols=16,
             rows=1,
-            name=name,
+            name=label,
             description=description or f"Use {sep_text} as separator.",
         )
         self._text.param.watch(self._on_text_value_change, "value")
-
-        # --- value <-> internal
 
     def _on_text_value_change(self, event):
         assert isinstance(event.new, str)
@@ -61,14 +60,15 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
         except ValueError as e:
             self.error_message = f"{e}."
 
-    # --- rendering
-
     def __panel__(self):
         return pn.Column(self._text)
 
 
 # TODO: This is an experimental construction site. Don't use ArrayEditor yet.
 class ArrayEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
+    """An editor for editing arrays (not functional yet)."""
+
+    # TODO: check: better reuse `value` from base class
     value = param.List(default=[])
 
     def __init__(

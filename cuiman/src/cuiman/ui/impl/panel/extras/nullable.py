@@ -5,13 +5,13 @@
 import panel as pn
 import param
 
-
 pn.extension()
 
 
 class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
     """A widget that provides a UI for values that can be null."""
 
+    # TODO: check: better reuse `value` from base class
     value = param.Parameter(default=None, allow_None=True)
 
     def __init__(self, inner_widget: pn.widgets.WidgetBase, **params):
@@ -25,6 +25,7 @@ class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
             value=self.value is not None,
             styles={"margin-bottom": "0px"},
         )
+
         self._inner_widget = inner_widget
         try:
             self._inner_widget.name = ""
@@ -33,21 +34,14 @@ class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
             # TypeError: Constant parameter 'name' cannot be modified
             pass
 
-        # --- init inner value if needed
         if self.value is not None:
             self._inner_widget.value = self.value
 
-        # --- sync toggle → value
         self._toggle.param.watch(self._on_toggle_change, "value")
-
         self._inner_widget.param.watch(self._on_inner_change, "value")
-
-        # --- sync external value → UI
         self.param.watch(self._on_value_change, "value")
 
         self._update_visibility()
-
-    # --- reactions
 
     def _on_toggle_change(self, event):
         if event.new:
@@ -56,6 +50,7 @@ class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
         else:
             # disable → null
             self.value = None
+        self._update_visibility()
 
     def _on_inner_change(self, event):
         if self._toggle.value:
@@ -67,7 +62,6 @@ class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
         else:
             self._toggle.value = True
             self._inner_widget.value = event.new
-
         self._update_visibility()
 
     def _update_visibility(self):

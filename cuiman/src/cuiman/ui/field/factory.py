@@ -95,6 +95,8 @@ class FieldFactoryBase(FieldFactory, ABC):
 
     def create_field(self, ctx: FieldContext) -> Field:
         """Create a UI field based on its data type."""
+        # TODO: we should also respect the case `not ctx.schema.required`,
+        #   Check if this could be the treated as `ctx.schema.nullable`.
         if ctx.schema.nullable:
             return self.create_nullable_field(ctx)
         match ctx.schema.type:

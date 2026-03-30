@@ -14,6 +14,8 @@ BBox = list[float]
 
 
 class BBoxEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
+    """An editor for editing bounding boxes in a map view."""
+
     # TODO: check: better reuse `value` from base class
     value = param.List(default=[0, 40, 20, 60], allow_None=False)
 

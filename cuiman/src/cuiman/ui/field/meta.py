@@ -1,7 +1,7 @@
 #  Copyright (c) 2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-
+import datetime
 import re
 from functools import cached_property
 from typing import Any, Literal, TypeAlias, Union
@@ -30,6 +30,7 @@ FieldWidgetType: TypeAlias = Literal[
     "slider",
     "switch",
 ]
+"""Selection of widget type hints."""
 
 
 class FieldGroup(pydantic.BaseModel):
@@ -111,7 +112,12 @@ class FieldMeta(pydantic.BaseModel):
     # --- required
 
     name: str
+    """The name of the field. This is the name of the 
+    corresponding process input/output or property name of object
+    fields."""
+
     schema_: Schema = pydantic.Field(..., alias="schema")
+    """The original schema from which this metadata was extracted."""
 
     # --- optional
 
@@ -122,36 +128,75 @@ class FieldMeta(pydantic.BaseModel):
     # TODO: split into properties and
     #   properties: dict[str, FieldMeta] | None
     #   item: FieldMeta | None
+    # TODO: remove `children` then
     children: list["FieldMeta"] | None = None
+    """Children of object properties or array items."""
+
     layout: FieldLayout | None = None
+    """Hint to layout the children of this field."""
+
     widget: FieldWidgetType | str | None = None
+    """Hint for the type of widget to be used for this field."""
+
     title: str | None = None
+    """The title of this field. See also [label][label]."""
+
     description: str | None = None
+    """The description text for this field."""
+
     tooltip: str | None = None
+    """A tooltip text for this field."""
+
     placeholder: str | None = None
+    """A placeholder text for this field."""
+
     nullable_parent: bool | None = None
+    """If `True`, the parent of this field is a nullable field."""
+
     group_name: str | None = None
+    """The name of the group in which this field will occur. 
+    See also [FieldGroup][FieldGroup]."""
+
     order: int | str | None = None
+    """The order of this field in the group. 
+    See also [FieldGroup][FieldGroup]."""
+
     advanced: bool | None = None
+    """Whether this field is considered an advanced field."""
+
     required: bool | None = None
+    """Whether this field originates from a required process input 
+    or object property."""
+
     password: bool | None = None
+    """Whether this field is a password input field."""
+
     separator: str | None = None
+    """The separator character used for separating array items 
+    when for arrays edited as text."""
+
     # Other properties with default values initialized from schema.
     # They may be overridden and will be used in the UI instead.
     minimum: int | float | None = None
+    """Minimum numeric value as used for slider widgets."""
+
     maximum: int | float | None = None
+    """Maximum numeric value as used for slider widgets."""
+
+    # TODO: better name `options`?
     enum: list[Any] | None = None
-    # default: Any | None = None
-    # nullable: bool | None = None
+    """Enumeration used for the options of select widgets."""
 
     @property
     def properties(self) -> dict[str, "FieldMeta"]:
+        """The metadata of object properties."""
         assert self.schema_.type == DataType.object
         assert isinstance(self.children, list)
         return {v.name: v for v in self.children}
 
     @property
     def item(self) -> "FieldMeta":
+        """The metadata of array items."""
         assert self.schema_.type == DataType.array
         assert isinstance(self.children, list) and len(self.children) == 1
         # noinspection PyTypeChecker
@@ -159,19 +204,21 @@ class FieldMeta(pydantic.BaseModel):
 
     @property
     def nullable(self) -> bool:
+        """Whether this field is nullable."""
         return self.schema_.nullable is True
 
     @property
     def default(self) -> Any:
+        """This field's default value."""
         return self.schema_.default
 
     @cached_property
     def label(self) -> str:
         """
-        The label is the title, if the title is provided.
+        The label is the title if the title is provided, even if it is empty.
         Otherwise, a label is created from the name.
         """
-        return self.title or _make_label(self.name)
+        return self.title if (self.title is not None) else _make_label(self.name)
 
     @classmethod
     def from_input_descriptions(
@@ -235,9 +282,11 @@ class FieldMeta(pydantic.BaseModel):
         schema: Schema,
         required: bool | None = None,
     ) -> "FieldMeta":
+        """Create field metadata from an OpenAPI Schema."""
         return _ui_field_meta_from_schema(name, schema, required=required)
 
     def to_non_nullable(self) -> "FieldMeta":
+        """Create a non-nullable version of this field metadata."""
         if not self.schema_.nullable:
             return self
         new_schema = self.schema_.model_copy(update={"nullable": False})
@@ -398,8 +447,10 @@ def _get_initial_value(meta: FieldMeta) -> Any:
         case DataType.number:
             return float(_get_initial_number(schema))
         case DataType.string:
+            if schema.format == "date":
+                return datetime.date.today().isoformat()
             min_length = schema.minLength if schema.minLength is not None else 0
-            return "a" * min_length
+            return "+" * min_length
         case DataType.array:
             min_items = schema.minItems if schema.minItems is not None else 0
             item_meta = meta.item

@@ -433,6 +433,18 @@ class FieldMetaTest(TestCase):
             to_json(properties.get("threshold"), exclude={"schema_", "required"}),
         )
 
+    def test_label(self):
+        meta = FieldMeta.from_schema("max_bias", Schema(**{"type": "number"}))
+        self.assertEqual("Max Bias", meta.label)
+        meta = FieldMeta.from_schema(
+            "max_bias", Schema(**{"type": "number", "title": "Maximum bias"})
+        )
+        self.assertEqual("Maximum bias", meta.label)
+        meta = FieldMeta.from_schema(
+            "max_bias", Schema(**{"type": "number", "title": ""})
+        )
+        self.assertEqual("", meta.label)
+
     # noinspection PyMethodMayBeStatic
     def test_pydantic_deserialization_with_extra_fields(self):
         """Ensure, pydantic deserializes extra fields as expected."""

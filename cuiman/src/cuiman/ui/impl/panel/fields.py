@@ -18,12 +18,10 @@ class PanelWidgetField(cui.FieldBase):
         view: pn.widgets.WidgetBase,
         *,
         json_codec: JsonCodec | None = None,
-        unbound: bool = False,
     ):
         isinstance(view, pn.widgets.WidgetBase)
+        self._json_codec = json_codec or JsonIdentityCodec()
         super().__init__(view_model, view)
-        self.json_codec = json_codec or JsonIdentityCodec()
-        self.unbound = unbound
 
     @property
     def view(self) -> pn.widgets.WidgetBase:
@@ -32,14 +30,11 @@ class PanelWidgetField(cui.FieldBase):
         return self._view
 
     def _bind(self):
-        if self.unbound:
-            return
-
         def observe_vm(_e):
-            self.view.value = self.json_codec.from_json(self.view_model.value)
+            self.view.value = self._json_codec.from_json(self.view_model.value)
 
         def observe_view(_e):
-            self.view_model.value = self.json_codec.to_json(self.view.value)
+            self.view_model.value = self._json_codec.to_json(self.view.value)
 
         self.view_model.watch(observe_vm)
         self.view.param.watch(observe_view, "value")

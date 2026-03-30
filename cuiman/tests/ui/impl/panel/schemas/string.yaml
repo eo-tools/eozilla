@@ -2,6 +2,9 @@ type: object
 properties:
   plain:
     type: string
+  plain_min_length_10:
+    type: string
+    minLength: 10
   date:
     type: string
     format: date

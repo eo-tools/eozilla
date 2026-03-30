@@ -35,7 +35,7 @@ class FieldContext:
         self._parent_ctx = parent_ctx
         self._builder = builder
         self._meta = meta
-        self._vm_builder = UIViewModelBuilder(self)
+        self._vm_factory = ViewModelFactory(self)
         self._initial_value = (
             meta.get_initial_value()
             if isinstance(initial_value, Undefined)
@@ -55,8 +55,8 @@ class FieldContext:
         return self._meta.schema_
 
     @property
-    def vm(self) -> "UIViewModelBuilder":
-        return self._vm_builder
+    def vm(self) -> "ViewModelFactory":
+        return self._vm_factory
 
     @property
     def initial_value(self) -> Any:
@@ -105,10 +105,10 @@ class FieldContext:
         )
 
 
-class UIViewModelBuilder:
+class ViewModelFactory:
     """
-    A convenient builder for view models available
-    from the [UIBuilderContext][UIBuilderContext].
+    A convenience factory for view models. Made available
+    as [`ctx.vm`][FieldContext.vm].
     """
 
     def __init__(self, ctx: FieldContext):

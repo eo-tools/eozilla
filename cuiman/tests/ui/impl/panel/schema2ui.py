@@ -41,25 +41,41 @@ def main(
     selected_schema_name = schema_names[0]
 
     select = pn.widgets.Select(
-        options=schema_names,
-        value=selected_schema_name,
+        options=schema_names, value=selected_schema_name, size=16
     )
-    panel = pn.Column(
+    text_area = pn.widgets.TextAreaInput(value="", cols=12, rows=16)
+
+    schema_column = pn.Column(
         "## OpenAPI Schema:",
         select,
+    )
+    value_column = pn.Column(
+        "## JSON-Value:",
+        text_area,
+    )
+    ui_column = pn.Column(
         "## Generated UI:",
         "<placeholder>",
     )
+    panel = pn.Row(pn.Column(schema_column, value_column), ui_column)
 
-    def _change_selected_schema(schema_name):
+    def _on_view_model_change(event: ViewModelChangeEvent) -> None:
+        _change_current_value(event.source.value)
+
+    def _change_current_value(value: Any) -> None:
+        json_text = json.dumps(value, indent=2, sort_keys=False)
+        text_area.value = json_text
+
+    def _change_selected_schema(schema_name: str):
         nonlocal selected_schema_name
         selected_schema_name = schema_name
         schema = schema_dict[selected_schema_name]
+        schema.title = schema.title or ""  # Force no title if not explicitly set
         field_meta = FieldMeta.from_schema("root", schema)
         form_field = form_factory.create_form(field_meta)
         form_field.view_model.watch(_on_view_model_change)
-        _show_current_view_model_value(form_field.view_model.value)
-        panel[3] = form_field.view
+        ui_column[1] = form_field.view
+        _change_current_value(form_field.view_model.value)
 
     def _on_selection_change(event):
         _change_selected_schema(event.new)
@@ -93,16 +109,6 @@ def load_schema(path: Path) -> Schema:
         else:
             schema_dict = json.load(f)
     return Schema(**schema_dict)
-
-
-def _on_view_model_change(event: ViewModelChangeEvent) -> None:
-    _show_current_view_model_value(event.source.value)
-
-
-def _show_current_view_model_value(value: Any) -> None:
-    print(80 * "-")
-    print(yaml.safe_dump(value, sort_keys=False), end="")
-    sys.stdout.flush()
 
 
 if __name__ == "__main__":
