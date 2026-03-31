@@ -8,12 +8,12 @@ from typing import Any, Literal
 
 import panel as pn
 
-import cuiman.ui as cui
-import cuiman.ui.vm as cvm
+import gavicore.ui as cui
+import gavicore.ui.vm as cvm
 from gavicore.models import DataType
 from gavicore.util.json import JsonDateCodec
 
-from .extras.array import ArrayWidget, ArrayEditor
+from .extras.array import ArrayEditor, ArrayWidget
 from .extras.bbox import BBoxEditor
 from .extras.nullable import NullableWidget
 from .extras.object import ObjectWidget

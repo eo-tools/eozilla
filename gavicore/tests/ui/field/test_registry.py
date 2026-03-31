@@ -4,16 +4,14 @@
 
 from unittest import TestCase
 
-import pytest
-
-from cuiman.ui import (
+from gavicore.models import DataType, Schema
+from gavicore.ui import (
     FieldBase,
     FieldContext,
     FieldFactory,
     FieldFactoryRegistry,
     FieldMeta,
 )
-from gavicore.models import DataType, Schema
 
 
 class MyField(FieldBase):

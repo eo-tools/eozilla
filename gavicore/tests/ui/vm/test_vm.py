@@ -6,8 +6,9 @@ from unittest import TestCase
 
 import pytest
 
-from cuiman.ui import FieldMeta
-from cuiman.ui.vm import (
+from gavicore.models import Schema
+from gavicore.ui import FieldMeta
+from gavicore.ui.vm import (
     ArrayViewModel,
     NullableViewModel,
     ObjectViewModel,
@@ -15,7 +16,6 @@ from cuiman.ui.vm import (
     ViewModel,
     ViewModelChangeEvent,
 )
-from gavicore.models import Schema
 
 
 class MyViewModelObserver:

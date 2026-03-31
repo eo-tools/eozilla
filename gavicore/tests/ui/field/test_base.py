@@ -4,12 +4,12 @@
 
 from unittest import TestCase
 
-from cuiman.ui import (
+from gavicore.models import Schema
+from gavicore.ui import (
     FieldBase,
     FieldMeta,
 )
-from cuiman.ui.vm import PrimitiveViewModel
-from gavicore.models import Schema
+from gavicore.ui.vm import PrimitiveViewModel
 
 
 class MyField(FieldBase):

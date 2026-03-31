@@ -7,7 +7,8 @@ from unittest import TestCase
 
 import pytest
 
-from cuiman.ui import (
+from gavicore.models import Schema
+from gavicore.ui import (
     Field,
     FieldBase,
     FieldContext,
@@ -16,13 +17,12 @@ from cuiman.ui import (
     FieldGenerator,
     FieldMeta,
 )
-from cuiman.ui.vm import (
+from gavicore.ui.vm import (
     ArrayViewModel,
     NullableViewModel,
     ObjectViewModel,
     PrimitiveViewModel,
 )
-from gavicore.models import Schema
 
 from .libui import (
     Checkbox,

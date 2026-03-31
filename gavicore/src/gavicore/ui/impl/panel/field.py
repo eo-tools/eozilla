@@ -2,14 +2,14 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Any, TYPE_CHECKING
+from typing import Any
 
 import panel as pn
 
-import cuiman.ui as cui
-import cuiman.ui.vm as cvm
-from cuiman.ui import Field, FieldGenerator, FieldMeta
+import gavicore.ui as cui
+import gavicore.ui.vm as cvm
 from gavicore.models import InputDescription, Schema
+from gavicore.ui import Field, FieldGenerator, FieldMeta
 from gavicore.util.json import JsonCodec, JsonIdentityCodec
 from gavicore.util.undefined import Undefined
 

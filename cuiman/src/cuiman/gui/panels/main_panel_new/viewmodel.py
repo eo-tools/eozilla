@@ -8,8 +8,6 @@ import param
 
 from cuiman.api.config import AdvancedInputPredicate
 from cuiman.api.exceptions import ClientError
-from cuiman.ui import Field, FieldMeta
-from cuiman.ui.impl.panel import PanelField
 from gavicore.models import (
     Format,
     InputDescription,
@@ -22,6 +20,8 @@ from gavicore.models import (
     ProcessSummary,
     TransmissionMode,
 )
+from gavicore.ui import Field, FieldMeta
+from gavicore.ui.impl.panel import PanelField
 from gavicore.util.json import JsonValue
 from gavicore.util.request import ExecutionRequest
 

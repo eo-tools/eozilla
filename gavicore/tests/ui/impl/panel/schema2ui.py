@@ -3,7 +3,6 @@
 #  https://opensource.org/license/apache-2-0.
 
 import json
-import sys
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -11,10 +10,10 @@ import panel as pn
 import typer
 import yaml
 
-from cuiman.ui import FieldMeta
-from cuiman.ui.impl.panel import PanelField
-from cuiman.ui.vm import ViewModelChangeEvent
 from gavicore.models import Schema
+from gavicore.ui import FieldMeta
+from gavicore.ui.impl.panel import PanelField
+from gavicore.ui.vm import ViewModelChangeEvent
 
 pn.extension()
 

@@ -6,9 +6,9 @@ from unittest import TestCase
 
 import pytest
 
-from cuiman.ui import FieldMeta
-from cuiman.ui.impl.panel import PanelField
 from gavicore.models import Schema
+from gavicore.ui import FieldMeta
+from gavicore.ui.impl.panel import PanelField
 
 from .schema2ui import load_schemas
 

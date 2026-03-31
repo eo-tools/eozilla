@@ -6,7 +6,7 @@ from unittest import TestCase
 
 import pytest
 
-from cuiman.ui.impl.panel.util import ArrayTextConverter
+from gavicore.ui.impl.panel.util import ArrayTextConverter
 
 
 class ArrayTextConverterTest(TestCase):

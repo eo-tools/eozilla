@@ -8,9 +8,9 @@ from unittest import TestCase
 import pydantic
 from pydantic import BaseModel
 
-from cuiman.ui import FieldMeta
-from cuiman.ui.field.meta import FieldGroup
 from gavicore.models import InputDescription, OutputDescription, Schema
+from gavicore.ui import FieldMeta
+from gavicore.ui.field.meta import FieldGroup
 
 dict_kwargs = dict(
     exclude_none=True, exclude_defaults=True, exclude_unset=True, by_alias=True
