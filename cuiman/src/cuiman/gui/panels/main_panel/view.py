@@ -5,8 +5,9 @@
 from typing import Any
 
 import panel as pn
+import panel.layout
 
-from cuiman.api.config import AdvancedInputPredicate, ProcessPredicate
+from cuiman.api.config import InputPredicate, ProcessPredicate
 from cuiman.api.exceptions import ClientError
 from cuiman.gui.jobs_observer import JobsObserver
 from gavicore.models import (
@@ -60,7 +61,7 @@ class MainPanelView(pn.viewable.Viewer):
         execute_process: ExecuteProcessAction,
         get_job_results: GetJobResultsAction,
         accept_process: ProcessPredicate,
-        is_advanced_input: AdvancedInputPredicate,
+        accept_input: InputPredicate,
     ):
         super().__init__()
 
@@ -68,9 +69,9 @@ class MainPanelView(pn.viewable.Viewer):
             process_list=process_list,
             process_list_error=process_list_error,
             accept_process=accept_process,
-            is_advanced_input=is_advanced_input,
             get_process=get_process,
             execute_process=execute_process,
+            accept_input=accept_input,
         )
         # Used in view only, once we go async, move to viewmodel
         self._get_job_results = get_job_results
@@ -133,13 +134,17 @@ class MainPanelView(pn.viewable.Viewer):
             name="Get Request",
             on_click=self._on_get_process_request,
             disabled=self.vm.param.get_request_disabled,
-            description="Sets the variable `_request` to the\ncurrent process request object",
+            description=(
+                "Sets the variable `_request` to the\ncurrent process request object"
+            ),
         )
         self._results_button = pn.widgets.Button(
             name="Get Results",
             on_click=self._on_get_process_results,
             disabled=True,
-            description="Sets the variable `_results` to the\ncurrent process results object",
+            description=(
+                "Sets the variable `_results` to the\ncurrent process results object"
+            ),
         )
 
         # --- file_menu
@@ -154,13 +159,19 @@ class MainPanelView(pn.viewable.Viewer):
             "Save",
             on_click=self._on_save_request_clicked,
             disabled=True,
-            description="Save the current settings as process request file using JSON or YAML format",
+            description=(
+                "Save the current settings as process request file "
+                "using JSON or YAML format"
+            ),
         )
         self._save_as_button = XMenuItem(
             "Save As...",
             on_click=self._on_save_as_request_clicked,
             disabled=True,
-            description="Save the current settings as process request file using JSON or YAML format",
+            description=(
+                "Save the current settings as process request file "
+                "using JSON or YAML format"
+            ),
         )
         file_menu = XMenu(
             "File",
@@ -176,7 +187,7 @@ class MainPanelView(pn.viewable.Viewer):
             margin=(10, 0, 0, 0),
         )
 
-        self._inputs_panel = pn.Column()
+        self._inputs_panel = pn.Column(styles={"margin": "0", "padding": "0"})
         self._outputs_panel = pn.Column()
 
         self._job_info_panel = JobInfoPanelView(standalone=False)
@@ -241,11 +252,19 @@ class MainPanelView(pn.viewable.Viewer):
         self._process_doc_markdown.object = markdown_text
 
     def _render_inputs(self):
-        container = self.vm.input_container
-        if container is None or container.is_empty:
+        inputs_field = self.vm.inputs_field
+        is_empty = (
+            inputs_field is None
+            or inputs_field.view is None
+            or (
+                isinstance(inputs_field.view, panel.layout.ListPanel)
+                and len(inputs_field.view) == 0
+            )
+        )
+        if is_empty:
             self._inputs_panel[:] = [pn.pane.Markdown("_No inputs available._")]
         else:
-            self._inputs_panel[:] = container.get_viewables()
+            self._inputs_panel[:] = [inputs_field.view]
 
     def _render_outputs(self):
         process = self.vm.process_description
@@ -297,7 +316,7 @@ class MainPanelView(pn.viewable.Viewer):
         name: str = output.title or output.schema_.title or key
 
         def handle_change(selected: bool):
-            # TODO
+            # TODO: request has changed - enable/disable elements
             print("_create_output_option:handle_change:", key, name, selected)
 
         checkbox = pn.widgets.Checkbox(

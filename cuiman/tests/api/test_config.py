@@ -10,8 +10,6 @@ from unittest import TestCase
 from cuiman.api.config import ClientConfig
 from cuiman.api.defaults import DEFAULT_API_URL
 from gavicore.models import (
-    AdditionalParameter,
-    AdditionalParameters,
     InputDescription,
     ProcessDescription,
 )
@@ -137,32 +135,5 @@ class ClientConfigTest(TestCase):
                 "ignored",
                 InputDescription(title="ignored", schema={}),
                 ignored_arg=137,
-            ),
-        )
-
-    def test_default_is_advanced_input(self):
-        # noinspection PyArgumentList,PyTypeChecker
-        self.assertEqual(
-            False,
-            ClientConfig.is_advanced_input(
-                ProcessDescription(id="test", version="0"),
-                "common_x",
-                InputDescription(schema={"type": "integer"}),
-            ),
-        )
-        # noinspection PyArgumentList,PyTypeChecker
-        self.assertEqual(
-            True,
-            ClientConfig.is_advanced_input(
-                ProcessDescription(id="test", version="0"),
-                "advanced_x",
-                InputDescription(
-                    schema={"type": "integer"},
-                    additionalParameters=AdditionalParameters(
-                        parameters=[
-                            AdditionalParameter(name="level", value=["advanced"])
-                        ]
-                    ),
-                ),
             ),
         )

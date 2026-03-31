@@ -5,7 +5,7 @@
 import datetime
 import re
 from functools import cached_property
-from typing import Any, Literal, TypeAlias, Union
+from typing import Any, Callable, Literal, TypeAlias, Union, overload
 
 import pydantic
 
@@ -21,15 +21,14 @@ UI_KEY_PREFIXES = [f"{k}:" for k in UI_KEYS] + [f"{k}-" for k in UI_KEYS]
 
 FieldWidgetType: TypeAlias = Literal[
     "checkbox",
+    "input",
     "password",
-    "number",
-    "text",
-    "textarea",
     "radiobutton",
     "radiogroup",
     "select",
     "slider",
     "switch",
+    "textarea",
 ]
 """Selection of widget type hints."""
 
@@ -122,16 +121,11 @@ class FieldMeta(pydantic.BaseModel):
 
     # --- optional
 
-    # If shema.type == "array" then this is a one-element list
-    # with the first element describing the array items.
-    # If shema.type == "object" then this is list of UI fields
-    # of the object properties.
-    # TODO: split into properties and
-    #   properties: dict[str, FieldMeta] | None
-    #   item: FieldMeta | None
-    # TODO: remove `children` then
-    children: list["FieldMeta"] | None = None
-    """Children of object properties or array items."""
+    properties: dict[str, "FieldMeta"] | None = None
+    """The metadata of object properties. Set if schema type is "object"."""
+
+    items: "FieldMeta | None" = None
+    """The metadata of array items. Set if schema type is "array"."""
 
     layout: FieldLayout | None = None
     """Hint to layout the children of this field."""
@@ -162,9 +156,6 @@ class FieldMeta(pydantic.BaseModel):
     """The order of this field in the group. 
     See also [FieldGroup][FieldGroup]."""
 
-    advanced: bool | None = None
-    """Whether this field is considered an advanced field."""
-
     required: bool | None = None
     """Whether this field originates from a required process input 
     or object property."""
@@ -175,6 +166,12 @@ class FieldMeta(pydantic.BaseModel):
     separator: str | None = None
     """The separator character used for separating array items 
     when for arrays edited as text."""
+
+    advanced: bool | None = None
+    """Whether this field is considered an advanced field."""
+
+    level: Literal["common", "advanced"] | str | None = None
+    """User level of a field. A UI may decide to hide advanced fields."""
 
     # Other properties with default values initialized from schema.
     # They may be overridden and will be used in the UI instead.
@@ -187,21 +184,6 @@ class FieldMeta(pydantic.BaseModel):
     # TODO: better name `options`?
     enum: list[Any] | None = None
     """Enumeration used for the options of select widgets."""
-
-    @property
-    def properties(self) -> dict[str, "FieldMeta"]:
-        """The metadata of object properties."""
-        assert self.schema_.type == DataType.object
-        assert isinstance(self.children, list)
-        return {v.name: v for v in self.children}
-
-    @property
-    def items(self) -> "FieldMeta":
-        """The metadata of array items."""
-        assert self.schema_.type == DataType.array
-        assert isinstance(self.children, list) and len(self.children) == 1
-        # noinspection PyTypeChecker
-        return self.children[0]
 
     @property
     def nullable(self) -> bool:
@@ -244,7 +226,7 @@ class FieldMeta(pydantic.BaseModel):
             "type": "object",
             "properties": properties,
             "required": required_names or None,
-            "title": title or _make_label(name),
+            "title": title if title is not None else _make_label(name),
             "description": description,
         }
         return cls.from_schema(
@@ -252,29 +234,6 @@ class FieldMeta(pydantic.BaseModel):
             Schema(**schema_dict),
             required=True if len(required_names) > 0 else None,
         )
-
-    @classmethod
-    def from_output_descriptions(
-        cls,
-        output_descriptions: dict[str, OutputDescription],
-        name: str = "outputs",
-        title: str | None = None,
-        description: str | None = None,
-    ) -> "FieldMeta":
-        """Extract a UI-field from the input description."""
-        properties = {
-            output_name: _schema_from_output_description(
-                output_name, output_description
-            )
-            for output_name, output_description in output_descriptions.items()
-        }
-        schema_dict = {
-            "type": "object",
-            "properties": properties,
-            "title": title or _make_label(name),
-            "description": description,
-        }
-        return cls.from_schema(name, Schema(**schema_dict))
 
     @classmethod
     def from_schema(
@@ -301,6 +260,24 @@ class FieldMeta(pydantic.BaseModel):
     def get_initial_value(self) -> Any:
         """Compute an initial value for this UI field metadata."""
         return _get_initial_value(self)
+
+    @overload
+    def filter(
+        self, accept_meta: Callable[["FieldMeta"], bool], skip_root: Literal[True]
+    ) -> "FieldMeta": ...
+    @overload
+    def filter(
+        self, accept_meta: Callable[["FieldMeta"], bool], skip_root: Literal[False]
+    ) -> "FieldMeta | None": ...
+    def filter(
+        self, accept_meta: Callable[["FieldMeta"], bool], skip_root: bool = False
+    ) -> "FieldMeta | None":
+        """
+        Filter this field metadata by the given predicate function.
+        The predicate function is applied to
+        this metadata and its children if the schema type is "object" or "array".
+        """
+        return _filter_meta(accept_meta, self, skip_root, 0)
 
 
 def _schema_from_input_description(
@@ -350,38 +327,33 @@ def _ui_field_meta_from_schema(
     schema_dict = _make_schema_dict(schema)
     ui_props = _extract_ui_props_from_schema_dict(schema_dict)
     required = ui_props.pop("required", required)
-    children = _ui_field_meta_children_from_schema(name, schema)
-    return FieldMeta(
-        name=name, schema=schema, required=required, children=children, **ui_props
-    )
-
-
-def _ui_field_meta_children_from_schema(
-    name: str, schema: Schema
-) -> list[FieldMeta] | None:
+    items: FieldMeta | None = None
+    properties: dict[str, FieldMeta] | None = None
     if schema.type == DataType.array:
-        items = schema.items
-        assert items is None or isinstance(items, Schema)
-        item_name = f"{name}_item"
-        item_schema = items if isinstance(items, Schema) else Schema(**{})
-        # create one-element children array
-        return [
-            _ui_field_meta_from_schema(
-                item_name,
-                item_schema,
-                required=schema.minItems is not None and schema.minItems > 0,
-            )
-        ]
+        schema_items = schema.items
+        assert schema_items is None or isinstance(schema.items, Schema)
+        items = _ui_field_meta_from_schema(
+            f"{name}_item",
+            schema.items if isinstance(schema.items, Schema) else Schema(**{}),
+            required=schema.minItems is not None and schema.minItems > 0,
+        )
     elif schema.type == DataType.object:
-        required = set(schema.required) if schema.required else set()
-        # create one-element children array
-        return [
-            _ui_field_meta_from_schema(
-                prop_name, prop_schema, required=prop_name in required
-            )
-            for prop_name, prop_schema in (schema.properties or {}).items()
-        ]
-    return None
+        required_set = set(schema.required) if schema.required else set()
+        properties = {}
+        if schema.properties:
+            for prop_name, prop_schema in schema.properties.items():
+                properties[prop_name] = _ui_field_meta_from_schema(
+                    prop_name, prop_schema, required=(prop_name in required_set)
+                )
+
+    return FieldMeta(
+        name=name,
+        schema=schema,
+        required=required,
+        properties=properties,
+        items=items,
+        **ui_props,
+    )
 
 
 def _extract_ui_props_from_schema_dict(
@@ -397,6 +369,7 @@ def _extract_ui_props_from_schema_dict(
     return ui_props
 
 
+_EXCL_SCHEMA_PROPERTY_NAMES = {"properties", "items", "required"}
 _VALIDATION_META = FieldMeta(name="validation_meta", schema=Schema(**{}))
 
 
@@ -404,7 +377,7 @@ def _update_ui_props_from_schema_props(
     source: dict[str, Any], ui_props: dict[str, Any]
 ) -> None:
     for name, value in source.items():
-        if name in FieldMeta.model_fields:
+        if name not in _EXCL_SCHEMA_PROPERTY_NAMES and name in FieldMeta.model_fields:
             valid = True
             try:
                 setattr(_VALIDATION_META, name, value)
@@ -453,10 +426,12 @@ def _get_initial_value(meta: FieldMeta) -> Any:
             min_length = schema.minLength if schema.minLength is not None else 0
             return "+" * min_length
         case DataType.array:
+            assert isinstance(meta.items, FieldMeta)
             min_items = schema.minItems if schema.minItems is not None else 0
             item_meta = meta.items
             return [_get_initial_value(item_meta) for _i in range(min_items)]
         case DataType.object:
+            assert isinstance(meta.properties, dict)
             # TODO: consider minProperties, additionalProperties
             required = set(schema.required or [])
             properties = meta.properties
@@ -506,3 +481,35 @@ def _make_description_dict(
 
 def _make_label(name: str) -> str:
     return " ".join(p.capitalize() for p in re.split(r"[_-]|(?<=[a-z])(?=[A-Z])", name))
+
+
+def _filter_meta(
+    predicate: Callable[[FieldMeta], bool],
+    field_meta: FieldMeta,
+    skip_root: bool,
+    level: int,
+) -> FieldMeta | None:
+    can_return_none = level > 0 or not skip_root
+    if can_return_none and not predicate(field_meta):
+        return None
+
+    if isinstance(field_meta.properties, dict):
+        old_len = len(field_meta.properties)
+        properties: dict[str, FieldMeta] = {}
+        for k, v in field_meta.properties.items():
+            filtered_v = _filter_meta(predicate, v, skip_root, level + 1)
+            if filtered_v is not None:
+                properties[k] = filtered_v
+        new_len = len(properties)
+        if can_return_none and new_len == 0 and old_len > 0:
+            return None
+        return field_meta.model_copy(update={"properties": properties})
+
+    if isinstance(field_meta.items, FieldMeta):
+        items = _filter_meta(predicate, field_meta.items, skip_root, level + 1)
+        if can_return_none and items is None:
+            return None
+        assert items is not None, "skip_root can only be True for objects"
+        return field_meta.model_copy(update={"items": items})
+
+    return field_meta

@@ -63,6 +63,7 @@ class ObjectViewModel(ObjectViewModelBase):
         properties: dict[str, ViewModel] | None = None,
     ):
         super().__init__(meta, value)
+        assert isinstance(meta.properties, dict)
         # initialize item view models
         for k, child_meta in meta.properties.items():
             vm = properties.get(k) if properties else None

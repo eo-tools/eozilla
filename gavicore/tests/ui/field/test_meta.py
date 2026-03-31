@@ -8,7 +8,7 @@ from unittest import TestCase
 import pydantic
 from pydantic import BaseModel
 
-from gavicore.models import InputDescription, OutputDescription, Schema
+from gavicore.models import InputDescription, Schema
 from gavicore.ui import FieldMeta
 from gavicore.ui.field.meta import FieldGroup
 
@@ -71,107 +71,55 @@ class FieldMetaTest(TestCase):
         schema_3 = {"type": "boolean", "title": "Use fast path"}
         self.assertEqual(
             {
-                "children": [
-                    {
+                "name": "inputs",
+                "properties": {
+                    "datasets": {
                         "name": "datasets",
                         "schema": {
-                            "type": "array",
                             "items": schema_1,
                             "minItems": 1,
                             "title": "Datasets",
+                            "type": "array",
                         },
-                        "children": [
-                            {
-                                "name": "datasets_item",
-                                "schema": schema_1,
-                                "required": True,
-                                "title": "Input dataset",
-                            }
-                        ],
                         "required": True,
+                        "items": {
+                            "name": "datasets_item",
+                            "required": True,
+                            "schema": schema_1,
+                            "title": "Input dataset",
+                        },
                         "title": "Datasets",
                     },
-                    {
+                    "threshold": {
                         "name": "threshold",
                         "schema": schema_2,
                         "required": False,
                         "title": "Threshold",
                     },
-                    {
+                    "boost": {
                         "name": "boost",
                         "schema": schema_3,
                         "required": True,
                         "title": "Use fast path",
                     },
-                ],
-                "name": "inputs",
+                },
                 "required": True,
                 "schema": {
-                    "type": "object",
-                    "required": ["datasets", "boost"],
                     "properties": {
+                        "boost": schema_3,
                         "datasets": {
-                            "type": "array",
-                            "items": {
-                                "type": "string",
-                                "format": "uri",
-                                "title": "Input dataset",
-                            },
+                            "items": schema_1,
                             "minItems": 1,
                             "title": "Datasets",
+                            "type": "array",
                         },
                         "threshold": schema_2,
-                        "boost": schema_3,
                     },
+                    "required": ["datasets", "boost"],
                     "title": "Inputs",
+                    "type": "object",
                 },
                 "title": "Inputs",
-            },
-            to_json(meta),
-        )
-
-    def test_from_output_descriptions(self):
-        meta = FieldMeta.from_output_descriptions(
-            {
-                "dataset": OutputDescription(
-                    **{"schema": {"type": "string", "title": "Output dataset path"}},
-                ),
-                "logs": OutputDescription(
-                    **{"schema": {"type": "string", "title": "Log file path"}},
-                ),
-            }
-        )
-        self.maxDiff = None
-        self.assertIsInstance(meta, FieldMeta)
-
-        schema_1 = {"type": "string", "title": "Output dataset path"}
-        schema_2 = {"type": "string", "title": "Log file path"}
-        self.assertEqual(
-            {
-                "name": "outputs",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "dataset": schema_1,
-                        "logs": schema_2,
-                    },
-                    "title": "Outputs",
-                },
-                "title": "Outputs",
-                "children": [
-                    {
-                        "name": "dataset",
-                        "schema": schema_1,
-                        "title": "Output dataset path",
-                        "required": False,
-                    },
-                    {
-                        "name": "logs",
-                        "schema": schema_2,
-                        "title": "Log file path",
-                        "required": False,
-                    },
-                ],
             },
             to_json(meta),
         )
@@ -215,22 +163,22 @@ class FieldMetaTest(TestCase):
                         "boost": schema_2,
                     },
                 },
-                "children": [
-                    {
+                "properties": {
+                    "threshold": {
                         "name": "threshold",
                         "required": True,
                         "schema": schema_1,
                         "title": "Threshold",
                         "widget": "slider",
                     },
-                    {
+                    "boost": {
                         "name": "boost",
                         "required": False,
                         "schema": schema_2,
                         "title": "Boost",
                         "widget": "switch",
                     },
-                ],
+                },
             },
             to_json(meta),
         )
@@ -289,17 +237,7 @@ class FieldMetaTest(TestCase):
         )
 
     def test_input_precedence(self):
-        self._assert_source_precedence(InputDescription)
-
-    def test_output_precedence(self):
-        self._assert_source_precedence(OutputDescription)
-
-    def _assert_source_precedence(
-        self,
-        description_cls: type[InputDescription] | type[OutputDescription],
-    ):
         self._assert_description(
-            description_cls,
             description_props={
                 "title": "The threshold D.1",
                 "x-ui": {"title": "The threshold D.2"},
@@ -314,7 +252,6 @@ class FieldMetaTest(TestCase):
         )
 
         self._assert_description(
-            description_cls,
             description_props={
                 "title": "The threshold D.1",
                 "x-ui": {"title": "The threshold D.2"},
@@ -329,7 +266,6 @@ class FieldMetaTest(TestCase):
         )
 
         self._assert_description(
-            description_cls,
             description_props={
                 "title": "The threshold D.1",
                 "x-ui": {"title": "The threshold D.2"},
@@ -344,7 +280,6 @@ class FieldMetaTest(TestCase):
         )
 
         self._assert_description(
-            description_cls,
             description_props={
                 "title": "The threshold D.1",
                 # "x-ui": {"title": "The threshold D.2"},
@@ -359,7 +294,6 @@ class FieldMetaTest(TestCase):
         )
 
         self._assert_description(
-            description_cls,
             description_props={
                 "title": "The threshold D.1",
                 # "x-ui": {"title": "The threshold D.2"},
@@ -374,7 +308,6 @@ class FieldMetaTest(TestCase):
         )
 
         self._assert_description(
-            description_cls,
             description_props={
                 # "title": "The threshold D.1",
                 # "x-ui": {"title": "The threshold D.2"},
@@ -389,7 +322,6 @@ class FieldMetaTest(TestCase):
         )
 
         self._assert_description(
-            description_cls,
             description_props={
                 # "title": "The threshold D.1",
                 # "x-ui": {"title": "The threshold D.2"},
@@ -405,22 +337,14 @@ class FieldMetaTest(TestCase):
 
     def _assert_description(
         self,
-        description_cls: type[InputDescription] | type[OutputDescription],
         description_props: dict[str, Any],
         schema_props: dict[str, Any],
         expected_props: dict[str, Any],
     ):
         kwargs = {**description_props, "schema": schema_props}
-        if issubclass(description_cls, InputDescription):
-            meta = FieldMeta.from_input_descriptions(
-                {"threshold": InputDescription(**kwargs)}
-            )
-        elif issubclass(description_cls, OutputDescription):
-            meta = FieldMeta.from_output_descriptions(
-                {"threshold": OutputDescription(**kwargs)},
-            )
-        else:
-            raise TypeError(f"Unsupported description class: {description_cls}")
+        meta = FieldMeta.from_input_descriptions(
+            {"threshold": InputDescription(**kwargs)}
+        )
 
         properties = meta.properties
         self.assertIsInstance(properties, dict)

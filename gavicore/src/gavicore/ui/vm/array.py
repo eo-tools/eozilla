@@ -18,7 +18,8 @@ class ArrayViewModel(CompositeViewModel[int, list[Any]]):
 
     def __init__(self, meta: FieldMeta, *, value: Any | Undefined = UNDEFINED):
         super().__init__(meta, list, value)
-        self._item_meta = meta.items
+        assert isinstance(meta.items, FieldMeta)
+        self._item_meta: FieldMeta = meta.items
         # initialize item view models
         self._items: dict[int, ViewModel] = {}
         self._length: int = 0

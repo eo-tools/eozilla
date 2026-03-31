@@ -55,13 +55,18 @@ class Client(ApiClient):
             if kwargs
             else config_cls.accept_process
         )
+        accept_input = (
+            partial(config_cls.accept_input, **kwargs)
+            if kwargs
+            else config_cls.accept_input
+        )
         main_panel = MainPanelView(
             *self._get_processes(),
             get_process=self.get_process,
             execute_process=self.execute_process,
             get_job_results=self.get_job_results,
             accept_process=accept_process,
-            is_advanced_input=config_cls.is_advanced_input,
+            accept_input=accept_input,
         )
         # noinspection PyTypeChecker
         self._jobs_event_bus.register(main_panel)

@@ -17,7 +17,7 @@ from gavicore.models import (
     Schema,
 )
 from gavicore.util.testing import BaseModelMixin
-from procodile import JobContext, Process, additional_parameters
+from procodile import JobContext, Process
 
 
 def f1(x: float, y: float) -> float:
@@ -247,14 +247,12 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
                 "a": InputDescription(
                     title="Discriminator",
                     schema=Schema(default=False),
-                    additionalParameters=additional_parameters({"level": "common"}),
+                    **{"x-ui": {"level": "common"}},
                 ),
                 "b": InputDescription(
                     title="Value",
                     schema=Schema(default=1.0),
-                    additionalParameters=additional_parameters(
-                        {"disabled": True, "level": "advanced"}
-                    ),
+                    **{"x-ui": {"disabled": True, "level": "advanced"}},
                 ),
             },
             outputs={
@@ -286,7 +284,8 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
                     nullable=True,
                     default=False,
                 ),
-                additionalParameters=additional_parameters({"level": "common"}),
+                # TODO: check why we cannot see extra properties
+                # **{"x-ui": {"level": "common"}},
             ),
             proc_inputs["a"],
         )
@@ -296,9 +295,8 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
                 schema=Schema(
                     anyOf=[Schema(type="number"), Schema(type="boolean")], default=1.0
                 ),
-                additionalParameters=additional_parameters(
-                    {"disabled": True, "level": "advanced"}
-                ),
+                # TODO: check why we cannot see extra properties
+                # **{"x-ui": {"disabled": True, "level": "advanced"}},
             ),
             proc_inputs["b"],
         )

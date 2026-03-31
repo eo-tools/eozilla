@@ -13,6 +13,7 @@ import gavicore.ui.vm as cvm
 from gavicore.models import DataType
 from gavicore.util.json import JsonDateCodec
 
+from ... import FieldMeta
 from .extras.array import ArrayEditor, ArrayWidget
 from .extras.bbox import BBoxEditor
 from .extras.nullable import NullableWidget
@@ -116,6 +117,7 @@ class PanelFieldFactory(cui.FieldFactoryBase):
             def create_item_field(_index: int, value: Any) -> pn.widgets.WidgetBase:
                 # TODO: this is a common function, move into ctx
                 # TODO: do something with index
+                assert isinstance(ctx.meta.items, FieldMeta)
                 ctx.meta.items.title = ""  # Supress label for items
                 item_field = ctx.create_child_field(ctx.meta.items)
                 item_field.view_model.value = value

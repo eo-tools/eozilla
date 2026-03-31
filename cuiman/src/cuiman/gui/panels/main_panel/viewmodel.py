@@ -6,12 +6,10 @@ from typing import Callable, TypeAlias
 
 import param
 
-from cuiman.api.config import AdvancedInputPredicate
+from cuiman.api.config import InputPredicate, ProcessPredicate
 from cuiman.api.exceptions import ClientError
-from cuiman.gui.component import ComponentContainer, JsonValue
 from gavicore.models import (
     Format,
-    InputDescription,
     JobInfo,
     JobResults,
     Output,
@@ -21,6 +19,9 @@ from gavicore.models import (
     ProcessSummary,
     TransmissionMode,
 )
+from gavicore.ui import Field, FieldMeta
+from gavicore.ui.impl.panel import PanelField
+from gavicore.util.json import JsonValue
 from gavicore.util.request import ExecutionRequest
 
 GetProcessAction: TypeAlias = Callable[[str], ProcessDescription]
@@ -49,8 +50,8 @@ class MainPanelViewModel(param.Parameterized):
 
     show_advanced = param.Boolean(default=False)
 
-    input_container = param.ClassSelector(
-        class_=ComponentContainer,
+    inputs_field = param.ClassSelector(
+        class_=Field,
         default=None,
         allow_None=True,
     )
@@ -78,8 +79,8 @@ class MainPanelViewModel(param.Parameterized):
         *,
         process_list: ProcessList,
         process_list_error: ClientError | None,
-        accept_process,
-        is_advanced_input: AdvancedInputPredicate,
+        accept_process: ProcessPredicate,
+        accept_input: InputPredicate,
         get_process: GetProcessAction,
         execute_process: ExecuteProcessAction,
         **params,
@@ -88,7 +89,7 @@ class MainPanelViewModel(param.Parameterized):
 
         self._get_process = get_process
         self._execute_process = execute_process
-        self._is_advanced_input = is_advanced_input
+        self._accept_input = accept_input
 
         self.processes = [p for p in process_list.processes if accept_process(p)]
         self.error = process_list_error
@@ -108,47 +109,48 @@ class MainPanelViewModel(param.Parameterized):
     def update_inputs(self):
         process = self.process_description
         if process is None:
-            self.input_container = None
+            self.inputs_field = None
             return
 
-        last_values: dict[str, JsonValue] = (
-            self.input_container.get_json_values()
-            if self.input_container is not None
-            else {}
+        last_values: dict[str, JsonValue]
+        if self.inputs_field is not None and isinstance(
+            self.inputs_field.view_model.value, dict
+        ):
+            last_values = self.inputs_field.view_model.value
+        else:
+            last_values = {}
+
+        filtered_inputs = {
+            k: v
+            for k, v in (process.inputs or {}).items()
+            if self._accept_input(process, k, v)
+        }
+
+        input_field_meta = FieldMeta.from_input_descriptions(filtered_inputs)
+        if not self.show_advanced:
+            input_field_meta = input_field_meta.filter(
+                lambda m: not (m.advanced or m.level == "advanced"), skip_root=True
+            )
+        self.inputs_field = PanelField.from_meta(
+            input_field_meta, initial_value=last_values
         )
 
-        inputs = process.inputs or {}
-
-        show_advanced = self.show_advanced
-        has_advanced = False
-        filtered_inputs: dict[str, InputDescription] = {}
-        for k, v in inputs.items():
-            is_advanced = self._is_advanced_input(process, k, v)
-            has_advanced = has_advanced or is_advanced
-            if not is_advanced or show_advanced:
-                filtered_inputs[k] = v
-        self.has_advanced = has_advanced
-
-        self.input_container = ComponentContainer.from_input_descriptions(
-            filtered_inputs,
-            last_values,
-        )
-
-        MainPanelViewModel.Settings.show_advanced = show_advanced
+        MainPanelViewModel.Settings.show_advanced = self.show_advanced
 
     def build_execution_request(self) -> ExecutionRequest:
         pid = self.selected_process_id
         process = self.process_description
-        container = self.input_container
+        input_field = self.inputs_field
 
         assert pid is not None
         assert process is not None
-        assert container is not None
+        assert input_field is not None
+        assert isinstance(input_field.view_model.value, dict)
 
         return ExecutionRequest(
             process_id=pid,
             dotpath=True,
-            inputs=container.get_json_values(),
+            inputs=input_field.view_model.value,
             outputs=self._default_outputs(process),
         )
 
