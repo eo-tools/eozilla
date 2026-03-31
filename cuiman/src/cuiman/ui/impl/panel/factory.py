@@ -4,7 +4,7 @@
 
 import datetime
 import math
-from typing import Literal
+from typing import Any, Literal
 
 import panel as pn
 
@@ -13,7 +13,7 @@ import cuiman.ui.vm as cvm
 from gavicore.models import DataType
 from gavicore.util.json import JsonDateCodec
 
-from .extras.array import ArrayWidget
+from .extras.array import ArrayWidget, ArrayEditor
 from .extras.bbox import BBoxEditor
 from .extras.nullable import NullableWidget
 from .extras.object import ObjectWidget
@@ -92,29 +92,41 @@ class PanelFieldFactory(cui.FieldFactoryBase):
         if format_ is not None and format_.lower() == "bbox":
             return PanelField(view_model, BBoxEditor())
 
-        item_type = ctx.meta.item.schema_.type
+        item_schema = ctx.meta.item.schema_
+        item_type = item_schema.type
+        item_format = item_schema.format
         assert item_type is not None
         array_converter = _ARRAY_CONVERTERS.get(item_type)
         assert array_converter is not None
 
-        # TODO: handle type="array" complex types or with widget="editor"
-        # if view_model.meta.widget == "editor" or array_converter is None:
-        #     item_editor = ctx.create_child_field(ctx.meta.item)
-        #     view = ArrayEditor(
-        #         value=view_model.value,
-        #         item_editor=item_editor.view,
-        #         name=view_model.meta.label,
-        #         value_factory=ctx.meta.get_initial_value,
-        #     )
-        #     return PanelWidgetField(view_model, view=view)
+        if (
+            array_converter is not None
+            and view_model.meta.widget != "editor"
+            and item_format is None  # --> for sure we have a dedicated item editor
+        ):
+            view = ArrayWidget(
+                value=view_model.value,
+                converter=array_converter,
+                separator=view_model.meta.separator,
+                name=view_model.meta.label,
+                description=view_model.meta.description,
+            )
+        else:
 
-        view = ArrayWidget(
-            value=view_model.value,
-            converter=array_converter,
-            separator=view_model.meta.separator,
-            label=view_model.meta.label,
-            description=view_model.meta.description,
-        )
+            def create_item_field(_index: int, value: Any) -> pn.widgets.WidgetBase:
+                # TODO: this is a common function, move into ctx
+                # TODO: do something with index
+                ctx.meta.item.title = ""  # Supress label for items
+                item_field = ctx.create_child_field(ctx.meta.item)
+                item_field.view_model.value = value
+                return item_field.view
+
+            view = ArrayEditor(
+                name=view_model.meta.label,
+                value=view_model.value,
+                item_editor_factory=create_item_field,
+                item_value_factory=ctx.meta.get_initial_value,
+            )
         return PanelField(view_model, view)
 
     def get_string_score(self, meta: cui.FieldMeta) -> int:

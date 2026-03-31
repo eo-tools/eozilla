@@ -18,6 +18,7 @@ properties:
       type: string
   date_array:
     type: array
+    x-ui-widget: input
     items:
       type: string
       format: date

@@ -1,0 +1,18 @@
+type: object
+properties:
+  string_array:
+    type: array
+    x-ui-widget: editor
+    items:
+      type: number
+      format: date
+  date_array:
+    type: array
+    items:
+      type: number
+      format: date
+  uri_array:
+    type: array
+    items:
+      type: string
+      format: uri

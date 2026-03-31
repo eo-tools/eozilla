@@ -2,7 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, Callable
 
 import panel as pn
 import param
@@ -11,13 +11,10 @@ from ..util import ArrayTextConverter
 
 pn.extension()
 
-T = TypeVar("T")
-
 
 class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
     """A text input or text area for editing array items."""
 
-    # TODO: check: better reuse `value` from base class
     value = param.List(default=[])
 
     def __init__(
@@ -25,7 +22,7 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
         value: list,
         converter: ArrayTextConverter,
         separator: str | None = ",",
-        label: str | None = None,
+        name: str | None = None,
         description: str | None = None,
         **params,
     ):
@@ -45,7 +42,7 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
             value=initial_text,
             cols=16,
             rows=1,
-            name=label,
+            name=name,
             description=description or f"Use {sep_text} as separator.",
         )
         self._text.param.watch(self._on_text_value_change, "value")
@@ -64,106 +61,84 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
         return pn.Column(self._text)
 
 
-# TODO: This is an experimental construction site. Don't use ArrayEditor yet.
 class ArrayEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
-    """An editor for editing arrays (not functional yet)."""
+    """A simple editor for editing values of type list (arrays)."""
 
-    # TODO: check: better reuse `value` from base class
     value = param.List(default=[])
 
     def __init__(
         self,
-        value: list,
-        value_factory: Callable[[], Any],
-        item_editor: pn.widgets.WidgetBase,
+        value: list[Any],
+        item_value_factory: Callable[[], Any],
+        item_editor_factory: Callable[[int, Any], pn.widgets.WidgetBase],
         **params,
     ):
         super().__init__(**params)
-
         self.value = value
-        self._value_factory = value_factory
-        self._item_editor = item_editor
+        self._item_value_factory = item_value_factory
+        self._item_editor_factory = item_editor_factory
+        self._items_box = pn.Column(
+            max_height=200,
+            styles={"overflow-y": "auto", "gap": "0"},
+        )
+        add_btn = pn.widgets.ButtonIcon(
+            icon="circle-plus",
+            name="Add Item",
+            size="1.5em",
+        )
+        add_btn.on_click(self._on_add_item)
+        self._add_row = pn.Row(
+            add_btn,
+        )
+        if self.name:
+            panel = pn.Column(
+                f"### {self.name}",
+                pn.layout.Divider(margin=(-16, 0, 0, 8)),
+                self._items_box,
+                self._add_row,
+            )
+        else:
+            panel = pn.Column(self._items_box, self._add_row)
+        self._panel = panel
+        self._update_item_rows()
+        self.param.watch(self._on_value_change, "value")
 
-        self._selected_index: Optional[int] = None
+    def _on_add_item(self, _e):
+        self.value = self.value + [self._item_value_factory()]
 
-        # --- UI components
+    def _on_value_change(self, _e):
+        self._update_item_rows()
 
-        self._list = pn.widgets.Select(options=self._format_options(), size=5)
-        self._add_btn = pn.widgets.Button(name="+", width=20)
-        self._remove_btn = pn.widgets.Button(name="-", width=20)
-        self._apply_btn = pn.widgets.Button(name="Apply", button_type="primary")
+    def _update_item_rows(self):
+        # brute force
+        self._items_box[:] = self._render_item_rows()
 
-        # --- wiring
+    def _render_item_rows(self):
+        return [self._render_item_row(i, v) for i, v in enumerate(self.value)]
 
-        self._list.param.watch(self._on_select, "value")
-        self._add_btn.on_click(self._on_add)
-        self._remove_btn.on_click(self._on_remove)
-        self._apply_btn.on_click(self._on_apply)
+    def _render_item_row(self, index, value):
+        def on_delete_item(_event):
+            v = list(self.value)
+            del v[index]
+            self.value = v
 
-        self.param.watch(self._on_value, "value")
-
-        # --- layout
-
-        left = pn.Column(
-            self._list,
-            pn.Row(self._add_btn, self._remove_btn),
-            width=200,
+        del_btn = pn.widgets.ButtonIcon(icon="x", size="1em")
+        del_btn.on_click(on_delete_item)
+        return pn.Row(
+            self._render_item_editor(index, value),
+            del_btn,
+            styles={"gap": "0.5em"},
         )
 
-        right = pn.Column(
-            self._item_editor,
-            self._apply_btn,
-        )
+    def _render_item_editor(self, index, value):
+        def on_item_value_change(e):
+            v = list(self.value)
+            v[index] = e.new
+            self.value = v
 
-        self._panel = pn.Row(left, right)
-
-        # initial sync
-        self._sync_from_value()
-
-    # --- value <-> internal
-
-    def _sync_from_value(self):
-        self._list.options = self._format_options()
-
-    def _on_value(self, _event):
-        self._sync_from_value()
-
-    # --- list handling
-
-    def _format_options(self):
-        return {str(i): i for i in range(len(self.value))}
-
-    def _on_select(self, event):
-        self._selected_index = event.new
-        if self._selected_index is not None:
-            self._item_editor.value = self.value[self._selected_index]
-
-    # --- actions
-
-    def _on_add(self, _):
-        new_item = self._value_factory()
-        self.value = [*self.value, new_item]
-        self._list.options = self._format_options()
-
-    def _on_remove(self, _):
-        if self._selected_index is None:
-            return
-
-        self.value = [v for i, v in enumerate(self.value) if i != self._selected_index]
-
-        self._selected_index = None
-        self._list.value = None
-        self._list.options = self._format_options()
-
-    def _on_apply(self, _):
-        if self._selected_index is None:
-            return
-
-        updated = list(self.value)
-        updated[self._selected_index] = self._item_editor.value
-        self.value = updated
-
-    # --- rendering
+        item_editor = self._item_editor_factory(index, value)
+        item_editor.param.watch(on_item_value_change, "value")
+        return item_editor
 
     def __panel__(self):
         return self._panel
