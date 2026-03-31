@@ -2,14 +2,16 @@
 
 ### Enhancements
 
-- Added `--skip-build` flag to the `appligator` CLI to skip Docker image
-  building and only generate DAG files, using the provided `--image-name` directly.
-- Added `appligator.airflow.gen_dockerfile.generate` for Jinja2-template-based
-  Dockerfile generation. Produces a two-stage pixi build with support for
-  non-editable local package installs. 
-- Updated `appligator.airflow.run_step` with `coerce_inputs` (casts Airflow
-  Jinja string params to their declared types) and `_XComEncoder` (serialises
-  Pydantic models and other non-JSON-native objects for XCom output).
+- Enhanced `appligator` with Dockerfile generation and improved Airflow integration:
+    - Added `appligator.airflow.gen_dockerfile.generate` for Jinja2-template-based
+      Dockerfile generation. Produces a two-stage pixi build with support for
+      non-editable local package installs. The runtime base image is configurable
+      via `base_image` (default: `debian:bookworm-slim`).
+    - Added `--skip-build` flag to the `appligator` CLI to skip Docker image
+      building and only generate DAG files, using the provided `--image-name` directly.
+    - Updated `appligator.airflow.run_step` with `coerce_inputs` (casts Airflow
+      Jinja string params to their declared types) and `_XComEncoder` (serialises
+      Pydantic models and other non-JSON-native objects for XCom output).
 - The Cuiman client package has been enhanced by _job result openers_,
   which ease working with the results of a process job (#65):
     - Client classes now have a method 

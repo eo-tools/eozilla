@@ -30,6 +30,7 @@ def generate(
     runtime_apt_packages: list[str] | None = None,
     pixi_version: str = "0.50.2",
     pixi_env: str = "default",
+    base_image: str = "debian:bookworm-slim",
 ) -> Path:
     """
     Generate a Dockerfile and assemble a build context directory.
@@ -89,6 +90,8 @@ def generate(
             image (pixi package manager only).
         pixi_env: Name of the pixi environment to install and ship.
             Defaults to ``"default"``.
+        base_image: Base image for the runtime stage.
+            Defaults to ``"debian:bookworm-slim"``.
 
     Returns:
         Path to the generated ``Dockerfile`` inside ``output_dir``.
@@ -168,8 +171,9 @@ def generate(
         keep_trailing_newline=True,
         autoescape=False,  # noqa: S701 — Dockerfile output, not HTML
     )
-    template = env.get_template(f"{package_manager}.Dockerfile.j2")
+    template = env.get_template(f"Dockerfile.{package_manager}.j2")
     content = template.render(
+        base_image=base_image,
         pixi_version=pixi_version,
         pixi_env=pixi_env,
         workdir=workdir,
