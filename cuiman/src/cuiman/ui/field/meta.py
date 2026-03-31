@@ -1,6 +1,7 @@
 #  Copyright (c) 2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
+
 import datetime
 import re
 from functools import cached_property
@@ -16,7 +17,7 @@ from gavicore.models import (
 )
 
 UI_KEYS = ["x-ui", "ui", "xUI", "xUi"]
-UI_KEY_PREFIXES = [f"{k}:" for k in UI_KEYS]
+UI_KEY_PREFIXES = [f"{k}:" for k in UI_KEYS] + [f"{k}-" for k in UI_KEYS]
 
 FieldWidgetType: TypeAlias = Literal[
     "checkbox",
@@ -195,7 +196,7 @@ class FieldMeta(pydantic.BaseModel):
         return {v.name: v for v in self.children}
 
     @property
-    def item(self) -> "FieldMeta":
+    def items(self) -> "FieldMeta":
         """The metadata of array items."""
         assert self.schema_.type == DataType.array
         assert isinstance(self.children, list) and len(self.children) == 1
@@ -453,7 +454,7 @@ def _get_initial_value(meta: FieldMeta) -> Any:
             return "+" * min_length
         case DataType.array:
             min_items = schema.minItems if schema.minItems is not None else 0
-            item_meta = meta.item
+            item_meta = meta.items
             return [_get_initial_value(item_meta) for _i in range(min_items)]
         case DataType.object:
             # TODO: consider minProperties, additionalProperties

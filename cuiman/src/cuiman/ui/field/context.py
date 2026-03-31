@@ -74,17 +74,14 @@ class FieldContext:
 
         return LayoutManager(layout_function, views).layout(self)
 
-    def create_child_fields(self) -> dict[str, Field]:
-        return {
-            child_meta.name: self.create_child_field(child_meta)
-            for child_meta in (self.meta.children or [])
-        }
-
     def create_property_fields(self) -> dict[str, Field]:
         return {
             prop_name: self.create_child_field(prop_meta)
             for prop_name, prop_meta in self.meta.properties.items()
         }
+
+    def create_item_field(self) -> Field:
+        return self.create_child_field(self.meta.items)
 
     def create_child_field(self, child_meta: FieldMeta) -> Field:
         """Create a new field for the given field metadata."""

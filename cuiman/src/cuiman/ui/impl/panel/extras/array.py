@@ -7,7 +7,7 @@ from typing import Any, Callable
 import panel as pn
 import param
 
-from ..util import ArrayTextConverter
+from ..util import ArrayTextConverter, get_header_items
 
 pn.extension()
 
@@ -21,29 +21,27 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
         self,
         value: list,
         converter: ArrayTextConverter,
-        separator: str | None = ",",
+        separator: str | None = None,
         name: str | None = None,
         description: str | None = None,
         **params,
     ):
         super().__init__(name="", **params)
-
+        sep_ = "," if separator is None else separator
         self.value = value
         self._converter = converter
-        self._separator = separator
+        self._separator = sep_
 
-        initial_text = converter.format_array(value, sep=separator)
-        sep_text = (
-            "space or newline"
-            if not separator or not separator.strip()
-            else f"{separator!r}"
-        )
+        initial_text = converter.format_array(value, sep=sep_)
+        sep_text = "space or newline" if not sep_ or not sep_.strip() else f"{sep_!r}"
+        help_text = f"Use {sep_text} as separator."
         self._text = pn.widgets.TextAreaInput(
             value=initial_text,
             cols=16,
             rows=1,
             name=name,
-            description=description or f"Use {sep_text} as separator.",
+            placeholder=help_text,
+            description=description or help_text,
         )
         self._text.param.watch(self._on_text_value_change, "value")
 
@@ -92,8 +90,7 @@ class ArrayEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
         )
         if self.name:
             panel = pn.Column(
-                f"### {self.name}",
-                pn.layout.Divider(margin=(-16, 0, 0, 8)),
+                *get_header_items(self.name),
                 self._items_box,
                 self._add_row,
             )

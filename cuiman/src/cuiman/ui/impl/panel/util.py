@@ -2,10 +2,20 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
+import panel as pn
+
 T = TypeVar("T")
+
+
+def get_header_items(title: str | None) -> tuple:
+    if title:
+        return f"{title}", pn.layout.Divider(margin=(-16, 0, 0, 8))
+    else:
+        return ()
 
 
 # noinspection PyMethodMayBeStatic

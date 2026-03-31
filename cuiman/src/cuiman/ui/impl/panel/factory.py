@@ -70,9 +70,9 @@ class PanelFieldFactory(cui.FieldFactoryBase):
         )
 
     def get_array_score(self, meta: cui.FieldMeta) -> int:
-        if meta.item is None:
+        if meta.items is None:
             return 0
-        item_type = meta.item.schema_.type
+        item_type = meta.items.schema_.type
         if item_type is None:
             return 0
         format_ = meta.schema_.format
@@ -86,13 +86,13 @@ class PanelFieldFactory(cui.FieldFactoryBase):
     def create_array_field(self, ctx: cui.FieldContext) -> cui.Field:
         view_model = ctx.vm.array()
 
-        assert ctx.meta.item is not None
+        assert ctx.meta.items is not None
 
         format_ = ctx.schema.format
         if format_ is not None and format_.lower() == "bbox":
             return PanelField(view_model, BBoxEditor())
 
-        item_schema = ctx.meta.item.schema_
+        item_schema = ctx.meta.items.schema_
         item_type = item_schema.type
         item_format = item_schema.format
         assert item_type is not None
@@ -102,7 +102,7 @@ class PanelFieldFactory(cui.FieldFactoryBase):
         if (
             array_converter is not None
             and view_model.meta.widget != "editor"
-            and item_format is None  # --> for sure we have a dedicated item editor
+            and (view_model.meta.widget == "input" or item_format is None)
         ):
             view = ArrayWidget(
                 value=view_model.value,
@@ -116,8 +116,8 @@ class PanelFieldFactory(cui.FieldFactoryBase):
             def create_item_field(_index: int, value: Any) -> pn.widgets.WidgetBase:
                 # TODO: this is a common function, move into ctx
                 # TODO: do something with index
-                ctx.meta.item.title = ""  # Supress label for items
-                item_field = ctx.create_child_field(ctx.meta.item)
+                ctx.meta.items.title = ""  # Supress label for items
+                item_field = ctx.create_child_field(ctx.meta.items)
                 item_field.view_model.value = value
                 return item_field.view
 
@@ -125,7 +125,7 @@ class PanelFieldFactory(cui.FieldFactoryBase):
                 name=view_model.meta.label,
                 value=view_model.value,
                 item_editor_factory=create_item_field,
-                item_value_factory=ctx.meta.get_initial_value,
+                item_value_factory=ctx.meta.items.get_initial_value,
             )
         return PanelField(view_model, view)
 

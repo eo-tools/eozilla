@@ -4,6 +4,8 @@
 
 import panel as pn
 
+from ..util import get_header_items
+
 pn.extension()
 
 
@@ -24,8 +26,7 @@ class ObjectWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
     def __panel__(self):
         if self.name:
             return pn.Column(
-                f"### {self.name}",
-                pn.layout.Divider(margin=(-16, 0, 0, 8)),
+                *get_header_items(self.name),
                 self.inner_viewable,
             )
         else:
