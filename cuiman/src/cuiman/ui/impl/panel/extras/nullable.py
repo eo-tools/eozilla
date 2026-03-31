@@ -11,7 +11,6 @@ pn.extension()
 class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
     """A widget that provides a UI for values that can be null."""
 
-    # TODO: check: better reuse `value` from base class
     value = param.Parameter(default=None, allow_None=True)
 
     def __init__(self, inner_widget: pn.widgets.WidgetBase, **params):
