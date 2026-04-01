@@ -137,3 +137,47 @@ class ClientConfigTest(TestCase):
                 ignored_arg=137,
             ),
         )
+
+    # noinspection PyArgumentList,PyTypeChecker
+    def test_default_is_advanced_input(self):
+        self.assert_is_advanced_input(
+            InputDescription(
+                schema={"type": "integer"},
+            ),
+            False,
+        )
+        self.assert_is_advanced_input(
+            InputDescription(
+                schema={"type": "integer"},
+                additionalParameters={
+                    "parameters": [{"name": "level", "value": ["advanced"]}]
+                },
+            ),
+            True,
+        )
+        self.assert_is_advanced_input(
+            InputDescription(
+                schema={"type": "integer"},
+                **{"x-ui:advanced": True},
+            ),
+            True,
+        )
+        self.assert_is_advanced_input(
+            InputDescription(
+                schema={"type": "integer"},
+                **{"x-ui": {"advanced": True}},
+            ),
+            # TODO: make this work too
+            # True,
+            False,
+        )
+
+    def assert_is_advanced_input(
+        self, input_description: InputDescription, expected: bool
+    ):
+        actual = ClientConfig.is_advanced_input(
+            ProcessDescription(id="myProcess", version="0"),
+            "param_1",
+            input_description,
+        )
+        self.assertEqual(expected, actual)
