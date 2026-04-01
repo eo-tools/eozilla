@@ -21,7 +21,7 @@ from gavicore.models import (
     TransmissionMode,
 )
 from gavicore.ui import Field, FieldMeta
-from gavicore.ui.impl.panel import PanelField
+from gavicore.ui.lib.panel import PanelField
 from gavicore.util.json import JsonValue
 from gavicore.util.request import ExecutionRequest
 
