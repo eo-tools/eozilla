@@ -7,7 +7,7 @@ from typing import Any
 import panel as pn
 import panel.layout
 
-from cuiman.api.config import InputPredicate, ProcessPredicate
+from cuiman.api.config import AdvancedInputPredicate, ProcessPredicate
 from cuiman.api.exceptions import ClientError
 from cuiman.gui.jobs_observer import JobsObserver
 from gavicore.models import (
@@ -18,6 +18,7 @@ from gavicore.models import (
     ProcessDescription,
     ProcessList,
 )
+from ..debug import DebugHelper
 
 from ...ipy_helper import IPyHelper
 from ..job_info_panel import JobInfoPanelView
@@ -61,7 +62,7 @@ class MainPanelView(pn.viewable.Viewer):
         execute_process: ExecuteProcessAction,
         get_job_results: GetJobResultsAction,
         accept_process: ProcessPredicate,
-        accept_input: InputPredicate,
+        is_advanced_input: AdvancedInputPredicate,
     ):
         super().__init__()
 
@@ -69,9 +70,9 @@ class MainPanelView(pn.viewable.Viewer):
             process_list=process_list,
             process_list_error=process_list_error,
             accept_process=accept_process,
+            is_advanced_input=is_advanced_input,
             get_process=get_process,
             execute_process=execute_process,
-            accept_input=accept_input,
         )
         # Used in view only, once we go async, move to viewmodel
         self._get_job_results = get_job_results
@@ -89,7 +90,7 @@ class MainPanelView(pn.viewable.Viewer):
 
         def _on_select_process(e):
             self.vm.select_process(e.new)
-            self._render_from_vm()
+            self._update_process_ui()
             self._set_own_job_info(None)
 
         self._process_select.param.watch(_on_select_process, "value")
@@ -103,7 +104,7 @@ class MainPanelView(pn.viewable.Viewer):
         def _on_advanced(e):
             self.vm.show_advanced = bool(e.new)
             self.vm.update_inputs()
-            self._render_inputs()
+            self._update_process_inputs_ui()
 
         self._advanced_switch.param.watch(_on_advanced, "value")
 
@@ -114,6 +115,7 @@ class MainPanelView(pn.viewable.Viewer):
         process_panel = pn.Column(
             self._process_select,
             self._process_doc_markdown,
+            DebugHelper.panel(),
             pn.Row(
                 self._advanced_switch,
                 pn.widgets.StaticText(value="Show advanced inputs"),
@@ -187,7 +189,7 @@ class MainPanelView(pn.viewable.Viewer):
             margin=(10, 0, 0, 0),
         )
 
-        self._inputs_panel = pn.Column(styles={"margin": "0", "padding": "0"})
+        self._inputs_panel = pn.Column()
         self._outputs_panel = pn.Column()
 
         self._job_info_panel = JobInfoPanelView(standalone=False)
@@ -201,7 +203,7 @@ class MainPanelView(pn.viewable.Viewer):
             self._job_info_panel,
         )
 
-        self._render_from_vm()
+        self._update_process_ui()
 
     def __panel__(self) -> pn.viewable.Viewable:
         return self._view
@@ -228,30 +230,29 @@ class MainPanelView(pn.viewable.Viewer):
             own_job_info is None or own_job_info.status != JobStatus.successful
         )
 
-    def _render_from_vm(self):
-        process = self.vm.process_description
-        self._update_process_description_markdown(process)
-
+    def _update_process_ui(self):
+        """Update the processor-specific user interface."""
+        self._update_process_description_ui()
         self.vm.update_inputs()
-        self._render_inputs()
-        self._render_outputs()
+        self._update_process_inputs_ui()
+        self._update_process_outputs_ui()
 
-    def _update_process_description_markdown(self, process: ProcessDescription | None):
-        # process = self._vm.process_description
-        error = self.vm.error
+    def _update_process_description_ui(self):
+        process = self.vm.process_description
         if process is not None:
             if process and process.description:
                 markdown_text = f"**Description:** {process.description}"
             else:
                 markdown_text = "**Description:** _No description available._"
         else:
+            error = self.vm.error
             if error is not None:
                 markdown_text = f"**Error**: {error}: {error.api_error.detail}"
             else:
                 markdown_text = "_No process selected._"
         self._process_doc_markdown.object = markdown_text
 
-    def _render_inputs(self):
+    def _update_process_inputs_ui(self):
         inputs_field = self.vm.inputs_field
         is_empty = (
             inputs_field is None
@@ -266,7 +267,7 @@ class MainPanelView(pn.viewable.Viewer):
         else:
             self._inputs_panel[:] = [inputs_field.view]
 
-    def _render_outputs(self):
+    def _update_process_outputs_ui(self):
         process = self.vm.process_description
         num_outputs = self._num_outputs
         if process is None:

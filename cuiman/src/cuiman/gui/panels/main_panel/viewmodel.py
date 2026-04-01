@@ -6,8 +6,9 @@ from typing import Callable, TypeAlias
 
 import param
 
-from cuiman.api.config import InputPredicate, ProcessPredicate
+from cuiman.api.config import AdvancedInputPredicate
 from cuiman.api.exceptions import ClientError
+from cuiman.gui.panels.debug import DebugHelper
 from gavicore.models import (
     Format,
     JobInfo,
@@ -18,6 +19,7 @@ from gavicore.models import (
     ProcessRequest,
     ProcessSummary,
     TransmissionMode,
+    InputDescription,
 )
 from gavicore.ui import Field, FieldMeta
 from gavicore.ui.impl.panel import PanelField
@@ -79,8 +81,8 @@ class MainPanelViewModel(param.Parameterized):
         *,
         process_list: ProcessList,
         process_list_error: ClientError | None,
-        accept_process: ProcessPredicate,
-        accept_input: InputPredicate,
+        accept_process,
+        is_advanced_input: AdvancedInputPredicate,
         get_process: GetProcessAction,
         execute_process: ExecuteProcessAction,
         **params,
@@ -89,7 +91,7 @@ class MainPanelViewModel(param.Parameterized):
 
         self._get_process = get_process
         self._execute_process = execute_process
-        self._accept_input = accept_input
+        self._is_advanced_input = is_advanced_input
 
         self.processes = [p for p in process_list.processes if accept_process(p)]
         self.error = process_list_error
@@ -120,17 +122,28 @@ class MainPanelViewModel(param.Parameterized):
         else:
             last_values = {}
 
-        filtered_inputs = {
-            k: v
-            for k, v in (process.inputs or {}).items()
-            if self._accept_input(process, k, v)
-        }
+        inputs: dict[str, InputDescription] = process.inputs or {}
+
+        # TODO: we should not filter based inputs directly.
+        #  Instead filter the field metadata properties which
+        #  has much more options as the metadata has already
+        #  parsed special x-ui control properties.
+        # Filter inputs by "show_advanced" flag and
+        # find out whether we have advanced inputs at all.
+        show_advanced = self.show_advanced
+        has_advanced = False
+        filtered_inputs: dict[str, InputDescription] = {}
+        for k, v in inputs.items():
+            DebugHelper.print(f"update_inputs: input {k!r}, extra: ", v.model_extra)
+            is_advanced = self._is_advanced_input(process, k, v)
+            has_advanced = has_advanced or is_advanced
+            if not is_advanced or show_advanced:
+                filtered_inputs[k] = v
+        self.has_advanced = has_advanced
+
+        DebugHelper.print("update_inputs: has_advanced=", has_advanced)
 
         input_field_meta = FieldMeta.from_input_descriptions(filtered_inputs)
-        if not self.show_advanced:
-            input_field_meta = input_field_meta.filter(
-                lambda m: not (m.advanced or m.level == "advanced"), skip_root=True
-            )
         self.inputs_field = PanelField.from_meta(
             input_field_meta, initial_value=last_values
         )
@@ -147,6 +160,7 @@ class MainPanelViewModel(param.Parameterized):
         assert input_field is not None
         assert isinstance(input_field.view_model.value, dict)
 
+        # noinspection PyTypeChecker
         return ExecutionRequest(
             process_id=pid,
             dotpath=True,

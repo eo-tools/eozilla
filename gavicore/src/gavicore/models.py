@@ -69,6 +69,7 @@ class Schema(BaseModel):
     model_config = ConfigDict(
         # allow for extensions usually prefixed by "x-", e.g., "x-ui"
         extra="allow",
+        json_schema_extra={"additionalProperties": True},
     )
 
     # general
@@ -198,6 +199,7 @@ class DescriptionType(BaseModel):
     model_config = ConfigDict(
         # allow for extensions usually prefixed by "x-", e.g., "x-ui"
         extra="allow",
+        json_schema_extra={"additionalProperties": True},
     )
 
     title: str | None = None

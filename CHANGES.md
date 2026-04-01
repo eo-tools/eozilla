@@ -2,10 +2,10 @@
 
 ### Enhancements
 
-- TODO: Describe the new UI generator and its use
-  - Added `gavicore.ui` and removed `cuiman.gui.component` (TODO) 
-  - Skipped support for `additionalParameters` in process descriptions;
-  - Skipped support for experimental `ClientConfig.is_advanced_input()` 
+- The Gavicore package has been enhanced by a new _UI generator_.
+  - Added a new UI generation framework in `gavicore.ui`.
+  - Dropped subpackage `cuiman.gui.component`. (TODO) 
+  
 - The Cuiman client package has been enhanced by _job result openers_,
   which ease working with the results of a process job (#65):
     - Client classes now have a method 
@@ -36,6 +36,10 @@
         - `gavicore.models.ApiError` (extra "x-traceback")
     - Replaced one-element enums `JobType`, `MaxOccurs` by string literals. 
     - Replaced `Union[]` by `|` operator.
+
+- Dropped utility function `additional_parameters()` in `procodile` 
+  as usage of `additionalParameters` in input descriptions
+  is and was discouraged.
 
 - Lifted some mypy restrictions and enabled mypy pydantic plugin.
 
