@@ -8,7 +8,6 @@ import param
 
 from cuiman.api.config import AdvancedInputPredicate
 from cuiman.api.exceptions import ClientError
-from cuiman.gui.panels.debug import DebugHelper
 from gavicore.models import (
     Format,
     JobInfo,
@@ -32,49 +31,39 @@ GetJobResultsAction: TypeAlias = Callable[[str], JobResults]
 
 
 class MainPanelViewModel(param.Parameterized):
-    # ----- public state (observable)
-
+    # --- public state (observable)
     processes = param.List(default=[], doc="Filtered process summaries")
     selected_process_id = param.String(default=None, allow_None=True)
-
     process_description = param.ClassSelector(
         class_=ProcessDescription,
         default=None,
         allow_None=True,
     )
-
     loading = param.Boolean(default=False)
     error = param.ClassSelector(
         class_=ClientError,
         default=None,
         allow_None=True,
     )
-
     show_advanced = param.Boolean(default=False)
-
     inputs_field = param.ClassSelector(
         class_=Field,
         default=None,
         allow_None=True,
     )
-
     last_job = param.ClassSelector(
         class_=JobInfo,
         default=None,
         allow_None=True,
     )
 
-    # ----- dependent state
-
+    # --- dependent state
     has_advanced = param.Boolean(default=False)
     execute_disabled = param.Boolean(default=False)
     get_request_disabled = param.Boolean(default=False)
 
-    # ----- internal state
-
+    # --- internal state
     _process_cache = param.Dict(default={}, precedence=-1)
-
-    # ----- construction
 
     def __init__(
         self,
@@ -97,8 +86,6 @@ class MainPanelViewModel(param.Parameterized):
         self.error = process_list_error
 
         self.select_process(MainPanelViewModel._initial_process_id(self.processes))
-
-    # ----- intent
 
     def select_process(self, process_id: str | None):
         if process_id:
@@ -134,14 +121,11 @@ class MainPanelViewModel(param.Parameterized):
         has_advanced = False
         filtered_inputs: dict[str, InputDescription] = {}
         for k, v in inputs.items():
-            DebugHelper.print(f"update_inputs: input {k!r}, extra: ", v.model_extra)
             is_advanced = self._is_advanced_input(process, k, v)
             has_advanced = has_advanced or is_advanced
             if not is_advanced or show_advanced:
                 filtered_inputs[k] = v
         self.has_advanced = has_advanced
-
-        DebugHelper.print("update_inputs: has_advanced=", has_advanced)
 
         input_field_meta = FieldMeta.from_input_descriptions(filtered_inputs)
         self.inputs_field = PanelField.from_meta(
@@ -185,8 +169,6 @@ class MainPanelViewModel(param.Parameterized):
         finally:
             self.loading = False
 
-    # ----- helpers (state changing)
-
     def _load_process_description(self):
         pid = self.selected_process_id
         if not pid:
@@ -209,8 +191,6 @@ class MainPanelViewModel(param.Parameterized):
             self.error = e
         finally:
             self.loading = False
-
-    # ----- helpers (pure)
 
     @staticmethod
     def _initial_process_id(

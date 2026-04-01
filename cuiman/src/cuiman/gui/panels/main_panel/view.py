@@ -18,8 +18,6 @@ from gavicore.models import (
     ProcessDescription,
     ProcessList,
 )
-from ..debug import DebugHelper
-
 from ...ipy_helper import IPyHelper
 from ..job_info_panel import JobInfoPanelView
 from ..x_menu import XMenu
@@ -77,7 +75,6 @@ class MainPanelView(pn.viewable.Viewer):
         # Used in view only, once we go async, move to viewmodel
         self._get_job_results = get_job_results
 
-        # --- _process_select
         process_select_options = {
             f"{p.title if p.title else 'No Title'}  (id={p.id})": p.id
             for p in self.vm.processes
@@ -95,8 +92,6 @@ class MainPanelView(pn.viewable.Viewer):
 
         self._process_select.param.watch(_on_select_process, "value")
 
-        # --- _advanced_switch
-
         self._advanced_switch = pn.widgets.Switch(
             value=self.vm.show_advanced,
         )
@@ -107,15 +102,12 @@ class MainPanelView(pn.viewable.Viewer):
             self._update_process_inputs_ui()
 
         self._advanced_switch.param.watch(_on_advanced, "value")
-
-        # --- _process_doc_markdown
-
         self._process_doc_markdown = pn.pane.Markdown("")
 
         process_panel = pn.Column(
             self._process_select,
             self._process_doc_markdown,
-            DebugHelper.panel(),
+            # DebugHelper.instance(),  # Uncomment for debugging
             pn.Row(
                 self._advanced_switch,
                 pn.widgets.StaticText(value="Show advanced inputs"),
