@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 from types import NoneType
 from typing import Any, Final, Literal, TypeAlias
 
-
 from gavicore.util.ensure import ensure_type
 
 JSON_TYPE_NAMES: Final = ("boolean", "integer", "number", "string", "array", "object")
@@ -50,10 +49,12 @@ class JsonDateCodec(JsonCodec):
         if not value:
             return None
         ensure_type("value", value, datetime.date)
+        assert isinstance(value, datetime.date)
         return datetime.date.isoformat(value)
 
     def from_json(self, json_value: JsonValue) -> Any:
         if not json_value:
             return None
         ensure_type("json_value", json_value, str)
+        assert isinstance(json_value, str)
         return datetime.date.fromisoformat(json_value)

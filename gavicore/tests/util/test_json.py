@@ -4,7 +4,7 @@
 
 import datetime
 
-from gavicore.util.json import JsonIdentityCodec, JsonDateCodec
+from gavicore.util.json import JsonDateCodec, JsonIdentityCodec
 
 
 def test_json_identity_codec():

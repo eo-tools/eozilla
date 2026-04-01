@@ -5,7 +5,7 @@
 
 import pytest
 
-from gavicore.util.ensure import ensure_type, ensure_condition, ensure_callable
+from gavicore.util.ensure import ensure_callable, ensure_condition, ensure_type
 
 
 def test_ensure_type():
