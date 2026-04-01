@@ -2,11 +2,23 @@
 
 ### Enhancements
 
-- The Gavicore package has been enhanced by a new _UI generator_.
+- The **Gavicore** package has been enhanced by a new _UI generator_.
   - Added a new UI generation framework in `gavicore.ui`.
   - Dropped subpackage `cuiman.gui.component`.
   
-- The Cuiman client package has been enhanced by _job result openers_,
+- Enhanced the **Appligator** package with Dockerfile generation and 
+  improved Airflow integration:
+    - Added `appligator.airflow.gen_dockerfile.generate` for Jinja2-template-based
+      Dockerfile generation. Produces a two-stage pixi build with support for
+      non-editable local package installs. The runtime base image is configurable
+      via `base_image` (default: `debian:bookworm-slim`).
+    - Added `--skip-build` flag to the `appligator` CLI to skip Docker image
+      building and only generate DAG files, using the provided `--image-name` directly.
+    - Updated `appligator.airflow.run_step` with `coerce_inputs` (casts Airflow
+      Jinja string params to their declared types) and `_XComEncoder` (serialises
+      Pydantic models and other non-JSON-native objects for XCom output).
+
+- The **Cuiman** client package has been enhanced by _job result openers_,
   which ease working with the results of a process job (#65):
     - Client classes now have a method 
       `open_job_result(job_id, **options)` that is used to open the results 
@@ -21,7 +33,6 @@
     - Added some default openers for `xarray.Dataset`, 
       `pandas.DataFrame`, and `geopandas.GeoDataFrame` 
       given that a respective job result is a link.
-
 - The model classes that correspond to the OGC API - Processes in 
   `gavicore.models` are no longer generated and have been adjusted to
   be more user-friendly (#71):

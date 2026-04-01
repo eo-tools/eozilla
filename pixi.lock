@@ -1599,10 +1599,13 @@ packages:
 - pypi: ./appligator
   name: appligator
   version: 0.1.0.dev0
-  sha256: f3564077c7bb2460982187899472be6552697debd1fdd01277731eab250d8988
+  sha256: e6e6370986bb16eee7c22b259583cf891c42584fdf70421fe501eb8ac976a60b
   requires_dist:
+  - jinja2
   - pydantic
   - pyyaml
+  - tomli-w
+  - tomli ; python_full_version < '3.11'
   - typer
   - gavicore>=0.0.7
   - procodile>=0.0.7
