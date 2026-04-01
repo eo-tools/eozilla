@@ -263,15 +263,9 @@ class ClientConfig(AuthConfig, BaseSettings):
                         return True
         # TODO: consider the possible "x-ui" variants for which we may
         #  detect level=="advanced" or advanced==True
-        extras = input_description.model_extra
-        schema_extras = input_description.schema_.model_extra
-
-        import logging
-
-        logging.info(f"extras: {extras}")
-        logging.info(f"schema_extras: {schema_extras}")
-
         advanced_key = "x-ui:advanced"
+        extras = input_description.model_extra or {}
+        schema_extras = input_description.schema_.model_extra or {}
         return extras.get(advanced_key, schema_extras.get(advanced_key)) is True
 
     def register_job_result_opener(

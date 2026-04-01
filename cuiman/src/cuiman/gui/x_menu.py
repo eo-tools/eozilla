@@ -77,3 +77,11 @@ class XMenu(pn.viewable.Viewer):
     def _set_menu_button_name(self):
         caret = "▴" if self.open else "▾"
         self.button.name = f"{self.label}   {caret}"
+
+
+__all__ = [
+    "XMenu",
+    "XMenuItem",
+    "XMenuItemLike",
+    "XMenuItemOptions",
+]

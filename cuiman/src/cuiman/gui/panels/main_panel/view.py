@@ -9,7 +9,10 @@ import panel.layout
 
 from cuiman.api.config import AdvancedInputPredicate, ProcessPredicate
 from cuiman.api.exceptions import ClientError
+from cuiman.gui.ipy_helper import IPyHelper
 from cuiman.gui.jobs_observer import JobsObserver
+from cuiman.gui.panels import JobInfoPanelView
+from cuiman.gui.x_menu import XMenu, XMenuItem
 from gavicore.models import (
     JobInfo,
     JobList,
@@ -18,10 +21,7 @@ from gavicore.models import (
     ProcessDescription,
     ProcessList,
 )
-from ...ipy_helper import IPyHelper
-from ..job_info_panel import JobInfoPanelView
-from ..x_menu import XMenu
-from ..x_menu_item import XMenuItem
+
 from .viewmodel import (
     ExecuteProcessAction,
     GetJobResultsAction,

@@ -2,10 +2,11 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-import panel as pn
-import io
 import contextlib
+import io
 import traceback
+
+import panel as pn
 
 pn.extension()
 
@@ -37,10 +38,6 @@ class DebugPanel(pn.widgets.WidgetBase, pn.custom.PyComponent):
     def print(self, *args, end="\n"):
         """Print something."""
         self._print(*args, end)
-
-    def show(self):
-        """Call for standalone display."""
-        return pn.Column("### Debug Output", self._panel)
 
     def capture(self, func, *args, **kwargs):
         """Capture stdout + exceptions."""

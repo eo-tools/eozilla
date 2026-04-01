@@ -10,6 +10,7 @@ from cuiman.api.config import AdvancedInputPredicate
 from cuiman.api.exceptions import ClientError
 from gavicore.models import (
     Format,
+    InputDescription,
     JobInfo,
     JobResults,
     Output,
@@ -18,7 +19,6 @@ from gavicore.models import (
     ProcessRequest,
     ProcessSummary,
     TransmissionMode,
-    InputDescription,
 )
 from gavicore.ui import Field, FieldMeta
 from gavicore.ui.impl.panel import PanelField
