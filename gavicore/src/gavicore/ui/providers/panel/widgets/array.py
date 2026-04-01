@@ -7,7 +7,9 @@ from typing import Any, Callable
 import panel as pn
 import param
 
-from ..util import ArrayTextConverter, get_header_items
+from gavicore.util.text import ArrayTextConverter
+
+from ._util import get_header_items
 
 pn.extension()
 
@@ -20,7 +22,7 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
     def __init__(
         self,
         value: list,
-        converter: ArrayTextConverter,
+        array_converter: ArrayTextConverter,
         separator: str | None = None,
         name: str | None = None,
         description: str | None = None,
@@ -29,10 +31,10 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
         super().__init__(name="", **params)
         sep_ = "," if separator is None else separator
         self.value = value
-        self._converter = converter
+        self._array_converter = array_converter
         self._separator = sep_
 
-        initial_text = converter.format_array(value, sep=sep_)
+        initial_text = self._array_converter.format(value, sep=sep_)
         sep_text = "space or newline" if not sep_ or not sep_.strip() else f"{sep_!r}"
         help_text = f"Use {sep_text} as separator."
         self._text = pn.widgets.TextAreaInput(
@@ -49,7 +51,7 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
         assert isinstance(event.new, str)
         text = event.new
         try:
-            value = self._converter.parse_array(text, sep=self._separator)
+            value = self._array_converter.parse(text, sep=self._separator)
             if value != self.value:
                 self.value = value
         except ValueError as e:

@@ -4,7 +4,7 @@
 
 import panel as pn
 
-from ..util import get_header_items
+from ._util import get_header_items
 
 pn.extension()
 

@@ -6,20 +6,19 @@ from typing import Any
 
 import panel as pn
 
-import gavicore.ui as cui
-import gavicore.ui.vm as cvm
+import gavicore.ui as gcui
+import gavicore.ui.vm as gcvm
 from gavicore.models import InputDescription, Schema
-from gavicore.ui import Field, FieldGenerator, FieldMeta
 from gavicore.util.json import JsonCodec, JsonIdentityCodec
 from gavicore.util.undefined import Undefined
 
 
-class PanelField(cui.FieldBase):
+class PanelField(gcui.FieldBase):
     """A panel widget-like field."""
 
     def __init__(
         self,
-        view_model: cvm.ViewModel,
+        view_model: gcvm.ViewModel,
         view: pn.widgets.WidgetBase,
         *,
         json_codec: JsonCodec | None = None,
@@ -49,9 +48,9 @@ class PanelField(cui.FieldBase):
         cls,
         input_descriptions: dict[str, InputDescription],
         initial_value: Any | Undefined = Undefined.value,
-    ) -> Field:
+    ) -> gcui.Field:
         return cls.from_meta(
-            FieldMeta.from_input_descriptions(input_descriptions),
+            gcui.FieldMeta.from_input_descriptions(input_descriptions),
             initial_value=initial_value,
         )
 
@@ -61,19 +60,19 @@ class PanelField(cui.FieldBase):
         name: str,
         schema: Schema,
         initial_value: Any | Undefined = Undefined.value,
-    ) -> Field:
+    ) -> gcui.Field:
         return cls.from_meta(
-            FieldMeta.from_schema(name, schema), initial_value=initial_value
+            gcui.FieldMeta.from_schema(name, schema), initial_value=initial_value
         )
 
     @classmethod
     def from_meta(
         cls,
-        meta: FieldMeta,
+        meta: gcui.FieldMeta,
         initial_value: Any | Undefined = Undefined.value,
-    ) -> Field:
+    ) -> gcui.Field:
         from .factory import PanelFieldFactory
 
-        generator = FieldGenerator()
+        generator = gcui.FieldGenerator()
         generator.register_field_factory(PanelFieldFactory())
         return generator.generate_field(meta, initial_value=initial_value)
