@@ -2,6 +2,11 @@
 
 ### Enhancements
 
+- Added `--secret-name` option to the `appligator` CLI to inject Kubernetes secrets
+  as environment variables into every generated pod. The option is repeatable
+  (e.g. `--secret-name my-secret --secret-name other-secret`). Internally, each
+  name is translated to a `k8s.V1EnvFromSource(secret_ref=...)` entry on the
+  `KubernetesPodOperator`.
 - Enhanced `appligator` with Dockerfile generation and improved Airflow integration:
     - Added `appligator.airflow.gen_dockerfile.generate` for Jinja2-template-based
       Dockerfile generation. Produces a two-stage pixi build with support for
@@ -9,6 +14,7 @@
       via `base_image` (default: `debian:bookworm-slim`).
     - Added `--skip-build` flag to the `appligator` CLI to skip Docker image
       building and only generate DAG files, using the provided `--image-name` directly.
+      Skipping the build is now the default; use `--no-skip-build` to opt in to building.
     - Updated `appligator.airflow.run_step` with `coerce_inputs` (casts Airflow
       Jinja string params to their declared types) and `_XComEncoder` (serialises
       Pydantic models and other non-JSON-native objects for XCom output).

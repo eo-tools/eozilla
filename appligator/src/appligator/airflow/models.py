@@ -44,6 +44,7 @@ class TaskIR(BaseModel):
     image: str | None = None
     command: list[str] | None = None
     env: dict[str, str] | None = None
+    env_from_secrets: list[str] | None = None
 
     # Data flow
     inputs: dict[str, str] = Field(default_factory=dict)

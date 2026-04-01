@@ -47,7 +47,15 @@ def main(
     skip_build: Annotated[
         bool,
         typer.Option(..., help="Skip building the Docker image and only generate DAG files."),
-    ] = False,
+    ] = True,
+    secret_names: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--secret-name",
+            help="Kubernetes secret name to inject as environment variables into every pod "
+                 "(repeatable, e.g. --secret-name my-secret --secret-name other-secret).",
+        ),
+    ] = None,
 ):
     """
     Generate various application formats from your processes.
@@ -101,6 +109,7 @@ def main(
             dag_id=process_id,
             registry=process_registry.get_workflow(process_id).registry,
             image=image_name,
+            env_from_secrets=secret_names,
         )
         dag_file = dags_folder / f"{process_id}.py"
         with dag_file.open("w") as stream:

@@ -24,6 +24,14 @@ class KubernetesOperatorHandler(OperatorHandler):
 
         inputs = render_task_inputs(task.inputs)
 
+        env_from_block = ""
+        if task.env_from_secrets:
+            entries = ", ".join(
+                f"k8s.V1EnvFromSource(secret_ref=k8s.V1SecretEnvSource(name={name!r}))"
+                for name in task.env_from_secrets
+            )
+            env_from_block = f"\n        env_from=[{entries}],"
+
         return f"""
     tasks["{task.id}"] = KubernetesPodOperator(
         task_id="{task.id}",
@@ -34,7 +42,7 @@ class KubernetesOperatorHandler(OperatorHandler):
             "func_qualname": "{task.func_qualname}",
             "inputs": {{{inputs}}},
             "output_keys": {task.outputs},
-        }})],
+        }})],{env_from_block}
         do_xcom_push=True,
     )
 """

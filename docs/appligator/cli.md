@@ -28,6 +28,8 @@ $ main [OPTIONS] [PROCESS_REGISTRY_SPEC]
 
 * `--dags-folder PATH`: An Airflow DAGs folder to which to write the outputs.  [default: C:\Users\norma\Projects\eozilla\eozilla-airflow\dags]
 * `--image-name TEXT`: Name of the Docker image which is created from your workflow and required packages that Airflow will use for running the workflows in the registry.  [default: appligator_workflow_image:v1]
+* `--skip-build / --no-skip-build`: Skip building the Docker image and only generate DAG files.  [default: skip-build]
+* `--secret-name TEXT`: Kubernetes secret name to inject as environment variables into every pod. Repeatable — supply the flag multiple times to add more than one secret (e.g. `--secret-name my-secret --secret-name other-secret`).
 * `--version / --no-version`: Show version and exit.  [default: no-version]
 * `--install-completion`: Install completion for the current shell.
 * `--show-completion`: Show completion for the current shell, to copy it or customize the installation.

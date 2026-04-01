@@ -11,6 +11,7 @@ def gen_workflow_dag(
     dag_id: str,
     registry: WorkflowStepRegistry,
     image: str,
+    env_from_secrets: list[str] | None = None,
 ) -> str:
     """Generates a fully-formed Airflow DAG Python file."""
 
@@ -21,7 +22,7 @@ def gen_workflow_dag(
         raise ValueError("Image name is required to generate dag.")
 
     # operator-agnostic intermediate representation
-    ir = workflow_to_ir(registry, dag_id, image_name=image)
+    ir = workflow_to_ir(registry, dag_id, image_name=image, env_from_secrets=env_from_secrets)
 
     dag_code = AirflowRenderer().render(ir)
 

@@ -11,7 +11,10 @@ from procodile.workflow import FINAL_STEP_ID
 
 
 def workflow_to_ir(
-    registry: WorkflowStepRegistry, workflow_id: str, image_name: str = ""
+    registry: WorkflowStepRegistry,
+    workflow_id: str,
+    image_name: str = "",
+    env_from_secrets: list[str] | None = None,
 ) -> WorkflowIR:
     """
     Convert a WorkflowStepRegistry into a fully normalized WorkflowIR (Workflow
@@ -62,6 +65,7 @@ def workflow_to_ir(
             func_module=main_step.function.__module__,
             func_qualname=main_step.function.__qualname__,
             image=image_name,
+            env_from_secrets=env_from_secrets,
             inputs={name: f"param:{name}" for name in params},
             outputs=list((main_step.description.outputs or {}).keys()),
             depends_on=[],
@@ -94,6 +98,7 @@ def workflow_to_ir(
                 func_module=step.function.__module__,
                 func_qualname=step.function.__qualname__,
                 image=image_name,
+                env_from_secrets=env_from_secrets,
                 inputs=inputs,
                 outputs=list((step.description.outputs or {}).keys()),
                 depends_on=sorted(set(depends_on)),
