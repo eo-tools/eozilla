@@ -239,6 +239,12 @@ def _parse_parameters(
     return arg_parameters, job_ctx_arg
 
 
+# TODO: replace deprecated FieldInfo.merge_field_infos()
+#   used in _merge_inputs_into_model_class(). See
+#   - https://github.com/pydantic/pydantic/issues/12329
+#   - https://github.com/pydantic/pydantic/issues/12374
+
+
 def _merge_inputs_into_model_class(
     fn_name: str,
     signature: inspect.Signature,
@@ -389,6 +395,7 @@ def _merge_input_descriptions(
         additionalParameters=(
             base_description.additionalParameters or description.additionalParameters
         ),
+        **(base_description.model_extra or {}),
     )
 
 
@@ -408,6 +415,7 @@ def _merge_output_descriptions(
         additionalParameters=(
             base_description.additionalParameters or description.additionalParameters
         ),
+        **(base_description.model_extra or {}),
     )
 
 

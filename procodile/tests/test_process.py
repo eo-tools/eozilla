@@ -284,8 +284,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
                     nullable=True,
                     default=False,
                 ),
-                # TODO: check why we cannot see extra properties
-                # **{"x-ui": {"level": "common"}},
+                **{"x-ui": {"level": "common"}},
             ),
             proc_inputs["a"],
         )
@@ -295,8 +294,7 @@ class RegisteredProcessTest(BaseModelMixin, TestCase):
                 schema=Schema(
                     anyOf=[Schema(type="number"), Schema(type="boolean")], default=1.0
                 ),
-                # TODO: check why we cannot see extra properties
-                # **{"x-ui": {"disabled": True, "level": "advanced"}},
+                **{"x-ui": {"disabled": True, "level": "advanced"}},
             ),
             proc_inputs["b"],
         )
