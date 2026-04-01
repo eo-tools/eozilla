@@ -4,7 +4,7 @@
 
 - The Gavicore package has been enhanced by a new _UI generator_.
   - Added a new UI generation framework in `gavicore.ui`.
-  - Dropped subpackage `cuiman.gui.component`. (TODO) 
+  - Dropped subpackage `cuiman.gui.component`.
   
 - The Cuiman client package has been enhanced by _job result openers_,
   which ease working with the results of a process job (#65):
