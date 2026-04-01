@@ -32,6 +32,15 @@ class KubernetesOperatorHandler(OperatorHandler):
             )
             env_from_block = f"\n        env_from=[{entries}],"
 
+        resources_block = ""
+        if task.resources:
+            r = task.resources
+            requests = {k: v for k, v in {"cpu": r.cpu_request, "memory": r.memory_request}.items() if v}
+            limits = {k: v for k, v in {"cpu": r.cpu_limit, "memory": r.memory_limit}.items() if v}
+            requests_str = f"requests={requests!r}, " if requests else ""
+            limits_str = f"limits={limits!r}" if limits else ""
+            resources_block = f"\n        container_resources=k8s.V1ResourceRequirements({requests_str}{limits_str}),"
+
         return f"""
     tasks["{task.id}"] = KubernetesPodOperator(
         task_id="{task.id}",
@@ -42,7 +51,7 @@ class KubernetesOperatorHandler(OperatorHandler):
             "func_qualname": "{task.func_qualname}",
             "inputs": {{{inputs}}},
             "output_keys": {task.outputs},
-        }})],{env_from_block}
+        }})],{env_from_block}{resources_block}
         do_xcom_push=True,
     )
 """

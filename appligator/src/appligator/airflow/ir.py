@@ -4,7 +4,7 @@
 
 from typing import Any
 
-from appligator.airflow.models import TaskIR, WorkflowIR
+from appligator.airflow.models import ResourceRequirements, TaskIR, WorkflowIR
 from gavicore.models import InputDescription
 from procodile import WorkflowStepRegistry
 from procodile.workflow import FINAL_STEP_ID
@@ -15,6 +15,7 @@ def workflow_to_ir(
     workflow_id: str,
     image_name: str = "",
     env_from_secrets: list[str] | None = None,
+    resources: ResourceRequirements | None = None,
 ) -> WorkflowIR:
     """
     Convert a WorkflowStepRegistry into a fully normalized WorkflowIR (Workflow
@@ -41,6 +42,7 @@ def workflow_to_ir(
         registry: A WorkflowStepRegistry produced by the workflow DSL.
         workflow_id: The DAG/workflow identifier.
         image_name: Optional Container image used for Kubernetes tasks.
+        resources: Optional CPU/memory requests and limits applied to every task.
 
     Returns:
         A WorkflowIR representing the complete workflow execution graph.
@@ -66,6 +68,7 @@ def workflow_to_ir(
             func_qualname=main_step.function.__qualname__,
             image=image_name,
             env_from_secrets=env_from_secrets,
+            resources=resources,
             inputs={name: f"param:{name}" for name in params},
             outputs=list((main_step.description.outputs or {}).keys()),
             depends_on=[],
@@ -99,6 +102,7 @@ def workflow_to_ir(
                 func_qualname=step.function.__qualname__,
                 image=image_name,
                 env_from_secrets=env_from_secrets,
+                resources=resources,
                 inputs=inputs,
                 outputs=list((step.description.outputs or {}).keys()),
                 depends_on=sorted(set(depends_on)),

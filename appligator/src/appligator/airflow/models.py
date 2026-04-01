@@ -12,6 +12,20 @@ Runtime = Literal[
 ]
 
 
+class ResourceRequirements(BaseModel):
+    """
+    CPU and memory resource requests and limits for a container.
+
+    Values follow the Kubernetes quantity syntax (e.g. "500m", "2", "256Mi", "1Gi").
+    All fields are optional; only the non-None ones are emitted into the generated DAG.
+    """
+
+    cpu_request: str | None = None
+    memory_request: str | None = None
+    cpu_limit: str | None = None
+    memory_limit: str | None = None
+
+
 class TaskIR(BaseModel):
     """
     Operator-agnostic description of a single executable task.
@@ -27,6 +41,7 @@ class TaskIR(BaseModel):
         image: Container image for container-based runtimes (if applicable).
         command: Optional command override.
         env: Optional environment variables.
+        resources: Optional CPU/memory requests and limits.
         inputs: Mapping of input names to param:/xcom: references.
         outputs: List of output keys produced by the task.
         depends_on: List of upstream task IDs.
@@ -45,6 +60,7 @@ class TaskIR(BaseModel):
     command: list[str] | None = None
     env: dict[str, str] | None = None
     env_from_secrets: list[str] | None = None
+    resources: ResourceRequirements | None = None
 
     # Data flow
     inputs: dict[str, str] = Field(default_factory=dict)

@@ -65,6 +65,22 @@ def main(
                  "each gets a suffix: <dag-name>_<process_id>.py.",
         ),
     ] = None,
+    cpu_request: Annotated[
+        str | None,
+        typer.Option("--cpu-request", help="CPU request for every pod (e.g. '500m', '1')."),
+    ] = None,
+    memory_request: Annotated[
+        str | None,
+        typer.Option("--memory-request", help="Memory request for every pod (e.g. '256Mi', '1Gi')."),
+    ] = None,
+    cpu_limit: Annotated[
+        str | None,
+        typer.Option("--cpu-limit", help="CPU limit for every pod (e.g. '2')."),
+    ] = None,
+    memory_limit: Annotated[
+        str | None,
+        typer.Option("--memory-limit", help="Memory limit for every pod (e.g. '2Gi')."),
+    ] = None,
 ):
     """
     Generate various application formats from your processes.
@@ -86,6 +102,7 @@ def main(
     from appligator import __version__
     from appligator.airflow.gen_image import gen_image
     from appligator.airflow.gen_workflow_dag import gen_workflow_dag
+    from appligator.airflow.models import ResourceRequirements
     from gavicore.util.dynimp import import_value
     from procodile import ProcessRegistry
 
@@ -105,6 +122,17 @@ def main(
     )
 
     dags_folder.mkdir(exist_ok=True)
+
+    resources = (
+        ResourceRequirements(
+            cpu_request=cpu_request,
+            memory_request=memory_request,
+            cpu_limit=cpu_limit,
+            memory_limit=memory_limit,
+        )
+        if any([cpu_request, memory_request, cpu_limit, memory_limit])
+        else None
+    )
 
     process_ids = list(process_registry.keys())
     multi = len(process_ids) > 1
@@ -126,6 +154,7 @@ def main(
             registry=process_registry.get_workflow(process_id).registry,
             image=image_name,
             env_from_secrets=secret_names,
+            resources=resources,
         )
         dag_file = dags_folder / f"{file_stem}.py"
         with dag_file.open("w") as stream:

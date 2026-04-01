@@ -31,6 +31,10 @@ $ main [OPTIONS] [PROCESS_REGISTRY_SPEC]
 * `--skip-build / --no-skip-build`: Skip building the Docker image and only generate DAG files.  [default: skip-build]
 * `--secret-name TEXT`: Kubernetes secret name to inject as environment variables into every pod. Repeatable — supply the flag multiple times to add more than one secret (e.g. `--secret-name my-secret --secret-name other-secret`).
 * `--dag-name TEXT`: Custom stem for the generated DAG file(s) instead of the process ID. With a single process, produces `<dag-name>.py`. With multiple processes, produces `<dag-name>_<process_id>.py` for each.
+* `--cpu-request TEXT`: CPU request applied to every generated pod (e.g. `500m`, `1`).
+* `--memory-request TEXT`: Memory request applied to every generated pod (e.g. `256Mi`, `1Gi`).
+* `--cpu-limit TEXT`: CPU limit applied to every generated pod (e.g. `2`).
+* `--memory-limit TEXT`: Memory limit applied to every generated pod (e.g. `2Gi`).
 * `--version / --no-version`: Show version and exit.  [default: no-version]
 * `--install-completion`: Install completion for the current shell.
 * `--show-completion`: Show completion for the current shell, to copy it or customize the installation.

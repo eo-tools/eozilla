@@ -40,8 +40,8 @@ class AirflowRenderer:
         """
         lines: list[str] = []
 
-        needs_k8s_secrets = any(t.env_from_secrets for t in workflow.tasks)
-        lines.extend(render_header(needs_k8s_secrets=needs_k8s_secrets))
+        needs_k8s = any(t.env_from_secrets or t.resources for t in workflow.tasks)
+        lines.extend(render_header(needs_k8s=needs_k8s))
 
         lines.append(render_dag_open(workflow))
 
@@ -63,7 +63,7 @@ class AirflowRenderer:
         raise ValueError(f"No operator adapter for task {task.id}")
 
 
-def render_header(needs_k8s_secrets: bool = False) -> list[str]:
+def render_header(needs_k8s: bool = False) -> list[str]:
     lines = [
         "import json",
         "from datetime import datetime",
@@ -72,7 +72,7 @@ def render_header(needs_k8s_secrets: bool = False) -> list[str]:
         "from airflow.providers.standard.operators.python import PythonOperator",
         "from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator",
     ]
-    if needs_k8s_secrets:
+    if needs_k8s:
         lines.append("from kubernetes.client import models as k8s")
     lines.append("")
     return lines

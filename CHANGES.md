@@ -2,6 +2,12 @@
 
 ### Enhancements
 
+- Added resource requests and limits support for generated Kubernetes pods.
+  Four new CLI options (`--cpu-request`, `--memory-request`, `--cpu-limit`,
+  `--memory-limit`) set `container_resources` on every `KubernetesPodOperator`
+  via `k8s.V1ResourceRequirements`. Only the supplied fields are emitted.
+  The `from kubernetes.client import models as k8s` import is now also triggered
+  by resources (previously only by `--secret-name`).
 - Added `--secret-name` option to the `appligator` CLI to inject Kubernetes secrets
   as environment variables into every generated pod. The option is repeatable
   (e.g. `--secret-name my-secret --secret-name other-secret`). Internally, each
