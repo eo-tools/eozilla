@@ -56,6 +56,15 @@ def main(
                  "(repeatable, e.g. --secret-name my-secret --secret-name other-secret).",
         ),
     ] = None,
+    dag_name: Annotated[
+        str | None,
+        typer.Option(
+            "--dag-name",
+            help="Custom name for the generated DAG file (without .py extension). "
+                 "Defaults to the process ID. If multiple processes are in the registry, "
+                 "each gets a suffix: <dag-name>_<process_id>.py.",
+        ),
+    ] = None,
 ):
     """
     Generate various application formats from your processes.
@@ -97,7 +106,14 @@ def main(
 
     dags_folder.mkdir(exist_ok=True)
 
+    process_ids = list(process_registry.keys())
+    multi = len(process_ids) > 1
+
     for process_id, _process in process_registry.items():
+        if dag_name:
+            file_stem = f"{dag_name}_{process_id}" if multi else dag_name
+        else:
+            file_stem = process_id
         # TODO: implement this better later
         if not skip_build:
             image_name = gen_image(
@@ -111,7 +127,7 @@ def main(
             image=image_name,
             env_from_secrets=secret_names,
         )
-        dag_file = dags_folder / f"{process_id}.py"
+        dag_file = dags_folder / f"{file_stem}.py"
         with dag_file.open("w") as stream:
             stream.write(
                 f"# WARNING - THIS IS GENERATED CODE\n"
