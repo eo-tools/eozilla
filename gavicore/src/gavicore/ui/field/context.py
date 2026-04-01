@@ -23,18 +23,18 @@ if TYPE_CHECKING:
 
 
 class FieldContext:
-    """The context object passed to the UI field factories."""
+    """The context object passed to a UI field factory."""
 
     def __init__(
         self,
         *,
-        builder: "FieldGenerator",
+        generator: "FieldGenerator",
         meta: FieldMeta,
         initial_value: Any | Undefined = Undefined.value,
         parent_ctx: "FieldContext | None" = None,
     ):
         self._parent_ctx = parent_ctx
-        self._builder = builder
+        self._generator = generator
         self._meta = meta
         self._vm_factory = ViewModelFactory(self)
         self._initial_value = (
@@ -45,36 +45,46 @@ class FieldContext:
 
     @property
     def meta(self) -> FieldMeta:
+        """The field metadata."""
         return self._meta
 
     @property
     def name(self) -> str:
+        """The name from field metadata."""
         return self._meta.name
 
     @property
     def schema(self) -> Schema:
+        """The OpenAPI Schema from field metadata."""
         return self._meta.schema_
 
     @property
     def vm(self) -> "ViewModelFactory":
+        """The view model factory."""
         return self._vm_factory
 
     @property
     def initial_value(self) -> Any:
+        """An initial value."""
         return self._initial_value
 
     @property
     def path(self) -> list[str]:
+        """The path of this field context as list of field names."""
         if self._parent_ctx is not None:
             return self._parent_ctx.path + [self.name]
         return [self.name]
 
     def layout(self, layout_function: "LayoutFunction", views: dict[str, View]) -> View:
+        """Layout the given views using the field metadata's `layout` property."""
         from .layout import LayoutManager
 
         return LayoutManager(layout_function, views).layout(self)
 
     def create_property_fields(self) -> dict[str, Field]:
+        """Create property fields given that this
+        context's field is of type "object".
+        """
         assert isinstance(self.meta.properties, dict)
         return {
             prop_name: self.create_child_field(prop_meta)
@@ -82,14 +92,17 @@ class FieldContext:
         }
 
     def create_item_field(self) -> Field:
+        """Create a new item field given that this
+        context's field is of type "array".
+        """
         assert isinstance(self.meta.items, FieldMeta)
         return self.create_child_field(self.meta.items)
 
     def create_child_field(self, child_meta: FieldMeta) -> Field:
-        """Create a new field for the given field metadata."""
+        """Create a new field for the given child field metadata."""
         child_ctx = self._create_child_ctx(child_meta)
         # noinspection PyProtectedMember
-        return self._builder._generate_field(child_ctx)
+        return self._generator._generate_field(child_ctx)
 
     def _create_child_ctx(self, child_meta: FieldMeta) -> "FieldContext":
         initial_value = self.initial_value
@@ -103,7 +116,7 @@ class FieldContext:
         else:
             child_value = child_meta.get_initial_value()
         return FieldContext(
-            builder=self._builder,
+            generator=self._generator,
             meta=child_meta,
             initial_value=child_value,
             parent_ctx=self,

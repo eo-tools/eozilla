@@ -27,7 +27,7 @@ class MyFieldFactory(FieldFactoryBase):
 
 def make_ctx(meta: FieldMeta):
     builder = FieldGenerator()
-    return FieldContext(builder=builder, meta=meta)
+    return FieldContext(generator=builder, meta=meta)
 
 
 class FieldFactoryBaseTest(TestCase):

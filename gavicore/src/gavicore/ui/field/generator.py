@@ -52,7 +52,7 @@ class FieldGenerator:
             The generated a field or form.
         """
         ctx = FieldContext(
-            builder=self,
+            generator=self,
             meta=meta,
             initial_value=initial_value,
             parent_ctx=None,

@@ -8,7 +8,7 @@ import panel as pn
 
 import gavicore.ui as gcui
 import gavicore.ui.vm as gcvm
-from gavicore.models import InputDescription, Schema
+from gavicore.models import Schema
 from gavicore.util.json import JsonCodec, JsonIdentityCodec
 from gavicore.util.undefined import Undefined
 
@@ -42,17 +42,6 @@ class PanelField(gcui.FieldBase):
 
         self.view_model.watch(observe_vm)
         self.view.param.watch(observe_view, "value")
-
-    @classmethod
-    def from_input_descriptions(
-        cls,
-        input_descriptions: dict[str, InputDescription],
-        initial_value: Any | Undefined = Undefined.value,
-    ) -> gcui.Field:
-        return cls.from_meta(
-            gcui.FieldMeta.from_input_descriptions(input_descriptions),
-            initial_value=initial_value,
-        )
 
     @classmethod
     def from_schema(

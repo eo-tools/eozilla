@@ -70,8 +70,7 @@ class PanelFieldFactory(gcui.FieldFactoryBase):
         )
 
     def get_array_score(self, meta: gcui.FieldMeta) -> int:
-        if meta.items is None:
-            return 0
+        assert meta.items is not None
         item_type = meta.items.schema_.type
         if item_type is None:
             return 0
@@ -114,11 +113,9 @@ class PanelFieldFactory(gcui.FieldFactoryBase):
         else:
 
             def create_item_field(_index: int, value: Any) -> pn.widgets.WidgetBase:
-                # TODO: this is a common function, move into ctx
-                # TODO: do something with index
                 assert isinstance(ctx.meta.items, gcui.FieldMeta)
                 ctx.meta.items.title = ""  # Supress label for items
-                item_field = ctx.create_child_field(ctx.meta.items)
+                item_field = ctx.create_item_field()
                 item_field.view_model.value = value
                 return item_field.view
 

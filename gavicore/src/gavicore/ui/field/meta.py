@@ -5,7 +5,7 @@
 import datetime
 import re
 from functools import cached_property
-from typing import Any, Callable, Literal, TypeAlias, Union, overload
+from typing import Any, Literal, TypeAlias, Union
 
 import pydantic
 
@@ -261,24 +261,6 @@ class FieldMeta(pydantic.BaseModel):
         """Compute an initial value for this UI field metadata."""
         return _get_initial_value(self)
 
-    @overload
-    def filter(
-        self, accept_meta: Callable[["FieldMeta"], bool], skip_root: Literal[True]
-    ) -> "FieldMeta": ...
-    @overload
-    def filter(
-        self, accept_meta: Callable[["FieldMeta"], bool], skip_root: Literal[False]
-    ) -> "FieldMeta | None": ...
-    def filter(
-        self, accept_meta: Callable[["FieldMeta"], bool], skip_root: bool = False
-    ) -> "FieldMeta | None":
-        """
-        Filter this field metadata by the given predicate function.
-        The predicate function is applied to
-        this metadata and its children if the schema type is "object" or "array".
-        """
-        return _filter_meta(accept_meta, self, skip_root, 0)
-
 
 def _schema_from_input_description(
     input_name: str,
@@ -305,18 +287,6 @@ def _schema_from_input_description(
     if "title" not in schema_dict:
         schema_dict["title"] = _make_label(input_name)
     return Schema(**schema_dict), min_items > 0
-
-
-def _schema_from_output_description(
-    output_name: str,
-    output_description: OutputDescription,
-) -> Schema:
-    description_dict = _make_description_dict(output_description)
-    schema_dict = _make_schema_dict(output_description.schema_)
-    schema_dict.update(description_dict)
-    if "title" not in schema_dict:
-        schema_dict["title"] = _make_label(output_name)
-    return Schema(**schema_dict)
 
 
 def _ui_field_meta_from_schema(
@@ -356,6 +326,10 @@ def _ui_field_meta_from_schema(
     )
 
 
+_EXCL_SCHEMA_PROPERTY_NAMES = {"properties", "items", "required"}
+_VALIDATION_META = FieldMeta(name="validation_meta", schema=Schema(**{}))
+
+
 def _extract_ui_props_from_schema_dict(
     schema_dict: dict[str, Any],
 ) -> dict[str, Any]:
@@ -366,11 +340,8 @@ def _extract_ui_props_from_schema_dict(
     _update_ui_props_from_ui_object(schema_dict, UI_KEYS, ui_props)
     # update properties in ui_dict from values of prefixed UI properties
     _update_ui_props_from_prefixed_ui_keys(schema_dict, UI_KEY_PREFIXES, ui_props)
-    return ui_props
-
-
-_EXCL_SCHEMA_PROPERTY_NAMES = {"properties", "items", "required"}
-_VALIDATION_META = FieldMeta(name="validation_meta", schema=Schema(**{}))
+    # finally, select only valid properties from ui_dict
+    return _select_valid_ui_props(ui_props)
 
 
 def _update_ui_props_from_schema_props(
@@ -378,13 +349,7 @@ def _update_ui_props_from_schema_props(
 ) -> None:
     for name, value in source.items():
         if name not in _EXCL_SCHEMA_PROPERTY_NAMES and name in FieldMeta.model_fields:
-            valid = True
-            try:
-                setattr(_VALIDATION_META, name, value)
-            except (TypeError, ValueError):
-                valid = False
-            if valid:
-                ui_props[name] = value
+            ui_props[name] = value
 
 
 def _update_ui_props_from_ui_object(
@@ -405,6 +370,18 @@ def _update_ui_props_from_prefixed_ui_keys(
     for prefix in ui_key_prefixes:
         extras = extract_extras(source, prefix)
         ui_props.update(extras)
+
+
+def _select_valid_ui_props(ui_props: dict[str, Any]) -> dict[str, Any]:
+    return {k: v for k, v in ui_props.items() if _is_valid_ui_prop(k, v)}
+
+
+def _is_valid_ui_prop(k, v) -> bool:
+    try:
+        setattr(_VALIDATION_META, k, v)
+        return True
+    except (TypeError, ValueError):
+        return False
 
 
 def _get_initial_value(meta: FieldMeta) -> Any:
@@ -481,35 +458,3 @@ def _make_description_dict(
 
 def _make_label(name: str) -> str:
     return " ".join(p.capitalize() for p in re.split(r"[_-]|(?<=[a-z])(?=[A-Z])", name))
-
-
-def _filter_meta(
-    predicate: Callable[[FieldMeta], bool],
-    field_meta: FieldMeta,
-    skip_root: bool,
-    level: int,
-) -> FieldMeta | None:
-    can_return_none = level > 0 or not skip_root
-    if can_return_none and not predicate(field_meta):
-        return None
-
-    if isinstance(field_meta.properties, dict):
-        old_len = len(field_meta.properties)
-        properties: dict[str, FieldMeta] = {}
-        for k, v in field_meta.properties.items():
-            filtered_v = _filter_meta(predicate, v, skip_root, level + 1)
-            if filtered_v is not None:
-                properties[k] = filtered_v
-        new_len = len(properties)
-        if can_return_none and new_len == 0 and old_len > 0:
-            return None
-        return field_meta.model_copy(update={"properties": properties})
-
-    if isinstance(field_meta.items, FieldMeta):
-        items = _filter_meta(predicate, field_meta.items, skip_root, level + 1)
-        if can_return_none and items is None:
-            return None
-        assert items is not None, "skip_root can only be True for objects"
-        return field_meta.model_copy(update={"items": items})
-
-    return field_meta

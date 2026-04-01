@@ -135,8 +135,9 @@ isort = { relative-imports-order = "closest-to-furthest" }
 
 [tool.coverage.report]
 omit = [
-    "procodile-example/src/**/*",
     "cuiman/src/cuiman/gui/**/*",
+    "gavicore/src/gavicore/ui/providers/panel/widgets/*",
+    "procodile-example/src/**/*",
     "wraptile/src/wraptile/services/airflow/**/*",
 ]
 

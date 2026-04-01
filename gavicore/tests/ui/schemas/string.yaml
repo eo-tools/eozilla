@@ -11,3 +11,9 @@ properties:
   text_area:
     type: string
     "x-ui:widget": "textarea"
+  select:
+    type: string
+    enum:
+      - green
+      - blue
+      - yellow

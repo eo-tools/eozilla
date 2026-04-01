@@ -7,6 +7,9 @@ from abc import ABC, abstractmethod
 from types import NoneType
 from typing import Any, Final, Literal, TypeAlias
 
+
+from gavicore.util.ensure import ensure_type
+
 JSON_TYPE_NAMES: Final = ("boolean", "integer", "number", "string", "array", "object")
 
 JsonType: TypeAlias = Literal[
@@ -16,6 +19,8 @@ JsonValue: TypeAlias = (
     bool | int | float | str | list["JsonValue"] | dict[str, "JsonValue"] | None
 )
 JsonSchemaDict: TypeAlias = dict[str, JsonValue]
+
+JSON_PYTHON_TYPES = (bool, int, float, str, list, dict, NoneType)
 
 
 class JsonCodec(ABC):
@@ -32,11 +37,11 @@ class JsonCodec(ABC):
 
 class JsonIdentityCodec(JsonCodec):
     def to_json(self, value: Any) -> JsonValue:
-        assert isinstance(value, (bool, int, float, str, list, dict, NoneType))
+        ensure_type("value", value, JSON_PYTHON_TYPES)
         return value
 
     def from_json(self, json_value: JsonValue) -> Any:
-        assert isinstance(json_value, (bool, int, float, str, list, dict, NoneType))
+        ensure_type("json_value", json_value, JSON_PYTHON_TYPES)
         return json_value
 
 
@@ -44,11 +49,11 @@ class JsonDateCodec(JsonCodec):
     def to_json(self, value: Any) -> JsonValue:
         if not value:
             return None
-        assert isinstance(value, datetime.date)
+        ensure_type("value", value, datetime.date)
         return datetime.date.isoformat(value)
 
     def from_json(self, json_value: JsonValue) -> Any:
         if not json_value:
             return None
-        assert isinstance(json_value, str)
+        ensure_type("json_value", json_value, str)
         return datetime.date.fromisoformat(json_value)

@@ -140,10 +140,10 @@ class NullFieldFactory(FieldFactoryBase):
         return LibuiField(view_model, view=view)
 
 
-# --- UI field builder usage --------
+# --- Field generator usage --------
 
 
-class FormFactoryTest(TestCase):
+class FieldGeneratorTest(TestCase):
     def setUp(self):
         registry = FieldFactoryRegistry()
         registry.register(NullFieldFactory())
@@ -152,11 +152,9 @@ class FormFactoryTest(TestCase):
         registry.register(StringFieldFactory())
         registry.register(NumberFieldFactory())
         registry.register(BooleanFieldFactory())
-        self.form_factory = FieldGenerator(registry)
+        self.generator = FieldGenerator(registry)
 
-    def test_form_factory_plain(self):
-        builder = self.form_factory
-
+    def test_generate(self):
         meta = FieldMeta.from_schema(
             "root",
             Schema(
@@ -183,7 +181,7 @@ class FormFactoryTest(TestCase):
             ),
         )
 
-        field = builder.generate_field(
+        field = self.generator.generate_field(
             meta,
             initial_value={
                 "ds_paths": [],
@@ -295,7 +293,7 @@ class FormFactoryTest(TestCase):
             view_model._get_value(),
         )
 
-    def test_form_factory_with_layout(self):
+    def test_generate_with_layout(self):
         meta = FieldMeta.from_schema(
             "root",
             Schema(
@@ -336,7 +334,7 @@ class FormFactoryTest(TestCase):
             ),
         )
 
-        field = self.form_factory.generate_field(
+        field = self.generator.generate_field(
             meta,
             initial_value={
                 "ds_paths": ["SST-20260301.nc", "SST-20260302.nc", "SST-20260303.nc"],
@@ -378,9 +376,9 @@ class FormFactoryTest(TestCase):
             view.render().lines,
         )
 
-    def test_form_factory_fails(self):
+    def test_generator_fails(self):
         meta = FieldMeta.from_schema("x", Schema(**{}))
         with pytest.raises(
             ValueError, match="no factory found for creating a UI for field 'x'"
         ):
-            self.form_factory.generate_field(meta)
+            self.generator.generate_field(meta)

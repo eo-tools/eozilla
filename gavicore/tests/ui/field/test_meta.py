@@ -369,6 +369,43 @@ class FieldMetaTest(TestCase):
         )
         self.assertEqual("", meta.label)
 
+    def test_cannot_override_properties_with_wrong_type(self):
+        meta = FieldMeta.from_schema(
+            "x", Schema(**{"type": "boolean", "x-ui:title": 42, "x-ui:order": 20})
+        )
+        self.assertEqual(None, meta.title)
+        self.assertEqual(20, meta.order)
+
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(
+                **{"type": "boolean", "x-ui:title": "Interpolate", "x-ui:order": [0, 1]}
+            ),
+        )
+        self.assertEqual("Interpolate", meta.title)
+        self.assertEqual(None, meta.order)
+
+    def test_to_non_nullable(self):
+        meta = FieldMeta.from_schema("x", Schema(**{"type": "boolean"}))
+        self.assertIs(False, meta.nullable)
+        self.assertIs(meta, meta.to_non_nullable())
+        meta = FieldMeta.from_schema(
+            "x", Schema(**{"type": "boolean", "nullable": False})
+        )
+        self.assertIs(False, meta.nullable)
+        self.assertIs(meta, meta.to_non_nullable())
+
+        meta = FieldMeta.from_schema(
+            "x", Schema(**{"type": "boolean", "nullable": True})
+        )
+        self.assertIs(True, meta.nullable)
+        nn_meta = meta.to_non_nullable()
+        self.assertIs(False, nn_meta.nullable)
+        self.assertEqual(
+            Schema(**{"type": "boolean", "nullable": False}), nn_meta.schema_
+        )
+        self.assertIs(True, nn_meta.nullable_parent)
+
     # noinspection PyMethodMayBeStatic
     def test_pydantic_deserialization_with_extra_fields(self):
         """Ensure, pydantic deserializes extra fields as expected."""
