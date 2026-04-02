@@ -5,6 +5,7 @@
 import unittest
 
 from appligator.airflow.ir import workflow_to_ir
+from appligator.airflow.models import ConfigMapMount, PvcMount
 from gavicore.models import Field
 from procodile import ProcessRegistry, Workflow
 from procodile.workflow import FINAL_STEP_ID, FromMain, FromStep
@@ -67,6 +68,14 @@ class TestWorkflowToIR(unittest.TestCase):
             image_name="",
         )
 
+        _k8s_task_defaults = {
+            "command": None,
+            "env": None,
+            "env_from_secrets": None,
+            "resources": None,
+            "pvc_mounts": [],
+            "config_map_mounts": [],
+        }
         expected = {
             "id": "wf",
             "params": {
@@ -83,8 +92,7 @@ class TestWorkflowToIR(unittest.TestCase):
                     "func_module": "tests.airflow.test_workflow_to_ir",
                     "func_qualname": "TestWorkflowToIR.setUp.<locals>.main",
                     "image": "",
-                    "command": None,
-                    "env": None,
+                    **_k8s_task_defaults,
                     "inputs": {"x": "param:x"},
                     "outputs": ["out"],
                     "depends_on": [],
@@ -95,8 +103,7 @@ class TestWorkflowToIR(unittest.TestCase):
                     "func_module": "tests.airflow.test_workflow_to_ir",
                     "func_qualname": "TestWorkflowToIR.setUp.<locals>.step",
                     "image": "",
-                    "command": None,
-                    "env": None,
+                    **_k8s_task_defaults,
                     "inputs": {"y": "xcom:main:out"},
                     "outputs": ["return_value"],
                     "depends_on": ["main"],
@@ -109,6 +116,10 @@ class TestWorkflowToIR(unittest.TestCase):
                     "image": None,
                     "command": None,
                     "env": None,
+                    "env_from_secrets": None,
+                    "resources": None,
+                    "pvc_mounts": [],
+                    "config_map_mounts": [],
                     "inputs": {"upstream_task_id": "step"},
                     "outputs": [],
                     "depends_on": ["step"],
@@ -154,6 +165,31 @@ class TestWorkflowToIR(unittest.TestCase):
 
         main_ir = next(t for t in ir.tasks if t.id == "main")
         self.assertEqual(main_ir.outputs, ["return_value"])
+
+    def test_pvc_mounts_propagated_to_kubernetes_tasks(self):
+        pvc = PvcMount(name="data", claim_name="data-pvc", mount_path="/mnt/data")
+        ir = workflow_to_ir(self.registry, "wf", pvc_mounts=[pvc])
+
+        k8s_tasks = [t for t in ir.tasks if t.runtime == "kubernetes"]
+        self.assertTrue(len(k8s_tasks) > 0)
+        for task in k8s_tasks:
+            self.assertEqual(task.pvc_mounts, [pvc])
+
+    def test_config_map_mounts_propagated_to_kubernetes_tasks(self):
+        cm = ConfigMapMount(name="cfg", config_map_name="my-cm", mount_path="/etc/cfg")
+        ir = workflow_to_ir(self.registry, "wf", config_map_mounts=[cm])
+
+        k8s_tasks = [t for t in ir.tasks if t.runtime == "kubernetes"]
+        for task in k8s_tasks:
+            self.assertEqual(task.config_map_mounts, [cm])
+
+    def test_volumes_not_set_on_synthetic_task(self):
+        pvc = PvcMount(name="data", claim_name="data-pvc", mount_path="/mnt/data")
+        ir = workflow_to_ir(self.registry, "wf", pvc_mounts=[pvc])
+
+        syn = next(t for t in ir.tasks if t.id == FINAL_STEP_ID)
+        self.assertEqual(syn.pvc_mounts, [])
+        self.assertEqual(syn.config_map_mounts, [])
 
     def test_step_to_step_dependency(self):
         registry = ProcessRegistry()

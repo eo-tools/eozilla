@@ -12,6 +12,37 @@ Runtime = Literal[
 ]
 
 
+class PvcMount(BaseModel):
+    """A PersistentVolumeClaim volume with its mount point."""
+
+    name: str
+    claim_name: str
+    mount_path: str
+
+
+class ConfigMapMount(BaseModel):
+    """A ConfigMap volume with its mount point."""
+
+    name: str
+    config_map_name: str
+    mount_path: str
+    sub_path: str | None = None
+
+
+class ResourceRequirements(BaseModel):
+    """
+    CPU and memory resource requests and limits for a container.
+
+    Values follow the Kubernetes quantity syntax (e.g. "500m", "2", "256Mi", "1Gi").
+    All fields are optional; only the non-None ones are emitted into the generated DAG.
+    """
+
+    cpu_request: str | None = None
+    memory_request: str | None = None
+    cpu_limit: str | None = None
+    memory_limit: str | None = None
+
+
 class TaskIR(BaseModel):
     """
     Operator-agnostic description of a single executable task.
@@ -27,6 +58,7 @@ class TaskIR(BaseModel):
         image: Container image for container-based runtimes (if applicable).
         command: Optional command override.
         env: Optional environment variables.
+        resources: Optional CPU/memory requests and limits.
         inputs: Mapping of input names to param:/xcom: references.
         outputs: List of output keys produced by the task.
         depends_on: List of upstream task IDs.
@@ -44,6 +76,10 @@ class TaskIR(BaseModel):
     image: str | None = None
     command: list[str] | None = None
     env: dict[str, str] | None = None
+    env_from_secrets: list[str] | None = None
+    resources: ResourceRequirements | None = None
+    pvc_mounts: list[PvcMount] = Field(default_factory=list)
+    config_map_mounts: list[ConfigMapMount] = Field(default_factory=list)
 
     # Data flow
     inputs: dict[str, str] = Field(default_factory=dict)
