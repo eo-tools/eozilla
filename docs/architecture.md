@@ -100,7 +100,7 @@ classDiagram
 
 ```
 
-## Eozilla Cuiman Client - UI
+## Eozilla `gavicore.ui.providers.panel` - Generating Panel UIs from OpenAPI Schema
 
 ```mermaid
 ---
@@ -111,67 +111,132 @@ config:
 ---
 classDiagram
     direction LR
-    UIField <|-- UIFieldBase
-    UIField --> UIFieldMeta
-    UIFieldFactory <|-- UIFieldFactoryBase
-    UIFieldContext <.. UIFieldFactory : use
-    UIFieldContext <.. UIFieldBuilder : create
-    UIFieldContext --> UIFieldMeta
-    UIFieldBuilder *--> UIFieldFactory
-    UIField <.. UIFieldFactory : create
-    UIField --> ViewModel
+    
+    PanelField --|> gavicore.ui.FieldBase
+    PanelField ..|> gavicore.ui.FieldMeta : use
+    PanelField ..|> gavicore.ui.FieldGenerator : use
+    PanelField ..|> PanelFieldFactory : register
+    
+    PanelFieldFactory --|> gavicore.ui.FieldFactoryBase
+    PanelFieldFactory ..|> gavicore.ui.FieldContext : use
+    
+    class PanelField {
+        from_schema(schema: Schema)$ PanelField
+        from_meta(meta: FieldMeta)$ PanelField
+    }
+```
 
-    class UIField {
-        meta: UIFieldMeta
+
+## Eozilla `gavicore.ui.field` - Generating UIs from OpenAPI Schema
+
+```mermaid
+---
+config:
+    class:
+        hideEmptyMembersBox: true
+    theme: default
+---
+classDiagram
+    direction LR
+    
+    Field --> FieldMeta
+    Field --> View
+    Field --> gavicore.ui.vm.ViewModel
+    FieldBase --|> Field
+    FieldContext --> FieldMeta
+    FieldFactory ..> Field: create
+    FieldFactory ..> FieldContext: use
+    FieldFactory ..> FieldContext: use
+    FieldFactoryBase --|> FieldFactory
+    FieldGenerator ..> FieldContext : create
+    FieldGenerator --> FieldFactoryRegistry
+    FieldFactoryRegistry *--> FieldFactory 
+
+    class Field {
+        meta: FieldMeta
         view_model: ViewModel
         view: Any
     }
     
-    class UIFieldBase {
-        _bind_mutually()
+    class FieldBase {
+        _bind()
     }
 
-    class UIFieldMeta {
+    class FieldMeta {
         name: str
         schema: Schema
         widget: str
-        layout: UIFieldLayout
+        layout: FieldLayout
         order: int
+        advanced: bool
         title: str
         description: str
-        from_schema(schema)
-        from_input_descriptions(inputs)
-        from_output_descriptions(outputs)
+        
+        from_schema(schema)$ FieldMeta
+        from_input_description(input)$ FieldMeta
+        from_input_descriptions(inputs)$ FieldMeta
     }
 
-    class UIFieldFactory {
+    class FieldFactory {
+        get_score(meta: FieldMeta)* int
+        create_field(ctx: FieldContext)* Field 
+    }
+
+    class FieldContext {
+        meta: FieldMeta
+        vm: ViewModelFactory
+        
+        create_property_fields(obj_meta) dict
+        create_item_field(array_meta) Field
+        create_child_field(child_meta) Field
+    }
+
+    class FieldFactoryRegistry {
         register_factory(factory)
-        get_score(field_meta)
-        create_field(ctx) 
+        find_factory(meta: FieldMeta) FieldFactory|None
     }
 
-    class UIFieldContext {
-        meta: UIFieldMeta
-        vm_builder: ViewModelBuilder 
-        create_child_fields()
-        create_child_field(child_meta)
+    class FieldGenerator {
+        generate_field(meta: FieldMeta, initial_value) Field
     }
 
-    class UIFieldBuilder {
-        find_factory(meta)
-        create_field(meta, initial_value)  
-    }
 
-    ViewModel --> UIFieldMeta
+```
+
+## Eozilla `gavicore.ui.vm` - View Models
+
+```mermaid
+---
+config:
+    class:
+        hideEmptyMembersBox: true
+    theme: default
+---
+classDiagram
+    direction BT
+
     ViewModel *--> ViewModelObserver 
-
+    ViewModel --> gavicore.ui.FieldMeta 
+    ViewModelObserver ..> ViewModelChangeEvent : use
+    ViewModel ..> ViewModelChangeEvent : create
+    ViewModelChangeEvent --|> ViewModelChangeEvent : causes 
+    
     class ViewModel {
-        meta: UIFieldMeta
+        meta: FieldMeta
         value: Any
-        watch(observer)
+        watch(observers) 
+        dispose()
     }
-
-
+    
+    class ViewModelChangeEvent {
+        source: ViewModel
+        causes: ViewModelChangeEvent[]
+    }
+    
+    PrimitiveViewModel --|> ViewModel
+    CompositeViewModel --|> ViewModel
+    ArrayViewModel --|> CompositeViewModel
+    ObjectViewModel --|> CompositeViewModel
 ```
 
 ## Eozilla Cuiman Client - GUI
