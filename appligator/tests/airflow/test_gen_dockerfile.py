@@ -37,7 +37,7 @@ def _gen(tmp_path: Path, **kwargs) -> tuple[Path, str]:
         df = generate(output_dir=out, **kwargs)
     finally:
         os.chdir(old)
-    return df, df.read_text()
+    return df, df.read_text(encoding="utf-8")
 
 
 class TestValidation:

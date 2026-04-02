@@ -186,7 +186,7 @@ def generate(
     )
 
     dockerfile = output_dir / "Dockerfile"
-    dockerfile.write_text(content)
+    dockerfile.write_text(content, encoding="utf-8")
     return dockerfile
 
 

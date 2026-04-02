@@ -1,5 +1,11 @@
 ## Changes in version 0.1.0 (in development)
 
+### Fixes
+
+- Fixed Windows encoding errors in `appligator` Dockerfile generation, replaced
+  non-ASCII characters with plain ASCII equivalents, and added `encoding="utf-8"` 
+  to `write_text`/`read_text` calls in `gen_dockerfile.py`.
+
 ### Enhancements
 
 - Enhanced `appligator` with Dockerfile generation and improved Airflow integration:
