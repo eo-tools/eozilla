@@ -136,3 +136,90 @@ class CliTest(TestCase):
             )
             self.assertEqual(1, result.exit_code)
             self.assertIn("--config-map-mount must be", result.output)
+
+    def test_dag_name_with_multiple_processes_uses_suffix(self):
+        """Exercises the multi + dag_name branch: file_stem = f"{dag_name}_{process_id}"."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = runner.invoke(
+                cli,
+                [
+                    # registry has multiple processes so multi=True
+                    "wraptile.services.local.testing:service.process_registry",
+                    "--dags-folder",
+                    tmpdir,
+                    "--dag-name",
+                    "mydag",
+                ],
+            )
+            self.assertEqual(0, result.exit_code, msg=result.output)
+            stems = [f.stem for f in Path(tmpdir).glob("*.py")]
+            # every file should be prefixed with the dag_name
+            self.assertTrue(all(s.startswith("mydag_") for s in stems), stems)
+
+    def test_no_skip_build_calls_gen_image(self):
+        """Exercises the --no-skip-build path (gen_image call)."""
+        with patch(
+            "appligator.airflow.gen_image.gen_image",
+            return_value="built-image:latest",
+        ) as mock_gen_image:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                result = runner.invoke(
+                    cli,
+                    [
+                        "wraptile.services.local.testing:service.process_registry",
+                        "--dags-folder",
+                        tmpdir,
+                        "--no-skip-build",
+                    ],
+                )
+                self.assertEqual(0, result.exit_code, msg=result.output)
+                mock_gen_image.assert_called()
+
+    def test_config_file_values_used(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = Path(tmpdir) / "appligator-config.yaml"
+            cfg.write_text(
+                "secret_names:\n  - from-file-secret\n"
+                "pvc_mounts:\n"
+                "  - name: file-vol\n"
+                "    claim_name: file-pvc\n"
+                "    mount_path: /mnt/file\n",
+                encoding="utf-8",
+            )
+            result = runner.invoke(
+                cli,
+                [
+                    "wraptile.services.local.testing:service.process_registry",
+                    "--dags-folder",
+                    tmpdir,
+                    "--config-file",
+                    str(cfg),
+                ],
+            )
+            self.assertEqual(0, result.exit_code, msg=result.output)
+            dag_files = list(Path(tmpdir).glob("*.py"))
+            content = dag_files[0].read_text(encoding="utf-8")
+            self.assertIn("from-file-secret", content)
+            self.assertIn("claim_name='file-pvc'", content)
+
+    def test_cli_flag_overrides_config_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = Path(tmpdir) / "appligator-config.yaml"
+            cfg.write_text("secret_names:\n  - file-secret\n", encoding="utf-8")
+            result = runner.invoke(
+                cli,
+                [
+                    "wraptile.services.local.testing:service.process_registry",
+                    "--dags-folder",
+                    tmpdir,
+                    "--config-file",
+                    str(cfg),
+                    "--secret-name",
+                    "cli-secret",
+                ],
+            )
+            self.assertEqual(0, result.exit_code, msg=result.output)
+            dag_files = list(Path(tmpdir).glob("*.py"))
+            content = dag_files[0].read_text(encoding="utf-8")
+            self.assertIn("cli-secret", content)
+            self.assertNotIn("file-secret", content)

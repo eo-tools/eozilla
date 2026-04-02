@@ -140,6 +140,48 @@ class TestKubernetesOperatorHandler(unittest.TestCase):
         self.assertIn("k8s.V1VolumeMount(name='data', mount_path='/mnt/data')", rendered)
         self.assertIn("k8s.V1VolumeMount(name='cfg', mount_path='/etc/cfg')", rendered)
 
+    def test_render_with_resources(self):
+        from appligator.airflow.models import ResourceRequirements
+
+        task = TaskIR(
+            id="t",
+            runtime="kubernetes",
+            func_module="m",
+            func_qualname="f",
+            image="img",
+            inputs={},
+            outputs=[],
+            resources=ResourceRequirements(
+                cpu_request="500m",
+                memory_request="1Gi",
+                cpu_limit="1",
+                memory_limit="2Gi",
+            ),
+        )
+        rendered = self.handler.render(task)
+        self.assertIn("container_resources=k8s.V1ResourceRequirements(", rendered)
+        self.assertIn("requests=", rendered)
+        self.assertIn("limits=", rendered)
+        self.assertIn("'cpu': '500m'", rendered)
+        self.assertIn("'memory': '1Gi'", rendered)
+
+    def test_render_with_partial_resources(self):
+        from appligator.airflow.models import ResourceRequirements
+
+        task = TaskIR(
+            id="t",
+            runtime="kubernetes",
+            func_module="m",
+            func_qualname="f",
+            image="img",
+            inputs={},
+            outputs=[],
+            resources=ResourceRequirements(cpu_request="500m"),
+        )
+        rendered = self.handler.render(task)
+        self.assertIn("requests=", rendered)
+        self.assertNotIn("limits=", rendered)
+
     def test_no_volume_blocks_when_no_mounts(self):
         task = TaskIR(
             id="t",

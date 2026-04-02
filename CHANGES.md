@@ -22,6 +22,10 @@
         - `--pvc-mount name:claim_name:mount_path` mounts a PersistentVolumeClaim.
         - `--config-map-mount name:config_map_name:mount_path[:sub_path]` mounts a
           ConfigMap, with optional `sub_path` for single-file mounts.
+    - Added `--config-file PATH` option to load all Kubernetes options from an
+      `appligator-config.yaml` file (`image_name`, `dag_name`, `secret_names`,
+      resource fields, `pvc_mounts`, `config_map_mounts`). CLI flags take
+      precedence over file values.
 - The Cuiman client package has been enhanced by _job result openers_,
   which ease working with the results of a process job (#65):
     - Client classes now have a method 
