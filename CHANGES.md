@@ -2,18 +2,7 @@
 
 ### Enhancements
 
-- Added resource requests and limits support for generated Kubernetes pods.
-  Four new CLI options (`--cpu-request`, `--memory-request`, `--cpu-limit`,
-  `--memory-limit`) set `container_resources` on every `KubernetesPodOperator`
-  via `k8s.V1ResourceRequirements`. Only the supplied fields are emitted.
-  The `from kubernetes.client import models as k8s` import is now also triggered
-  by resources (previously only by `--secret-name`).
-- Added `--secret-name` option to the `appligator` CLI to inject Kubernetes secrets
-  as environment variables into every generated pod. The option is repeatable
-  (e.g. `--secret-name my-secret --secret-name other-secret`). Internally, each
-  name is translated to a `k8s.V1EnvFromSource(secret_ref=...)` entry on the
-  `KubernetesPodOperator`.
-- Enhanced `appligator` with Dockerfile generation and improved Airflow integration:
+- Enhanced `appligator` with Dockerfile generation and improved Airflow DAG generation:
     - Added `appligator.airflow.gen_dockerfile.generate` for Jinja2-template-based
       Dockerfile generation. Produces a two-stage pixi build with support for
       non-editable local package installs. The runtime base image is configurable
@@ -24,6 +13,16 @@
     - Updated `appligator.airflow.run_step` with `coerce_inputs` (casts Airflow
       Jinja string params to their declared types) and `_XComEncoder` (serialises
       Pydantic models and other non-JSON-native objects for XCom output).
+    - Added `--secret-name` option to inject Kubernetes secrets as environment
+      variables into every generated pod (repeatable). 
+    - Added resource requests and limits support via four new CLI options
+      (`--cpu-request`, `--memory-request`, `--cpu-limit`, `--memory-limit`).
+    - Added volume support via two new model types (`PvcMount`, `ConfigMapMount`) and
+      two new repeatable CLI options:
+        - `--pvc-mount name:claim_name:mount_path` mounts a PersistentVolumeClaim.
+        - `--config-map-mount name:config_map_name:mount_path[:sub_path]` mounts a
+          ConfigMap, with optional `sub_path` for single-file mounts.
+        - Both can also be passed directly to `gen_workflow_dag` and `workflow_to_ir`.
 - The Cuiman client package has been enhanced by _job result openers_,
   which ease working with the results of a process job (#65):
     - Client classes now have a method 
