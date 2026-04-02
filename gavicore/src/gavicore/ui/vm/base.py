@@ -7,10 +7,8 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any, Callable, Generic, Protocol, TypeVar
 
-from bokeh.core.property.singletons import UndefinedType
-
 from gavicore.models import DataType, Schema
-from gavicore.util.undefined import UNDEFINED
+from gavicore.util.undefined import UNDEFINED, Undefined
 
 from ..field.meta import FieldMeta
 
@@ -47,7 +45,7 @@ class ViewModel(Generic[T], ABC):
 
     @classmethod
     def create(
-        cls, meta: FieldMeta, *, value: Any | UndefinedType = UNDEFINED
+        cls, meta: FieldMeta, *, value: Any | Undefined = UNDEFINED
     ) -> "ViewModel":
         """
         Create a new view model instance for the given field metadata

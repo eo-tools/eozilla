@@ -14,7 +14,7 @@ class PanelFieldFactoryTest(TestCase):
         factory = PanelFieldFactory()
         for t in ("boolean", "integer", "number", "string"):
             self.assertEqual(
-                1,
+                5,
                 factory.get_score(
                     _meta_from_schema({"type": "array", "items": {"type": t}})
                 ),

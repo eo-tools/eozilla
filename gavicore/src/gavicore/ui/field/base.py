@@ -5,6 +5,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, TypeAlias
 
+from gavicore.util.ensure import ensure_type
+
 from ..vm import ViewModel
 from .meta import FieldMeta
 
@@ -36,11 +38,17 @@ class Field(ABC):
     def view(self) -> View:
         """The view used by this field."""
 
+    @property
+    @abstractmethod
+    def available(self) -> bool:
+        """Is this field (this field's view) available?"""
+
 
 class FieldBase(Field, ABC):
     """Abstract base class for UI fields."""
 
     def __init__(self, view_model: ViewModel, view: View):
+        ensure_type("view_model", view_model, ViewModel)
         self._view_model = view_model
         self._view = view
         self._bind()

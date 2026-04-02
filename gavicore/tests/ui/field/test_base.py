@@ -16,6 +16,9 @@ class MyField(FieldBase):
     def _bind(self) -> None:
         self.bound = True
 
+    def available(self) -> bool:
+        return True
+
 
 class FieldBaseTest(TestCase):
     def test_builder(self):

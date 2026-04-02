@@ -8,6 +8,7 @@ from .composite import CompositeViewModel
 from .nullable import NullableViewModel
 from .object import ObjectViewModel
 from .primitive import PrimitiveViewModel
+from .some import AnyViewModel
 
 __all__ = [
     "ArrayViewModel",
@@ -15,6 +16,7 @@ __all__ = [
     "NullableViewModel",
     "ObjectViewModel",
     "PrimitiveViewModel",
+    "AnyViewModel",
     "ViewModel",
     "ViewModelChangeEvent",
     "ViewModelObserver",

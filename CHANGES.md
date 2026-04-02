@@ -2,6 +2,18 @@
 
 ### Enhancements
 
+- The **Gavicore** package has been enhanced by a new _UI generator_ which 
+  converts OGC API - Process descriptions (or OpenAPI Schema) into user 
+  interfaces for editing input parameters:
+  - Added a new extendable UI generation framework in `gavicore.ui`.
+  - The framework itself does not enforce a dedicated widget library, 
+    but it can be configured to output UIs for any Python widget library. 
+  - Support for UI generated with the [Panel](https://panel.holoviz.org/) 
+    library is inbuilt as it is used in the Cuiman GUI.
+  - Dropped subpackage `cuiman.gui.component`.
+  - Added a pixi tool to demonstrate and debug generated UIs from 
+    OpenAPI Schema: `pixi run schema2ui`.
+
 - Enhanced the **Appligator** package with Dockerfile generation and 
   improved Airflow DAG generation:
     - Added `appligator.airflow.gen_dockerfile.generate` for Jinja2-template-based
@@ -29,7 +41,6 @@
       precedence over file values.
 
 - The **Cuiman** client package has been enhanced by _job result openers_,
-- The Cuiman client package has been enhanced by _job result openers_,
   which ease working with the results of a process job (#65):
     - Client classes now have a method 
       `open_job_result(job_id, **options)` that is used to open the results 

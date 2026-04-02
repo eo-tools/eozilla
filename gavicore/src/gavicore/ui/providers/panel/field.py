@@ -2,38 +2,52 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Any
+from typing import Any, Final
 
 import panel as pn
 
-import gavicore.ui as gcui
-import gavicore.ui.vm as gcvm
 from gavicore.models import Schema
+from gavicore.ui import FieldBase, FieldContext, FieldGenerator, FieldMeta
+from gavicore.ui.vm import ViewModel
+from gavicore.util.ensure import ensure_type
 from gavicore.util.json import JsonCodec, JsonIdentityCodec
 from gavicore.util.undefined import Undefined
 
 
-class PanelField(gcui.FieldBase):
+class PanelField(FieldBase):
     """A panel widget-like field."""
+
+    UNAVAILABLE_VIEW: Final = pn.widgets.ButtonIcon(
+        icon="mood-annoyed-2", name="Missing Field", disabled=True
+    )
+    """The panel widget used to indicate that a view is missing."""
 
     def __init__(
         self,
-        view_model: gcvm.ViewModel,
+        view_model: ViewModel,
         view: pn.widgets.WidgetBase,
         *,
         json_codec: JsonCodec | None = None,
     ):
-        isinstance(view, pn.widgets.WidgetBase)
+        ensure_type("view", view, pn.widgets.WidgetBase)
         self._json_codec = json_codec or JsonIdentityCodec()
         super().__init__(view_model, view)
 
     @property
     def view(self) -> pn.widgets.WidgetBase:
         """The Panel widget-like viewable."""
-        isinstance(self._view, pn.widgets.WidgetBase)
+        assert isinstance(self._view, pn.widgets.WidgetBase)
         return self._view
 
+    @property
+    def available(self) -> bool:
+        """Is this field missing?"""
+        return self.view is not PanelField.UNAVAILABLE_VIEW
+
     def _bind(self):
+        if not self.available:
+            return
+
         def observe_vm(_e):
             self.view.value = self._json_codec.from_json(self.view_model.value)
 
@@ -49,19 +63,26 @@ class PanelField(gcui.FieldBase):
         name: str,
         schema: Schema,
         initial_value: Any | Undefined = Undefined.value,
-    ) -> gcui.Field:
+    ) -> "PanelField":
         return cls.from_meta(
-            gcui.FieldMeta.from_schema(name, schema), initial_value=initial_value
+            FieldMeta.from_schema(name, schema), initial_value=initial_value
         )
 
     @classmethod
     def from_meta(
         cls,
-        meta: gcui.FieldMeta,
+        meta: FieldMeta,
         initial_value: Any | Undefined = Undefined.value,
-    ) -> gcui.Field:
-        from .factory import PanelFieldFactory
+    ) -> "PanelField":
+        from .factory import PanelDefaultFieldFactory, PanelFieldFactory
 
-        generator = gcui.FieldGenerator()
+        generator = FieldGenerator()
         generator.register_field_factory(PanelFieldFactory())
-        return generator.generate_field(meta, initial_value=initial_value)
+        generator.register_field_factory(PanelDefaultFieldFactory())
+        field = generator.generate_field(meta, initial_value=initial_value)
+        assert isinstance(field, PanelField)
+        return field
+
+    @classmethod
+    def create_unavailable(cls, ctx: FieldContext) -> "PanelField":
+        return PanelField(ctx.vm.any(), PanelField.UNAVAILABLE_VIEW)

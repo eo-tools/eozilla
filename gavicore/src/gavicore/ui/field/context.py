@@ -8,6 +8,7 @@ from gavicore.models import DataType, Schema
 from gavicore.util.undefined import Undefined
 
 from ..vm import (
+    AnyViewModel,
     ArrayViewModel,
     NullableViewModel,
     ObjectViewModel,
@@ -131,6 +132,9 @@ class ViewModelFactory:
 
     def __init__(self, ctx: FieldContext):
         self._ctx = ctx
+
+    def any(self):
+        return AnyViewModel(self._ctx.meta, value=self._ctx.initial_value)
 
     def primitive(self) -> PrimitiveViewModel:
         return PrimitiveViewModel(self._ctx.meta, value=self._ctx.initial_value)

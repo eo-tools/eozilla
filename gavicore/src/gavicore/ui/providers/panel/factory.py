@@ -8,9 +8,9 @@ from typing import Any, Literal
 
 import panel as pn
 
-import gavicore.ui as gcui
-import gavicore.ui.vm as gcvm
 from gavicore.models import DataType
+from gavicore.ui import FieldContext, FieldFactory, FieldFactoryBase, FieldMeta
+from gavicore.ui.vm import ViewModel
 from gavicore.util.json import JsonDateCodec
 from gavicore.util.text import ArrayTextConverter, TextConverter
 
@@ -33,13 +33,16 @@ _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
 # TODO: handle type="oneOf"
 
 
-class PanelFieldFactory(gcui.FieldFactoryBase):
-    def get_nullable_score(self, meta: gcui.FieldMeta) -> int:
-        return 1
+class PanelFieldFactory(FieldFactoryBase):
+    def get_nullable_score(self, meta: FieldMeta) -> int:
+        return 5
 
-    def create_nullable_field(self, ctx: gcui.FieldContext) -> gcui.Field:
+    def create_nullable_field(self, ctx: FieldContext) -> PanelField:
         non_nullable_meta = ctx.meta.to_non_nullable()
         non_nullable_field = ctx.create_child_field(non_nullable_meta)
+        assert isinstance(non_nullable_field, PanelField)
+        if not non_nullable_field.available:
+            return non_nullable_field
         view_model = ctx.vm.nullable(non_nullable_field.view_model)
         return PanelField(
             view_model,
@@ -50,10 +53,10 @@ class PanelFieldFactory(gcui.FieldFactoryBase):
             ),
         )
 
-    def get_object_score(self, meta: gcui.FieldMeta) -> int:
-        return 1
+    def get_object_score(self, meta: FieldMeta) -> int:
+        return 5
 
-    def create_object_field(self, ctx: gcui.FieldContext) -> gcui.Field:
+    def create_object_field(self, ctx: FieldContext) -> PanelField:
         prop_fields = ctx.create_property_fields()
         view_models = {k: f.view_model for k, f in prop_fields.items()}
         view_model = ctx.vm.object(properties=view_models)
@@ -63,13 +66,17 @@ class PanelFieldFactory(gcui.FieldFactoryBase):
                 {k: f.view for k, f in prop_fields.items()},
             )
         else:
-            inner_viewable = pn.Column(*[f.view for f in prop_fields.values()])
+            inner_viewable = _layout_views(
+                ctx,
+                "column",
+                [f.view for f in prop_fields.values()],  # type: ignore[arg-type]
+            )
         return PanelField(
             view_model,
             ObjectWidget(name=view_model.meta.label, inner_viewable=inner_viewable),
         )
 
-    def get_array_score(self, meta: gcui.FieldMeta) -> int:
+    def get_array_score(self, meta: FieldMeta) -> int:
         assert meta.items is not None
         item_type = meta.items.schema_.type
         if item_type is None:
@@ -79,10 +86,10 @@ class PanelFieldFactory(gcui.FieldFactoryBase):
             return 10
         array_converter = _ARRAY_TEXT_CONVERTERS.get(item_type)
         if array_converter is not None:
-            return 1
+            return 5
         return 0
 
-    def create_array_field(self, ctx: gcui.FieldContext) -> gcui.Field:
+    def create_array_field(self, ctx: FieldContext) -> PanelField:
         view_model = ctx.vm.array()
 
         assert ctx.meta.items is not None
@@ -112,8 +119,8 @@ class PanelFieldFactory(gcui.FieldFactoryBase):
             )
         else:
 
-            def create_item_field(_index: int, value: Any) -> pn.widgets.WidgetBase:
-                assert isinstance(ctx.meta.items, gcui.FieldMeta)
+            def create_item_editor(_index: int, value: Any) -> pn.widgets.WidgetBase:
+                assert isinstance(ctx.meta.items, FieldMeta)
                 ctx.meta.items.title = ""  # Supress label for items
                 item_field = ctx.create_item_field()
                 item_field.view_model.value = value
@@ -122,15 +129,15 @@ class PanelFieldFactory(gcui.FieldFactoryBase):
             view = ArrayEditor(
                 name=view_model.meta.label,
                 value=view_model.value,
-                item_editor_factory=create_item_field,
+                item_editor_factory=create_item_editor,
                 item_value_factory=ctx.meta.items.get_initial_value,
             )
         return PanelField(view_model, view)
 
-    def get_string_score(self, meta: gcui.FieldMeta) -> int:
-        return 1
+    def get_string_score(self, meta: FieldMeta) -> int:
+        return 5
 
-    def create_string_field(self, ctx: gcui.FieldContext) -> gcui.Field:
+    def create_string_field(self, ctx: FieldContext) -> PanelField:
         view_model = ctx.vm.primitive()
         value = view_model.value
         label = view_model.meta.label
@@ -163,25 +170,25 @@ class PanelFieldFactory(gcui.FieldFactoryBase):
             )
         return PanelField(view_model, view)
 
-    def get_integer_score(self, meta: gcui.FieldMeta) -> int:
-        return 1
+    def get_integer_score(self, meta: FieldMeta) -> int:
+        return 5
 
-    def get_number_score(self, meta: gcui.FieldMeta) -> int:
-        return 1
+    def get_number_score(self, meta: FieldMeta) -> int:
+        return 5
 
-    def create_integer_field(self, ctx: gcui.FieldContext) -> gcui.Field:
+    def create_integer_field(self, ctx: FieldContext) -> PanelField:
         view_model = ctx.vm.primitive()
         return PanelField(
             view_model, self._create_numeric_view(view_model, is_int=True)
         )
 
-    def create_number_field(self, ctx: gcui.FieldContext) -> gcui.Field:
+    def create_number_field(self, ctx: FieldContext) -> PanelField:
         view_model = ctx.vm.primitive()
         return PanelField(view_model, self._create_numeric_view(view_model))
 
     @classmethod
     def _create_numeric_view(
-        cls, view_model: gcvm.ViewModel, *, is_int: bool | None = None
+        cls, view_model: ViewModel, *, is_int: bool | None = None
     ) -> pn.widgets.WidgetBase:
         value = view_model.value
         label = view_model.meta.label
@@ -224,10 +231,10 @@ class PanelFieldFactory(gcui.FieldFactoryBase):
             input_cls = pn.widgets.FloatInput
         return input_cls(name=label, value=value, description=description)
 
-    def get_boolean_score(self, _meta: gcui.FieldMeta) -> int:
-        return 1
+    def get_boolean_score(self, _meta: FieldMeta) -> int:
+        return 5
 
-    def create_boolean_field(self, ctx: gcui.FieldContext) -> gcui.Field:
+    def create_boolean_field(self, ctx: FieldContext) -> PanelField:
         view_model = ctx.vm.primitive()
         if view_model.meta.widget == "switch":
             view = pn.widgets.Switch(value=view_model.value, name=view_model.meta.label)
@@ -238,12 +245,35 @@ class PanelFieldFactory(gcui.FieldFactoryBase):
         return PanelField(view_model, view)
 
 
+class PanelDefaultFieldFactory(FieldFactory):
+    """
+    This factory is expected to be used in case no other factory
+    is able to handle the field. It has a well-known, constant view
+    recognized by other Panel factories.
+    """
+
+    def get_score(self, meta: FieldMeta) -> int:
+        """Return the minimum score `1`."""
+        return 1
+
+    def create_field(self, ctx: FieldContext) -> PanelField:
+        """Return a field with a view indicating that it is missing."""
+        return PanelField.create_unavailable(ctx)
+
+
 def _layout_views(
-    _ctx: gcui.FieldContext,
+    _ctx: FieldContext,
     direction: Literal["row", "column"],
     views: list[pn.viewable.Viewable],
 ) -> pn.Row | pn.Column:
+    views = _select_available_views(views)
     if direction == "row":
         return pn.Row(*views)
     else:
         return pn.Column(*views)
+
+
+def _select_available_views(
+    views: list[pn.viewable.Viewable],
+) -> list[pn.viewable.Viewable]:
+    return [v for v in views if v is not PanelField.UNAVAILABLE_VIEW]
