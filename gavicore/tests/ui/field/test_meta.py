@@ -29,6 +29,33 @@ def to_json(model: BaseModel, exclude: set[str] | None = None):
 
 
 class FieldMetaTest(TestCase):
+    def test_from_input_description(self):
+        meta = FieldMeta.from_input_description(
+            "threshold",
+            InputDescription(
+                **{
+                    "schema": {"type": "number", "default": 0.5},
+                    "minOccurs": 1,
+                    "maxOccurs": 1,
+                }
+            ),
+        )
+        self.maxDiff = None
+        self.assertIsInstance(meta, FieldMeta)
+        self.assertEqual(
+            {
+                "name": "threshold",
+                "schema": {
+                    "type": "number",
+                    "default": 0.5,
+                    "title": "Threshold",
+                },
+                "required": True,
+                "title": "Threshold",
+            },
+            to_json(meta),
+        )
+
     def test_from_input_descriptions(self):
         meta = FieldMeta.from_input_descriptions(
             {

@@ -17,6 +17,7 @@ from pydantic import Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
+from gavicore.ui import FieldMeta
 
 from .auth import AuthConfig
 from .defaults import DEFAULT_API_URL
@@ -254,6 +255,9 @@ class ClientConfig(AuthConfig, BaseSettings):
             `True` if the input is advanced
             (e.g. for advanced process users only).
         """
+        # The following approach uses additionalParameters but its use
+        # is discouraged. (We receive such metadata currently from
+        # the TAO Process API).
         additional_parameters = input_description.additionalParameters
         if additional_parameters:
             parameters = additional_parameters.parameters
@@ -261,12 +265,11 @@ class ClientConfig(AuthConfig, BaseSettings):
                 for p in parameters:
                     if p.name == "level" and p.value == ["advanced"]:
                         return True
-        # TODO: consider the possible "x-ui" variants for which we may
-        #  detect level=="advanced" or advanced==True
-        advanced_key = "x-ui:advanced"
-        extras = input_description.model_extra or {}
-        schema_extras = input_description.schema_.model_extra or {}
-        return extras.get(advanced_key, schema_extras.get(advanced_key)) is True
+        # The way it should be done is using "x-ui" properties.
+        # Ideally, we should pass an already parsed FieldMeta into the
+        # is_advanced_input() method.
+        field_meta = FieldMeta.from_input_description(input_name, input_description)
+        return field_meta.advanced or field_meta.level == "advanced"
 
     def register_job_result_opener(
         self, opener_type: type[JobResultOpener]

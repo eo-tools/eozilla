@@ -167,9 +167,7 @@ class ClientConfigTest(TestCase):
                 schema={"type": "integer"},
                 **{"x-ui": {"advanced": True}},
             ),
-            # TODO: make this work too
-            # True,
-            False,
+            True,
         )
 
     def assert_is_advanced_input(

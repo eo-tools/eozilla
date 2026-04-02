@@ -204,6 +204,18 @@ class FieldMeta(pydantic.BaseModel):
         return self.title if (self.title is not None) else _make_label(self.name)
 
     @classmethod
+    def from_input_description(
+        cls,
+        input_name: str,
+        input_description: InputDescription,
+    ) -> "FieldMeta":
+        """
+        Extract field metadata from the given input name and input description.
+        """
+        schema, required = _schema_from_input_description(input_name, input_description)
+        return cls.from_schema(input_name, schema, required=required)
+
+    @classmethod
     def from_input_descriptions(
         cls,
         input_descriptions: dict[str, InputDescription],
@@ -211,7 +223,9 @@ class FieldMeta(pydantic.BaseModel):
         title: str | None = None,
         description: str | None = None,
     ) -> "FieldMeta":
-        """Extract a UI-field from the input description."""
+        """
+        Extract a field metadata of type "object" from given input descriptions.
+        """
         properties = {}
         required_names = []
         for input_name, input_description in input_descriptions.items():
@@ -388,6 +402,8 @@ def _get_initial_value(meta: FieldMeta) -> Any:
     schema = meta.schema_
     if schema.default is not None:
         return schema.default
+    if schema.enum and len(schema.enum) > 0:
+        return schema.enum[0]
     if schema.nullable:
         return None
     match schema.type:
@@ -400,16 +416,19 @@ def _get_initial_value(meta: FieldMeta) -> Any:
         case DataType.string:
             if schema.format == "date":
                 return datetime.date.today().isoformat()
+            # create string of length min_length
             min_length = schema.minLength if schema.minLength is not None else 0
             return "+" * min_length
         case DataType.array:
             assert isinstance(meta.items, FieldMeta)
+            # create array of length min_items
             min_items = schema.minItems if schema.minItems is not None else 0
             item_meta = meta.items
             return [_get_initial_value(item_meta) for _i in range(min_items)]
         case DataType.object:
             assert isinstance(meta.properties, dict)
             # TODO: consider minProperties, additionalProperties
+            # create object with required properties
             required = set(schema.required or [])
             properties = meta.properties
             return {
