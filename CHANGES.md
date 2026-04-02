@@ -22,7 +22,6 @@
         - `--pvc-mount name:claim_name:mount_path` mounts a PersistentVolumeClaim.
         - `--config-map-mount name:config_map_name:mount_path[:sub_path]` mounts a
           ConfigMap, with optional `sub_path` for single-file mounts.
-        - Both can also be passed directly to `gen_workflow_dag` and `workflow_to_ir`.
 - The Cuiman client package has been enhanced by _job result openers_,
   which ease working with the results of a process job (#65):
     - Client classes now have a method 
