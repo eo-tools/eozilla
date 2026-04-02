@@ -40,7 +40,10 @@ class AirflowRenderer:
         """
         lines: list[str] = []
 
-        needs_k8s = any(t.env_from_secrets or t.resources for t in workflow.tasks)
+        needs_k8s = any(
+            t.env_from_secrets or t.resources or t.pvc_mounts or t.config_map_mounts
+            for t in workflow.tasks
+        )
         lines.extend(render_header(needs_k8s=needs_k8s))
 
         lines.append(render_dag_open(workflow))

@@ -81,6 +81,28 @@ def main(
         str | None,
         typer.Option("--memory-limit", help="Memory limit for every pod (e.g. '2Gi')."),
     ] = None,
+    pvc_mounts: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--pvc-mount",
+            help=(
+                "Mount a PersistentVolumeClaim into every pod. "
+                "Format: name:claim_name:mount_path "
+                "(e.g. --pvc-mount output:my-pvc:/mnt/output). Repeatable."
+            ),
+        ),
+    ] = None,
+    config_map_mounts: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--config-map-mount",
+            help=(
+                "Mount a ConfigMap into every pod. "
+                "Format: name:config_map_name:mount_path or name:config_map_name:mount_path:sub_path "
+                "(e.g. --config-map-mount settings:my-cm:/app/settings.yaml:settings.yaml). Repeatable."
+            ),
+        ),
+    ] = None,
 ):
     """
     Generate various application formats from your processes.
@@ -102,7 +124,7 @@ def main(
     from appligator import __version__
     from appligator.airflow.gen_image import gen_image
     from appligator.airflow.gen_workflow_dag import gen_workflow_dag
-    from appligator.airflow.models import ResourceRequirements
+    from appligator.airflow.models import ConfigMapMount, PvcMount, ResourceRequirements
     from gavicore.util.dynimp import import_value
     from procodile import ProcessRegistry
 
@@ -134,6 +156,31 @@ def main(
         else None
     )
 
+    parsed_pvc_mounts: list[PvcMount] = []
+    for spec in pvc_mounts or []:
+        parts = spec.split(":", 2)
+        if len(parts) != 3:  # noqa: PLR2004
+            typer.echo(f"Error: --pvc-mount must be name:claim_name:mount_path, got: {spec!r}")
+            raise typer.Exit(1)
+        parsed_pvc_mounts.append(PvcMount(name=parts[0], claim_name=parts[1], mount_path=parts[2]))
+
+    parsed_config_map_mounts: list[ConfigMapMount] = []
+    for spec in config_map_mounts or []:
+        parts = spec.split(":", 3)
+        if len(parts) not in (3, 4):
+            typer.echo(
+                f"Error: --config-map-mount must be name:config_map_name:mount_path[:sub_path], got: {spec!r}"
+            )
+            raise typer.Exit(1)
+        parsed_config_map_mounts.append(
+            ConfigMapMount(
+                name=parts[0],
+                config_map_name=parts[1],
+                mount_path=parts[2],
+                sub_path=parts[3] if len(parts) == 4 else None,  # noqa: PLR2004
+            )
+        )
+
     process_ids = list(process_registry.keys())
     multi = len(process_ids) > 1
 
@@ -155,6 +202,8 @@ def main(
             image=image_name,
             env_from_secrets=secret_names,
             resources=resources,
+            pvc_mounts=parsed_pvc_mounts or None,
+            config_map_mounts=parsed_config_map_mounts or None,
         )
         dag_file = dags_folder / f"{file_stem}.py"
         with dag_file.open("w") as stream:

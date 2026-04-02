@@ -4,7 +4,13 @@
 
 from typing import Any
 
-from appligator.airflow.models import ResourceRequirements, TaskIR, WorkflowIR
+from appligator.airflow.models import (
+    ConfigMapMount,
+    PvcMount,
+    ResourceRequirements,
+    TaskIR,
+    WorkflowIR,
+)
 from gavicore.models import InputDescription
 from procodile import WorkflowStepRegistry
 from procodile.workflow import FINAL_STEP_ID
@@ -16,6 +22,8 @@ def workflow_to_ir(
     image_name: str = "",
     env_from_secrets: list[str] | None = None,
     resources: ResourceRequirements | None = None,
+    pvc_mounts: list[PvcMount] | None = None,
+    config_map_mounts: list[ConfigMapMount] | None = None,
 ) -> WorkflowIR:
     """
     Convert a WorkflowStepRegistry into a fully normalized WorkflowIR (Workflow
@@ -69,6 +77,8 @@ def workflow_to_ir(
             image=image_name,
             env_from_secrets=env_from_secrets,
             resources=resources,
+            pvc_mounts=pvc_mounts or [],
+            config_map_mounts=config_map_mounts or [],
             inputs={name: f"param:{name}" for name in params},
             outputs=list((main_step.description.outputs or {}).keys()),
             depends_on=[],
@@ -103,6 +113,8 @@ def workflow_to_ir(
                 image=image_name,
                 env_from_secrets=env_from_secrets,
                 resources=resources,
+                pvc_mounts=pvc_mounts or [],
+                config_map_mounts=config_map_mounts or [],
                 inputs=inputs,
                 outputs=list((step.description.outputs or {}).keys()),
                 depends_on=sorted(set(depends_on)),

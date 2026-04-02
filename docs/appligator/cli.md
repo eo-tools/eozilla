@@ -35,6 +35,8 @@ $ main [OPTIONS] [PROCESS_REGISTRY_SPEC]
 * `--memory-request TEXT`: Memory request applied to every generated pod (e.g. `256Mi`, `1Gi`).
 * `--cpu-limit TEXT`: CPU limit applied to every generated pod (e.g. `2`).
 * `--memory-limit TEXT`: Memory limit applied to every generated pod (e.g. `2Gi`).
+* `--pvc-mount TEXT`: Mount a PersistentVolumeClaim into every pod. Format: `name:claim_name:mount_path` (e.g. `--pvc-mount output:my-pvc:/mnt/output`). Repeatable.
+* `--config-map-mount TEXT`: Mount a ConfigMap into every pod. Format: `name:config_map_name:mount_path` or `name:config_map_name:mount_path:sub_path` (e.g. `--config-map-mount settings:my-cm:/app/settings.yaml:settings.yaml`). Repeatable.
 * `--version / --no-version`: Show version and exit.  [default: no-version]
 * `--install-completion`: Install completion for the current shell.
 * `--show-completion`: Show completion for the current shell, to copy it or customize the installation.

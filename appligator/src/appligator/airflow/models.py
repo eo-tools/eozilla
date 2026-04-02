@@ -12,6 +12,23 @@ Runtime = Literal[
 ]
 
 
+class PvcMount(BaseModel):
+    """A PersistentVolumeClaim volume with its mount point."""
+
+    name: str
+    claim_name: str
+    mount_path: str
+
+
+class ConfigMapMount(BaseModel):
+    """A ConfigMap volume with its mount point."""
+
+    name: str
+    config_map_name: str
+    mount_path: str
+    sub_path: str | None = None
+
+
 class ResourceRequirements(BaseModel):
     """
     CPU and memory resource requests and limits for a container.
@@ -61,6 +78,8 @@ class TaskIR(BaseModel):
     env: dict[str, str] | None = None
     env_from_secrets: list[str] | None = None
     resources: ResourceRequirements | None = None
+    pvc_mounts: list[PvcMount] = Field(default_factory=list)
+    config_map_mounts: list[ConfigMapMount] = Field(default_factory=list)
 
     # Data flow
     inputs: dict[str, str] = Field(default_factory=dict)
