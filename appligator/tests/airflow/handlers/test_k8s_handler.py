@@ -140,6 +140,30 @@ class TestKubernetesOperatorHandler(unittest.TestCase):
         self.assertIn("k8s.V1VolumeMount(name='data', mount_path='/mnt/data')", rendered)
         self.assertIn("k8s.V1VolumeMount(name='cfg', mount_path='/etc/cfg')", rendered)
 
+    def test_render_with_env_from_secrets(self):
+        task = TaskIR(
+            id="t",
+            runtime="kubernetes",
+            func_module="m",
+            func_qualname="f",
+            image="img",
+            inputs={},
+            outputs=[],
+            env_from_secrets=["my-secret", "other-secret"],
+        )
+        rendered = self.handler.render(task)
+        self.assertIn(
+            "env_from=[k8s.V1EnvFromSource(secret_ref=k8s.V1SecretEnvSource(name='my-secret')), "
+            "k8s.V1EnvFromSource(secret_ref=k8s.V1SecretEnvSource(name='other-secret'))]",
+            rendered,
+        )
+
+    def test_no_env_from_block_when_no_secrets(self):
+        task = TaskIR(
+            id="t", runtime="kubernetes", func_module="m", func_qualname="f", image="img", inputs={}, outputs=[]
+        )
+        self.assertNotIn("env_from=", self.handler.render(task))
+
     def test_render_with_resources(self):
         from appligator.airflow.models import ResourceRequirements
 

@@ -202,6 +202,31 @@ class CliTest(TestCase):
             self.assertIn("from-file-secret", content)
             self.assertIn("claim_name='file-pvc'", content)
 
+    def test_config_map_mount_from_config_file(self):
+        """Exercises the cfg.config_map_mounts fallback in effective_config_map_mounts."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = Path(tmpdir) / "appligator-config.yaml"
+            cfg.write_text(
+                "config_map_mounts:\n"
+                "  - name: file-cm\n"
+                "    config_map_name: file-config\n"
+                "    mount_path: /etc/file-config\n",
+                encoding="utf-8",
+            )
+            result = runner.invoke(
+                cli,
+                [
+                    "wraptile.services.local.testing:service.process_registry",
+                    "--dags-folder",
+                    tmpdir,
+                    "--config-file",
+                    str(cfg),
+                ],
+            )
+            self.assertEqual(0, result.exit_code, msg=result.output)
+            content = list(Path(tmpdir).glob("*.py"))[0].read_text(encoding="utf-8")
+            self.assertIn("config_map=k8s.V1ConfigMapVolumeSource(name='file-config')", content)
+
     def test_cli_flag_overrides_config_file(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = Path(tmpdir) / "appligator-config.yaml"
