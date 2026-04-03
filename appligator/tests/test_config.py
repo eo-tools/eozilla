@@ -31,20 +31,26 @@ class TestLoadConfig:
         assert load_config(p).dag_name == "my_dag"
 
     def test_secret_names(self, tmp_path):
-        p = _write(tmp_path, """\
+        p = _write(
+            tmp_path,
+            """\
             secret_names:
               - secret-a
               - secret-b
-        """)
+        """,
+        )
         assert load_config(p).secret_names == ["secret-a", "secret-b"]
 
     def test_resource_fields(self, tmp_path):
-        p = _write(tmp_path, """\
+        p = _write(
+            tmp_path,
+            """\
             cpu_request: 500m
             memory_request: 1Gi
             cpu_limit: "2"
             memory_limit: 4Gi
-        """)
+        """,
+        )
         cfg = load_config(p)
         assert cfg.cpu_request == "500m"
         assert cfg.memory_request == "1Gi"
@@ -52,12 +58,15 @@ class TestLoadConfig:
         assert cfg.memory_limit == "4Gi"
 
     def test_pvc_mounts(self, tmp_path):
-        p = _write(tmp_path, """\
+        p = _write(
+            tmp_path,
+            """\
             pvc_mounts:
               - name: my-vol
                 claim_name: my-pvc
                 mount_path: /mnt/data
-        """)
+        """,
+        )
         cfg = load_config(p)
         assert len(cfg.pvc_mounts) == 1
         pvc = cfg.pvc_mounts[0]
@@ -66,12 +75,15 @@ class TestLoadConfig:
         assert pvc.mount_path == "/mnt/data"
 
     def test_config_map_mount_without_sub_path(self, tmp_path):
-        p = _write(tmp_path, """\
+        p = _write(
+            tmp_path,
+            """\
             config_map_mounts:
               - name: my-cm
                 config_map_name: app-config
                 mount_path: /etc/config
-        """)
+        """,
+        )
         cfg = load_config(p)
         cm = cfg.config_map_mounts[0]
         assert cm.name == "my-cm"
@@ -80,18 +92,23 @@ class TestLoadConfig:
         assert cm.sub_path is None
 
     def test_config_map_mount_with_sub_path(self, tmp_path):
-        p = _write(tmp_path, """\
+        p = _write(
+            tmp_path,
+            """\
             config_map_mounts:
               - name: settings
                 config_map_name: app-config
                 mount_path: /app/settings.yaml
                 sub_path: settings.yaml
-        """)
+        """,
+        )
         cm = load_config(p).config_map_mounts[0]
         assert cm.sub_path == "settings.yaml"
 
     def test_full_config(self, tmp_path):
-        p = _write(tmp_path, """\
+        p = _write(
+            tmp_path,
+            """\
             image_name: myrepo/myimage:latest
             dag_name: my_workflow
             secret_names:
@@ -109,7 +126,8 @@ class TestLoadConfig:
                 config_map_name: s2gos-settings
                 mount_path: /opt/pixi/s2gos_settings.yaml
                 sub_path: s2gos_settings.yaml
-        """)
+        """,
+        )
         cfg = load_config(p)
         assert cfg.image_name == "myrepo/myimage:latest"
         assert cfg.dag_name == "my_workflow"

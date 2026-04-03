@@ -183,14 +183,19 @@ def test_pvc_mount_rendered_in_dag():
         dag_id="first_workflow",
         registry=first_step.registry,
         image="example:latest",
-        pvc_mounts=[PvcMount(name="my-output", claim_name="my-pvc", mount_path="/mnt/output")],
+        pvc_mounts=[
+            PvcMount(name="my-output", claim_name="my-pvc", mount_path="/mnt/output")
+        ],
     )
     assert "from kubernetes.client import models as k8s" in dag_code
     assert (
         "volumes=[k8s.V1Volume(name='my-output', "
         "persistent_volume_claim=k8s.V1PersistentVolumeClaimVolumeSource(claim_name='my-pvc'))]"
     ) in dag_code
-    assert "volume_mounts=[k8s.V1VolumeMount(name='my-output', mount_path='/mnt/output')]" in dag_code
+    assert (
+        "volume_mounts=[k8s.V1VolumeMount(name='my-output', mount_path='/mnt/output')]"
+        in dag_code
+    )
 
 
 def test_config_map_mount_without_sub_path_rendered_in_dag():
@@ -198,13 +203,20 @@ def test_config_map_mount_without_sub_path_rendered_in_dag():
         dag_id="first_workflow",
         registry=first_step.registry,
         image="example:latest",
-        config_map_mounts=[ConfigMapMount(name="my-cm", config_map_name="my-config", mount_path="/etc/config")],
+        config_map_mounts=[
+            ConfigMapMount(
+                name="my-cm", config_map_name="my-config", mount_path="/etc/config"
+            )
+        ],
     )
     assert "from kubernetes.client import models as k8s" in dag_code
     assert (
         "volumes=[k8s.V1Volume(name='my-cm', config_map=k8s.V1ConfigMapVolumeSource(name='my-config'))]"
     ) in dag_code
-    assert "volume_mounts=[k8s.V1VolumeMount(name='my-cm', mount_path='/etc/config')]" in dag_code
+    assert (
+        "volume_mounts=[k8s.V1VolumeMount(name='my-cm', mount_path='/etc/config')]"
+        in dag_code
+    )
     assert "sub_path" not in dag_code
 
 
@@ -232,8 +244,12 @@ def test_pvc_and_config_map_mounts_combined():
         dag_id="first_workflow",
         registry=first_step.registry,
         image="example:latest",
-        pvc_mounts=[PvcMount(name="data", claim_name="data-pvc", mount_path="/mnt/data")],
-        config_map_mounts=[ConfigMapMount(name="cfg", config_map_name="my-cfg", mount_path="/etc/cfg")],
+        pvc_mounts=[
+            PvcMount(name="data", claim_name="data-pvc", mount_path="/mnt/data")
+        ],
+        config_map_mounts=[
+            ConfigMapMount(name="cfg", config_map_name="my-cfg", mount_path="/etc/cfg")
+        ],
     )
     assert "k8s.V1PersistentVolumeClaimVolumeSource(claim_name='data-pvc')" in dag_code
     assert "k8s.V1ConfigMapVolumeSource(name='my-cfg')" in dag_code

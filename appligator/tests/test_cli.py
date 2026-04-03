@@ -68,8 +68,13 @@ class CliTest(TestCase):
             dag_files = list(Path(tmpdir).glob("*.py"))
             self.assertTrue(len(dag_files) >= 1)
             content = dag_files[0].read_text(encoding="utf-8")
-            self.assertIn("persistent_volume_claim=k8s.V1PersistentVolumeClaimVolumeSource(claim_name='my-pvc')", content)
-            self.assertIn("k8s.V1VolumeMount(name='my-vol', mount_path='/mnt/data')", content)
+            self.assertIn(
+                "persistent_volume_claim=k8s.V1PersistentVolumeClaimVolumeSource(claim_name='my-pvc')",
+                content,
+            )
+            self.assertIn(
+                "k8s.V1VolumeMount(name='my-vol', mount_path='/mnt/data')", content
+            )
 
     def test_config_map_mount_appears_in_generated_dag(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -86,8 +91,12 @@ class CliTest(TestCase):
             self.assertEqual(0, result.exit_code, msg=result.output)
             dag_files = list(Path(tmpdir).glob("*.py"))
             content = dag_files[0].read_text(encoding="utf-8")
-            self.assertIn("config_map=k8s.V1ConfigMapVolumeSource(name='app-config')", content)
-            self.assertIn("k8s.V1VolumeMount(name='my-cm', mount_path='/etc/config')", content)
+            self.assertIn(
+                "config_map=k8s.V1ConfigMapVolumeSource(name='app-config')", content
+            )
+            self.assertIn(
+                "k8s.V1VolumeMount(name='my-cm', mount_path='/etc/config')", content
+            )
             self.assertNotIn("sub_path", content)
 
     def test_config_map_mount_with_sub_path_appears_in_generated_dag(self):
@@ -120,7 +129,9 @@ class CliTest(TestCase):
                 ],
             )
             self.assertEqual(1, result.exit_code)
-            self.assertIn("--pvc-mount must be name:claim_name:mount_path", result.output)
+            self.assertIn(
+                "--pvc-mount must be name:claim_name:mount_path", result.output
+            )
 
     def test_invalid_config_map_mount_format_exits_with_error(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -225,7 +236,9 @@ class CliTest(TestCase):
             )
             self.assertEqual(0, result.exit_code, msg=result.output)
             content = list(Path(tmpdir).glob("*.py"))[0].read_text(encoding="utf-8")
-            self.assertIn("config_map=k8s.V1ConfigMapVolumeSource(name='file-config')", content)
+            self.assertIn(
+                "config_map=k8s.V1ConfigMapVolumeSource(name='file-config')", content
+            )
 
     def test_cli_flag_overrides_config_file(self):
         with tempfile.TemporaryDirectory() as tmpdir:

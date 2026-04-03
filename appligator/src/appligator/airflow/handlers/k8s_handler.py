@@ -35,8 +35,16 @@ class KubernetesOperatorHandler(OperatorHandler):
         resources_block = ""
         if task.resources:
             r = task.resources
-            requests = {k: v for k, v in {"cpu": r.cpu_request, "memory": r.memory_request}.items() if v}
-            limits = {k: v for k, v in {"cpu": r.cpu_limit, "memory": r.memory_limit}.items() if v}
+            requests = {
+                k: v
+                for k, v in {"cpu": r.cpu_request, "memory": r.memory_request}.items()
+                if v
+            }
+            limits = {
+                k: v
+                for k, v in {"cpu": r.cpu_limit, "memory": r.memory_limit}.items()
+                if v
+            }
             requests_str = f"requests={requests!r}, " if requests else ""
             limits_str = f"limits={limits!r}" if limits else ""
             resources_block = f"\n        container_resources=k8s.V1ResourceRequirements({requests_str}{limits_str}),"
@@ -64,7 +72,9 @@ class KubernetesOperatorHandler(OperatorHandler):
                     f"k8s.V1VolumeMount(name={cm.name!r}, mount_path={cm.mount_path!r}{sub})"
                 )
             volumes_block = f"\n        volumes=[{', '.join(vol_entries)}],"
-            volume_mounts_block = f"\n        volume_mounts=[{', '.join(mount_entries)}],"
+            volume_mounts_block = (
+                f"\n        volume_mounts=[{', '.join(mount_entries)}],"
+            )
 
         return f"""
     tasks["{task.id}"] = KubernetesPodOperator(

@@ -11,6 +11,7 @@ from appligator.airflow.gen_dockerfile import (
     generate,
 )
 
+
 def _workspace(tmp_path: Path, *, packages: list[str] | None = None) -> Path:
     """Create a minimal pixi workspace under tmp_path."""
     (tmp_path / "pyproject.toml").write_text("[project]\nname = 'test'\n")
@@ -19,9 +20,7 @@ def _workspace(tmp_path: Path, *, packages: list[str] | None = None) -> Path:
         for pkg in packages:
             pkg_dir = tmp_path / "packages" / pkg
             pkg_dir.mkdir(parents=True)
-            (pkg_dir / "pyproject.toml").write_text(
-                f"[project]\nname = '{pkg}'\n"
-            )
+            (pkg_dir / "pyproject.toml").write_text(f"[project]\nname = '{pkg}'\n")
     return tmp_path
 
 
@@ -260,9 +259,7 @@ class TestPackagesDir:
         assert "COPY --from=build" in runtime_stage
         assert "/packages" in runtime_stage
 
-    def test_custom_packages_dirname_used_in_dockerfile(
-        self, tmp_path, monkeypatch
-    ):
+    def test_custom_packages_dirname_used_in_dockerfile(self, tmp_path, monkeypatch):
         ws = tmp_path / "ws"
         ws.mkdir()
         (ws / "pyproject.toml").write_text("[project]\nname = 'test'\n")
@@ -411,7 +408,7 @@ class TestCopyPyprojectTomlStripped:
         import tomllib
 
         data = tomllib.loads(dest.read_text())
-        feature_deps = (
-            data["tool"]["pixi"]["feature"]["local-deps"]["pypi-dependencies"]
-        )
+        feature_deps = data["tool"]["pixi"]["feature"]["local-deps"][
+            "pypi-dependencies"
+        ]
         assert "appligator" not in feature_deps
