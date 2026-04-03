@@ -142,7 +142,9 @@ class TestAirflowRenderer(unittest.TestCase):
             func_qualname="f",
             image="img",
             inputs={},
-            config_map_mounts=[ConfigMapMount(name="cm", config_map_name="my-cm", mount_path="/etc/cm")],
+            config_map_mounts=[
+                ConfigMapMount(name="cm", config_map_name="my-cm", mount_path="/etc/cm")
+            ],
         )
         workflow = WorkflowIR(id="wf", tasks=[task], params={}, final_task="t")
         result = renderer.render(workflow)
@@ -150,7 +152,14 @@ class TestAirflowRenderer(unittest.TestCase):
 
     def test_k8s_import_not_emitted_when_no_volumes_or_secrets(self):
         renderer = AirflowRenderer()
-        task = TaskIR(id="t", runtime="kubernetes", func_module="m", func_qualname="f", image="img", inputs={})
+        task = TaskIR(
+            id="t",
+            runtime="kubernetes",
+            func_module="m",
+            func_qualname="f",
+            image="img",
+            inputs={},
+        )
         workflow = WorkflowIR(id="wf", tasks=[task], params={}, final_task="t")
         result = renderer.render(workflow)
         self.assertNotIn("from kubernetes.client import models as k8s", result)

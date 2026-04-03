@@ -45,8 +45,8 @@ def main(
         typer.Option(
             "--config-file",
             help="Path to an appligator-config.yaml file. Values from the file "
-                 "are used as defaults; any flag passed explicitly on the command "
-                 "line takes precedence.",
+            "are used as defaults; any flag passed explicitly on the command "
+            "line takes precedence.",
             exists=True,
             file_okay=True,
             dir_okay=False,
@@ -58,14 +58,16 @@ def main(
     ] = False,
     skip_build: Annotated[
         bool,
-        typer.Option(..., help="Skip building the Docker image and only generate DAG files."),
+        typer.Option(
+            ..., help="Skip building the Docker image and only generate DAG files."
+        ),
     ] = True,
     secret_names: Annotated[
         list[str] | None,
         typer.Option(
             "--secret-name",
             help="Kubernetes secret name to inject as environment variables into every pod "
-                 "(repeatable, e.g. --secret-name my-secret --secret-name other-secret).",
+            "(repeatable, e.g. --secret-name my-secret --secret-name other-secret).",
         ),
     ] = None,
     dag_name: Annotated[
@@ -73,17 +75,22 @@ def main(
         typer.Option(
             "--dag-name",
             help="Custom name for the generated DAG file (without .py extension). "
-                 "Defaults to the process ID. If multiple processes are in the registry, "
-                 "each gets a suffix: <dag-name>_<process_id>.py.",
+            "Defaults to the process ID. If multiple processes are in the registry, "
+            "each gets a suffix: <dag-name>_<process_id>.py.",
         ),
     ] = None,
     cpu_request: Annotated[
         str | None,
-        typer.Option("--cpu-request", help="CPU request for every pod (e.g. '500m', '1')."),
+        typer.Option(
+            "--cpu-request", help="CPU request for every pod (e.g. '500m', '1')."
+        ),
     ] = None,
     memory_request: Annotated[
         str | None,
-        typer.Option("--memory-request", help="Memory request for every pod (e.g. '256Mi', '1Gi')."),
+        typer.Option(
+            "--memory-request",
+            help="Memory request for every pod (e.g. '256Mi', '1Gi').",
+        ),
     ] = None,
     cpu_limit: Annotated[
         str | None,
@@ -154,7 +161,9 @@ def main(
 
     effective_image = image_name or cfg.image_name or DEFAULT_IMAGE_NAME
     effective_dag_name = dag_name or cfg.dag_name
-    effective_secrets = secret_names if secret_names is not None else (cfg.secret_names or None)
+    effective_secrets = (
+        secret_names if secret_names is not None else (cfg.secret_names or None)
+    )
     effective_cpu_request = cpu_request or cfg.cpu_request
     effective_memory_request = memory_request or cfg.memory_request
     effective_cpu_limit = cpu_limit or cfg.cpu_limit
@@ -167,7 +176,14 @@ def main(
             cpu_limit=effective_cpu_limit,
             memory_limit=effective_memory_limit,
         )
-        if any([effective_cpu_request, effective_memory_request, effective_cpu_limit, effective_memory_limit])
+        if any(
+            [
+                effective_cpu_request,
+                effective_memory_request,
+                effective_cpu_limit,
+                effective_memory_limit,
+            ]
+        )
         else None
     )
 
@@ -176,10 +192,16 @@ def main(
     for spec in pvc_mounts or []:
         parts = spec.split(":", 2)
         if len(parts) != 3:  # noqa: PLR2004
-            typer.echo(f"Error: --pvc-mount must be name:claim_name:mount_path, got: {spec!r}")
+            typer.echo(
+                f"Error: --pvc-mount must be name:claim_name:mount_path, got: {spec!r}"
+            )
             raise typer.Exit(1)
-        parsed_pvc_mounts.append(PvcMount(name=parts[0], claim_name=parts[1], mount_path=parts[2]))
-    effective_pvc_mounts = parsed_pvc_mounts if pvc_mounts is not None else cfg.pvc_mounts
+        parsed_pvc_mounts.append(
+            PvcMount(name=parts[0], claim_name=parts[1], mount_path=parts[2])
+        )
+    effective_pvc_mounts = (
+        parsed_pvc_mounts if pvc_mounts is not None else cfg.pvc_mounts
+    )
 
     parsed_config_map_mounts: list[ConfigMapMount] = []
     for spec in config_map_mounts or []:
@@ -197,7 +219,11 @@ def main(
                 sub_path=parts[3] if len(parts) == 4 else None,  # noqa: PLR2004
             )
         )
-    effective_config_map_mounts = parsed_config_map_mounts if config_map_mounts is not None else cfg.config_map_mounts
+    effective_config_map_mounts = (
+        parsed_config_map_mounts
+        if config_map_mounts is not None
+        else cfg.config_map_mounts
+    )
 
     process_registry: ProcessRegistry = import_value(
         process_registry_spec,
@@ -213,7 +239,9 @@ def main(
 
     for process_id, _process in process_registry.items():
         if effective_dag_name:
-            file_stem = f"{effective_dag_name}_{process_id}" if multi else effective_dag_name
+            file_stem = (
+                f"{effective_dag_name}_{process_id}" if multi else effective_dag_name
+            )
         else:
             file_stem = process_id
         # TODO: implement this better later
