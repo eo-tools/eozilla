@@ -34,24 +34,6 @@ _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
 
 
 class PanelFieldFactory(FieldFactoryBase):
-    def get_untyped_score(self, meta: FieldMeta) -> int:
-        return 5
-
-    def create_untyped_field(self, ctx: FieldContext) -> PanelField:
-        json_editor = pn.widgets.JSONEditor(
-            value=ctx.initial_value,
-            width=300,
-            mode="text",
-            menu=False,
-            search=False,
-        )
-        return PanelField(
-            ctx.vm.any(),
-            LabeledWidget(
-                name=ctx.meta.label, divider=False, inner_viewable=json_editor
-            ),
-        )
-
     def get_nullable_score(self, meta: FieldMeta) -> int:
         return 5
 
@@ -68,30 +50,124 @@ class PanelFieldFactory(FieldFactoryBase):
             ),
         )
 
-    def get_object_score(self, meta: FieldMeta) -> int:
+    def get_boolean_score(self, _meta: FieldMeta) -> int:
         return 5
 
-    def create_object_field(self, ctx: FieldContext) -> PanelField:
-        prop_fields = ctx.create_property_fields()
-        view_models = {k: f.view_model for k, f in prop_fields.items()}
-        view_model = ctx.vm.object(properties=view_models)
-        if ctx.meta.layout is not None:
-            inner_viewable = ctx.layout(
-                _layout_views,  # type: ignore[arg-type]
-                {k: f.view for k, f in prop_fields.items()},
+    def create_boolean_field(self, ctx: FieldContext) -> PanelField:
+        view_model = ctx.vm.primitive()
+        if view_model.meta.widget == "switch":
+            view = pn.widgets.Switch(value=view_model.value, name=view_model.meta.label)
+        else:
+            view = pn.widgets.Checkbox(
+                value=view_model.value, name=view_model.meta.label
+            )
+        return PanelField(view_model, view)
+
+    def get_integer_score(self, meta: FieldMeta) -> int:
+        return 5
+
+    def get_number_score(self, meta: FieldMeta) -> int:
+        return 5
+
+    def create_integer_field(self, ctx: FieldContext) -> PanelField:
+        view_model = ctx.vm.primitive()
+        return PanelField(
+            view_model, self._create_numeric_view(view_model, is_int=True)
+        )
+
+    def create_number_field(self, ctx: FieldContext) -> PanelField:
+        view_model = ctx.vm.primitive()
+        return PanelField(view_model, self._create_numeric_view(view_model))
+
+    @classmethod
+    def _create_numeric_view(
+        cls, view_model: ViewModel, *, is_int: bool | None = None
+    ) -> pn.widgets.WidgetBase:
+        value = view_model.value
+        label = view_model.meta.label
+        description = view_model.meta.description
+        widget_hint = view_model.meta.widget
+        minimum = view_model.meta.minimum
+        maximum = view_model.meta.maximum
+        enum = view_model.meta.enum
+
+        if enum:
+            if widget_hint == "radio":
+                return pn.widgets.RadioBoxGroup(name=label, value=value, options=enum)
+            if widget_hint == "button":
+                return pn.widgets.RadioButtonGroup(
+                    name=label, value=value, options=enum
+                )
+            if widget_hint == "slider":
+                return pn.widgets.DiscreteSlider(name=label, value=value, options=enum)
+            if widget_hint in ("select", None):
+                return pn.widgets.Select(name=label, value=value, options=enum)
+
+        if (
+            widget_hint == "slider"
+            and isinstance(minimum, (int, float))
+            and isinstance(maximum, (int, float))
+            and minimum < maximum
+        ):
+            step: int | float = pow(10.0, int(math.log10(maximum - minimum)) - 1.0)
+            if is_int:
+                slider_cls = pn.widgets.IntSlider
+                step = round(step)
+            else:
+                slider_cls = pn.widgets.FloatSlider
+            return slider_cls(
+                name=label,
+                value=value,
+                start=minimum,
+                end=maximum,
+                step=step,
+            )
+
+        if is_int:
+            input_cls = pn.widgets.IntInput
+        else:
+            input_cls = pn.widgets.FloatInput
+        return input_cls(name=label, value=value, description=description)
+
+    def get_string_score(self, meta: FieldMeta) -> int:
+        return 5
+
+    def create_string_field(self, ctx: FieldContext) -> PanelField:
+        view_model = ctx.vm.primitive()
+        value = view_model.value
+        label = view_model.meta.label
+        enum = view_model.meta.enum
+        description = view_model.meta.description
+        format_ = view_model.schema.format
+        widget_hint = ctx.meta.widget
+        if format_ == "date":
+            json_codec = JsonDateCodec()
+            date = json_codec.from_json(value) or datetime.date.today()
+            return PanelField(
+                view_model,
+                pn.widgets.DatePicker(name=label, value=date, description=description),
+                json_codec=json_codec,
+            )
+        if enum is not None:
+            if widget_hint == "radio":
+                view = pn.widgets.RadioBoxGroup(name=label, value=value, options=enum)
+            elif widget_hint == "button":
+                view = pn.widgets.RadioButtonGroup(
+                    name=label, value=value, options=enum, description=description
+                )
+            else:
+                view = pn.widgets.Select(
+                    name=label, value=value, options=enum, description=description
+                )
+        elif widget_hint == "textarea":
+            view = pn.widgets.TextAreaInput(
+                name=label, value=value, description=description
             )
         else:
-            inner_viewable = _layout_views(
-                ctx,
-                "column",
-                [f.view for f in prop_fields.values()],  # type: ignore[arg-type]
+            view = pn.widgets.TextInput(
+                name=label, value=value, description=description
             )
-        return PanelField(
-            view_model,
-            LabeledWidget(
-                name=view_model.meta.label, divider=True, inner_viewable=inner_viewable
-            ),
-        )
+        return PanelField(view_model, view)
 
     def get_array_score(self, meta: FieldMeta) -> int:
         assert meta.items is not None
@@ -151,115 +227,48 @@ class PanelFieldFactory(FieldFactoryBase):
             )
         return PanelField(view_model, view)
 
-    def get_string_score(self, meta: FieldMeta) -> int:
+    def get_object_score(self, meta: FieldMeta) -> int:
         return 5
 
-    def create_string_field(self, ctx: FieldContext) -> PanelField:
-        view_model = ctx.vm.primitive()
-        value = view_model.value
-        label = view_model.meta.label
-        enum = view_model.meta.enum
-        description = view_model.meta.description
-        format_ = view_model.schema.format
-        if format_ == "date":
-            json_codec = JsonDateCodec()
-            date = json_codec.from_json(value) or datetime.date.today()
-            return PanelField(
-                view_model,
-                pn.widgets.DatePicker(name=label, value=date, description=description),
-                json_codec=json_codec,
-            )
-        if enum is not None:
-            # TODO: check widget == "radio"
-            view = pn.widgets.Select(
-                name=label,
-                options=enum,
-                value=value,
-                description=description,
-            )
-        elif ctx.meta.widget == "textarea":
-            view = pn.widgets.TextAreaInput(
-                name=label, value=value, description=description
+    def create_object_field(self, ctx: FieldContext) -> PanelField:
+        prop_fields = ctx.create_property_fields()
+        view_models = {k: f.view_model for k, f in prop_fields.items()}
+        view_model = ctx.vm.object(properties=view_models)
+        if ctx.meta.layout is not None:
+            inner_viewable = ctx.layout(
+                _layout_views,  # type: ignore[arg-type]
+                {k: f.view for k, f in prop_fields.items()},
             )
         else:
-            view = pn.widgets.TextInput(
-                name=label, value=value, description=description
+            inner_viewable = _layout_views(
+                ctx,
+                "column",
+                [f.view for f in prop_fields.values()],  # type: ignore[arg-type]
             )
-        return PanelField(view_model, view)
-
-    def get_integer_score(self, meta: FieldMeta) -> int:
-        return 5
-
-    def get_number_score(self, meta: FieldMeta) -> int:
-        return 5
-
-    def create_integer_field(self, ctx: FieldContext) -> PanelField:
-        view_model = ctx.vm.primitive()
         return PanelField(
-            view_model, self._create_numeric_view(view_model, is_int=True)
+            view_model,
+            LabeledWidget(
+                name=view_model.meta.label, divider=True, inner_viewable=inner_viewable
+            ),
         )
 
-    def create_number_field(self, ctx: FieldContext) -> PanelField:
-        view_model = ctx.vm.primitive()
-        return PanelField(view_model, self._create_numeric_view(view_model))
-
-    @classmethod
-    def _create_numeric_view(
-        cls, view_model: ViewModel, *, is_int: bool | None = None
-    ) -> pn.widgets.WidgetBase:
-        value = view_model.value
-        label = view_model.meta.label
-        description = view_model.meta.description
-        widget_hint = view_model.meta.widget
-        minimum = view_model.meta.minimum
-        maximum = view_model.meta.maximum
-        enum = view_model.meta.enum
-
-        if enum:
-            # TODO: check widget == "radio"
-            if widget_hint == "slider":
-                return pn.widgets.DiscreteSlider(name=label, value=value, options=enum)
-            if widget_hint in ("select", None):
-                return pn.widgets.Select(name=label, value=value, options=enum)
-
-        if (
-            widget_hint == "slider"
-            and isinstance(minimum, (int, float))
-            and isinstance(maximum, (int, float))
-            and minimum < maximum
-        ):
-            step: int | float = pow(10.0, int(math.log10(maximum - minimum)) - 1.0)
-            if is_int:
-                slider_cls = pn.widgets.IntSlider
-                step = round(step)
-            else:
-                slider_cls = pn.widgets.FloatSlider
-            return slider_cls(
-                name=label,
-                value=value,
-                start=minimum,
-                end=maximum,
-                step=step,
-            )
-
-        if is_int:
-            input_cls = pn.widgets.IntInput
-        else:
-            input_cls = pn.widgets.FloatInput
-        return input_cls(name=label, value=value, description=description)
-
-    def get_boolean_score(self, _meta: FieldMeta) -> int:
+    def get_untyped_score(self, meta: FieldMeta) -> int:
         return 5
 
-    def create_boolean_field(self, ctx: FieldContext) -> PanelField:
-        view_model = ctx.vm.primitive()
-        if view_model.meta.widget == "switch":
-            view = pn.widgets.Switch(value=view_model.value, name=view_model.meta.label)
-        else:
-            view = pn.widgets.Checkbox(
-                value=view_model.value, name=view_model.meta.label
-            )
-        return PanelField(view_model, view)
+    def create_untyped_field(self, ctx: FieldContext) -> PanelField:
+        json_editor = pn.widgets.JSONEditor(
+            value=ctx.initial_value,
+            width=300,
+            mode="text",
+            menu=False,
+            search=False,
+        )
+        return PanelField(
+            ctx.vm.any(),
+            LabeledWidget(
+                name=ctx.meta.label, divider=False, inner_viewable=json_editor
+            ),
+        )
 
 
 def _layout_views(

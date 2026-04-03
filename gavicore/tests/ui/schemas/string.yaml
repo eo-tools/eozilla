@@ -14,6 +14,23 @@ properties:
   select:
     type: string
     enum:
-      - green
-      - blue
-      - yellow
+    - yellow
+    - red
+    - green
+    - blue
+  radio:
+    type: string
+    enum:
+    - yellow
+    - red
+    - green
+    - blue
+    "x-ui:widget": "radio"
+  button:
+    type: string
+    enum:
+    - yellow
+    - red
+    - green
+    - blue
+    "x-ui:widget": "button"
