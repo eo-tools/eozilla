@@ -40,10 +40,6 @@ from .libui import (
 
 
 class LibuiField(FieldBase):
-    @property
-    def available(self) -> bool:
-        return True
-
     def _bind(self):
         def observe_vm(_e):
             self.view.value = self.view_model.value

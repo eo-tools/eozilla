@@ -38,11 +38,6 @@ class Field(ABC):
     def view(self) -> View:
         """The view used by this field."""
 
-    @property
-    @abstractmethod
-    def available(self) -> bool:
-        """Is this field (this field's view) available?"""
-
 
 class FieldBase(Field, ABC):
     """Abstract base class for UI fields."""

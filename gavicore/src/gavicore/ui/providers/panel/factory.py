@@ -9,7 +9,7 @@ from typing import Any, Literal
 import panel as pn
 
 from gavicore.models import DataType
-from gavicore.ui import FieldContext, FieldFactory, FieldFactoryBase, FieldMeta
+from gavicore.ui import FieldContext, FieldFactoryBase, FieldMeta
 from gavicore.ui.vm import ViewModel
 from gavicore.util.json import JsonDateCodec
 from gavicore.util.text import ArrayTextConverter, TextConverter
@@ -17,8 +17,8 @@ from gavicore.util.text import ArrayTextConverter, TextConverter
 from .field import PanelField
 from .widgets.array import ArrayEditor, ArrayWidget
 from .widgets.bbox import BBoxEditor
+from .widgets.labeled import LabeledWidget
 from .widgets.nullable import NullableWidget
-from .widgets.object import ObjectWidget
 
 _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
     DataType.boolean: TextConverter.BooleanArray(),
@@ -34,15 +34,30 @@ _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
 
 
 class PanelFieldFactory(FieldFactoryBase):
+    def get_untyped_score(self, meta: FieldMeta) -> int:
+        return 5
+
+    def create_untyped_field(self, ctx: FieldContext) -> PanelField:
+        json_editor = pn.widgets.JSONEditor(
+            value=ctx.initial_value,
+            width=300,
+            mode="text",
+            menu=False,
+            search=False,
+        )
+        return PanelField(
+            ctx.vm.any(),
+            LabeledWidget(
+                name=ctx.meta.label, divider=False, inner_viewable=json_editor
+            ),
+        )
+
     def get_nullable_score(self, meta: FieldMeta) -> int:
         return 5
 
     def create_nullable_field(self, ctx: FieldContext) -> PanelField:
         non_nullable_meta = ctx.meta.to_non_nullable()
         non_nullable_field = ctx.create_child_field(non_nullable_meta)
-        assert isinstance(non_nullable_field, PanelField)
-        if not non_nullable_field.available:
-            return non_nullable_field
         view_model = ctx.vm.nullable(non_nullable_field.view_model)
         return PanelField(
             view_model,
@@ -73,7 +88,9 @@ class PanelFieldFactory(FieldFactoryBase):
             )
         return PanelField(
             view_model,
-            ObjectWidget(name=view_model.meta.label, inner_viewable=inner_viewable),
+            LabeledWidget(
+                name=view_model.meta.label, divider=True, inner_viewable=inner_viewable
+            ),
         )
 
     def get_array_score(self, meta: FieldMeta) -> int:
@@ -245,35 +262,12 @@ class PanelFieldFactory(FieldFactoryBase):
         return PanelField(view_model, view)
 
 
-class PanelDefaultFieldFactory(FieldFactory):
-    """
-    This factory is expected to be used in case no other factory
-    is able to handle the field. It has a well-known, constant view
-    recognized by other Panel factories.
-    """
-
-    def get_score(self, meta: FieldMeta) -> int:
-        """Return the minimum score `1`."""
-        return 1
-
-    def create_field(self, ctx: FieldContext) -> PanelField:
-        """Return a field with a view indicating that it is missing."""
-        return PanelField.create_unavailable(ctx)
-
-
 def _layout_views(
     _ctx: FieldContext,
     direction: Literal["row", "column"],
     views: list[pn.viewable.Viewable],
 ) -> pn.Row | pn.Column:
-    views = _select_available_views(views)
     if direction == "row":
         return pn.Row(*views)
     else:
         return pn.Column(*views)
-
-
-def _select_available_views(
-    views: list[pn.viewable.Viewable],
-) -> list[pn.viewable.Viewable]:
-    return [v for v in views if v is not PanelField.UNAVAILABLE_VIEW]

@@ -7,7 +7,7 @@ from typing import Any, Final
 import panel as pn
 
 from gavicore.models import Schema
-from gavicore.ui import FieldBase, FieldContext, FieldGenerator, FieldMeta
+from gavicore.ui import FieldBase, FieldGenerator, FieldMeta
 from gavicore.ui.vm import ViewModel
 from gavicore.util.ensure import ensure_type
 from gavicore.util.json import JsonCodec, JsonIdentityCodec
@@ -39,15 +39,7 @@ class PanelField(FieldBase):
         assert isinstance(self._view, pn.widgets.WidgetBase)
         return self._view
 
-    @property
-    def available(self) -> bool:
-        """Is this field missing?"""
-        return self.view is not PanelField.UNAVAILABLE_VIEW
-
     def _bind(self):
-        if not self.available:
-            return
-
         def observe_vm(_e):
             self.view.value = self._json_codec.from_json(self.view_model.value)
 
@@ -74,15 +66,10 @@ class PanelField(FieldBase):
         meta: FieldMeta,
         initial_value: Any | Undefined = Undefined.value,
     ) -> "PanelField":
-        from .factory import PanelDefaultFieldFactory, PanelFieldFactory
+        from .factory import PanelFieldFactory
 
         generator = FieldGenerator()
         generator.register_field_factory(PanelFieldFactory())
-        generator.register_field_factory(PanelDefaultFieldFactory())
         field = generator.generate_field(meta, initial_value=initial_value)
         assert isinstance(field, PanelField)
         return field
-
-    @classmethod
-    def create_unavailable(cls, ctx: FieldContext) -> "PanelField":
-        return PanelField(ctx.vm.any(), PanelField.UNAVAILABLE_VIEW)
