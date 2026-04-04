@@ -28,12 +28,10 @@ _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
 }
 
 # TODO: handle type="discriminator"
-# TODO: handle type="anyOf"
 # TODO: handle type="allOf"
-# TODO: handle type="oneOf"
 
 
-class PanelFieldFactory(FieldFactoryBase):
+class PanelFieldFactory(FieldFactoryBase[PanelField]):
     def get_nullable_score(self, meta: FieldMeta) -> int:
         return 5
 
@@ -251,6 +249,36 @@ class PanelFieldFactory(FieldFactoryBase):
                 name=view_model.meta.label, divider=True, inner_viewable=inner_viewable
             ),
         )
+
+    def get_one_of_score(self, meta: FieldMeta) -> int:
+        return 5
+
+    def create_one_of_field(self, ctx: FieldContext) -> PanelField:
+        return self._create_one_of_field(ctx)
+
+    def get_any_of_score(self, meta: FieldMeta) -> int:
+        return 5
+
+    def create_any_of_field(self, ctx: FieldContext) -> PanelField:
+        return self._create_one_of_field(ctx)
+
+    def _create_one_of_field(self, ctx: FieldContext) -> PanelField:
+        one_of = ctx.meta.one_of if ctx.meta.any_of is None else ctx.meta.any_of
+        assert one_of is not None
+        match len(one_of):
+            case 0:
+                return self.create_untyped_field(ctx)
+            case 1:
+                field = ctx.create_child_field(one_of[0])
+                assert isinstance(field, PanelField)
+                return field
+        child_fields = [ctx.create_child_field(fm) for fm in one_of]
+        view_model = ctx.vm.object(
+            properties={f.meta.name: f.view_model for f in child_fields}
+        )
+        views = [f.view for f in child_fields]
+        view = LabeledWidget(pn.layout.Tabs(*views), name=ctx.meta.label)
+        return PanelField(view_model, view)
 
     def get_untyped_score(self, meta: FieldMeta) -> int:
         return 5

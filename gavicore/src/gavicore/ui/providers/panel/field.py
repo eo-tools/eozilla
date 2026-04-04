@@ -14,7 +14,7 @@ from gavicore.util.json import JsonCodec, JsonIdentityCodec
 from gavicore.util.undefined import Undefined
 
 
-class PanelField(FieldBase):
+class PanelField(FieldBase[pn.widgets.WidgetBase]):
     """A panel widget-like field."""
 
     UNAVAILABLE_VIEW: Final = pn.widgets.ButtonIcon(
@@ -68,8 +68,6 @@ class PanelField(FieldBase):
     ) -> "PanelField":
         from .factory import PanelFieldFactory
 
-        generator = FieldGenerator()
+        generator = FieldGenerator[PanelField, pn.widgets.WidgetBase]()
         generator.register_field_factory(PanelFieldFactory())
-        field = generator.generate_field(meta, initial_value=initial_value)
-        assert isinstance(field, PanelField)
-        return field
+        return generator.generate_field(meta, initial_value=initial_value)

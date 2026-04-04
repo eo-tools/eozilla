@@ -119,8 +119,8 @@ class Schema(BaseModel):
 
 
 class Discriminator(BaseModel):
-    propertyName: str | None = Field(None, min_length=1)
-    mapping: dict[str, Schema] | None = None
+    propertyName: str = Field(..., min_length=1)
+    mapping: dict[str, str] | None = None
 
 
 # ---------------------------------------------------------------------

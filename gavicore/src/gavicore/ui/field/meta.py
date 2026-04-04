@@ -127,6 +127,15 @@ class FieldMeta(pydantic.BaseModel):
     items: "FieldMeta | None" = None
     """The metadata of array items. Set if schema type is "array"."""
 
+    one_of: "list[FieldMeta] | None" = None
+    """The metadata for a schema's "oneOf" element, if given."""
+
+    any_of: "list[FieldMeta] | None" = None
+    """The metadata for a schema's "anyOf" element, if given."""
+
+    all_of: "list[FieldMeta] | None" = None
+    """The metadata for a schema's "allOf" element, if given."""
+
     layout: FieldLayout | None = None
     """Hint to layout the children of this field."""
 
@@ -326,9 +335,14 @@ def _ui_field_meta_from_schema(
         properties = {}
         if schema.properties:
             for prop_name, prop_schema in schema.properties.items():
+                # noinspection PyTypeChecker
                 properties[prop_name] = _ui_field_meta_from_schema(
                     prop_name, prop_schema, required=(prop_name in required_set)
                 )
+
+    one_of = _convert_schema_list(schema.oneOf, name_prefix="alternative_")
+    any_of = _convert_schema_list(schema.anyOf, name_prefix="option_")
+    all_of = _convert_schema_list(schema.allOf, name_prefix="part_")
 
     return FieldMeta(
         name=name,
@@ -336,6 +350,9 @@ def _ui_field_meta_from_schema(
         required=required,
         properties=properties,
         items=items,
+        one_of=one_of,
+        any_of=any_of,
+        all_of=all_of,
         **ui_props,
     )
 
@@ -477,3 +494,15 @@ def _make_description_dict(
 
 def _make_label(name: str) -> str:
     return " ".join(p.capitalize() for p in re.split(r"[_-]|(?<=[a-z])(?=[A-Z])", name))
+
+
+def _convert_schema_list(
+    schema_list: list[Schema] | None, name_prefix: str = "item_"
+) -> list[FieldMeta] | None:
+    if schema_list is not None:
+        assert isinstance(schema_list, list)
+        return [
+            FieldMeta.from_schema(f"{name_prefix}{i}", s)
+            for i, s in enumerate(schema_list)
+        ]
+    return None

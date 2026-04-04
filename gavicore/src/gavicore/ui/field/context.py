@@ -2,7 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Generic
 
 from gavicore.models import DataType, Schema
 from gavicore.util.undefined import Undefined
@@ -15,7 +15,7 @@ from ..vm import (
     PrimitiveViewModel,
     ViewModel,
 )
-from .base import Field, View
+from .base import FT, VT
 from .meta import FieldMeta
 
 if TYPE_CHECKING:
@@ -23,16 +23,16 @@ if TYPE_CHECKING:
     from .layout import LayoutFunction
 
 
-class FieldContext:
+class FieldContext(Generic[FT, VT]):
     """The context object passed to a UI field factory."""
 
     def __init__(
         self,
         *,
-        generator: "FieldGenerator",
+        generator: "FieldGenerator[FT, VT]",
         meta: FieldMeta,
         initial_value: Any | Undefined = Undefined.value,
-        parent_ctx: "FieldContext | None" = None,
+        parent_ctx: "FieldContext[FT, VT] | None" = None,
     ):
         self._parent_ctx = parent_ctx
         self._generator = generator
@@ -76,13 +76,13 @@ class FieldContext:
             return self._parent_ctx.path + [self.name]
         return [self.name]
 
-    def layout(self, layout_function: "LayoutFunction", views: dict[str, View]) -> View:
+    def layout(self, layout_function: "LayoutFunction", views: dict[str, VT]) -> VT:
         """Layout the given views using the field metadata's `layout` property."""
         from .layout import LayoutManager
 
         return LayoutManager(layout_function, views).layout(self)
 
-    def create_property_fields(self) -> dict[str, Field]:
+    def create_property_fields(self) -> dict[str, FT]:
         """Create property fields given that this
         context's field is of type "object".
         """
@@ -92,20 +92,20 @@ class FieldContext:
             for prop_name, prop_meta in self.meta.properties.items()
         }
 
-    def create_item_field(self) -> Field:
+    def create_item_field(self) -> FT:
         """Create a new item field given that this
         context's field is of type "array".
         """
         assert isinstance(self.meta.items, FieldMeta)
         return self.create_child_field(self.meta.items)
 
-    def create_child_field(self, child_meta: FieldMeta) -> Field:
+    def create_child_field(self, child_meta: FieldMeta) -> FT:
         """Create a new field for the given child field metadata."""
         child_ctx = self._create_child_ctx(child_meta)
         # noinspection PyProtectedMember
         return self._generator._generate_field(child_ctx)
 
-    def _create_child_ctx(self, child_meta: FieldMeta) -> "FieldContext":
+    def _create_child_ctx(self, child_meta: FieldMeta) -> "FieldContext[FT, VT]":
         initial_value = self.initial_value
         child_name = child_meta.name
         if (
