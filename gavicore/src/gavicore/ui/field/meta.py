@@ -266,7 +266,8 @@ class FieldMeta(pydantic.BaseModel):
         required: bool | None = None,
     ) -> "FieldMeta":
         """Create field metadata from an OpenAPI Schema."""
-        return _ui_field_meta_from_schema(name, schema, required=required)
+        f = FieldMetaFactory(name, schema)
+        return f.create_field_meta(name, schema, required=required)
 
     def to_non_nullable(self) -> "FieldMeta":
         """Create a non-nullable version of this field metadata."""
@@ -312,58 +313,112 @@ def _schema_from_input_description(
     return Schema(**schema_dict), min_items > 0
 
 
-def _ui_field_meta_from_schema(
-    name: str,
-    schema: Schema,
-    required: bool | None = None,
-) -> FieldMeta:
-    schema_dict = _make_schema_dict(schema)
-    ui_props = _extract_ui_props_from_schema_dict(schema_dict)
-    required = ui_props.pop("required", required)
-    items: FieldMeta | None = None
-    properties: dict[str, FieldMeta] | None = None
-    if schema.type == DataType.array:
-        schema_items = schema.items
-        assert schema_items is None or isinstance(schema.items, Schema)
-        items = _ui_field_meta_from_schema(
-            f"{name}_item",
-            schema.items if isinstance(schema.items, Schema) else Schema(**{}),
-            required=schema.minItems is not None and schema.minItems > 0,
+class FieldMetaFactory:
+    def __init__(self, name: str, schema: Schema) -> None:
+        self.name = name
+        self.document = schema
+        self.defs: dict[str, FieldMeta] = {}
+
+    def create_field_meta(
+        self,
+        name: str,
+        schema: Schema,
+        required: bool | None = None,
+    ) -> FieldMeta:
+        if schema.ref is not None:
+            if schema.ref in self.defs:
+                return self.defs[schema.ref]
+            resolved_schema = self._resolve_schema_ref(schema.ref)
+            meta = FieldMeta(name=name, schema=resolved_schema, required=required)
+            self.defs[schema.ref] = meta
+        else:
+            meta = FieldMeta(name=name, schema=schema, required=required)
+        self._update_field_meta_from_schema(meta)
+        return meta
+
+    def _update_field_meta_from_schema(self, meta: FieldMeta) -> None:
+        name = meta.name
+        schema = meta.schema_
+        ui_props = _extract_ui_props_from_schema(schema)
+        required = ui_props.pop("required", meta.required)
+        items: FieldMeta | None = None
+        properties: dict[str, FieldMeta] | None = None
+        if schema.type == DataType.array:
+            schema_items = schema.items
+            assert schema_items is None or isinstance(schema.items, Schema)
+            items = self.create_field_meta(
+                f"{name}_item",
+                schema.items if isinstance(schema.items, Schema) else Schema(**{}),
+                required=schema.minItems is not None and schema.minItems > 0,
+            )
+        elif schema.type == DataType.object:
+            required_set = set(schema.required) if schema.required else set()
+            properties = {}
+            if schema.properties:
+                for prop_name, prop_schema in schema.properties.items():
+                    # noinspection PyTypeChecker
+                    properties[prop_name] = self.create_field_meta(
+                        prop_name, prop_schema, required=(prop_name in required_set)
+                    )
+
+        one_of = self._convert_schema_list(schema.oneOf, name_prefix="alternative_")
+        any_of = self._convert_schema_list(schema.anyOf, name_prefix="option_")
+        all_of = self._convert_schema_list(schema.allOf, name_prefix="part_")
+
+        update = dict(
+            required=required,
+            properties=properties,
+            items=items,
+            one_of=one_of,
+            any_of=any_of,
+            all_of=all_of,
+            **ui_props,
         )
-    elif schema.type == DataType.object:
-        required_set = set(schema.required) if schema.required else set()
-        properties = {}
-        if schema.properties:
-            for prop_name, prop_schema in schema.properties.items():
-                # noinspection PyTypeChecker
-                properties[prop_name] = _ui_field_meta_from_schema(
-                    prop_name, prop_schema, required=(prop_name in required_set)
+        for k, v in update.items():
+            setattr(meta, k, v)
+
+    def _resolve_schema_ref(self, ref: str) -> Schema:
+        if not ref.startswith("#/"):
+            raise NotImplementedError(
+                "$refs must be document-relative (start with '#/')"
+            )
+        path = ref[2:].split("/")
+        assert isinstance(self.document.model_extra, dict)
+        s: dict[str, Any] = self.document.model_extra
+        for i, name in enumerate(path):
+            if name not in s:
+                raise ValueError(
+                    f"invalid $ref value: {'/'.join(path[: i + 1])!r} does not exist"
                 )
+            s = s[name]
+            if not isinstance(s, dict):
+                raise TypeError(
+                    f"invalid $ref value: "
+                    f"dict expected for {'/'.join(path[: i + 1])!r}, "
+                    f"but got {type(s).__name__}"
+                )
+        return Schema(**s)
 
-    one_of = _convert_schema_list(schema.oneOf, name_prefix="alternative_")
-    any_of = _convert_schema_list(schema.anyOf, name_prefix="option_")
-    all_of = _convert_schema_list(schema.allOf, name_prefix="part_")
-
-    return FieldMeta(
-        name=name,
-        schema=schema,
-        required=required,
-        properties=properties,
-        items=items,
-        one_of=one_of,
-        any_of=any_of,
-        all_of=all_of,
-        **ui_props,
-    )
+    def _convert_schema_list(
+        self, schema_list: list[Schema] | None, name_prefix: str = "item_"
+    ) -> list[FieldMeta] | None:
+        if schema_list is not None:
+            assert isinstance(schema_list, list)
+            return [
+                self.create_field_meta(f"{name_prefix}{i}", s)
+                for i, s in enumerate(schema_list)
+            ]
+        return None
 
 
 _EXCL_SCHEMA_PROPERTY_NAMES = {"properties", "items", "required"}
 _VALIDATION_META = FieldMeta(name="validation_meta", schema=Schema(**{}))
 
 
-def _extract_ui_props_from_schema_dict(
-    schema_dict: dict[str, Any],
+def _extract_ui_props_from_schema(
+    schema: Schema,
 ) -> dict[str, Any]:
+    schema_dict = _make_schema_dict(schema)
     ui_props: dict[str, Any] = {}
     # update properties in ui_dict by yet unset FieldMeta values
     _update_ui_props_from_schema_props(schema_dict, ui_props)
@@ -494,15 +549,3 @@ def _make_description_dict(
 
 def _make_label(name: str) -> str:
     return " ".join(p.capitalize() for p in re.split(r"[_-]|(?<=[a-z])(?=[A-Z])", name))
-
-
-def _convert_schema_list(
-    schema_list: list[Schema] | None, name_prefix: str = "item_"
-) -> list[FieldMeta] | None:
-    if schema_list is not None:
-        assert isinstance(schema_list, list)
-        return [
-            FieldMeta.from_schema(f"{name_prefix}{i}", s)
-            for i, s in enumerate(schema_list)
-        ]
-    return None
