@@ -153,7 +153,9 @@ def generate(
     # ── non-editable local package installs ──────────────────────────────────
     resolved_post_install = list(post_install_commands or [])
     if local_packages:
-        assert packages_dir is not None  # narrowing for type checker; enforced by validation above
+        assert (
+            packages_dir is not None
+        )  # narrowing for type checker; enforced by validation above
         pip = f"{workdir}/.pixi/envs/{pixi_env}/bin/pip"
         pkgs = " \\\n    ".join(
             f"./{packages_dir.name}/{pkg}" for pkg in local_packages
@@ -186,7 +188,7 @@ def generate(
     )
 
     dockerfile = output_dir / "Dockerfile"
-    dockerfile.write_text(content)
+    dockerfile.write_text(content, encoding="utf-8")
     return dockerfile
 
 

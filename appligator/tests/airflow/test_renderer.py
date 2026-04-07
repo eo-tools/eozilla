@@ -5,7 +5,7 @@
 import unittest
 
 from appligator.airflow.handlers.base_handler import OperatorHandler
-from appligator.airflow.models import TaskIR, WorkflowIR
+from appligator.airflow.models import ConfigMapMount, PvcMount, TaskIR, WorkflowIR
 from appligator.airflow.renderer import (
     AirflowRenderer,
     render_dag_open,
@@ -22,6 +22,14 @@ class TestRenderHeader(unittest.TestCase):
         self.assertIn("\nfrom airflow import DAG", header)
         self.assertIn("from airflow.models.param import Param", header)
         self.assertIn("import json", header)
+
+    def test_k8s_import_not_present_without_volumes_or_secrets(self):
+        header = "\n".join(render_header(needs_k8s=False))
+        self.assertNotIn("from kubernetes.client import models as k8s", header)
+
+    def test_k8s_import_present_when_needed(self):
+        header = "\n".join(render_header(needs_k8s=True))
+        self.assertIn("from kubernetes.client import models as k8s", header)
 
 
 class TestRenderDagParams(unittest.TestCase):
@@ -109,6 +117,52 @@ class TestAirflowRenderer(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             renderer.render_task(task)
+
+    def test_k8s_import_emitted_for_pvc_mounts(self):
+        renderer = AirflowRenderer()
+        task = TaskIR(
+            id="t",
+            runtime="kubernetes",
+            func_module="m",
+            func_qualname="f",
+            image="img",
+            inputs={},
+            pvc_mounts=[PvcMount(name="v", claim_name="c", mount_path="/m")],
+        )
+        workflow = WorkflowIR(id="wf", tasks=[task], params={}, final_task="t")
+        result = renderer.render(workflow)
+        self.assertIn("from kubernetes.client import models as k8s", result)
+
+    def test_k8s_import_emitted_for_config_map_mounts(self):
+        renderer = AirflowRenderer()
+        task = TaskIR(
+            id="t",
+            runtime="kubernetes",
+            func_module="m",
+            func_qualname="f",
+            image="img",
+            inputs={},
+            config_map_mounts=[
+                ConfigMapMount(name="cm", config_map_name="my-cm", mount_path="/etc/cm")
+            ],
+        )
+        workflow = WorkflowIR(id="wf", tasks=[task], params={}, final_task="t")
+        result = renderer.render(workflow)
+        self.assertIn("from kubernetes.client import models as k8s", result)
+
+    def test_k8s_import_not_emitted_when_no_volumes_or_secrets(self):
+        renderer = AirflowRenderer()
+        task = TaskIR(
+            id="t",
+            runtime="kubernetes",
+            func_module="m",
+            func_qualname="f",
+            image="img",
+            inputs={},
+        )
+        workflow = WorkflowIR(id="wf", tasks=[task], params={}, final_task="t")
+        result = renderer.render(workflow)
+        self.assertNotIn("from kubernetes.client import models as k8s", result)
 
     def test_render_with_nonexistent_handler_raises(self):
         renderer = AirflowRenderer()

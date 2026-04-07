@@ -11,6 +11,7 @@ from pydantic import Field
 from appligator.airflow.gen_workflow_dag import (
     gen_workflow_dag,
 )
+from appligator.airflow.models import ConfigMapMount, PvcMount
 from procodile import ProcessRegistry
 from procodile.workflow import FromMain, FromStep, Workflow
 
@@ -175,3 +176,82 @@ def test_generate_airflow_dag_fails_on_invalid_registry():
 def test_generate_airflow_dag_fails_on_no_image():
     with pytest.raises(ValueError, match="Image name is required to generate dag."):
         gen_workflow_dag(dag_id="bad_registry", registry=main.registry, image=None)
+
+
+def test_pvc_mount_rendered_in_dag():
+    dag_code = gen_workflow_dag(
+        dag_id="first_workflow",
+        registry=first_step.registry,
+        image="example:latest",
+        pvc_mounts=[
+            PvcMount(name="my-output", claim_name="my-pvc", mount_path="/mnt/output")
+        ],
+    )
+    assert "from kubernetes.client import models as k8s" in dag_code
+    assert (
+        "volumes=[k8s.V1Volume(name='my-output', "
+        "persistent_volume_claim=k8s.V1PersistentVolumeClaimVolumeSource(claim_name='my-pvc'))]"
+    ) in dag_code
+    assert (
+        "volume_mounts=[k8s.V1VolumeMount(name='my-output', mount_path='/mnt/output')]"
+        in dag_code
+    )
+
+
+def test_config_map_mount_without_sub_path_rendered_in_dag():
+    dag_code = gen_workflow_dag(
+        dag_id="first_workflow",
+        registry=first_step.registry,
+        image="example:latest",
+        config_map_mounts=[
+            ConfigMapMount(
+                name="my-cm", config_map_name="my-config", mount_path="/etc/config"
+            )
+        ],
+    )
+    assert "from kubernetes.client import models as k8s" in dag_code
+    assert (
+        "volumes=[k8s.V1Volume(name='my-cm', config_map=k8s.V1ConfigMapVolumeSource(name='my-config'))]"
+    ) in dag_code
+    assert (
+        "volume_mounts=[k8s.V1VolumeMount(name='my-cm', mount_path='/etc/config')]"
+        in dag_code
+    )
+    assert "sub_path" not in dag_code
+
+
+def test_config_map_mount_with_sub_path_rendered_in_dag():
+    dag_code = gen_workflow_dag(
+        dag_id="first_workflow",
+        registry=first_step.registry,
+        image="example:latest",
+        config_map_mounts=[
+            ConfigMapMount(
+                name="settings",
+                config_map_name="app-settings",
+                mount_path="/app/settings.yaml",
+                sub_path="settings.yaml",
+            )
+        ],
+    )
+    assert (
+        "k8s.V1VolumeMount(name='settings', mount_path='/app/settings.yaml', sub_path='settings.yaml')"
+    ) in dag_code
+
+
+def test_pvc_and_config_map_mounts_combined():
+    dag_code = gen_workflow_dag(
+        dag_id="first_workflow",
+        registry=first_step.registry,
+        image="example:latest",
+        pvc_mounts=[
+            PvcMount(name="data", claim_name="data-pvc", mount_path="/mnt/data")
+        ],
+        config_map_mounts=[
+            ConfigMapMount(name="cfg", config_map_name="my-cfg", mount_path="/etc/cfg")
+        ],
+    )
+    assert "k8s.V1PersistentVolumeClaimVolumeSource(claim_name='data-pvc')" in dag_code
+    assert "k8s.V1ConfigMapVolumeSource(name='my-cfg')" in dag_code
+    assert "k8s.V1VolumeMount(name='data', mount_path='/mnt/data')" in dag_code
+    assert "k8s.V1VolumeMount(name='cfg', mount_path='/etc/cfg')" in dag_code
