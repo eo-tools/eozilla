@@ -2,9 +2,17 @@
 
 ### Enhancements
 
-- The **Gavicore** package has been enhanced by a new _UI generator_.
-  - Added a new UI generation framework in `gavicore.ui`.
+- The **Gavicore** package has been enhanced by a new _UI generator_ which 
+  converts OGC API - Process descriptions (or OpenAPI Schema) into user 
+  interfaces for editing input parameters:
+  - Added a new extendable UI generation framework in `gavicore.ui`.
+  - The framework itself does not enforce a dedicated widget library, 
+    but it can be configured to output UIs for any Python widget library. 
+  - Support for UI generated with the [Panel](https://panel.holoviz.org/) 
+    library is inbuilt as it is used in the Cuiman GUI.
   - Dropped subpackage `cuiman.gui.component`.
+  - Added a pixi tool to demonstrate and debug generated UIs from 
+    OpenAPI Schema: `pixi run schema2ui`.
   
 - Enhanced the **Appligator** package with Dockerfile generation and 
   improved Airflow integration:
