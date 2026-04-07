@@ -116,6 +116,9 @@ class Schema(BaseModel):
     oneOf: list[Schema] | None = None
     anyOf: list[Schema] | None = None
     discriminator: Discriminator | None = None
+    # refs
+    id: str | None = Field(None, alias="$id", min_length=1)
+    ref: str | None = Field(None, alias="$ref", min_length=1)
 
 
 class Discriminator(BaseModel):
