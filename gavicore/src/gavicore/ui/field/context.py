@@ -32,6 +32,7 @@ class FieldContext(Generic[FT, VT]):
         generator: "FieldGenerator[FT, VT]",
         meta: FieldMeta,
         initial_value: Any | Undefined = Undefined.value,
+        no_label: bool = False,
         parent_ctx: "FieldContext[FT, VT] | None" = None,
     ):
         self._parent_ctx = parent_ctx
@@ -43,6 +44,7 @@ class FieldContext(Generic[FT, VT]):
             if isinstance(initial_value, Undefined)
             else initial_value
         )
+        self._no_label = no_label
 
     @property
     def meta(self) -> FieldMeta:
@@ -53,6 +55,11 @@ class FieldContext(Generic[FT, VT]):
     def name(self) -> str:
         """The name from field metadata."""
         return self._meta.name
+
+    @property
+    def label(self) -> str:
+        """The name from field metadata."""
+        return self._meta.label if not self._no_label else ""
 
     @property
     def schema(self) -> Schema:
@@ -99,13 +106,15 @@ class FieldContext(Generic[FT, VT]):
         assert isinstance(self.meta.items, FieldMeta)
         return self.create_child_field(self.meta.items)
 
-    def create_child_field(self, child_meta: FieldMeta) -> FT:
+    def create_child_field(self, child_meta: FieldMeta, no_label: bool = False) -> FT:
         """Create a new field for the given child field metadata."""
-        child_ctx = self._create_child_ctx(child_meta)
+        child_ctx = self._create_child_ctx(child_meta, no_label=no_label)
         # noinspection PyProtectedMember
         return self._generator._generate_field(child_ctx)
 
-    def _create_child_ctx(self, child_meta: FieldMeta) -> "FieldContext[FT, VT]":
+    def _create_child_ctx(
+        self, child_meta: FieldMeta, no_label: bool = False
+    ) -> "FieldContext[FT, VT]":
         initial_value = self.initial_value
         child_name = child_meta.name
         if (
@@ -121,6 +130,7 @@ class FieldContext(Generic[FT, VT]):
             meta=child_meta,
             initial_value=child_value,
             parent_ctx=self,
+            no_label=no_label,
         )
 
 

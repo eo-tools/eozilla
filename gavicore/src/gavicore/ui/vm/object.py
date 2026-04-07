@@ -4,9 +4,10 @@
 
 from typing import Any
 
+from gavicore.ui.field.meta import FieldMeta
+from gavicore.util.ensure import ensure_type
 from gavicore.util.undefined import Undefined
 
-from ..field.meta import FieldMeta
 from .base import ViewModel
 from .composite import CompositeViewModel
 
@@ -62,8 +63,8 @@ class ObjectViewModel(ObjectViewModelBase):
         value: Any | Undefined = Undefined.value,
         properties: dict[str, ViewModel] | None = None,
     ):
+        ensure_type("meta.properties", meta.properties, (dict, type(None)))
         super().__init__(meta, value)
-        assert isinstance(meta.properties, dict)
         # initialize item view models
         for k, child_meta in meta.properties.items():
             vm = properties.get(k) if properties else None

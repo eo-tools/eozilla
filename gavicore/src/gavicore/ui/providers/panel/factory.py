@@ -10,7 +10,7 @@ import panel as pn
 
 from gavicore.models import DataType
 from gavicore.ui import FieldContext, FieldFactoryBase, FieldMeta
-from gavicore.ui.vm import ViewModel
+from gavicore.ui.vm import ViewModel, SelectiveViewModel
 from gavicore.util.json import JsonDateCodec
 from gavicore.util.text import ArrayTextConverter, TextConverter
 
@@ -37,7 +37,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
 
     def create_nullable_field(self, ctx: FieldContext) -> PanelField:
         non_nullable_meta = ctx.meta.to_non_nullable()
-        non_nullable_field = ctx.create_child_field(non_nullable_meta)
+        non_nullable_field = ctx.create_child_field(non_nullable_meta, no_label=True)
         view_model = ctx.vm.nullable(non_nullable_field.view_model)
         return PanelField(
             view_model,
@@ -70,19 +70,25 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
     def create_integer_field(self, ctx: FieldContext) -> PanelField:
         view_model = ctx.vm.primitive()
         return PanelField(
-            view_model, self._create_numeric_view(view_model, is_int=True)
+            view_model,
+            self._create_numeric_view(view_model, label=ctx.label, is_int=True),
         )
 
     def create_number_field(self, ctx: FieldContext) -> PanelField:
         view_model = ctx.vm.primitive()
-        return PanelField(view_model, self._create_numeric_view(view_model))
+        return PanelField(
+            view_model, self._create_numeric_view(view_model, label=ctx.label)
+        )
 
     @classmethod
     def _create_numeric_view(
-        cls, view_model: ViewModel, *, is_int: bool | None = None
+        cls,
+        view_model: ViewModel,
+        *,
+        is_int: bool | None = None,
+        label: str | None = None,
     ) -> pn.widgets.WidgetBase:
         value = view_model.value
-        label = view_model.meta.label
         description = view_model.meta.description
         widget_hint = view_model.meta.widget
         minimum = view_model.meta.minimum
@@ -205,7 +211,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
                 value=view_model.value,
                 array_converter=array_converter,
                 separator=view_model.meta.separator,
-                name=view_model.meta.label,
+                name=ctx.label,
                 description=view_model.meta.description,
             )
         else:
@@ -218,7 +224,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
                 return item_field.view
 
             view = ArrayEditor(
-                name=view_model.meta.label,
+                name=ctx.label,
                 value=view_model.value,
                 item_editor_factory=create_item_editor,
                 item_value_factory=ctx.meta.items.get_initial_value,
@@ -245,39 +251,50 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
             )
         return PanelField(
             view_model,
-            LabeledWidget(
-                name=view_model.meta.label, divider=True, inner_viewable=inner_viewable
-            ),
+            LabeledWidget(inner_viewable, name=ctx.label, divider=True),
         )
 
     def get_one_of_score(self, meta: FieldMeta) -> int:
         return 5
 
     def create_one_of_field(self, ctx: FieldContext) -> PanelField:
-        return self._create_one_of_field(ctx)
+        assert ctx.meta.one_of is not None
+        return self._create_one_of_field(ctx, ctx.meta.one_of)
 
     def get_any_of_score(self, meta: FieldMeta) -> int:
         return 5
 
     def create_any_of_field(self, ctx: FieldContext) -> PanelField:
-        return self._create_one_of_field(ctx)
+        assert ctx.meta.any_of is not None
+        return self._create_one_of_field(ctx, ctx.meta.any_of)
 
-    def _create_one_of_field(self, ctx: FieldContext) -> PanelField:
-        one_of = ctx.meta.one_of if ctx.meta.any_of is None else ctx.meta.any_of
-        assert one_of is not None
-        match len(one_of):
+    def _create_one_of_field(
+        self, ctx: FieldContext, options: list[FieldMeta]
+    ) -> PanelField:
+        match len(options):
             case 0:
                 return self.create_untyped_field(ctx)
             case 1:
-                field = ctx.create_child_field(one_of[0])
+                field = ctx.create_child_field(options[0])
                 assert isinstance(field, PanelField)
                 return field
-        child_fields = [ctx.create_child_field(fm) for fm in one_of]
-        view_model = ctx.vm.object(
-            properties={f.meta.name: f.view_model for f in child_fields}
+
+        child_fields = [ctx.create_child_field(fm, no_label=True) for fm in options]
+        view_model = SelectiveViewModel(
+            ctx.meta,
+            options=[f.view_model for f in child_fields],
         )
-        views = [f.view for f in child_fields]
-        view = LabeledWidget(pn.layout.Tabs(*views), name=ctx.meta.label)
+
+        tab_options = [(f.meta.label, f.view) for f in child_fields]
+        tabs = pn.layout.Tabs(*tab_options)
+
+        view_model.active_index = tabs.active
+
+        def on_active_tab_change(_e):
+            view_model.active_index = tabs.active
+
+        tabs.param.watch(on_active_tab_change, "active")
+        view = LabeledWidget(tabs, name=ctx.label)
         return PanelField(view_model, view)
 
     def get_untyped_score(self, meta: FieldMeta) -> int:
@@ -293,9 +310,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         )
         return PanelField(
             ctx.vm.any(),
-            LabeledWidget(
-                name=ctx.meta.label, divider=False, inner_viewable=json_editor
-            ),
+            LabeledWidget(json_editor, name=ctx.label, divider=False),
         )
 
 

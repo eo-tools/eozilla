@@ -64,9 +64,6 @@ class FieldGenerator(Generic[FT, VT]):
     def _generate_field(self, ctx: FieldContext[FT, VT]) -> FT:
         factory = self._field_factory_registry.lookup(ctx.meta)
         if factory is None:
-            # TODO: if a factory cannot be found, the default behaviour
-            #  should be to emit a warning and ignore the field, as this will
-            #  be a quite common situation.
             raise ValueError(
                 f"no factory found for creating a UI for field {'.'.join(ctx.path)!r}"
             )
