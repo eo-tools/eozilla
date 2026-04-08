@@ -5,7 +5,7 @@
 import datetime
 import re
 from functools import cached_property
-from typing import Any, Literal, TypeAlias, Union
+from typing import Any, Literal, TypeAlias, Union, Annotated
 
 import pydantic
 
@@ -59,7 +59,7 @@ class FieldGroup(pydantic.BaseModel):
     property, if any, or the value of the `name` property.
     """
 
-    type: Literal["column", "row"]
+    type: Literal["column", "row"]  # we may add "grid" or others
     items: list[Union["FieldGroup", str]] | None = None
     name: str | None = None
     title: str | None = None
@@ -154,6 +154,8 @@ class FieldMeta(pydantic.BaseModel):
 
     order: int | str | None = None
     """The order of this field in the group. 
+    The order's value is used to compare it against other `order` values 
+    when sorting multiple fields in ascending order. 
     See also [FieldGroup][FieldGroup]."""
 
     required: bool | None = None
@@ -163,7 +165,9 @@ class FieldMeta(pydantic.BaseModel):
     password: bool | None = None
     """Whether this field is a password input field."""
 
-    separator: Annotated[str, StringConstraints(min_length=1, max_length=1)] | None = None
+    separator: (
+        Annotated[str, pydantic.StringConstraints(min_length=1, max_length=1)] | None
+    ) = None
     """The separator character used for separating array items 
     when for arrays edited as text."""
 

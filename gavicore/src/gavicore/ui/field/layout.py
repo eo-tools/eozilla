@@ -5,7 +5,7 @@
 from typing import Literal, Protocol
 
 from gavicore.models import DataType
-from gavicore.util.ensure import ensure_callable, ensure_type
+from gavicore.util.ensure import ensure_callable, ensure_type, ensure_condition
 
 from .base import Field, View
 from .context import FieldContext
@@ -40,8 +40,11 @@ class LayoutManager:
         """
         Generate a layout field for a value of type "object".
         """
-        assert ctx.schema.type == DataType.object
-        assert ctx.meta.layout is not None
+        ensure_condition(
+            ctx.schema.type == DataType.object,
+            "can only layout objects",
+            exception_type=TypeError,
+        )
         group: FieldGroup
         if ctx.meta.layout == "row":
             group = FieldGroup(type="row")

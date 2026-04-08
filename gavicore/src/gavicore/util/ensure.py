@@ -25,7 +25,11 @@ def ensure_callable(name: str, value: Any) -> None:
         raise TypeError(f"{name} must be callable, but was {actual_type.__name__}")
 
 
-def ensure_condition(condition: bool, message: str | Callable[[], str]) -> None:
+def ensure_condition(
+    condition: bool,
+    message: str | Callable[[], str],
+    exception_type: type[Exception] = ValueError,
+) -> None:
     """Raise a `ValueError` if `condition` is `False`."""
     if not condition:
-        raise ValueError(message() if callable(message) else message)
+        raise exception_type(message() if callable(message) else message)

@@ -16,6 +16,7 @@ from ..vm import (
 )
 from .base import Field, View
 from .meta import FieldMeta
+from ...util.ensure import ensure_condition
 
 if TYPE_CHECKING:
     from .generator import FieldGenerator
@@ -85,7 +86,11 @@ class FieldContext:
         """Create property fields given that this
         context's field is of type "object".
         """
-        assert isinstance(self.meta.properties, dict)
+        ensure_condition(
+            isinstance(self.meta.properties, dict),
+            f"field metadata {self.meta.name!r} does not have properties",
+            exception_type=TypeError,
+        )
         return {
             prop_name: self.create_child_field(prop_meta)
             for prop_name, prop_meta in self.meta.properties.items()
@@ -95,7 +100,11 @@ class FieldContext:
         """Create a new item field given that this
         context's field is of type "array".
         """
-        assert isinstance(self.meta.items, FieldMeta)
+        ensure_condition(
+            isinstance(self.meta.items, FieldMeta),
+            f"field metadata {self.meta.name!r} does not have items",
+            exception_type=TypeError,
+        )
         return self.create_child_field(self.meta.items)
 
     def create_child_field(self, child_meta: FieldMeta) -> Field:

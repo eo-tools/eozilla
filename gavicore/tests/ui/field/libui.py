@@ -174,7 +174,7 @@ class Widget(Generic[T], View, ABC):
 
 
 class WidgetBase(Generic[T], Widget[T], ABC):
-    """Abstract base class for views that have a primary value."""
+    """Abstract base class for widgets with a value attribute."""
 
     def __init__(self, value: T, **props):
         super().__init__(**props)

@@ -84,11 +84,12 @@ class PanelFieldFactory(gcui.FieldFactoryBase):
 
     def create_array_field(self, ctx: gcui.FieldContext) -> gcui.Field:
         view_model = ctx.vm.array()
-
         assert ctx.meta.items is not None
 
+        widget_hint = view_model.meta.widget
+
         format_ = ctx.schema.format
-        if format_ is not None and format_.lower() == "bbox":
+        if (format_ is not None and format_.lower() == "bbox") or widget_hint == "map":
             return PanelField(view_model, BBoxEditor())
 
         item_schema = ctx.meta.items.schema_
@@ -100,8 +101,8 @@ class PanelFieldFactory(gcui.FieldFactoryBase):
 
         if (
             array_converter is not None
-            and view_model.meta.widget != "editor"
-            and (view_model.meta.widget == "input" or item_format is None)
+            and widget_hint != "editor"
+            and (widget_hint == "input" or item_format is None)
         ):
             view = ArrayWidget(
                 value=view_model.value,
