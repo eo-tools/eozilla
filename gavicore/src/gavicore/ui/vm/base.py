@@ -7,7 +7,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Callable, Generic, Protocol, TypeVar
 
-from gavicore.models import DataType, Schema
+from gavicore.models import DataType
 from gavicore.util.ensure import ensure_type
 from gavicore.util.undefined import UNDEFINED, Undefined
 

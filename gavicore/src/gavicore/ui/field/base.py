@@ -5,10 +5,8 @@
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
+from gavicore.ui.vm import ViewModel
 from gavicore.util.ensure import ensure_type
-
-from ..vm import ViewModel
-from .meta import FieldMeta
 
 VT = TypeVar("VT")
 """
