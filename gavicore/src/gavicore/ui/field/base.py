@@ -25,11 +25,6 @@ class Field(ABC, Generic[VT]):
     """
 
     @property
-    def meta(self) -> FieldMeta:
-        """The field metadata."""
-        return self.view_model.meta
-
-    @property
     @abstractmethod
     def view_model(self) -> ViewModel:
         """The view model used by this field."""

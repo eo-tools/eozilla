@@ -64,7 +64,7 @@ class ObjectFieldFactory(FieldFactoryBase):
         view_model = ctx.vm.object(properties=view_models)
         if ctx.meta.layout is None:
             views = [f.view for f in prop_fields.values()]
-            view = Column(*views, label=view_model.meta.title)
+            view = Column(*views, label=ctx.meta.title)
         else:
             views = {k: f.view for k, f in prop_fields.items()}
             view = ctx.layout(layout_views, views)
@@ -88,7 +88,7 @@ class ArrayFieldFactory(FieldFactoryBase):
 
     def create_array_field(self, ctx: FieldContext) -> Field:
         view_model = ctx.vm.array()
-        view = ListEditor(value=view_model.value, label=view_model.meta.title)
+        view = ListEditor(value=view_model.value, label=ctx.meta.title)
         return LibuiField(view_model, view=view)
 
 
@@ -98,7 +98,7 @@ class StringFieldFactory(FieldFactoryBase):
 
     def create_string_field(self, ctx: FieldContext) -> Field:
         view_model = ctx.vm.primitive()
-        view = TextInput(value=view_model.value, label=view_model.meta.title)
+        view = TextInput(value=view_model.value, label=ctx.meta.title)
         return LibuiField(view_model, view=view)
 
 
@@ -108,7 +108,7 @@ class NumberFieldFactory(FieldFactoryBase):
 
     def create_number_field(self, ctx: FieldContext) -> Field:
         view_model = ctx.vm.primitive()
-        view = NumberInput(value=view_model.value, label=view_model.meta.title)
+        view = NumberInput(value=view_model.value, label=ctx.meta.title)
         return LibuiField(view_model, view=view)
 
 
@@ -118,7 +118,7 @@ class BooleanFieldFactory(FieldFactoryBase):
 
     def create_boolean_field(self, ctx: FieldContext) -> Field:
         view_model = ctx.vm.primitive()
-        view = Checkbox(value=view_model.value, label=view_model.meta.title)
+        view = Checkbox(value=view_model.value, label=ctx.meta.title)
         return LibuiField(view_model, view=view)
 
 
@@ -135,7 +135,7 @@ class NullFieldFactory(FieldFactoryBase):
         view = NullableWidget(
             value=ctx.initial_value,
             child=non_nullable_view,
-            label=view_model.meta.title,
+            label=ctx.meta.title,
         )
         return LibuiField(view_model, view=view)
 

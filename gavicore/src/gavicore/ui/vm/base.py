@@ -84,11 +84,6 @@ class ViewModel(Generic[T], ABC):
         return self._meta
 
     @property
-    def schema(self) -> Schema:
-        """The field's OpenAPI schema."""
-        return self._meta.schema_
-
-    @property
     def value(self) -> T:
         """Get the current value."""
         return self._get_value()

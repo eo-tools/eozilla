@@ -10,7 +10,7 @@ import panel as pn
 
 from gavicore.models import DataType
 from gavicore.ui import FieldContext, FieldFactoryBase, FieldMeta
-from gavicore.ui.vm import ViewModel, SelectiveViewModel
+from gavicore.ui.vm import SelectiveViewModel
 from gavicore.util.json import JsonDateCodec
 from gavicore.util.text import ArrayTextConverter, TextConverter
 
@@ -19,7 +19,6 @@ from .widgets.array import ArrayEditor, ArrayWidget
 from .widgets.bbox import BBoxEditor
 from .widgets.labeled import LabeledWidget
 from .widgets.nullable import NullableWidget
-from ...field.base import FT
 
 _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
     DataType.boolean: TextConverter.BooleanArray(),
@@ -29,7 +28,6 @@ _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
 }
 
 # TODO: handle type="discriminator"
-# TODO: handle type="allOf"
 
 
 class PanelFieldFactory(FieldFactoryBase[PanelField]):
@@ -54,12 +52,10 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
 
     def create_boolean_field(self, ctx: FieldContext) -> PanelField:
         view_model = ctx.vm.primitive()
-        if view_model.meta.widget == "switch":
-            view = pn.widgets.Switch(value=view_model.value, name=view_model.meta.label)
+        if ctx.meta.widget == "switch":
+            view = pn.widgets.Switch(value=view_model.value, name=ctx.label)
         else:
-            view = pn.widgets.Checkbox(
-                value=view_model.value, name=view_model.meta.label
-            )
+            view = pn.widgets.Checkbox(value=view_model.value, name=ctx.label)
         return PanelField(view_model, view)
 
     def get_integer_score(self, meta: FieldMeta) -> int:
@@ -69,47 +65,43 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         return 5
 
     def create_integer_field(self, ctx: FieldContext) -> PanelField:
-        view_model = ctx.vm.primitive()
-        return PanelField(
-            view_model,
-            self._create_numeric_view(view_model, label=ctx.label, is_int=True),
-        )
+        return self._create_numeric_view(ctx, is_int=True)
 
     def create_number_field(self, ctx: FieldContext) -> PanelField:
-        view_model = ctx.vm.primitive()
-        return PanelField(
-            view_model, self._create_numeric_view(view_model, label=ctx.label)
-        )
+        return self._create_numeric_view(ctx)
 
     @classmethod
     def _create_numeric_view(
         cls,
-        view_model: ViewModel,
+        ctx: FieldContext,
         *,
         is_int: bool | None = None,
-        label: str | None = None,
-    ) -> pn.widgets.WidgetBase:
+    ) -> PanelField:
+        view_model = ctx.vm.primitive()
         value = view_model.value
-        description = view_model.meta.description
-        widget_hint = view_model.meta.widget
-        minimum = view_model.meta.minimum
-        maximum = view_model.meta.maximum
-        enum = view_model.meta.enum
+        label = ctx.label
+        description = ctx.meta.description
+        widget_hint = ctx.meta.widget
+        minimum = ctx.meta.minimum
+        maximum = ctx.meta.maximum
+        enum = ctx.meta.enum
 
+        view: pn.widgets.WidgetBase | None = None
         if enum:
             if widget_hint == "radio":
-                return pn.widgets.RadioBoxGroup(name=label, value=value, options=enum)
-            if widget_hint == "button":
-                return pn.widgets.RadioButtonGroup(
+                view = pn.widgets.RadioBoxGroup(name=label, value=value, options=enum)
+            elif widget_hint == "button":
+                view = pn.widgets.RadioButtonGroup(
                     name=label, value=value, options=enum
                 )
-            if widget_hint == "slider":
-                return pn.widgets.DiscreteSlider(name=label, value=value, options=enum)
-            if widget_hint in ("select", None):
-                return pn.widgets.Select(name=label, value=value, options=enum)
+            elif widget_hint == "slider":
+                view = pn.widgets.DiscreteSlider(name=label, value=value, options=enum)
+            elif widget_hint in ("select", None):
+                view = pn.widgets.Select(name=label, value=value, options=enum)
 
         if (
-            widget_hint == "slider"
+            view is None
+            and widget_hint == "slider"
             and isinstance(minimum, (int, float))
             and isinstance(maximum, (int, float))
             and minimum < maximum
@@ -120,7 +112,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
                 step = round(step)
             else:
                 slider_cls = pn.widgets.FloatSlider
-            return slider_cls(
+            view = slider_cls(
                 name=label,
                 value=value,
                 start=minimum,
@@ -128,11 +120,14 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
                 step=step,
             )
 
-        if is_int:
-            input_cls = pn.widgets.IntInput
-        else:
-            input_cls = pn.widgets.FloatInput
-        return input_cls(name=label, value=value, description=description)
+        if view is None:
+            if is_int:
+                input_cls = pn.widgets.IntInput
+            else:
+                input_cls = pn.widgets.FloatInput
+            view = input_cls(name=label, value=value, description=description)
+        assert view is not None
+        return PanelField(view_model, view)
 
     def get_string_score(self, meta: FieldMeta) -> int:
         return 5
@@ -140,10 +135,10 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
     def create_string_field(self, ctx: FieldContext) -> PanelField:
         view_model = ctx.vm.primitive()
         value = view_model.value
-        label = view_model.meta.label
-        enum = view_model.meta.enum
-        description = view_model.meta.description
-        format_ = view_model.schema.format
+        label = ctx.label
+        enum = ctx.meta.enum
+        description = ctx.meta.description
+        format_ = ctx.schema.format
         widget_hint = ctx.meta.widget
         if format_ == "date":
             json_codec = JsonDateCodec()
@@ -205,15 +200,15 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
 
         if (
             array_converter is not None
-            and view_model.meta.widget != "editor"
-            and (view_model.meta.widget == "input" or item_format is None)
+            and ctx.meta.widget != "editor"
+            and (ctx.meta.widget == "input" or item_format is None)
         ):
             view = ArrayWidget(
                 value=view_model.value,
                 array_converter=array_converter,
-                separator=view_model.meta.separator,
+                separator=ctx.meta.separator,
                 name=ctx.label,
-                description=view_model.meta.description,
+                description=ctx.meta.description,
             )
         else:
 
@@ -280,13 +275,14 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
                 assert isinstance(field, PanelField)
                 return field
 
+        child_labels = [fm.label for fm in options]
         child_fields = [ctx.create_child_field(fm, no_label=True) for fm in options]
         view_model = SelectiveViewModel(
             ctx.meta,
             options=[f.view_model for f in child_fields],
         )
 
-        tab_options = [(f.meta.label, f.view) for f in child_fields]
+        tab_options = list(zip(child_labels, child_fields, strict=True))
         tabs = pn.layout.Tabs(*tab_options)
 
         view_model.active_index = tabs.active

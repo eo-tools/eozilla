@@ -33,7 +33,6 @@ class FieldBaseTest(TestCase):
         view_model = PrimitiveViewModel(meta)
         view = object()
         f = MyField(view_model, view)
-        self.assertIs(meta, f.meta)
         self.assertIs(view_model, f.view_model)
         self.assertIs(view, f.view)
         self.assertTrue(hasattr(f, "bound"))
