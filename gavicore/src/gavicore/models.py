@@ -69,6 +69,7 @@ class Schema(BaseModel):
     model_config = ConfigDict(
         # allow for extensions usually prefixed by "x-", e.g., "x-ui"
         extra="allow",
+        json_schema_extra={"additionalProperties": True},
     )
 
     # general
@@ -85,8 +86,8 @@ class Schema(BaseModel):
     deprecated: bool | None = False
     field_ref: str | None = Field(None, alias="$ref")
     # type "number" and "integer"
-    minimum: float | None = None
-    maximum: float | None = None
+    minimum: int | float | None = None
+    maximum: int | float | None = None
     exclusiveMinimum: bool | None = False
     exclusiveMaximum: bool | None = False
     multipleOf: float | None = Field(None, gt=0.0)
@@ -99,7 +100,7 @@ class Schema(BaseModel):
     contentEncoding: str | None = None
     contentSchema: str | None = None
     # type "array"
-    items: list[Schema] | Schema | None = None
+    items: Schema | None = None
     minItems: int | None = Field(0, ge=0)
     maxItems: int | None = Field(None, ge=0)
     uniqueItems: bool | None = False
@@ -198,6 +199,7 @@ class DescriptionType(BaseModel):
     model_config = ConfigDict(
         # allow for extensions usually prefixed by "x-", e.g., "x-ui"
         extra="allow",
+        json_schema_extra={"additionalProperties": True},
     )
 
     title: str | None = None

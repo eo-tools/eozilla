@@ -4182,10 +4182,11 @@ packages:
 - pypi: ./gavicore
   name: gavicore
   version: 0.1.0.dev0
-  sha256: 37a0483705e40a2deda151b6374aceb5bde3b589c1b4dd16ddee086fe69f463d
+  sha256: 49333cb7ca2b44ba200d6e6b7d765a2d598d5765fcbe7583f888810c26bcaea1
   requires_dist:
   - click
   - pydantic
+  - pyyaml
   - typer
   requires_python: '>=3.10'
   editable: true

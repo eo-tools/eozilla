@@ -5,10 +5,14 @@
 from typing import Any
 
 import panel as pn
+import panel.layout
 
 from cuiman.api.config import AdvancedInputPredicate, ProcessPredicate
 from cuiman.api.exceptions import ClientError
+from cuiman.gui.ipy_helper import IPyHelper
 from cuiman.gui.jobs_observer import JobsObserver
+from cuiman.gui.panels import JobInfoPanelView
+from cuiman.gui.x_menu import XMenu, XMenuItem
 from gavicore.models import (
     JobInfo,
     JobList,
@@ -18,10 +22,6 @@ from gavicore.models import (
     ProcessList,
 )
 
-from ...ipy_helper import IPyHelper
-from ..job_info_panel import JobInfoPanelView
-from ..x_menu import XMenu
-from ..x_menu_item import XMenuItem
 from .viewmodel import (
     ExecuteProcessAction,
     GetJobResultsAction,
@@ -75,7 +75,6 @@ class MainPanelView(pn.viewable.Viewer):
         # Used in view only, once we go async, move to viewmodel
         self._get_job_results = get_job_results
 
-        # --- _process_select
         process_select_options = {
             f"{p.title if p.title else 'No Title'}  (id={p.id})": p.id
             for p in self.vm.processes
@@ -88,12 +87,10 @@ class MainPanelView(pn.viewable.Viewer):
 
         def _on_select_process(e):
             self.vm.select_process(e.new)
-            self._render_from_vm()
+            self._update_process_ui()
             self._set_own_job_info(None)
 
         self._process_select.param.watch(_on_select_process, "value")
-
-        # --- _advanced_switch
 
         self._advanced_switch = pn.widgets.Switch(
             value=self.vm.show_advanced,
@@ -102,17 +99,15 @@ class MainPanelView(pn.viewable.Viewer):
         def _on_advanced(e):
             self.vm.show_advanced = bool(e.new)
             self.vm.update_inputs()
-            self._render_inputs()
+            self._update_process_inputs_ui()
 
         self._advanced_switch.param.watch(_on_advanced, "value")
-
-        # --- _process_doc_markdown
-
         self._process_doc_markdown = pn.pane.Markdown("")
 
         process_panel = pn.Column(
             self._process_select,
             self._process_doc_markdown,
+            # DebugHelper.instance(),  # Uncomment for debugging
             pn.Row(
                 self._advanced_switch,
                 pn.widgets.StaticText(value="Show advanced inputs"),
@@ -133,13 +128,17 @@ class MainPanelView(pn.viewable.Viewer):
             name="Get Request",
             on_click=self._on_get_process_request,
             disabled=self.vm.param.get_request_disabled,
-            description="Sets the variable `_request` to the\ncurrent process request object",
+            description=(
+                "Sets the variable `_request` to the\ncurrent process request object"
+            ),
         )
         self._results_button = pn.widgets.Button(
             name="Get Results",
             on_click=self._on_get_process_results,
             disabled=True,
-            description="Sets the variable `_results` to the\ncurrent process results object",
+            description=(
+                "Sets the variable `_results` to the\ncurrent process results object"
+            ),
         )
 
         # --- file_menu
@@ -154,13 +153,19 @@ class MainPanelView(pn.viewable.Viewer):
             "Save",
             on_click=self._on_save_request_clicked,
             disabled=True,
-            description="Save the current settings as process request file using JSON or YAML format",
+            description=(
+                "Save the current settings as process request file "
+                "using JSON or YAML format"
+            ),
         )
         self._save_as_button = XMenuItem(
             "Save As...",
             on_click=self._on_save_as_request_clicked,
             disabled=True,
-            description="Save the current settings as process request file using JSON or YAML format",
+            description=(
+                "Save the current settings as process request file "
+                "using JSON or YAML format"
+            ),
         )
         file_menu = XMenu(
             "File",
@@ -190,7 +195,7 @@ class MainPanelView(pn.viewable.Viewer):
             self._job_info_panel,
         )
 
-        self._render_from_vm()
+        self._update_process_ui()
 
     def __panel__(self) -> pn.viewable.Viewable:
         return self._view
@@ -217,37 +222,44 @@ class MainPanelView(pn.viewable.Viewer):
             own_job_info is None or own_job_info.status != JobStatus.successful
         )
 
-    def _render_from_vm(self):
-        process = self.vm.process_description
-        self._update_process_description_markdown(process)
-
+    def _update_process_ui(self):
+        """Update the processor-specific user interface."""
+        self._update_process_description_ui()
         self.vm.update_inputs()
-        self._render_inputs()
-        self._render_outputs()
+        self._update_process_inputs_ui()
+        self._update_process_outputs_ui()
 
-    def _update_process_description_markdown(self, process: ProcessDescription | None):
-        # process = self._vm.process_description
-        error = self.vm.error
+    def _update_process_description_ui(self):
+        process = self.vm.process_description
         if process is not None:
             if process and process.description:
                 markdown_text = f"**Description:** {process.description}"
             else:
                 markdown_text = "**Description:** _No description available._"
         else:
+            error = self.vm.error
             if error is not None:
                 markdown_text = f"**Error**: {error}: {error.api_error.detail}"
             else:
                 markdown_text = "_No process selected._"
         self._process_doc_markdown.object = markdown_text
 
-    def _render_inputs(self):
-        container = self.vm.input_container
-        if container is None or container.is_empty:
+    def _update_process_inputs_ui(self):
+        inputs_field = self.vm.inputs_field
+        is_empty = (
+            inputs_field is None
+            or inputs_field.view is None
+            or (
+                isinstance(inputs_field.view, panel.layout.ListPanel)
+                and len(inputs_field.view) == 0
+            )
+        )
+        if is_empty:
             self._inputs_panel[:] = [pn.pane.Markdown("_No inputs available._")]
         else:
-            self._inputs_panel[:] = container.get_viewables()
+            self._inputs_panel[:] = [inputs_field.view]
 
-    def _render_outputs(self):
+    def _update_process_outputs_ui(self):
         process = self.vm.process_description
         num_outputs = self._num_outputs
         if process is None:
@@ -297,7 +309,7 @@ class MainPanelView(pn.viewable.Viewer):
         name: str = output.title or output.schema_.title or key
 
         def handle_change(selected: bool):
-            # TODO
+            # TODO: request has changed - enable/disable elements
             print("_create_output_option:handle_change:", key, name, selected)
 
         checkbox = pn.widgets.Checkbox(

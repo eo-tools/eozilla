@@ -8,7 +8,6 @@ import param
 
 from cuiman.api.config import AdvancedInputPredicate
 from cuiman.api.exceptions import ClientError
-from cuiman.gui.component import ComponentContainer, JsonValue
 from gavicore.models import (
     Format,
     InputDescription,
@@ -21,6 +20,9 @@ from gavicore.models import (
     ProcessSummary,
     TransmissionMode,
 )
+from gavicore.ui import Field, FieldMeta
+from gavicore.ui.providers.panel import PanelField
+from gavicore.util.json import JsonValue
 from gavicore.util.request import ExecutionRequest
 
 GetProcessAction: TypeAlias = Callable[[str], ProcessDescription]
@@ -29,49 +31,39 @@ GetJobResultsAction: TypeAlias = Callable[[str], JobResults]
 
 
 class MainPanelViewModel(param.Parameterized):
-    # ----- public state (observable)
-
+    # --- public state (observable)
     processes = param.List(default=[], doc="Filtered process summaries")
     selected_process_id = param.String(default=None, allow_None=True)
-
     process_description = param.ClassSelector(
         class_=ProcessDescription,
         default=None,
         allow_None=True,
     )
-
     loading = param.Boolean(default=False)
     error = param.ClassSelector(
         class_=ClientError,
         default=None,
         allow_None=True,
     )
-
     show_advanced = param.Boolean(default=False)
-
-    input_container = param.ClassSelector(
-        class_=ComponentContainer,
+    inputs_field = param.ClassSelector(
+        class_=Field,
         default=None,
         allow_None=True,
     )
-
     last_job = param.ClassSelector(
         class_=JobInfo,
         default=None,
         allow_None=True,
     )
 
-    # ----- dependent state
-
+    # --- dependent state
     has_advanced = param.Boolean(default=False)
     execute_disabled = param.Boolean(default=False)
     get_request_disabled = param.Boolean(default=False)
 
-    # ----- internal state
-
+    # --- internal state
     _process_cache = param.Dict(default={}, precedence=-1)
-
-    # ----- construction
 
     def __init__(
         self,
@@ -95,8 +87,6 @@ class MainPanelViewModel(param.Parameterized):
 
         self.select_process(MainPanelViewModel._initial_process_id(self.processes))
 
-    # ----- intent
-
     def select_process(self, process_id: str | None):
         if process_id:
             MainPanelViewModel.Settings.process_id = process_id
@@ -108,17 +98,25 @@ class MainPanelViewModel(param.Parameterized):
     def update_inputs(self):
         process = self.process_description
         if process is None:
-            self.input_container = None
+            self.inputs_field = None
             return
 
-        last_values: dict[str, JsonValue] = (
-            self.input_container.get_json_values()
-            if self.input_container is not None
-            else {}
-        )
+        last_values: dict[str, JsonValue]
+        if self.inputs_field is not None and isinstance(
+            self.inputs_field.view_model.value, dict
+        ):
+            last_values = self.inputs_field.view_model.value
+        else:
+            last_values = {}
 
-        inputs = process.inputs or {}
+        inputs: dict[str, InputDescription] = process.inputs or {}
 
+        # TODO: we should not filter based inputs directly.
+        #  Instead filter the field metadata properties which
+        #  has much more options as the metadata has already
+        #  parsed special x-ui control properties.
+        # Filter inputs by "show_advanced" flag and
+        # find out whether we have advanced inputs at all.
         show_advanced = self.show_advanced
         has_advanced = False
         filtered_inputs: dict[str, InputDescription] = {}
@@ -129,26 +127,28 @@ class MainPanelViewModel(param.Parameterized):
                 filtered_inputs[k] = v
         self.has_advanced = has_advanced
 
-        self.input_container = ComponentContainer.from_input_descriptions(
-            filtered_inputs,
-            last_values,
+        input_field_meta = FieldMeta.from_input_descriptions(filtered_inputs)
+        self.inputs_field = PanelField.from_meta(
+            input_field_meta, initial_value=last_values
         )
 
-        MainPanelViewModel.Settings.show_advanced = show_advanced
+        MainPanelViewModel.Settings.show_advanced = self.show_advanced
 
     def build_execution_request(self) -> ExecutionRequest:
         pid = self.selected_process_id
         process = self.process_description
-        container = self.input_container
+        input_field = self.inputs_field
 
         assert pid is not None
         assert process is not None
-        assert container is not None
+        assert input_field is not None
+        assert isinstance(input_field.view_model.value, dict)
 
+        # noinspection PyTypeChecker
         return ExecutionRequest(
             process_id=pid,
             dotpath=True,
-            inputs=container.get_json_values(),
+            inputs=input_field.view_model.value,
             outputs=self._default_outputs(process),
         )
 
@@ -168,8 +168,6 @@ class MainPanelViewModel(param.Parameterized):
             raise
         finally:
             self.loading = False
-
-    # ----- helpers (state changing)
 
     def _load_process_description(self):
         pid = self.selected_process_id
@@ -193,8 +191,6 @@ class MainPanelViewModel(param.Parameterized):
             self.error = e
         finally:
             self.loading = False
-
-    # ----- helpers (pure)
 
     @staticmethod
     def _initial_process_id(

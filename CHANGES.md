@@ -2,8 +2,20 @@
 
 ### Enhancements
 
-- Enhanced the Appligator package with Dockerfile generation and improved 
-  Airflow DAG generation:
+- The **Gavicore** package has been enhanced by a new _UI generator_ which 
+  converts OGC API - Process descriptions (or OpenAPI Schema) into user 
+  interfaces for editing input parameters:
+  - Added a new extendable UI generation framework in `gavicore.ui`.
+  - The framework itself does not enforce a dedicated widget library, 
+    but it can be configured to output UIs for any Python widget library. 
+  - Support for UI generated with the [Panel](https://panel.holoviz.org/) 
+    library is inbuilt as it is used in the Cuiman GUI.
+  - Dropped subpackage `cuiman.gui.component`.
+  - Added a pixi tool to demonstrate and debug generated UIs from 
+    OpenAPI Schema: `pixi run schema2ui`.
+  
+- Enhanced the **Appligator** package with Dockerfile generation and 
+  improved Airflow integration:
     - Added `appligator.airflow.gen_dockerfile.generate` for Jinja2-template-based
       Dockerfile generation. Produces a two-stage pixi build with support for
       non-editable local package installs. The runtime base image is configurable
@@ -28,7 +40,7 @@
       resource fields, `pvc_mounts`, `config_map_mounts`). CLI flags take
       precedence over file values.
   
-- The Cuiman client package has been enhanced by _job result openers_,
+- The **Cuiman** client package has been enhanced by _job result openers_,
   which ease working with the results of a process job (#65):
     - Client classes now have a method 
       `open_job_result(job_id, **options)` that is used to open the results 
@@ -58,6 +70,12 @@
         - `gavicore.models.ApiError` (extra "x-traceback")
     - Replaced one-element enums `JobType`, `MaxOccurs` by string literals. 
     - Replaced `Union[]` by `|` operator.
+
+### Other changes
+
+- Dropped utility function `additional_parameters()` in `procodile` 
+  as usage of `additionalParameters` in input descriptions
+  is and was discouraged.
 
 - Lifted some mypy restrictions and enabled mypy pydantic plugin.
 

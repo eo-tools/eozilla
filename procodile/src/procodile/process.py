@@ -10,8 +10,6 @@ from pydantic import BaseModel, Field, ValidationError, create_model
 from pydantic.fields import FieldInfo
 
 from gavicore.models import (
-    AdditionalParameter,
-    AdditionalParameters,
     InputDescription,
     OutputDescription,
     ProcessDescription,
@@ -133,31 +131,6 @@ class Process:
         )
 
 
-def additional_parameters(
-    parameters: dict[str, Any], **metadata: Any
-) -> AdditionalParameters:
-    """
-    Helper function that creates an instance of `AdditionalParameters`
-    from the keys and values given the `parameters` dictionary.
-    The return value is used as the `additionalParameters` argument of an
-    `InputDescription` or `OutputDescription`.
-
-    Args:
-        parameters: the parameter key-value pairs.
-        metadata: Other metadata fields passed to `AdditionalParameters`.
-
-    Returns:
-        A `AdditionalParameters` instance that can be passed to an
-        `InputDescription` or `OutputDescription`.
-    """
-    return AdditionalParameters(
-        parameters=[
-            AdditionalParameter(name=k, value=[v]) for k, v in parameters.items()
-        ],
-        **metadata,
-    )
-
-
 def _parse_inputs(
     fn_name: str,
     signature: inspect.Signature,
@@ -264,6 +237,12 @@ def _parse_parameters(
         else:
             arg_parameters[param_name] = parameter
     return arg_parameters, job_ctx_arg
+
+
+# TODO: replace deprecated FieldInfo.merge_field_infos()
+#   used in _merge_inputs_into_model_class(). See
+#   - https://github.com/pydantic/pydantic/issues/12329
+#   - https://github.com/pydantic/pydantic/issues/12374
 
 
 def _merge_inputs_into_model_class(
@@ -416,6 +395,7 @@ def _merge_input_descriptions(
         additionalParameters=(
             base_description.additionalParameters or description.additionalParameters
         ),
+        **(base_description.model_extra or {}),
     )
 
 
@@ -435,6 +415,7 @@ def _merge_output_descriptions(
         additionalParameters=(
             base_description.additionalParameters or description.additionalParameters
         ),
+        **(base_description.model_extra or {}),
     )
 
 

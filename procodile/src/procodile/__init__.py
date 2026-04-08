@@ -10,7 +10,7 @@ from gavicore.util.request import ExecutionRequest
 
 from .artifacts import ArtifactRef, ArtifactStore, ExecutionContext
 from .job import Job, JobCancelledException, JobContext
-from .process import Process, additional_parameters
+from .process import Process
 from .registry import ProcessRegistry
 from .workflow import (
     FromMain,
@@ -22,7 +22,6 @@ from .workflow import (
 """Processes development API."""
 
 __all__ = [
-    "additional_parameters",
     "ArtifactRef",
     "ArtifactStore",
     "__version__",

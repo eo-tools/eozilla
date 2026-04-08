@@ -10,8 +10,6 @@ from unittest import TestCase
 from cuiman.api.config import ClientConfig
 from cuiman.api.defaults import DEFAULT_API_URL
 from gavicore.models import (
-    AdditionalParameter,
-    AdditionalParameters,
     InputDescription,
     ProcessDescription,
 )
@@ -140,29 +138,44 @@ class ClientConfigTest(TestCase):
             ),
         )
 
+    # noinspection PyArgumentList,PyTypeChecker
     def test_default_is_advanced_input(self):
-        # noinspection PyArgumentList,PyTypeChecker
-        self.assertEqual(
+        self.assert_advanced_inputs_are_recognized(
+            InputDescription(
+                schema={"type": "integer"},
+            ),
             False,
-            ClientConfig.is_advanced_input(
-                ProcessDescription(id="test", version="0"),
-                "common_x",
-                InputDescription(schema={"type": "integer"}),
-            ),
         )
-        # noinspection PyArgumentList,PyTypeChecker
-        self.assertEqual(
+        self.assert_advanced_inputs_are_recognized(
+            InputDescription(
+                schema={"type": "integer"},
+                additionalParameters={
+                    "parameters": [{"name": "level", "value": ["advanced"]}]
+                },
+            ),
             True,
-            ClientConfig.is_advanced_input(
-                ProcessDescription(id="test", version="0"),
-                "advanced_x",
-                InputDescription(
-                    schema={"type": "integer"},
-                    additionalParameters=AdditionalParameters(
-                        parameters=[
-                            AdditionalParameter(name="level", value=["advanced"])
-                        ]
-                    ),
-                ),
-            ),
         )
+        self.assert_advanced_inputs_are_recognized(
+            InputDescription(
+                schema={"type": "integer"},
+                **{"x-ui:advanced": True},
+            ),
+            True,
+        )
+        self.assert_advanced_inputs_are_recognized(
+            InputDescription(
+                schema={"type": "integer"},
+                **{"x-ui": {"advanced": True}},
+            ),
+            True,
+        )
+
+    def assert_advanced_inputs_are_recognized(
+        self, input_description: InputDescription, expected: bool
+    ):
+        actual = ClientConfig.is_advanced_input(
+            ProcessDescription(id="myProcess", version="0"),
+            "param_1",
+            input_description,
+        )
+        self.assertEqual(expected, actual)

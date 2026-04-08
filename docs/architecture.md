@@ -5,9 +5,7 @@ _This chapter is currently just a collection of design diagrams. Perhaps it will
 _Note, should the following diagram code not render, copy it 
 into the [mermaid](https://www.mermaidchart.com/) editor._
 
-## Overview
-
-### Eozilla package dependencies
+## Package Dependencies
 
 ```mermaid
 ---
@@ -37,7 +35,7 @@ direction TD
 ```
 
 
-### Core classes
+## Core Classes
 
 ```mermaid
 ---
@@ -56,9 +54,17 @@ classDiagram
     }
     namespace gavicore {
         class models
-        class service.Service
         class models.ProcessRequest
-        class ExecutionRequest
+        class models.ProcessDescription
+        class models.Schema
+        class ui
+        class ui.Field
+        class ui.FieldMeta
+        class ui.FieldGenerator
+        class util
+        class util.request.ExecutionRequest
+        class service
+        class service.Service
     }
     namespace wraptile {
         class server
@@ -100,107 +106,7 @@ classDiagram
 
 ```
 
-## Eozilla Cuiman Client - GUI
-
-Given here is the design used in package `cuiman.gui.component`.
-The package contains the code to generate widgets and panels from the 
-JSON schema `gavicore.models.InputDescription` instances contained in
-a `gavicore.models.ProcessDescription` instance.
-
-The `ComponentContainer` maps every `InputDescription` to a visual 
-`Component` that is created for a given JSON schema.  
-
-```mermaid
----
-config:
-  class:
-    hideEmptyMembersBox: true
-  layout: elk
----
-classDiagram
-direction LR
-    class models.InputDescription {
-      title
-      description
-      schema
-    }
-    class ComponentContainer {
-	    \_\_init\_\_(input_descriptions)
-      get_components()
-      get_viewables()
-    }
-    ComponentContainer ..> ComponentFactoryRegistry : use
-    ComponentContainer o--> models.InputDescription : 1..n by name
-    ComponentContainer o--> Component : 1..n
-    ComponentFactory ..> Component : create
-    ComponentFactoryRegistry *--> ComponentFactory
-```
-
-A suitable `ComponentFactory` is selected for a given JSON schema
-and will create the `Component` when it is needed.
-The possible `ComponentFactory` instances are registered in a
- `ComponentFactoryRegistry` singleton.
-
-```mermaid
----
-config:
-  class:
-    hideEmptyMembersBox: true
-  layout: dagre
----
-classDiagram
-direction TB
-    class panel.viewable.Viewable {
-	    \_\_panel\_\_()
-    }
-    class Component {
-	    viewable
-	    json_codec
-	    _get_value_()
-	    _set_value_(val)
-	    _watch_value_(cb)
-    }
-    class WidgetComponent {
-    }
-    class ComponentFactory {
-	    _accept_(schema)
-	    _create_component_(schema)
-    }
-    class ComponentFactoryRegistry {
-      register_factory(factory, type, format)
-      find_factory(schema)
-    }
-    class ComponentFactoryBase {
-	    type
-	    format
-	    accept(schema)
-    }
-    class BooleanCF {
-    }
-    class IntegerCF {
-    }
-    class NumberCF {
-    }
-    class StringCF {
-    }
-    class DateCF {
-    }
-    class BboxCF {
-    }
-    Component <|-- WidgetComponent
-    Component --> panel.viewable.Viewable : 1 
-    ComponentFactory ..> Component : create
-    ComponentFactoryRegistry *--> ComponentFactory : 0..N
-    ComponentFactory <|-- ComponentFactoryBase
-    ComponentFactoryBase <|-- BooleanCF
-    ComponentFactoryBase <|-- IntegerCF
-    ComponentFactoryBase <|-- NumberCF
-    ComponentFactoryBase <|-- StringCF
-    ComponentFactoryBase <|-- DateCF
-    ComponentFactoryBase <|-- BboxCF
-```
-
-## Eozilla Gavicore
+## Gavicore - Service Interface
 
 Given here is the design used in package `gavicore.service`.
 
@@ -262,3 +168,200 @@ direction TB
     Service ..> JobResult : obtain   
     Service ..> ProcessRequest : use      
 ```
+
+## Gavicore - Generating UIs
+
+The `gavicore.ui` package contains the code to generate widgets and panels 
+
+- from plain OpenAPI Schema instances of type `gavicore.models.Schema`, and
+- from `gavicore.models.InputDescription` instances contained in
+  a `gavicore.models.ProcessDescription` instance.
+
+The `gavicore.ui` machinery is used by `cuiman.gui` to generate UIs for selected
+processes.
+
+The core framework is neutral with respect to the target UI library.
+The `gavicore.ui.providers.panel` package contain a `PanelField` implementation 
+that generates UIs for the [Panel](https://panel.holoviz.org/) library.
+
+### `gavicore.ui.field` 
+
+The machinery that can generate UIs from OpenAPI Schemas.
+Entry points are `FieldGenerator` with one or more registered 
+`FieldFactory` implementations:
+
+```python
+from gavicore.models import Schema
+from gavicore.ui import FieldGenerator, FieldMeta
+
+# what is needed:
+# --- factories that generate fields from metadata (required)
+from mylib import MyFieldFactory1, MyFieldFactory2
+# --- observer for value changes in the generated UI tree (optional)
+from mylib import MyViewModelObserver
+# --- top-level field metadata, e.g. from OpenAPI Schema (required)
+my_schema = Schema(**{...})
+my_field_meta = FieldMeta.from_schema(my_schema)
+# --- an initial value for the UI (optional)
+my_value = {}
+
+# Generator setup:
+generator = FieldGenerator()
+generator.register_field_factory(MyFieldFactory1())
+generator.register_field_factory(MyFieldFactory2())
+# Generator usage:
+field = generator.generate_field(my_field_meta)
+
+# Then:
+# --- populate UI fields
+field.view_model.value = my_value
+# --- observe value changes in UI fields
+my_observer = MyViewModelObserver()
+field.view_model.watch(my_observer)
+# --- and do something to render field.view
+```
+
+```mermaid
+---
+config:
+    class:
+        hideEmptyMembersBox: true
+    theme: default
+---
+classDiagram
+    direction LR
+    
+    Field --> FieldMeta
+    Field --> View
+    Field --> gavicore.ui.vm.ViewModel
+    FieldBase --|> Field
+    FieldContext --> FieldMeta
+    FieldFactory ..> Field: create
+    FieldFactory ..> FieldContext: use
+    FieldFactory ..> FieldContext: use
+    FieldFactoryBase --|> FieldFactory
+    FieldGenerator ..> FieldContext : create
+    FieldGenerator --> FieldFactoryRegistry
+    FieldFactoryRegistry *--> FieldFactory 
+
+    class Field {
+        meta: FieldMeta
+        view_model: ViewModel
+        view: Any
+    }
+    
+    class FieldBase {
+        _bind()*
+    }
+
+    class FieldMeta {
+        name: str
+        schema: Schema
+        widget: str
+        layout: FieldLayout
+        order: int
+        advanced: bool
+        title: str
+        description: str
+        
+        from_schema(schema)$ FieldMeta
+        from_input_description(input)$ FieldMeta
+        from_input_descriptions(inputs)$ FieldMeta
+    }
+
+    class FieldFactory {
+        get_score(meta: FieldMeta)* int
+        create_field(ctx: FieldContext)* Field 
+    }
+
+    class FieldContext {
+        meta: FieldMeta
+        vm: ViewModelFactory
+        
+        create_property_fields(obj_meta) dict
+        create_item_field(array_meta) Field
+        create_child_field(child_meta) Field
+    }
+
+    class FieldFactoryRegistry {
+        register_factory(factory) Callable
+        find_factory(meta: FieldMeta) FieldFactory|None
+    }
+
+    class FieldGenerator {
+        register_field_factory(factory: FieldFactory)
+        generate_field(meta: FieldMeta, initial_value) Field
+    }
+```
+
+### `gavicore.ui.providers.panel`
+
+Implements `PanelField` and `PanelFieldFactory` for generating UIs 
+from OpenAPI Schema targeting the [Panel](https://panel.holoviz.org/) library.
+
+This means, the `PanelField.view` object will be a widget-like component that 
+can be used as part of a larger UI developed with [Panel](https://panel.holoviz.org/).
+
+```mermaid
+---
+config:
+    class:
+        hideEmptyMembersBox: true
+    theme: default
+---
+classDiagram
+    direction LR
+    
+    PanelField --|> gavicore.ui.FieldBase
+    PanelField ..|> gavicore.ui.FieldMeta : use
+    PanelField ..|> gavicore.ui.FieldGenerator : use
+    PanelField ..|> PanelFieldFactory : register
+    
+    PanelFieldFactory --|> gavicore.ui.FieldFactoryBase
+    PanelFieldFactory ..|> gavicore.ui.FieldContext : use
+    
+    class PanelField {
+        from_schema(schema: Schema)$ PanelField
+        from_meta(meta: FieldMeta)$ PanelField
+    }
+```
+
+###  `gavicore.ui.vm` 
+
+Defines class `ViewModel` which is used to propagate values into the UI and 
+to observe value changes in the UI fields.
+
+```mermaid
+---
+config:
+    class:
+        hideEmptyMembersBox: true
+    theme: default
+---
+classDiagram
+    direction BT
+
+    ViewModel *--> ViewModelObserver 
+    ViewModel --> gavicore.ui.FieldMeta 
+    ViewModelObserver ..> ViewModelChangeEvent : use
+    ViewModel ..> ViewModelChangeEvent : create
+    ViewModelChangeEvent --|> ViewModelChangeEvent : causes 
+    
+    class ViewModel {
+        meta: FieldMeta
+        value: Any
+        watch(observers) 
+        dispose()
+    }
+    
+    class ViewModelChangeEvent {
+        source: ViewModel
+        causes: ViewModelChangeEvent[]
+    }
+    
+    PrimitiveViewModel --|> ViewModel
+    CompositeViewModel --|> ViewModel
+    ArrayViewModel --|> CompositeViewModel
+    ObjectViewModel --|> CompositeViewModel
+```
+
