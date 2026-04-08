@@ -28,7 +28,6 @@ _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
 }
 
 # TODO: handle type="discriminator"
-# TODO: handle type="allOf"
 
 
 class PanelFieldFactory(FieldFactoryBase[PanelField]):
@@ -306,7 +305,11 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         combined_meta = FieldMeta.from_field_metas(
             ctx.meta.name, *ctx.meta.all_of, required=ctx.meta.required
         )
-        return ctx.create_child_field(combined_meta)
+        child_field = ctx.create_child_field(combined_meta, no_label=True)
+        return PanelField(
+            child_field.view_model,
+            LabeledWidget(child_field.view, name=ctx.label, divider=True),
+        )
 
     def get_untyped_score(self, meta: FieldMeta) -> int:
         return 5

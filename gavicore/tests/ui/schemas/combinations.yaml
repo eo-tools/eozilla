@@ -26,6 +26,32 @@ properties:
             type: string
             "x-ui:widget": textarea
 
+  any_of:
+    anyOf:
+      - type: object
+        title: S3 Object
+        properties:
+          bucket:
+            type: string
+          object:
+            type: string
+          access_key_id:
+            type: string
+          secret_access_key:
+            type: string
+      - type: object
+        title: File Upload
+        properties:
+          local_path:
+            type: string
+            "x-ui:widget": fileupload
+      - type: object
+        title: Inline Value
+        properties:
+          json_value:
+            type: string
+            "x-ui:widget": textarea
+
   all_of:
     allOf:
       - type: object
