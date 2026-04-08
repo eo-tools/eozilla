@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 from gavicore.models import DataType, Schema
 from gavicore.util.undefined import Undefined
 
+from ...util.ensure import ensure_condition
 from ..vm import (
     ArrayViewModel,
     NullableViewModel,
@@ -16,7 +17,6 @@ from ..vm import (
 )
 from .base import Field, View
 from .meta import FieldMeta
-from ...util.ensure import ensure_condition
 
 if TYPE_CHECKING:
     from .generator import FieldGenerator
@@ -91,6 +91,7 @@ class FieldContext:
             f"field metadata {self.meta.name!r} does not have properties",
             exception_type=TypeError,
         )
+        assert self.meta.properties is not None
         return {
             prop_name: self.create_child_field(prop_meta)
             for prop_name, prop_meta in self.meta.properties.items()
@@ -105,6 +106,7 @@ class FieldContext:
             f"field metadata {self.meta.name!r} does not have items",
             exception_type=TypeError,
         )
+        assert self.meta.items is not None
         return self.create_child_field(self.meta.items)
 
     def create_child_field(self, child_meta: FieldMeta) -> Field:

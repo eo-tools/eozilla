@@ -5,7 +5,7 @@
 import datetime
 import re
 from functools import cached_property
-from typing import Any, Literal, TypeAlias, Union, Annotated
+from typing import Annotated, Any, Literal, TypeAlias, Union
 
 import pydantic
 

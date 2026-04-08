@@ -5,7 +5,7 @@
 from typing import Literal, Protocol
 
 from gavicore.models import DataType
-from gavicore.util.ensure import ensure_callable, ensure_type, ensure_condition
+from gavicore.util.ensure import ensure_callable, ensure_condition, ensure_type
 
 from .base import Field, View
 from .context import FieldContext
