@@ -69,11 +69,6 @@ class ObjectViewModel(ObjectViewModelBase):
         for k, child_meta in (meta.properties or {}).items():
             vm = properties.get(k) if properties else None
             if vm is not None:
-                if vm.meta is not child_meta:
-                    raise ValueError(
-                        f"invalid view model passed for property {k!r} "
-                        f"of field {meta.name!r}"
-                    )
                 vm.watch(self._on_child_change)
             else:
                 if isinstance(value, dict) and k in value:

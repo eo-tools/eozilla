@@ -247,17 +247,6 @@ class ViewModelTest(TestCase):
                 }
             ),
         )
-        with pytest.raises(
-            ValueError,
-            match=r"invalid view model passed for property 'b' of field 'x'",
-        ):
-            ObjectViewModel(
-                meta,
-                properties={
-                    "a": PrimitiveViewModel(meta.properties["a"]),
-                    "b": PrimitiveViewModel(meta.properties["a"]),
-                },
-            )
 
     def test_nullable_ok(self):
         meta = FieldMeta.from_schema(
