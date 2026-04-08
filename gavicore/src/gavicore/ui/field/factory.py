@@ -25,7 +25,7 @@ class FieldFactory(ABC):
         Get the score of this factory for the given field metadata.
         The score is proportional to the factory's ability to create
         a field for the field metadata.
-        A negative or zero score indicates the factory's unability.
+        A negative or zero score indicates complete inability.
         """
 
     @abstractmethod
@@ -40,11 +40,11 @@ class FieldFactoryBase(FieldFactory, ABC):
     UI fields based on the schema data type.
 
     You need to override one or more of the `get_{type}_score()`
-    methods and return a value greater zero.
+    methods and return a value greater than zero.
     By default, all `get_{type}_score()` return zero.
 
     Make sure to also implement any `create_{type}_field()` method
-    for which `get_{type}_score()` returns a value greater zero.
+    for which `get_{type}_score()` returns a value greater than zero.
     By default, all `create_{type}_field()` raise a `NotImplementedError`.
 
     TODO: explain special treatment of nullable fields

@@ -76,7 +76,7 @@ class FieldContext:
         return [self.name]
 
     def layout(self, layout_function: "LayoutFunction", views: dict[str, View]) -> View:
-        """Layout the given views using the field metadata's `layout` property."""
+        """Lay out the given views using the field metadata's `layout` property."""
         from .layout import LayoutManager
 
         return LayoutManager(layout_function, views).layout(self)

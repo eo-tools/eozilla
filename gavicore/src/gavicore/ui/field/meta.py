@@ -96,7 +96,7 @@ class FieldMeta(pydantic.BaseModel):
     }
     ```
 
-    This class should not be instantiated from its constructor,
+    This class should not be instantiated from its constructor;
     instead, use one of the factory methods
 
     - [from_input_descriptions][from_input_descriptions]
@@ -128,13 +128,13 @@ class FieldMeta(pydantic.BaseModel):
     """The metadata of array items. Set if schema type is "array"."""
 
     layout: FieldLayout | None = None
-    """Hint to layout the children of this field."""
+    """Hint to lay out the children of this field."""
 
     widget: FieldWidgetType | str | None = None
     """Hint for the type of widget to be used for this field."""
 
     title: str | None = None
-    """The title of this field. See also [label][label]."""
+    """The title of this field. See also [label](label)."""
 
     description: str | None = None
     """The description text for this field."""
@@ -163,7 +163,7 @@ class FieldMeta(pydantic.BaseModel):
     password: bool | None = None
     """Whether this field is a password input field."""
 
-    separator: str | None = None
+    separator: Annotated[str, StringConstraints(min_length=1, max_length=1)] | None = None
     """The separator character used for separating array items 
     when for arrays edited as text."""
 
@@ -224,7 +224,7 @@ class FieldMeta(pydantic.BaseModel):
         description: str | None = None,
     ) -> "FieldMeta":
         """
-        Extract a field metadata of type "object" from given input descriptions.
+        Extract a field metadata instance of type "object" from given input descriptions.
         """
         properties = {}
         required_names = []

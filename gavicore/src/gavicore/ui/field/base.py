@@ -17,7 +17,7 @@ A concrete piece of UI of typically data-bound UI
 
 class Field(ABC):
     """
-    A binding unit between data (`view_model`) and a concrete piece of UI
+    A binding unit between data (`view_model`) and a concrete piece
     of typically data-bound UI (`view` such as widget, panel, control).
     """
 

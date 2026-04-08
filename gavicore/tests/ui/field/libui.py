@@ -31,7 +31,7 @@ class Rendering:
 
     @property
     def height(self) -> int:
-        """Get the width of the rendering."""
+        """Get the height of the rendering."""
         return len(self.lines)
 
     @classmethod

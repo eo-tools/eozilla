@@ -33,7 +33,7 @@ class FieldGenerator:
         Args:
             field_factory: A field factory.
         Returns:
-            An callable that can be used to register the added field factory.
+            A callable that can be used to register the added field factory.
         """
         return self._field_factory_registry.register(field_factory)
 
@@ -49,7 +49,7 @@ class FieldGenerator:
             meta: The field metadata.
             initial_value: The optional, initial value for the field.
         Returns:
-            The generated a field or form.
+            The generated field or form.
         """
         ctx = FieldContext(
             generator=self,

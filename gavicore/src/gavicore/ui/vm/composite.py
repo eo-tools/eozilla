@@ -16,7 +16,7 @@ T = TypeVar("T", dict[str, Any], list[Any])
 
 class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
     """
-    An abstract base class for view model that
+    An abstract base class for view models that
     are non-nullable composites of child view models.
     """
 

@@ -13,7 +13,7 @@ from .meta import FieldGroup
 
 
 class LayoutFunction(Protocol):
-    """Layout given child views and return a new view."""
+    """Lay out given child views and return a new view."""
 
     def __call__(
         self,

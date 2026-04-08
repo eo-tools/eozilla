@@ -173,7 +173,7 @@ direction TB
 
 The `gavicore.ui` package contains the code to generate widgets and panels 
 
-- from plain OpenAPI Schema instances of type `gavocore.models.Schema`, and
+- from plain OpenAPI Schema instances of type `gavicore.models.Schema`, and
 - from `gavicore.models.InputDescription` instances contained in
   a `gavicore.models.ProcessDescription` instance.
 
@@ -191,8 +191,8 @@ Entry points are `FieldGenerator` with one or more registered
 `FieldFactory` implementations:
 
 ```python
-from gavivore.models import Schema
-from gavivore.ui import FieldGenerator, FieldMeta
+from gavicore.models import Schema
+from gavicore.ui import FieldGenerator, FieldMeta
 
 # what is needed:
 # --- factories that generate fields from metadata (required)
@@ -328,7 +328,7 @@ classDiagram
 
 ###  `gavicore.ui.vm` 
 
-Defines class `ViewModel` which is used to propagate value into the UI and 
+Defines class `ViewModel` which is used to propagate values into the UI and 
 to observe value changes in the UI fields.
 
 ```mermaid
