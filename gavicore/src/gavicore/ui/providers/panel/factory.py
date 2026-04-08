@@ -19,6 +19,7 @@ from .widgets.array import ArrayEditor, ArrayWidget
 from .widgets.bbox import BBoxEditor
 from .widgets.labeled import LabeledWidget
 from .widgets.nullable import NullableWidget
+from ...field.base import FT
 
 _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
     DataType.boolean: TextConverter.BooleanArray(),
@@ -296,6 +297,16 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         tabs.param.watch(on_active_tab_change, "active")
         view = LabeledWidget(tabs, name=ctx.label)
         return PanelField(view_model, view)
+
+    def get_all_of_score(self, meta: FieldMeta) -> int:
+        return 5
+
+    def create_all_of_field(self, ctx: FieldContext) -> PanelField:
+        assert ctx.meta.all_of is not None
+        combined_meta = FieldMeta.from_field_metas(
+            ctx.meta.name, *ctx.meta.all_of, required=ctx.meta.required
+        )
+        return ctx.create_child_field(combined_meta)
 
     def get_untyped_score(self, meta: FieldMeta) -> int:
         return 5

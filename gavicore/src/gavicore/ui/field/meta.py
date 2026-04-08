@@ -15,6 +15,7 @@ from gavicore.models import (
     OutputDescription,
     Schema,
 )
+from gavicore.util.ensure import ensure_condition
 
 UI_KEYS = ["x-ui", "ui", "xUI", "xUi"]
 UI_KEY_PREFIXES = [f"{k}:" for k in UI_KEYS] + [f"{k}-" for k in UI_KEYS]
@@ -190,7 +191,6 @@ class FieldMeta(pydantic.BaseModel):
     maximum: int | float | None = None
     """Maximum numeric value as used for slider widgets."""
 
-    # TODO: better name `options`?
     enum: list[Any] | None = None
     """Enumeration used for the options of select widgets."""
 
@@ -267,6 +267,58 @@ class FieldMeta(pydantic.BaseModel):
     ) -> "FieldMeta":
         """Create field metadata from an OpenAPI Schema."""
         return _ui_field_meta_from_schema(name, schema, required=required)
+
+    @classmethod
+    def from_schemas(
+        cls, name: str, *schemas: Schema, required: bool | None = None
+    ) -> "FieldMeta":
+        ensure_condition(len(schemas) > 0, "missing field metadata to merge")
+        if len(schemas) == 1:
+            return cls.from_schema(name, schemas[0], required=required)
+
+        data_type: Any | None = None
+        properties: dict[str, Any] | None = None
+        required: set[str] | None = None
+        schema_dicts = [_make_schema_dict(s) for s in schemas]
+        merged_schema_dict = {}
+        for schema_dict in schema_dicts:
+            if "type" in schema_dict:
+                t = schema_dict["type"]
+                if data_type is None:
+                    data_type = t
+            if "required" in schema_dict:
+                r = schema_dict["required"]
+                assert isinstance(r, list)
+                if required is None:
+                    required = set()
+                required.update(r)
+            if "properties" in schema_dict:
+                p = schema_dict["properties"]
+                assert isinstance(p, dict)
+                if properties is None:
+                    properties = {}
+                properties.update(p)
+            merged_schema_dict.update(schema_dict)
+        if data_type is not None:
+            merged_schema_dict["type"] = data_type
+        if properties is not None:
+            merged_schema_dict["properties"] = properties
+        if required is not None:
+            merged_schema_dict["required"] = list(required)
+        return FieldMeta.from_schema(
+            name,
+            Schema(**merged_schema_dict),
+            required=required,
+        )
+
+    @classmethod
+    def from_field_metas(
+        cls, name: str, *metas: "FieldMeta", required: bool | None = None
+    ) -> "FieldMeta":
+        ensure_condition(len(metas) > 0, "missing field metadata to merge")
+        if len(metas) == 1:
+            return metas[0]
+        return cls.from_schemas(name, *(m.schema_ for m in metas), required=required)
 
     def to_non_nullable(self) -> "FieldMeta":
         """Create a non-nullable version of this field metadata."""
@@ -452,7 +504,7 @@ def _get_initial_value(meta: FieldMeta) -> Any:
                 k: m.get_initial_value() for k, m in properties.items() if k in required
             }
         case _:
-            # TODO: handle other cases here: oneOf, anyOf, allOf, discriminator
+            # TODO: handle other cases here: oneOf, anyOf, allOf
             # raise ValueError(
             #     f"Unsupported untyped schema in field {meta.name!r}"
             # )
