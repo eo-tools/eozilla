@@ -199,7 +199,7 @@ from gavivore.ui import FieldGenerator, FieldMeta
 from mylib import MyFieldFactory1, MyFieldFactory2
 # --- observer for value changes in the generated UI tree (optional)
 from mylib import MyViewModelObserver
-# --- a top-level field metadata, e.g. from OpenAPI Schema (required)
+# --- top-level field metadata, e.g. from OpenAPI Schema (required)
 my_schema = Schema(**{...})
 my_field_meta = FieldMeta.from_schema(my_schema)
 # --- an initial value for the UI (optional)
