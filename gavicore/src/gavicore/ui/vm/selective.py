@@ -1,11 +1,13 @@
 #  Copyright (c) 2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
+
 from typing import Any
 
 from gavicore.ui.field.meta import FieldMeta
 from gavicore.util.ensure import ensure_condition, ensure_type
-from .base import ViewModel, ViewModelChangeEvent, T
+
+from .base import ViewModel, ViewModelChangeEvent
 
 
 class SelectiveViewModel(ViewModel[Any]):
@@ -23,14 +25,6 @@ class SelectiveViewModel(ViewModel[Any]):
         ensure_type("meta", meta, FieldMeta)
         ensure_type("options", options, list)
         ensure_type("active_index", active_index, int)
-        ensure_condition(
-            meta.one_of is not None or meta.any_of is not None,
-            "meta.one_of or meta.any_of must be given",
-        )
-        ensure_condition(
-            len(meta.one_of or meta.any_of) == len(options),
-            "meta.one_of or meta.any_of must have the same length as options",
-        )
         ensure_condition(
             0 <= active_index < len(options),
             "active_index is out of bounds",
@@ -63,12 +57,12 @@ class SelectiveViewModel(ViewModel[Any]):
     def _on_option_change(self, event: ViewModelChangeEvent) -> None:
         self._notify(*event.causes)
 
-    def _get_value(self) -> T:
+    def _get_value(self) -> Any:
         assert 0 <= self._active_index < len(self._options)
         return self._options[self._active_index].value
 
-    def _set_value(self, value: T) -> None:
+    def _set_value(self, value: Any) -> None:
         # Note, we expect that given value fits the option selected
-        # by active index. This means, this class does not and cannot
+        # by active index. This means this class does not and cannot
         # automatically set the right active index based on the value.
         self._options[self._active_index].value = value

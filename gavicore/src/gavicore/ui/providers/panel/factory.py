@@ -1,4 +1,4 @@
-#  Copyright (c) 2025-2026 by the Eozilla team and contributors
+#  Copyright (c) 2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -184,11 +184,12 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
 
     def create_array_field(self, ctx: FieldContext) -> PanelField:
         view_model = ctx.vm.array()
-
         assert ctx.meta.items is not None
 
+        widget_hint = view_model.meta.widget
+
         format_ = ctx.schema.format
-        if format_ is not None and format_.lower() == "bbox":
+        if (format_ is not None and format_.lower() == "bbox") or widget_hint == "map":
             return PanelField(view_model, BBoxEditor())
 
         item_schema = ctx.meta.items.schema_
@@ -196,12 +197,11 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         item_format = item_schema.format
         assert item_type is not None
         array_converter = _ARRAY_TEXT_CONVERTERS.get(item_type)
-        assert array_converter is not None
 
         if (
             array_converter is not None
-            and ctx.meta.widget != "editor"
-            and (ctx.meta.widget == "input" or item_format is None)
+            and widget_hint != "editor"
+            and (widget_hint == "input" or item_format is None)
         ):
             view = ArrayWidget(
                 value=view_model.value,

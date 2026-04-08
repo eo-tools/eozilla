@@ -140,13 +140,13 @@ class ClientConfigTest(TestCase):
 
     # noinspection PyArgumentList,PyTypeChecker
     def test_default_is_advanced_input(self):
-        self.assert_is_advanced_input(
+        self.assert_advanced_inputs_are_recognized(
             InputDescription(
                 schema={"type": "integer"},
             ),
             False,
         )
-        self.assert_is_advanced_input(
+        self.assert_advanced_inputs_are_recognized(
             InputDescription(
                 schema={"type": "integer"},
                 additionalParameters={
@@ -155,14 +155,14 @@ class ClientConfigTest(TestCase):
             ),
             True,
         )
-        self.assert_is_advanced_input(
+        self.assert_advanced_inputs_are_recognized(
             InputDescription(
                 schema={"type": "integer"},
                 **{"x-ui:advanced": True},
             ),
             True,
         )
-        self.assert_is_advanced_input(
+        self.assert_advanced_inputs_are_recognized(
             InputDescription(
                 schema={"type": "integer"},
                 **{"x-ui": {"advanced": True}},
@@ -170,7 +170,7 @@ class ClientConfigTest(TestCase):
             True,
         )
 
-    def assert_is_advanced_input(
+    def assert_advanced_inputs_are_recognized(
         self, input_description: InputDescription, expected: bool
     ):
         actual = ClientConfig.is_advanced_input(

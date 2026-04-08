@@ -3,11 +3,11 @@ properties:
   input_1:
     title: "Required"
     type: string
-  input_3:
+  input_2:
     title: "Required + Nullable "
     type: string
     nullable: true
-  input_2:
+  input_3:
     title: "Optional"
     type: string
   input_4:

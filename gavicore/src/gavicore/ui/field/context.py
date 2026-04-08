@@ -5,9 +5,7 @@
 from typing import TYPE_CHECKING, Any, Generic
 
 from gavicore.models import DataType, Schema
-from gavicore.util.undefined import Undefined
-
-from ..vm import (
+from gavicore.ui.vm import (
     AnyViewModel,
     ArrayViewModel,
     NullableViewModel,
@@ -15,6 +13,9 @@ from ..vm import (
     PrimitiveViewModel,
     ViewModel,
 )
+from gavicore.util.ensure import ensure_condition
+from gavicore.util.undefined import Undefined
+
 from .base import FT, VT
 from .meta import FieldMeta
 
@@ -84,7 +85,7 @@ class FieldContext(Generic[FT, VT]):
         return [self.name]
 
     def layout(self, layout_function: "LayoutFunction", views: dict[str, VT]) -> VT:
-        """Layout the given views using the field metadata's `layout` property."""
+        """Lay out the given views using the field metadata's `layout` property."""
         from .layout import LayoutManager
 
         return LayoutManager(layout_function, views).layout(self)
@@ -93,7 +94,12 @@ class FieldContext(Generic[FT, VT]):
         """Create property fields given that this
         context's field is of type "object".
         """
-        assert isinstance(self.meta.properties, dict)
+        ensure_condition(
+            isinstance(self.meta.properties, dict),
+            f"field metadata {self.meta.name!r} does not have properties",
+            exception_type=TypeError,
+        )
+        assert self.meta.properties is not None
         return {
             prop_name: self.create_child_field(prop_meta)
             for prop_name, prop_meta in self.meta.properties.items()
@@ -103,7 +109,12 @@ class FieldContext(Generic[FT, VT]):
         """Create a new item field given that this
         context's field is of type "array".
         """
-        assert isinstance(self.meta.items, FieldMeta)
+        ensure_condition(
+            isinstance(self.meta.items, FieldMeta),
+            f"field metadata {self.meta.name!r} does not have items",
+            exception_type=TypeError,
+        )
+        assert self.meta.items is not None
         return self.create_child_field(self.meta.items)
 
     def create_child_field(self, child_meta: FieldMeta, no_label: bool = False) -> FT:

@@ -5,7 +5,7 @@
 import datetime
 import re
 from functools import cached_property
-from typing import Any, Literal, TypeAlias, Union
+from typing import Annotated, Any, Literal, TypeAlias, Union
 
 import pydantic
 
@@ -60,7 +60,7 @@ class FieldGroup(pydantic.BaseModel):
     property, if any, or the value of the `name` property.
     """
 
-    type: Literal["column", "row"]
+    type: Literal["column", "row"]  # we may add "grid" or others
     items: list[Union["FieldGroup", str]] | None = None
     name: str | None = None
     title: str | None = None
@@ -97,7 +97,7 @@ class FieldMeta(pydantic.BaseModel):
     }
     ```
 
-    This class should not be instantiated from its constructor,
+    This class should not be instantiated from its constructor;
     instead, use one of the factory methods
 
     - [from_input_descriptions][from_input_descriptions]
@@ -138,13 +138,13 @@ class FieldMeta(pydantic.BaseModel):
     """The metadata for a schema's "allOf" element, if given."""
 
     layout: FieldLayout | None = None
-    """Hint to layout the children of this field."""
+    """Hint to lay out the children of this field."""
 
     widget: FieldWidgetType | str | None = None
     """Hint for the type of widget to be used for this field."""
 
     title: str | None = None
-    """The title of this field. See also [label][label]."""
+    """The title of this field. See also [label](label)."""
 
     description: str | None = None
     """The description text for this field."""
@@ -164,6 +164,8 @@ class FieldMeta(pydantic.BaseModel):
 
     order: int | str | None = None
     """The order of this field in the group. 
+    The order's value is used to compare it against other `order` values 
+    when sorting multiple fields in ascending order. 
     See also [FieldGroup][FieldGroup]."""
 
     required: bool | None = None
@@ -173,7 +175,9 @@ class FieldMeta(pydantic.BaseModel):
     password: bool | None = None
     """Whether this field is a password input field."""
 
-    separator: str | None = None
+    separator: (
+        Annotated[str, pydantic.StringConstraints(min_length=1, max_length=1)] | None
+    ) = None
     """The separator character used for separating array items 
     when for arrays edited as text."""
 
@@ -233,7 +237,7 @@ class FieldMeta(pydantic.BaseModel):
         description: str | None = None,
     ) -> "FieldMeta":
         """
-        Extract a field metadata of type "object" from given input descriptions.
+        Extract a field metadata instance of type "object" from given input descriptions.
         """
         properties = {}
         required_names = []
@@ -277,8 +281,8 @@ class FieldMeta(pydantic.BaseModel):
             return cls.from_schema(name, schemas[0], required=required)
 
         data_type: Any | None = None
-        properties: dict[str, Any] | None = None
-        required: set[str] | None = None
+        merged_properties: dict[str, Any] | None = None
+        merged_required: set[str] | None = None
         schema_dicts = [_make_schema_dict(s) for s in schemas]
         merged_schema_dict = {}
         for schema_dict in schema_dicts:
@@ -289,22 +293,22 @@ class FieldMeta(pydantic.BaseModel):
             if "required" in schema_dict:
                 r = schema_dict["required"]
                 assert isinstance(r, list)
-                if required is None:
-                    required = set()
-                required.update(r)
+                if merged_required is None:
+                    merged_required = set()
+                merged_required.update(r)
             if "properties" in schema_dict:
                 p = schema_dict["properties"]
                 assert isinstance(p, dict)
-                if properties is None:
-                    properties = {}
-                properties.update(p)
+                if merged_properties is None:
+                    merged_properties = {}
+                merged_properties.update(p)
             merged_schema_dict.update(schema_dict)
         if data_type is not None:
             merged_schema_dict["type"] = data_type
-        if properties is not None:
-            merged_schema_dict["properties"] = properties
-        if required is not None:
-            merged_schema_dict["required"] = list(required)
+        if merged_properties is not None:
+            merged_schema_dict["properties"] = merged_properties
+        if merged_required is not None:
+            merged_schema_dict["required"] = list(merged_required)
         return FieldMeta.from_schema(
             name,
             Schema(**merged_schema_dict),

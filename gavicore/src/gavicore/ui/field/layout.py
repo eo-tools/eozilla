@@ -5,7 +5,7 @@
 from typing import Generic, Literal, Protocol
 
 from gavicore.models import DataType
-from gavicore.util.ensure import ensure_callable, ensure_type
+from gavicore.util.ensure import ensure_callable, ensure_condition, ensure_type
 
 from .base import FT, VT
 from .context import FieldContext
@@ -13,7 +13,7 @@ from .meta import FieldGroup
 
 
 class LayoutFunction(Protocol[FT, VT]):
-    """Layout given child views and return a new view."""
+    """Lay out given child views and return a new view."""
 
     def __call__(
         self,
@@ -42,8 +42,11 @@ class LayoutManager(Generic[FT, VT]):
         """
         Generate a layout field for a value of type "object".
         """
-        assert ctx.schema.type == DataType.object
-        assert ctx.meta.layout is not None
+        ensure_condition(
+            ctx.schema.type == DataType.object,
+            "can only layout objects",
+            exception_type=TypeError,
+        )
         group: FieldGroup
         if ctx.meta.layout == "row":
             group = FieldGroup(type="row")

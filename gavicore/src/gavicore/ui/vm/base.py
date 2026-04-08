@@ -5,7 +5,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Callable, Generic, Protocol, TypeVar, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Generic, Protocol, TypeVar
 
 from gavicore.models import DataType, Schema
 from gavicore.util.ensure import ensure_type
