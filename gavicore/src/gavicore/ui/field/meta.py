@@ -281,8 +281,8 @@ class FieldMeta(pydantic.BaseModel):
             return cls.from_schema(name, schemas[0], required=required)
 
         data_type: Any | None = None
-        properties: dict[str, Any] | None = None
-        required: set[str] | None = None
+        merged_properties: dict[str, Any] | None = None
+        merged_required: set[str] | None = None
         schema_dicts = [_make_schema_dict(s) for s in schemas]
         merged_schema_dict = {}
         for schema_dict in schema_dicts:
@@ -293,22 +293,22 @@ class FieldMeta(pydantic.BaseModel):
             if "required" in schema_dict:
                 r = schema_dict["required"]
                 assert isinstance(r, list)
-                if required is None:
-                    required = set()
-                required.update(r)
+                if merged_required is None:
+                    merged_required = set()
+                merged_required.update(r)
             if "properties" in schema_dict:
                 p = schema_dict["properties"]
                 assert isinstance(p, dict)
-                if properties is None:
-                    properties = {}
-                properties.update(p)
+                if merged_properties is None:
+                    merged_properties = {}
+                merged_properties.update(p)
             merged_schema_dict.update(schema_dict)
         if data_type is not None:
             merged_schema_dict["type"] = data_type
-        if properties is not None:
-            merged_schema_dict["properties"] = properties
-        if required is not None:
-            merged_schema_dict["required"] = list(required)
+        if merged_properties is not None:
+            merged_schema_dict["properties"] = merged_properties
+        if merged_required is not None:
+            merged_schema_dict["required"] = list(merged_required)
         return FieldMeta.from_schema(
             name,
             Schema(**merged_schema_dict),

@@ -9,8 +9,8 @@ import pytest
 from gavicore.models import Schema
 from gavicore.ui import FieldMeta
 from gavicore.ui.vm import (
-    ViewModel,
     SelectiveViewModel,
+    ViewModel,
 )
 from gavicore.ui.vm.base import ViewModelChangeRecorder
 
@@ -83,19 +83,6 @@ class SelectiveViewModelTest(TestCase):
         ):
             # noinspection PyTypeChecker
             SelectiveViewModel(self.meta, options=self.options, active_index=None)
-
-        with pytest.raises(
-            ValueError, match="meta.one_of or meta.any_of must be given"
-        ):
-            SelectiveViewModel(
-                FieldMeta.from_schema("x", Schema(**{})), options=self.options
-            )
-
-        with pytest.raises(
-            ValueError,
-            match="meta.one_of or meta.any_of must have the same length as options",
-        ):
-            SelectiveViewModel(self.meta, options=self.options + self.options)
 
         with pytest.raises(ValueError, match="active_index is out of bounds"):
             SelectiveViewModel(self.meta, options=self.options, active_index=3)

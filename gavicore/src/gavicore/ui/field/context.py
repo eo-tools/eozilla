@@ -5,10 +5,7 @@
 from typing import TYPE_CHECKING, Any, Generic
 
 from gavicore.models import DataType, Schema
-from gavicore.util.undefined import Undefined
-
-from ...util.ensure import ensure_condition
-from ..vm import (
+from gavicore.ui.vm import (
     AnyViewModel,
     ArrayViewModel,
     NullableViewModel,
@@ -16,6 +13,9 @@ from ..vm import (
     PrimitiveViewModel,
     ViewModel,
 )
+from gavicore.util.ensure import ensure_condition
+from gavicore.util.undefined import Undefined
+
 from .base import FT, VT
 from .meta import FieldMeta
 

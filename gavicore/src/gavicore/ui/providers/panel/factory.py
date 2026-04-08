@@ -10,7 +10,7 @@ import panel as pn
 
 from gavicore.models import DataType
 from gavicore.ui import FieldContext, FieldFactoryBase, FieldMeta
-from gavicore.ui.vm import ViewModel, SelectiveViewModel
+from gavicore.ui.vm import SelectiveViewModel, ViewModel
 from gavicore.util.json import JsonDateCodec
 from gavicore.util.text import ArrayTextConverter, TextConverter
 
@@ -19,7 +19,6 @@ from .widgets.array import ArrayEditor, ArrayWidget
 from .widgets.bbox import BBoxEditor
 from .widgets.labeled import LabeledWidget
 from .widgets.nullable import NullableWidget
-from ...field.base import FT
 
 _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
     DataType.boolean: TextConverter.BooleanArray(),

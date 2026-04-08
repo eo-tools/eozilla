@@ -66,7 +66,7 @@ class ObjectViewModel(ObjectViewModelBase):
         ensure_type("meta.properties", meta.properties, (dict, type(None)))
         super().__init__(meta, value)
         # initialize item view models
-        for k, child_meta in meta.properties.items():
+        for k, child_meta in (meta.properties or {}).items():
             vm = properties.get(k) if properties else None
             if vm is not None:
                 if vm.meta is not child_meta:
