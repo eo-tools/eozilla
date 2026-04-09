@@ -36,7 +36,9 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
 
     def create_nullable_field(self, ctx: FieldContext) -> PanelField:
         non_nullable_meta = ctx.meta.to_non_nullable()
-        non_nullable_field = ctx.create_child_field(non_nullable_meta, no_label=True)
+        non_nullable_field = ctx.create_child_field(
+            non_nullable_meta, label_hidden=True
+        )
         view_model = ctx.vm.nullable(non_nullable_field.view_model)
         return PanelField(
             view_model,
@@ -257,12 +259,12 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
     def get_one_of_score(self, meta: FieldMeta) -> int:
         return 5
 
+    def get_any_of_score(self, meta: FieldMeta) -> int:
+        return 5
+
     def create_one_of_field(self, ctx: FieldContext) -> PanelField:
         assert ctx.meta.one_of is not None
         return self._create_one_of_field(ctx, ctx.meta.one_of)
-
-    def get_any_of_score(self, meta: FieldMeta) -> int:
-        return 5
 
     def create_any_of_field(self, ctx: FieldContext) -> PanelField:
         assert ctx.meta.any_of is not None
@@ -271,15 +273,19 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
     def _create_one_of_field(
         self, ctx: FieldContext, options: list[FieldMeta]
     ) -> PanelField:
+
+        # handle degenerated oneOf/anyOf cases
         match len(options):
             case 0:
                 return self.create_untyped_field(ctx)
             case 1:
-                field = ctx.create_child_field(options[0])
+                field = ctx.create_child_field(
+                    options[0], label_hidden=ctx.label_hidden
+                )
                 assert isinstance(field, PanelField)
                 return field
 
-        child_fields = [ctx.create_child_field(fm, no_label=True) for fm in options]
+        child_fields = [ctx.create_child_field(fm, label_hidden=True) for fm in options]
         view_model = SelectiveViewModel(
             ctx.meta,
             options=[f.view_model for f in child_fields],
@@ -302,10 +308,22 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
 
     def create_all_of_field(self, ctx: FieldContext) -> PanelField:
         assert ctx.meta.all_of is not None
+
+        parts = ctx.meta.all_of
+
+        # handle degenerated allOf cases
+        match len(parts):
+            case 0:
+                return self.create_untyped_field(ctx)
+            case 1:
+                field = ctx.create_child_field(parts[0], label_hidden=ctx.label_hidden)
+                assert isinstance(field, PanelField)
+                return field
+
         combined_meta = FieldMeta.from_field_metas(
             ctx.meta.name, *ctx.meta.all_of, required=ctx.meta.required
         )
-        child_field = ctx.create_child_field(combined_meta, no_label=True)
+        child_field = ctx.create_child_field(combined_meta, label_hidden=True)
         return PanelField(
             child_field.view_model,
             LabeledWidget(child_field.view, name=ctx.label, divider=True),

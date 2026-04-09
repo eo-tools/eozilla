@@ -33,7 +33,7 @@ class FieldContext(Generic[FT, VT]):
         generator: "FieldGenerator[FT, VT]",
         meta: FieldMeta,
         initial_value: Any | Undefined = Undefined.value,
-        no_label: bool = False,
+        label_hidden: bool = False,
         parent_ctx: "FieldContext[FT, VT] | None" = None,
     ):
         self._parent_ctx = parent_ctx
@@ -45,7 +45,7 @@ class FieldContext(Generic[FT, VT]):
             if isinstance(initial_value, Undefined)
             else initial_value
         )
-        self._no_label = no_label
+        self._label_hidden = label_hidden
 
     @property
     def meta(self) -> FieldMeta:
@@ -58,9 +58,17 @@ class FieldContext(Generic[FT, VT]):
         return self._meta.name
 
     @property
+    def label_hidden(self) -> bool:
+        """A flag indicating that the label for the field should not be shown."""
+        return self._label_hidden
+
+    @property
     def label(self) -> str:
-        """The name from field metadata."""
-        return self._meta.label if not self._no_label else ""
+        """
+        A label for the field.
+        It is an empty string if the [label_hidden][label_hidden] flag is set.
+        """
+        return "" if self._label_hidden else self._meta.label
 
     @property
     def schema(self) -> Schema:
@@ -117,14 +125,16 @@ class FieldContext(Generic[FT, VT]):
         assert self.meta.items is not None
         return self.create_child_field(self.meta.items)
 
-    def create_child_field(self, child_meta: FieldMeta, no_label: bool = False) -> FT:
+    def create_child_field(
+        self, child_meta: FieldMeta, label_hidden: bool = False
+    ) -> FT:
         """Create a new field for the given child field metadata."""
-        child_ctx = self._create_child_ctx(child_meta, no_label=no_label)
+        child_ctx = self._create_child_ctx(child_meta, label_hidden=label_hidden)
         # noinspection PyProtectedMember
         return self._generator._generate_field(child_ctx)
 
     def _create_child_ctx(
-        self, child_meta: FieldMeta, no_label: bool = False
+        self, child_meta: FieldMeta, label_hidden: bool = False
     ) -> "FieldContext[FT, VT]":
         initial_value = self.initial_value
         child_name = child_meta.name
@@ -140,8 +150,8 @@ class FieldContext(Generic[FT, VT]):
             generator=self._generator,
             meta=child_meta,
             initial_value=child_value,
+            label_hidden=label_hidden,
             parent_ctx=self,
-            no_label=no_label,
         )
 
 
