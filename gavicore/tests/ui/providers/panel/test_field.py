@@ -16,8 +16,6 @@ class PanelFieldTest(TestCase):
     def test_with_all_schemas(self):
         # TODO: test type="discriminator"
         # TODO: test type="anyOf"
-        # TODO: test type="allOf"
-        # TODO: test type="oneOf"
 
         schemas = load_schemas()
         for path, schema in schemas:
@@ -25,14 +23,9 @@ class PanelFieldTest(TestCase):
             try:
                 PanelField.from_schema(name, schema)
             except Exception as e:
-                import traceback
-
-                print(80 * "-")
-                traceback.print_exc()
-                print(80 * "-")
-                self.fail(
-                    f"Exception for schema {path.name!r}: {type(e).__name__}: {e}"
-                )
+                raise self.failureException(
+                    f"Exception for schema from path {path}: {e}"
+                ) from e
 
 
 def _meta_from_schema(schema: Schema | dict) -> FieldMeta:

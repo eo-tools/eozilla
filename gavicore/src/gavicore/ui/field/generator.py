@@ -35,7 +35,7 @@ class FieldGenerator(Generic[FT, VT]):
         Args:
             field_factory: A field factory.
         Returns:
-            An callable that can be used to register the added field factory.
+            A callable that can be used to register the added field factory.
         """
         return self._field_factory_registry.register(field_factory)
 
@@ -51,7 +51,7 @@ class FieldGenerator(Generic[FT, VT]):
             meta: The field metadata.
             initial_value: The optional, initial value for the field.
         Returns:
-            The generated a field or form.
+            The generated field or form.
         """
         ctx = FieldContext(
             generator=self,
@@ -64,9 +64,6 @@ class FieldGenerator(Generic[FT, VT]):
     def _generate_field(self, ctx: FieldContext[FT, VT]) -> FT:
         factory = self._field_factory_registry.lookup(ctx.meta)
         if factory is None:
-            # TODO: if a factory cannot be found, the default behaviour
-            #  should be to emit a warning and ignore the field, as this will
-            #  be a quite common situation.
             raise ValueError(
                 f"no factory found for creating a UI for field {'.'.join(ctx.path)!r}"
             )

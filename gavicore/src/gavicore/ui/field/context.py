@@ -5,9 +5,7 @@
 from typing import TYPE_CHECKING, Any, Generic
 
 from gavicore.models import DataType, Schema
-from gavicore.util.undefined import Undefined
-
-from ..vm import (
+from gavicore.ui.vm import (
     AnyViewModel,
     ArrayViewModel,
     NullableViewModel,
@@ -15,6 +13,9 @@ from ..vm import (
     PrimitiveViewModel,
     ViewModel,
 )
+from gavicore.util.ensure import ensure_condition
+from gavicore.util.undefined import Undefined
+
 from .base import FT, VT
 from .meta import FieldMeta
 
@@ -32,6 +33,7 @@ class FieldContext(Generic[FT, VT]):
         generator: "FieldGenerator[FT, VT]",
         meta: FieldMeta,
         initial_value: Any | Undefined = Undefined.value,
+        label_hidden: bool = False,
         parent_ctx: "FieldContext[FT, VT] | None" = None,
     ):
         self._parent_ctx = parent_ctx
@@ -43,6 +45,7 @@ class FieldContext(Generic[FT, VT]):
             if isinstance(initial_value, Undefined)
             else initial_value
         )
+        self._label_hidden = label_hidden
 
     @property
     def meta(self) -> FieldMeta:
@@ -53,6 +56,19 @@ class FieldContext(Generic[FT, VT]):
     def name(self) -> str:
         """The name from field metadata."""
         return self._meta.name
+
+    @property
+    def label_hidden(self) -> bool:
+        """A flag indicating that the label for the field should not be shown."""
+        return self._label_hidden
+
+    @property
+    def label(self) -> str:
+        """
+        A label for the field.
+        It is an empty string if the [label_hidden][label_hidden] flag is set.
+        """
+        return "" if self._label_hidden else self._meta.label
 
     @property
     def schema(self) -> Schema:
@@ -77,7 +93,7 @@ class FieldContext(Generic[FT, VT]):
         return [self.name]
 
     def layout(self, layout_function: "LayoutFunction", views: dict[str, VT]) -> VT:
-        """Layout the given views using the field metadata's `layout` property."""
+        """Lay out the given views using the field metadata's `layout` property."""
         from .layout import LayoutManager
 
         return LayoutManager(layout_function, views).layout(self)
@@ -86,7 +102,12 @@ class FieldContext(Generic[FT, VT]):
         """Create property fields given that this
         context's field is of type "object".
         """
-        assert isinstance(self.meta.properties, dict)
+        ensure_condition(
+            isinstance(self.meta.properties, dict),
+            f"field metadata {self.meta.name!r} does not have properties",
+            exception_type=TypeError,
+        )
+        assert self.meta.properties is not None
         return {
             prop_name: self.create_child_field(prop_meta)
             for prop_name, prop_meta in self.meta.properties.items()
@@ -96,16 +117,25 @@ class FieldContext(Generic[FT, VT]):
         """Create a new item field given that this
         context's field is of type "array".
         """
-        assert isinstance(self.meta.items, FieldMeta)
+        ensure_condition(
+            isinstance(self.meta.items, FieldMeta),
+            f"field metadata {self.meta.name!r} does not have items",
+            exception_type=TypeError,
+        )
+        assert self.meta.items is not None
         return self.create_child_field(self.meta.items)
 
-    def create_child_field(self, child_meta: FieldMeta) -> FT:
+    def create_child_field(
+        self, child_meta: FieldMeta, label_hidden: bool = False
+    ) -> FT:
         """Create a new field for the given child field metadata."""
-        child_ctx = self._create_child_ctx(child_meta)
+        child_ctx = self._create_child_ctx(child_meta, label_hidden=label_hidden)
         # noinspection PyProtectedMember
         return self._generator._generate_field(child_ctx)
 
-    def _create_child_ctx(self, child_meta: FieldMeta) -> "FieldContext[FT, VT]":
+    def _create_child_ctx(
+        self, child_meta: FieldMeta, label_hidden: bool = False
+    ) -> "FieldContext[FT, VT]":
         initial_value = self.initial_value
         child_name = child_meta.name
         if (
@@ -120,6 +150,7 @@ class FieldContext(Generic[FT, VT]):
             generator=self._generator,
             meta=child_meta,
             initial_value=child_value,
+            label_hidden=label_hidden,
             parent_ctx=self,
         )
 

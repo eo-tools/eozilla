@@ -435,7 +435,7 @@ class FieldMetaTest(TestCase):
 
     # noinspection PyMethodMayBeStatic
     def test_pydantic_deserialization_with_extra_fields(self):
-        """Ensure, pydantic deserializes extra fields as expected."""
+        """Ensure that pydantic deserializes extra fields as expected."""
 
         class MyModel(pydantic.BaseModel):
             model_config = pydantic.ConfigDict(

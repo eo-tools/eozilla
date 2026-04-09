@@ -39,7 +39,7 @@
       `appligator-config.yaml` file (`image_name`, `dag_name`, `secret_names`,
       resource fields, `pvc_mounts`, `config_map_mounts`). CLI flags take
       precedence over file values.
-
+  
 - The **Cuiman** client package has been enhanced by _job result openers_,
   which ease working with the results of a process job (#65):
     - Client classes now have a method 
@@ -55,7 +55,7 @@
     - Added some default openers for `xarray.Dataset`, 
       `pandas.DataFrame`, and `geopandas.GeoDataFrame` 
       given that a respective job result is a link.
-  
+
 - The model classes that correspond to the OGC API - Processes in 
   `gavicore.models` are no longer generated and have been adjusted to
   be more user-friendly (#71):
@@ -70,6 +70,8 @@
         - `gavicore.models.ApiError` (extra "x-traceback")
     - Replaced one-element enums `JobType`, `MaxOccurs` by string literals. 
     - Replaced `Union[]` by `|` operator.
+
+### Other changes
 
 - Dropped utility function `additional_parameters()` in `procodile` 
   as usage of `additionalParameters` in input descriptions

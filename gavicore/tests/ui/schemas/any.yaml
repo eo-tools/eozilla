@@ -1,7 +1,4 @@
 type: object
 properties:
-  discriminator:
-      description: A selector
-
   any_value:
-      description: This can be any valid JSON value
+    description: This can be any valid JSON value

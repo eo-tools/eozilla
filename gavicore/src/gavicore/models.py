@@ -84,7 +84,6 @@ class Schema(BaseModel):
     example: Any | None = None
     examples: Any | None = None
     deprecated: bool | None = False
-    field_ref: str | None = Field(None, alias="$ref")
     # type "number" and "integer"
     minimum: int | float | None = None
     maximum: int | float | None = None

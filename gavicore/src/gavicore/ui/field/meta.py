@@ -5,7 +5,7 @@
 import datetime
 import re
 from functools import cached_property
-from typing import Any, Literal, TypeAlias, Union
+from typing import Annotated, Any, Literal, TypeAlias, Union
 
 import pydantic
 
@@ -15,6 +15,7 @@ from gavicore.models import (
     OutputDescription,
     Schema,
 )
+from gavicore.util.ensure import ensure_condition
 
 UI_KEYS = ["x-ui", "ui", "xUI", "xUi"]
 UI_KEY_PREFIXES = [f"{k}:" for k in UI_KEYS] + [f"{k}-" for k in UI_KEYS]
@@ -59,7 +60,7 @@ class FieldGroup(pydantic.BaseModel):
     property, if any, or the value of the `name` property.
     """
 
-    type: Literal["column", "row"]
+    type: Literal["column", "row"]  # we may add "grid" or others
     items: list[Union["FieldGroup", str]] | None = None
     name: str | None = None
     title: str | None = None
@@ -96,7 +97,7 @@ class FieldMeta(pydantic.BaseModel):
     }
     ```
 
-    This class should not be instantiated from its constructor,
+    This class should not be instantiated from its constructor;
     instead, use one of the factory methods
 
     - [from_input_descriptions][from_input_descriptions]
@@ -137,13 +138,13 @@ class FieldMeta(pydantic.BaseModel):
     """The metadata for a schema's "allOf" element, if given."""
 
     layout: FieldLayout | None = None
-    """Hint to layout the children of this field."""
+    """Hint to lay out the children of this field."""
 
     widget: FieldWidgetType | str | None = None
     """Hint for the type of widget to be used for this field."""
 
     title: str | None = None
-    """The title of this field. See also [label][label]."""
+    """The title of this field. See also [label](label)."""
 
     description: str | None = None
     """The description text for this field."""
@@ -163,6 +164,8 @@ class FieldMeta(pydantic.BaseModel):
 
     order: int | str | None = None
     """The order of this field in the group. 
+    The order's value is used to compare it against other `order` values 
+    when sorting multiple fields in ascending order. 
     See also [FieldGroup][FieldGroup]."""
 
     required: bool | None = None
@@ -172,7 +175,9 @@ class FieldMeta(pydantic.BaseModel):
     password: bool | None = None
     """Whether this field is a password input field."""
 
-    separator: str | None = None
+    separator: (
+        Annotated[str, pydantic.StringConstraints(min_length=1, max_length=1)] | None
+    ) = None
     """The separator character used for separating array items 
     when for arrays edited as text."""
 
@@ -190,7 +195,6 @@ class FieldMeta(pydantic.BaseModel):
     maximum: int | float | None = None
     """Maximum numeric value as used for slider widgets."""
 
-    # TODO: better name `options`?
     enum: list[Any] | None = None
     """Enumeration used for the options of select widgets."""
 
@@ -233,7 +237,7 @@ class FieldMeta(pydantic.BaseModel):
         description: str | None = None,
     ) -> "FieldMeta":
         """
-        Extract a field metadata of type "object" from given input descriptions.
+        Extract a field metadata instance of type "object" from given input descriptions.
         """
         properties = {}
         required_names = []
@@ -268,6 +272,58 @@ class FieldMeta(pydantic.BaseModel):
         """Create field metadata from an OpenAPI Schema."""
         f = FieldMetaFactory(name, schema)
         return f.create_field_meta(name, schema, required=required)
+
+    @classmethod
+    def from_schemas(
+        cls, name: str, *schemas: Schema, required: bool | None = None
+    ) -> "FieldMeta":
+        ensure_condition(len(schemas) > 0, "missing field metadata to merge")
+        if len(schemas) == 1:
+            return cls.from_schema(name, schemas[0], required=required)
+
+        data_type: Any | None = None
+        merged_properties: dict[str, Any] | None = None
+        merged_required: set[str] | None = None
+        schema_dicts = [_make_schema_dict(s) for s in schemas]
+        merged_schema_dict = {}
+        for schema_dict in schema_dicts:
+            if "type" in schema_dict:
+                t = schema_dict["type"]
+                if data_type is None:
+                    data_type = t
+            if "required" in schema_dict:
+                r = schema_dict["required"]
+                assert isinstance(r, list)
+                if merged_required is None:
+                    merged_required = set()
+                merged_required.update(r)
+            if "properties" in schema_dict:
+                p = schema_dict["properties"]
+                assert isinstance(p, dict)
+                if merged_properties is None:
+                    merged_properties = {}
+                merged_properties.update(p)
+            merged_schema_dict.update(schema_dict)
+        if data_type is not None:
+            merged_schema_dict["type"] = data_type
+        if merged_properties is not None:
+            merged_schema_dict["properties"] = merged_properties
+        if merged_required is not None:
+            merged_schema_dict["required"] = list(merged_required)
+        return FieldMeta.from_schema(
+            name,
+            Schema(**merged_schema_dict),
+            required=required,
+        )
+
+    @classmethod
+    def from_field_metas(
+        cls, name: str, *metas: "FieldMeta", required: bool | None = None
+    ) -> "FieldMeta":
+        ensure_condition(len(metas) > 0, "missing field metadata to merge")
+        if len(metas) == 1:
+            return metas[0]
+        return cls.from_schemas(name, *(m.schema_ for m in metas), required=required)
 
     def to_non_nullable(self) -> "FieldMeta":
         """Create a non-nullable version of this field metadata."""
@@ -507,7 +563,7 @@ def _get_initial_value(meta: FieldMeta) -> Any:
                 k: m.get_initial_value() for k, m in properties.items() if k in required
             }
         case _:
-            # TODO: handle other cases here: oneOf, anyOf, allOf, discriminator
+            # TODO: handle other cases here: oneOf, anyOf, allOf
             # raise ValueError(
             #     f"Unsupported untyped schema in field {meta.name!r}"
             # )

@@ -16,7 +16,7 @@ T = TypeVar("T", dict[str, Any], list[Any])
 
 class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
     """
-    An abstract base class for view model that
+    An abstract base class for view models that
     are non-nullable composites of child view models.
     """
 
@@ -73,7 +73,7 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
         """Set item by key and value."""
 
     def _create_child(self, child_meta: FieldMeta, child_value: Any) -> ViewModel:
-        child_vm = self.create(child_meta, value=child_value)
+        child_vm = self.from_field_meta(child_meta, value=child_value)
         child_vm.watch(self._on_child_change)
         return child_vm
 
