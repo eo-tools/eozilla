@@ -8,13 +8,17 @@ from .composite import CompositeViewModel
 from .nullable import NullableViewModel
 from .object import ObjectViewModel
 from .primitive import PrimitiveViewModel
+from .selective import SelectiveViewModel
+from .some import AnyViewModel
 
 __all__ = [
+    "AnyViewModel",
     "ArrayViewModel",
     "CompositeViewModel",
     "NullableViewModel",
     "ObjectViewModel",
     "PrimitiveViewModel",
+    "SelectiveViewModel",
     "ViewModel",
     "ViewModelChangeEvent",
     "ViewModelObserver",

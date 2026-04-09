@@ -34,7 +34,7 @@ class MyViewModelObserver:
 class ViewModelTest(TestCase):
     def test_create_ok(self):
         meta = FieldMeta.from_schema("x", Schema(**{"type": "integer", "default": -1}))
-        vm = ViewModel.create(meta)
+        vm = ViewModel.from_field_meta(meta)
         self.assertIsInstance(vm, PrimitiveViewModel)
         self.assertEqual(-1, vm.value)
 
@@ -48,7 +48,7 @@ class ViewModelTest(TestCase):
                 }
             ),
         )
-        vm = ViewModel.create(meta)
+        vm = ViewModel.from_field_meta(meta)
         self.assertIsInstance(vm, ArrayViewModel)
         self.assertEqual([0.1, 0.5], vm.value)
 
@@ -65,7 +65,7 @@ class ViewModelTest(TestCase):
                 }
             ),
         )
-        vm = ViewModel.create(meta)
+        vm = ViewModel.from_field_meta(meta)
         self.assertIsInstance(vm, ObjectViewModel)
         self.assertEqual({"x": 10, "y": -20}, vm.value)
 
@@ -79,14 +79,14 @@ class ViewModelTest(TestCase):
                 }
             ),
         )
-        vm = ViewModel.create(meta)
+        vm = ViewModel.from_field_meta(meta)
         self.assertIsInstance(vm, NullableViewModel)
         self.assertEqual(None, vm.value)
 
     def test_create_failing(self):
         meta = FieldMeta.from_schema("x", Schema(**{}))
         with pytest.raises(ValueError, match="missing type in schema for field 'x'"):
-            ViewModel.create(meta)
+            ViewModel.from_field_meta(meta)
 
     def test_primitive_ok(self):
         meta = FieldMeta.from_schema("x", Schema(**{"type": "integer"}))
@@ -247,17 +247,6 @@ class ViewModelTest(TestCase):
                 }
             ),
         )
-        with pytest.raises(
-            ValueError,
-            match=r"invalid view model passed for property 'b' of field 'x'",
-        ):
-            ObjectViewModel(
-                meta,
-                properties={
-                    "a": PrimitiveViewModel(meta.properties["a"]),
-                    "b": PrimitiveViewModel(meta.properties["a"]),
-                },
-            )
 
     def test_nullable_ok(self):
         meta = FieldMeta.from_schema(

@@ -263,6 +263,114 @@ class FieldMetaTest(TestCase):
             meta.layout,
         )
 
+    def test_schema_with_ref(self):
+        # top-level $ref
+        point_schema_dict = {
+            "type": "array",
+            "title": "A point",
+            "items": {"type": "number"},
+            "minItems": 2,
+            "maxItems": 2,
+        }
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(
+                **{
+                    "$ref": "#/$defs/Point",
+                    "$defs": {
+                        "Point": point_schema_dict,
+                    },
+                }
+            ),
+        )
+        self.assertEqual("x", meta.name)
+        self.assertEqual(Schema(**point_schema_dict), meta.schema_)
+        self.assertEqual("#/$defs/Point", meta.ref)
+        self.assertEqual("A point", meta.title)
+
+    def test_schema_with_nested_ref(self):
+        # top-level $ref
+        point_schema_dict = {
+            "type": "array",
+            "title": "A point",
+            "items": {"type": "number"},
+            "minItems": 2,
+            "maxItems": 2,
+        }
+        line_schema_dict = {
+            "type": "array",
+            "title": "A line",
+            "items": {"$ref": "#/$defs/Point"},
+            "minItems": 2,
+            "maxItems": 2,
+        }
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(
+                **{
+                    "$ref": "#/$defs/Line",
+                    "$defs": {
+                        "Line": line_schema_dict,
+                        "Point": point_schema_dict,
+                    },
+                }
+            ),
+        )
+        self.assertEqual("x", meta.name)
+        self.assertEqual(Schema(**line_schema_dict), meta.schema_)
+        self.assertEqual("#/$defs/Line", meta.ref)
+        self.assertEqual("A line", meta.title)
+        self.assertIsInstance(meta.items, FieldMeta)
+        self.assertEqual(Schema(**point_schema_dict), meta.items.schema_)
+        self.assertEqual("#/$defs/Point", meta.items.ref)
+
+    def test_schema_with_nested_ref_cycle(self):
+        # top-level $ref
+        file_schema_dict = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "content": {"type": "string", "format": "binary"},
+            },
+        }
+        folder_schema_dict = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "oneOf": [
+                            {"$ref": "#/$defs/File"},
+                            {"$ref": "#/$defs/Folder"},
+                        ]
+                    },
+                },
+            },
+        }
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(
+                **{
+                    "$ref": "#/$defs/Folder",
+                    "$defs": {
+                        "File": file_schema_dict,
+                        "Folder": folder_schema_dict,
+                    },
+                }
+            ),
+        )
+        self.assertEqual("x", meta.name)
+        self.assertEqual(Schema(**folder_schema_dict), meta.schema_)
+        self.assertEqual("#/$defs/Folder", meta.ref)
+        self.assertIsInstance(meta.properties, dict)
+        files_meta = meta.properties.get("files")
+        self.assertIsInstance(files_meta, FieldMeta)
+        self.assertIsInstance(files_meta.items, FieldMeta)
+        self.assertIsInstance(files_meta.items.one_of, list)
+        folder_meta = files_meta.items.one_of[1]
+        self.assertIs(meta, folder_meta)
+
     def test_input_precedence(self):
         self._assert_description(
             description_props={

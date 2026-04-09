@@ -5,14 +5,14 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Callable, Generic, Protocol, TypeVar
-
-from bokeh.core.property.singletons import UndefinedType
+from typing import TYPE_CHECKING, Any, Callable, Generic, Protocol, TypeVar
 
 from gavicore.models import DataType, Schema
-from gavicore.util.undefined import UNDEFINED
+from gavicore.util.ensure import ensure_type
+from gavicore.util.undefined import UNDEFINED, Undefined
 
-from ..field.meta import FieldMeta
+if TYPE_CHECKING:
+    from gavicore.ui.field import FieldMeta
 
 
 class ViewModelChangeEvent:
@@ -38,20 +38,21 @@ T = TypeVar("T")
 class ViewModel(Generic[T], ABC):
     """Abstract base class for all view models."""
 
-    def __init__(self, meta: FieldMeta):
+    def __init__(self, meta: "FieldMeta"):
         """Base class constructor."""
-        if not isinstance(meta, FieldMeta):
-            raise TypeError(f"meta must have type {FieldMeta.__name__}")
+        from gavicore.ui.field import FieldMeta
+
+        ensure_type("meta", meta, FieldMeta)
         self._meta = meta
         self._observers: set[ViewModelObserver] = set()
 
     @classmethod
-    def create(
-        cls, meta: FieldMeta, *, value: Any | UndefinedType = UNDEFINED
+    def from_field_meta(
+        cls, meta: "FieldMeta", *, value: Any | Undefined = UNDEFINED
     ) -> "ViewModel":
         """
-        Create a new view model instance for the given field metadata
-        and initial value.
+        Create a new view model instance from the given field metadata
+        and an optional initial value.
         """
         schema = meta.schema_
 
@@ -78,7 +79,7 @@ class ViewModel(Generic[T], ABC):
         raise ValueError(f"missing type in schema for field {meta.name!r}")
 
     @property
-    def meta(self) -> FieldMeta:
+    def meta(self) -> "FieldMeta":
         """The field's metadata."""
         return self._meta
 
