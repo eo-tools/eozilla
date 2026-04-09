@@ -273,7 +273,6 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
     def _create_one_of_field(
         self, ctx: FieldContext, options: list[FieldMeta]
     ) -> PanelField:
-
         # handle degenerated oneOf/anyOf cases
         match len(options):
             case 0:
@@ -285,10 +284,22 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
                 assert isinstance(field, PanelField)
                 return field
 
-        child_fields = [ctx.create_child_field(fm, label_hidden=True) for fm in options]
+        discriminator = ctx.schema.discriminator
+        if discriminator is not None:
+            child_fields = [
+                ctx.create_child_field(option, label_hidden=True)
+                for option in options
+                if option.name != discriminator.propertyName
+            ]
+        else:
+            child_fields = [
+                ctx.create_child_field(option, label_hidden=True) for option in options
+            ]
+
         view_model = SelectiveViewModel(
             ctx.meta,
             options=[f.view_model for f in child_fields],
+            discriminator=discriminator,
         )
 
         tab_options = [(f.meta.label, f.view) for f in child_fields]

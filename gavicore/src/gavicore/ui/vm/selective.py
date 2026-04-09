@@ -4,10 +4,62 @@
 
 from typing import Any
 
+from gavicore.models import Discriminator
 from gavicore.ui.field.meta import FieldMeta
 from gavicore.util.ensure import ensure_condition, ensure_type
 
 from .base import ViewModel, ViewModelChangeEvent
+
+
+class _InvDiscriminator:
+    """
+    An inverse discriminator that maps option indexes
+    to the value of an original discriminator's mapping.
+    """
+
+    def __init__(self, name: str, mapping: dict[int, str]):
+        self.name = name
+        self.mapping = mapping
+
+    @classmethod
+    def from_discriminator(cls, discriminator: Discriminator, options: list[ViewModel]):
+        mapping: dict[int, str] = {}
+        if discriminator.mapping is None:
+            for i, option in enumerate(options):
+                mapping[i] = cls.require_option_ref(option).rsplit("/", maxsplit=1)[-1]
+        else:
+            for i, option in enumerate(options):
+                o_ref: str = cls.require_option_ref(option)
+                value: str | None = None
+                for map_name, map_ref in discriminator.mapping.items():
+                    if map_ref == o_ref:
+                        value = map_name
+                        break
+                ensure_condition(
+                    value is not None,
+                    f"invalid discriminator mapping: "
+                    f"missing value for reference {o_ref!r}",
+                )
+                assert value is not None
+                mapping[i] = value
+            no = len(options)
+            nm = len(mapping)
+            ensure_condition(
+                no == nm,
+                f"invalid discriminator mapping: "
+                f"too {'many' if nm > no else 'few'} entries",
+            )
+        return _InvDiscriminator(discriminator.propertyName, mapping)
+
+    @classmethod
+    def require_option_ref(cls, option: ViewModel) -> str:
+        option_ref = option.schema.ref
+        ensure_condition(
+            isinstance(option_ref, str),
+            f"option {option.meta.name!r} should be a reference",
+        )
+        assert option_ref is not None
+        return option_ref
 
 
 class SelectiveViewModel(ViewModel[Any]):
@@ -21,6 +73,7 @@ class SelectiveViewModel(ViewModel[Any]):
         meta: FieldMeta,
         options: list[ViewModel],
         active_index: int = 0,
+        discriminator: Discriminator | None = None,
     ):
         ensure_type("meta", meta, FieldMeta)
         ensure_type("options", options, list)
@@ -35,6 +88,12 @@ class SelectiveViewModel(ViewModel[Any]):
         self._unwatch_options = [
             option.watch(self._on_option_change) for option in options
         ]
+        if discriminator is not None:
+            self._inv_discriminator = _InvDiscriminator.from_discriminator(
+                discriminator, options
+            )
+        else:
+            self._inv_discriminator = None
 
     @property
     def active_index(self) -> int:
@@ -45,8 +104,18 @@ class SelectiveViewModel(ViewModel[Any]):
         ensure_condition(
             0 <= active_index < len(self._options), "active_index out of bounds"
         )
-        self._active_index = active_index
-        self._notify()
+        if active_index != self._active_index:
+            self._active_index = active_index
+            value = self._get_value()
+            discriminator = self._inv_discriminator
+            if discriminator is not None and isinstance(value, dict):
+                value = dict(value)
+                value.update(
+                    **{discriminator.name: discriminator.mapping[active_index]}
+                )
+            with self.intercept_changes() as changes:
+                self._set_value(value)
+            self._notify(*changes)
 
     def dispose(self):
         for unwatch_option in self._unwatch_options:
