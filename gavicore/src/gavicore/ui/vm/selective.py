@@ -53,7 +53,7 @@ class _InvDiscriminator:
 
     @classmethod
     def require_option_ref(cls, option: ViewModel) -> str:
-        option_ref = option.schema.ref
+        option_ref = option.meta.ref
         ensure_condition(
             isinstance(option_ref, str),
             f"option {option.meta.name!r} should be a reference",
@@ -106,16 +106,7 @@ class SelectiveViewModel(ViewModel[Any]):
         )
         if active_index != self._active_index:
             self._active_index = active_index
-            value = self._get_value()
-            discriminator = self._inv_discriminator
-            if discriminator is not None and isinstance(value, dict):
-                value = dict(value)
-                value.update(
-                    **{discriminator.name: discriminator.mapping[active_index]}
-                )
-            with self.intercept_changes() as changes:
-                self._set_value(value)
-            self._notify(*changes)
+            self._notify()
 
     def dispose(self):
         for unwatch_option in self._unwatch_options:
@@ -127,8 +118,16 @@ class SelectiveViewModel(ViewModel[Any]):
         self._notify(*event.causes)
 
     def _get_value(self) -> Any:
-        assert 0 <= self._active_index < len(self._options)
-        return self._options[self._active_index].value
+        active_index = self._active_index
+        assert 0 <= active_index < len(self._options)
+        value = self._options[active_index].value
+        discriminator = self._inv_discriminator
+        if discriminator is not None and isinstance(value, dict):
+            discriminator_value = discriminator.mapping[active_index]
+            if value.get(discriminator.name) != discriminator_value:
+                value = dict(value)
+                value[discriminator.name] = discriminator_value
+        return value
 
     def _set_value(self, value: Any) -> None:
         # Note, we expect that given value fits the option selected

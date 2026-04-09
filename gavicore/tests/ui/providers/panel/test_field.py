@@ -14,9 +14,6 @@ from .schema2ui import load_schemas
 # noinspection PyMethodMayBeStatic
 class PanelFieldTest(TestCase):
     def test_with_all_schemas(self):
-        # TODO: test type="discriminator"
-        # TODO: test type="anyOf"
-
         schemas = load_schemas()
         for path, schema in schemas:
             name = path.stem.replace("-", "_")
@@ -24,7 +21,7 @@ class PanelFieldTest(TestCase):
                 PanelField.from_schema(name, schema)
             except Exception as e:
                 raise self.failureException(
-                    f"Exception for schema from path {path}: {e}"
+                    f"Exception for schema {path.name}: {e}"
                 ) from e
 
 

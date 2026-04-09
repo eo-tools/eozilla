@@ -27,8 +27,6 @@ _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
     DataType.string: TextConverter.StringArray(),
 }
 
-# TODO: handle type="discriminator"
-
 
 class PanelFieldFactory(FieldFactoryBase[PanelField]):
     def get_nullable_score(self, meta: FieldMeta) -> int:
@@ -178,6 +176,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         assert meta.items is not None
         item_type = meta.items.schema_.type
         if item_type is None:
+            # TODO: handle this case --> use JSON editor as fallback
             return 0
         format_ = meta.schema_.format
         if format_ is not None and format_.lower() == "bbox":
@@ -185,6 +184,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         array_converter = _ARRAY_TEXT_CONVERTERS.get(item_type)
         if array_converter is not None:
             return 5
+        # TODO: handle this case --> use JSON editor as fallback
         return 0
 
     def create_array_field(self, ctx: FieldContext) -> PanelField:

@@ -195,8 +195,16 @@ class FieldMeta(pydantic.BaseModel):
     maximum: int | float | None = None
     """Maximum numeric value as used for slider widgets."""
 
+    # TODO: rename into options
     enum: list[Any] | None = None
     """Enumeration used for the options of select widgets."""
+
+    ref: str | None = None
+    """Set from schema reference property '$ref'. 
+    Since we resolve schemas, the original $ref value is kept 
+    so we can still use it to evaluate a schema's discriminator 
+    mappings.
+    """
 
     @property
     def nullable(self) -> bool:
@@ -370,10 +378,10 @@ def _schema_from_input_description(
 
 
 class FieldMetaFactory:
-    def __init__(self, name: str, schema: Schema) -> None:
-        self.name = name
-        self.document = schema
-        self.defs: dict[str, FieldMeta] = {}
+    def __init__(self, root_name: str, root_schema: Schema) -> None:
+        self._root_name = root_name
+        self._root_schema = root_schema
+        self._resolved_metas: dict[str, FieldMeta] = {}
 
     def create_field_meta(
         self,
@@ -381,14 +389,23 @@ class FieldMetaFactory:
         schema: Schema,
         required: bool | None = None,
     ) -> FieldMeta:
+        # create the field metadata stub first
         if schema.ref is not None:
-            if schema.ref in self.defs:
-                return self.defs[schema.ref]
-            resolved_schema = self._resolve_schema_ref(schema.ref)
-            meta = FieldMeta(name=name, schema=resolved_schema, required=required)
-            self.defs[schema.ref] = meta
+            # is ref already resolved
+            if schema.ref in self._resolved_metas:
+                # Note that the returned field metadata may not be
+                # fully populated with metadata, see below
+                return self._resolved_metas[schema.ref]
+            resolved_schema = self.resolve_schema_ref(schema.ref)
+            meta = FieldMeta(
+                name=name, schema=resolved_schema, ref=schema.ref, required=required
+            )
+            # We already register the field, although it is still a stub,
+            # in order to detect cycles early
+            self._resolved_metas[schema.ref] = meta
         else:
             meta = FieldMeta(name=name, schema=schema, required=required)
+        # then update the stub with all the other metadata
         self._update_field_meta_from_schema(meta)
         return meta
 
@@ -417,9 +434,9 @@ class FieldMetaFactory:
                         prop_name, prop_schema, required=(prop_name in required_set)
                     )
 
-        one_of = self._convert_schema_list(schema.oneOf, name_prefix="alternative_")
-        any_of = self._convert_schema_list(schema.anyOf, name_prefix="option_")
-        all_of = self._convert_schema_list(schema.allOf, name_prefix="part_")
+        one_of = self._resolve_schemas(schema.oneOf, name_prefix="option_")
+        any_of = self._resolve_schemas(schema.anyOf, name_prefix="option_")
+        all_of = self._resolve_schemas(schema.allOf, name_prefix="part_")
 
         update = dict(
             required=required,
@@ -433,36 +450,44 @@ class FieldMetaFactory:
         for k, v in update.items():
             setattr(meta, k, v)
 
-    def _resolve_schema_ref(self, ref: str) -> Schema:
+    def resolve_schema_ref(self, ref: str) -> Schema:
         if not ref.startswith("#/"):
             raise NotImplementedError(
                 "$refs must be document-relative (start with '#/')"
             )
+        # Note, ref will likely be "#/$defs/<Schema>"
+        # or "#/components/schemas/<Schema>".
+        # We therefore expect the schema definitions in
+        #   { "$defs": {"<Schema>": ...}}
+        # or
+        #   { "components": {"schemas": {"<Schema>": ...}}}
+        # which are found in the model_extra dict of the root schema.
         path = ref[2:].split("/")
-        assert isinstance(self.document.model_extra, dict)
-        s: dict[str, Any] = self.document.model_extra
+        extras = self._root_schema.model_extra
+        assert isinstance(extras, dict)
+        s: dict[str, Any] = extras
         for i, name in enumerate(path):
-            if name not in s:
-                raise ValueError(
-                    f"invalid $ref value: {'/'.join(path[: i + 1])!r} does not exist"
-                )
+            ensure_condition(
+                name in s,
+                f"invalid $ref value: {'/'.join(path[: i + 1])!r} does not exist",
+            )
             s = s[name]
-            if not isinstance(s, dict):
-                raise TypeError(
-                    f"invalid $ref value: "
-                    f"dict expected for {'/'.join(path[: i + 1])!r}, "
-                    f"but got {type(s).__name__}"
-                )
+            ensure_condition(
+                isinstance(s, dict),
+                f"invalid $ref value: dict expected for {'/'.join(path[: i + 1])!r}, "
+                f"but got {type(s).__name__}",
+                exception_type=TypeError,
+            )
         return Schema(**s)
 
-    def _convert_schema_list(
-        self, schema_list: list[Schema] | None, name_prefix: str = "item_"
+    def _resolve_schemas(
+        self, schemas: list[Schema] | None, name_prefix: str
     ) -> list[FieldMeta] | None:
-        if schema_list is not None:
-            assert isinstance(schema_list, list)
+        if schemas is not None:
+            assert isinstance(schemas, list)
             return [
                 self.create_field_meta(f"{name_prefix}{i}", s)
-                for i, s in enumerate(schema_list)
+                for i, s in enumerate(schemas)
             ]
         return None
 
