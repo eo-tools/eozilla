@@ -175,34 +175,38 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
     def get_array_score(self, meta: FieldMeta) -> int:
         assert meta.items is not None
         item_type = meta.items.schema_.type
-        if item_type is None:
-            # TODO: handle this case --> use JSON editor as fallback
-            return 0
-        format_ = meta.schema_.format
-        if format_ is not None and format_.lower() == "bbox":
-            return 10
-        array_converter = _ARRAY_TEXT_CONVERTERS.get(item_type)
-        if array_converter is not None:
-            return 5
-        # TODO: handle this case --> use JSON editor as fallback
-        return 0
+        if item_type is not None:
+            format_ = meta.schema_.format
+            widget_hint = meta.widget
+            if item_type == DataType.number and (
+                (format_ or "").lower() == "bbox" or widget_hint == "map"
+            ):
+                return 10
+            array_converter = _ARRAY_TEXT_CONVERTERS.get(item_type)
+            if array_converter is not None:
+                return 5
+        # we'll fall back to JSON editor
+        return 1
 
     def create_array_field(self, ctx: FieldContext) -> PanelField:
+        meta = ctx.meta
+        assert meta.items is not None
+        format_ = meta.schema_.format
+        widget_hint = meta.widget
+        item_schema = meta.items.schema_
+        item_type = item_schema.type
+
         view_model = ctx.vm.array()
-        assert ctx.meta.items is not None
 
-        widget_hint = view_model.meta.widget
-
-        format_ = ctx.schema.format
-        if (format_ is not None and format_.lower() == "bbox") or widget_hint == "map":
+        if item_type == DataType.number and (
+            ((format_ or "").lower() == "bbox") or widget_hint == "map"
+        ):
             return PanelField(view_model, BBoxEditor())
 
-        item_schema = ctx.meta.items.schema_
-        item_type = item_schema.type
+        item_schema = meta.items.schema_
         item_format = item_schema.format
         assert item_type is not None
         array_converter = _ARRAY_TEXT_CONVERTERS.get(item_type)
-        assert array_converter is not None
 
         if (
             array_converter is not None
