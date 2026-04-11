@@ -9,13 +9,13 @@ import pytest
 from gavicore.models import Schema
 from gavicore.ui import FieldMeta
 from gavicore.ui.vm import (
+    AnyViewModel,
     ArrayViewModel,
     NullableViewModel,
     ObjectViewModel,
     PrimitiveViewModel,
     ViewModel,
     ViewModelChangeEvent,
-    AnyViewModel,
 )
 
 

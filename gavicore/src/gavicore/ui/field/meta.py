@@ -285,7 +285,7 @@ class FieldMeta(pydantic.BaseModel):
     def from_schemas(
         cls, name: str, *schemas: Schema, required: bool | None = None
     ) -> "FieldMeta":
-        ensure_condition(len(schemas) > 0, "missing field metadata to merge")
+        ensure_condition(len(schemas) > 0, "missing schemas to merge")
         if len(schemas) == 1:
             return cls.from_schema(name, schemas[0], required=required)
 
@@ -329,8 +329,6 @@ class FieldMeta(pydantic.BaseModel):
         cls, name: str, *metas: "FieldMeta", required: bool | None = None
     ) -> "FieldMeta":
         ensure_condition(len(metas) > 0, "missing field metadata to merge")
-        if len(metas) == 1:
-            return metas[0]
         return cls.from_schemas(name, *(m.schema_ for m in metas), required=required)
 
     def to_non_nullable(self) -> "FieldMeta":

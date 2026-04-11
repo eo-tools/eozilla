@@ -116,7 +116,10 @@ class FieldContext(Generic[FT, VT]):
             if prop_name != self._hidden_prop_name
         }
 
-    def create_item_field(self) -> FT:
+    def create_item_field(
+        self,
+        label_hidden: bool = False,
+    ) -> FT:
         """Create a new item field given that this
         context's field is of type "array".
         """
@@ -126,7 +129,7 @@ class FieldContext(Generic[FT, VT]):
             exception_type=TypeError,
         )
         assert self.meta.items is not None
-        return self.create_child_field(self.meta.items)
+        return self.create_child_field(self.meta.items, label_hidden=label_hidden)
 
     def create_child_field(
         self,

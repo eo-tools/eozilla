@@ -190,10 +190,11 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
 
     def create_array_field(self, ctx: FieldContext) -> PanelField:
         meta = ctx.meta
-        assert meta.items is not None
+        item_meta = meta.items
+        assert item_meta is not None
         format_ = meta.schema_.format
         widget_hint = meta.widget
-        item_schema = meta.items.schema_
+        item_schema = item_meta.schema_
         item_type = item_schema.type
 
         view_model = ctx.vm.array()
@@ -203,7 +204,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         ):
             return PanelField(view_model, BBoxEditor())
 
-        item_schema = meta.items.schema_
+        item_schema = item_meta.schema_
         item_format = item_schema.format
         assert item_type is not None
         array_converter = _ARRAY_TEXT_CONVERTERS.get(item_type)
@@ -223,9 +224,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         else:
 
             def create_item_editor(_index: int, value: Any) -> pn.widgets.WidgetBase:
-                assert isinstance(ctx.meta.items, FieldMeta)
-                ctx.meta.items.title = ""  # Supress label for items
-                item_field = ctx.create_item_field()
+                item_field = ctx.create_item_field(label_hidden=True)
                 item_field.view_model.value = value
                 return item_field.view
 
@@ -233,7 +232,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
                 name=ctx.label,
                 value=view_model.value,
                 item_editor_factory=create_item_editor,
-                item_value_factory=ctx.meta.items.get_initial_value,
+                item_value_factory=item_meta.get_initial_value,
             )
         return PanelField(view_model, view)
 
@@ -282,11 +281,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
             case 0:
                 return self.create_untyped_field(ctx)
             case 1:
-                field = ctx.create_child_field(
-                    options[0], label_hidden=ctx.label_hidden
-                )
-                assert isinstance(field, PanelField)
-                return field
+                return ctx.create_child_field(options[0], label_hidden=ctx.label_hidden)
 
         discriminator = ctx.schema.discriminator
         child_fields = [
@@ -330,9 +325,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
             case 0:
                 return self.create_untyped_field(ctx)
             case 1:
-                field = ctx.create_child_field(parts[0], label_hidden=ctx.label_hidden)
-                assert isinstance(field, PanelField)
-                return field
+                return ctx.create_child_field(parts[0], label_hidden=ctx.label_hidden)
 
         combined_meta = FieldMeta.from_field_metas(
             ctx.meta.name, *ctx.meta.all_of, required=ctx.meta.required
