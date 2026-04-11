@@ -15,6 +15,7 @@ from gavicore.ui.vm import (
     PrimitiveViewModel,
     ViewModel,
     ViewModelChangeEvent,
+    AnyViewModel,
 )
 
 
@@ -264,6 +265,14 @@ class ViewModelTest(TestCase):
         self.assertEqual(False, vm.is_null)
         vm.value = None
         self.assertEqual(True, vm.is_null)
+
+    def test_any_ok(self):
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(**{}),
+        )
+        vm = AnyViewModel(meta, value=[1, 2, 3])
+        self._assert_vm_commons(vm, [1, 2, 3], "Hallo")
 
     def test_nullable_failing(self):
         meta = FieldMeta.from_schema(

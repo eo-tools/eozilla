@@ -77,11 +77,11 @@ class FieldFactoryBase(FieldFactory[FT], ABC, Generic[FT]):
                 return self.get_array_score(meta)
             case DataType.object:
                 return self.get_object_score(meta)
-        if schema.oneOf:
+        if schema.oneOf is not None:
             return self.get_one_of_score(meta)
-        if schema.anyOf:
+        if schema.anyOf is not None:
             return self.get_any_of_score(meta)
-        if schema.allOf:
+        if schema.allOf is not None:
             return self.get_all_of_score(meta)
         return self.get_untyped_score(meta)
 

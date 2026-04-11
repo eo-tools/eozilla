@@ -268,13 +268,13 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
 
     def create_one_of_field(self, ctx: FieldContext) -> PanelField:
         assert ctx.meta.one_of is not None
-        return self._create_one_of_field(ctx, ctx.meta.one_of)
+        return self._create_options_field(ctx, ctx.meta.one_of)
 
     def create_any_of_field(self, ctx: FieldContext) -> PanelField:
         assert ctx.meta.any_of is not None
-        return self._create_one_of_field(ctx, ctx.meta.any_of)
+        return self._create_options_field(ctx, ctx.meta.any_of)
 
-    def _create_one_of_field(
+    def _create_options_field(
         self, ctx: FieldContext, options: list[FieldMeta]
     ) -> PanelField:
         # handle degenerated oneOf/anyOf cases
@@ -289,17 +289,16 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
                 return field
 
         discriminator = ctx.schema.discriminator
-        if discriminator is not None:
-            child_fields = [
-                ctx.create_child_field(option, label_hidden=True)
-                for option in options
-                if option.name != discriminator.propertyName
-            ]
-        else:
-            child_fields = [
-                ctx.create_child_field(option, label_hidden=True) for option in options
-            ]
-
+        child_fields = [
+            ctx.create_child_field(
+                option,
+                label_hidden=True,
+                hidden_prop_name=(
+                    discriminator.propertyName if discriminator is not None else None
+                ),
+            )
+            for option in options
+        ]
         view_model = SelectiveViewModel(
             ctx.meta,
             options=[f.view_model for f in child_fields],

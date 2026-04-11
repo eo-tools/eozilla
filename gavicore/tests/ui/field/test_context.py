@@ -39,6 +39,30 @@ class FieldContextTest(TestCase):
         self.assertIs(generator, ctx._generator)
         self.assertEqual(["threshold"], ctx.path)
 
+    def test_label_hidden(self):
+        meta = FieldMeta.from_schema(
+            "threshold",
+            Schema(
+                **{
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                }
+            ),
+        )
+
+        generator = FieldGenerator()
+        ctx = FieldContext(
+            generator=generator,
+            meta=meta,
+            initial_value=0.5,
+            label_hidden=True,
+        )
+
+        self.assertIs(meta, ctx.meta)
+        self.assertIs(True, ctx.label_hidden)
+        self.assertEqual("", ctx.label)
+
     def test_child_ctx(self):
         meta = FieldMeta.from_schema(
             "config",

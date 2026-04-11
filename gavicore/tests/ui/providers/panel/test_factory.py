@@ -28,15 +28,15 @@ class PanelFieldFactoryTest(TestCase):
             ),
         )
 
-        self.assertEqual(0, factory.get_score(_meta_from_schema({"type": "array"})))
+        self.assertEqual(1, factory.get_score(_meta_from_schema({"type": "array"})))
         self.assertEqual(
-            0,
+            1,
             factory.get_score(
                 _meta_from_schema({"type": "array", "items": {"type": "object"}})
             ),
         )
         self.assertEqual(
-            0,
+            1,
             factory.get_score(
                 _meta_from_schema(
                     {

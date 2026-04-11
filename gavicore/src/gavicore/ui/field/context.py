@@ -34,6 +34,7 @@ class FieldContext(Generic[FT, VT]):
         meta: FieldMeta,
         initial_value: Any | Undefined = Undefined.value,
         label_hidden: bool = False,
+        hidden_prop_name: str | None = None,
         parent_ctx: "FieldContext[FT, VT] | None" = None,
     ):
         self._parent_ctx = parent_ctx
@@ -46,6 +47,7 @@ class FieldContext(Generic[FT, VT]):
             else initial_value
         )
         self._label_hidden = label_hidden
+        self._hidden_prop_name = hidden_prop_name
 
     @property
     def meta(self) -> FieldMeta:
@@ -111,6 +113,7 @@ class FieldContext(Generic[FT, VT]):
         return {
             prop_name: self.create_child_field(prop_meta)
             for prop_name, prop_meta in self.meta.properties.items()
+            if prop_name != self._hidden_prop_name
         }
 
     def create_item_field(self) -> FT:
@@ -126,15 +129,23 @@ class FieldContext(Generic[FT, VT]):
         return self.create_child_field(self.meta.items)
 
     def create_child_field(
-        self, child_meta: FieldMeta, label_hidden: bool = False
+        self,
+        child_meta: FieldMeta,
+        label_hidden: bool = False,
+        hidden_prop_name: str | None = None,
     ) -> FT:
         """Create a new field for the given child field metadata."""
-        child_ctx = self._create_child_ctx(child_meta, label_hidden=label_hidden)
+        child_ctx = self._create_child_ctx(
+            child_meta, label_hidden=label_hidden, hidden_prop_name=hidden_prop_name
+        )
         # noinspection PyProtectedMember
         return self._generator._generate_field(child_ctx)
 
     def _create_child_ctx(
-        self, child_meta: FieldMeta, label_hidden: bool = False
+        self,
+        child_meta: FieldMeta,
+        label_hidden: bool = False,
+        hidden_prop_name: str | None = None,
     ) -> "FieldContext[FT, VT]":
         initial_value = self.initial_value
         child_name = child_meta.name
@@ -151,6 +162,7 @@ class FieldContext(Generic[FT, VT]):
             meta=child_meta,
             initial_value=child_value,
             label_hidden=label_hidden,
+            hidden_prop_name=hidden_prop_name,
             parent_ctx=self,
         )
 

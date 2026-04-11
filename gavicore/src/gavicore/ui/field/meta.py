@@ -466,6 +466,7 @@ class FieldMetaFactory:
         extras = self._root_schema.model_extra
         assert isinstance(extras, dict)
         s: dict[str, Any] = extras
+        name: str | None = None
         for i, name in enumerate(path):
             ensure_condition(
                 name in s,
@@ -478,6 +479,8 @@ class FieldMetaFactory:
                 f"but got {type(s).__name__}",
                 exception_type=TypeError,
             )
+        if name is not None and "title" not in s:
+            s["title"] = name.title()
         return Schema(**s)
 
     def _resolve_schemas(
