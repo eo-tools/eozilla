@@ -1,0 +1,69 @@
+type: object
+properties:
+  discriminator_without_mapping:
+    oneOf:
+      - $ref: "#/components/schemas/Point"
+      - $ref: "#/components/schemas/LineString"
+      - $ref: "#/components/schemas/Polygon"
+    discriminator:
+      propertyName: type
+
+  discriminator_with_mapping:
+    oneOf:
+      - $ref: "#/components/schemas/Point"
+      - $ref: "#/components/schemas/LineString"
+      - $ref: "#/components/schemas/Polygon"
+    discriminator:
+      propertyName: type
+      mapping:
+        pt: "#/components/schemas/Point"
+        ls: "#/components/schemas/LineString"
+        pg: "#/components/schemas/Polygon"
+
+components:
+  schemas:
+    Coordinate:
+      items:
+        type: number
+      maxItems: 3
+      minItems: 2
+      type: array
+    LineString:
+      properties:
+        coordinates:
+          items:
+            $ref: '#/components/schemas/Coordinate'
+          minItems: 2
+          type: array
+        type:
+          type: string
+      required:
+      - type
+      - coordinates
+      type: object
+    Point:
+      properties:
+        coordinates:
+          $ref: '#/components/schemas/Coordinate'
+        type:
+          type: string
+      required:
+      - type
+      - coordinates
+      type: object
+    Polygon:
+      properties:
+        coordinates:
+          items:
+            items:
+              $ref: '#/components/schemas/Coordinate'
+            minItems: 3
+            type: array
+          minItems: 1
+          type: array
+        type:
+          type: string
+      required:
+      - type
+      - coordinates
+      type: object

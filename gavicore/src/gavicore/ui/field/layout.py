@@ -2,41 +2,43 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Literal, Protocol
+from typing import Generic, Literal, Protocol
 
 from gavicore.models import DataType
 from gavicore.util.ensure import ensure_callable, ensure_condition, ensure_type
 
-from .base import Field, View
+from .base import FT, VT
 from .context import FieldContext
 from .meta import FieldGroup
 
 
-class LayoutFunction(Protocol):
+class LayoutFunction(Protocol[FT, VT]):
     """Lay out given child views and return a new view."""
 
     def __call__(
         self,
-        ctx: FieldContext,
+        ctx: FieldContext[FT, VT],
         direction: Literal["row", "column"],
-        child_views: list[View],
-    ) -> View: ...
+        child_views: list[VT],
+    ) -> VT: ...
 
 
-class LayoutManager:
+class LayoutManager(Generic[FT, VT]):
     """
     Generator for nested layout fields for a parent field of type "object".
     """
 
     def __init__(
-        self, layout_function: LayoutFunction, property_views: dict[str, View]
+        self,
+        layout_function: LayoutFunction[FT, VT],
+        property_views: dict[str, VT],
     ):
         ensure_callable("layout_function", layout_function)
         ensure_type("property_views", property_views, dict)
         self._layout_function = layout_function
         self._property_views = property_views
 
-    def layout(self, ctx: FieldContext) -> View:
+    def layout(self, ctx: FieldContext[FT, VT]) -> VT:
         """
         Generate a layout field for a value of type "object".
         """
@@ -57,11 +59,11 @@ class LayoutManager:
 
     def _layout_by_group(
         self,
-        ctx: FieldContext,
+        ctx: FieldContext[FT, VT],
         group: FieldGroup,
-        property_views: dict[str, View],
-    ) -> Field:
-        child_views: list[Field]
+        property_views: dict[str, VT],
+    ) -> VT:
+        child_views: list[VT]
         if not group.items:
             child_views = list(property_views.values())
             property_views.clear()

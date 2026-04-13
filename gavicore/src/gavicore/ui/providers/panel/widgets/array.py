@@ -92,7 +92,7 @@ class ArrayEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
         )
         if self.name:
             panel = pn.Column(
-                *get_header_items(self.name),
+                *get_header_items(self.name, divider=True),
                 self._items_box,
                 self._add_row,
             )
