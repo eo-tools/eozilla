@@ -112,10 +112,12 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
             and isinstance(maximum, (int, float))
             and minimum < maximum
         ):
-            step: int | float = pow(10.0, int(math.log10(maximum - minimum)) - 1.0)
+            step = view_model.meta.step
+            if step is None:
+                step = pow(10.0, int(math.log10(maximum - minimum)) - 1.0) / 2
             if is_int:
                 slider_cls = pn.widgets.IntSlider
-                step = round(step)
+                step = max(1, round(step))
             else:
                 slider_cls = pn.widgets.FloatSlider
             return slider_cls(

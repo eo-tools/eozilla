@@ -195,6 +195,9 @@ class FieldMeta(pydantic.BaseModel):
     maximum: int | float | None = None
     """Maximum numeric value as used for slider widgets."""
 
+    step: int | float | None = None
+    """Step size as used for slider widgets."""
+
     # TODO: rename into options
     enum: list[Any] | None = None
     """Enumeration used for the options of select widgets."""
