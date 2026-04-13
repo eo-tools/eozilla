@@ -11,6 +11,8 @@ from .base import FT, VT
 from .context import FieldContext
 from .meta import FieldGroup
 
+SortKey = tuple[int, str]
+
 
 class LayoutFunction(Protocol[FT, VT]):
     """Lay out given child views and return a new view."""
@@ -63,25 +65,41 @@ class LayoutManager(Generic[FT, VT]):
         group: FieldGroup,
         property_views: dict[str, VT],
     ) -> VT:
-        child_views: list[VT]
+        assert isinstance(ctx.meta.properties, dict)
+
+        group_items: list[FieldGroup | str]
         if not group.items:
-            child_views = list(property_views.values())
-            property_views.clear()
-        else:
-            child_views = []
-            for group_item in group.items:
-                if isinstance(group_item, FieldGroup):
-                    child_view = self._layout_by_group(ctx, group_item, property_views)
+            property_names = list(property_views.keys())
+            sortable_property_names: list[tuple[SortKey, str]] = []
+            for property_index, property_name in enumerate(property_names):
+                assert property_name in ctx.meta.properties
+                property_meta = ctx.meta.properties[property_name]
+                if isinstance(property_meta.order, int):
+                    sort_key = property_meta.order
                 else:
-                    assert isinstance(group_item, str)
-                    assert isinstance(ctx.meta.properties, dict)
-                    prop_name: str = group_item
-                    if prop_name not in property_views:
-                        raise ValueError(
-                            f"property {prop_name!r} not found in object "
-                            f"field {ctx.meta.name!r}"
-                        )
-                    child_view = property_views[prop_name]
-                    property_views.pop(prop_name)
-                child_views.append(child_view)
+                    sort_key = property_index
+                sortable_property_names.append(
+                    ((sort_key, property_name), property_name)
+                )
+            group_items = [
+                x[1] for x in sorted(sortable_property_names, key=lambda x: x[0])
+            ]
+        else:
+            group_items = group.items
+
+        child_views: list[VT] = []
+        for group_item in group_items:
+            if isinstance(group_item, FieldGroup):
+                child_view = self._layout_by_group(ctx, group_item, property_views)
+            else:
+                assert isinstance(group_item, str)
+                prop_name: str = group_item
+                if prop_name not in property_views:
+                    raise ValueError(
+                        f"property {prop_name!r} not found in object "
+                        f"field {ctx.meta.name!r}"
+                    )
+                child_view = property_views[prop_name]
+                property_views.pop(prop_name)
+            child_views.append(child_view)
         return self._layout_function(ctx, group.type, child_views)

@@ -12,10 +12,10 @@ from gavicore.models import DataType
 from gavicore.ui import FieldContext, FieldFactoryBase, FieldMeta
 from gavicore.ui.vm import SelectiveViewModel, ViewModel
 from gavicore.util.json import (
+    JsonCodec,
     JsonDateCodec,
     JsonDatetimeCodec,
     JsonTimeCodec,
-    JsonCodec,
 )
 from gavicore.util.text import ArrayTextConverter, TextConverter
 

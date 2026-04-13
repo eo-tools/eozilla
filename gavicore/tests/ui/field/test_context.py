@@ -196,6 +196,39 @@ class FieldContextLayoutTest(TestCase):
             ctx.layout(self.layout_fn, child_views),
         )
 
+    @classmethod
+    def create_ctx_and_views_ordered(
+        cls, layout: Any
+    ) -> tuple[FieldContext, dict[str, Any]]:
+        ctx = FieldContext(
+            generator=FieldGenerator(),
+            meta=FieldMeta.from_schema(
+                "x",
+                Schema(
+                    **{
+                        "type": "object",
+                        "properties": {
+                            "a": {"type": "string", "x-ui-order": 11},
+                            "b": {"type": "string", "x-ui-order": 20},
+                            "c": {"type": "string", "x-ui-order": 30},
+                            "d": {"type": "string", "x-ui-order": 20},
+                            "e": {"type": "string", "x-ui-order": 20},
+                            "f": {"type": "string", "x-ui-order": 10},
+                        },
+                        "x-ui-layout": layout,
+                    }
+                ),
+            ),
+        )
+        return ctx, {k: f"v({k})" for k in ctx.meta.properties.keys()}
+
+    def test_layout_ordered(self):
+        ctx, child_views = self.create_ctx_and_views_ordered("column")
+        self.assertEqual(
+            ("column", "v(f)", "v(a)", "v(b)", "v(d)", "v(e)", "v(c)"),
+            ctx.layout(self.layout_fn, child_views),
+        )
+
     def test_layout_fail(self):
         ctx, child_views = self.create_ctx_and_views(
             {"type": "row", "items": ["a", "p", "c"]}
