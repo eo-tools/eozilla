@@ -4,7 +4,12 @@
 
 import datetime
 
-from gavicore.util.json import JsonDateCodec, JsonIdentityCodec
+from gavicore.util.json import (
+    JsonDateCodec,
+    JsonDatetimeCodec,
+    JsonIdentityCodec,
+    JsonTimeCodec,
+)
 
 
 def test_json_identity_codec():
@@ -14,9 +19,27 @@ def test_json_identity_codec():
     assert c.to_json(3) == 3
 
 
+def test_json_datetime_codec():
+    c = JsonDatetimeCodec()
+    assert c.to_json(None) is None
+    assert c.from_json(None) is None
+    assert c.to_json(datetime.datetime(2026, 4, 1, 10, 20, 56)) == "2026-04-01T10:20:56"
+    assert c.from_json("2026-04-01T10:20:56") == datetime.datetime(
+        2026, 4, 1, 10, 20, 56
+    )
+
+
 def test_json_date_codec():
     c = JsonDateCodec()
     assert c.to_json(None) is None
     assert c.from_json(None) is None
     assert c.to_json(datetime.date(2026, 4, 1)) == "2026-04-01"
     assert c.from_json("2026-04-01") == datetime.date(2026, 4, 1)
+
+
+def test_json_time_codec():
+    c = JsonTimeCodec()
+    assert c.to_json(None) is None
+    assert c.from_json(None) is None
+    assert c.to_json(datetime.time(12, 10, 32)) == "12:10:32"
+    assert c.from_json("12:10:32") == datetime.time(12, 10, 32)

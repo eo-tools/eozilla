@@ -5,12 +5,26 @@ properties:
   plain_min_length_10:
     type: string
     minLength: 10
-  date:
+  password:
+    type: string
+    format: password
+    placeholder: "Enter password here"
+  datetime_input:
+    type: string
+    format: datetime
+    x-ui-widget: input
+  datetime_picker:
+    type: string
+    format: datetime
+  date_picker:
     type: string
     format: date
+  time_picker:
+    type: string
+    format: time
   text_area:
     type: string
-    "x-ui:widget": "textarea"
+    x-ui-widget: textarea
   select:
     type: string
     enum:
@@ -25,7 +39,7 @@ properties:
     - red
     - green
     - blue
-    "x-ui:widget": "radio"
+    x-ui-widget: radio
   button:
     type: string
     enum:
@@ -33,4 +47,4 @@ properties:
     - red
     - green
     - blue
-    "x-ui:widget": "button"
+    x-ui-widget: button

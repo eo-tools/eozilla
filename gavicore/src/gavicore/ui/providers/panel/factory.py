@@ -11,7 +11,12 @@ import panel as pn
 from gavicore.models import DataType
 from gavicore.ui import FieldContext, FieldFactoryBase, FieldMeta
 from gavicore.ui.vm import SelectiveViewModel, ViewModel
-from gavicore.util.json import JsonDateCodec
+from gavicore.util.json import (
+    JsonDateCodec,
+    JsonDatetimeCodec,
+    JsonTimeCodec,
+    JsonCodec,
+)
 from gavicore.util.text import ArrayTextConverter, TextConverter
 
 from .field import PanelField
@@ -89,6 +94,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
     ) -> pn.widgets.WidgetBase:
         value = view_model.value
         description = view_model.meta.description
+        placeholder = view_model.meta.placeholder or ""
         widget_hint = view_model.meta.widget
         minimum = view_model.meta.minimum
         maximum = view_model.meta.maximum
@@ -132,7 +138,9 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
             input_cls = pn.widgets.IntInput
         else:
             input_cls = pn.widgets.FloatInput
-        return input_cls(name=label, value=value, description=description)
+        return input_cls(
+            name=label, value=value, description=description, placeholder=placeholder
+        )
 
     def get_string_score(self, meta: FieldMeta) -> int:
         return 5
@@ -143,17 +151,43 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         label = view_model.meta.label
         enum = view_model.meta.enum
         description = view_model.meta.description
+        placeholder = view_model.meta.placeholder or ""
         format_ = view_model.schema.format
         widget_hint = ctx.meta.widget
-        if format_ == "date":
-            json_codec = JsonDateCodec()
-            date = json_codec.from_json(value) or datetime.date.today()
-            return PanelField(
-                view_model,
-                pn.widgets.DatePicker(name=label, value=date, description=description),
-                json_codec=json_codec,
+
+        if format_ in ("datetime", "date", "time"):
+            json_codec: JsonCodec
+            if format_ == "datetime":
+                json_codec = JsonDatetimeCodec()
+                dt_value = json_codec.from_json(value) or datetime.datetime.today()
+                if widget_hint == "input":
+                    view = pn.widgets.DatetimeInput(
+                        name=label, value=dt_value, description=description
+                    )
+                else:
+                    view = pn.widgets.DatetimePicker(
+                        name=label, value=dt_value, description=description
+                    )
+            elif format_ == "date":
+                json_codec = JsonDateCodec()
+                dt_value = json_codec.from_json(value) or datetime.date.today()
+                view = pn.widgets.DatePicker(
+                    name=label, value=dt_value, description=description
+                )
+            else:
+                json_codec = JsonTimeCodec()
+                dt_value = json_codec.from_json(value) or datetime.datetime.now().time()
+                view = pn.widgets.TimePicker(name=label, value=dt_value)
+            return PanelField(view_model, view, json_codec=json_codec)
+
+        if format_ == "password":
+            view = pn.widgets.PasswordInput(
+                name=label,
+                value=value,
+                description=description,
+                placeholder=placeholder,
             )
-        if enum is not None:
+        elif enum is not None:
             if widget_hint == "radio":
                 view = pn.widgets.RadioBoxGroup(name=label, value=value, options=enum)
             elif widget_hint == "button":
@@ -166,11 +200,17 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
                 )
         elif widget_hint == "textarea":
             view = pn.widgets.TextAreaInput(
-                name=label, value=value, description=description
+                name=label,
+                value=value,
+                description=description,
+                placeholder=placeholder,
             )
         else:
             view = pn.widgets.TextInput(
-                name=label, value=value, description=description
+                name=label,
+                value=value,
+                description=description,
+                placeholder=placeholder,
             )
         return PanelField(view_model, view)
 
