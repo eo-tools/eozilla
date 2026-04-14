@@ -6,7 +6,7 @@ import datetime
 
 from gavicore.util.json import (
     JsonDateCodec,
-    JsonDatetimeCodec,
+    JsonDateTimeCodec,
     JsonIdentityCodec,
     JsonTimeCodec,
 )
@@ -20,7 +20,7 @@ def test_json_identity_codec():
 
 
 def test_json_datetime_codec():
-    c = JsonDatetimeCodec()
+    c = JsonDateTimeCodec()
     assert c.to_json(None) is None
     assert c.from_json(None) is None
     assert c.to_json(datetime.datetime(2026, 4, 1, 10, 20, 56)) == "2026-04-01T10:20:56"

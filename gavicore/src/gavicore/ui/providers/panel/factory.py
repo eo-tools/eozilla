@@ -14,8 +14,11 @@ from gavicore.ui.vm import SelectiveViewModel, ViewModel
 from gavicore.util.json import (
     JsonCodec,
     JsonDateCodec,
-    JsonDatetimeCodec,
+    JsonDateTimeCodec,
     JsonTimeCodec,
+    JsonBase64Codec,
+    JsonValue,
+    T,
 )
 from gavicore.util.text import ArrayTextConverter, TextConverter
 
@@ -31,6 +34,9 @@ _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
     DataType.number: TextConverter.NumberArray(),
     DataType.string: TextConverter.StringArray(),
 }
+
+
+pn.extension("filedropper")
 
 
 class PanelFieldFactory(FieldFactoryBase[PanelField]):
@@ -158,7 +164,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         if format_ in ("datetime", "date", "time"):
             json_codec: JsonCodec
             if format_ == "datetime":
-                json_codec = JsonDatetimeCodec()
+                json_codec = JsonDateTimeCodec()
                 dt_value = json_codec.from_json(value) or datetime.datetime.today()
                 if widget_hint == "input":
                     view = pn.widgets.DatetimeInput(
@@ -178,6 +184,22 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
                 json_codec = JsonTimeCodec()
                 dt_value = json_codec.from_json(value) or datetime.datetime.now().time()
                 view = pn.widgets.TimePicker(name=label, value=dt_value)
+            return PanelField(view_model, view, json_codec=json_codec)
+
+        if format_ == "bytes":
+            json_codec: JsonCodec = JsonBase64Codec()
+            if widget_hint == "dropper":
+                json_codec = _DropperCodec(json_codec)
+                view = pn.widgets.FileDropper(
+                    name=label,
+                    multiple=False,
+                )
+            else:
+                view = pn.widgets.FileInput(
+                    name=label,
+                    description=description,
+                    multiple=False,
+                )
             return PanelField(view_model, view, json_codec=json_codec)
 
         if format_ == "password":
@@ -404,3 +426,20 @@ def _layout_views(
         return pn.Row(*views)
     else:
         return pn.Column(*views)
+
+
+class _DropperCodec(JsonCodec[dict]):
+    def __init__(self, inner: JsonCodec[str | bytes]):
+        self.inner = inner
+
+    def to_json(self, value: dict | None) -> JsonValue:
+        if value is None:
+            return None
+        if not value:
+            return ""
+        return self.inner.to_json(tuple(value.values())[0])
+
+    def from_json(self, json_value: JsonValue) -> dict | None:
+        if json_value is None:
+            return None
+        return {"dummy.bin": self.inner.from_json(json_value)}
