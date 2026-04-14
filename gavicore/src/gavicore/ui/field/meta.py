@@ -584,7 +584,7 @@ def _get_initial_value(meta: FieldMeta) -> Any:
             return [_get_initial_value(item_meta) for _i in range(min_items)]
         case DataType.object:
             assert isinstance(meta.properties, dict)
-            # TODO: consider minProperties, additionalProperties
+            # Note, we may also consider minProperties, additionalProperties
             # create object with required properties
             required = set(schema.required or [])
             properties = meta.properties
