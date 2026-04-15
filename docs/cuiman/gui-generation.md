@@ -28,21 +28,21 @@ Therefore, most of the customization configuration is directly mapped
 to configuration of the underlying Panel widgets and viewables.
 
 
-### Schema Metadata Mapping
+### Schema Mapping Overview
 
 A given schema is converted into UI fields given using the available metadata that 
 is part of the schema itself and metadata that can be specified using special 
 schema properties prefixed by "x-ui".
 
-OpenAPI/JSON Schema metadata:
+**Mapped OpenAPI/JSON schema metadata:**
 
 - `title` - used as widget or group label
-- `description` - used as tool-zip text, where possible
+- `description` - used as tool-tip text, where possible
 - `default` - serves as default value for the widget
 - `enum` - provides the options for select-like widgets
 - `format` - mostly for type `string`, controls the actual target data type  
 
-Supported "x-ui" extensions:
+**Supported "x-ui" metadata extensions**:
 
 - `x-ui-widget` - hint to generate a widget of the given type
 - `x-ui-placeholder` - a placeholder value used in text or numeric input fields
@@ -66,24 +66,25 @@ property named `x-ui`:
     }
 ```
 
-
-### Schema Widget Mapping 
+**Schema widget mapping:** 
 
 The following list provides an overview about the currently implemented
 mapping of schema elements to Panel widgets and panels.
 
 - `type: boolean`: creates **checkbox** and **switch** widgets.
 - `type: integer` and `type: number`: creates numeric **input** or **slider** widgets.
-  * `enum: [...]`: creates numeric **select**, **radio group**, or **toggle button group** widgets. 
+    * `enum: [...]`: creates numeric **select**, **radio group**, 
+      or **toggle button group** widgets. 
 - `type: string`: creates **text input**, **textarea**, **date/time picker** widgets.
-  * `enum: [...]`: creates textual **select**, **radio group**, or **toggle button group** widgets. 
-  * `format: password`: creates a **password input** widget.
-  * `format: datetime`: creates a **datetime picker** widget.
-  * `format: date`: creates a **date picker** widget.
-  * `format: time`: creates a **time picker** widget.
+    * `enum: [...]`: creates textual **select**, **radio group**, 
+      or **toggle button group** widgets. 
+    * `format: password`: creates a **password input** widget.
+    * `format: datetime`: creates a **datetime picker** widget.
+    * `format: date`: creates a **date picker** widget.
+    * `format: time`: creates a **time picker** widget.
 - `type: array`: creates **array input** widgets for numeric and textual item types
   or **array editors** for any item schema type.
-  * `format: bbox`: creates a **map view** to enter a bounding box.
+    * `format: bbox`: creates a **map view** to enter a bounding box.
 - `type: object`: creates a **sub-form** with optionally ordered and outlaid 
   fields for the object properties.
 - `oneOf: [s1, s2, s3, ...]`: creates a **tabs panel** with a tab 
@@ -96,17 +97,34 @@ mapping of schema elements to Panel widgets and panels.
   the generated field for the same schema, but using `nullable: false`. If
   unselected, the value is `null` (JSON) or `Null` (Python).
 
-If none of the above is given, a JSON editor will be generated for a given 
+If none of the above is given, a JSON editor widget will be generated for a given 
 schema.
 
-Currently unsupported Schema properties:
+**Partly supported schema keywords:**
 
-- `minProperties`, `maxProperties` - simply ignored. 
-- `additionalProperties` - simply ignored.
-- `not` - ignored, hence falls back untyped.
+- `$ref`: only schema-relative references are currently 
+  supported. For example, `$ref: #/$defs/Complex` expects a schema definition 
+  named `Complex` in a top-level JSON object `$defs` in the same schema.
+  Schema definitions can also be referenced in nested objects, e.g., 
+  `$ref: #/components/schemas/Complex`.
+- `prefixItems`: JSON schema introduced this keyword to represent typed
+  tuples. Since there is no unambiguous OpenAPI schema representation,
+  multiple prefix-item schemas are converted into an `items` value which 
+  comprises a `oneOf` element of the converted `prefixItems` schemas. 
+- `items`: if the value is a list of schemas (= tuple), see `prefixItems` above. 
 
-The following subsection describe the default mapping of certain schema types
-to Panel widgets and the available customization options. 
+**Currently unsupported schema keywords:**
+
+- `additionalProperties`: currently not implemented, ignored for time being.
+  The plan is to support it by a special editor that allows adding and removing 
+  named properties. Will work only if and only if `properties` is not given.
+- `minProperties`, `maxProperties`: ignored.
+- `additionalItems`: ignored.
+- `not` - ignored, hence falls back to an untyped schema.
+
+
+The following subsections describe the default mapping of schema types
+to Panel widgets in more detail including the available customization options. 
 
 
 ### Type `boolean`
