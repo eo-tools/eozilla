@@ -15,7 +15,8 @@ from gavicore.models import (
     ProcessDescription,
     Schema,
 )
-from gavicore.util.schema import create_schema_dict
+
+from .schema import model_class_to_openapi_schema_dict
 
 
 @dataclass
@@ -164,7 +165,9 @@ def _parse_inputs(
 
     model_class.model_rebuild()
 
-    inputs_schema_dict: dict[str, Any] = create_schema_dict(model_class)
+    inputs_schema_dict: dict[str, Any] = model_class_to_openapi_schema_dict(
+        model_class, inline_refs=True
+    )
     required_names: list[str] = inputs_schema_dict.get("required", [])
     properties: dict[str, Any] = inputs_schema_dict.get("properties", {})
 
@@ -197,7 +200,9 @@ def _parse_outputs(
         fn_name, output_annotation, outputs
     )
     model_class = create_model("Outputs", **model_field_definitions)  # type: ignore[call-overload]
-    outputs_schema_dict = create_schema_dict(model_class)
+    outputs_schema_dict = model_class_to_openapi_schema_dict(
+        model_class, inline_refs=True
+    )
     properties = outputs_schema_dict.get("properties", {})
 
     output_descriptions: dict[str, OutputDescription] = {}
