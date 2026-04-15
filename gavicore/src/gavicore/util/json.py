@@ -5,7 +5,7 @@ import base64
 import datetime
 from abc import ABC, abstractmethod
 from types import NoneType
-from typing import Any, Final, Literal, TypeAlias, Generic, TypeVar
+from typing import Any, Final, Generic, Literal, TypeAlias, TypeVar
 
 from gavicore.util.ensure import ensure_type
 

@@ -27,6 +27,9 @@ Cuiman's default GUI library is [Panel](https://panel.holoviz.org/).
 Therefore, most of the customization configuration is directly mapped
 to configuration of the underlying Panel widgets and viewables.
 
+
+### Schema Metadata Mapping
+
 A given schema is converted into UI fields given using the available metadata that 
 is part of the schema itself and metadata that can be specified using special 
 schema properties prefixed by "x-ui".
@@ -50,8 +53,9 @@ Supported "x-ui" extensions:
 - `x-ui-layout` - grouping fields and group layout
 
 Note that you can also use the prefix "x-ui:" instead of "x-ui-". The latter is 
-more convenient when encoding schemas is YAML. If multiple extensions are used, 
-they can also be grouped in an object property named `x-ui`:
+more convenient when encoding schemas is YAML. If multiple extensions are used,
+in a schema or process input description, they can also be grouped in an object 
+property named `x-ui`:
 
 ```json
     "x-ui": {
@@ -62,23 +66,24 @@ they can also be grouped in an object property named `x-ui`:
     }
 ```
 
-### Schema Mapping Overview 
+
+### Schema Widget Mapping 
 
 The following list provides an overview about the currently implemented
 mapping of schema elements to Panel widgets and panels.
 
 - `type: boolean`: creates **checkbox** and **switch** widgets.
 - `type: integer` and `type: number`: creates numeric **input** or **slider** widgets.
-    - `enum: [...]`: creates numeric **select**, **radio group**, or **toggle button group** widgets. 
+  * `enum: [...]`: creates numeric **select**, **radio group**, or **toggle button group** widgets. 
 - `type: string`: creates **text input**, **textarea**, **date/time picker** widgets.
-    - `enum: [...]`: creates textual **select**, **radio group**, or **toggle button group** widgets. 
-    - `format: password`: creates a **password input** widget.
-    - `format: datetime`: creates a **datetime picker** widget.
-    - `format: date`: creates a **date picker** widget.
-    - `format: time`: creates a **time picker** widget.
+  * `enum: [...]`: creates textual **select**, **radio group**, or **toggle button group** widgets. 
+  * `format: password`: creates a **password input** widget.
+  * `format: datetime`: creates a **datetime picker** widget.
+  * `format: date`: creates a **date picker** widget.
+  * `format: time`: creates a **time picker** widget.
 - `type: array`: creates **array input** widgets for numeric and textual item types
   or **array editors** for any item schema type.
-    - `format: bbox`: creates a **map view** to enter a bounding box.
+  * `format: bbox`: creates a **map view** to enter a bounding box.
 - `type: object`: creates a **sub-form** with optionally ordered and outlaid 
   fields for the object properties.
 - `oneOf: [s1, s2, s3, ...]`: creates a **tabs panel** with a tab 
@@ -103,6 +108,7 @@ Currently unsupported Schema properties:
 The following subsection describe the default mapping of certain schema types
 to Panel widgets and the available customization options. 
 
+
 ### Type `boolean`
 
 Schemas of type `boolean` generate 
@@ -113,6 +119,7 @@ by default.
 
 - `x-ui-widget: switch`: generates a 
   [switch](https://panel.holoviz.org/reference/widgets/Switch.html) instead.
+
 
 ### Type `integer` and `number`
 
@@ -139,6 +146,7 @@ If `enum` is given too:
   [radio button group](https://panel.holoviz.org/reference/widgets/RadioButtonGroup).
 - `x-ui-widget: select` generates a 
   [select](https://panel.holoviz.org/reference/widgets/Select) widget.
+
 
 ### Type `string`
 
@@ -206,6 +214,7 @@ box will be the effective field value.
 - `x-ui-widget: textarea` similar as above, but uses a multi-line 
   [text area](https://panel.holoviz.org/reference/widgets/TextAreaInput.html).
 
+
 ### Type `object`
 
 Schemas of Type `object` generate sub-form with optionally ordered and outlaid 
@@ -227,12 +236,14 @@ order that corresponds to order of the `properties` in the object schema.
   to specify the fields order. The default order value is the index of 
   a property in its given order.
 
+
 ### `nullable` Schemas 
 
 If `nullable: true` a labeled switch widget is created that if selected, 
 shows the generated field for the same schema, but using `nullable: false`.
 If the switch is unselected, the effective value of the field will be 
 `null` (`Null` in Python).
+
 
 ### `oneOf` and `anyOf` Schemas
 
@@ -248,11 +259,13 @@ The discriminator property is omitted from the generated sub-forms
 as its field value is determined by `$ref` schema name or the 
 discriminator's optional `mapping` keys.
 
+
 ### `allOf` Schemas
 
 The `allOf` schema combination creates a field for the schema resulting from
 merging all its subschemas. Typically, the item schemas are objects and `allOf`
 is used to represent a type derived form two or more subtypes.
+
 
 ## Customizing the UI Generation
 
@@ -268,7 +281,7 @@ as usually only Eozilla/Cuiman client applications require a GUI.
 TODO - write
 
 1. Implement the `FieldFactory` interface
-2. Start using `FieldFactoryBase`
+2. Start by using `FieldFactoryBase`
 3. Making effective use of `FieldMeta` and `FieldContext`
 4. Creating a `ViewModel`
 5. Creating the Panel `View`

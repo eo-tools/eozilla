@@ -5,6 +5,7 @@
 import datetime
 
 from gavicore.util.json import (
+    JsonBase64Codec,
     JsonDateCodec,
     JsonDateTimeCodec,
     JsonIdentityCodec,
@@ -17,6 +18,15 @@ def test_json_identity_codec():
     assert c.from_json(None) is None
     assert c.from_json(True) is True
     assert c.to_json(3) == 3
+
+
+def test_json_base64_codec():
+    c = JsonBase64Codec()
+    assert c.to_json(None) is None
+    assert c.from_json(None) is None
+    assert c.to_json("¡Adios!") == "wqFBZGlvcyE="
+    assert c.from_json("wqFBZGlvcyE=") == b"\xc2\xa1Adios!"
+    assert c.to_json(b"\xc2\xa1Adios!") == "wqFBZGlvcyE="
 
 
 def test_json_datetime_codec():
