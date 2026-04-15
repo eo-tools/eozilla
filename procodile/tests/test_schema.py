@@ -9,8 +9,8 @@ import pydantic
 
 from procodile.schema import (
     inline_schema_refs,
-    model_class_to_openapi_schema_dict,
     json_schema_to_openapi_schema,
+    model_class_to_openapi_schema_dict,
 )
 
 
