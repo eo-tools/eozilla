@@ -73,7 +73,7 @@ class CompositeViewModel(Generic[K, T], ViewModel[T], ABC):
         """Set item by key and value."""
 
     def _create_child(self, child_meta: FieldMeta, child_value: Any) -> ViewModel:
-        child_vm = self.create(child_meta, value=child_value)
+        child_vm = self.from_field_meta(child_meta, value=child_value)
         child_vm.watch(self._on_child_change)
         return child_vm
 

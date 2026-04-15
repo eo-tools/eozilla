@@ -13,9 +13,9 @@
   - Dropped subpackage `cuiman.gui.component`.
   - Added a pixi tool to demonstrate and debug generated UIs from 
     OpenAPI Schema: `pixi run schema2ui`.
-  
+
 - Enhanced the **Appligator** package with Dockerfile generation and 
-  improved Airflow integration:
+  improved Airflow DAG generation:
     - Added `appligator.airflow.gen_dockerfile.generate` for Jinja2-template-based
       Dockerfile generation. Produces a two-stage pixi build with support for
       non-editable local package installs. The runtime base image is configurable

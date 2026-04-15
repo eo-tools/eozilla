@@ -84,7 +84,6 @@ class Schema(BaseModel):
     example: Any | None = None
     examples: Any | None = None
     deprecated: bool | None = False
-    field_ref: str | None = Field(None, alias="$ref")
     # type "number" and "integer"
     minimum: int | float | None = None
     maximum: int | float | None = None
@@ -116,11 +115,14 @@ class Schema(BaseModel):
     oneOf: list[Schema] | None = None
     anyOf: list[Schema] | None = None
     discriminator: Discriminator | None = None
+    # refs
+    id: str | None = Field(None, alias="$id", min_length=1)
+    ref: str | None = Field(None, alias="$ref", min_length=1)
 
 
 class Discriminator(BaseModel):
-    propertyName: str | None = Field(None, min_length=1)
-    mapping: dict[str, Schema] | None = None
+    propertyName: str = Field(..., min_length=1)
+    mapping: dict[str, str] | None = None
 
 
 # ---------------------------------------------------------------------

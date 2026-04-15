@@ -15,11 +15,12 @@ properties:
         - green
         - blue
         - red
-  date_array:
+  datetime_array:
     type: array
     items:
       type: string
-      format: date
+      format: datetime
+      x-ui-widget: input
   uri_array:
     type: array
     items:
