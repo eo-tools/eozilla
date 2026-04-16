@@ -83,8 +83,9 @@ mapping of schema elements to Panel widgets and panels.
     * `format: date`: creates a **date picker** widget.
     * `format: time`: creates a **time picker** widget.
 - `type: array`: creates **array input** widgets for numeric and textual item types
-  or **array editors** for any item schema type.
-    * `format: bbox`: creates a **map view** to enter a bounding box.
+  or **array editors** for any item schema type. 
+  A few special tuple types such as **geographic bounding boxes** and 
+  **date(-time) ranges** are supported too.
 - `type: object`: creates a **sub-form** with optionally ordered and outlaid 
   fields for the object properties.
 - `oneOf: [s1, s2, s3, ...]`: creates a **tabs panel** with a tab 
@@ -215,14 +216,24 @@ If `enum` is specified:
 
 ### Type `array`
 
-With one exception, the `array` type will generate an _array editor_ field.
+With a few exceptions, the `array` type will generate an _array editor_ field.
 The editor is used to interactively add, edit, and remove array items. 
 The array item fields are generated from the schema's `items` property 
 which specifies the items' schema.
 
-If the `array` schema defines `format: bbox` or `x-ui-widget: map` a map
-view will be generated that lets users draw a geometry whose bounding 
-box will be the effective field value.
+A few tuple types are supported that generate special widgets instead of 
+the default array editor:
+
+- **geographic bounding boxes**: item type `number` with `minItems: 4`, `maxItems: 4`, 
+  and `x-ui-widget: map` creates a special editor to enter the bounding box
+  using [](). It lets users draw a geometry whose bounding 
+  box will become the effective field value.
+
+- **date(-time) ranges**: item type `string` with `minItems: 2`, `maxItems: 2` creates 
+  a [date-time range picker](https://panel.holoviz.org/reference/widgets/DatetimeRangePicker.html) 
+  for item format `date-time` or 
+  a [date range picker](https://panel.holoviz.org/reference/widgets/DateRangePicker.html) 
+  for item format `date`. 
 
 **Customisation options**: 
 

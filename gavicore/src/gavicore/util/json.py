@@ -26,15 +26,15 @@ T = TypeVar("T")
 
 
 class JsonCodec(ABC, Generic[T]):
-    """Convert component values to/from JSON values."""
+    """Convert component values to/from valid JSON values."""
 
     @abstractmethod
     def to_json(self, value: T | None) -> JsonValue:
-        """Return a JSON value from given Python value."""
+        """Return a valid JSON value from given Python value."""
 
     @abstractmethod
     def from_json(self, json_value: JsonValue) -> T | None:
-        """Return a Python value from given JSON value."""
+        """Return a Python value from given valid JSON value."""
 
 
 class JsonIdentityCodec(JsonCodec[Any]):
@@ -112,3 +112,65 @@ class JsonTimeCodec(JsonCodec[datetime.time]):
         ensure_type("json_value", json_value, str)
         assert isinstance(json_value, str)
         return datetime.time.fromisoformat(json_value)
+
+
+DateTimeRange = tuple[datetime.datetime, datetime.datetime]
+
+
+class JsonDateTimeRangeCodec(JsonCodec[DateTimeRange]):
+    def to_json(self, value: DateTimeRange | None) -> JsonValue:
+        if not value:
+            return None
+        ensure_type("value", value, (list, tuple))
+        assert isinstance(value, (list, tuple))
+        assert len(value) == 2
+        dt1, dt2 = value
+        return [
+            datetime.datetime.isoformat(dt1),
+            datetime.datetime.isoformat(dt2),
+        ]
+
+    def from_json(self, json_value: JsonValue) -> DateTimeRange | None:
+        if not json_value:
+            return None
+        ensure_type("json_value", json_value, list)
+        assert isinstance(json_value, list)
+        assert len(json_value) == 2
+        dt1, dt2 = json_value
+        assert isinstance(dt1, str)
+        assert isinstance(dt2, str)
+        return (
+            datetime.datetime.fromisoformat(dt1) if dt1 else datetime.datetime.now(),
+            datetime.datetime.fromisoformat(dt2) if dt2 else datetime.datetime.now(),
+        )
+
+
+DateRange = tuple[datetime.date, datetime.date]
+
+
+class JsonDateRangeCodec(JsonCodec[DateRange]):
+    def to_json(self, value: DateRange | None) -> JsonValue:
+        if not value:
+            return None
+        ensure_type("value", value, (list, tuple))
+        assert isinstance(value, (list, tuple))
+        assert len(value) == 2
+        dt1, dt2 = value
+        return [
+            datetime.date.isoformat(dt1),
+            datetime.date.isoformat(dt2),
+        ]
+
+    def from_json(self, json_value: JsonValue) -> DateRange | None:
+        if not json_value:
+            return None
+        ensure_type("json_value", json_value, list)
+        assert isinstance(json_value, list)
+        assert len(json_value) == 2
+        dt1, dt2 = json_value
+        assert isinstance(dt1, str)
+        assert isinstance(dt2, str)
+        return (
+            datetime.date.fromisoformat(dt1) if dt1 else datetime.date.today(),
+            datetime.date.fromisoformat(dt2) if dt2 else datetime.date.today(),
+        )

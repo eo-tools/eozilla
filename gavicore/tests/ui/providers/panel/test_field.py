@@ -14,6 +14,10 @@ from .schema2ui import load_schemas
 # noinspection PyMethodMayBeStatic
 class PanelFieldTest(TestCase):
     def test_with_all_schemas(self):
+        """
+        Smoke test: ensure all schemas are
+        converted into fields without errors.
+        """
         schemas = load_schemas()
         for path, schema in schemas:
             name = path.stem.replace("-", "_")

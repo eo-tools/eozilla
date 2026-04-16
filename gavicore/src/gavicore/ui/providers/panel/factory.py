@@ -15,7 +15,9 @@ from gavicore.util.json import (
     JsonBase64Codec,
     JsonCodec,
     JsonDateCodec,
+    JsonDateRangeCodec,
     JsonDateTimeCodec,
+    JsonDateTimeRangeCodec,
     JsonTimeCodec,
     JsonValue,
 )
@@ -233,41 +235,66 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         return PanelField(view_model, view)
 
     def get_array_score(self, meta: FieldMeta) -> int:
-        assert meta.items is not None
-        item_type = meta.items.schema_.type
-        if item_type is not None:
-            format_ = meta.schema_.format
-            widget_hint = meta.widget
-            if item_type == DataType.number and (
-                (format_ or "").lower() == "bbox" or widget_hint == "map"
-            ):
-                return 10
-            array_converter = _ARRAY_TEXT_CONVERTERS.get(item_type)
-            if array_converter is not None:
-                return 5
-        # we'll fall back to JSON editor
-        return 1
+        return 5
 
     def create_array_field(self, ctx: FieldContext) -> PanelField:
         meta = ctx.meta
+        schema = meta.schema_
+        min_items = schema.minItems
+        max_items = schema.maxItems
+        assert meta.items is not None
         item_meta = meta.items
-        assert item_meta is not None
-        format_ = meta.schema_.format
-        widget_hint = meta.widget
         item_schema = item_meta.schema_
         item_type = item_schema.type
+        item_format = item_schema.format
+
+        format_ = schema.format
+        widget_hint = meta.widget
 
         view_model = ctx.vm.array()
+        json_codec: JsonCodec
 
-        if item_type == DataType.number and (
-            ((format_ or "").lower() == "bbox") or widget_hint == "map"
+        if (
+            item_type == DataType.number
+            and (format_ == "bbox" or widget_hint == "map")
+            and min_items == 4
+            and max_items == 4
         ):
             return PanelField(view_model, BBoxEditor())
 
-        item_schema = item_meta.schema_
-        item_format = item_schema.format
-        assert item_type is not None
-        array_converter = _ARRAY_TEXT_CONVERTERS.get(item_type)
+        if (
+            item_type == DataType.string
+            and item_format == "date-time"
+            and widget_hint in ("range-picker", None)
+            and min_items == 2
+            and max_items == 2
+        ):
+            json_codec = JsonDateTimeRangeCodec()
+            view = pn.widgets.DatetimeRangePicker(
+                name=ctx.label,
+                value=json_codec.from_json(ctx.initial_value),
+                description=ctx.meta.description,
+            )
+            return PanelField(view_model, view, json_codec=json_codec)
+
+        if (
+            item_type == DataType.string
+            and item_format == "date"
+            and widget_hint in ("range-picker", None)
+            and min_items == 2
+            and max_items == 2
+        ):
+            json_codec = JsonDateRangeCodec()
+            view = pn.widgets.DateRangePicker(
+                name=ctx.label,
+                value=json_codec.from_json(ctx.initial_value),
+                description=ctx.meta.description,
+            )
+            return PanelField(view_model, view, json_codec=json_codec)
+
+        array_converter = (
+            _ARRAY_TEXT_CONVERTERS.get(item_type) if item_type is not None else None
+        )
 
         if (
             array_converter is not None

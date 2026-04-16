@@ -1,9 +1,9 @@
 type: object
 properties:
-  array:
+  number_4_tuple_map_widget:
     type: array
     items:
       type: number
     minItems: 4
     maxItems: 4
-    "x-ui:widget": map
+    x-ui-widget: map
