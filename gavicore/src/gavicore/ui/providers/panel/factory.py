@@ -4,12 +4,13 @@
 
 import datetime
 import math
+from abc import ABC
 from typing import Any, Literal
 
 import panel as pn
 
 from gavicore.models import DataType
-from gavicore.ui import FieldContext, FieldFactoryBase, FieldMeta
+from gavicore.ui import FieldContext, FieldFactory, FieldFactoryBase, FieldMeta
 from gavicore.ui.vm import SelectiveViewModel, ViewModel
 from gavicore.util.json import (
     JsonBase64Codec,
@@ -40,7 +41,15 @@ _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
 pn.extension("filedropper")
 
 
-class PanelFieldFactory(FieldFactoryBase[PanelField]):
+class PanelFieldFactory(FieldFactory[PanelField], ABC):
+    """Interface implemented by Panel fields factories."""
+
+
+class PanelFieldFactoryBase(FieldFactoryBase[PanelField], PanelFieldFactory, ABC):
+    """Base class for Panel fields factories."""
+
+
+class DefaultPanelFieldFactory(PanelFieldFactoryBase):
     def get_nullable_score(self, meta: FieldMeta) -> int:
         return 5
 
@@ -327,6 +336,29 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         return 5
 
     def create_object_field(self, ctx: FieldContext) -> PanelField:
+        widget_hint = ctx.meta.widget
+        schema = ctx.meta.schema_
+
+        view_model: ViewModel
+
+        if widget_hint == "editor" or (
+            schema.additionalProperties
+            in (
+                True,
+                None,
+            )
+            and not schema.properties
+        ):
+            view_model = ctx.vm.primitive()
+            return PanelField(
+                view_model,
+                pn.widgets.JSONEditor(
+                    mode="text",
+                    value=view_model.value,
+                    schema=schema.to_json_dict(),
+                ),
+            )
+
         prop_fields = ctx.create_property_fields()
         view_models = {k: f.view_model for k, f in prop_fields.items()}
         view_model = ctx.vm.object(properties=view_models)

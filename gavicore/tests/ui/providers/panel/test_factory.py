@@ -1,23 +1,26 @@
 #  Copyright (c) 2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
-import json
+
 from unittest import TestCase
 
 import panel as pn
 
 from gavicore.models import Schema
 from gavicore.ui import FieldContext, FieldGenerator, FieldMeta
-from gavicore.ui.providers.panel.factory import PanelFieldFactory, _FileDropperCodec
+from gavicore.ui.providers.panel.factory import (
+    DefaultPanelFieldFactory,
+    _FileDropperCodec,
+)
 from gavicore.ui.providers.panel.widgets.bbox import BBoxEditor
 from gavicore.ui.providers.panel.widgets.labeled import LabeledWidget
 from gavicore.ui.vm import AnyViewModel, PrimitiveViewModel, SelectiveViewModel
 
 
-class PanelFieldFactoryTest(TestCase):
+class DefaultPanelFieldFactoryTest(TestCase):
     def test_create_field_for_bbox_tuple(self):
         generator = FieldGenerator()
-        generator.register_field_factory(PanelFieldFactory())
+        generator.register_field_factory(DefaultPanelFieldFactory())
 
         meta = _meta_from_schema(
             {
@@ -33,7 +36,7 @@ class PanelFieldFactoryTest(TestCase):
 
     def test_create_field_for_date_tuple(self):
         generator = FieldGenerator()
-        generator.register_field_factory(PanelFieldFactory())
+        generator.register_field_factory(DefaultPanelFieldFactory())
 
         meta = _meta_from_schema(
             {
@@ -48,7 +51,7 @@ class PanelFieldFactoryTest(TestCase):
 
     def test_create_field_for_discriminator(self):
         generator = FieldGenerator()
-        generator.register_field_factory(PanelFieldFactory())
+        generator.register_field_factory(DefaultPanelFieldFactory())
         field = generator.generate_field(
             _meta_from_schema(
                 {
@@ -95,7 +98,7 @@ class PanelFieldFactoryTest(TestCase):
 
     def assert_create_field_for_combinations(self, combination_op: str):
         generator = FieldGenerator()
-        generator.register_field_factory(PanelFieldFactory())
+        generator.register_field_factory(DefaultPanelFieldFactory())
 
         field = generator.generate_field(_meta_from_schema({combination_op: []}))
         self.assertIsInstance(field.view_model, AnyViewModel)
@@ -108,7 +111,7 @@ class PanelFieldFactoryTest(TestCase):
 
 def _ctx_from_schema(schema: Schema | dict) -> FieldContext:
     generator = FieldGenerator()
-    generator.register_field_factory(PanelFieldFactory())
+    generator.register_field_factory(DefaultPanelFieldFactory())
     return FieldContext(generator=generator, meta=_meta_from_schema(schema))
 
 

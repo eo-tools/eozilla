@@ -7,7 +7,7 @@ from typing import Any, Final
 import panel as pn
 
 from gavicore.models import Schema
-from gavicore.ui import FieldBase, FieldGenerator, FieldMeta
+from gavicore.ui import FieldBase, FieldFactoryRegistry, FieldGenerator, FieldMeta
 from gavicore.ui.vm import ViewModel
 from gavicore.util.ensure import ensure_type
 from gavicore.util.json import JsonCodec, JsonIdentityCodec
@@ -55,9 +55,12 @@ class PanelField(FieldBase[pn.widgets.WidgetBase]):
         name: str,
         schema: Schema,
         initial_value: Any | Undefined = Undefined.value,
+        field_factory_registry: FieldFactoryRegistry["PanelField"] | None = None,
     ) -> "PanelField":
         return cls.from_meta(
-            FieldMeta.from_schema(name, schema), initial_value=initial_value
+            FieldMeta.from_schema(name, schema),
+            initial_value=initial_value,
+            field_factory_registry=field_factory_registry,
         )
 
     @classmethod
@@ -65,9 +68,14 @@ class PanelField(FieldBase[pn.widgets.WidgetBase]):
         cls,
         meta: FieldMeta,
         initial_value: Any | Undefined = Undefined.value,
+        field_factory_registry: FieldFactoryRegistry["PanelField"] | None = None,
     ) -> "PanelField":
-        from .factory import PanelFieldFactory
+        if field_factory_registry is None:
+            from .registry import PanelFieldFactoryRegistry
 
-        generator = FieldGenerator[PanelField, pn.widgets.WidgetBase]()
-        generator.register_field_factory(PanelFieldFactory())
+            field_factory_registry = PanelFieldFactoryRegistry.create_default()
+        assert field_factory_registry is not None
+        generator = FieldGenerator[PanelField, pn.widgets.WidgetBase](
+            field_factory_registry
+        )
         return generator.generate_field(meta, initial_value=initial_value)

@@ -1,0 +1,10 @@
+type: object
+properties:
+  additional_properties_any:
+    type: object
+    additionalProperties: true
+
+  additional_properties_typed:
+    type: object
+    additionalProperties:
+      type: number

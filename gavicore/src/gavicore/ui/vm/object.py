@@ -74,6 +74,8 @@ class ObjectViewModel(ObjectViewModelBase):
                 if isinstance(value, dict) and k in value:
                     v = value[k]
                 else:
+                    # noinspection PyUnresolvedReferences
                     v = child_meta.get_initial_value()
+                # noinspection PyTypeChecker
                 vm = self._create_child(child_meta, v)
             self._properties[k] = vm

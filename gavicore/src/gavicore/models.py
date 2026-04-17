@@ -119,6 +119,12 @@ class Schema(BaseModel):
     id: str | None = Field(None, alias="$id", min_length=1)
     ref: str | None = Field(None, alias="$ref", min_length=1)
 
+    def to_json_dict(self) -> dict[str, Any]:
+        """Convert this model into a JSON-serializable `dict`."""
+        return self.model_dump(
+            mode="json", exclude_defaults=True, exclude_unset=True, by_alias=True
+        )
+
 
 class Discriminator(BaseModel):
     propertyName: str = Field(..., min_length=1)

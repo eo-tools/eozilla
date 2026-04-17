@@ -62,6 +62,7 @@ class Client(ApiClient):
             get_job_results=self.get_job_results,
             accept_process=accept_process,
             is_advanced_input=config_cls.is_advanced_input,
+            field_factory_registry=config_cls.get_field_factory_registry(),
         )
         # noinspection PyTypeChecker
         self._jobs_event_bus.register(main_panel)
