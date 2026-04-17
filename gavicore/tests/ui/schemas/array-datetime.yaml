@@ -1,0 +1,17 @@
+type: object
+properties:
+  string_2_tuple_date_time_format:
+    type: array
+    items:
+      type: string
+      format: date-time
+    minItems: 2
+    maxItems: 2
+
+  string_2_tuple_date_format:
+    type: array
+    items:
+      type: string
+      format: date
+    minItems: 2
+    maxItems: 2

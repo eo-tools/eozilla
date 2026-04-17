@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from functools import cache
 from pathlib import Path
 from typing import (
     Annotated,
@@ -17,7 +18,7 @@ from pydantic import Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
-from gavicore.ui import FieldMeta
+from gavicore.ui import FieldFactoryRegistry, FieldMeta
 
 from .auth import AuthConfig
 from .defaults import DEFAULT_API_URL
@@ -52,18 +53,6 @@ class ClientConfig(AuthConfig, BaseSettings):
     """
 
     return_type_map: ClassVar[dict[type, type]] = {}
-    """
-    A mapping from a hard-coded client return type to a 
-    custom return type. The hard-coded return type is usually a 
-    model class from `gavicore.models`. The custom return type 
-    typically extends the model class.  
-    Designed to be configured by library clients.
-    The default mapping is empty.
-    """
-
-    opener_registry: ClassVar[JobResultOpenerRegistry] = (
-        JobResultOpenerRegistry.create_default()
-    )
     """
     A mapping from a hard-coded client return type to a 
     custom return type. The hard-coded return type is usually a 
@@ -271,8 +260,9 @@ class ClientConfig(AuthConfig, BaseSettings):
         field_meta = FieldMeta.from_input_description(input_name, input_description)
         return field_meta.advanced or field_meta.level == "advanced"
 
+    @classmethod
     def register_job_result_opener(
-        self, opener_type: type[JobResultOpener]
+        cls, opener_type: type[JobResultOpener]
     ) -> Callable[[], None]:
         """Register a job result opener.
 
@@ -282,7 +272,46 @@ class ClientConfig(AuthConfig, BaseSettings):
         Returns:
             A function that can be called to unregister the opener.
         """
-        return self.opener_registry.register(opener_type)
+        return cls.get_job_result_opener_registry().register(opener_type)
+
+    @classmethod
+    @cache
+    def get_job_result_opener_registry(cls) -> JobResultOpenerRegistry:
+        """
+        Get the registry for openers that are used to open job results.
+
+        Use it to register custom openers for special job results.
+
+        Note that the registry contains types/classes, not instances.
+        """
+        return JobResultOpenerRegistry.create_default()
+
+    @classmethod
+    @cache
+    def get_field_factory_registry(cls) -> FieldFactoryRegistry:
+        """
+        Get the registry for factories that generate UI fields from
+        process inputs.
+
+        Used in the GUI client `cuiman.gui.Client`. Use it to register
+        factories that customize the way the client GUI is generated.
+
+        The default registry contains factories that creates UI fields for
+        the [Panel](https://panel.holoviz.org/) library as this is the primary
+        library used in the GUI client.
+
+        The default registry type is
+        `gavicore.ui.providers.panel.PanelFieldFactoryRegistry`.
+
+        The type of registered field factories is
+        `gavicore.ui.providers.panel.PanelFieldFactory`.
+
+        The type of the field instances created by the factories must be
+        `gavicore.ui.providers.panel.PanelField`.
+        """
+        from gavicore.ui.providers.panel import PanelFieldFactoryRegistry
+
+        return PanelFieldFactoryRegistry.create_default()
 
 
 # Set Eozilla defaults.

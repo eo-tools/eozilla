@@ -135,4 +135,9 @@ class ClientMixin(ABC):
             _media_type=media_type,
             options=options,
         )
-        return run_sync(open_job_result, ctx, *self.config.opener_registry.opener_types)
+        opener_registry = self.config.get_job_result_opener_registry()
+        return run_sync(
+            open_job_result,
+            ctx,
+            *opener_registry.opener_types,
+        )

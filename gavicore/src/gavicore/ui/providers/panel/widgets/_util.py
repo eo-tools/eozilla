@@ -5,8 +5,10 @@
 import panel as pn
 
 
-def get_header_items(title: str | None) -> tuple:
+def get_header_items(title: str | None, divider: bool = False) -> tuple:
     if title:
-        return f"{title}", pn.layout.Divider(margin=(-16, 0, 0, 8))
-    else:
-        return ()
+        text = pn.widgets.StaticText(value=title)
+        if divider:
+            return text, pn.layout.Divider(margin=(-12, 0, 0, 8))
+        return (text,)
+    return ()

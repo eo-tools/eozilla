@@ -36,7 +36,7 @@ class NullableViewModel(Generic[T], ViewModel[T | None]):
             self._inner.watch(self._on_inner_change)
         else:
             non_nullable_meta = meta.to_non_nullable()
-            self._inner = self.create(
+            self._inner = self.from_field_meta(
                 non_nullable_meta,
                 value=(
                     non_nullable_meta.get_initial_value()

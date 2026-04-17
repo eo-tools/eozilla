@@ -21,6 +21,8 @@ from gavicore.models import (
     ProcessDescription,
     ProcessList,
 )
+from gavicore.ui import FieldFactoryRegistry
+from gavicore.ui.providers.panel import PanelField
 
 from .viewmodel import (
     ExecuteProcessAction,
@@ -61,6 +63,7 @@ class MainPanelView(pn.viewable.Viewer):
         get_job_results: GetJobResultsAction,
         accept_process: ProcessPredicate,
         is_advanced_input: AdvancedInputPredicate,
+        field_factory_registry: FieldFactoryRegistry[PanelField],
     ):
         super().__init__()
 
@@ -71,6 +74,7 @@ class MainPanelView(pn.viewable.Viewer):
             is_advanced_input=is_advanced_input,
             get_process=get_process,
             execute_process=execute_process,
+            field_factory_registry=field_factory_registry,
         )
         # Used in view only, once we go async, move to viewmodel
         self._get_job_results = get_job_results
