@@ -10,6 +10,10 @@ copyright: Copyright &copy; 2026 Eozilla Team
 
 nav:
   - Overview: index.md
+  - Appligator:
+    - Introduction: appligator/introduction.md
+    - Usage: appligator/usage.md
+    - CLI: appligator/cli.md
   - Cuiman:
     - Introduction: cuiman/introduction.md
     - Configuration: cuiman/configuration.md
@@ -23,20 +27,22 @@ nav:
       - notebooks/cuiman-openers.ipynb
     - CLI Reference: cuiman/cli.md
     - API Reference: cuiman/api.md
-  - Wraptile:
-    - Introduction: wraptile/introduction.md
-    - Usage: wraptile/usage.md
-    - Customization: wraptile/customization.md
-    - CLI Reference: wraptile/cli.md
+  - Gavicore:
+    - Introduction: gavicore/introduction.md
+    - gavicore/api-models.md
+    - gavicore/api-service.md
+    - gavicore/api-ui.md
+    - gavicore/api-util.md
   - Procodile:
     - Introduction: procodile/introduction.md
     - Usage: procodile/usage.md
     - API Reference: procodile/api.md
     - CLI Reference: procodile/cli.md
-  - Appligator:
-    - Introduction: appligator/introduction.md
-    - Usage: appligator/usage.md
-    - CLI: appligator/cli.md
+  - Wraptile:
+    - Introduction: wraptile/introduction.md
+    - Usage: wraptile/usage.md
+    - Customization: wraptile/customization.md
+    - CLI Reference: wraptile/cli.md
   - Architecture: architecture.md
   - Contributing: contributing.md
 
@@ -99,11 +105,19 @@ plugins:
             docstring_style: google
             show_root_toc_entry: true
             show_root_heading: true
-            show_source: true
-            heading_level: 2
+            show_source: false
+            heading_level: 3
             annotations_path: brief
             members_order: source
-
+            show_if_no_docstring: false
+            inherited_members: true
+            members: true
+            filters:
+              - "!^_"
+            # --- Generates JSON schema doc for each pydantic model:
+            # extensions:
+            #  - griffe_pydantic:
+            #      schema: true
 extra_css:
     - overrides/css/custom.css
 

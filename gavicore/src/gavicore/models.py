@@ -16,7 +16,7 @@ from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootMo
 
 
 class DataType(Enum):
-    """The data type of a value to be validated by the [Schema][Schema]."""
+    """The optional data type of [Schema][gavicore.models.Schema]."""
 
     boolean = "boolean"
     integer = "integer"

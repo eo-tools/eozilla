@@ -411,3 +411,8 @@ config.get_field_factory_registry().register(NumberRangeFactory())
 The next time you run the Cuiman GUI client, it will consider that factory
 for generating its GUIs for a given OGC process description, provided
 that the above code is executed once before the GUI is used.
+
+
+## Custom Usage of the UI Generation
+
+1. [][]
