@@ -14,24 +14,25 @@ nav:
     - Introduction: cuiman/introduction.md
     - Configuration: cuiman/configuration.md
     - Customization: cuiman/customization.md
+    - GUI-Generation: cuiman/gui-generation.md
     - Usage:
       - notebooks/cuiman-api.ipynb
       - notebooks/cuiman-gui.ipynb
       # - notebooks/cuiman-api-airflow.ipynb
       - notebooks/cuiman-cli.ipynb
       - notebooks/cuiman-openers.ipynb
-    - CLI: cuiman/cli.md
-    - API: cuiman/api.md
+    - CLI Reference: cuiman/cli.md
+    - API Reference: cuiman/api.md
   - Wraptile:
     - Introduction: wraptile/introduction.md
     - Usage: wraptile/usage.md
     - Customization: wraptile/customization.md
-    - CLI: wraptile/cli.md
+    - CLI Reference: wraptile/cli.md
   - Procodile:
     - Introduction: procodile/introduction.md
     - Usage: procodile/usage.md
-    - API: procodile/api.md
-    - CLI: procodile/cli.md
+    - API Reference: procodile/api.md
+    - CLI Reference: procodile/cli.md
   - Appligator:
     - Introduction: appligator/introduction.md
     - Usage: appligator/usage.md

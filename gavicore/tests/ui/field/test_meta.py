@@ -6,9 +6,10 @@ from typing import Annotated, Any
 from unittest import TestCase
 
 import pydantic
+import pytest
 from pydantic import BaseModel
 
-from gavicore.models import InputDescription, Schema
+from gavicore.models import DataType, InputDescription, Schema
 from gavicore.ui import FieldMeta
 from gavicore.ui.field.meta import FieldGroup
 
@@ -151,7 +152,44 @@ class FieldMetaTest(TestCase):
             to_json(meta),
         )
 
-    def test_object_schema(self):
+    def test_from_object_schemas(self):
+        schema_1 = Schema(
+            **{
+                "type": "object",
+                "properties": {
+                    "a": {"type": "string"},
+                    "b": {"type": "string"},
+                },
+                "required": ["a"],
+            }
+        )
+        schema_2 = Schema(
+            **{
+                "type": "object",
+                "properties": {
+                    "c": {"type": "string"},
+                    "d": {"type": "string"},
+                },
+                "required": ["c", "d"],
+            }
+        )
+        meta = FieldMeta.from_schemas("x", schema_1)
+        self.assertEqual(schema_1, meta.schema_)
+
+        meta = FieldMeta.from_schemas("x", schema_1, schema_2)
+        self.assertEqual(DataType.object, meta.schema_.type)
+        self.assertEqual(
+            {
+                "a": Schema(**{"type": "string"}),
+                "b": Schema(**{"type": "string"}),
+                "c": Schema(**{"type": "string"}),
+                "d": Schema(**{"type": "string"}),
+            },
+            meta.schema_.properties,
+        )
+        self.assertEqual({"a", "c", "d"}, set(meta.schema_.required))
+
+    def test_from_object_schema(self):
         schema_prop_1 = Schema(
             **{"type": "number", "title": "Threshold", "x-ui": {"widget": "slider"}}
         )
@@ -210,7 +248,7 @@ class FieldMetaTest(TestCase):
             to_json(meta),
         )
 
-    def test_object_schema_with_layout(self):
+    def test_from_object_schema_with_layout(self):
         meta = FieldMeta.from_schema(
             "root",
             Schema(
@@ -262,6 +300,122 @@ class FieldMetaTest(TestCase):
             ),
             meta.layout,
         )
+
+    # noinspection PyMethodMayBeStatic
+    def test_from_schema_with_abs_ref_not_yet_supported(self):
+        with pytest.raises(NotImplementedError):
+            FieldMeta.from_schema(
+                "x",
+                Schema(**{"$ref": "https://schemadb.com/Point"}),
+            )
+
+    def test_from_schema_with_ref(self):
+        # top-level $ref
+        point_schema_dict = {
+            "type": "array",
+            "title": "A point",
+            "items": {"type": "number"},
+            "minItems": 2,
+            "maxItems": 2,
+        }
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(
+                **{
+                    "$ref": "#/$defs/Point",
+                    "$defs": {
+                        "Point": point_schema_dict,
+                    },
+                }
+            ),
+        )
+        self.assertEqual("x", meta.name)
+        self.assertEqual(Schema(**point_schema_dict), meta.schema_)
+        self.assertEqual("#/$defs/Point", meta.ref)
+        self.assertEqual("A point", meta.title)
+
+    def test_from_schema_with_nested_ref(self):
+        # top-level $ref
+        point_schema_dict = {
+            "type": "array",
+            "title": "A point",
+            "items": {"type": "number"},
+            "minItems": 2,
+            "maxItems": 2,
+        }
+        line_schema_dict = {
+            "type": "array",
+            "title": "A line",
+            "items": {"$ref": "#/$defs/Point"},
+            "minItems": 2,
+            "maxItems": 2,
+        }
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(
+                **{
+                    "$ref": "#/$defs/Line",
+                    "$defs": {
+                        "Line": line_schema_dict,
+                        "Point": point_schema_dict,
+                    },
+                }
+            ),
+        )
+        self.assertEqual("x", meta.name)
+        self.assertEqual(Schema(**line_schema_dict), meta.schema_)
+        self.assertEqual("#/$defs/Line", meta.ref)
+        self.assertEqual("A line", meta.title)
+        self.assertIsInstance(meta.items, FieldMeta)
+        self.assertEqual(Schema(**point_schema_dict), meta.items.schema_)
+        self.assertEqual("#/$defs/Point", meta.items.ref)
+
+    def test_from_schema_with_nested_ref_cycle(self):
+        # top-level $ref
+        file_schema_dict = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "content": {"type": "string", "format": "binary"},
+            },
+        }
+        folder_schema_dict = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "oneOf": [
+                            {"$ref": "#/$defs/File"},
+                            {"$ref": "#/$defs/Folder"},
+                        ]
+                    },
+                },
+            },
+        }
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(
+                **{
+                    "$ref": "#/$defs/Folder",
+                    "$defs": {
+                        "File": file_schema_dict,
+                        "Folder": folder_schema_dict,
+                    },
+                }
+            ),
+        )
+        self.assertEqual("x", meta.name)
+        self.assertEqual(Schema(**folder_schema_dict), meta.schema_)
+        self.assertEqual("#/$defs/Folder", meta.ref)
+        self.assertIsInstance(meta.properties, dict)
+        files_meta = meta.properties.get("files")
+        self.assertIsInstance(files_meta, FieldMeta)
+        self.assertIsInstance(files_meta.items, FieldMeta)
+        self.assertIsInstance(files_meta.items.one_of, list)
+        folder_meta = files_meta.items.one_of[1]
+        self.assertIs(meta, folder_meta)
 
     def test_input_precedence(self):
         self._assert_description(
