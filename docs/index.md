@@ -61,6 +61,35 @@ wraptile --help
 We currently package Eozilla only as pip packages distributed via PyPI, but
 we will publish `conda-forge` packages soon.
 
+## Package Dependencies
+
+```mermaid
+---
+config:
+    class:
+        hideEmptyMembersBox: false
+    theme: default
+---
+classDiagram
+direction TD
+    class appligator {
+    }
+    class cuiman {
+    }
+    class gavicore {
+    }
+    class procodile {
+    }
+    class wraptile {
+    }
+    cuiman ..> gavicore : uses
+    appligator ..> gavicore : uses
+    appligator ..> procodile : uses (opt.)
+    procodile ..> gavicore : uses
+    wraptile ..> gavicore : uses
+    wraptile ..> procodile : uses (opt.)
+```
+
 ## Acknowledgements
 
 Large parts of the work in the Eozilla project have been made possible by the

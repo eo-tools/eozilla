@@ -15,6 +15,7 @@ from gavicore.models import (
     OutputDescription,
     Schema,
 )
+from gavicore.util.ensure import ensure_condition
 
 UI_KEYS = ["x-ui", "ui", "xUI", "xUi"]
 UI_KEY_PREFIXES = [f"{k}:" for k in UI_KEYS] + [f"{k}-" for k in UI_KEYS]
@@ -56,7 +57,7 @@ class FieldGroup(pydantic.BaseModel):
     of a layout tree and do not have the `group` property set
     will be appended to the root group of a layout tree.
     Their order will be determined by the value of the `order`
-    property, if any, or the value of the `name` property.
+    property, if any, or the original property order.
     """
 
     type: Literal["column", "row"]  # we may add "grid" or others
@@ -99,9 +100,9 @@ class FieldMeta(pydantic.BaseModel):
     This class should not be instantiated from its constructor;
     instead, use one of the factory methods
 
-    - [from_input_descriptions][from_input_descriptions]
-    - [from_output_descriptions][from_output_descriptions]
-    - [from_schema][from_schema]
+    - [from_input_description][gavicore.ui.FieldMeta.from_input_description]
+    - [from_input_descriptions][gavicore.ui.FieldMeta.from_input_descriptions]
+    - [from_schema][gavicore.ui.FieldMeta.from_schema]
     """
 
     model_config = pydantic.ConfigDict(
@@ -127,6 +128,15 @@ class FieldMeta(pydantic.BaseModel):
     items: "FieldMeta | None" = None
     """The metadata of array items. Set if schema type is "array"."""
 
+    one_of: "list[FieldMeta] | None" = None
+    """The metadata for a schema's "oneOf" element, if given."""
+
+    any_of: "list[FieldMeta] | None" = None
+    """The metadata for a schema's "anyOf" element, if given."""
+
+    all_of: "list[FieldMeta] | None" = None
+    """The metadata for a schema's "allOf" element, if given."""
+
     layout: FieldLayout | None = None
     """Hint to lay out the children of this field."""
 
@@ -134,7 +144,8 @@ class FieldMeta(pydantic.BaseModel):
     """Hint for the type of widget to be used for this field."""
 
     title: str | None = None
-    """The title of this field. See also [label](label)."""
+    """The title of this field. 
+    See also [label][gavicore.ui.FieldMeta.label]."""
 
     description: str | None = None
     """The description text for this field."""
@@ -150,13 +161,13 @@ class FieldMeta(pydantic.BaseModel):
 
     group_name: str | None = None
     """The name of the group in which this field will occur. 
-    See also [FieldGroup][FieldGroup]."""
+    See also [FieldGroup][gavicore.ui.FieldGroup]."""
 
-    order: int | str | None = None
+    order: int | None = None
     """The order of this field in the group. 
     The order's value is used to compare it against other `order` values 
     when sorting multiple fields in ascending order. 
-    See also [FieldGroup][FieldGroup]."""
+    See also [FieldGroup][gavicore.ui.FieldGroup]."""
 
     required: bool | None = None
     """Whether this field originates from a required process input 
@@ -185,9 +196,19 @@ class FieldMeta(pydantic.BaseModel):
     maximum: int | float | None = None
     """Maximum numeric value as used for slider widgets."""
 
-    # TODO: better name `options`?
+    step: int | float | None = None
+    """Step size as used for slider widgets."""
+
+    # TODO: rename into options
     enum: list[Any] | None = None
     """Enumeration used for the options of select widgets."""
+
+    ref: str | None = None
+    """Set from schema reference property '$ref'. 
+    Since we resolve schemas, the original $ref value is kept 
+    so we can still use it to evaluate a schema's discriminator 
+    mappings.
+    """
 
     @property
     def nullable(self) -> bool:
@@ -261,7 +282,58 @@ class FieldMeta(pydantic.BaseModel):
         required: bool | None = None,
     ) -> "FieldMeta":
         """Create field metadata from an OpenAPI Schema."""
-        return _ui_field_meta_from_schema(name, schema, required=required)
+        f = FieldMetaFactory(name, schema)
+        return f.create_field_meta(name, schema, required=required)
+
+    @classmethod
+    def from_schemas(
+        cls, name: str, *schemas: Schema, required: bool | None = None
+    ) -> "FieldMeta":
+        ensure_condition(len(schemas) > 0, "missing schemas to merge")
+        if len(schemas) == 1:
+            return cls.from_schema(name, schemas[0], required=required)
+
+        data_type: Any | None = None
+        merged_properties: dict[str, Any] | None = None
+        merged_required: set[str] | None = None
+        schema_dicts = [_make_schema_dict(s) for s in schemas]
+        merged_schema_dict = {}
+        for schema_dict in schema_dicts:
+            if "type" in schema_dict:
+                t = schema_dict["type"]
+                if data_type is None:
+                    data_type = t
+            if "required" in schema_dict:
+                r = schema_dict["required"]
+                assert isinstance(r, list)
+                if merged_required is None:
+                    merged_required = set()
+                merged_required.update(r)
+            if "properties" in schema_dict:
+                p = schema_dict["properties"]
+                assert isinstance(p, dict)
+                if merged_properties is None:
+                    merged_properties = {}
+                merged_properties.update(p)
+            merged_schema_dict.update(schema_dict)
+        if data_type is not None:
+            merged_schema_dict["type"] = data_type
+        if merged_properties is not None:
+            merged_schema_dict["properties"] = merged_properties
+        if merged_required is not None:
+            merged_schema_dict["required"] = list(merged_required)
+        return FieldMeta.from_schema(
+            name,
+            Schema(**merged_schema_dict),
+            required=required,
+        )
+
+    @classmethod
+    def from_field_metas(
+        cls, name: str, *metas: "FieldMeta", required: bool | None = None
+    ) -> "FieldMeta":
+        ensure_condition(len(metas) > 0, "missing field metadata to merge")
+        return cls.from_schemas(name, *(m.schema_ for m in metas), required=required)
 
     def to_non_nullable(self) -> "FieldMeta":
         """Create a non-nullable version of this field metadata."""
@@ -307,50 +379,132 @@ def _schema_from_input_description(
     return Schema(**schema_dict), min_items > 0
 
 
-def _ui_field_meta_from_schema(
-    name: str,
-    schema: Schema,
-    required: bool | None = None,
-) -> FieldMeta:
-    schema_dict = _make_schema_dict(schema)
-    ui_props = _extract_ui_props_from_schema_dict(schema_dict)
-    required = ui_props.pop("required", required)
-    items: FieldMeta | None = None
-    properties: dict[str, FieldMeta] | None = None
-    if schema.type == DataType.array:
-        schema_items = schema.items
-        assert schema_items is None or isinstance(schema.items, Schema)
-        items = _ui_field_meta_from_schema(
-            f"{name}_item",
-            schema.items if isinstance(schema.items, Schema) else Schema(**{}),
-            required=schema.minItems is not None and schema.minItems > 0,
-        )
-    elif schema.type == DataType.object:
-        required_set = set(schema.required) if schema.required else set()
-        properties = {}
-        if schema.properties:
-            for prop_name, prop_schema in schema.properties.items():
-                properties[prop_name] = _ui_field_meta_from_schema(
-                    prop_name, prop_schema, required=(prop_name in required_set)
-                )
+class FieldMetaFactory:
+    def __init__(self, root_name: str, root_schema: Schema) -> None:
+        self._root_name = root_name
+        self._root_schema = root_schema
+        self._resolved_metas: dict[str, FieldMeta] = {}
 
-    return FieldMeta(
-        name=name,
-        schema=schema,
-        required=required,
-        properties=properties,
-        items=items,
-        **ui_props,
-    )
+    def create_field_meta(
+        self,
+        name: str,
+        schema: Schema,
+        required: bool | None = None,
+    ) -> FieldMeta:
+        # create the field metadata stub first
+        if schema.ref is not None:
+            # is ref already resolved
+            if schema.ref in self._resolved_metas:
+                # Note that the returned field metadata may not be
+                # fully populated with metadata, see below
+                return self._resolved_metas[schema.ref]
+            resolved_schema = self.resolve_schema_ref(schema.ref)
+            meta = FieldMeta(
+                name=name, schema=resolved_schema, ref=schema.ref, required=required
+            )
+            # We already register the field, although it is still a stub,
+            # in order to detect cycles early
+            self._resolved_metas[schema.ref] = meta
+        else:
+            meta = FieldMeta(name=name, schema=schema, required=required)
+        # then update the stub with all the other metadata
+        self._update_field_meta_from_schema(meta)
+        return meta
+
+    def _update_field_meta_from_schema(self, meta: FieldMeta) -> None:
+        name = meta.name
+        schema = meta.schema_
+        ui_props = _extract_ui_props_from_schema(schema)
+        required = ui_props.pop("required", meta.required)
+        items: FieldMeta | None = None
+        properties: dict[str, FieldMeta] | None = None
+        if schema.type == DataType.array:
+            schema_items = schema.items
+            assert schema_items is None or isinstance(schema.items, Schema)
+            items = self.create_field_meta(
+                f"{name}_item",
+                schema.items if isinstance(schema.items, Schema) else Schema(**{}),
+                required=schema.minItems is not None and schema.minItems > 0,
+            )
+        elif schema.type == DataType.object:
+            required_set = set(schema.required) if schema.required else set()
+            properties = {}
+            if schema.properties:
+                for prop_name, prop_schema in schema.properties.items():
+                    # noinspection PyTypeChecker
+                    properties[prop_name] = self.create_field_meta(
+                        prop_name, prop_schema, required=(prop_name in required_set)
+                    )
+
+        one_of = self._resolve_schemas(schema.oneOf, name_prefix="option_")
+        any_of = self._resolve_schemas(schema.anyOf, name_prefix="option_")
+        all_of = self._resolve_schemas(schema.allOf, name_prefix="part_")
+
+        update = dict(
+            required=required,
+            properties=properties,
+            items=items,
+            one_of=one_of,
+            any_of=any_of,
+            all_of=all_of,
+            **ui_props,
+        )
+        for k, v in update.items():
+            setattr(meta, k, v)
+
+    def resolve_schema_ref(self, ref: str) -> Schema:
+        if not ref.startswith("#/"):
+            raise NotImplementedError(
+                "$refs must be document-relative (start with '#/')"
+            )
+        # Note, ref will likely be "#/$defs/<Schema>"
+        # or "#/components/schemas/<Schema>".
+        # We therefore expect the schema definitions in
+        #   { "$defs": {"<Schema>": ...}}
+        # or
+        #   { "components": {"schemas": {"<Schema>": ...}}}
+        # which are found in the model_extra dict of the root schema.
+        path = ref[2:].split("/")
+        extras = self._root_schema.model_extra
+        assert isinstance(extras, dict)
+        s: dict[str, Any] = extras
+        name: str | None = None
+        for i, name in enumerate(path):
+            ensure_condition(
+                name in s,
+                f"invalid $ref value: {'/'.join(path[: i + 1])!r} does not exist",
+            )
+            s = s[name]
+            ensure_condition(
+                isinstance(s, dict),
+                f"invalid $ref value: dict expected for {'/'.join(path[: i + 1])!r}, "
+                f"but got {type(s).__name__}",
+                exception_type=TypeError,
+            )
+        if name is not None and "title" not in s:
+            s["title"] = name.title()
+        return Schema(**s)
+
+    def _resolve_schemas(
+        self, schemas: list[Schema] | None, name_prefix: str
+    ) -> list[FieldMeta] | None:
+        if schemas is not None:
+            assert isinstance(schemas, list)
+            return [
+                self.create_field_meta(f"{name_prefix}{i}", s)
+                for i, s in enumerate(schemas)
+            ]
+        return None
 
 
 _EXCL_SCHEMA_PROPERTY_NAMES = {"properties", "items", "required"}
 _VALIDATION_META = FieldMeta(name="validation_meta", schema=Schema(**{}))
 
 
-def _extract_ui_props_from_schema_dict(
-    schema_dict: dict[str, Any],
+def _extract_ui_props_from_schema(
+    schema: Schema,
 ) -> dict[str, Any]:
+    schema_dict = _make_schema_dict(schema)
     ui_props: dict[str, Any] = {}
     # update properties in ui_dict by yet unset FieldMeta values
     _update_ui_props_from_schema_props(schema_dict, ui_props)
@@ -431,7 +585,7 @@ def _get_initial_value(meta: FieldMeta) -> Any:
             return [_get_initial_value(item_meta) for _i in range(min_items)]
         case DataType.object:
             assert isinstance(meta.properties, dict)
-            # TODO: consider minProperties, additionalProperties
+            # Note, we may also consider minProperties, additionalProperties
             # create object with required properties
             required = set(schema.required or [])
             properties = meta.properties
@@ -439,7 +593,7 @@ def _get_initial_value(meta: FieldMeta) -> Any:
                 k: m.get_initial_value() for k, m in properties.items() if k in required
             }
         case _:
-            # TODO: handle other cases here: oneOf, anyOf, allOf, discriminator
+            # TODO: handle other cases here: oneOf, anyOf, allOf
             # raise ValueError(
             #     f"Unsupported untyped schema in field {meta.name!r}"
             # )

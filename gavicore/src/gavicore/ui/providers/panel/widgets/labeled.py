@@ -3,30 +3,36 @@
 #  https://opensource.org/license/apache-2-0.
 
 import panel as pn
+import param
 
 from ._util import get_header_items
 
 pn.extension()
 
 
-class ObjectWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
+class LabeledWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
     """
-    A widget that provides a UI that renders the views
-    of an object's properties.
+    A widget that provides a UI that will always render the
+    given inner widget with a label given by the widget's name,
+    if any. Used for widgets that doesn't support labels.
     """
+
+    divider = param.Boolean(default=False)
 
     def __init__(
         self,
         inner_viewable: pn.viewable.Viewable,
+        divider: bool = False,
         **params,
     ):
         super().__init__(**params)
+        self.divider = divider
         self.inner_viewable = inner_viewable
 
     def __panel__(self):
         if self.name:
             return pn.Column(
-                *get_header_items(self.name),
+                *get_header_items(self.name, divider=self.divider),
                 self.inner_viewable,
             )
         else:

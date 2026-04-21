@@ -134,4 +134,5 @@ class AsyncClientMixin(ABC):
             _media_type=media_type,
             options=options,
         )
-        return await open_job_result(ctx, *self.config.opener_registry.opener_types)
+        opener_registry = self.config.get_job_result_opener_registry()
+        return await open_job_result(ctx, *opener_registry.opener_types)

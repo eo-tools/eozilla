@@ -2,20 +2,21 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Generic
 
 from gavicore.models import DataType, Schema
-from gavicore.util.undefined import Undefined
-
-from ...util.ensure import ensure_condition
-from ..vm import (
+from gavicore.ui.vm import (
+    AnyViewModel,
     ArrayViewModel,
     NullableViewModel,
     ObjectViewModel,
     PrimitiveViewModel,
     ViewModel,
 )
-from .base import Field, View
+from gavicore.util.ensure import ensure_condition
+from gavicore.util.undefined import Undefined
+
+from .base import FT, VT
 from .meta import FieldMeta
 
 if TYPE_CHECKING:
@@ -23,16 +24,18 @@ if TYPE_CHECKING:
     from .layout import LayoutFunction
 
 
-class FieldContext:
+class FieldContext(Generic[FT, VT]):
     """The context object passed to a UI field factory."""
 
     def __init__(
         self,
         *,
-        generator: "FieldGenerator",
+        generator: "FieldGenerator[FT, VT]",
         meta: FieldMeta,
         initial_value: Any | Undefined = Undefined.value,
-        parent_ctx: "FieldContext | None" = None,
+        label_hidden: bool = False,
+        hidden_prop_name: str | None = None,
+        parent_ctx: "FieldContext[FT, VT] | None" = None,
     ):
         self._parent_ctx = parent_ctx
         self._generator = generator
@@ -43,6 +46,8 @@ class FieldContext:
             if isinstance(initial_value, Undefined)
             else initial_value
         )
+        self._label_hidden = label_hidden
+        self._hidden_prop_name = hidden_prop_name
 
     @property
     def meta(self) -> FieldMeta:
@@ -53,6 +58,20 @@ class FieldContext:
     def name(self) -> str:
         """The name from field metadata."""
         return self._meta.name
+
+    @property
+    def label_hidden(self) -> bool:
+        """A flag indicating that the label for the field should not be shown."""
+        return self._label_hidden
+
+    @property
+    def label(self) -> str:
+        """
+        A label for the field.
+        It is an empty string if the
+        [label_hidden][gavicore.ui.FieldContext.label_hidden] flag is set.
+        """
+        return "" if self._label_hidden else self._meta.label
 
     @property
     def schema(self) -> Schema:
@@ -76,13 +95,13 @@ class FieldContext:
             return self._parent_ctx.path + [self.name]
         return [self.name]
 
-    def layout(self, layout_function: "LayoutFunction", views: dict[str, View]) -> View:
+    def layout(self, layout_function: "LayoutFunction", views: dict[str, VT]) -> VT:
         """Lay out the given views using the field metadata's `layout` property."""
         from .layout import LayoutManager
 
         return LayoutManager(layout_function, views).layout(self)
 
-    def create_property_fields(self) -> dict[str, Field]:
+    def create_property_fields(self) -> dict[str, FT]:
         """Create property fields given that this
         context's field is of type "object".
         """
@@ -95,9 +114,13 @@ class FieldContext:
         return {
             prop_name: self.create_child_field(prop_meta)
             for prop_name, prop_meta in self.meta.properties.items()
+            if prop_name != self._hidden_prop_name
         }
 
-    def create_item_field(self) -> Field:
+    def create_item_field(
+        self,
+        label_hidden: bool = False,
+    ) -> FT:
         """Create a new item field given that this
         context's field is of type "array".
         """
@@ -107,15 +130,27 @@ class FieldContext:
             exception_type=TypeError,
         )
         assert self.meta.items is not None
-        return self.create_child_field(self.meta.items)
+        return self.create_child_field(self.meta.items, label_hidden=label_hidden)
 
-    def create_child_field(self, child_meta: FieldMeta) -> Field:
+    def create_child_field(
+        self,
+        child_meta: FieldMeta,
+        label_hidden: bool = False,
+        hidden_prop_name: str | None = None,
+    ) -> FT:
         """Create a new field for the given child field metadata."""
-        child_ctx = self._create_child_ctx(child_meta)
+        child_ctx = self._create_child_ctx(
+            child_meta, label_hidden=label_hidden, hidden_prop_name=hidden_prop_name
+        )
         # noinspection PyProtectedMember
         return self._generator._generate_field(child_ctx)
 
-    def _create_child_ctx(self, child_meta: FieldMeta) -> "FieldContext":
+    def _create_child_ctx(
+        self,
+        child_meta: FieldMeta,
+        label_hidden: bool = False,
+        hidden_prop_name: str | None = None,
+    ) -> "FieldContext[FT, VT]":
         initial_value = self.initial_value
         child_name = child_meta.name
         if (
@@ -130,6 +165,8 @@ class FieldContext:
             generator=self._generator,
             meta=child_meta,
             initial_value=child_value,
+            label_hidden=label_hidden,
+            hidden_prop_name=hidden_prop_name,
             parent_ctx=self,
         )
 
@@ -142,6 +179,9 @@ class ViewModelFactory:
 
     def __init__(self, ctx: FieldContext):
         self._ctx = ctx
+
+    def any(self):
+        return AnyViewModel(self._ctx.meta, value=self._ctx.initial_value)
 
     def primitive(self) -> PrimitiveViewModel:
         return PrimitiveViewModel(self._ctx.meta, value=self._ctx.initial_value)

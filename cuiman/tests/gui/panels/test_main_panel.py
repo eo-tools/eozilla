@@ -19,6 +19,7 @@ from gavicore.models import (
     ProcessSummary,
     Schema,
 )
+from gavicore.ui.providers.panel import PanelFieldFactoryRegistry
 
 bbox_input = InputDescription(
     title="Bounding box",
@@ -103,6 +104,7 @@ def _create_main_panel(process_inputs: dict[str, InputDescription]) -> MainPanel
         on_get_job_results,
         accept_process,
         is_advanced_input,
+        field_factory_registry=PanelFieldFactoryRegistry.create_default(),
     )
 
 
