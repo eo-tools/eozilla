@@ -28,11 +28,19 @@ nav:
     - CLI Reference: cuiman/cli.md
     - API Reference: cuiman/api.md
   - Gavicore:
-    - Introduction: gavicore/introduction.md
-    - gavicore/api-models.md
-    - gavicore/api-service.md
-    - gavicore/api-ui.md
-    - gavicore/api-util.md
+    - Overview: gavicore/overview.md
+    - gavicore.models:
+      - Description: gavicore/models/description.md
+      - API Reference: gavicore/models/api.md
+    - gavicore.service:
+      - Description: gavicore/service/description.md
+      - API Reference: gavicore/service/api.md
+    - gavicore.ui:
+      - Description: gavicore/ui/description.md
+      - API Reference: gavicore/ui/api.md
+    - gavicore.util:
+      - Description: gavicore/util/description.md
+      - API Reference: gavicore/util/api.md
   - Procodile:
     - Introduction: procodile/introduction.md
     - Usage: procodile/usage.md
@@ -43,7 +51,6 @@ nav:
     - Usage: wraptile/usage.md
     - Customization: wraptile/customization.md
     - CLI Reference: wraptile/cli.md
-  - Architecture: architecture.md
   - Contributing: contributing.md
 
 theme:
@@ -67,6 +74,11 @@ theme:
         name: Switch to light mode
   features:
     - navigation.top
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - toc.follow
+    - content.code.copy
   custom_dir: docs/overrides
 
 markdown_extensions:
@@ -102,24 +114,30 @@ plugins:
       handlers:
         python:
           options:
+            #annotations_path: brief
+            #annotations_path: full
+            annotations_path: source
             docstring_style: google
-            show_root_toc_entry: true
-            show_root_heading: true
-            show_source: false
-            heading_level: 3
-            annotations_path: brief
-            members_order: source
-            show_if_no_docstring: false
-            inherited_members: true
-            members: true
+            docstring_section_style: table
             filters:
               - "!^_"
+            heading_level: 3
+            inherited_members: true
+            line_length: 80
+            members_order: source
+            merge_init_into_class: true
+            separate_signature: true
+            show_if_no_docstring: false
+            show_root_heading: true
+            show_root_toc_entry: true
+            show_signature_annotations: true
+            show_source: false
             # --- Generates JSON schema doc for each pydantic model:
             # extensions:
             #  - griffe_pydantic:
             #      schema: true
 extra_css:
-    - overrides/css/custom.css
+  - overrides/css/custom.css
 
-hooks:
-    - docs/hooks/notebooks_json_output.py
+# hooks:
+#   - docs/hooks/notebooks_json_output.py

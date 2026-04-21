@@ -100,9 +100,9 @@ class FieldMeta(pydantic.BaseModel):
     This class should not be instantiated from its constructor;
     instead, use one of the factory methods
 
-    - [from_input_descriptions][from_input_descriptions]
-    - [from_output_descriptions][from_output_descriptions]
-    - [from_schema][from_schema]
+    - [from_input_description][gavicore.ui.FieldMeta.from_input_description]
+    - [from_input_descriptions][gavicore.ui.FieldMeta.from_input_descriptions]
+    - [from_schema][gavicore.ui.FieldMeta.from_schema]
     """
 
     model_config = pydantic.ConfigDict(

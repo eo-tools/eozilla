@@ -20,10 +20,13 @@ The pipeline in short:
 The UI generation at its core is not aware of the target UI library
 that is used to render the UI and let users interact with it.
 
+The framework used to generate UIs is implemented in the Eozilla 
+Gavicore package `gavicore.ui` and is documented 
+[here](../gavicore/ui/description.md).  
 
 ## Customizing Schemas
 
-Cuiman's default GUI library is [Panel](https://panel.holoviz.org/).
+Cuiman's default UI library is [Panel](https://panel.holoviz.org/).
 Therefore, most of the customization configuration is directly mapped
 to configuration of the underlying Panel widgets and viewables.
 
@@ -411,8 +414,3 @@ config.get_field_factory_registry().register(NumberRangeFactory())
 The next time you run the Cuiman GUI client, it will consider that factory
 for generating its GUIs for a given OGC process description, provided
 that the above code is executed once before the GUI is used.
-
-
-## Custom Usage of the UI Generation
-
-1. [][]
