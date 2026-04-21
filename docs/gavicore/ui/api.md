@@ -16,6 +16,8 @@
 
 ::: gavicore.ui.FieldGenerator
 
+::: gavicore.ui.FieldGroup
+
 ::: gavicore.ui.FieldMeta
 
 

@@ -144,7 +144,8 @@ class FieldMeta(pydantic.BaseModel):
     """Hint for the type of widget to be used for this field."""
 
     title: str | None = None
-    """The title of this field. See also [label](label)."""
+    """The title of this field. 
+    See also [label][gavicore.ui.FieldMeta.label]."""
 
     description: str | None = None
     """The description text for this field."""
@@ -160,13 +161,13 @@ class FieldMeta(pydantic.BaseModel):
 
     group_name: str | None = None
     """The name of the group in which this field will occur. 
-    See also [FieldGroup][FieldGroup]."""
+    See also [FieldGroup][gavicore.ui.FieldGroup]."""
 
     order: int | None = None
     """The order of this field in the group. 
     The order's value is used to compare it against other `order` values 
     when sorting multiple fields in ascending order. 
-    See also [FieldGroup][FieldGroup]."""
+    See also [FieldGroup][gavicore.ui.FieldGroup]."""
 
     required: bool | None = None
     """Whether this field originates from a required process input 

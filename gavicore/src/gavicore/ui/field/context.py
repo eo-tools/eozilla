@@ -68,7 +68,8 @@ class FieldContext(Generic[FT, VT]):
     def label(self) -> str:
         """
         A label for the field.
-        It is an empty string if the [label_hidden][label_hidden] flag is set.
+        It is an empty string if the
+        [label_hidden][gavicore.ui.FieldContext.label_hidden] flag is set.
         """
         return "" if self._label_hidden else self._meta.label
 
