@@ -5,8 +5,8 @@
 from typing import Callable, Literal, TypeAlias
 
 import fsspec
-import param
 import panel as pn
+import param
 
 from gavicore.ui.providers.panel.widgets.path import FilesystemPathInput
 
@@ -21,12 +21,13 @@ def _make_divider() -> pn.viewable.Viewable:
 
 
 # noinspection PyPep8Naming
-def Header(
+def PanelHeader(
     *,
     title: str = "",
     level: int = 3,
     action: pn.viewable.Viewable | None = None,
 ) -> pn.viewable.Viewable:
+    """A simple panel header."""
     header = pn.FlexBox(
         _make_header(title, level),
         *((action,) if action is not None else ()),
@@ -50,10 +51,11 @@ def Panel(
     indent: int | None = None,
     action: pn.viewable.Viewable | None = None,
 ) -> pn.layout.Panel:
+    """A simple panel."""
     min_level = 3
     level_ = level or min_level
     return pn.Column(
-        Header(title=title, level=level_, action=action),
+        PanelHeader(title=title, level=level_, action=action),
         *content,
         sizing_mode="stretch_width",
         margin=(
@@ -65,7 +67,9 @@ def Panel(
     )
 
 
-class InlineDialog(pn.viewable.Viewer):
+class ClosablePanel(pn.viewable.Viewer):
+    """A panel that can be closed."""
+
     title = param.String()
     visible = param.Boolean(default=True)
     level = param.Integer(default=None, allow_None=True)
@@ -75,8 +79,8 @@ class InlineDialog(pn.viewable.Viewer):
 
     def __init__(self, **params):
         super().__init__(**params)
-        self._close_btn = pn.widgets.ButtonIcon(size="1em", icon="x")
-        self._close_btn.on_click(self._on_close_clicked)
+        self._close_button = pn.widgets.ButtonIcon(size="1em", icon="x")
+        self._close_button.on_click(self._on_close_clicked)
         self.param.watch(self._on_visible_change, "visible")
 
     @property
@@ -93,7 +97,7 @@ class InlineDialog(pn.viewable.Viewer):
         panel = Panel(
             self.content,
             title=self.title if self.title else "",
-            action=self._close_btn,
+            action=self._close_button,
             level=self.level,
             indent=self.indent,
         )
@@ -111,7 +115,12 @@ class InlineDialog(pn.viewable.Viewer):
 FileAction: TypeAlias = Callable[[fsspec.AbstractFileSystem, str], None]
 
 
-class FileDialog(pn.viewable.Viewer):
+class FilePanel(pn.viewable.Viewer):
+    """
+    A file panel comprises a `FilesystemPathInput` and has an optional
+    action component to perform some action on the selected path.
+    """
+
     def __init__(
         self,
         *,
@@ -138,7 +147,7 @@ class FileDialog(pn.viewable.Viewer):
             mode=path_type,
             action=self._action_button,
         )
-        self._dialog = InlineDialog(
+        self._panel = ClosablePanel(
             title=title,
             content=self._path_input,
             on_close=on_close,
@@ -161,11 +170,11 @@ class FileDialog(pn.viewable.Viewer):
         return not bool(self._path_input.error)
 
     @property
-    def dialog(self) -> InlineDialog:
-        return self._dialog
+    def panel(self) -> ClosablePanel:
+        return self._panel
 
     def __panel__(self):
-        return self._dialog
+        return self._panel
 
     def _on_path_error_change(self, _e):
         self._action_button.disabled = bool(self._path_input.error)
@@ -179,10 +188,15 @@ class FileDialog(pn.viewable.Viewer):
             self._path_input.error = str(e)
         # Autoclose, if not error:
         if self.ok:
-            self.dialog.close()
+            self.panel.close()
 
 
-class FileOpenDialog(FileDialog):
+class FileOpenPanel(FilePanel):
+    """
+    A file panel used to select existing files and to perform a read-only action
+    on the selected path.
+    """
+
     def __init__(
         self,
         *,
@@ -211,7 +225,12 @@ class FileOpenDialog(FileDialog):
         )
 
 
-class FileSaveDialog(FileDialog):
+class FileSavePanel(FilePanel):
+    """
+    A file panel used to select files and to perform a write-action
+    on the selected path.
+    """
+
     def __init__(
         self,
         *,

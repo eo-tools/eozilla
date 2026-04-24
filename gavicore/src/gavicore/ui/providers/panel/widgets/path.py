@@ -6,8 +6,8 @@ import os
 import pathlib
 
 import fsspec
-import param
 import panel as pn
+import param
 
 
 class FilesystemPathInput(pn.custom.PyComponent, pn.widgets.WidgetBase):
@@ -124,7 +124,6 @@ class FilesystemPathInput(pn.custom.PyComponent, pn.widgets.WidgetBase):
     # ------------------------------------------------------------------
 
     def __panel__(self):
-
         if self.action is not None:
             content = pn.FlexBox(
                 self._autocomplete,

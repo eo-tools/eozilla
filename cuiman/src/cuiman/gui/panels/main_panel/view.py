@@ -23,13 +23,13 @@ from gavicore.models import (
 from gavicore.ui import FieldFactoryRegistry
 from gavicore.ui.providers.panel import PanelField
 
+from ..util import FileOpenPanel, FileSavePanel, PanelHeader
 from .viewmodel import (
     ExecuteProcessAction,
     GetJobResultsAction,
     GetProcessAction,
     MainPanelViewModel,
 )
-from cuiman.gui.dialogs import FileOpenDialog, FileSaveDialog, Header
 
 
 @JobsObserver.register  # virtual subclass, no runtime checks
@@ -99,9 +99,9 @@ class MainPanelView(pn.viewable.Viewer):
         def _on_file_menu_click(e):
             item = e.new
             if item == "load_request":
-                self._load_request_dialog.dialog.visible = True
+                self._load_request_dialog.panel.visible = True
             elif item == "store_request":
-                self._store_request_dialog.dialog.visible = True
+                self._store_request_dialog.panel.visible = True
 
         file_menu = pn.widgets.MenuButton(
             name="File Actions",
@@ -113,7 +113,7 @@ class MainPanelView(pn.viewable.Viewer):
         )
         file_menu.on_click(_on_file_menu_click)
 
-        self._load_request_dialog = FileOpenDialog(
+        self._load_request_dialog = FileOpenPanel(
             title="Load Process Request",
             path="./request.json",
             path_label="Process request file (JSON)",
@@ -123,7 +123,7 @@ class MainPanelView(pn.viewable.Viewer):
             indent=24,
         )
 
-        self._store_request_dialog = FileSaveDialog(
+        self._store_request_dialog = FileSavePanel(
             title="Store Process Request",
             path="./request.json",
             path_label="Process request file (JSON)",
@@ -133,17 +133,17 @@ class MainPanelView(pn.viewable.Viewer):
             indent=24,
         )
 
-        self._load_request_dialog.dialog.visible = False
-        self._store_request_dialog.dialog.visible = False
+        self._load_request_dialog.panel.visible = False
+        self._store_request_dialog.panel.visible = False
 
         file_menu.disabled = pn.bind(
             lambda v1, v2: v1 or v2,
-            self._load_request_dialog.dialog.param.visible,
-            self._store_request_dialog.dialog.param.visible,
+            self._load_request_dialog.panel.param.visible,
+            self._store_request_dialog.panel.param.visible,
         )
 
         process_panel = pn.Column(
-            Header(title="Process"),
+            PanelHeader(title="Process"),
             pn.layout.FlexBox(
                 self._process_select,
                 file_menu,
@@ -239,8 +239,8 @@ class MainPanelView(pn.viewable.Viewer):
         self._advanced_switch.visible = pn.bind(lambda v: v, self.vm.param.has_advanced)
         file_menu.disabled = pn.bind(
             lambda v1, v2: v1 or v2,
-            self._load_request_dialog.dialog.param.visible,
-            self._store_request_dialog.dialog.param.visible,
+            self._load_request_dialog.panel.param.visible,
+            self._store_request_dialog.panel.param.visible,
         )
 
         self.vm.select_process(self.vm.get_initial_process_id())
@@ -294,7 +294,7 @@ class MainPanelView(pn.viewable.Viewer):
                 and len(inputs_field.view) == 0
             )
         )
-        input_children: list[Any] = [Header(title="Inputs")]
+        input_children: list[Any] = [PanelHeader(title="Inputs")]
         if is_empty:
             input_children.append(pn.pane.Markdown("_No inputs available._"))
         else:
@@ -306,7 +306,7 @@ class MainPanelView(pn.viewable.Viewer):
         if process_description is None:
             self._outputs_panel[:] = []
             return
-        output_children: list[Any] = [Header(title="Outputs")]
+        output_children: list[Any] = [PanelHeader(title="Outputs")]
         num_outputs = self.vm.num_outputs
         if num_outputs == 0:
             output_children.append("_No outputs available._")
@@ -373,10 +373,10 @@ class MainPanelView(pn.viewable.Viewer):
             self._set_own_job_info(None, client_error=e)
 
     def _on_load_request_clicked(self, _event: Any = None):
-        self._load_request_dialog.dialog.open()
+        self._load_request_dialog.panel.open()
 
     def _on_store_request_clicked(self, _event: Any = None):
-        self._store_request_dialog.dialog.open()
+        self._store_request_dialog.panel.open()
 
     def _on_get_process_request(self, _event: Any = None):
         execution_request = self.vm.create_request()

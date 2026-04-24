@@ -9,12 +9,12 @@ import panel as pn
 import param
 
 from cuiman.api.exceptions import ClientError
-from cuiman.gui.dialogs import Header
 from cuiman.gui.jobs_observer import JobsObserver
 from gavicore.models import JobInfo, JobList
 
+from .util import PanelHeader
 
-header = Header(title="Job Information")
+header = PanelHeader(title="Job Information")
 
 
 @JobsObserver.register  # virtual subclass, no runtime checks
