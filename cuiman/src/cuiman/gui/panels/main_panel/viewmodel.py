@@ -173,7 +173,9 @@ class MainPanelViewModel(param.Parameterized):
             }
 
         # Recreate the input fields
-        input_field_meta = FieldMeta.from_input_descriptions(input_descriptions)
+        input_field_meta = FieldMeta.from_input_descriptions(
+            input_descriptions, title=""
+        )
         self.inputs_field = PanelField.from_meta(
             input_field_meta,
             initial_value=initial_inputs,
@@ -265,7 +267,7 @@ class MainPanelViewModel(param.Parameterized):
 
     def load_process_request_file(
         self, fs: fsspec.AbstractFileSystem, path: str
-    ) -> str:
+    ) -> None:
         self.settings.last_path = path
         with fs.open(path, "r") as stream:
             request_dict = json.load(stream)

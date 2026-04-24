@@ -6,6 +6,7 @@ from typing import Any, Callable, TypeAlias
 
 import panel as pn
 
+from cuiman.gui.dialogs import Header
 from .viewmodel import JobsPanelViewModel
 
 JobAction: TypeAlias = Callable[[str], Any]
@@ -20,6 +21,7 @@ class JobsPanelView(pn.viewable.Viewer):
         self.table.param.watch(lambda e: vm.set_selection(e.new), "selection")
 
         self.view = pn.Column(
+            Header(title="Jobs"),
             self.table,
             pn.Row(
                 pn.widgets.Button(

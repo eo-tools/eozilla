@@ -8,13 +8,68 @@ import fsspec
 import param
 import panel as pn
 
-
 from gavicore.ui.providers.panel.widgets.path import FilesystemPathInput
+
+
+def _make_header(title: str, level: int) -> pn.viewable.Viewable:
+    tag = f"h{level}"
+    return pn.pane.HTML(f"<{tag} style='margin:0'>{title}</{tag}>")
+
+
+def _make_divider() -> pn.viewable.Viewable:
+    return pn.layout.Divider(margin=(-6, 0, 0, 6), sizing_mode="stretch_width")
+
+
+# noinspection PyPep8Naming
+def Header(
+    *,
+    title: str = "",
+    level: int = 3,
+    action: pn.viewable.Viewable | None = None,
+) -> pn.viewable.Viewable:
+    header = pn.FlexBox(
+        _make_header(title, level),
+        *((action,) if action is not None else ()),
+        align_items="center",
+        justify_content="space-between",
+        flex_wrap="nowrap",
+        sizing_mode="stretch_width",
+    )
+    return pn.Column(
+        header,
+        _make_divider(),
+        sizing_mode="stretch_width",
+    )
+
+
+# noinspection PyPep8Naming
+def Panel(
+    *content: pn.viewable.Viewable,
+    title: str = "",
+    level: int | None = None,
+    indent: int | None = None,
+    action: pn.viewable.Viewable | None = None,
+) -> pn.layout.Panel:
+    min_level = 3
+    level_ = level or min_level
+    return pn.Column(
+        Header(title=title, level=level_, action=action),
+        *content,
+        sizing_mode="stretch_width",
+        margin=(
+            0,
+            0,
+            0,
+            indent if indent is not None else max(0, 12 * (level_ - min_level)),
+        ),
+    )
 
 
 class InlineDialog(pn.viewable.Viewer):
     title = param.String()
     visible = param.Boolean(default=True)
+    level = param.Integer(default=None, allow_None=True)
+    indent = param.Integer(default=None, allow_None=True)
     content = param.ClassSelector(class_=pn.viewable.Viewable, allow_refs=False)
     on_close = param.Callable(allow_None=True)
 
@@ -35,22 +90,15 @@ class InlineDialog(pn.viewable.Viewer):
         self.visible = False
 
     def __panel__(self):
-        header = pn.FlexBox(
-            pn.pane.Markdown(object=f"{self.title}" if self.title else ""),
-            self._close_btn,
-            align_items="center",
-            justify_content="space-between",
-            flex_wrap="nowrap",
-            sizing_mode="stretch_width",
-        )
-        return pn.Column(
-            header,
-            pn.layout.Divider(margin=(-20, 0, 0, 6)),
+        panel = Panel(
             self.content,
-            sizing_mode="stretch_width",
-            margin=0,
-            visible=pn.bind(lambda v: v, self.param.visible),
+            title=self.title if self.title else "",
+            action=self._close_btn,
+            level=self.level,
+            indent=self.indent,
         )
+        panel.visible = pn.bind(lambda v: v, self.param.visible)
+        return panel
 
     def _on_visible_change(self, _e):
         if self.on_close is not None and not self.visible:
@@ -75,6 +123,8 @@ class FileDialog(pn.viewable.Viewer):
         path_must_exist: bool = False,
         path_type: Literal["file", "directory"] = "file",
         on_close: Callable[[], None] | None = None,
+        level: int | None = None,
+        indent: int | None = None,
         **params,
     ):
         super().__init__(**params)
@@ -92,6 +142,8 @@ class FileDialog(pn.viewable.Viewer):
             title=title,
             content=self._path_input,
             on_close=on_close,
+            level=level,
+            indent=indent,
         )
         self._path_input.param.watch(self._on_path_error_change, "error")
         self._action_button.disabled = bool(self._path_input.error)
@@ -140,6 +192,8 @@ class FileOpenDialog(FileDialog):
         action_label: str,
         action_callback: FileAction,
         on_close: Callable[[], None] | None = None,
+        level: int | None = None,
+        indent: int | None = None,
         **params,
     ):
         super().__init__(
@@ -151,6 +205,8 @@ class FileOpenDialog(FileDialog):
             action_label=action_label,
             action_callback=action_callback,
             on_close=on_close,
+            level=level,
+            indent=indent,
             **params,
         )
 
@@ -165,6 +221,8 @@ class FileSaveDialog(FileDialog):
         action_label: str,
         action_callback: FileAction,
         on_close: Callable[[], None] | None = None,
+        level: int | None = None,
+        indent: int | None = None,
         **params,
     ):
         super().__init__(
@@ -176,5 +234,7 @@ class FileSaveDialog(FileDialog):
             action_label=action_label,
             action_callback=action_callback,
             on_close=on_close,
+            level=level,
+            indent=indent,
             **params,
         )

@@ -244,7 +244,8 @@ class FieldMeta(pydantic.BaseModel):
     def from_input_descriptions(
         cls,
         input_descriptions: dict[str, InputDescription],
-        name: str = "inputs",
+        *,
+        name: str | None = None,
         title: str | None = None,
         description: str | None = None,
     ) -> "FieldMeta":
@@ -265,11 +266,11 @@ class FieldMeta(pydantic.BaseModel):
             "type": "object",
             "properties": properties,
             "required": required_names or None,
-            "title": title if title is not None else _make_label(name),
+            "title": title,
             "description": description,
         }
         return cls.from_schema(
-            name,
+            name or "inputs",
             Schema(**schema_dict),
             required=True if len(required_names) > 0 else None,
         )
@@ -279,6 +280,7 @@ class FieldMeta(pydantic.BaseModel):
         cls,
         name: str,
         schema: Schema,
+        *,
         required: bool | None = None,
     ) -> "FieldMeta":
         """Create field metadata from an OpenAPI Schema."""

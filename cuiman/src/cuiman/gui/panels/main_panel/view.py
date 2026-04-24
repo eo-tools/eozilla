@@ -4,7 +4,6 @@
 
 from typing import Any
 
-import fsspec
 import panel as pn
 import panel.layout
 
@@ -30,7 +29,7 @@ from .viewmodel import (
     GetProcessAction,
     MainPanelViewModel,
 )
-from cuiman.gui.dialogs import FileOpenDialog, FileSaveDialog
+from cuiman.gui.dialogs import FileOpenDialog, FileSaveDialog, Header
 
 
 @JobsObserver.register  # virtual subclass, no runtime checks
@@ -85,7 +84,7 @@ class MainPanelView(pn.viewable.Viewer):
             for p in self.vm.processes
         }
         self._process_select = pn.widgets.Select(
-            name="Process",
+            # name="Process",
             options=process_select_options,
             value=pn.bind(lambda v: v, self.vm.param.selected_process_id),
         )
@@ -115,19 +114,23 @@ class MainPanelView(pn.viewable.Viewer):
         file_menu.on_click(_on_file_menu_click)
 
         self._load_request_dialog = FileOpenDialog(
-            title="### Load Process Request",
+            title="Load Process Request",
             path="./request.json",
             path_label="Process request file (JSON)",
             action_label="Load",
-            action_callback=self.load_process_request_file,
+            action_callback=self.vm.load_process_request_file,
+            level=4,
+            indent=24,
         )
 
         self._store_request_dialog = FileSaveDialog(
-            title="### Store Process Request",
+            title="Store Process Request",
             path="./request.json",
             path_label="Process request file (JSON)",
             action_label="Store",
-            action_callback=self.store_process_request_file,
+            action_callback=self.vm.store_process_request_file,
+            level=4,
+            indent=24,
         )
 
         self._load_request_dialog.dialog.visible = False
@@ -140,6 +143,7 @@ class MainPanelView(pn.viewable.Viewer):
         )
 
         process_panel = pn.Column(
+            Header(title="Process"),
             pn.layout.FlexBox(
                 self._process_select,
                 file_menu,
@@ -276,6 +280,11 @@ class MainPanelView(pn.viewable.Viewer):
         self._process_doc_markdown.object = markdown_text
 
     def _update_process_inputs_ui(self, _event=None):
+        process_description = self.vm.process_description
+        if process_description is None:
+            self._inputs_panel[:] = []
+            return
+
         inputs_field = self.vm.inputs_field
         is_empty = (
             inputs_field is None
@@ -285,29 +294,34 @@ class MainPanelView(pn.viewable.Viewer):
                 and len(inputs_field.view) == 0
             )
         )
+        input_children: list[Any] = [Header(title="Inputs")]
         if is_empty:
-            self._inputs_panel[:] = [pn.pane.Markdown("_No inputs available._")]
+            input_children.append(pn.pane.Markdown("_No inputs available._"))
         else:
-            self._inputs_panel[:] = [inputs_field.view]
+            input_children.append(inputs_field.view)
+        self._inputs_panel[:] = input_children
 
     def _update_process_outputs_ui(self, _event=None):
-        process = self.vm.process_description
-        num_outputs = self.vm.num_outputs
-        if process is None:
+        process_description = self.vm.process_description
+        if process_description is None:
             self._outputs_panel[:] = []
+            return
+        output_children: list[Any] = [Header(title="Outputs")]
+        num_outputs = self.vm.num_outputs
+        if num_outputs == 0:
+            output_children.append("_No outputs available._")
+        elif num_outputs == 1:
+            output_children.append("_No selectable outputs available._")
         else:
-            self._outputs_panel[:] = (
-                self._create_outputs_ui(process) if num_outputs >= 2 else []
-            )
-        if num_outputs < 2:
-            self._outputs_panel.visible = False
+            output_children.extend(self._create_outputs_ui(process_description))
+        self._outputs_panel[:] = output_children
 
-    def _create_outputs_ui(self, process_description: ProcessDescription) -> list:
+    def _create_outputs_ui(self, process_description: ProcessDescription) -> list[Any]:
         outputs = process_description.outputs or {}
         num_outputs = self.vm.num_outputs
 
         output_mode = pn.widgets.RadioButtonGroup(
-            name="Output",
+            name="Output mode:",
             options={
                 "Default": "default",
                 "Selected": "selection",
@@ -386,13 +400,3 @@ class MainPanelView(pn.viewable.Viewer):
     ) -> None:
         self._job_info_panel.job_info = job_info
         self._job_info_panel.client_error = client_error
-
-    def load_process_request_file(
-        self, fs: fsspec.AbstractFileSystem, path: str
-    ) -> None:
-        self.vm.load_process_request_file(fs, path)
-
-    def store_process_request_file(
-        self, fs: fsspec.AbstractFileSystem, path: str
-    ) -> None:
-        self.vm.store_process_request_file(fs, path)
