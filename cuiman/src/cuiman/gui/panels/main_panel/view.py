@@ -4,6 +4,7 @@
 
 from typing import Any
 
+import fsspec
 import panel as pn
 import panel.layout
 
@@ -12,7 +13,6 @@ from cuiman.api.exceptions import ClientError
 from cuiman.gui.ipy_helper import IPyHelper
 from cuiman.gui.jobs_observer import JobsObserver
 from cuiman.gui.panels import JobInfoPanelView
-from cuiman.gui.x_menu import XMenu, XMenuItem
 from gavicore.models import (
     JobInfo,
     JobList,
@@ -30,6 +30,7 @@ from .viewmodel import (
     GetProcessAction,
     MainPanelViewModel,
 )
+from cuiman.gui.dialogs import FileOpenDialog, FileSaveDialog
 
 
 @JobsObserver.register  # virtual subclass, no runtime checks
@@ -50,7 +51,7 @@ class MainPanelView(pn.viewable.Viewer):
         - catching ClientError
         - touching data return by the API client
 
-    Also consider: The view should never “drive” initial state.
+    Also consider: The view should never "drive" initial state.
         It should only reflect it from the view-model.
     """
 
@@ -86,36 +87,72 @@ class MainPanelView(pn.viewable.Viewer):
         self._process_select = pn.widgets.Select(
             name="Process",
             options=process_select_options,
-            value=self.vm.selected_process_id,
+            value=pn.bind(lambda v: v, self.vm.param.selected_process_id),
         )
-
-        def _on_select_process(e):
-            self.vm.select_process(e.new)
-            self._update_process_ui()
-            self._set_own_job_info(None)
-
-        self._process_select.param.watch(_on_select_process, "value")
 
         self._advanced_switch = pn.widgets.Switch(
-            value=self.vm.show_advanced,
+            value=pn.bind(lambda v: v, self.vm.param.show_advanced),
         )
 
-        def _on_advanced(e):
-            self.vm.show_advanced = bool(e.new)
-            self.vm.update_inputs()
-            self._update_process_inputs_ui()
-
-        self._advanced_switch.param.watch(_on_advanced, "value")
         self._process_doc_markdown = pn.pane.Markdown("")
+        self._message_markdown = pn.pane.Markdown("")
+
+        def _on_file_menu_click(e):
+            item = e.new
+            if item == "load_request":
+                self._load_request_dialog.dialog.visible = True
+            elif item == "store_request":
+                self._store_request_dialog.dialog.visible = True
+
+        file_menu = pn.widgets.MenuButton(
+            name="File Actions",
+            items=[
+                ("Load Request", "load_request"),
+                ("Store Request", "store_request"),
+            ],
+            # width=120,
+        )
+        file_menu.on_click(_on_file_menu_click)
+
+        self._load_request_dialog = FileOpenDialog(
+            title="### Load Process Request",
+            path="./request.json",
+            path_label="Process request file (JSON)",
+            action_label="Load",
+            action_callback=self.load_process_request_file,
+        )
+
+        self._store_request_dialog = FileSaveDialog(
+            title="### Store Process Request",
+            path="./request.json",
+            path_label="Process request file (JSON)",
+            action_label="Store",
+            action_callback=self.store_process_request_file,
+        )
+
+        self._load_request_dialog.dialog.visible = False
+        self._store_request_dialog.dialog.visible = False
+
+        file_menu.disabled = pn.bind(
+            lambda v1, v2: v1 or v2,
+            self._load_request_dialog.dialog.param.visible,
+            self._store_request_dialog.dialog.param.visible,
+        )
 
         process_panel = pn.Column(
-            self._process_select,
+            pn.layout.FlexBox(
+                self._process_select,
+                file_menu,
+                align_content="space-between",
+                align_items="flex-end",
+            ),
+            self._load_request_dialog,
+            self._store_request_dialog,
             self._process_doc_markdown,
-            # DebugHelper.instance(),  # Uncomment for debugging
             pn.Row(
                 self._advanced_switch,
                 pn.widgets.StaticText(value="Show advanced inputs"),
-                visible=self.vm.param.has_advanced,
+                visible=pn.bind(lambda v: v, self.vm.param.has_advanced),
             ),
         )
 
@@ -145,43 +182,10 @@ class MainPanelView(pn.viewable.Viewer):
             ),
         )
 
-        # --- file_menu
-
-        self._open_button = XMenuItem(
-            "Open",
-            on_click=self._on_open_request_clicked,
-            disabled=True,
-            description="Open a process request from a JSON or YAML file",
-        )
-        self._save_button = XMenuItem(
-            "Save",
-            on_click=self._on_save_request_clicked,
-            disabled=True,
-            description=(
-                "Save the current settings as process request file "
-                "using JSON or YAML format"
-            ),
-        )
-        self._save_as_button = XMenuItem(
-            "Save As...",
-            on_click=self._on_save_as_request_clicked,
-            disabled=True,
-            description=(
-                "Save the current settings as process request file "
-                "using JSON or YAML format"
-            ),
-        )
-        file_menu = XMenu(
-            "File",
-            (self._open_button, self._save_button, self._save_as_button),
-            description="Request-file related actions",
-        )
-
         action_panel = pn.Row(
             self._execute_button,
             self._request_button,
             self._results_button,
-            file_menu,
             margin=(10, 0, 0, 0),
         )
 
@@ -189,7 +193,6 @@ class MainPanelView(pn.viewable.Viewer):
         self._outputs_panel = pn.Column()
 
         self._job_info_panel = JobInfoPanelView(standalone=False)
-        self._job_info_panel.param.watch(self._on_own_job_info_changed, "job_info")
 
         self._view = pn.Column(
             process_panel,
@@ -199,7 +202,44 @@ class MainPanelView(pn.viewable.Viewer):
             self._job_info_panel,
         )
 
-        self._update_process_ui()
+        # Watches View --> VM
+        #
+        self._process_select.param.watch(
+            lambda e: self.vm.select_process(e.new), "value"
+        )
+        self._advanced_switch.param.watch(
+            lambda e: setattr(self.vm, "show_advanced", e.new), "value"
+        )
+
+        # Watches VM --> View
+        #
+        self.vm.param.watch(self._update_process_description_ui, "process_description")
+        self.vm.param.watch(self._update_process_inputs_ui, "inputs_field")
+        self.vm.param.watch(self._update_process_outputs_ui, "process_description")
+        self.vm.param.watch(
+            lambda _: self._set_own_job_info(None), "selected_process_id"
+        )
+
+        # Reactive bindings
+        #
+        self._execute_button.disabled = pn.bind(
+            lambda v: v, self.vm.param.execute_disabled
+        )
+        self._request_button.disabled = pn.bind(
+            lambda v: v, self.vm.param.get_request_disabled
+        )
+        self._results_button.disabled = pn.bind(
+            lambda job: job is None or job.status != JobStatus.successful,
+            self._job_info_panel.param.job_info,
+        )
+        self._advanced_switch.visible = pn.bind(lambda v: v, self.vm.param.has_advanced)
+        file_menu.disabled = pn.bind(
+            lambda v1, v2: v1 or v2,
+            self._load_request_dialog.dialog.param.visible,
+            self._store_request_dialog.dialog.param.visible,
+        )
+
+        self.vm.select_process(self.vm.get_initial_process_id())
 
     def __panel__(self) -> pn.viewable.Viewable:
         return self._view
@@ -220,20 +260,7 @@ class MainPanelView(pn.viewable.Viewer):
         # TODO: render error
         pass
 
-    def _on_own_job_info_changed(self, _event: Any):
-        own_job_info = self._job_info_panel.job_info
-        self._results_button.disabled = (
-            own_job_info is None or own_job_info.status != JobStatus.successful
-        )
-
-    def _update_process_ui(self):
-        """Update the processor-specific user interface."""
-        self._update_process_description_ui()
-        self.vm.update_inputs()
-        self._update_process_inputs_ui()
-        self._update_process_outputs_ui()
-
-    def _update_process_description_ui(self):
+    def _update_process_description_ui(self, _event=None):
         process = self.vm.process_description
         if process is not None:
             if process and process.description:
@@ -248,7 +275,7 @@ class MainPanelView(pn.viewable.Viewer):
                 markdown_text = "_No process selected._"
         self._process_doc_markdown.object = markdown_text
 
-    def _update_process_inputs_ui(self):
+    def _update_process_inputs_ui(self, _event=None):
         inputs_field = self.vm.inputs_field
         is_empty = (
             inputs_field is None
@@ -263,21 +290,21 @@ class MainPanelView(pn.viewable.Viewer):
         else:
             self._inputs_panel[:] = [inputs_field.view]
 
-    def _update_process_outputs_ui(self):
+    def _update_process_outputs_ui(self, _event=None):
         process = self.vm.process_description
-        num_outputs = self._num_outputs
+        num_outputs = self.vm.num_outputs
         if process is None:
             self._outputs_panel[:] = []
         else:
             self._outputs_panel[:] = (
-                self.create_outputs_ui(process) if num_outputs >= 2 else []
+                self._create_outputs_ui(process) if num_outputs >= 2 else []
             )
         if num_outputs < 2:
             self._outputs_panel.visible = False
 
-    def create_outputs_ui(self, process_description: ProcessDescription) -> list:
+    def _create_outputs_ui(self, process_description: ProcessDescription) -> list:
         outputs = process_description.outputs or {}
-        num_outputs = self._num_outputs
+        num_outputs = self.vm.num_outputs
 
         output_mode = pn.widgets.RadioButtonGroup(
             name="Output",
@@ -295,11 +322,11 @@ class MainPanelView(pn.viewable.Viewer):
 
         output_options = [self._create_output_option(k, v) for k, v in outputs.items()]
 
-        def enable_output_options(value: str):
+        def enable_output_options(e):
             for v in output_options:
-                v.disabled = value == "default"
+                v.disabled = e.new == "default"
 
-        pn.bind(enable_output_options, output_mode)
+        output_mode.param.watch(enable_output_options, "value")
 
         return [
             output_mode,
@@ -320,7 +347,7 @@ class MainPanelView(pn.viewable.Viewer):
             name=output.title or output.schema_.title or name, value=True
         )
         checkbox.disabled = True
-        pn.bind(handle_change, checkbox)
+        checkbox.param.watch(lambda e: handle_change(e.new), "value")
         return checkbox
 
     def _on_execute_button_clicked(self, _event: Any = None):
@@ -331,20 +358,14 @@ class MainPanelView(pn.viewable.Viewer):
         except ClientError as e:
             self._set_own_job_info(None, client_error=e)
 
-    def _on_open_request_clicked(self, _event: Any = None):
-        # TODO implement open request
-        pass
+    def _on_load_request_clicked(self, _event: Any = None):
+        self._load_request_dialog.dialog.open()
 
-    def _on_save_request_clicked(self, _event: Any = None):
-        # TODO implement save request
-        pass
-
-    def _on_save_as_request_clicked(self, _event: Any = None):
-        # TODO implement save request as
-        pass
+    def _on_store_request_clicked(self, _event: Any = None):
+        self._store_request_dialog.dialog.open()
 
     def _on_get_process_request(self, _event: Any = None):
-        execution_request = self.vm.build_execution_request()
+        execution_request = self.vm.create_request()
         IPyHelper.set_execution_request_in_user_ns(execution_request)
 
     def _on_get_process_results(self, _event: Any = None):
@@ -357,11 +378,6 @@ class MainPanelView(pn.viewable.Viewer):
         except ClientError as e:
             self._set_own_job_info(job_info, e)
 
-    @property
-    def _num_outputs(self) -> int:
-        process = self.vm.process_description
-        return len(process.outputs) if process and process.outputs else 0
-
     def _get_own_job_info(self) -> JobInfo | None:
         return self._job_info_panel.job_info
 
@@ -370,3 +386,13 @@ class MainPanelView(pn.viewable.Viewer):
     ) -> None:
         self._job_info_panel.job_info = job_info
         self._job_info_panel.client_error = client_error
+
+    def load_process_request_file(
+        self, fs: fsspec.AbstractFileSystem, path: str
+    ) -> None:
+        self.vm.load_process_request_file(fs, path)
+
+    def store_process_request_file(
+        self, fs: fsspec.AbstractFileSystem, path: str
+    ) -> None:
+        self.vm.store_process_request_file(fs, path)
