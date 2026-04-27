@@ -44,6 +44,22 @@ class JsonIdentityCodec(JsonCodec):
         return json_value
 
 
+class JsonDatetimeCodec(JsonCodec):
+    def to_json(self, value: Any) -> JsonValue:
+        if not value:
+            return None
+        ensure_type("value", value, datetime.datetime)
+        assert isinstance(value, datetime.datetime)
+        return datetime.datetime.isoformat(value)
+
+    def from_json(self, json_value: JsonValue) -> Any:
+        if not json_value:
+            return None
+        ensure_type("json_value", json_value, str)
+        assert isinstance(json_value, str)
+        return datetime.datetime.fromisoformat(json_value)
+
+
 class JsonDateCodec(JsonCodec):
     def to_json(self, value: Any) -> JsonValue:
         if not value:
@@ -58,3 +74,19 @@ class JsonDateCodec(JsonCodec):
         ensure_type("json_value", json_value, str)
         assert isinstance(json_value, str)
         return datetime.date.fromisoformat(json_value)
+
+
+class JsonTimeCodec(JsonCodec):
+    def to_json(self, value: Any) -> JsonValue:
+        if not value:
+            return None
+        ensure_type("value", value, datetime.time)
+        assert isinstance(value, datetime.time)
+        return datetime.time.isoformat(value)
+
+    def from_json(self, json_value: JsonValue) -> Any:
+        if not json_value:
+            return None
+        ensure_type("json_value", json_value, str)
+        assert isinstance(json_value, str)
+        return datetime.time.fromisoformat(json_value)
