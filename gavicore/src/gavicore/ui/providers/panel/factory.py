@@ -58,10 +58,10 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
     def create_boolean_field(self, ctx: FieldContext) -> PanelField:
         view_model = ctx.vm.primitive()
         if view_model.meta.widget == "switch":
-            view = pn.widgets.Switch(value=view_model.value, name=view_model.meta.label)
+            view = pn.widgets.Switch(value=view_model.value, name=ctx.label)
         else:
             view = pn.widgets.Checkbox(
-                value=view_model.value, name=view_model.meta.label
+                value=view_model.value, name=ctx.label
             )
         return PanelField(view_model, view)
 
@@ -246,7 +246,6 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         ):
             return PanelField(view_model, BBoxEditor())
 
-        item_schema = item_meta.schema_
         item_format = item_schema.format
         assert item_type is not None
         array_converter = _ARRAY_TEXT_CONVERTERS.get(item_type)
