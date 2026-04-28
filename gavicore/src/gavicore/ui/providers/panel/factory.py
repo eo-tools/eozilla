@@ -76,9 +76,7 @@ class DefaultPanelFieldFactory(PanelFieldFactoryBase):
         if view_model.meta.widget == "switch":
             view = pn.widgets.Switch(value=view_model.value, name=ctx.label)
         else:
-            view = pn.widgets.Checkbox(
-                value=view_model.value, name=ctx.label
-            )
+            view = pn.widgets.Checkbox(value=view_model.value, name=ctx.label)
         return PanelField(view_model, view)
 
     def get_integer_score(self, meta: FieldMeta) -> int:
