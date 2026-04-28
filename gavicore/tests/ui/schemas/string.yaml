@@ -5,17 +5,24 @@ properties:
   plain_min_length_10:
     type: string
     minLength: 10
-  password:
+  bytes_input:
+    type: string
+    format: bytes
+  byte_dropper:
+    type: string
+    format: bytes
+    x-ui-widget: dropper
+  password_input:
     type: string
     format: password
     placeholder: "Enter password here"
   datetime_input:
     type: string
-    format: datetime
+    format: date-time
     x-ui-widget: input
   datetime_picker:
     type: string
-    format: datetime
+    format: date-time
   date_picker:
     type: string
     format: date

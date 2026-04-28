@@ -12,10 +12,12 @@ from gavicore.models import DataType
 from gavicore.ui import FieldContext, FieldFactoryBase, FieldMeta
 from gavicore.ui.vm import SelectiveViewModel, ViewModel
 from gavicore.util.json import (
-    JsonDateCodec,
-    JsonDatetimeCodec,
-    JsonTimeCodec,
+    JsonBase64Codec,
     JsonCodec,
+    JsonDateCodec,
+    JsonDateTimeCodec,
+    JsonTimeCodec,
+    JsonValue,
 )
 from gavicore.util.text import ArrayTextConverter, TextConverter
 
@@ -31,6 +33,9 @@ _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
     DataType.number: TextConverter.NumberArray(),
     DataType.string: TextConverter.StringArray(),
 }
+
+
+pn.extension("filedropper")
 
 
 class PanelFieldFactory(FieldFactoryBase[PanelField]):
@@ -155,10 +160,12 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         format_ = view_model.schema.format
         widget_hint = ctx.meta.widget
 
-        if format_ in ("datetime", "date", "time"):
-            json_codec: JsonCodec
-            if format_ == "datetime":
-                json_codec = JsonDatetimeCodec()
+        json_codec: JsonCodec
+
+        if format_ in ("date-time", "date", "time"):
+            dt_value: datetime.date | datetime.time | None
+            if format_ == "date-time":
+                json_codec = JsonDateTimeCodec()
                 dt_value = json_codec.from_json(value) or datetime.datetime.today()
                 if widget_hint == "input":
                     view = pn.widgets.DatetimeInput(
@@ -174,10 +181,21 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
                 view = pn.widgets.DatePicker(
                     name=label, value=dt_value, description=description
                 )
-            else:
+            else:  # if format_ == "time":
                 json_codec = JsonTimeCodec()
                 dt_value = json_codec.from_json(value) or datetime.datetime.now().time()
                 view = pn.widgets.TimePicker(name=label, value=dt_value)
+            return PanelField(view_model, view, json_codec=json_codec)
+
+        if format_ == "bytes":
+            if widget_hint == "dropper":
+                json_codec = _FileDropperCodec()
+                view = pn.widgets.FileDropper(name=label, multiple=False)
+            else:
+                json_codec = JsonBase64Codec()
+                view = pn.widgets.FileInput(
+                    name=label, description=description, multiple=False
+                )
             return PanelField(view_model, view, json_codec=json_codec)
 
         if format_ == "password":
@@ -403,3 +421,27 @@ def _layout_views(
         return pn.Row(*views)
     else:
         return pn.Column(*views)
+
+
+class _FileDropperCodec(JsonCodec[dict]):
+    """Encode/decode values for the panel.widgets.FileDropper widget."""
+
+    def __init__(self):
+        self.inner = JsonBase64Codec()
+
+    def to_json(self, value: dict | None) -> JsonValue:
+        if value is None:
+            return None
+        assert isinstance(value, dict)
+        if not value:
+            return ""
+        bytes_or_str = tuple(value.values())[0]
+        return self.inner.to_json(bytes_or_str)
+
+    def from_json(self, json_value: JsonValue) -> dict | None:
+        if json_value is None:
+            return None
+        assert isinstance(json_value, str)
+        if json_value == "":
+            return {}
+        return {"bytes.bin": self.inner.from_json(json_value)}

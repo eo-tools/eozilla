@@ -8,7 +8,7 @@ import panel as pn
 
 from gavicore.models import Schema
 from gavicore.ui import FieldContext, FieldGenerator, FieldMeta
-from gavicore.ui.providers.panel.factory import PanelFieldFactory
+from gavicore.ui.providers.panel.factory import PanelFieldFactory, _FileDropperCodec
 from gavicore.ui.providers.panel.widgets.labeled import LabeledWidget
 from gavicore.ui.vm import AnyViewModel, PrimitiveViewModel, SelectiveViewModel
 
@@ -121,3 +121,14 @@ def _meta_from_schema(schema: Schema | dict) -> FieldMeta:
     return FieldMeta.from_schema(
         "root", schema if isinstance(schema, Schema) else Schema(**schema)
     )
+
+
+def test_json_file_dropper_codec():
+    c = _FileDropperCodec()
+    assert c.to_json(None) is None
+    assert c.from_json(None) is None
+    assert c.to_json({}) == ""
+    assert c.from_json("") == {}
+    assert c.to_json({"README.txt": "¡Adios!"}) == "wqFBZGlvcyE="
+    assert c.from_json("wqFBZGlvcyE=") == {"bytes.bin": b"\xc2\xa1Adios!"}
+    assert c.to_json({"bytes.bin": b"\xc2\xa1Adios!"}) == "wqFBZGlvcyE="

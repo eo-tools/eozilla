@@ -57,7 +57,7 @@ class FieldGroup(pydantic.BaseModel):
     of a layout tree and do not have the `group` property set
     will be appended to the root group of a layout tree.
     Their order will be determined by the value of the `order`
-    property, if any, or the value of the `name` property.
+    property, if any, or the original property order.
     """
 
     type: Literal["column", "row"]  # we may add "grid" or others
@@ -162,7 +162,7 @@ class FieldMeta(pydantic.BaseModel):
     """The name of the group in which this field will occur. 
     See also [FieldGroup][FieldGroup]."""
 
-    order: int | str | None = None
+    order: int | None = None
     """The order of this field in the group. 
     The order's value is used to compare it against other `order` values 
     when sorting multiple fields in ascending order. 
@@ -584,7 +584,7 @@ def _get_initial_value(meta: FieldMeta) -> Any:
             return [_get_initial_value(item_meta) for _i in range(min_items)]
         case DataType.object:
             assert isinstance(meta.properties, dict)
-            # TODO: consider minProperties, additionalProperties
+            # Note, we may also consider minProperties, additionalProperties
             # create object with required properties
             required = set(schema.required or [])
             properties = meta.properties
