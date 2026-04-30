@@ -23,7 +23,7 @@ from gavicore.models import (
     TransmissionMode,
 )
 from gavicore.ui import Field, FieldFactoryRegistry, FieldMeta
-from gavicore.ui.providers.panel import PanelField
+from gavicore.ui.panel import PanelField
 from gavicore.util.ensure import ensure_condition
 from gavicore.util.request import ExecutionRequest
 

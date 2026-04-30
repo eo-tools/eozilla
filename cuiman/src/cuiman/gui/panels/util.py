@@ -8,7 +8,7 @@ import fsspec
 import panel as pn
 import param
 
-from gavicore.ui.providers.panel.widgets.path import FilesystemPathInput
+from gavicore.ui.panel.widgets.path import FilesystemPathInput
 
 
 def _make_header(title: str, level: int) -> pn.viewable.Viewable:
