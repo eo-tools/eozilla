@@ -8,12 +8,12 @@ import panel as pn
 
 from gavicore.models import Schema
 from gavicore.ui import FieldContext, FieldGenerator, FieldMeta
-from gavicore.ui.providers.panel.factory import (
+from gavicore.ui.panel.factory import (
     DefaultPanelFieldFactory,
     _FileDropperCodec,
 )
-from gavicore.ui.providers.panel.widgets.bbox import BBoxEditor
-from gavicore.ui.providers.panel.widgets.labeled import LabeledWidget
+from gavicore.ui.panel.widgets.bbox import BBoxEditor
+from gavicore.ui.panel.widgets.labeled import LabeledWidget
 from gavicore.ui.vm import AnyViewModel, PrimitiveViewModel, SelectiveViewModel
 
 

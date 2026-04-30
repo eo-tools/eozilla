@@ -19,7 +19,7 @@ from gavicore.models import (
     ProcessSummary,
     Schema,
 )
-from gavicore.ui.providers.panel import PanelFieldFactoryRegistry
+from gavicore.ui.panel import PanelFieldFactoryRegistry
 
 bbox_input = InputDescription(
     title="Bounding box",

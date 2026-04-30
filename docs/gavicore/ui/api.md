@@ -32,10 +32,10 @@
 ::: gavicore.ui.vm.ObjectViewModel
 
 
-## `gavicore.ui.providers.panel` - Panel API
+## `gavicore.ui.panel` - Panel API
 
-::: gavicore.ui.providers.panel.PanelField
+::: gavicore.ui.panel.PanelField
 
-::: gavicore.ui.providers.panel.PanelFieldFactory
+::: gavicore.ui.panel.PanelFieldFactory
 
-::: gavicore.ui.providers.panel.PanelFieldFactoryBase
+::: gavicore.ui.panel.PanelFieldFactoryBase

@@ -22,7 +22,7 @@ from gavicore.models import (
     ProcessList,
 )
 from gavicore.ui import FieldFactoryRegistry
-from gavicore.ui.providers.panel import PanelField
+from gavicore.ui.panel import PanelField
 
 from .viewmodel import (
     ExecuteProcessAction,
