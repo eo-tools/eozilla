@@ -20,7 +20,7 @@ from gavicore.models import (
     ProcessSummary,
     TransmissionMode,
 )
-from gavicore.ui import Field, FieldMeta
+from gavicore.ui import Field, FieldFactoryRegistry, FieldMeta
 from gavicore.ui.providers.panel import PanelField
 from gavicore.util.json import JsonValue
 from gavicore.util.request import ExecutionRequest
@@ -74,6 +74,7 @@ class MainPanelViewModel(param.Parameterized):
         is_advanced_input: AdvancedInputPredicate,
         get_process: GetProcessAction,
         execute_process: ExecuteProcessAction,
+        field_factory_registry: FieldFactoryRegistry[PanelField],
         **params,
     ):
         super().__init__(**params)
@@ -81,6 +82,7 @@ class MainPanelViewModel(param.Parameterized):
         self._get_process = get_process
         self._execute_process = execute_process
         self._is_advanced_input = is_advanced_input
+        self._field_factory_registry = field_factory_registry
 
         self.processes = [p for p in process_list.processes if accept_process(p)]
         self.error = process_list_error
@@ -129,7 +131,9 @@ class MainPanelViewModel(param.Parameterized):
 
         input_field_meta = FieldMeta.from_input_descriptions(filtered_inputs)
         self.inputs_field = PanelField.from_meta(
-            input_field_meta, initial_value=last_values
+            input_field_meta,
+            initial_value=last_values,
+            field_factory_registry=self._field_factory_registry,
         )
 
         MainPanelViewModel.Settings.show_advanced = self.show_advanced

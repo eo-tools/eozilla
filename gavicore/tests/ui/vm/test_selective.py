@@ -130,11 +130,6 @@ definitions = {
     },
 }
 
-import yaml
-
-with open("discriminator.yaml", "w") as f:
-    yaml.safe_dump(definitions, f)
-
 
 class SelectiveViewModelWithDiscriminatorTest(TestCase):
     @classmethod

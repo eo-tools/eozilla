@@ -8,52 +8,50 @@ import panel as pn
 
 from gavicore.models import Schema
 from gavicore.ui import FieldContext, FieldGenerator, FieldMeta
-from gavicore.ui.providers.panel.factory import PanelFieldFactory, _FileDropperCodec
+from gavicore.ui.providers.panel.factory import (
+    DefaultPanelFieldFactory,
+    _FileDropperCodec,
+)
+from gavicore.ui.providers.panel.widgets.bbox import BBoxEditor
 from gavicore.ui.providers.panel.widgets.labeled import LabeledWidget
 from gavicore.ui.vm import AnyViewModel, PrimitiveViewModel, SelectiveViewModel
 
 
-class PanelFieldFactoryTest(TestCase):
-    def test_get_score_for_arrays(self):
-        factory = PanelFieldFactory()
-        for t in ("boolean", "integer", "number", "string"):
-            self.assertEqual(
-                5,
-                factory.get_score(
-                    _meta_from_schema({"type": "array", "items": {"type": t}})
-                ),
-            )
-        self.assertEqual(
-            10,
-            factory.get_score(
-                _meta_from_schema(
-                    {"type": "array", "format": "bbox", "items": {"type": "number"}}
-                )
-            ),
-        )
+class DefaultPanelFieldFactoryTest(TestCase):
+    def test_create_field_for_bbox_tuple(self):
+        generator = FieldGenerator()
+        generator.register_field_factory(DefaultPanelFieldFactory())
 
-        self.assertEqual(1, factory.get_score(_meta_from_schema({"type": "array"})))
-        self.assertEqual(
-            1,
-            factory.get_score(
-                _meta_from_schema({"type": "array", "items": {"type": "object"}})
-            ),
+        meta = _meta_from_schema(
+            {
+                "type": "array",
+                "items": {"type": "number"},
+                "minItems": 4,
+                "maxItems": 4,
+                "x-ui-widget": "map",
+            }
         )
-        self.assertEqual(
-            1,
-            factory.get_score(
-                _meta_from_schema(
-                    {
-                        "type": "array",
-                        "items": {"type": "array", "items": {"type": "string"}},
-                    }
-                ),
-            ),
+        field = generator.generate_field(meta)
+        self.assertIsInstance(field.view, BBoxEditor)
+
+    def test_create_field_for_date_tuple(self):
+        generator = FieldGenerator()
+        generator.register_field_factory(DefaultPanelFieldFactory())
+
+        meta = _meta_from_schema(
+            {
+                "type": "array",
+                "items": {"type": "string", "format": "date"},
+                "minItems": 2,
+                "maxItems": 2,
+            }
         )
+        field = generator.generate_field(meta)
+        self.assertIsInstance(field.view, pn.widgets.DateRangePicker)
 
     def test_create_field_for_discriminator(self):
         generator = FieldGenerator()
-        generator.register_field_factory(PanelFieldFactory())
+        generator.register_field_factory(DefaultPanelFieldFactory())
         field = generator.generate_field(
             _meta_from_schema(
                 {
@@ -100,7 +98,7 @@ class PanelFieldFactoryTest(TestCase):
 
     def assert_create_field_for_combinations(self, combination_op: str):
         generator = FieldGenerator()
-        generator.register_field_factory(PanelFieldFactory())
+        generator.register_field_factory(DefaultPanelFieldFactory())
 
         field = generator.generate_field(_meta_from_schema({combination_op: []}))
         self.assertIsInstance(field.view_model, AnyViewModel)
@@ -113,7 +111,7 @@ class PanelFieldFactoryTest(TestCase):
 
 def _ctx_from_schema(schema: Schema | dict) -> FieldContext:
     generator = FieldGenerator()
-    generator.register_field_factory(PanelFieldFactory())
+    generator.register_field_factory(DefaultPanelFieldFactory())
     return FieldContext(generator=generator, meta=_meta_from_schema(schema))
 
 

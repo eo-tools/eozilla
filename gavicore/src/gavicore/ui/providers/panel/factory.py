@@ -4,18 +4,21 @@
 
 import datetime
 import math
+from abc import ABC
 from typing import Any, Literal
 
 import panel as pn
 
 from gavicore.models import DataType
-from gavicore.ui import FieldContext, FieldFactoryBase, FieldMeta
+from gavicore.ui import FieldContext, FieldFactory, FieldFactoryBase, FieldMeta
 from gavicore.ui.vm import SelectiveViewModel, ViewModel
 from gavicore.util.json import (
     JsonBase64Codec,
     JsonCodec,
     JsonDateCodec,
+    JsonDateRangeCodec,
     JsonDateTimeCodec,
+    JsonDateTimeRangeCodec,
     JsonTimeCodec,
     JsonValue,
 )
@@ -38,7 +41,15 @@ _ARRAY_TEXT_CONVERTERS: dict[DataType, ArrayTextConverter] = {
 pn.extension("filedropper")
 
 
-class PanelFieldFactory(FieldFactoryBase[PanelField]):
+class PanelFieldFactory(FieldFactory[PanelField], ABC):
+    """Interface implemented by Panel fields factories."""
+
+
+class PanelFieldFactoryBase(FieldFactoryBase[PanelField], PanelFieldFactory, ABC):
+    """Base class for Panel fields factories."""
+
+
+class DefaultPanelFieldFactory(PanelFieldFactoryBase):
     def get_nullable_score(self, meta: FieldMeta) -> int:
         return 5
 
@@ -65,9 +76,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         if view_model.meta.widget == "switch":
             view = pn.widgets.Switch(value=view_model.value, name=ctx.label)
         else:
-            view = pn.widgets.Checkbox(
-                value=view_model.value, name=ctx.label
-            )
+            view = pn.widgets.Checkbox(value=view_model.value, name=ctx.label)
         return PanelField(view_model, view)
 
     def get_integer_score(self, meta: FieldMeta) -> int:
@@ -233,40 +242,66 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         return PanelField(view_model, view)
 
     def get_array_score(self, meta: FieldMeta) -> int:
-        assert meta.items is not None
-        item_type = meta.items.schema_.type
-        if item_type is not None:
-            format_ = meta.schema_.format
-            widget_hint = meta.widget
-            if item_type == DataType.number and (
-                (format_ or "").lower() == "bbox" or widget_hint == "map"
-            ):
-                return 10
-            array_converter = _ARRAY_TEXT_CONVERTERS.get(item_type)
-            if array_converter is not None:
-                return 5
-        # we'll fall back to JSON editor
-        return 1
+        return 5
 
     def create_array_field(self, ctx: FieldContext) -> PanelField:
         meta = ctx.meta
+        schema = meta.schema_
+        min_items = schema.minItems
+        max_items = schema.maxItems
+        assert meta.items is not None
         item_meta = meta.items
-        assert item_meta is not None
-        format_ = meta.schema_.format
-        widget_hint = meta.widget
         item_schema = item_meta.schema_
         item_type = item_schema.type
+        item_format = item_schema.format
+
+        format_ = schema.format
+        widget_hint = meta.widget
 
         view_model = ctx.vm.array()
+        json_codec: JsonCodec
 
-        if item_type == DataType.number and (
-            ((format_ or "").lower() == "bbox") or widget_hint == "map"
+        if (
+            item_type == DataType.number
+            and (format_ == "bbox" or widget_hint == "map")
+            and min_items == 4
+            and max_items == 4
         ):
             return PanelField(view_model, BBoxEditor())
 
-        item_format = item_schema.format
-        assert item_type is not None
-        array_converter = _ARRAY_TEXT_CONVERTERS.get(item_type)
+        if (
+            item_type == DataType.string
+            and item_format == "date-time"
+            and widget_hint in ("range-picker", None)
+            and min_items == 2
+            and max_items == 2
+        ):
+            json_codec = JsonDateTimeRangeCodec()
+            view = pn.widgets.DatetimeRangePicker(
+                name=ctx.label,
+                value=json_codec.from_json(ctx.initial_value),
+                description=ctx.meta.description,
+            )
+            return PanelField(view_model, view, json_codec=json_codec)
+
+        if (
+            item_type == DataType.string
+            and item_format == "date"
+            and widget_hint in ("range-picker", None)
+            and min_items == 2
+            and max_items == 2
+        ):
+            json_codec = JsonDateRangeCodec()
+            view = pn.widgets.DateRangePicker(
+                name=ctx.label,
+                value=json_codec.from_json(ctx.initial_value),
+                description=ctx.meta.description,
+            )
+            return PanelField(view_model, view, json_codec=json_codec)
+
+        array_converter = (
+            _ARRAY_TEXT_CONVERTERS.get(item_type) if item_type is not None else None
+        )
 
         if (
             array_converter is not None
@@ -299,6 +334,19 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         return 5
 
     def create_object_field(self, ctx: FieldContext) -> PanelField:
+        widget_hint = ctx.meta.widget
+        schema = ctx.meta.schema_
+
+        view_model: ViewModel
+
+        if (
+            widget_hint == "editor"
+            or schema.additionalProperties is not False
+            and not schema.properties
+        ):
+            view_model = ctx.vm.primitive()
+            return PanelField(view_model, _create_json_editor(ctx))
+
         prop_fields = ctx.create_property_fields()
         view_models = {k: f.view_model for k, f in prop_fields.items()}
         view_model = ctx.vm.object(properties=view_models)
@@ -399,17 +447,7 @@ class PanelFieldFactory(FieldFactoryBase[PanelField]):
         return 5
 
     def create_untyped_field(self, ctx: FieldContext) -> PanelField:
-        json_editor = pn.widgets.JSONEditor(
-            value=ctx.initial_value,
-            width=300,
-            mode="text",
-            menu=False,
-            search=False,
-        )
-        return PanelField(
-            ctx.vm.any(),
-            LabeledWidget(json_editor, name=ctx.label, divider=False),
-        )
+        return PanelField(ctx.vm.any(), _create_json_editor(ctx))
 
 
 def _layout_views(
@@ -445,3 +483,16 @@ class _FileDropperCodec(JsonCodec[dict]):
         if json_value == "":
             return {}
         return {"bytes.bin": self.inner.from_json(json_value)}
+
+
+def _create_json_editor(ctx: FieldContext) -> pn.widgets.WidgetBase:
+    json_editor = pn.widgets.JSONEditor(
+        value=ctx.initial_value,
+        width=300,
+        mode="text",
+        menu=False,
+        search=False,
+        schema=ctx.meta.schema_.to_json_dict(),
+    )
+    # return json_editor
+    return LabeledWidget(json_editor, name=ctx.label, divider=False, link=True)

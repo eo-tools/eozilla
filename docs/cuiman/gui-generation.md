@@ -57,14 +57,16 @@ more convenient when encoding schemas is YAML. If multiple extensions are used,
 in a schema or process input description, they can also be grouped in an object 
 property named `x-ui`:
 
-```json
-    "x-ui": {
-      "widget": "slider",
-      "minimum": 0,        
-      "maximum": 100,
-      "step": 5,
+```yaml
+    x-ui: 
+      widget: slider,
+      minimum: 0,        
+      maximum: 100,
+      step: 5,
     }
 ```
+
+The extensions can occur in bot schemas and process input/output descriptions. 
 
 **Schema widget mapping:** 
 
@@ -83,8 +85,9 @@ mapping of schema elements to Panel widgets and panels.
     * `format: date`: creates a **date picker** widget.
     * `format: time`: creates a **time picker** widget.
 - `type: array`: creates **array input** widgets for numeric and textual item types
-  or **array editors** for any item schema type.
-    * `format: bbox`: creates a **map view** to enter a bounding box.
+  or **array editors** for any item schema type. 
+  A few special tuple types such as **geographic bounding boxes** and 
+  **date(-time) ranges** are supported too.
 - `type: object`: creates a **sub-form** with optionally ordered and outlaid 
   fields for the object properties.
 - `oneOf: [s1, s2, s3, ...]`: creates a **tabs panel** with a tab 
@@ -215,14 +218,24 @@ If `enum` is specified:
 
 ### Type `array`
 
-With one exception, the `array` type will generate an _array editor_ field.
+With a few exceptions, the `array` type will generate an _array editor_ field.
 The editor is used to interactively add, edit, and remove array items. 
 The array item fields are generated from the schema's `items` property 
 which specifies the items' schema.
 
-If the `array` schema defines `format: bbox` or `x-ui-widget: map` a map
-view will be generated that lets users draw a geometry whose bounding 
-box will be the effective field value.
+A few tuple types are supported that generate special widgets instead of 
+the default array editor:
+
+- **geographic bounding boxes**: item type `number` with `minItems: 4`, `maxItems: 4`, 
+  and `x-ui-widget: map` creates a special editor to enter the bounding box
+  using [](). It lets users draw a geometry whose bounding 
+  box will become the effective field value.
+
+- **date(-time) ranges**: item type `string` with `minItems: 2`, `maxItems: 2` creates 
+  a [date-time range picker](https://panel.holoviz.org/reference/widgets/DatetimeRangePicker.html) 
+  for item format `date-time` or 
+  a [date range picker](https://panel.holoviz.org/reference/widgets/DateRangePicker.html) 
+  for item format `date`. 
 
 **Customisation options**: 
 
@@ -294,14 +307,107 @@ using the [panel](https://pypi.org/project/panel/) package.
 However, [panel](https://pypi.org/project/panel/) is an optional package to Gavicore
 as usually only Eozilla/Cuiman client applications require a GUI.
 
+### 1. Define the required customization
 
+Let's say we want to generate a custom UI for a 2-tuple representing
+a numeric value range, whose values can be validated by the following 
+schema: 
 
-TODO - write
+```yaml
+    type: array
+    items: 
+      type: number
+      minimum: -1.0
+      maximum: 1.0
+    minItems: 2
+    maxItems: 2
+    default: [-1.0, 1.0]
+```
 
-1. Implement the `FieldFactory` interface
-2. Start by using `FieldFactoryBase`
-3. Making effective use of `FieldMeta` and `FieldContext`
-4. Creating a `ViewModel`
-5. Creating the Panel `View`
-6. Creating the `PanelField`
-7. Registering the custom `FieldFactory`
+The UI field to be generated for this schema should be a 
+[numeric range slider](https://panel.holoviz.org/reference/widgets/EditableRangeSlider.html). 
+Furthermore, we say that the field is only used if `x-ui-widget: range-input`.
+
+### 2. Create a custom field factory
+
+In order to generate the desired UI field, we'll develop a custom
+`gavicore.ui.providers.panel.PanelFieldFactory` class and register an instance of it 
+in the framework. 
+
+The `PanelFieldFactory` is a typed abstract base class that implements 
+the generic `gavicore.ui.FieldFactory` interface. A `FieldFactory` is 
+responsible for calculating a "suitability score" for a given field metadata
+ `gavicore.ui.FieldMeta` which includes the OpenAPI schema and derived metadata.
+
+The framework selects the factory with the highest score for a given schema.
+The default score returned by the inbuilt factories is `5`.
+If a factory was selected, it is asked to create a `gavicore.ui.Field` given the
+current `gavicore.ui.FieldContext`. A `PanelFieldFactory` is supposed to only create 
+`gavicore.ui.providers.panel.PanelField` instances.
+
+The above is best explained by example. First we create a new class
+`NumberRangeFactory` that derives from `PanelFieldFactoryBase`:
+
+```python
+from gavicore.models import DataType
+from gavicore.ui import FieldContext, FieldMeta
+from gavicore.ui.providers.panel import PanelField, PanelFieldFactoryBase
+
+class NumberRangeFactory(PanelFieldFactoryBase):
+    def get_array_score(self, meta: FieldMeta) -> int:
+        """Compute the score of this factory for an array schema."""
+        ...
+
+    def create_array_field(self, ctx: FieldContext) -> PanelField:
+        """Create the Panel field for the selected array schema."""
+        ...
+```
+
+### 3. Implement the custom field factory
+
+Lets implement `get_array_score()` first:
+
+```python
+    def get_array_score(self, meta: FieldMeta) -> int:
+        schema = meta.schema_
+        assert schema.type == DataType.array  # will never fail 
+        is_range_input = (
+            meta.widget == 'range-input' 
+            and schema.items is not None 
+            and schema.items.type == DataType.number
+            and schema.minItems == 2 
+            and schema.maxItems == 2
+        )
+        return 100 if is_range_input else 0
+```
+
+Now `create_array_field()`:
+
+```python
+    def create_array_field(self, ctx: FieldContext) -> int:
+        # A view model is a reactive holder for some value, 
+        # here an array value:
+        view_model=ctx.vm.array()
+        # The view must derive from type pn.widgets.WidgetBase
+        view = pn.widgets.EditableRangeSlider(
+            name=ctx.label,  # always use ctx.label for adding labels to widgets 
+            value=view_model.value, # the view model's initial value is used here
+        )
+        return PanelField(view_model=view_model, view=view)
+```
+
+### 4. Register the custom field factory
+
+Finally, we register an instance of the new class in the Cuiman client's 
+configuration:
+
+```python
+from cuiman.api import ClientConfig
+
+config = ClientConfig.default_config
+config.get_field_factory_registry().register(NumberRangeFactory())
+```
+
+The next time you run the Cuiman GUI client, it will consider that factory
+for generating its GUIs for a given OGC process description, provided
+that the above code is executed once before the GUI is used.

@@ -16,7 +16,9 @@ The `cuiman` API allows for the following customizations:
    `pydantic_settings.SettingsConfigDict` instance.
 2. Some `cuiman.ClientConfig` class attributes in can be overridden     
    to initialize custom default values.
-3. Applications can create their own CLI instance with custom settings.
+3. Applications can customize the way how job results are opened.
+4. Applications can create their own CLI instance with custom settings.
+5. Applications can customize the way the process input GUIs are generated.
 
 
 ## API customisation
@@ -52,18 +54,29 @@ In a module `src/anolis_client/cli.py`:
 
 ```python
 from importlib import import_module
+
+import typer
 from cuiman.cli import new_cli
+
 from anolis_client import __version__ as version
 
 # Force pre-configuration of Anolis configuration
 import_module("anolis_client.api")
 
-cli = new_cli(
+cli: typer.Typer = new_cli(
     name="anolis-client",
     summary="Client for the Anolis processing service.",
     version=version,
 )
 
+# As cli is of type `typer.Typer`, you can add custom options here.
+
 if __name__ == "__main__":  # pragma: no cover
     cli()
 ```
+
+## GUI customisation
+
+Please refer to the chapter [GUI-Generation](./gui-generation.md)
+dedicated to the generation and customization of the client GUI generated
+from OGC process descriptions.
