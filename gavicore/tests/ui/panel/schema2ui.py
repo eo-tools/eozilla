@@ -12,7 +12,7 @@ import yaml
 
 from gavicore.models import Schema
 from gavicore.ui import FieldMeta
-from gavicore.ui.providers.panel import PanelField
+from gavicore.ui.panel import PanelField
 from gavicore.ui.vm import ViewModelChangeEvent
 
 pn.extension()

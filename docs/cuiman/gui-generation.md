@@ -305,7 +305,7 @@ is used to represent a type derived form two or more subtypes.
 
 Under the hood the `cuiman.gui` package uses the common package 
 `gavicore.ui` that provides the core UI generation framework.
-Within that framework, `gavicore.ui.providers.panel` implements a UI generator 
+Within that framework, `gavicore.ui.panel` implements a UI generator 
 using the [panel](https://pypi.org/project/panel/) package.
 However, [panel](https://pypi.org/project/panel/) is an optional package to Gavicore
 as usually only Eozilla/Cuiman client applications require a GUI.
@@ -334,7 +334,7 @@ Furthermore, we say that the field is only used if `x-ui-widget: range-input`.
 ### 2. Create a custom field factory
 
 In order to generate the desired UI field, we'll develop a custom
-`gavicore.ui.providers.panel.PanelFieldFactory` class and register an instance of it 
+`gavicore.ui.panel.PanelFieldFactory` class and register an instance of it 
 in the framework. 
 
 The `PanelFieldFactory` is a typed abstract base class that implements 
@@ -346,7 +346,7 @@ The framework selects the factory with the highest score for a given schema.
 The default score returned by the inbuilt factories is `5`.
 If a factory was selected, it is asked to create a `gavicore.ui.Field` given the
 current `gavicore.ui.FieldContext`. A `PanelFieldFactory` is supposed to only create 
-`gavicore.ui.providers.panel.PanelField` instances.
+`gavicore.ui.panel.PanelField` instances.
 
 The above is best explained by example. First we create a new class
 `NumberRangeFactory` that derives from `PanelFieldFactoryBase`:
@@ -354,7 +354,8 @@ The above is best explained by example. First we create a new class
 ```python
 from gavicore.models import DataType
 from gavicore.ui import FieldContext, FieldMeta
-from gavicore.ui.providers.panel import PanelField, PanelFieldFactoryBase
+from gavicore.ui.panel import PanelField, PanelFieldFactoryBase
+
 
 class NumberRangeFactory(PanelFieldFactoryBase):
     def get_array_score(self, meta: FieldMeta) -> int:
