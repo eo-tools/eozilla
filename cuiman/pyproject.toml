@@ -47,7 +47,7 @@ dependencies = [
   "uri-template",
   "httpx",
   # local dependency
-  "gavicore>=0.0.7",
+  "gavicore>=0.0.9",
 ]
 
 [project.scripts]

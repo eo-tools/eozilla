@@ -84,7 +84,7 @@ mapping of schema elements to Panel widgets and panels.
     * `enum: [...]`: creates textual **select**, **radio group**, 
       or **toggle button group** widgets. 
     * `format: password`: creates a **password input** widget.
-    * `format: datetime`: creates a **datetime picker** widget.
+    * `format: date-time`: creates a **datetime picker** widget.
     * `format: date`: creates a **date picker** widget.
     * `format: time`: creates a **time picker** widget.
 - `type: array`: creates **array input** widgets for numeric and textual item types
@@ -251,7 +251,7 @@ the default array editor:
 
 ### Type `object`
 
-Schemas of Type `object` generate sub-form with optionally ordered and outlaid 
+Schemas of Type `object` generate a sub-form with optionally ordered and outlaid 
 fields for the object's `properties`.
 
 **Customisation options**: 
@@ -266,7 +266,7 @@ order that corresponds to order of the `properties` in the object schema.
   or `row` and `items` is an optional list of property names or of other layout 
   objects. If `items` is not not given, it defaults to all properties that 
   have not yet been part of the layout.
-- `x-ui-order: <order`: a integer value that can be used in the property schemas
+- `x-ui-order: <order>`: an integer value that can be used in the property schemas
   to specify the fields order. The default order value is the index of 
   a property in its given order.
 

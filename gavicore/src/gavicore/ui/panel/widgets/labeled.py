@@ -21,13 +21,16 @@ class LabeledWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
 
     def __init__(
         self,
-        inner_viewable: pn.viewable.Viewable,
+        inner_viewable: pn.reactive.Reactive,
         divider: bool = False,
+        link: bool = False,
         **params,
     ):
         super().__init__(**params)
         self.divider = divider
         self.inner_viewable = inner_viewable
+        if link:
+            inner_viewable.link(self, value="value", bidirectional=True)
 
     def __panel__(self):
         if self.name:
