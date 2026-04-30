@@ -156,12 +156,14 @@ def _parse_inputs(
         model_class = create_model("ProcessInputs", **model_field_definitions)
 
     if inputs:
-        model_class = _merge_inputs_into_model_class(
+        model_class_merged = _merge_inputs_into_model_class(
             fn_name=fn_name,
             signature=signature,
             inputs=inputs,
             model_class=model_class,
         )
+        # TODO: Work out why mypy dislikes this apparently valid assignment
+        model_class = model_class_merged  # type:ignore[misc,assignment]
 
     model_class.model_rebuild()
 

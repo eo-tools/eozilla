@@ -2,9 +2,11 @@ type: object
 properties:
   additional_properties_any:
     type: object
+    title: "Object where values can be any valid JSON:"
     additionalProperties: true
 
   additional_properties_typed:
     type: object
+    title: "Object where values must be numbers only:"
     additionalProperties:
       type: number
