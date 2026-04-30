@@ -39,6 +39,8 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
   "click",
+  "ipyfilechooser",
+  "ipyleaflet",
   "panel",
   "pydantic",
   "pydantic-settings",
