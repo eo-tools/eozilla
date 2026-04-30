@@ -17,7 +17,7 @@ from gavicore.ui.vm import ViewModelChangeEvent
 
 pn.extension()
 
-schemas_dir = Path(__file__).parent / ".." / ".." / "schemas"
+schemas_dir = Path(__file__).parent / ".." / "schemas"
 
 app = typer.Typer()
 app_name = "schema2ui"
