@@ -10,7 +10,7 @@ The `gavicore.ui` package contains the code to generate widgets and panels
 
 The design of the framework's core is neutral with respect to the target UI 
 library. An implementation that generates UIs for the [Panel](https://panel.holoviz.org/) library
-is located in the `gavicore.ui.providers.panel` package. It is used by
+is located in the `gavicore.ui.panel` package. It is used by
 the Cuiman `cuiman.gui.Client` to generate UIs for the 
 OpenAPI schemas of the inputs of a selected process in Jupyter Notebooks.
 The customization of the GUI generation in Cuiman is described
@@ -195,13 +195,13 @@ classDiagram
 
 The framework's view model API is defined in `gavicore.ui.vm`.
 
-The package `gavicore.ui.providers.panel` defines a 
-[PanelField][gavicore.ui.providers.panel.PanelField] 
-and a [PanelFieldFactory][gavicore.ui.providers.panel.PanelFieldFactory] 
+The package `gavicore.ui.panel` defines a 
+[PanelField][gavicore.ui.panel.PanelField] 
+and a [PanelFieldFactory][gavicore.ui.panel.PanelFieldFactory] 
 for generating UIs from OpenAPI Schema targeting the [Panel](https://panel.holoviz.org/) 
 UI-library. Basically this means, the `PanelField.view` object will be a 
 widget-like component that can be used as part of a larger UI developed 
 with [Panel](https://panel.holoviz.org/).
 
-The [PanelFieldFactoryBase][gavicore.ui.providers.panel.PanelFieldFactoryBase]
+The [PanelFieldFactoryBase][gavicore.ui.panel.PanelFieldFactoryBase]
 class eases supporting custom field types targeting the Panel library.

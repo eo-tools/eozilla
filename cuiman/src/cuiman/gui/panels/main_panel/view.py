@@ -21,7 +21,7 @@ from gavicore.models import (
     ProcessList,
 )
 from gavicore.ui import FieldFactoryRegistry
-from gavicore.ui.providers.panel import PanelField
+from gavicore.ui.panel import PanelField
 
 from ..util import FileOpenPanel, FileSavePanel, PanelHeader
 from .viewmodel import (

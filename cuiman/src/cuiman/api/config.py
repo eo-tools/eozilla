@@ -301,15 +301,15 @@ class ClientConfig(AuthConfig, BaseSettings):
         library used in the GUI client.
 
         The default registry type is
-        `gavicore.ui.providers.panel.PanelFieldFactoryRegistry`.
+        `gavicore.ui.panel.PanelFieldFactoryRegistry`.
 
         The type of registered field factories is
-        `gavicore.ui.providers.panel.PanelFieldFactory`.
+        `gavicore.ui.panel.PanelFieldFactory`.
 
         The type of the field instances created by the factories must be
-        `gavicore.ui.providers.panel.PanelField`.
+        `gavicore.ui.panel.PanelField`.
         """
-        from gavicore.ui.providers.panel import PanelFieldFactoryRegistry
+        from gavicore.ui.panel import PanelFieldFactoryRegistry
 
         return PanelFieldFactoryRegistry.create_default()
 
