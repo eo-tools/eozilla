@@ -339,23 +339,13 @@ class DefaultPanelFieldFactory(PanelFieldFactoryBase):
 
         view_model: ViewModel
 
-        if widget_hint == "editor" or (
-            schema.additionalProperties
-            in (
-                True,
-                None,
-            )
+        if (
+            widget_hint == "editor"
+            or schema.additionalProperties is not False
             and not schema.properties
         ):
             view_model = ctx.vm.primitive()
-            return PanelField(
-                view_model,
-                pn.widgets.JSONEditor(
-                    mode="text",
-                    value=view_model.value,
-                    schema=schema.to_json_dict(),
-                ),
-            )
+            return PanelField(view_model, _create_json_editor(ctx))
 
         prop_fields = ctx.create_property_fields()
         view_models = {k: f.view_model for k, f in prop_fields.items()}
@@ -457,17 +447,7 @@ class DefaultPanelFieldFactory(PanelFieldFactoryBase):
         return 5
 
     def create_untyped_field(self, ctx: FieldContext) -> PanelField:
-        json_editor = pn.widgets.JSONEditor(
-            value=ctx.initial_value,
-            width=300,
-            mode="text",
-            menu=False,
-            search=False,
-        )
-        return PanelField(
-            ctx.vm.any(),
-            LabeledWidget(json_editor, name=ctx.label, divider=False),
-        )
+        return PanelField(ctx.vm.any(), _create_json_editor(ctx))
 
 
 def _layout_views(
@@ -503,3 +483,16 @@ class _FileDropperCodec(JsonCodec[dict]):
         if json_value == "":
             return {}
         return {"bytes.bin": self.inner.from_json(json_value)}
+
+
+def _create_json_editor(ctx: FieldContext) -> pn.widgets.WidgetBase:
+    json_editor = pn.widgets.JSONEditor(
+        value=ctx.initial_value,
+        width=300,
+        mode="text",
+        menu=False,
+        search=False,
+        schema=ctx.meta.schema_.to_json_dict(),
+    )
+    # return json_editor
+    return LabeledWidget(json_editor, name=ctx.label, divider=False, link=True)
