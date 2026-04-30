@@ -47,9 +47,13 @@ class ExecutionRequest(ProcessRequest):
     """
 
     process_id: Annotated[str, Field(title="Process identifier", min_length=1)]
+    """Required process identifier."""
+
     dotpath: Annotated[
         bool, Field(title="Whether to encode nested input values using dots ('.').")
     ] = False
+    """Whether dots in input names should be used to create
+    nested object values. Defaults to `False`."""
 
     def to_process_request(self) -> ProcessRequest:
         """

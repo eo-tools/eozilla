@@ -42,11 +42,11 @@ pn.extension("filedropper")
 
 
 class PanelFieldFactory(FieldFactory[PanelField], ABC):
-    """Interface implemented by Panel fields factories."""
+    """Interface implemented by Panel field factories."""
 
 
 class PanelFieldFactoryBase(FieldFactoryBase[PanelField], PanelFieldFactory, ABC):
-    """Base class for Panel fields factories."""
+    """Convenient base class for custom Panel field factories."""
 
 
 class DefaultPanelFieldFactory(PanelFieldFactoryBase):

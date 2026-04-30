@@ -20,10 +20,13 @@ The pipeline in short:
 The UI generation at its core is not aware of the target UI library
 that is used to render the UI and let users interact with it.
 
+The framework used to generate UIs is implemented in the Eozilla 
+Gavicore package `gavicore.ui` and is documented 
+[here](../gavicore/ui/description.md).  
 
 ## Customizing Schemas
 
-Cuiman's default GUI library is [Panel](https://panel.holoviz.org/).
+Cuiman's default UI library is [Panel](https://panel.holoviz.org/).
 Therefore, most of the customization configuration is directly mapped
 to configuration of the underlying Panel widgets and viewables.
 
