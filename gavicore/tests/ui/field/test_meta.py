@@ -104,10 +104,10 @@ class FieldMetaTest(TestCase):
                     "datasets": {
                         "name": "datasets",
                         "schema": {
+                            "type": "array",
                             "items": schema_1,
                             "minItems": 1,
                             "title": "Datasets",
-                            "type": "array",
                         },
                         "required": True,
                         "items": {
@@ -133,21 +133,19 @@ class FieldMetaTest(TestCase):
                 },
                 "required": True,
                 "schema": {
+                    "type": "object",
                     "properties": {
                         "boost": schema_3,
                         "datasets": {
+                            "type": "array",
                             "items": schema_1,
                             "minItems": 1,
                             "title": "Datasets",
-                            "type": "array",
                         },
                         "threshold": schema_2,
                     },
                     "required": ["datasets", "boost"],
-                    "title": "Inputs",
-                    "type": "object",
                 },
-                "title": "Inputs",
             },
             to_json(meta),
         )
