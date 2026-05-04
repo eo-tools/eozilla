@@ -88,7 +88,7 @@ wraptile = { path = "./wraptile", editable = true }
 apache-airflow-client = "==3.0.2"
 # Documentation
 # For mermaid diagrams
-mkdocs-mermaid2-plugin = "*"
+mkdocs-mermaid2-plugin = ">=1.2.3,<1.3"
 
 [tool.isort]
 skip = [".idea", ".github", ".pixi", "htmlcov", "site"]
