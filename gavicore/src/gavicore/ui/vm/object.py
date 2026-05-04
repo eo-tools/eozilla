@@ -12,7 +12,7 @@ from .base import ViewModel
 from .composite import CompositeViewModel
 
 
-class ObjectViewModelBase(CompositeViewModel[str, dict[str, Any]]):
+class ObjectViewModel(CompositeViewModel[str, dict[str, Any]]):
     """
     A view model for a non-nullable, static object
     comprising view models for each of its properties.
@@ -21,10 +21,27 @@ class ObjectViewModelBase(CompositeViewModel[str, dict[str, Any]]):
     def __init__(
         self,
         meta: FieldMeta,
-        value: Any | Undefined,
+        *,
+        value: Any | Undefined = Undefined.value,
+        properties: dict[str, ViewModel] | None = None,
     ):
+        ensure_type("meta.properties", meta.properties, (dict, type(None)))
         super().__init__(meta, dict, value)
         self._properties: dict[str, ViewModel] = {}
+        # initialize item view models
+        for k, child_meta in (meta.properties or {}).items():
+            vm = properties.get(k) if properties else None
+            if vm is not None:
+                vm.watch(self._on_child_change)
+            else:
+                if isinstance(value, dict) and k in value:
+                    v = value[k]
+                else:
+                    # noinspection PyUnresolvedReferences
+                    v = child_meta.get_initial_value()
+                # noinspection PyTypeChecker
+                vm = self._create_child(child_meta, v)
+            self._properties[k] = vm
 
     @property
     def properties(self) -> dict[str, ViewModel]:
@@ -48,34 +65,3 @@ class ObjectViewModelBase(CompositeViewModel[str, dict[str, Any]]):
     def __setitem__(self, key: str, value: Any) -> None:
         vm = self._properties[key]
         vm._set_value(value)
-
-
-class ObjectViewModel(ObjectViewModelBase):
-    """
-    A view model for a non-nullable, static object
-    comprising view models for each of its properties.
-    """
-
-    def __init__(
-        self,
-        meta: FieldMeta,
-        *,
-        value: Any | Undefined = Undefined.value,
-        properties: dict[str, ViewModel] | None = None,
-    ):
-        ensure_type("meta.properties", meta.properties, (dict, type(None)))
-        super().__init__(meta, value)
-        # initialize item view models
-        for k, child_meta in (meta.properties or {}).items():
-            vm = properties.get(k) if properties else None
-            if vm is not None:
-                vm.watch(self._on_child_change)
-            else:
-                if isinstance(value, dict) and k in value:
-                    v = value[k]
-                else:
-                    # noinspection PyUnresolvedReferences
-                    v = child_meta.get_initial_value()
-                # noinspection PyTypeChecker
-                vm = self._create_child(child_meta, v)
-            self._properties[k] = vm
