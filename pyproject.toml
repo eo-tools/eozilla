@@ -425,7 +425,7 @@ cmd = "python -m tools.sync_versions"
 # pixi run schema2ui
 
 [tool.pixi.tasks.schema2ui]
-cmd = "python ./gavicore/tests/ui/panel/schema2ui.py"
+cmd = "python ./gavicore/src/gavicore/ui/panel/schema2ui.py"
 
 # docs
 

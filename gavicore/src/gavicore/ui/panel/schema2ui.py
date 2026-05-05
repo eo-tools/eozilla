@@ -11,28 +11,41 @@ import typer
 import yaml
 
 from gavicore.models import Schema
-from gavicore.ui import FieldMeta
+from gavicore.ui import FieldMeta, FieldFactoryRegistry
 from gavicore.ui.panel import PanelField
 from gavicore.ui.vm import ViewModelChangeEvent
 
 pn.extension()
 
-schemas_dir = Path(__file__).parent / ".." / "schemas"
+GAVICORE_ROOT = (Path(__file__).parent / ".." / ".." / ".." / "..").resolve()
+DEFAULT_SCHEMAS_DIR = GAVICORE_ROOT / "tests" / "ui" / "schemas"
+
+APP_NAME = "schema2ui"
 
 app = typer.Typer()
-app_name = "schema2ui"
 
 
-@app.command(name=app_name)
+@app.command(name=APP_NAME)
 def main(
-    schema_spec: Annotated[
-        str,
-        typer.Option(help="Path to the schema YAML file or a known schema name."),
-    ] = "",
+    schemas: Annotated[
+        list[str],
+        typer.Argument(
+            help="Path to the schema YAML file or a known schema name.",
+            default_factory=lambda: [DEFAULT_SCHEMAS_DIR],
+        ),
+    ],
+) -> None:
+    """Convert a selected schema into a Panel UI."""
+    schemas_to_ui(*schemas)
+
+
+def schemas_to_ui(
+    *schema_paths: str,
+    registry: FieldFactoryRegistry["PanelField"] | None = None,
 ) -> None:
     """Convert a selected schema into a Panel UI."""
 
-    schemas = load_schemas(schema_spec)
+    schemas = load_schemas(*schema_paths)
     schema_dict = {p.stem.title(): s for p, s in schemas}
     schema_names = list(schema_dict.keys())
 
@@ -70,7 +83,7 @@ def main(
         schema = schema_dict[selected_schema_name]
         schema.title = schema.title or ""  # Force no title if not explicitly set
         field_meta = FieldMeta.from_schema("root", schema)
-        form_field = PanelField.from_meta(field_meta)
+        form_field = PanelField.from_meta(field_meta, field_factory_registry=registry)
         form_field.view_model.watch(_on_view_model_change)
         ui_column[1] = form_field.view
         _change_current_value(form_field.view_model.value)
@@ -81,22 +94,24 @@ def main(
     select.param.watch(_on_selection_change, "value")
     _change_selected_schema(selected_schema_name)
 
-    pn.serve(panel, title=f"{app_name}")
+    pn.serve(panel, title=f"{APP_NAME}")
 
 
-def load_schemas(schema_spec: str | None = None) -> list[tuple[Path, Schema]]:
-    schemas: list[tuple[Path, Schema]]
-    if schema_spec:
-        schema_path: Path = Path(schema_spec)
-        if len(schema_path.parts) == 1 and schema_path.suffix == "":
-            schema_path = schemas_dir / f"{schema_spec}.yaml"
-        schemas = [(schema_path, load_schema(schema_path))]
-    else:
-        schemas = [
-            (schema_path, load_schema(schema_path))
-            for schema_path in schemas_dir.iterdir()
-        ]
-    return schemas
+def load_schemas(*schema_paths: str) -> list[tuple[Path, Schema]]:
+    resolved_paths: list[Path] = []
+    for path in schema_paths:
+        schema_path = Path(path)
+        if schema_path.is_file():
+            resolved_paths.append(schema_path)
+        elif schema_path.is_dir():
+            resolved_paths.extend(
+                [
+                    schema_path / p
+                    for p in schema_path.iterdir()
+                    if p.suffix.lower() in (".yaml", ".yml", ".json")
+                ]
+            )
+    return [(p, load_schema(p)) for p in resolved_paths]
 
 
 def load_schema(path: Path) -> Schema:
