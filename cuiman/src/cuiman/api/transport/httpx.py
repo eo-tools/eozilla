@@ -61,6 +61,7 @@ class HttpxTransport(Transport, AsyncTransport):
         return self._process_response(args, response)
 
     def _sync_request(self, args: TransportArgs) -> httpx.Response:
+        assert self.sync_httpx is not None
         args_, kwargs_ = self._get_request_args(args)
         try:
             return self.sync_httpx.request(*args_, **kwargs_)
@@ -68,6 +69,7 @@ class HttpxTransport(Transport, AsyncTransport):
             raise TransportError(f"{e}") from e
 
     async def _async_request(self, args: TransportArgs) -> httpx.Response:
+        assert self.async_httpx is not None
         args_, kwargs_ = self._get_request_args(args)
         try:
             return await self.async_httpx.request(*args_, **kwargs_)
