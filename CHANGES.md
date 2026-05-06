@@ -9,11 +9,12 @@
   available, `cuiman` automatically refreshes expired access tokens on 401
   responses and retries the request, for both sync and async clients.
   Refresh tokens are persisted to the config file alongside access tokens.
-- Environment variables (prefixed `EOZILLA_`) now skip interactive prompts
-  during `cuiman configure`. This allows admins to pre-configure fields like
-  `EOZILLA_API_URL`, `EOZILLA_AUTH_URL`, `EOZILLA_CLIENT_ID`, and
-  `EOZILLA_USE_BEARER` (e.g. via Kubernetes secrets in JupyterHub
-  deployments), so users only need to provide their username and password.
+- Environment variables (prefixed `EOZILLA_`) are now surfaced as pre-filled
+  defaults during `cuiman configure`, so users can see and override them.
+  This allows admins to pre-configure fields like `EOZILLA_API_URL`,
+  `EOZILLA_AUTH_URL`, `EOZILLA_CLIENT_ID`, and `EOZILLA_USE_BEARER`
+  (e.g. via Kubernetes secrets in JupyterHub deployments), so users only
+  need to confirm or override the values and provide their password.
 - Made `client_secret` optional during interactive `cuiman configure` for
   OAuth2 public clients that do not require a client secret.
 
