@@ -34,5 +34,8 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: eo-tools/eozilla
 
+      - name: Build docs
+        run: mkdocs build
+
       # Add other pixi tasks here
 
