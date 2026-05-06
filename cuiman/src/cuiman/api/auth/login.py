@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import json
 from typing import Any
 
 import httpx
@@ -121,10 +122,9 @@ def process_login_response(response: httpx.Response) -> Any:
 
 def process_login_response_for_tokens(response: httpx.Response) -> LoginResult:
     response.raise_for_status()
-    # noinspection PyBroadException
     try:
         token_data = response.json()
-    except Exception:
+    except json.JSONDecodeError:
         token_data = response.text.strip()
     access_token = parse_token(token_data)
     refresh_token = None
