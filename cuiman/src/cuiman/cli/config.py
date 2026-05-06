@@ -86,8 +86,8 @@ def _configure_basic_auth_with_prompt(ctx: _Context) -> None:
 def _configure_login_auth_with_prompt(ctx: _Context) -> None:
     # TODO: add URL validator
     _prompt_for_str(ctx, "auth_url", "Authentication URL", "")
-    _prompt_for_str(ctx, "client_id", "OAuth2 client ID", "")
-    _prompt_for_str(ctx, "client_secret", "OAuth2 client secret", "")
+    _prompt_for_str(ctx, "client_id", "client ID", "")
+    _prompt_for_str(ctx, "client_secret", "client secret", "")
     _configure_username_password_with_prompt(ctx)
     auth_config = AuthConfig(**ctx.curr_params)
     result = login_for_tokens(auth_config)
@@ -175,6 +175,9 @@ def _prompt_for_bool(
     if value is None:
         # No CLI flag; check env vars next (EOZILLA_* prefix, read via ClientConfig())
         env_value = ctx.env_params.get(key)
+        # Must use `is not None` rather than a truthy check: False is a valid bool
+        # value (e.g. EOZILLA_USE_BEARER=false), and `if env_value` would wrongly
+        # skip it and fall through to the interactive prompt.
         if env_value is not None:
             # Env var is set — use it without prompting
             value = env_value
