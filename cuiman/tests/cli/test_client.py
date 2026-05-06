@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by the Eozilla team and contributors
+#  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -36,7 +36,7 @@ class UseClientTest(TestCase):
                         title="Not found",
                         status=404,
                         detail="Something was not found",
-                        traceback=["a", "b", "c"],
+                        **{"x-traceback": ["a", "b", "c"]},
                     ),
                 )
 
@@ -51,7 +51,7 @@ class UseClientTest(TestCase):
                         title="Not found",
                         status=404,
                         detail="Something was not found",
-                        traceback=["a", "b", "c"],
+                        **{"x-traceback": ["a", "b", "c"]},
                     ),
                 )
 

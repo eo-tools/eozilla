@@ -10,32 +10,47 @@ copyright: Copyright &copy; 2026 Eozilla Team
 
 nav:
   - Overview: index.md
+  - Appligator:
+    - Introduction: appligator/introduction.md
+    - Usage: appligator/usage.md
+    - CLI: appligator/cli.md
   - Cuiman:
     - Introduction: cuiman/introduction.md
     - Configuration: cuiman/configuration.md
     - Customization: cuiman/customization.md
+    - GUI-Generation: cuiman/gui-generation.md
     - Usage:
       - notebooks/cuiman-api.ipynb
       - notebooks/cuiman-gui.ipynb
       # - notebooks/cuiman-api-airflow.ipynb
       - notebooks/cuiman-cli.ipynb
-    - CLI: cuiman/cli.md
-    - API: cuiman/api.md
+      - notebooks/cuiman-openers.ipynb
+    - CLI Reference: cuiman/cli.md
+    - API Reference: cuiman/api.md
+  - Gavicore:
+    - Overview: gavicore/overview.md
+    - gavicore.models:
+      - Description: gavicore/models/description.md
+      - API Reference: gavicore/models/api.md
+    - gavicore.service:
+      - Description: gavicore/service/description.md
+      - API Reference: gavicore/service/api.md
+    - gavicore.ui:
+      - Description: gavicore/ui/description.md
+      - API Reference: gavicore/ui/api.md
+    - gavicore.util:
+      - Description: gavicore/util/description.md
+      - API Reference: gavicore/util/api.md
+  - Procodile:
+    - Introduction: procodile/introduction.md
+    - Usage: procodile/usage.md
+    - API Reference: procodile/api.md
+    - CLI Reference: procodile/cli.md
   - Wraptile:
     - Introduction: wraptile/introduction.md
     - Usage: wraptile/usage.md
     - Customization: wraptile/customization.md
-    - CLI: wraptile/cli.md
-  - Procodile:
-    - Introduction: procodile/introduction.md
-    - Usage: procodile/usage.md
-    - API: procodile/api.md
-    - CLI: procodile/cli.md
-  - Appligator:
-    - Introduction: appligator/introduction.md
-    - Usage: appligator/usage.md
-    - CLI: appligator/cli.md
-  - Architecture: architecture.md
+    - CLI Reference: wraptile/cli.md
   - Contributing: contributing.md
 
 theme:
@@ -59,6 +74,11 @@ theme:
         name: Switch to light mode
   features:
     - navigation.top
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - toc.follow
+    - content.code.copy
   custom_dir: docs/overrides
 
 markdown_extensions:
@@ -94,16 +114,30 @@ plugins:
       handlers:
         python:
           options:
+            #annotations_path: brief
+            #annotations_path: full
+            annotations_path: source
             docstring_style: google
-            show_root_toc_entry: true
-            show_root_heading: true
-            show_source: true
-            heading_level: 2
-            annotations_path: brief
+            docstring_section_style: table
+            filters:
+              - "!^_"
+            heading_level: 3
+            inherited_members: true
+            line_length: 80
             members_order: source
-
+            merge_init_into_class: true
+            separate_signature: true
+            show_if_no_docstring: false
+            show_root_heading: true
+            show_root_toc_entry: true
+            show_signature_annotations: true
+            show_source: false
+            # --- Generates JSON schema doc for each pydantic model:
+            # extensions:
+            #  - griffe_pydantic:
+            #      schema: true
 extra_css:
-    - overrides/css/custom.css
+  - overrides/css/custom.css
 
-hooks:
-    - docs/hooks/notebooks_json_output.py
+# hooks:
+#   - docs/hooks/notebooks_json_output.py

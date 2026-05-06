@@ -1,4 +1,4 @@
-# # Cuiman API Reference
+# Cuiman API Reference
 
 The Cuiman Python API is provided by the `cuiman` package.
 

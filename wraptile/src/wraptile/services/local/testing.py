@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by the Eozilla team and contributors
+#  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -11,7 +11,7 @@ import pydantic
 from pydantic import Field
 
 from gavicore.models import InputDescription, Link, Schema
-from procodile import FromMain, FromStep, JobContext, additional_parameters
+from procodile import FromMain, FromStep, JobContext
 from wraptile.services.local import LocalService
 
 service = LocalService(
@@ -106,8 +106,8 @@ def primes_between(
         "var_names": InputDescription(
             title="Variable names",
             description="Comma-separated list of variable names.",
-            additionalParameters=additional_parameters({"level": "advanced"}),
             schema=Schema(),  # type: ignore[call-arg]
+            **{"x-ui:advanced": True},
         ),
         "bbox": Field(
             title="Bounding box",
@@ -137,8 +137,8 @@ def primes_between(
         "output_path": InputDescription(
             title="Output path",
             description="Local output path or URI.",
-            additionalParameters=additional_parameters({"level": "advanced"}),
             schema=Schema(minLength=1),  # type: ignore[call-arg]
+            **{"x-ui:advanced": True},
         ),
     },
 )
@@ -251,6 +251,7 @@ def read_data(id: str) -> str:
     return id + "_read"
 
 
+# noinspection PyShadowingBuiltins,PyUnresolvedReferences
 @process_pipeline.step(
     id="preprocess_data",
 )

@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by the Eozilla team and contributors
+#  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -10,7 +10,6 @@ from gavicore.models import (
     JobList,
     JobResults,
     JobStatus,
-    JobType,
     ProcessDescription,
     ProcessList,
     ProcessSummary,
@@ -70,17 +69,13 @@ class OutputTest(TestCase):
         self.assertEqual(
             {
                 "render_job": (
-                    "jobID: job_8\n"
-                    "processID: primes_between\n"
-                    "status: running\n"
-                    "type: process\n"
+                    "jobID: job_8\nprocessID: primes_between\nstatus: running\n"
                 ),
                 "render_job_list": (
                     "jobs:\n"
                     "- jobID: job_8\n"
                     "  processID: primes_between\n"
                     "  status: running\n"
-                    "  type: process\n"
                     "links: []\n"
                 ),
                 "render_job_list_empty": "jobs: []\nlinks: []\n",
@@ -112,14 +107,15 @@ class OutputTest(TestCase):
         )
 
     def test_json(self):
+        self.maxDiff = None
+
         outputs = get_outputs(get_renderer(OutputFormat.json))
         self.assertEqual(
             {
                 "render_job": (
                     "{\n"
-                    '  "processID": "primes_between",\n'
-                    '  "type": "process",\n'
                     '  "jobID": "job_8",\n'
+                    '  "processID": "primes_between",\n'
                     '  "status": "running"\n'
                     "}"
                 ),
@@ -127,9 +123,8 @@ class OutputTest(TestCase):
                     "{\n"
                     '  "jobs": [\n'
                     "    {\n"
-                    '      "processID": "primes_between",\n'
-                    '      "type": "process",\n'
                     '      "jobID": "job_8",\n'
+                    '      "processID": "primes_between",\n'
                     '      "status": "running"\n'
                     "    }\n"
                     "  ],\n"
@@ -234,9 +229,8 @@ def get_outputs(renderer: OutputRenderer) -> dict[str, str]:
             JobList(
                 jobs=[
                     JobInfo(
-                        processID="primes_between",
                         jobID="job_8",
-                        type=JobType.process,
+                        processID="primes_between",
                         status=JobStatus.running,
                     )
                 ],
@@ -251,9 +245,8 @@ def get_outputs(renderer: OutputRenderer) -> dict[str, str]:
         ),
         "render_job": renderer.render_job_info(
             JobInfo(
-                processID="primes_between",
                 jobID="job_8",
-                type=JobType.process,
+                processID="primes_between",
                 status=JobStatus.running,
             )
         ),

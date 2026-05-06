@@ -1,0 +1,24 @@
+type: object
+properties:
+  simple:
+    type: number
+  select:
+    type: number
+    enum: [0.1, 0.5, 1.0, 5.0, 10.0, 50.0, 100.0]
+  radio:
+    type: number
+    enum: [1.0, 5.0, 10.0, 50.0, 100.0]
+    "x-ui:widget": radio
+  button:
+    type: number
+    enum: [1.0, 5.0, 10.0, 50.0, 100.0]
+    "x-ui:widget": button
+  slider:
+    type: number
+    minimum: 0.0
+    maximum: 1.0
+    "x-ui:widget": slider
+  discrete_slider:
+    type: number
+    enum: [0.1, 0.5, 1.0, 5.0, 10.0, 50.0, 100.0]
+    "x-ui:widget": slider

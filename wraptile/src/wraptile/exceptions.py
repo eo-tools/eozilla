@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by the Eozilla team and contributors
+#  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -26,13 +26,15 @@ class ServiceException(HTTPException):
             status=status_code,
             title=HTTPStatus(status_code).phrase,
             detail=detail,
-            traceback=(
-                traceback.format_exception(
-                    type(exception), exception, exception.__traceback__
+            **{
+                "x-traceback": (
+                    traceback.format_exception(
+                        type(exception), exception, exception.__traceback__
+                    )
+                    if exception is not None
+                    else None
                 )
-                if exception is not None
-                else None
-            ),
+            },
         )
 
 

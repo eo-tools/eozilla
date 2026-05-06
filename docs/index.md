@@ -61,11 +61,45 @@ wraptile --help
 We currently package Eozilla only as pip packages distributed via PyPI, but
 we will publish `conda-forge` packages soon.
 
+## Package Dependencies
+
+```mermaid
+---
+config:
+    class:
+        hideEmptyMembersBox: false
+    theme: default
+---
+classDiagram
+direction TD
+    class appligator {
+    }
+    class cuiman {
+    }
+    class gavicore {
+    }
+    class procodile {
+    }
+    class wraptile {
+    }
+    cuiman ..> gavicore : uses
+    appligator ..> gavicore : uses
+    appligator ..> procodile : uses (opt.)
+    procodile ..> gavicore : uses
+    wraptile ..> gavicore : uses
+    wraptile ..> procodile : uses (opt.)
+```
+
 ## Acknowledgements
 
 Large parts of the work in the Eozilla project have been made possible by the
-[ESA DTE-S2GOS project](https://dte-s2gos.rayference.eu/about/), where we cloudify a set of EO scene simulator
-applications. The [ESA Sen4CAP project](https://www.esa-sen4cap.org/), where we
-cloudify various Sentinel-based data processors, gave us the impulse to create
-Eozilla as a set of reusable, standalone packages.
+[ESA DTE-S2GOS project](https://dte-s2gos.rayference.eu/about/), where we
+cloudify a set of EO scene simulator applications. 
+The [ESA Sen4CAP project](https://www.esa-sen4cap.org/), where we cloudify various
+Sentinel-based data processors, gave us the impulse to create Eozilla as a set
+of reusable, standalone packages. Further work on Eozilla has been supported
+by the [Open-Earth-Monitor Cyberinfrastructure project](https://earthmonitor.org/), 
+which has received funding from the European Union's Horizon Europe research 
+and innovation programme under grant agreement No. 101059548.
+
 Hopefully Eozilla can support and will be supported by other future projects.

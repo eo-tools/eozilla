@@ -22,7 +22,7 @@ typer = "*"
 uri-template = "*"
 uvicorn = "*"
 # IDE integration
-pixi-pycharm = ">=0.0.8,<0.0.9"
+pixi-pycharm = ">=0.0.11"
 # Development & build tools
 pip = "*"
 hatch = "*"
@@ -47,24 +47,30 @@ panel = "*"
 watchfiles = "*"
 # Use cases testing
 dask = "*"
+geopandas = "*"
+pandas = "*"
 xarray = "*"
 zarr = "*"
 # Needed in /tools
 datamodel-code-generator = "*"
 tomlkit = "*"  # to sync versions
 # Documentation
-mkdocs = "*"
-mkdocs-autorefs = "*"
-mkdocs-material = "*"
-mkdocstrings = "*"
-mkdocstrings-python = "*"
-mkdocs-jupyter = "*"
-nbformat = "*"
+mkdocs = "==1.6.1"
+mkdocs-autorefs = ">=1.4.3,<1.5"
+mkdocs-get-deps = ">=0.2,<0.3"
+mkdocs-jupyter = ">=0.25.1,<0.26"
+mkdocs-material = ">=9.7.1,<9.8"
+mkdocs-material-extensions = ">=1.3.1,<1.4"
+mkdocstrings = ">=1.0.0,<1.1"
+mkdocstrings-python = ">=2.0.1,<2.1"
+nbformat = ">=5.10.4,<5.11"
+pygments = ">=2.19,<2.20"
 # For mermaid diagrams
-pymdown-extensions = "*"
+pymdown-extensions = ">=10.20,<10.21"
 anaconda-client = ">=1.13.0,<2"
 graphviz = ">=13.1.2,<14"
 python-graphviz = ">=0.21,<0.22"
+griffe-pydantic = ">=1.3.1,<2"
 
 [tool.pixi.pypi-dependencies]
 # For PyPI builds (maybe replace by some pixi-friendly tool)
@@ -83,7 +89,7 @@ wraptile = { path = "./wraptile", editable = true }
 apache-airflow-client = "==3.0.2"
 # Documentation
 # For mermaid diagrams
-mkdocs-mermaid2-plugin = "*"
+mkdocs-mermaid2-plugin = ">=1.2.3,<1.3"
 
 [tool.isort]
 skip = [".idea", ".github", ".pixi", "htmlcov", "site"]
@@ -123,15 +129,17 @@ select = ["I", "F", "E"]
 
 [tool.coverage.report]
 omit = [
-    "procodile-example/src/**/*",
     "cuiman/src/cuiman/gui/**/*",
+    "gavicore/src/gavicore/ui/panel/**/*",
+    "procodile-example/src/**/*",
     "wraptile/src/wraptile/services/airflow/**/*",
 ]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 check_untyped_defs = true
-disable_error_code = ["valid-type", "import-untyped"]
+disable_error_code = ["import-untyped"]
+plugins = ["pydantic.mypy"]
 exclude = [
     "appligator/tests",
     "cuiman/tests",
@@ -144,9 +152,6 @@ exclude = [
     "tools",
     "_pkg_reservations",
 ]
-[[tool.mypy.overrides]]
-module = "gavicore.models"
-disable_error_code = ["valid-type"]
 
 ########################## Tasks ###############################
 
@@ -266,14 +271,17 @@ cmd = "mypy ."
 
 [tool.pixi.tasks.generate]
 depends-on = [
-    "gen-models",
+    # We no longer generate models
+    # "gen-models",
     "gen-server",
     "gen-client",
     "gen-client-docs",
 ]
 
+# Use with caution,
+# we no longer use generated models
 [tool.pixi.tasks.gen-models]
-cmd = "python -m tools.gen_models"
+cmd = "echo 'WARNING: We no longer use generated models' && python -m tools.gen_models"
 
 [tool.pixi.tasks.gen-server]
 cmd = "python -m tools.gen_server"
@@ -405,12 +413,17 @@ cmd = "python -m twine upload dist/*"
 [tool.pixi.tasks.sync-versions]
 cmd = "python -m tools.sync_versions"
 
+# pixi run schema2ui
+
+[tool.pixi.tasks.schema2ui]
+cmd = "python gavicore/src/gavicore/ui/panel/schema2ui.py"
+
 # docs
 
-[tool.pixi.tasks.docs-serve]
+[tool.pixi.tasks.serve-docs]
 cmd = "mkdocs serve"
 
-[tool.pixi.tasks.docs-build]
+[tool.pixi.tasks.build-docs]
 cmd = "mkdocs build"
 
 
@@ -419,3 +432,5 @@ cmd = "mkdocs build"
 omit = [
     'appligator/src/appligator/airflow/gen_image.py'
 ]
+
+

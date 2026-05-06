@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by the Eozilla team and contributors
+#  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -13,13 +13,13 @@ from gavicore.models import (
     JobInfo,
     JobResults,
     JobStatus,
-    JobType,
     ProcessDescription,
     ProcessList,
     ProcessRequest,
     ProcessSummary,
     Schema,
 )
+from gavicore.ui.panel import PanelFieldFactoryRegistry
 
 bbox_input = InputDescription(
     title="Bounding box",
@@ -86,9 +86,8 @@ def _create_main_panel(process_inputs: dict[str, InputDescription]) -> MainPanel
 
     def on_execute_process(process_id: str, _request: ProcessRequest):
         return JobInfo(
-            processID=process_id,
             jobID="job_8",
-            type=JobType.process,
+            processID=process_id,
             status=JobStatus.successful,
         )
 
@@ -105,6 +104,7 @@ def _create_main_panel(process_inputs: dict[str, InputDescription]) -> MainPanel
         on_get_job_results,
         accept_process,
         is_advanced_input,
+        field_factory_registry=PanelFieldFactoryRegistry.create_default(),
     )
 
 

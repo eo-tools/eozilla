@@ -1,0 +1,37 @@
+type: object
+properties:
+  string_array:
+    type: array
+    x-ui-widget: editor
+    items:
+      type: string
+  string_array_with_item_enum:
+    type: array
+    x-ui-widget: editor
+    items:
+      type: string
+      enum:
+        - yellow
+        - green
+        - blue
+        - red
+  datetime_array:
+    type: array
+    items:
+      type: string
+      format: datetime
+      x-ui-widget: input
+  uri_array:
+    type: array
+    items:
+      type: string
+      format: uri
+  uri_array_with_default:
+    type: array
+    default:
+      - s3://eozilla/outputs/ds-1.zarr
+      - s3://eozilla/outputs/ds-2.zarr
+      - s3://eozilla/outputs/ds-3.zarr
+    items:
+      type: string
+      format: uri

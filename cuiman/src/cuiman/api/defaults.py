@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by the Eozilla team and contributors
+#  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -13,3 +13,6 @@ DEFAULT_CONFIG_PATH: Final = DEFAULT_USER_PATH / "config"
 
 DEFAULT_API_URL: Final = "http://127.0.0.1:8008/"
 DEFAULT_AUTH_TYPE: Final = "none"
+
+DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL = 0.5  # 1/2 second
+DEFAULT_OPEN_JOB_RESULT_TIMEOUT = 1800.0  # 30 minutes

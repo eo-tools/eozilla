@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by the Eozilla team and contributors
+#  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -62,6 +62,7 @@ class Client(ApiClient):
             get_job_results=self.get_job_results,
             accept_process=accept_process,
             is_advanced_input=config_cls.is_advanced_input,
+            field_factory_registry=config_cls.get_field_factory_registry(),
         )
         # noinspection PyTypeChecker
         self._jobs_event_bus.register(main_panel)

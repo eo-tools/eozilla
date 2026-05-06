@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by the Eozilla team and contributors
+#  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -29,7 +29,6 @@ from gavicore.models import (
     JobList,
     JobResults,
     JobStatus,
-    JobType,
     OutputDescription,
     ProcessDescription,
     ProcessList,
@@ -221,9 +220,8 @@ class AirflowService(ServiceBase):
     @classmethod
     def dag_run_to_job_info(cls, dag_run: DAGRunResponse) -> JobInfo:
         return JobInfo(
-            type=JobType.process,
-            processID=dag_run.dag_id,
             jobID=dag_run.dag_run_id,
+            processID=dag_run.dag_id,
             status=cls.dag_run_state_to_job_status(dag_run.state),
             progress=None,  # check, it seems we have no good option here
             message=dag_run.note,  # check

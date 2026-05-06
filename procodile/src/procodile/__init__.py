@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by the Eozilla team and contributors
+#  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -10,7 +10,7 @@ from gavicore.util.request import ExecutionRequest
 
 from .artifacts import ArtifactRef, ArtifactStore, ExecutionContext
 from .job import Job, JobCancelledException, JobContext
-from .process import Process, additional_parameters
+from .process import Process
 from .registry import ProcessRegistry
 from .workflow import (
     FromMain,
@@ -22,7 +22,6 @@ from .workflow import (
 """Processes development API."""
 
 __all__ = [
-    "additional_parameters",
     "ArtifactRef",
     "ArtifactStore",
     "__version__",

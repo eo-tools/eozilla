@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 by the Eozilla team and contributors
+#  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
@@ -17,7 +17,6 @@ from gavicore.models import (
     JobInfo,
     JobResults,
     JobStatus,
-    JobType,
     ProcessRequest,
     Schema,
     Subscriber,
@@ -195,9 +194,8 @@ class Job(JobContext):
         self.process = process
         # noinspection PyTypeChecker
         self.job_info = JobInfo(  # noqa [call-arg]
-            type=JobType.process,
-            processID=process.description.id,
             jobID=job_id,
+            processID=process.description.id,
             status=JobStatus.accepted,
             created=self._now(),
         )

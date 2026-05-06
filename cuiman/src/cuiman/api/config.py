@@ -1,18 +1,28 @@
-#  Copyright (c) 2025 by the Eozilla team and contributors
+#  Copyright (c) 2025-2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from functools import cache
 from pathlib import Path
-from typing import Annotated, Any, Callable, ClassVar, Optional, TypeAlias
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    ClassVar,
+    Optional,
+    TypeAlias,
+)
 
 import yaml
 from pydantic import Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
+from gavicore.ui import FieldFactoryRegistry, FieldMeta
 
 from .auth import AuthConfig
 from .defaults import DEFAULT_API_URL
+from .opener import JobResultOpener, JobResultOpenerRegistry
 
 
 class ClientConfig(AuthConfig, BaseSettings):
@@ -234,6 +244,9 @@ class ClientConfig(AuthConfig, BaseSettings):
             `True` if the input is advanced
             (e.g. for advanced process users only).
         """
+        # The following approach uses additionalParameters but its use
+        # is discouraged. (We receive such metadata currently from
+        # the TAO Process API).
         additional_parameters = input_description.additionalParameters
         if additional_parameters:
             parameters = additional_parameters.parameters
@@ -241,7 +254,64 @@ class ClientConfig(AuthConfig, BaseSettings):
                 for p in parameters:
                     if p.name == "level" and p.value == ["advanced"]:
                         return True
-        return False
+        # The way it should be done is using "x-ui" properties.
+        # Ideally, we should pass an already parsed FieldMeta into the
+        # is_advanced_input() method.
+        field_meta = FieldMeta.from_input_description(input_name, input_description)
+        return field_meta.advanced or field_meta.level == "advanced"
+
+    @classmethod
+    def register_job_result_opener(
+        cls, opener_type: type[JobResultOpener]
+    ) -> Callable[[], None]:
+        """Register a job result opener.
+
+        Args:
+            opener_type: The type of the opener to be registered.
+
+        Returns:
+            A function that can be called to unregister the opener.
+        """
+        return cls.get_job_result_opener_registry().register(opener_type)
+
+    @classmethod
+    @cache
+    def get_job_result_opener_registry(cls) -> JobResultOpenerRegistry:
+        """
+        Get the registry for openers that are used to open job results.
+
+        Use it to register custom openers for special job results.
+
+        Note that the registry contains types/classes, not instances.
+        """
+        return JobResultOpenerRegistry.create_default()
+
+    @classmethod
+    @cache
+    def get_field_factory_registry(cls) -> FieldFactoryRegistry:
+        """
+        Get the registry for factories that generate UI fields from
+        process inputs.
+
+        Used in the GUI client `cuiman.gui.Client`. Use it to register
+        factories that customize the way the client GUI is generated.
+
+        The default registry contains factories that creates UI fields for
+        the [Panel](https://panel.holoviz.org/) library as this is the primary
+        library used in the GUI client.
+
+        The default registry type is
+        `gavicore.ui.panel.PanelFieldFactoryRegistry`.
+
+        The type of registered field factories is
+        `gavicore.ui.panel.PanelFieldFactory`.
+
+        The type of the field instances created by the factories must be
+        `gavicore.ui.panel.PanelField`.
+        """
+        from gavicore.ui.panel import PanelFieldFactoryRegistry
+
+        return PanelFieldFactoryRegistry.create_default()
 
 
 # Set Eozilla defaults.
