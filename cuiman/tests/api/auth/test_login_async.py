@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -49,7 +50,7 @@ async def test_login_async_plaintext():
     )
 
     mock_response = MagicMock()
-    mock_response.json.side_effect = ValueError("not json")
+    mock_response.json.side_effect = json.JSONDecodeError("not json", "", 0)
     mock_response.text = "plaintext-token"
     mock_response.raise_for_status.return_value = None
 
