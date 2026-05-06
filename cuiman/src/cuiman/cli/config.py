@@ -170,12 +170,17 @@ def _prompt_for_bool(
     text: str,
     default: bool,
 ) -> bool:
+    # CLI flag takes highest priority — skip prompting entirely if explicitly passed
     value: bool | None = ctx.cli_params.get(key)
     if value is None:
+        # No CLI flag; check env vars next (EOZILLA_* prefix, read via ClientConfig())
         env_value = ctx.env_params.get(key)
         if env_value is not None:
+            # Env var is set — use it without prompting
             value = env_value
         else:
+            # Nothing from CLI or env — ask the user interactively,
+            # falling back to the previously saved value, then the hardcoded default
             value = typer.confirm(
                 text,
                 default=ctx.prev_params.get(key) or default,
