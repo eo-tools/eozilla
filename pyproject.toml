@@ -136,7 +136,6 @@ ignore = [
 ]
 per-file-ignores = { "*.ipynb" = ["E402"] }
 isort = { relative-imports-order = "closest-to-furthest" }
-select = ["I", "F", "E"]
 
 [tool.coverage.report]
 omit = [
