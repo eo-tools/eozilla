@@ -22,7 +22,7 @@ typer = "*"
 uri-template = "*"
 uvicorn = "*"
 # IDE integration
-pixi-pycharm = ">=0.0.8"
+pixi-pycharm = ">=0.0.11"
 # Development & build tools
 pip = "*"
 hatch = "*"
@@ -55,7 +55,7 @@ zarr = "*"
 datamodel-code-generator = "*"
 tomlkit = "*"  # to sync versions
 # Documentation
-mkdocs = "=1.6.1"
+mkdocs = "==1.6.1"
 mkdocs-autorefs = ">=1.4.3,<1.5"
 mkdocs-get-deps = ">=0.2,<0.3"
 mkdocs-jupyter = ">=0.25.1,<0.26"
@@ -426,7 +426,7 @@ cmd = "python -m tools.sync_versions"
 # pixi run schema2ui
 
 [tool.pixi.tasks.schema2ui]
-cmd = "python ./gavicore/src/gavicore/ui/panel/schema2ui.py"
+cmd = "python gavicore/src/gavicore/ui/panel/schema2ui.py"
 
 # docs
 

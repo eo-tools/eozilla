@@ -27,16 +27,15 @@ app = typer.Typer()
 
 @app.command(name=APP_NAME)
 def main(
-    schemas: Annotated[
-        list[str],
+    schema_path: Annotated[
+        str,
         typer.Argument(
             help="Path to the schema YAML file or a known schema name.",
-            default_factory=lambda: [DEFAULT_SCHEMAS_DIR],
         ),
-    ],
+    ] = DEFAULT_SCHEMAS_DIR,
 ) -> None:
     """Convert a selected schema into a Panel UI."""
-    schemas_to_ui(*schemas)
+    schemas_to_ui(schema_path)
 
 
 def schemas_to_ui(
