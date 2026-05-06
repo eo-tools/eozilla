@@ -64,18 +64,25 @@ $ cuiman configure [OPTIONS]
 
 * `--api-url TEXT`: The URL of a service complying to the OGC API - Processes.
 * `-a, --auth-type TEXT`: The authorisation method for the API (none|basic|token|login|api-key).
-* `--auth-url TEXT`: The URL of the authorisation service for the API
+* `--auth-url TEXT`: The URL of the authorisation service for the API.
+* `--client-id TEXT`: OAuth2 client ID (used with `auth_type=login`).
+* `--client-secret TEXT`: OAuth2 client secret (optional for public clients).
 * `-u, --username TEXT`: Username.
 * `-p, --password TEXT`: Password.
 * `-t, --token TEXT`: Access token.
 * `--use-bearer`: Use bearer token?
-* `--token-header TEXT`: Access token header
+* `--token-header TEXT`: Access token header.
 * `-c, --config PATH`: Client configuration file.
 * `--help`: Show this message and exit.
 
-For `auth_type=login`, the configure command performs a login call and stores the
-returned access token and (if provided) the `refresh_token` in the config file.
-When a refresh token is present, `cuiman` refreshes on HTTP 401 and retries once.
+For `auth_type=login`, the configure command performs a login call using the
+OAuth2 Resource Owner Password Credentials grant and stores the returned access
+token and (if provided) the `refresh_token` in the config file. When a refresh
+token is present, `cuiman` automatically refreshes on HTTP 401 and retries once.
+
+Any `EOZILLA_*` environment variables (e.g. `EOZILLA_CLIENT_ID`,
+`EOZILLA_AUTH_URL`) are pre-filled as defaults in the interactive prompts,
+so they can be confirmed or overridden rather than re-typed each time.
 
 ## `cuiman list-processes`
 

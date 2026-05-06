@@ -108,9 +108,16 @@ client = Client(
 ### Using the CLI
 
 Before using the CLI, you should configure it using the `cuiman configure`
-command. 
+command.
 
-You can override settings anytime from environment variables or by using   
+If any `EOZILLA_*` environment variables are set (e.g. `EOZILLA_API_URL`,
+`EOZILLA_CLIENT_ID`, `EOZILLA_USE_BEARER`), they appear as pre-filled defaults
+in the interactive prompts so you can confirm or override them. This is useful
+in managed deployments (e.g. Kubernetes/JupyterHub) where admins inject
+service-level settings via environment variables and users only need to supply
+their own credentials.
+
+You can override settings anytime from environment variables or by using
 the `--config/-c <file>` option supported by most CLI commands.
 
 ## Basic Settings
@@ -199,10 +206,14 @@ config = ClientConfig(
     api_url="...", 
     auth_type="login",
     auth_url="...",
+    # OAuth2 client credentials (ROPC grant); client_secret may be omitted
+    # for public clients that do not require one.
+    client_id="...",
+    client_secret="...",
     username="...", 
     password="...",
     # Optional: set if you already have one; `cuiman configure` stores it
-    # when returned by the auth server.
+    # automatically when returned by the auth server.
     refresh_token="...",
     # See auth_type "token" above
     use_bearer=True,
