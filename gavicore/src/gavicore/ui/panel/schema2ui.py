@@ -11,7 +11,7 @@ import typer
 import yaml
 
 from gavicore.models import Schema
-from gavicore.ui import FieldMeta, FieldFactoryRegistry
+from gavicore.ui import FieldFactoryRegistry, FieldMeta
 from gavicore.ui.panel import PanelField
 from gavicore.ui.vm import ViewModelChangeEvent
 
@@ -32,7 +32,7 @@ def main(
         typer.Argument(
             help="Path to the schema YAML file or a known schema name.",
         ),
-    ] = DEFAULT_SCHEMAS_DIR,
+    ] = str(DEFAULT_SCHEMAS_DIR),
 ) -> None:
     """Convert a selected schema into a Panel UI."""
     schemas_to_ui(schema_path)

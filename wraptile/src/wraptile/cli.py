@@ -43,7 +43,7 @@ def parse_cli_service_options(
         return []
     service_args = os.environ.get(ENV_VAR_SERVICE)
     if kwargs == [service_args]:
-        return shlex.split(service_args)
+        return shlex.split(service_args or "")
     return kwargs
 
 
