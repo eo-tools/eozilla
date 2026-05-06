@@ -22,7 +22,6 @@ nav:
     - Usage:
       - notebooks/cuiman-api.ipynb
       - notebooks/cuiman-gui.ipynb
-      # - notebooks/cuiman-api-airflow.ipynb
       - notebooks/cuiman-cli.ipynb
       - notebooks/cuiman-openers.ipynb
     - CLI Reference: cuiman/cli.md
@@ -108,7 +107,8 @@ extra:
 plugins:
   - search
   - autorefs
-  - mermaid2
+  - mermaid2:
+      version: 11.14.0
   - mkdocs-jupyter
   - mkdocstrings:
       handlers:
@@ -139,5 +139,5 @@ plugins:
 extra_css:
   - overrides/css/custom.css
 
-# hooks:
-#   - docs/hooks/notebooks_json_output.py
+hooks:
+  - docs/hooks/notebooks_json_output.py

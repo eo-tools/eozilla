@@ -74,19 +74,25 @@ config:
 ---
 classDiagram
     direction LR
-    
-    Field --> FieldMeta
+
+    Field ..> FieldMeta
     Field --> View
     Field --> gavicore.ui.vm.ViewModel
     FieldBase --|> Field
+    
+    gavicore.ui.vm.ViewModel --> FieldMeta
+    
+    class Field {    
+        meta: FieldMeta
+        view_model: ViewModel*
+        view: Any*
+    }
 
-    class Field {
+    
+    class FieldBase {
         meta: FieldMeta
         view_model: ViewModel
         view: Any
-    }
-    
-    class FieldBase {
         _bind()*
     }
 
@@ -125,10 +131,21 @@ classDiagram
     FieldGenerator --> FieldFactoryRegistry
     FieldFactoryRegistry *--> FieldFactory 
 
-
     class FieldFactory {
         get_score(meta: FieldMeta)* int
         create_field(ctx: FieldContext)* Field 
+    }
+
+    class FieldFactoryBase {
+        get_score(meta: FieldMeta) int
+        get_boolean_score(meta: FieldMeta)* int
+        get_integer_score(meta: FieldMeta)* int
+        get_..._score(meta: FieldMeta)* int
+
+        create_field(ctx: FieldContext) Field 
+        create_boolean_field(ctx: FieldContext)* Field 
+        create_integer_field(ctx: FieldContext)* Field 
+        create_..._field(ctx: FieldContext)* Field 
     }
 
     class FieldContext {
@@ -169,15 +186,17 @@ classDiagram
 
     ViewModel *--> ViewModelObserver 
     ViewModel --> gavicore.ui.FieldMeta 
-    ViewModelObserver ..> ViewModelChangeEvent : use
-    ViewModel ..> ViewModelChangeEvent : create
-    ViewModelChangeEvent --|> ViewModelChangeEvent : causes 
+    ViewModelObserver ..> ViewModelChangeEvent : consume
+    ViewModel ..> ViewModelChangeEvent : emit
+    ViewModelChangeEvent --|> ViewModelChangeEvent 
     
     class ViewModel {
         meta: FieldMeta
         value: Any
-        watch(observers) 
-        dispose()
+        watch(observer: Callable, ...) Callable 
+        dispose()        
+        _get_value()* Any
+        _set_value(value: Any)*
     }
     
     class ViewModelChangeEvent {
