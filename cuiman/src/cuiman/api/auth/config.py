@@ -48,12 +48,13 @@ class AuthConfig(BaseSettings):
     username: Optional[str] = None
     password: Optional[str] = None
 
-    # For type "login" (OAuth2 Resource Owner Password Credentials)
+    # For type "login", initial password grant (OAuth2 Resource Owner Password Credentials)
     client_id: Optional[str] = None
     client_secret: Optional[str] = None
     grant_type: str = "password"
 
-    # For type "login" (OAuth2 refresh token)
+    # For type "login", token refresh phase — set after a successful login if the server
+    # returned a refresh token; presence of this field activates automatic token refresh on 401
     refresh_token: Optional[str] = None
 
     # For type "token" or "login"
