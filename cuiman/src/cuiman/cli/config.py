@@ -173,21 +173,14 @@ def _prompt_for_bool(
     # CLI flag takes highest priority — skip prompting entirely if explicitly passed
     value: bool | None = ctx.cli_params.get(key)
     if value is None:
-        # No CLI flag; check env vars next (EOZILLA_* prefix, read via ClientConfig())
-        env_value = ctx.env_params.get(key)
-        # Must use `is not None` rather than a truthy check: False is a valid bool
-        # value (e.g. EOZILLA_USE_BEARER=false), and `if env_value` would wrongly
-        # skip it and fall through to the interactive prompt.
-        if env_value is not None:
-            # Env var is set — use it without prompting
-            value = env_value
-        else:
-            # Nothing from CLI or env — ask the user interactively,
-            # falling back to the previously saved value, then the hardcoded default
-            value = typer.confirm(
-                text,
-                default=ctx.prev_params.get(key) or default,
-            )
+        # prev_params already incorporates env vars (ClientConfig.create() merges them),
+        # so any env var value surfaces here as the pre-filled default rather than
+        # silently bypassing the prompt — the user can still override it.
+        # Use .get(key, default) so False from prev_params is preserved as-is.
+        value = typer.confirm(
+            text,
+            default=ctx.prev_params.get(key, default),
+        )
     ctx.curr_params.update({key: value})
     assert isinstance(value, bool)
     return value

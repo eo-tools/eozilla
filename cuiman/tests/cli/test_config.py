@@ -288,20 +288,28 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
         self.assertEqual("secret123", config.password)
         self.assert_is_default_config_path(config_path)
 
+    @patch("typer.confirm")
     @patch("typer.prompt")
-    def test_prompt_for_bool_uses_env_value(self, mock_prompt: MagicMock):
-        """When an env var provides a bool value, the prompt is skipped (line 177)."""
+    def test_prompt_for_bool_uses_env_value(
+        self, mock_prompt: MagicMock, mock_confirm: MagicMock
+    ):
+        """When an env var provides a bool value, it surfaces as the default in the
+        confirm prompt rather than silently bypassing it, so the user can override it."""
         with set_env_cm(EOZILLA_USE_BEARER="True"):
             mock_prompt.side_effect = [
                 "http://localhost:9090",
                 "token",
                 "my-token",
             ]
-            # No typer.confirm needed — use_bearer comes from env
+            # confirm is still called — env var value becomes the pre-filled default
+            mock_confirm.return_value = True
             config_path = configure_client_with_prompt()
             self.assert_is_default_config_path(config_path)
             config = get_config(None)
             self.assertTrue(config.use_bearer)
+            mock_confirm.assert_called_once()
+            _, kwargs = mock_confirm.call_args
+            self.assertTrue(kwargs.get("default"))
 
     @patch("typer.prompt")
     def test_using_custom_config_path(self, mock_prompt: MagicMock):
