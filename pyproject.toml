@@ -122,9 +122,20 @@ include = [
 ]
 
 [tool.ruff.lint]
-ignore = ["E501", "I001"]
-isort = { relative-imports-order = "closest-to-furthest" }
+select = [
+    "B", # pycodestyle (coding style)
+    "E", # pyflakes (basic errors)
+    "F", # bugbear (common logic issues)
+    "I", # Isort (import order)
+    "S", # Bandit (security checks)
+]
+ignore = [
+    "E501",  # line-too-long
+    "I001",  # unsorted-imports
+    "S101", # assert
+]
 per-file-ignores = { "*.ipynb" = ["E402"] }
+isort = { relative-imports-order = "closest-to-furthest" }
 select = ["I", "F", "E"]
 
 [tool.coverage.report]
@@ -275,7 +286,7 @@ depends-on = [
     # "gen-models",
     "gen-server",
     "gen-client",
-    "gen-client-docs",
+    "gen-cli-docs",
 ]
 
 # Use with caution,
@@ -289,8 +300,8 @@ cmd = "python -m tools.gen_server"
 [tool.pixi.tasks.gen-client]
 cmd = "python -m tools.gen_client"
 
-[tool.pixi.tasks.gen-client-docs]
-cmd = "python -m tools.gen_client_docs"
+[tool.pixi.tasks.gen-cli-docs]
+cmd = "python -m tools.gen_cli_docs"
 
 [tool.pixi.tasks.gen-dags]
 cmd = "appligator wraptile.services.local.testing:service.process_registry"
