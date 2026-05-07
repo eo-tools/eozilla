@@ -50,7 +50,8 @@ dask = "*"
 geopandas = "*"
 pandas = "*"
 xarray = "*"
-zarr = "*"
+# zarr 3.2.x can no longer work with Windows file URIs, like file:///C:/...
+zarr = ">=3.1,<3.2"
 # Needed in /tools
 datamodel-code-generator = "*"
 tomlkit = "*"  # to sync versions
