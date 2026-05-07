@@ -9,23 +9,35 @@ from unittest.mock import patch
 from IPython.core.interactiveshell import InteractiveShell
 
 from cuiman import ClientError
-from cuiman.api.ishell import exception_handler, has_ishell
+from cuiman.api.ishell import has_ishell
 from gavicore.models import ApiError
 
 
 class IShellTest(TestCase):
+    handler = None
+
+    @classmethod
+    def setUpClass(cls):
+        from cuiman.api.ishell import _register_exception_handler
+
+        InteractiveShell.instance()  # ensure a shell exists before registering
+        # staticmethod prevents Python from binding the TestCase instance as `self`
+        # when the handler is accessed via self.handler — the handler's own `self`
+        # param expects an InteractiveShell, not a TestCase.
+        cls.handler = staticmethod(_register_exception_handler())
+
     def test_has_ishell_ok(self):
         self.assertTrue(has_ishell)
 
     def test_exception_handler_ok(self):
-        self.assertIsNotNone(exception_handler)
-        self.assertTrue(callable(exception_handler))
+        self.assertIsNotNone(self.handler)
+        self.assertTrue(callable(self.handler))
 
     def test_exception_handler_with_client_exception(self):
         exc = ClientError(
             "What the heck", ApiError(type="error", title="Don't worry, be happy")
         )
-        result = exception_handler(
+        result = self.handler(
             InteractiveShell.instance(),
             type(exc),
             exc,
@@ -35,7 +47,7 @@ class IShellTest(TestCase):
 
     def test_exception_handler_with_value_error(self):
         exc = ValueError("Too large")
-        result = exception_handler(
+        result = self.handler(
             InteractiveShell.instance(),
             type(exc),
             exc,

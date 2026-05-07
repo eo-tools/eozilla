@@ -55,4 +55,7 @@ def _register_exception_handler() -> Callable[[Any, Any, Any, Any], None]:
 
 
 if has_ishell:
-    exception_handler = _register_exception_handler()
+    from IPython.core.interactiveshell import InteractiveShell
+
+    if InteractiveShell.initialized():
+        exception_handler = _register_exception_handler()
