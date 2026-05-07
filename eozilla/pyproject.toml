@@ -39,11 +39,11 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
   # local dependencies
-  "appligator >=0.0.9",
-  "cuiman >=0.0.9",
-  "gavicore >=0.0.9",
-  "procodile >=0.0.9",
-  "wraptile >=0.0.9",
+  "appligator >=0.1.0.dev0",
+  "cuiman >=0.1.0.dev0",
+  "gavicore >=0.1.0.dev0",
+  "procodile >=0.1.0.dev0",
+  "wraptile >=0.1.0.dev0",
 ]
 
 [project.urls]
