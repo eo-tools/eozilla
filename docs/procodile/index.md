@@ -1,4 +1,4 @@
-# Procodile Introduction
+# Procodile
 
 Eozilla _Procodile_ is a simple Python framework that
 facilitates publishing of your Python functions as OGC processes, 

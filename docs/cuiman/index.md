@@ -1,4 +1,4 @@
-# Cuiman Overview
+# Cuiman
 
 The Eozilla _Cuiman_ tool provides a client for servers compliant with the 
 [OGC API - Processes, Part 1](https://github.com/opengeospatial/ogcapi-processes).

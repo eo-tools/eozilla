@@ -9,13 +9,13 @@ repo_name: eo-tools/eozilla
 copyright: Copyright &copy; 2026 Eozilla Team
 
 nav:
-  - Overview: index.md
+  - What is it?: index.md
   - Appligator:
-    - Introduction: appligator/introduction.md
+    - Overview: appligator/index.md
     - Usage: appligator/usage.md
     - CLI: appligator/cli.md
   - Cuiman:
-    - Introduction: cuiman/introduction.md
+    - Overview: cuiman/index.md
     - Configuration: cuiman/configuration.md
     - Customization: cuiman/customization.md
     - GUI-Generation: cuiman/gui-generation.md
@@ -27,7 +27,7 @@ nav:
     - CLI Reference: cuiman/cli.md
     - API Reference: cuiman/api.md
   - Gavicore:
-    - Overview: gavicore/overview.md
+    - Overview: gavicore/index.md
     - gavicore.models:
       - Description: gavicore/models/description.md
       - API Reference: gavicore/models/api.md
@@ -41,12 +41,12 @@ nav:
       - Description: gavicore/util/description.md
       - API Reference: gavicore/util/api.md
   - Procodile:
-    - Introduction: procodile/introduction.md
+    - Overview: procodile/index.md
     - Usage: procodile/usage.md
     - API Reference: procodile/api.md
     - CLI Reference: procodile/cli.md
   - Wraptile:
-    - Introduction: wraptile/introduction.md
+    - Overview: wraptile/index.md
     - Usage: wraptile/usage.md
     - Customization: wraptile/customization.md
     - CLI Reference: wraptile/cli.md

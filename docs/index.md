@@ -13,11 +13,14 @@ _Note: this project and its documentation are still in an early development stag
 
 The Eozilla suite of tools comprises:
 
-* **Procodile**: A simple Python framework for registering and executing processes.
+* **Procodile**: A simple, lightweight, and expressive Python framework for registering 
+  and executing processes and process workflows.
 * **Appligator**: An EO application bundler and transformer.
-   (Currently limited to generating Airflow DAGs.)
+   It allows for generating tailored Docker images from processes to be executed
+   on external workflow orchestration backends.
 * **Wraptile**: A fast and lightweight HTTP server that implements _OGC API - Processes_
-   for various workflow processing backends, such Airflow or a local executor.
+   for various workflow orchestration backends, 
+   such as [Apache Airflow](https://airflow.apache.org/) or a local process executor.
 * **Cuiman**: A Python client including API, GUI, and CLI for servers
    compliant with _OGC API - Processes_.
 * **Gavicore**: Common pydantic data models and utilities for the packages above.
