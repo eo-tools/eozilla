@@ -12,16 +12,3 @@ Both clients return their configuration as a
 Methods of the [`Client`](#cuiman.Client) and `AsyncClient` 
 may raise a [`ClientError`](#cuiman.ClientError) if a server call fails. 
 
-## Authentication notes
-
-When `auth_type="login"`, the client performs a login call to obtain an access
-token. If the auth server returns a `refresh_token`, it is stored in the config
-and used to refresh the access token on HTTP 401 (with a single retry). For
-`auth_type="token"`, the access token is treated as static and no refresh is
-attempted.
-
-::: cuiman.Client
-
-::: cuiman.ClientConfig
-
-::: cuiman.ClientError
