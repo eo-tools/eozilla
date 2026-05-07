@@ -36,7 +36,6 @@ _HIDDEN_INPUT = 6 * "*"
 
 class _Context(BaseModel):
     cli_params: dict[str, Any]
-    env_params: dict[str, Any]
     prev_params: dict[str, Any]
     curr_params: dict[str, Any]
 
@@ -47,7 +46,8 @@ def configure_client_with_prompt(
 ) -> Path:
     ctx = _Context(
         cli_params=cli_params,
-        env_params=ClientConfig().to_dict(),
+        # ClientConfig.create() merges file config with env vars, so env var values
+        # surface as prompt defaults rather than silently bypassing prompts.
         prev_params=ClientConfig.create(config_path=config_path).to_dict(),
         curr_params={},
     )
@@ -126,7 +126,7 @@ def _configure_token_type_with_prompt(ctx: _Context) -> None:
 def _prompt_for_str(
     ctx: _Context, key: str, text: str, default: str, choice: click.Choice | None = None
 ) -> str:
-    value: str | None = ctx.cli_params.get(key) or ctx.env_params.get(key)
+    value: str | None = ctx.cli_params.get(key)
     if value is None:
         value = (
             typer.prompt(
@@ -146,7 +146,7 @@ def _prompt_for_pw(
     key: str,
     text: str,
 ) -> str:
-    pw = ctx.cli_params.get(key) or ctx.env_params.get(key)
+    pw = ctx.cli_params.get(key)
     if pw is None:
         prev_pw: str | None = ctx.prev_params.get(key)
         new_pw: str = typer.prompt(
