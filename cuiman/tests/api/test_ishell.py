@@ -56,6 +56,16 @@ class IShellTest(TestCase):
         self.assertEqual(None, result)
 
 
+def test_ishell_registers_handler_when_shell_already_initialized():
+    # Covers the module-level branch: has_ishell=True AND initialized()=True
+    InteractiveShell.instance()  # idempotent; ensures initialized() returns True
+    sys.modules.pop("cuiman.api.ishell", None)
+    import cuiman.api.ishell as ishell
+
+    assert ishell.exception_handler is not None
+    assert callable(ishell.exception_handler)
+
+
 def test_ishell_without_ipython(monkeypatch):
     # Remove any cached copy so the top-level code runs again
 
