@@ -79,6 +79,8 @@
 
 - Lifted some mypy restrictions and enabled mypy pydantic plugin.
 
+- Added GitHub workflow for publication to PyPI. (#91)
+
 ## Changes in version 0.0.9
 
 ### Enhancements
