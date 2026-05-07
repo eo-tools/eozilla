@@ -37,10 +37,16 @@ def test_auth_headers_token_bearer():
     assert config.auth_headers == {"Authorization": "Bearer abc123"}
 
 
-def test_auth_headers_login_strategy():
+def test_auth_headers_login_bearer():
+    config = AuthConfig(auth_type="login", token="xyz")
+    assert config.auth_headers == {"Authorization": "Bearer xyz"}
+
+
+def test_auth_headers_login_custom_header():
     config = AuthConfig(
         auth_type="login",
         token="xyz",
+        use_bearer=False,
         token_header="X-Token",
     )
     assert config.auth_headers == {"X-Token": "xyz"}
@@ -110,6 +116,7 @@ def test_make_token_refresher_calls_refresh_login(mock_refresh: MagicMock):
         auth_url="https://acme.com/token",
         token="old-token",
         refresh_token="old-refresh",
+        use_bearer=False,
         token_header="X-Auth-Token",
     )
     refresher = config._make_token_refresher()
@@ -159,6 +166,7 @@ async def test_make_async_token_refresher_calls_refresh(mock_refresh: MagicMock)
         auth_url="https://acme.com/token",
         token="old-token",
         refresh_token="old-refresh",
+        use_bearer=False,
         token_header="X-Auth-Token",
     )
     refresher = config._make_async_token_refresher()

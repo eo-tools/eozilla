@@ -118,7 +118,7 @@ def _configure_username_password_with_prompt(ctx: _Context) -> None:
 
 
 def _configure_token_type_with_prompt(ctx: _Context) -> None:
-    use_bearer = _prompt_for_bool(ctx, "use_bearer", "Use bearer token?", False)
+    use_bearer = _prompt_for_bool(ctx, "use_bearer", "Use bearer token?", True)
     if not use_bearer:
         _prompt_for_str(ctx, "token_header", "Access token header", "X-Auth-Token")
 

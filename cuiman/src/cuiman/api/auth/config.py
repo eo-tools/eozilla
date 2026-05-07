@@ -61,7 +61,7 @@ class AuthConfig(BaseSettings):
     token: Optional[str] = None
 
     # For type "token": custom header or Bearer
-    use_bearer: bool = False  # if True → Authorization: Bearer <token>
+    use_bearer: bool = True  # if True → Authorization: Bearer <token>
     token_header: str = "X-Auth-Token"  # noqa: S105
 
     # For type "api-key"
@@ -136,6 +136,8 @@ def get_auth_headers(config: AuthConfig) -> dict[str, str]:
     if auth_type == "login":
         if not config.token:
             raise ValueError("Token is missing. Run CLI 'configure' first.")
+        if config.use_bearer:
+            return {"Authorization": f"Bearer {config.token}"}
         return {config.token_header: config.token}
 
     # API Key header
