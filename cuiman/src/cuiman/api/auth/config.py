@@ -2,7 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from typing import Literal, Optional, TypeAlias, get_args
+from typing import Awaitable, Callable, Literal, Optional, TypeAlias, get_args
 
 from pydantic import HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -48,11 +48,20 @@ class AuthConfig(BaseSettings):
     username: Optional[str] = None
     password: Optional[str] = None
 
+    # For type "login", initial password grant (OAuth2 Resource Owner Password Credentials)
+    client_id: Optional[str] = None
+    client_secret: Optional[str] = None
+    grant_type: str = "password"
+
+    # For type "login", token refresh phase — set after a successful login if the server
+    # returned a refresh token; presence of this field activates automatic token refresh on 401
+    refresh_token: Optional[str] = None
+
     # For type "token" or "login"
     token: Optional[str] = None
 
     # For type "token": custom header or Bearer
-    use_bearer: bool = False  # if True → Authorization: Bearer <token>
+    use_bearer: bool = True  # if True → Authorization: Bearer <token>
     token_header: str = "X-Auth-Token"  # noqa: S105
 
     # For type "api-key"
@@ -65,6 +74,40 @@ class AuthConfig(BaseSettings):
         Return the HTTP authentication headers for this auth configuration.
         """
         return get_auth_headers(self)
+
+    def _maybe_make_token_refresher(self) -> Callable[[], dict[str, str]] | None:
+        """Create a sync token refresh callback, or None if not applicable."""
+        if self.auth_type != "login" or not self.refresh_token:
+            return None
+
+        def refresh() -> dict[str, str]:
+            from .login import refresh_login
+
+            result = refresh_login(self)
+            self.token = result.access_token
+            if result.refresh_token:
+                self.refresh_token = result.refresh_token
+            return self.auth_headers
+
+        return refresh
+
+    def _make_async_token_refresher(
+        self,
+    ) -> Callable[[], Awaitable[dict[str, str]]] | None:
+        """Create an async token refresh callback, or None if not applicable."""
+        if self.auth_type != "login" or not self.refresh_token:
+            return None
+
+        async def refresh() -> dict[str, str]:
+            from .login_async import refresh_login_async
+
+            result = await refresh_login_async(self)
+            self.token = result.access_token
+            if result.refresh_token:
+                self.refresh_token = result.refresh_token
+            return self.auth_headers
+
+        return refresh
 
     # noinspection PyMethodParameters
     @field_validator("auth_url")
@@ -93,6 +136,8 @@ def get_auth_headers(config: AuthConfig) -> dict[str, str]:
     if auth_type == "login":
         if not config.token:
             raise ValueError("Token is missing. Run CLI 'configure' first.")
+        if config.use_bearer:
+            return {"Authorization": f"Bearer {config.token}"}
         return {config.token_header: config.token}
 
     # API Key header

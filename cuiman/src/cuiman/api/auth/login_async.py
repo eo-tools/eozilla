@@ -7,7 +7,12 @@ from typing import Any
 import httpx
 
 from .config import AuthConfig
-from .login import prepare_login, process_login_response
+from .login import (
+    LoginResult,
+    prepare_login,
+    prepare_refresh,
+    process_login_response_for_tokens,
+)
 
 
 async def login_async(auth_config: AuthConfig) -> Any:
@@ -21,7 +26,37 @@ async def login_async(auth_config: AuthConfig) -> Any:
     Returns:
         An access token either as JSON or plain text.
     """
+    return (await login_async_for_tokens(auth_config)).access_token
+
+
+async def login_async_for_tokens(auth_config: AuthConfig) -> LoginResult:
+    """
+    Performs an asynchronous login and returns both
+    access token and refresh token (if available).
+
+    Args:
+        auth_config: authentication configuration.
+
+    Returns:
+        A LoginResult with access_token and optional refresh_token.
+    """
     url, data = prepare_login(auth_config)
     async with httpx.AsyncClient() as client:
         response = await client.post(url, data=data)
-        return process_login_response(response)
+        return process_login_response_for_tokens(response)
+
+
+async def refresh_login_async(auth_config: AuthConfig) -> LoginResult:
+    """
+    Performs an asynchronous token refresh using a refresh token.
+
+    Args:
+        auth_config: authentication configuration (must have refresh_token set).
+
+    Returns:
+        A LoginResult with the new access_token and optional new refresh_token.
+    """
+    url, data = prepare_refresh(auth_config)
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, data=data)
+        return process_login_response_for_tokens(response)

@@ -12,8 +12,3 @@ Both clients return their configuration as a
 Methods of the [`Client`](#cuiman.Client) and `AsyncClient` 
 may raise a [`ClientError`](#cuiman.ClientError) if a server call fails. 
 
-::: cuiman.Client
-
-::: cuiman.ClientConfig
-
-::: cuiman.ClientError
