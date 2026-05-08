@@ -1,3 +1,16 @@
+## Changes in version 0.1.1 (in development)
+
+### Other changes
+
+- Python version is **python >=3.11** in all workspaces
+- Adjusted list of authos in all workspaces
+
+### Fixes
+
+- Added missing API docs to `docs/cuiman/api.md` (deployed shortly after 0.1.0 release)
+- Fixed the PyPI release workflow (applied shortly after 0.1.0 release)
+
+
 ## Changes in version 0.1.0
 
 ### Enhancements
