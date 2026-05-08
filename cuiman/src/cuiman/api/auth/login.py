@@ -97,7 +97,7 @@ def prepare_refresh(config: AuthConfig) -> tuple[str, dict[str, str | None]]:
     if not config.auth_url:
         raise ValueError("Authentication URL must be set.")
     if not config.refresh_token:
-        raise ValueError("Refresh token must be set for token refresh.")
+        raise ValueError("Refresh token must be set.")
     data = _add_client_credentials(
         config,
         {
