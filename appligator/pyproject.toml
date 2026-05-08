@@ -4,7 +4,7 @@
 
 [project]
 name = "appligator"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "An application package bundler"
 readme = "README.md"
 authors = [
@@ -45,8 +45,8 @@ dependencies = [
   "tomli; python_version < '3.11'",
   "typer",
   # local dependency
-  "gavicore >=0.1.0.dev0",
-  "procodile >=0.1.0.dev0",
+  "gavicore >=0.1.0",
+  "procodile >=0.1.0",
 ]
 
 [project.urls]
