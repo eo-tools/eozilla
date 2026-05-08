@@ -1,22 +1,23 @@
 ## Changes in version 0.1.0 (in development)
 
 ### Enhancements
-- Added OAuth2 Resource Owner Password Credentials support to `cuiman`
-  authentication, including `client_id`, `client_secret`, and `grant_type`
-  fields in `AuthConfig` and corresponding `--client-id` / `--client-secret`
-  CLI options.
-- Added automatic OAuth2 token refresh support. When a `refresh_token` is
-  available, `cuiman` automatically refreshes expired access tokens on 401
-  responses and retries the request, for both sync and async clients.
-  Refresh tokens are persisted to the config file alongside access tokens.
-- Environment variables (prefixed `EOZILLA_`) are now surfaced as pre-filled
-  defaults during `cuiman configure`, so users can see and override them.
-  This allows admins to pre-configure fields like `EOZILLA_API_URL`,
-  `EOZILLA_AUTH_URL`, `EOZILLA_CLIENT_ID`, and `EOZILLA_USE_BEARER`
-  (e.g. via Kubernetes secrets in JupyterHub deployments), so users only
-  need to confirm or override the values and provide their password.
-- Made `client_secret` optional during interactive `cuiman configure` for
-  OAuth2 public clients that do not require a client secret.
+- Enhanced **Cuiman** authentication with full OAuth2 Resource Owner Password
+  Credentials (ROPC) support, including automatic token refresh and improved
+  `cuiman configure` usability (#59):
+  - Added `client_id`, `client_secret`, and `grant_type` fields to `AuthConfig`
+    with corresponding `--client-id` / `--client-secret` CLI options.
+  - Added automatic token refresh: when a `refresh_token` is available,
+    `cuiman` refreshes expired access tokens on 401 responses and retries the
+    request, for both sync and async clients. Refresh tokens are persisted to
+    the config file alongside access tokens.
+  - Environment variables (prefixed `EOZILLA_`) are now surfaced as pre-filled
+    defaults during `cuiman configure`. This allows admins to pre-configure
+    fields like `EOZILLA_API_URL`, `EOZILLA_AUTH_URL`, `EOZILLA_CLIENT_ID`,
+    and `EOZILLA_USE_BEARER` (e.g. via Kubernetes secrets in JupyterHub
+    deployments), so users only need to confirm or override the values and
+    provide their password.
+  - Made `client_secret` optional for OAuth2 public clients that do not
+    require a client secret.
 
 - The **Gavicore** package has been enhanced by a new _UI generator_ which 
   converts OGC API - Process descriptions (or OpenAPI Schema) into user 

@@ -174,7 +174,7 @@ with a server that issues `refresh_token`s.
 config = ClientConfig(
     api_url="...", 
     auth_type="token", 
-    use_bearer=True,
+    use_bearer=True,  # default
 )
 ```
 
@@ -210,6 +210,7 @@ config = ClientConfig(
     # for public clients that do not require one.
     client_id="...",
     client_secret="...",
+    grant_type="password",  # default; set by the server's token endpoint requirements
     username="...", 
     password="...",
     # Optional: set if you already have one; `cuiman configure` stores it
