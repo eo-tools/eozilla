@@ -91,9 +91,9 @@
 
 ### Fixes
 
-- Fixed wraptile's local service implementation 
+- Fixed Wraptile's local service implementation 
   (`wraptile.services.local.local_service.LocalService`) to reliably work 
-  on Linux OSes when run in `processes` mode. 
+  on Linux OSes when run in `processes` mode. (#97)
 
 ### Other changes
 

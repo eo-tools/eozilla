@@ -11,7 +11,6 @@ from typing import Optional
 import fastapi
 from pydantic import ValidationError
 
-from gavicore.util.dynimp import import_value
 from gavicore.models import (
     JobInfo,
     JobList,
@@ -22,6 +21,7 @@ from gavicore.models import (
     ProcessRequest,
     ProcessSummary,
 )
+from gavicore.util.dynimp import import_value
 from procodile import Job, Process, ProcessRegistry
 from wraptile.exceptions import ServiceException
 from wraptile.services.base import ServiceBase
@@ -117,6 +117,7 @@ class LocalService(ServiceBase):
         self.jobs[job_id] = job
         self.job_uses_processes[job_id] = use_processes
         if use_processes:
+            assert self.service_ref is not None
             job.future = executor.submit(
                 _run_imported_job,
                 self.service_ref,
