@@ -260,6 +260,7 @@ class HttpxSyncTokenRefreshTest(TestCase):
 
     def test_401_without_refresher_raises_error(self):
         """Without a refresher, 401 is raised as a ClientError."""
+
         def panic():
             raise httpx.HTTPError("Unauthorized")
 
@@ -313,6 +314,7 @@ class HttpxSyncTokenRefreshTest(TestCase):
 
     def test_non_401_error_does_not_trigger_refresh(self):
         """Non-401 errors should not trigger token refresh."""
+
         def panic():
             raise httpx.HTTPError("Forbidden")
 
@@ -385,9 +387,7 @@ class HttpxAsyncTokenRefreshTest(IsolatedAsyncioTestCase):
             side_effect=[response_401, httpx.HTTPError("Connection lost")]
         )
 
-        refresher = AsyncMock(
-            return_value={"Authorization": "Bearer new-token"}
-        )
+        refresher = AsyncMock(return_value={"Authorization": "Bearer new-token"})
 
         transport = HttpxTransport(
             api_url="https://api.example.com",

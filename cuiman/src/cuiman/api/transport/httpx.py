@@ -23,9 +23,7 @@ class HttpxTransport(Transport, AsyncTransport):
         headers: dict[str, str] | None = None,
         return_type_map: dict[type, type] | None = None,
         token_refresher: Callable[[], dict[str, str]] | None = None,
-        async_token_refresher: (
-            Callable[[], Awaitable[dict[str, str]]] | None
-        ) = None,
+        async_token_refresher: (Callable[[], Awaitable[dict[str, str]]] | None) = None,
         debug: bool = False,
     ):
         self.api_url = api_url

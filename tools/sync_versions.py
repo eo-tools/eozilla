@@ -35,9 +35,21 @@ def main():
             continue
         print(f"🔧 Updating {name}/pyproject.toml")
         workspace_data = tomlkit.parse(workspace_path.read_text())
-        workspace_version = workspace_data["project"]["version"]
-        if workspace_version != root_version:
-            workspace_data["project"]["version"] = root_version
+        project: dict[str, Any] = workspace_data["project"]
+        project_version: str | None = project.get("version")
+        project_dependencies: list[str] = project.get("dependencies") or []
+        changed = False
+        for i, dep in enumerate(project_dependencies):
+            for name_ in workspace_names:
+                if dep.startswith(f"{name_}"):
+                    dep_update = f"{name_} >={root_version}"
+                    if dep != dep_update:
+                        project_dependencies[i] = dep_update
+                        changed = True
+        if project_version != root_version:
+            project["version"] = root_version
+            changed = True
+        if changed:
             workspace_path.write_text(tomlkit.dumps(workspace_data))
             print(f"✅ Synced version {root_version} in {workspace_path}")
         else:
