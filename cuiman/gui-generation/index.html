@@ -9,6 +9,10 @@
       
       
       
+        <link rel="prev" href="../customization/">
+      
+      
+        <link rel="next" href="../../notebooks/cuiman-api/">
       
       
         
@@ -19,7 +23,7 @@
     
     
       
-        <title>Workflow Development - Eozilla 🦖</title>
+        <title>GUI-Generation - Eozilla 🦖</title>
       
     
     
@@ -74,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#workflow-development" class="md-skip">
+        <a href="#cuiman-gui-generation" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Workflow Development
+              GUI-Generation
             
           </span>
         </div>
@@ -258,11 +262,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../cuiman/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -306,7 +312,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../" class="md-tabs__link">
+        <a href="../../procodile/" class="md-tabs__link">
           
   
   
@@ -571,6 +577,8 @@
       
   
   
+    
+  
   
   
     
@@ -596,20 +604,23 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../cuiman/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -627,13 +638,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -653,7 +664,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cuiman/configuration/" class="md-nav__link">
+      <a href="../configuration/" class="md-nav__link">
         
   
   
@@ -681,7 +692,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cuiman/customization/" class="md-nav__link">
+      <a href="../customization/" class="md-nav__link">
         
   
   
@@ -706,10 +717,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../cuiman/gui-generation/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GUI-Generation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -725,6 +763,203 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#customizing-schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customizing Schemas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Customizing Schemas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schema-mapping-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema Mapping Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-boolean" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type boolean
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-integer-and-number" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type integer and number
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-string" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type string
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type array
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type object
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nullable-schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        nullable Schemas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oneof-and-anyof-schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oneOf and anyOf Schemas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#allof-schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        allOf Schemas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customizing-the-ui-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customizing the UI Generation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Customizing the UI Generation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-define-the-required-customization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Define the required customization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-create-a-custom-field-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Create a custom field factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-implement-the-custom-field-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Implement the custom field factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-register-the-custom-field-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Register the custom field factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -753,17 +988,20 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
         
           
-          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="">
             
   
   
@@ -919,7 +1157,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cuiman/cli/" class="md-nav__link">
+      <a href="../cli/" class="md-nav__link">
         
   
   
@@ -947,7 +1185,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cuiman/api/" class="md-nav__link">
+      <a href="../api/" class="md-nav__link">
         
   
   
@@ -1581,7 +1819,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../procodile/" class="md-nav__link ">
               
   
   
@@ -1625,7 +1863,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/" class="md-nav__link">
+      <a href="../../procodile/usage/" class="md-nav__link">
         
   
   
@@ -1653,7 +1891,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/" class="md-nav__link">
+      <a href="../../procodile/api/" class="md-nav__link">
         
   
   
@@ -1681,7 +1919,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cli/" class="md-nav__link">
+      <a href="../../procodile/cli/" class="md-nav__link">
         
   
   
@@ -1927,33 +2165,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#conceptual-model-ogc-alignment" class="md-nav__link">
+  <a href="#customizing-schemas" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Conceptual Model (OGC Alignment)
+        Customizing Schemas
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#workflowregistry-conceptual-overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        WorkflowRegistry — Conceptual Overview
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="WorkflowRegistry — Conceptual Overview">
+    <nav class="md-nav" aria-label="Customizing Schemas">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#motivation" class="md-nav__link">
+  <a href="#schema-mapping-overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Motivation
+        Schema Mapping Overview
       
     </span>
   </a>
@@ -1961,10 +2188,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#why-workflows-are-exposed-as-processes" class="md-nav__link">
+  <a href="#type-boolean" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why Workflows are exposed as Processes
+        Type boolean
       
     </span>
   </a>
@@ -1972,10 +2199,76 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#future-compatibility-with-nested-execution-requests" class="md-nav__link">
+  <a href="#type-integer-and-number" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Future Compatibility with Nested Execution Requests
+        Type integer and number
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-string" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type string
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type array
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type object
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nullable-schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        nullable Schemas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oneof-and-anyof-schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oneOf and anyOf Schemas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#allof-schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        allOf Schemas
       
     </span>
   </a>
@@ -1988,55 +2281,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#creating-a-workflow" class="md-nav__link">
+  <a href="#customizing-the-ui-generation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Creating a Workflow
+        Customizing the UI Generation
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#defining-the-main-step" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Defining the Main Step
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#defining-workflow-steps-sub-processes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Defining Workflow Steps (Sub-Processes)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#declaring-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Declaring Dependencies
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Declaring Dependencies">
+    <nav class="md-nav" aria-label="Customizing the UI Generation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#from-the-main-step" class="md-nav__link">
+  <a href="#1-define-the-required-customization" class="md-nav__link">
     <span class="md-ellipsis">
       
-        From the Main Step
+        1. Define the required customization
       
     </span>
   </a>
@@ -2044,10 +2304,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#from-another-step" class="md-nav__link">
+  <a href="#2-create-a-custom-field-factory" class="md-nav__link">
     <span class="md-ellipsis">
       
-        From Another Step
+        2. Create a custom field factory
       
     </span>
   </a>
@@ -2055,10 +2315,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#mixing-dependencies-and-inputs" class="md-nav__link">
+  <a href="#3-implement-the-custom-field-factory" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mixing Dependencies and Inputs
+        3. Implement the custom field factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-register-the-custom-field-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Register the custom field factory
       
     </span>
   </a>
@@ -2067,128 +2338,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#declaring-outputs-for-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Declaring Outputs for Steps
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Declaring Outputs for Steps">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#output-resolution-rules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output Resolution Rules
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Output Resolution Rules">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-no-output-specification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. No output specification
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-tuple-return-value" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Tuple return value
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-dictionary-return-value" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Dictionary return value
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-single-scalar-value" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Single scalar value
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Examples
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#dependency-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dependency Validation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#execution-order" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Execution Order
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#visualizing-the-workflow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Visualizing the Workflow
-      
-    </span>
-  </a>
   
 </li>
       
@@ -2212,370 +2361,358 @@
   
 
 
-<h1 id="workflow-development">Workflow Development</h1>
-<p>A workflow defines how multiple python functions are connected and executed together.
-Each workflow has exactly one main process and any number of dependent steps.
-Steps may consume outputs from the main process or from other steps.</p>
-<p>Workflows are acyclic and are executed in topological order based on declared
-dependencies.</p>
-<p>From an OGC API – Processes (Part 3 draft) perspective:</p>
-<ul>
-<li>A workflow behaves like a single process by exposing itself as a process.</li>
-<li>Internally, it is a directed acyclic graph (DAG) of sub-processes</li>
-<li>Each workflow step is itself a <a href="#dependency-validation">valid</a> process</li>
-<li>Outputs from one step may be consumed as inputs by another step</li>
-</ul>
-<p>Workflows allow complex execution graphs to be expressed declaratively while
-remaining compliant with the OGC process model.</p>
-<h2 id="conceptual-model-ogc-alignment">Conceptual Model (OGC Alignment)</h2>
-<table>
-<thead>
-<tr>
-<th>Concept</th>
-<th>Meaning</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Workflow</td>
-<td>A directed, acyclic graph of processes with a single main entry point and a single output, where all data dependencies are explicitly declared.</td>
-</tr>
-<tr>
-<td>Main step</td>
-<td>The primary entrypoint declared using <code>registry.main()</code></td>
-</tr>
-<tr>
-<td>Step</td>
-<td>A sub-process within the workflow, defined using <code>your_process.step()</code> where <code>your_process</code> is the python function decorated with <code>registry.main()</code></td>
-</tr>
-<tr>
-<td>Dependency</td>
-<td>A data relationship between process inputs and outputs</td>
-</tr>
-<tr>
-<td>Execution order</td>
-<td>A topologically sorted process graph</td>
-</tr>
-</tbody>
-</table>
-<p>A workflow must:</p>
-<ul>
-<li>Define exactly one main entrypoint</li>
-<li>Define exactly one output step</li>
-<li>Contain no cycles</li>
-<li>Explicitly declare all inter-process dependencies</li>
-</ul>
-<h2 id="workflowregistry-conceptual-overview">WorkflowRegistry — Conceptual Overview</h2>
-<h3 id="motivation">Motivation</h3>
-<p><a href="https://docs.ogc.org/DRAFTS/21-009.html">OGC API – Processes Part 3 (draft)</a>
-introduces the concept of workflows, where a process execution request may reference
-other processes as inputs (“nested processes”).
-This enables clients to define ad-hoc workflows dynamically at execution time.</p>
-<p>This framework (<code>procodile</code>) takes a complementary approach:</p>
-<pre><code>Instead of defining workflows dynamically in JSON at execution time, workflows 
-are authored declaratively in Python, registered once, and then exposed as 
-standard OGC processes.
+<h1 id="cuiman-gui-generation">Cuiman GUI-Generation</h1>
+<p>The Cuiman GUI to build process requests is generated from a selected 
+<a href="https://docs.ogc.org/is/18-062r2/18-062r2.html#toc35">OGC process descriptions</a>.
+For a given process, the input descriptions are used to build an 
+<a href="https://swagger.io/specification/v3/">OpenAPI Schema v3.0</a> of type <code>object</code> 
+comprising the inputs as properties. The GUI is generated from this root schemas. </p>
+<p>The pipeline in short:</p>
+<pre><code>Process Input Descriptions
+   ↓
+Schema
+   ↓
+Field Metadata
+   ↓
+Field = View Model + View (Panel viewables)
 </code></pre>
-<p>Internally, workflows are represented as structured Python objects (<code>Workflow</code>) that
-capture:</p>
+<p>The UI generation at its core is not aware of the target UI library
+that is used to render the UI and let users interact with it.</p>
+<p>The framework used to generate UIs is implemented in the Eozilla 
+Gavicore package <code>gavicore.ui</code> and is documented 
+<a href="../../gavicore/ui/description/">here</a>.  </p>
+<h2 id="customizing-schemas">Customizing Schemas</h2>
+<p>Cuiman's default UI library is <a href="https://panel.holoviz.org/">Panel</a>.
+Therefore, most of the customization configuration is directly mapped
+to configuration of the underlying Panel widgets and viewables.</p>
+<h3 id="schema-mapping-overview">Schema Mapping Overview</h3>
+<p>A given schema is converted into UI fields given using the available metadata that 
+is part of the schema itself and metadata that can be specified using special 
+schema properties prefixed by "x-ui".</p>
+<p><strong>Mapped OpenAPI/JSON schema metadata:</strong></p>
 <ul>
-<li>step definitions</li>
-<li>input bindings (<code>FromMain</code>, <code>FromStep</code>)</li>
-<li>execution order</li>
-<li>execution logic (<code>workflow.run</code>)</li>
+<li><code>title</code> - used as widget or group label</li>
+<li><code>description</code> - used as tool-tip text, where possible</li>
+<li><code>default</code> - serves as default value for the widget</li>
+<li><code>enum</code> - provides the options for select-like widgets</li>
+<li><code>format</code> - mostly for type <code>string</code>, controls the actual target data type  </li>
 </ul>
-<table>
-<thead>
-<tr>
-<th>Aspect</th>
-<th>OGC Nested Processes</th>
-<th>Procodile Workflow Framework</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Definition order</td>
-<td>Leaf-first</td>
-<td>Root-first</td>
-</tr>
-<tr>
-<td>Representation</td>
-<td>Nested JSON</td>
-<td>Explicit DAG</td>
-</tr>
-<tr>
-<td>Primary use</td>
-<td>Ad-hoc execution</td>
-<td>Deployment &amp; reuse</td>
-</tr>
-<tr>
-<td>Identity</td>
-<td>Execution-scoped</td>
-<td>Stable process ID</td>
-</tr>
-<tr>
-<td>Execution model</td>
-<td>Tree evaluation</td>
-<td>DAG execution</td>
-</tr>
-</tbody>
-</table>
-<p>Both models describe the same execution semantics</p>
-<p>The framework is the inverse authoring model of nested processes</p>
-<p>Future support for nested execution requests can be added without changing the internal
-model</p>
-<h3 id="why-workflows-are-exposed-as-processes">Why Workflows are exposed as Processes</h3>
-<p>OGC API – Processes is fundamentally process-centric:</p>
+<p><strong>Supported "x-ui" metadata extensions</strong>:</p>
 <ul>
-<li>Clients discover <code>/processes</code></li>
-<li>Clients execute <code>/processes/{id}/execution</code></li>
+<li><code>x-ui-widget</code> - hint to generate a widget of the given type</li>
+<li><code>x-ui-placeholder</code> - a placeholder value used in text or numeric input fields</li>
+<li><code>x-ui-minimum</code> - minimum value for sliders</li>
+<li><code>x-ui-maximum</code> - maximum value for sliders</li>
+<li><code>x-ui-step</code> - step size for sliders</li>
+<li><code>x-ui-order</code> - number of string used for sorting the fields of a group</li>
+<li><code>x-ui-layout</code> - grouping fields and group layout</li>
 </ul>
-<p>There is no separate “workflow” resource in Part 1 or Part 3.</p>
-<p>Therefore:</p>
-<pre><code>A workflow must be represented as a process in order to be OGC-compliant.
-</code></pre>
-<p>The <code>ProcessRegistry</code> provides this abstraction by projecting workflows into
-processes.</p>
-<p><code>ProcessRegistry</code> is a mapping-like registry that:</p>
+<p>Note that you can also use the prefix "x-ui:" instead of "x-ui-". The latter is 
+more convenient when encoding schemas is YAML. If multiple extensions are used,
+in a schema or process input description, they can also be grouped in an object 
+property named <code>x-ui</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">x-ui</span><span class="p">:</span><span class="w"> </span>
+<span class="w">      </span><span class="nt">widget</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slider,</span>
+<span class="w">      </span><span class="nt">minimum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0,</span><span class="w">        </span>
+<span class="w">      </span><span class="nt">maximum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100,</span>
+<span class="w">      </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5,</span>
+<span class="w">    </span><span class="err">}</span>
+</code></pre></div>
+<p>The extensions can occur in bot schemas and process input/output descriptions. </p>
+<p><strong>Schema widget mapping:</strong> </p>
+<p>The following list provides an overview about the currently implemented
+mapping of schema elements to Panel widgets and panels.</p>
 <ul>
-<li>stores internal <code>Workflow</code> objects</li>
-<li>exposes them externally as <code>Process</code> objects</li>
+<li><code>type: boolean</code>: creates <strong>checkbox</strong> and <strong>switch</strong> widgets.</li>
+<li><code>type: integer</code> and <code>type: number</code>: creates numeric <strong>input</strong> or <strong>slider</strong> widgets.<ul>
+<li><code>enum: [...]</code>: creates numeric <strong>select</strong>, <strong>radio group</strong>, 
+  or <strong>toggle button group</strong> widgets. </li>
 </ul>
-<h3 id="future-compatibility-with-nested-execution-requests">Future Compatibility with Nested Execution Requests</h3>
-<p>Although workflows are currently authored as Python objects, the internal representation
-already contains everything needed to support OGC Part 3 nested execution requests in
-the future.</p>
-<p>A future extension may:</p>
+</li>
+<li><code>type: string</code>: creates <strong>text input</strong>, <strong>textarea</strong>, <strong>date/time picker</strong> widgets.<ul>
+<li><code>enum: [...]</code>: creates textual <strong>select</strong>, <strong>radio group</strong>, 
+  or <strong>toggle button group</strong> widgets. </li>
+<li><code>format: password</code>: creates a <strong>password input</strong> widget.</li>
+<li><code>format: date-time</code>: creates a <strong>datetime picker</strong> widget.</li>
+<li><code>format: date</code>: creates a <strong>date picker</strong> widget.</li>
+<li><code>format: time</code>: creates a <strong>time picker</strong> widget.</li>
+</ul>
+</li>
+<li><code>type: array</code>: creates <strong>array input</strong> widgets for numeric and textual item types
+  or <strong>array editors</strong> for any item schema type. 
+  A few special tuple types such as <strong>geographic bounding boxes</strong> and 
+  <strong>date(-time) ranges</strong> are supported too.</li>
+<li><code>type: object</code>: creates a <strong>sub-form</strong> with optionally ordered and outlaid 
+  fields for the object properties.</li>
+<li><code>oneOf: [s1, s2, s3, ...]</code>: creates a <strong>tabs panel</strong> with a tab 
+  generated for each subschemas <code>s{i}</code>. An optional schema <code>discriminator</code> 
+  is fully supported. Typically, the item schemas are objects.</li>
+<li><code>anyOf: [s1, s2, s3, ...]</code>: same as <code>oneOf</code>. </li>
+<li><code>allOf: [s1, s2, s3, ...]</code>: creates a field for the schema resulting from
+  merging the schemas <code>s{i}</code>. Typically, the item schemas are objects.</li>
+<li><code>nullable: true</code>: creates a <strong>labeled switch</strong> widget that if selected, shows
+  the generated field for the same schema, but using <code>nullable: false</code>. If
+  unselected, the value is <code>null</code> (JSON) or <code>Null</code> (Python).</li>
+</ul>
+<p>If none of the above is given, a JSON editor widget will be generated for a given 
+schema.</p>
+<p><strong>Partly supported schema keywords:</strong></p>
 <ul>
-<li>accept nested execution JSON</li>
-<li>translate it into an internal workflow DAG</li>
-<li>execute it using the same runtime</li>
-<li>or deploy it as a persistent workflow</li>
+<li><code>$ref</code>: only schema-relative references are currently 
+  supported. For example, <code>$ref: #/$defs/Complex</code> expects a schema definition 
+  named <code>Complex</code> in a top-level JSON object <code>$defs</code> in the same schema.
+  Schema definitions can also be referenced in nested objects, e.g., 
+  <code>$ref: #/components/schemas/Complex</code>.</li>
+<li><code>prefixItems</code>: JSON schema introduced this keyword to represent typed
+  tuples. Since there is no unambiguous OpenAPI schema representation,
+  multiple prefix-item schemas are converted into an <code>items</code> value which 
+  comprises a <code>oneOf</code> element of the converted <code>prefixItems</code> schemas. </li>
+<li><code>items</code>: if the value is a list of schemas (= tuple), see <code>prefixItems</code> above. </li>
 </ul>
-<p>In that scenario:</p>
+<p><strong>Currently unsupported schema keywords:</strong></p>
 <ul>
-<li>nested execution becomes an alternative front door</li>
-<li>the internal execution model remains unchanged</li>
+<li><code>additionalProperties</code>: currently not implemented, ignored for time being.
+  The plan is to support it by a special editor that allows adding and removing 
+  named properties. Will work only if and only if <code>properties</code> is not given.</li>
+<li><code>minProperties</code>, <code>maxProperties</code>: ignored.</li>
+<li><code>additionalItems</code>: ignored.</li>
+<li><code>not</code> - ignored, hence falls back to an untyped schema.</li>
 </ul>
-<p>This ensures forward compatibility with the OGC API – Processes Part 3 draft.</p>
-<h2 id="creating-a-workflow">Creating a Workflow</h2>
-<p>Workflows are created through a <code>WorkflowRegistry</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessRegistry</span>
+<p>The following subsections describe the default mapping of schema types
+to Panel widgets in more detail including the available customization options. </p>
+<h3 id="type-boolean">Type <code>boolean</code></h3>
+<p>Schemas of type <code>boolean</code> generate 
+a <a href="https://panel.holoviz.org/reference/widgets/Checkbox.html">checkbox</a>
+by default. </p>
+<p><strong>Customisation options</strong>: </p>
+<ul>
+<li><code>x-ui-widget: switch</code>: generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/Switch.html">switch</a> instead.</li>
+</ul>
+<h3 id="type-integer-and-number">Type <code>integer</code> and <code>number</code></h3>
+<p>Schemas of type <code>integer</code> and <code>number</code> generate 
+an <a href="https://panel.holoviz.org/reference/widgets/IntInput.html">int input</a>
+or <a href="https://panel.holoviz.org/reference/widgets/FloatInput.html">float input</a> 
+by default if <code>enum</code> is not specified. With <code>enum</code>, a 
+<a href="https://panel.holoviz.org/reference/widgets/Select.html">select</a> is generated.</p>
+<p><strong>Customisation options</strong>: </p>
+<ul>
+<li><code>x-ui-widget: slider</code> generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/IntSlider.html">slider</a>. 
+  Requires <code>minimum</code> and <code>maximum</code> to be given too, optionally also <code>step</code> to
+  control the step size. </li>
+</ul>
+<p>If <code>enum</code> is given too:</p>
+<ul>
+<li><code>x-ui-widget: slider</code> generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/DiscreteSlider.html">discrete slider</a>.</li>
+<li><code>x-ui-widget: radio</code> generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/RadioBoxGroup">radio box group</a>.</li>
+<li><code>x-ui-widget: button</code> generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/RadioButtonGroup">radio button group</a>.</li>
+<li><code>x-ui-widget: select</code> generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/Select">select</a> widget.</li>
+</ul>
+<h3 id="type-string">Type <code>string</code></h3>
+<p>Schemas of Type <code>string</code> generates 
+a <a href="https://panel.holoviz.org/reference/widgets/TextInput.html">text-input</a>
+by default if <code>format</code> is not provided (or currently unsupported) and <code>enum</code> 
+is not specified. </p>
+<p>If <code>enum</code> is specified, a <a href="https://panel.holoviz.org/reference/widgets/Select">select</a> 
+widget is generated by default.</p>
+<p>If <code>format</code> is given:</p>
+<ul>
+<li><code>format: byte</code>: generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/FileInput.html">file input</a> 
+  and stores the file data as base64-encoded string.</li>
+<li><code>format: password</code>: generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/PasswordInput.html">password input</a>
+  and stores the password as plain text (take care!).</li>
+<li><code>format: date-time</code>: generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/DatetimePicker.html">datetime picker</a>.</li>
+<li><code>format: date</code>: generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/DatePicker.html">date picker</a>.</li>
+<li><code>format: time</code>: generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/TimePicker.html">time picker</a>.</li>
+</ul>
+<p><strong>Customisation options</strong>: </p>
+<ul>
+<li><code>x-ui-widget: dropper</code>: generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/FileDropper.html">file dropper</a> 
+  if <code>format</code> is <code>bytes</code> and stores the file data as base64-encoded string.  </li>
+<li><code>x-ui-widget: input</code>: generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/DatetimeInput.html">datetime input</a> 
+  if <code>format</code> is <code>date-time</code>.  </li>
+<li><code>x-ui-widget: textarea</code>: generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/TextAreaInput.html">text area input</a> 
+  if <code>format</code> is not provided or currently unsupported.</li>
+</ul>
+<p>If <code>enum</code> is specified:</p>
+<ul>
+<li><code>x-ui-widget: radio</code> generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/RadioBoxGroup">radio box group</a>.</li>
+<li><code>x-ui-widget: button</code> generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/RadioButtonGroup">radio button group</a>.</li>
+<li><code>x-ui-widget: select</code> generates a 
+  <a href="https://panel.holoviz.org/reference/widgets/Select">select</a> widget.</li>
+</ul>
+<h3 id="type-array">Type <code>array</code></h3>
+<p>With a few exceptions, the <code>array</code> type will generate an <em>array editor</em> field.
+The editor is used to interactively add, edit, and remove array items. 
+The array item fields are generated from the schema's <code>items</code> property 
+which specifies the items' schema.</p>
+<p>A few tuple types are supported that generate special widgets instead of 
+the default array editor:</p>
+<ul>
+<li>
+<p><strong>geographic bounding boxes</strong>: item type <code>number</code> with <code>minItems: 4</code>, <code>maxItems: 4</code>, 
+  and <code>x-ui-widget: map</code> creates a special editor to enter the bounding box
+  using <a href=""></a>. It lets users draw a geometry whose bounding 
+  box will become the effective field value.</p>
+</li>
+<li>
+<p><strong>date(-time) ranges</strong>: item type <code>string</code> with <code>minItems: 2</code>, <code>maxItems: 2</code> creates 
+  a <a href="https://panel.holoviz.org/reference/widgets/DatetimeRangePicker.html">date-time range picker</a> 
+  for item format <code>date-time</code> or 
+  a <a href="https://panel.holoviz.org/reference/widgets/DateRangePicker.html">date range picker</a> 
+  for item format <code>date</code>. </p>
+</li>
+</ul>
+<p><strong>Customisation options</strong>: </p>
+<ul>
+<li><code>x-ui-widget: input</code> generates array input widgets where users enter array
+  items into a <a href="https://panel.holoviz.org/reference/widgets/TextInput.html">text-input</a>
+  separated by a comma or a character specified by the <code>x-ui-separator</code> property.   </li>
+<li><code>x-ui-widget: textarea</code> similar as above, but uses a multi-line 
+  <a href="https://panel.holoviz.org/reference/widgets/TextAreaInput.html">text area</a>.</li>
+</ul>
+<h3 id="type-object">Type <code>object</code></h3>
+<p>Schemas of Type <code>object</code> generate a sub-form with optionally ordered and outlaid 
+fields for the object's <code>properties</code>.</p>
+<p><strong>Customisation options</strong>: </p>
+<p>If no layout or order is specified, the property forms are generated in the 
+order that corresponds to order of the <code>properties</code> in the object schema.</p>
+<ul>
+<li><code>x-ui-layout: column</code>: arranges the sub-fields in a column  </li>
+<li><code>x-ui-layout: row</code>: arranges the sub-fields in a row  </li>
+<li><code>x-ui-layout: { layout }</code>: specifies a layout. A layout is an object with
+  two properties <code>type</code> and <code>items</code>. <code>type</code> is either <code>column</code> (default)
+  or <code>row</code> and <code>items</code> is an optional list of property names or of other layout 
+  objects. If <code>items</code> is not not given, it defaults to all properties that 
+  have not yet been part of the layout.</li>
+<li><code>x-ui-order: &lt;order&gt;</code>: an integer value that can be used in the property schemas
+  to specify the fields order. The default order value is the index of 
+  a property in its given order.</li>
+</ul>
+<h3 id="nullable-schemas"><code>nullable</code> Schemas</h3>
+<p>If <code>nullable: true</code> a labeled switch widget is created that if selected, 
+shows the generated field for the same schema, but using <code>nullable: false</code>.
+If the switch is unselected, the effective value of the field will be 
+<code>null</code> (<code>Null</code> in Python).</p>
+<h3 id="oneof-and-anyof-schemas"><code>oneOf</code> and <code>anyOf</code> Schemas</h3>
+<p>The values of both <code>oneOf</code> and <code>anyOf</code> are lists that define 
+alternative schemas. They create create a <strong>tabs panel</strong> with a tab 
+generated for each subschemas <code>s{i}</code>. </p>
+<p>Given that all subschemas are of type <code>object</code> an optional schema
+<code>discriminator</code> specifies a common object property whose value
+uniquely identifies the type of the subschema. The subschemas must 
+be specified by schema references using the <code>$ref</code> keyword. 
+The discriminator property is omitted from the generated sub-forms 
+as its field value is determined by <code>$ref</code> schema name or the 
+discriminator's optional <code>mapping</code> keys.</p>
+<h3 id="allof-schemas"><code>allOf</code> Schemas</h3>
+<p>The <code>allOf</code> schema combination creates a field for the schema resulting from
+merging all its subschemas. Typically, the item schemas are objects and <code>allOf</code>
+is used to represent a type derived form two or more subtypes.</p>
+<h2 id="customizing-the-ui-generation">Customizing the UI Generation</h2>
+<p>Under the hood the <code>cuiman.gui</code> package uses the common package 
+<code>gavicore.ui</code> that provides the core UI generation framework.
+Within that framework, <code>gavicore.ui.panel</code> implements a UI generator 
+using the <a href="https://pypi.org/project/panel/">panel</a> package.
+However, <a href="https://pypi.org/project/panel/">panel</a> is an optional package to Gavicore
+as usually only Eozilla/Cuiman client applications require a GUI.</p>
+<h3 id="1-define-the-required-customization">1. Define the required customization</h3>
+<p>Let's say we want to generate a custom UI for a 2-tuple representing
+a numeric value range, whose values can be validated by the following 
+schema: </p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
+<span class="w">    </span><span class="nt">items</span><span class="p">:</span><span class="w"> </span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">number</span>
+<span class="w">      </span><span class="nt">minimum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-1.0</span>
+<span class="w">      </span><span class="nt">maximum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">    </span><span class="nt">minItems</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">    </span><span class="nt">maxItems</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">-1.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>The UI field to be generated for this schema should be a 
+<a href="https://panel.holoviz.org/reference/widgets/EditableRangeSlider.html">numeric range slider</a>. 
+Furthermore, we say that the field is only used if <code>x-ui-widget: range-input</code>.</p>
+<h3 id="2-create-a-custom-field-factory">2. Create a custom field factory</h3>
+<p>In order to generate the desired UI field, we'll develop a custom
+<code>gavicore.ui.panel.PanelFieldFactory</code> class and register an instance of it 
+in the framework. </p>
+<p>The <code>PanelFieldFactory</code> is a typed abstract base class that implements 
+the generic <code>gavicore.ui.FieldFactory</code> interface. A <code>FieldFactory</code> is 
+responsible for calculating a "suitability score" for a given field metadata
+ <code>gavicore.ui.FieldMeta</code> which includes the OpenAPI schema and derived metadata.</p>
+<p>The framework selects the factory with the highest score for a given schema.
+The default score returned by the inbuilt factories is <code>5</code>.
+If a factory was selected, it is asked to create a <code>gavicore.ui.Field</code> given the
+current <code>gavicore.ui.FieldContext</code>. A <code>PanelFieldFactory</code> is supposed to only create 
+<code>gavicore.ui.panel.PanelField</code> instances.</p>
+<p>The above is best explained by example. First we create a new class
+<code>NumberRangeFactory</code> that derives from <code>PanelFieldFactoryBase</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">gavicore.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gavicore.ui</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldContext</span><span class="p">,</span> <span class="n">FieldMeta</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gavicore.ui.panel</span><span class="w"> </span><span class="kn">import</span> <span class="n">PanelField</span><span class="p">,</span> <span class="n">PanelFieldFactoryBase</span>
 
-<span class="n">registry</span> <span class="o">=</span> <span class="n">ProcessRegistry</span><span class="p">()</span>
-</code></pre></div>
-<p>Each workflow is uniquely identified by its <code>id</code>.</p>
-<h2 id="defining-the-main-step">Defining the Main Step</h2>
-<p>The main step represents the workflow’s external interface. It is the only step that
-receives user-supplied inputs.</p>
-<p>Every workflow must define exactly one main step.</p>
-<p>For e.g.,</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@registry</span><span class="o">.</span><span class="n">main</span><span class="p">(</span>
-    <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;main_step&quot;</span><span class="p">,</span>
-    <span class="n">inputs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">Field</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Main input&quot;</span><span class="p">),</span>
-    <span class="p">},</span>
-    <span class="n">outputs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">Field</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Main output&quot;</span><span class="p">),</span>
-    <span class="p">},</span>
-<span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">main_step</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="nb">id</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
-</code></pre></div>
-<h2 id="defining-workflow-steps-sub-processes">Defining Workflow Steps (Sub-Processes)</h2>
-<p>Workflow steps are defined using the <code>@main_step.step</code> decorator.</p>
-<p>Each step is a process that may depend on:</p>
-<ul>
-<li>Outputs from the main step</li>
-<li>Outputs from other workflow steps</li>
-</ul>
-<div class="highlight"><pre><span></span><code><span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;second_step&quot;</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">second_step</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="nb">id</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-</code></pre></div>
-<h2 id="declaring-dependencies">Declaring Dependencies</h2>
-<p>Dependencies are either declared</p>
-<ul>
-<li>using <code>typing.Annotated</code> in type annotations of your function argument declarations or</li>
-<li>using <code>pydantic.Field</code> in the decorator's <code>inputs</code> and <code>outputs</code> values.</li>
-</ul>
-<h3 id="from-the-main-step">From the Main Step</h3>
-<p>Use <code>FromMain</code> to reference outputs of the main step.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">FromMain</span>
 
-<span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;use_main&quot;</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">use_main</span><span class="p">(</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FromMain</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">)]</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="nb">id</span>
-</code></pre></div>
-<p>or</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">FromMain</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">NumberRangeFactory</span><span class="p">(</span><span class="n">PanelFieldFactoryBase</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_array_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meta</span><span class="p">:</span> <span class="n">FieldMeta</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the score of this factory for an array schema.&quot;&quot;&quot;</span>
+        <span class="o">...</span>
 
-<span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
-    <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;use_main&quot;</span><span class="p">,</span>
-    <span class="n">inputs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">Field</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;main input&quot;</span><span class="p">)</span>
-    <span class="p">},</span>
-<span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">use_main</span><span class="p">(</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="nb">id</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_array_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">FieldContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PanelField</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the Panel field for the selected array schema.&quot;&quot;&quot;</span>
+        <span class="o">...</span>
 </code></pre></div>
-<ul>
-<li><code>output</code> refers to a named output of the main step.</li>
-<li><code>"return_value"</code> may be used when the main step has no explicit outputs defined.</li>
-</ul>
-<h3 id="from-another-step">From Another Step</h3>
-<p>Use <code>FromStep</code> to reference outputs from another workflow step.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">FromStep</span>
+<h3 id="3-implement-the-custom-field-factory">3. Implement the custom field factory</h3>
+<p>Lets implement <code>get_array_score()</code> first:</p>
+<div class="highlight"><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">get_array_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meta</span><span class="p">:</span> <span class="n">FieldMeta</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">schema_</span>
+        <span class="k">assert</span> <span class="n">schema</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">DataType</span><span class="o">.</span><span class="n">array</span>  <span class="c1"># will never fail </span>
+        <span class="n">is_range_input</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">meta</span><span class="o">.</span><span class="n">widget</span> <span class="o">==</span> <span class="s1">&#39;range-input&#39;</span> 
+            <span class="ow">and</span> <span class="n">schema</span><span class="o">.</span><span class="n">items</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> 
+            <span class="ow">and</span> <span class="n">schema</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">DataType</span><span class="o">.</span><span class="n">number</span>
+            <span class="ow">and</span> <span class="n">schema</span><span class="o">.</span><span class="n">minItems</span> <span class="o">==</span> <span class="mi">2</span> 
+            <span class="ow">and</span> <span class="n">schema</span><span class="o">.</span><span class="n">maxItems</span> <span class="o">==</span> <span class="mi">2</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">100</span> <span class="k">if</span> <span class="n">is_range_input</span> <span class="k">else</span> <span class="mi">0</span>
+</code></pre></div>
+<p>Now <code>create_array_field()</code>:</p>
+<div class="highlight"><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">create_array_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">FieldContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="c1"># A view model is a reactive holder for some value, </span>
+        <span class="c1"># here an array value:</span>
+        <span class="n">view_model</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">array</span><span class="p">()</span>
+        <span class="c1"># The view must derive from type pn.widgets.WidgetBase</span>
+        <span class="n">view</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">widgets</span><span class="o">.</span><span class="n">EditableRangeSlider</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>  <span class="c1"># always use ctx.label for adding labels to widgets </span>
+            <span class="n">value</span><span class="o">=</span><span class="n">view_model</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="c1"># the view model&#39;s initial value is used here</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">PanelField</span><span class="p">(</span><span class="n">view_model</span><span class="o">=</span><span class="n">view_model</span><span class="p">,</span> <span class="n">view</span><span class="o">=</span><span class="n">view</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="4-register-the-custom-field-factory">4. Register the custom field factory</h3>
+<p>Finally, we register an instance of the new class in the Cuiman client's 
+configuration:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">cuiman.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientConfig</span>
 
-<span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;use_step&quot;</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">use_step</span><span class="p">(</span>
-    <span class="n">value</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FromStep</span><span class="p">(</span><span class="n">step_id</span><span class="o">=</span><span class="s2">&quot;second_step&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;return_value&quot;</span><span class="p">)]</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">value</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">ClientConfig</span><span class="o">.</span><span class="n">default_config</span>
+<span class="n">config</span><span class="o">.</span><span class="n">get_field_factory_registry</span><span class="p">()</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">NumberRangeFactory</span><span class="p">())</span>
 </code></pre></div>
-<p>or</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">FromStep</span>
-
-<span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;use_step&quot;</span><span class="p">,</span> 
-               <span class="n">inputs</span><span class="o">=</span><span class="p">{</span>
-                   <span class="n">FromStep</span><span class="p">(</span><span class="n">step_id</span><span class="o">=</span><span class="s2">&quot;second_step&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;return_value&quot;</span><span class="p">)</span>
-               <span class="p">}</span>
-<span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">use_step</span><span class="p">(</span>
-    <span class="n">value</span><span class="p">:</span> <span class="nb">str</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">value</span>
-</code></pre></div>
-<ul>
-<li><code>step_id</code> must refer to an existing workflow step.</li>
-<li><code>output</code> must match one of the step’s outputs or <code>"return_value"</code>.</li>
-</ul>
-<h3 id="mixing-dependencies-and-inputs">Mixing Dependencies and Inputs</h3>
-<p>A step may mix dependencies and normal inputs.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">FromStep</span><span class="p">,</span> <span class="n">FromMain</span>
-
-<span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;mixed_step&quot;</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">mixed_step</span><span class="p">(</span>
-    <span class="n">a</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FromMain</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">)],</span>
-    <span class="n">b</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FromStep</span><span class="p">(</span><span class="n">step_id</span><span class="o">=</span><span class="s2">&quot;second_step&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;return_value&quot;</span><span class="p">)],</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">b</span><span class="si">}</span><span class="s2">&quot;</span>
-</code></pre></div>
-<p>or</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">FromStep</span><span class="p">,</span> <span class="n">FromMain</span>
-
-<span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
-    <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;mixed_step&quot;</span><span class="p">,</span>
-    <span class="n">inputs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">FromMain</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">),</span>
-        <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="n">FromStep</span><span class="p">(</span><span class="n">step_id</span><span class="o">=</span><span class="s2">&quot;second_step&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;return_value&quot;</span><span class="p">)</span>
-    <span class="p">}</span>
-<span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">mixed_step</span><span class="p">(</span>
-    <span class="n">a</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">b</span><span class="p">:</span> <span class="nb">str</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">b</span><span class="si">}</span><span class="s2">&quot;</span>
-</code></pre></div>
-<h2 id="declaring-outputs-for-steps">Declaring Outputs for Steps</h2>
-<p>Steps may declare explicit outputs.</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
-    <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;final_step&quot;</span><span class="p">,</span>
-    <span class="n">outputs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="n">Field</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Final result&quot;</span><span class="p">),</span>
-    <span class="p">},</span>
-<span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">final_step</span><span class="p">(</span>
-    <span class="n">value</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FromStep</span><span class="p">(</span><span class="n">step_id</span><span class="o">=</span><span class="s2">&quot;mixed_step&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;return_value&quot;</span><span class="p">)]</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">value</span>
-</code></pre></div>
-<p>If no outputs are declared, the return value is exposed as  <code>"return_value"</code>.</p>
-<h3 id="output-resolution-rules">Output Resolution Rules</h3>
-<p>Workflow execution follows strict output normalization rules.
-These rules apply uniformly to main and step processes.</p>
-<h4 id="1-no-output-specification">1. No output specification</h4>
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="s2">&quot;return_value&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">}</span>
-</code></pre></div>
-<h4 id="2-tuple-return-value">2. Tuple return value</h4>
-<ul>
-<li>Values are mapped positionally to output names</li>
-<li>Output names must be defined in the output specification</li>
-</ul>
-<h4 id="3-dictionary-return-value">3. Dictionary return value</h4>
-<ul>
-<li>Keys are mapped directly to output names</li>
-<li>All keys must exist in the output specification</li>
-</ul>
-<h4 id="4-single-scalar-value">4. Single scalar value</h4>
-<ul>
-<li>Treated as a single output</li>
-<li>Exposed as "return_value" unless outputs are explicitly defined</li>
-</ul>
-<h3 id="examples">Examples</h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># No outputs declared</span>
-<span class="k">return</span> <span class="mi">42</span>
-<span class="c1"># → {&quot;return_value&quot;: 42}</span>
-
-<span class="c1"># No outputs declared</span>
-<span class="k">return</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="c1"># → {&quot;return_value&quot;: (1, 2)}</span>
-
-<span class="c1"># Declared outputs: (&quot;a&quot;, &quot;b&quot;)</span>
-<span class="k">return</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="c1"># → {&quot;a&quot;: 1, &quot;b&quot;: 2}</span>
-
-<span class="c1"># Declared outputs: (&quot;a&quot;, &quot;b&quot;)</span>
-<span class="k">return</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
-<span class="c1"># → {&quot;a&quot;: 1, &quot;b&quot;: 2}</span>
-
-<span class="c1"># Declared outputs: (&quot;c&quot;)</span>
-<span class="k">return</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
-<span class="c1"># → {&quot;c&quot;:{&quot;a&quot;: 1, &quot;b&quot;: 2}}</span>
-</code></pre></div>
-<h2 id="dependency-validation">Dependency Validation</h2>
-<p>Dependencies are validated at workflow construction time:</p>
-<ul>
-<li>Exactly one main step</li>
-<li>Exactly one output step (leaf step) -&gt; this returns the final output</li>
-<li>Referenced steps must exist</li>
-<li>Referenced outputs must exist</li>
-<li>Cyclic dependencies are rejected</li>
-</ul>
-<p>Errors are raised immediately if the workflow is invalid.</p>
-<h2 id="execution-order">Execution Order</h2>
-<p>Execution order is automatically derived using topological sorting.</p>
-<p>To ensure seamless integration with orchestrating engines
-(such as Apache Airflow or local runners), the system automatically
-appends a final step (<code>procodile.workflow.FINAL_STEP_ID</code>) to every user-created
-workflow.</p>
-<p>The final step serves as a standardized exit point for data. By maintaining a
-consistent final node, orchestrators can reliably extract the workflow's
-output without needing to parse unique or variable step names defined by
-the user.</p>
-<p><strong>Important</strong>: The final step node is a passthrough entity. It does not perform any data
-transformations, computations, or logic. Its sole responsibility is to
-receive the output from the preceding step and expose it via a standardized
-key.</p>
-<h2 id="visualizing-the-workflow">Visualizing the Workflow</h2>
-<p>Workflows can be visualized as a directed graph.</p>
-<div class="highlight"><pre><span></span><code><span class="n">dot</span> <span class="o">=</span> <span class="n">workflow</span><span class="o">.</span><span class="n">visualize_workflow</span><span class="p">()</span>
-</code></pre></div>
-<p>This returns a Graphviz DOT representation similar to this:</p>
-<div class="highlight"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">digraph pipeline {</span>
-<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">rankdir=LR;</span>
-<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">&quot;main_step&quot;;</span>
-<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">&quot;second_step&quot;;</span>
-<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">&quot;main_step&quot; -&gt; &quot;second_step&quot;;</span>
-<span class="l l-Scalar l-Scalar-Plain">}</span>
-</code></pre></div>
+<p>The next time you run the Cuiman GUI client, it will consider that factory
+for generating its GUIs for a given OGC process description, provided
+that the above code is executed once before the GUI is used.</p>
 
 
 

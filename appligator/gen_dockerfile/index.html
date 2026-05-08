@@ -19,7 +19,7 @@
     
     
       
-        <title>Workflow Development - Eozilla 🦖</title>
+        <title>Generating Dockerfiles - Eozilla 🦖</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#workflow-development" class="md-skip">
+        <a href="#generating-dockerfiles" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Workflow Development
+              Generating Dockerfiles
             
           </span>
         </div>
@@ -240,7 +240,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../appligator/" class="md-tabs__link">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -306,7 +306,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../" class="md-tabs__link">
+        <a href="../../procodile/" class="md-tabs__link">
           
   
   
@@ -467,7 +467,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../appligator/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -511,7 +511,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../appligator/usage/" class="md-nav__link">
+      <a href="../usage/" class="md-nav__link">
         
   
   
@@ -539,7 +539,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../appligator/cli/" class="md-nav__link">
+      <a href="../cli/" class="md-nav__link">
         
   
   
@@ -1581,7 +1581,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../procodile/" class="md-nav__link ">
               
   
   
@@ -1625,7 +1625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/" class="md-nav__link">
+      <a href="../../procodile/usage/" class="md-nav__link">
         
   
   
@@ -1653,7 +1653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/" class="md-nav__link">
+      <a href="../../procodile/api/" class="md-nav__link">
         
   
   
@@ -1681,7 +1681,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cli/" class="md-nav__link">
+      <a href="../../procodile/cli/" class="md-nav__link">
         
   
   
@@ -1927,10 +1927,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#conceptual-model-ogc-alignment" class="md-nav__link">
+  <a href="#how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Conceptual Model (OGC Alignment)
+        How it works
       
     </span>
   </a>
@@ -1938,60 +1938,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflowregistry-conceptual-overview" class="md-nav__link">
+  <a href="#minimal-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        WorkflowRegistry — Conceptual Overview
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="WorkflowRegistry — Conceptual Overview">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#motivation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Motivation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-workflows-are-exposed-as-processes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why Workflows are exposed as Processes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#future-compatibility-with-nested-execution-requests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Future Compatibility with Nested Execution Requests
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#creating-a-workflow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Creating a Workflow
+        Minimal example
       
     </span>
   </a>
@@ -1999,10 +1949,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#defining-the-main-step" class="md-nav__link">
+  <a href="#non-editable-local-packages" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining the Main Step
+        Non-editable local packages
       
     </span>
   </a>
@@ -2010,10 +1960,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#defining-workflow-steps-sub-processes" class="md-nav__link">
+  <a href="#adding-extra-packages-at-build-time" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defining Workflow Steps (Sub-Processes)
+        Adding extra packages at build time
       
     </span>
   </a>
@@ -2021,149 +1971,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#declaring-dependencies" class="md-nav__link">
+  <a href="#application-specific-runtime-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Declaring Dependencies
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Declaring Dependencies">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#from-the-main-step" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        From the Main Step
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#from-another-step" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        From Another Step
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mixing-dependencies-and-inputs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Mixing Dependencies and Inputs
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#declaring-outputs-for-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Declaring Outputs for Steps
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Declaring Outputs for Steps">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#output-resolution-rules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output Resolution Rules
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Output Resolution Rules">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-no-output-specification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. No output specification
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-tuple-return-value" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Tuple return value
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-dictionary-return-value" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Dictionary return value
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-single-scalar-value" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Single scalar value
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Examples
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#dependency-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dependency Validation
+        Application-specific runtime steps
       
     </span>
   </a>
@@ -2171,10 +1982,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#execution-order" class="md-nav__link">
+  <a href="#full-parameter-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Execution Order
+        Full parameter reference
       
     </span>
   </a>
@@ -2182,10 +1993,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#visualizing-the-workflow" class="md-nav__link">
+  <a href="#out-of-context-path-dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Visualizing the Workflow
+        Out-of-context path dependencies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#entry-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entry point
       
     </span>
   </a>
@@ -2212,369 +2034,205 @@
   
 
 
-<h1 id="workflow-development">Workflow Development</h1>
-<p>A workflow defines how multiple python functions are connected and executed together.
-Each workflow has exactly one main process and any number of dependent steps.
-Steps may consume outputs from the main process or from other steps.</p>
-<p>Workflows are acyclic and are executed in topological order based on declared
-dependencies.</p>
-<p>From an OGC API – Processes (Part 3 draft) perspective:</p>
-<ul>
-<li>A workflow behaves like a single process by exposing itself as a process.</li>
-<li>Internally, it is a directed acyclic graph (DAG) of sub-processes</li>
-<li>Each workflow step is itself a <a href="#dependency-validation">valid</a> process</li>
-<li>Outputs from one step may be consumed as inputs by another step</li>
-</ul>
-<p>Workflows allow complex execution graphs to be expressed declaratively while
-remaining compliant with the OGC process model.</p>
-<h2 id="conceptual-model-ogc-alignment">Conceptual Model (OGC Alignment)</h2>
+<h1 id="generating-dockerfiles">Generating Dockerfiles</h1>
+<p><code>appligator.airflow.gen_dockerfile.generate</code> assembles a Docker build
+context and writes a <code>Dockerfile</code> for running workflow steps inside a
+container orchestrator (e.g. Airflow's KubernetesPodOperator).</p>
+<p>It does <strong>not</strong> invoke <code>docker build</code> — you control when and how the image
+is built, which makes it easy to integrate into any CI pipeline.</p>
+<hr />
+<h2 id="how-it-works">How it works</h2>
+<p>The function produces a two-stage image:</p>
 <table>
 <thead>
 <tr>
-<th>Concept</th>
-<th>Meaning</th>
+<th>Stage</th>
+<th>Base image</th>
+<th>Purpose</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Workflow</td>
-<td>A directed, acyclic graph of processes with a single main entry point and a single output, where all data dependencies are explicitly declared.</td>
+<td><strong>build</strong></td>
+<td><code>ghcr.io/prefix-dev/pixi:&lt;version&gt;-bookworm-slim</code></td>
+<td>Resolves and installs the pixi environment</td>
 </tr>
 <tr>
-<td>Main step</td>
-<td>The primary entrypoint declared using <code>registry.main()</code></td>
-</tr>
-<tr>
-<td>Step</td>
-<td>A sub-process within the workflow, defined using <code>your_process.step()</code> where <code>your_process</code> is the python function decorated with <code>registry.main()</code></td>
-</tr>
-<tr>
-<td>Dependency</td>
-<td>A data relationship between process inputs and outputs</td>
-</tr>
-<tr>
-<td>Execution order</td>
-<td>A topologically sorted process graph</td>
+<td><strong>runtime</strong></td>
+<td><code>debian:bookworm-slim</code></td>
+<td>Ships only the installed environment, not the source tree</td>
 </tr>
 </tbody>
 </table>
-<p>A workflow must:</p>
-<ul>
-<li>Define exactly one main entrypoint</li>
-<li>Define exactly one output step</li>
-<li>Contain no cycles</li>
-<li>Explicitly declare all inter-process dependencies</li>
-</ul>
-<h2 id="workflowregistry-conceptual-overview">WorkflowRegistry — Conceptual Overview</h2>
-<h3 id="motivation">Motivation</h3>
-<p><a href="https://docs.ogc.org/DRAFTS/21-009.html">OGC API – Processes Part 3 (draft)</a>
-introduces the concept of workflows, where a process execution request may reference
-other processes as inputs (“nested processes”).
-This enables clients to define ad-hoc workflows dynamically at execution time.</p>
-<p>This framework (<code>procodile</code>) takes a complementary approach:</p>
-<pre><code>Instead of defining workflows dynamically in JSON at execution time, workflows 
-are authored declaratively in Python, registered once, and then exposed as 
-standard OGC processes.
-</code></pre>
-<p>Internally, workflows are represented as structured Python objects (<code>Workflow</code>) that
-capture:</p>
-<ul>
-<li>step definitions</li>
-<li>input bindings (<code>FromMain</code>, <code>FromStep</code>)</li>
-<li>execution order</li>
-<li>execution logic (<code>workflow.run</code>)</li>
-</ul>
+<p>The pixi environment is copied from the build stage into the lean runtime
+image, keeping the final image small and reproducible.</p>
+<hr />
+<h2 id="minimal-example">Minimal example</h2>
+<p>Create a <code>build_docker_image.py</code> at the root of your pixi workspace (where
+<code>pyproject.toml</code> and <code>pixi.lock</code> live) and run it with <code>pixi run python
+build_docker_image.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">appligator.airflow.gen_dockerfile</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate</span>
+
+<span class="n">generate</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;image&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>This writes <code>image/Dockerfile</code> and copies the necessary workspace files into
+<code>image/</code>.  Build the image manually:</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>myrepo/myimage:latest<span class="w"> </span>image/
+</code></pre></div>
+<hr />
+<h2 id="non-editable-local-packages">Non-editable local packages</h2>
+<p>In a monorepo where local packages are declared as pixi path-dependencies,
+<code>pixi install</code> installs them in editable mode — meaning the runtime image
+would need to carry the entire source tree.  Use <code>packages_dir</code> and
+<code>local_packages</code> to convert them to non-editable installs instead, so only
+the compiled environment is shipped:</p>
+<div class="highlight"><pre><span></span><code><span class="n">generate</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;image&quot;</span><span class="p">),</span>
+    <span class="n">packages_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;packages&quot;</span><span class="p">),</span>               <span class="c1"># directory with local packages</span>
+    <span class="n">local_packages</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my-utils&quot;</span><span class="p">,</span> <span class="s2">&quot;my-app&quot;</span><span class="p">],</span>       <span class="c1"># names inside packages_dir</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>generate</code> will:</p>
+<ol>
+<li>Copy only the listed packages into the build context.</li>
+<li>Run <code>pixi install --locked</code> to resolve the full environment.</li>
+<li>Run <code>pip install --no-deps --no-build-isolation</code> on each listed package to
+   overwrite the editable install with a non-editable one.</li>
+<li><strong>Not</strong> copy <code>packages/</code> into the runtime stage — the source tree is no
+   longer needed.</li>
+</ol>
+<p>The pip binary path is derived from <code>workdir</code> and <code>pixi_env</code> automatically;
+you never need to hardcode it.</p>
+<hr />
+<h2 id="adding-extra-packages-at-build-time">Adding extra packages at build time</h2>
+<p>Some packages are only needed inside the container (e.g. Airflow providers)
+and should not pollute the local development environment.  Pass them via
+<code>build_commands</code>, which runs before <code>pixi install</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">generate</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;image&quot;</span><span class="p">),</span>
+    <span class="n">build_commands</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;RUN pixi add apache-airflow-providers-cncf-kubernetes&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="application-specific-runtime-steps">Application-specific runtime steps</h2>
+<p>Use <code>runtime_commands</code> for any <code>COPY</code>, <code>RUN</code>, or <code>ENV</code> instructions that
+belong to your application rather than the generic image:</p>
+<div class="highlight"><pre><span></span><code><span class="n">generate</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;image&quot;</span><span class="p">),</span>
+    <span class="n">extra_files</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;sensor_data&quot;</span><span class="p">:</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;data/sensor_data&quot;</span><span class="p">)},</span>
+    <span class="n">runtime_commands</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;COPY ./sensor_data /opt/pixi/sensor_data&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;RUN myapp-cli prefetch-data&quot;</span><span class="p">,</span>
+        <span class="s1">&#39;RUN python -c &quot;import myapp; print(</span><span class="se">\&#39;</span><span class="s1">myapp OK</span><span class="se">\&#39;</span><span class="s1">)&quot;&#39;</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>extra_files</code> copies host files into the build context so Docker can <code>COPY</code>
+them.  The corresponding <code>COPY</code> instruction goes in <code>runtime_commands</code>.</p>
+<hr />
+<h2 id="full-parameter-reference">Full parameter reference</h2>
 <table>
 <thead>
 <tr>
-<th>Aspect</th>
-<th>OGC Nested Processes</th>
-<th>Procodile Workflow Framework</th>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Definition order</td>
-<td>Leaf-first</td>
-<td>Root-first</td>
+<td><code>package_manager</code></td>
+<td><code>str</code></td>
+<td><code>"pixi"</code></td>
+<td>Package manager to use. Only <code>"pixi"</code> is currently supported.</td>
 </tr>
 <tr>
-<td>Representation</td>
-<td>Nested JSON</td>
-<td>Explicit DAG</td>
+<td><code>workdir</code></td>
+<td><code>str</code></td>
+<td><code>"/opt/pixi"</code></td>
+<td><code>WORKDIR</code> in both stages. All env files and the entry point live here.</td>
 </tr>
 <tr>
-<td>Primary use</td>
-<td>Ad-hoc execution</td>
-<td>Deployment &amp; reuse</td>
+<td><code>output_dir</code></td>
+<td><code>Path</code></td>
+<td><code>Path("image")</code></td>
+<td>Directory where the build context is assembled. Recreated on every call.</td>
 </tr>
 <tr>
-<td>Identity</td>
-<td>Execution-scoped</td>
-<td>Stable process ID</td>
+<td><code>packages_dir</code></td>
+<td><code>Path \| None</code></td>
+<td><code>None</code></td>
+<td>Directory of local path-dependencies to copy into the build context.</td>
 </tr>
 <tr>
-<td>Execution model</td>
-<td>Tree evaluation</td>
-<td>DAG execution</td>
+<td><code>extra_files</code></td>
+<td><code>dict[str, Path] \| None</code></td>
+<td><code>None</code></td>
+<td>Extra files/dirs to add to the build context. Keys are names inside <code>output_dir</code>.</td>
+</tr>
+<tr>
+<td><code>build_commands</code></td>
+<td><code>list[str] \| None</code></td>
+<td><code>None</code></td>
+<td>Raw Dockerfile instructions inserted in the build stage <strong>before</strong> <code>pixi install</code>.</td>
+</tr>
+<tr>
+<td><code>local_packages</code></td>
+<td><code>list[str] \| None</code></td>
+<td><code>None</code></td>
+<td>Package names inside <code>packages_dir</code> to install as non-editable. Requires <code>packages_dir</code>.</td>
+</tr>
+<tr>
+<td><code>post_install_commands</code></td>
+<td><code>list[str] \| None</code></td>
+<td><code>None</code></td>
+<td>Raw Dockerfile instructions inserted in the build stage <strong>after</strong> <code>pixi install</code>.</td>
+</tr>
+<tr>
+<td><code>runtime_commands</code></td>
+<td><code>list[str] \| None</code></td>
+<td><code>None</code></td>
+<td>Raw Dockerfile instructions appended to the runtime stage before the <code>ENV</code> block.</td>
+</tr>
+<tr>
+<td><code>runtime_apt_packages</code></td>
+<td><code>list[str] \| None</code></td>
+<td><code>None</code></td>
+<td>Extra Debian packages to install at runtime (in addition to <code>libgomp1</code>).</td>
+</tr>
+<tr>
+<td><code>pixi_version</code></td>
+<td><code>str</code></td>
+<td><code>"0.50.2"</code></td>
+<td>Version tag of the <code>ghcr.io/prefix-dev/pixi</code> build image.</td>
+</tr>
+<tr>
+<td><code>pixi_env</code></td>
+<td><code>str</code></td>
+<td><code>"default"</code></td>
+<td>Name of the pixi environment to install and ship.</td>
 </tr>
 </tbody>
 </table>
-<p>Both models describe the same execution semantics</p>
-<p>The framework is the inverse authoring model of nested processes</p>
-<p>Future support for nested execution requests can be added without changing the internal
-model</p>
-<h3 id="why-workflows-are-exposed-as-processes">Why Workflows are exposed as Processes</h3>
-<p>OGC API – Processes is fundamentally process-centric:</p>
-<ul>
-<li>Clients discover <code>/processes</code></li>
-<li>Clients execute <code>/processes/{id}/execution</code></li>
-</ul>
-<p>There is no separate “workflow” resource in Part 1 or Part 3.</p>
-<p>Therefore:</p>
-<pre><code>A workflow must be represented as a process in order to be OGC-compliant.
-</code></pre>
-<p>The <code>ProcessRegistry</code> provides this abstraction by projecting workflows into
-processes.</p>
-<p><code>ProcessRegistry</code> is a mapping-like registry that:</p>
-<ul>
-<li>stores internal <code>Workflow</code> objects</li>
-<li>exposes them externally as <code>Process</code> objects</li>
-</ul>
-<h3 id="future-compatibility-with-nested-execution-requests">Future Compatibility with Nested Execution Requests</h3>
-<p>Although workflows are currently authored as Python objects, the internal representation
-already contains everything needed to support OGC Part 3 nested execution requests in
-the future.</p>
-<p>A future extension may:</p>
-<ul>
-<li>accept nested execution JSON</li>
-<li>translate it into an internal workflow DAG</li>
-<li>execute it using the same runtime</li>
-<li>or deploy it as a persistent workflow</li>
-</ul>
-<p>In that scenario:</p>
-<ul>
-<li>nested execution becomes an alternative front door</li>
-<li>the internal execution model remains unchanged</li>
-</ul>
-<p>This ensures forward compatibility with the OGC API – Processes Part 3 draft.</p>
-<h2 id="creating-a-workflow">Creating a Workflow</h2>
-<p>Workflows are created through a <code>WorkflowRegistry</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessRegistry</span>
-
-<span class="n">registry</span> <span class="o">=</span> <span class="n">ProcessRegistry</span><span class="p">()</span>
-</code></pre></div>
-<p>Each workflow is uniquely identified by its <code>id</code>.</p>
-<h2 id="defining-the-main-step">Defining the Main Step</h2>
-<p>The main step represents the workflow’s external interface. It is the only step that
-receives user-supplied inputs.</p>
-<p>Every workflow must define exactly one main step.</p>
-<p>For e.g.,</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@registry</span><span class="o">.</span><span class="n">main</span><span class="p">(</span>
-    <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;main_step&quot;</span><span class="p">,</span>
-    <span class="n">inputs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">Field</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Main input&quot;</span><span class="p">),</span>
-    <span class="p">},</span>
-    <span class="n">outputs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">Field</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Main output&quot;</span><span class="p">),</span>
-    <span class="p">},</span>
-<span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">main_step</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="nb">id</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
-</code></pre></div>
-<h2 id="defining-workflow-steps-sub-processes">Defining Workflow Steps (Sub-Processes)</h2>
-<p>Workflow steps are defined using the <code>@main_step.step</code> decorator.</p>
-<p>Each step is a process that may depend on:</p>
-<ul>
-<li>Outputs from the main step</li>
-<li>Outputs from other workflow steps</li>
-</ul>
-<div class="highlight"><pre><span></span><code><span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;second_step&quot;</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">second_step</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="nb">id</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-</code></pre></div>
-<h2 id="declaring-dependencies">Declaring Dependencies</h2>
-<p>Dependencies are either declared</p>
-<ul>
-<li>using <code>typing.Annotated</code> in type annotations of your function argument declarations or</li>
-<li>using <code>pydantic.Field</code> in the decorator's <code>inputs</code> and <code>outputs</code> values.</li>
-</ul>
-<h3 id="from-the-main-step">From the Main Step</h3>
-<p>Use <code>FromMain</code> to reference outputs of the main step.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">FromMain</span>
-
-<span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;use_main&quot;</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">use_main</span><span class="p">(</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FromMain</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">)]</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="nb">id</span>
-</code></pre></div>
-<p>or</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">FromMain</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
-
-<span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
-    <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;use_main&quot;</span><span class="p">,</span>
-    <span class="n">inputs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">Field</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;main input&quot;</span><span class="p">)</span>
-    <span class="p">},</span>
-<span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">use_main</span><span class="p">(</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="nb">id</span>
-</code></pre></div>
-<ul>
-<li><code>output</code> refers to a named output of the main step.</li>
-<li><code>"return_value"</code> may be used when the main step has no explicit outputs defined.</li>
-</ul>
-<h3 id="from-another-step">From Another Step</h3>
-<p>Use <code>FromStep</code> to reference outputs from another workflow step.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">FromStep</span>
-
-<span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;use_step&quot;</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">use_step</span><span class="p">(</span>
-    <span class="n">value</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FromStep</span><span class="p">(</span><span class="n">step_id</span><span class="o">=</span><span class="s2">&quot;second_step&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;return_value&quot;</span><span class="p">)]</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">value</span>
-</code></pre></div>
-<p>or</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">FromStep</span>
-
-<span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;use_step&quot;</span><span class="p">,</span> 
-               <span class="n">inputs</span><span class="o">=</span><span class="p">{</span>
-                   <span class="n">FromStep</span><span class="p">(</span><span class="n">step_id</span><span class="o">=</span><span class="s2">&quot;second_step&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;return_value&quot;</span><span class="p">)</span>
-               <span class="p">}</span>
-<span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">use_step</span><span class="p">(</span>
-    <span class="n">value</span><span class="p">:</span> <span class="nb">str</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">value</span>
-</code></pre></div>
-<ul>
-<li><code>step_id</code> must refer to an existing workflow step.</li>
-<li><code>output</code> must match one of the step’s outputs or <code>"return_value"</code>.</li>
-</ul>
-<h3 id="mixing-dependencies-and-inputs">Mixing Dependencies and Inputs</h3>
-<p>A step may mix dependencies and normal inputs.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">FromStep</span><span class="p">,</span> <span class="n">FromMain</span>
-
-<span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;mixed_step&quot;</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">mixed_step</span><span class="p">(</span>
-    <span class="n">a</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FromMain</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">)],</span>
-    <span class="n">b</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FromStep</span><span class="p">(</span><span class="n">step_id</span><span class="o">=</span><span class="s2">&quot;second_step&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;return_value&quot;</span><span class="p">)],</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">b</span><span class="si">}</span><span class="s2">&quot;</span>
-</code></pre></div>
-<p>or</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">FromStep</span><span class="p">,</span> <span class="n">FromMain</span>
-
-<span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
-    <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;mixed_step&quot;</span><span class="p">,</span>
-    <span class="n">inputs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">FromMain</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">),</span>
-        <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="n">FromStep</span><span class="p">(</span><span class="n">step_id</span><span class="o">=</span><span class="s2">&quot;second_step&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;return_value&quot;</span><span class="p">)</span>
-    <span class="p">}</span>
-<span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">mixed_step</span><span class="p">(</span>
-    <span class="n">a</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">b</span><span class="p">:</span> <span class="nb">str</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">b</span><span class="si">}</span><span class="s2">&quot;</span>
-</code></pre></div>
-<h2 id="declaring-outputs-for-steps">Declaring Outputs for Steps</h2>
-<p>Steps may declare explicit outputs.</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@main_step</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
-    <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;final_step&quot;</span><span class="p">,</span>
-    <span class="n">outputs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="n">Field</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Final result&quot;</span><span class="p">),</span>
-    <span class="p">},</span>
-<span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">final_step</span><span class="p">(</span>
-    <span class="n">value</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FromStep</span><span class="p">(</span><span class="n">step_id</span><span class="o">=</span><span class="s2">&quot;mixed_step&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;return_value&quot;</span><span class="p">)]</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">value</span>
-</code></pre></div>
-<p>If no outputs are declared, the return value is exposed as  <code>"return_value"</code>.</p>
-<h3 id="output-resolution-rules">Output Resolution Rules</h3>
-<p>Workflow execution follows strict output normalization rules.
-These rules apply uniformly to main and step processes.</p>
-<h4 id="1-no-output-specification">1. No output specification</h4>
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="s2">&quot;return_value&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">}</span>
-</code></pre></div>
-<h4 id="2-tuple-return-value">2. Tuple return value</h4>
-<ul>
-<li>Values are mapped positionally to output names</li>
-<li>Output names must be defined in the output specification</li>
-</ul>
-<h4 id="3-dictionary-return-value">3. Dictionary return value</h4>
-<ul>
-<li>Keys are mapped directly to output names</li>
-<li>All keys must exist in the output specification</li>
-</ul>
-<h4 id="4-single-scalar-value">4. Single scalar value</h4>
-<ul>
-<li>Treated as a single output</li>
-<li>Exposed as "return_value" unless outputs are explicitly defined</li>
-</ul>
-<h3 id="examples">Examples</h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># No outputs declared</span>
-<span class="k">return</span> <span class="mi">42</span>
-<span class="c1"># → {&quot;return_value&quot;: 42}</span>
-
-<span class="c1"># No outputs declared</span>
-<span class="k">return</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="c1"># → {&quot;return_value&quot;: (1, 2)}</span>
-
-<span class="c1"># Declared outputs: (&quot;a&quot;, &quot;b&quot;)</span>
-<span class="k">return</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="c1"># → {&quot;a&quot;: 1, &quot;b&quot;: 2}</span>
-
-<span class="c1"># Declared outputs: (&quot;a&quot;, &quot;b&quot;)</span>
-<span class="k">return</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
-<span class="c1"># → {&quot;a&quot;: 1, &quot;b&quot;: 2}</span>
-
-<span class="c1"># Declared outputs: (&quot;c&quot;)</span>
-<span class="k">return</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
-<span class="c1"># → {&quot;c&quot;:{&quot;a&quot;: 1, &quot;b&quot;: 2}}</span>
-</code></pre></div>
-<h2 id="dependency-validation">Dependency Validation</h2>
-<p>Dependencies are validated at workflow construction time:</p>
-<ul>
-<li>Exactly one main step</li>
-<li>Exactly one output step (leaf step) -&gt; this returns the final output</li>
-<li>Referenced steps must exist</li>
-<li>Referenced outputs must exist</li>
-<li>Cyclic dependencies are rejected</li>
-</ul>
-<p>Errors are raised immediately if the workflow is invalid.</p>
-<h2 id="execution-order">Execution Order</h2>
-<p>Execution order is automatically derived using topological sorting.</p>
-<p>To ensure seamless integration with orchestrating engines
-(such as Apache Airflow or local runners), the system automatically
-appends a final step (<code>procodile.workflow.FINAL_STEP_ID</code>) to every user-created
-workflow.</p>
-<p>The final step serves as a standardized exit point for data. By maintaining a
-consistent final node, orchestrators can reliably extract the workflow's
-output without needing to parse unique or variable step names defined by
-the user.</p>
-<p><strong>Important</strong>: The final step node is a passthrough entity. It does not perform any data
-transformations, computations, or logic. Its sole responsibility is to
-receive the output from the preceding step and expose it via a standardized
-key.</p>
-<h2 id="visualizing-the-workflow">Visualizing the Workflow</h2>
-<p>Workflows can be visualized as a directed graph.</p>
-<div class="highlight"><pre><span></span><code><span class="n">dot</span> <span class="o">=</span> <span class="n">workflow</span><span class="o">.</span><span class="n">visualize_workflow</span><span class="p">()</span>
-</code></pre></div>
-<p>This returns a Graphviz DOT representation similar to this:</p>
-<div class="highlight"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">digraph pipeline {</span>
-<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">rankdir=LR;</span>
-<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">&quot;main_step&quot;;</span>
-<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">&quot;second_step&quot;;</span>
-<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">&quot;main_step&quot; -&gt; &quot;second_step&quot;;</span>
-<span class="l l-Scalar l-Scalar-Plain">}</span>
+<hr />
+<h2 id="out-of-context-path-dependencies">Out-of-context path dependencies</h2>
+<p>If your <code>pyproject.toml</code> contains path-dependencies that point outside the
+build context (e.g. <code>{ path = "../eozilla/appligator", editable = true }</code> for
+local development), <code>generate</code> strips them automatically before copying
+<code>pyproject.toml</code> into the build context.  Dependencies pointing inside the
+context (e.g. <code>packages/my-pkg</code>) are kept as-is.</p>
+<p>This means you can safely use a <code>local-deps</code> pixi feature for development
+without it breaking the Docker build.</p>
+<hr />
+<h2 id="entry-point">Entry point</h2>
+<p>Every generated image includes <code>run_step.py</code> (from <code>appligator.airflow</code>) as
+its entry point.  It is invoked by the Airflow KubernetesPodOperator with a
+JSON payload specifying the function to run and its inputs:</p>
+<div class="highlight"><pre><span></span><code>ENTRYPOINT [&quot;python&quot;, &quot;/opt/pixi/run_step.py&quot;]
 </code></pre></div>
 
 
