@@ -1,4 +1,4 @@
-## Changes in version 0.1.0 (in development)
+## Changes in version 0.1.0
 
 ### Enhancements
 - Enhanced **Cuiman** authentication with full OAuth2 Resource Owner Password
