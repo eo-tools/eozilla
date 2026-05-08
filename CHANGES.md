@@ -3,7 +3,7 @@
 ### Other changes
 
 - Python version is **python >=3.11** in all workspaces
-- Adjusted list of authos in all workspaces
+- Adjusted list of authors in all workspaces
 
 ### Fixes
 
