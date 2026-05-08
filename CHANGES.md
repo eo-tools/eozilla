@@ -165,6 +165,8 @@ The following enhancements have been applied to the main panel in `cuiman.gui.pa
 - Removed `gavicore.util.schema.create_schema_instance` with no replacement.
 - Added "S" option (= security rules enabled by Bandit) to `ruff check`
   configuration.
+- The dev tool sync-versions (`pixi run sync-versions`) now also updates 
+  project inter-dependencies to the new root version.
 
 
 ### Breaking Changes
