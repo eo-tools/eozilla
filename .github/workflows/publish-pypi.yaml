@@ -1,0 +1,26 @@
+name: publish-pypi
+
+on:
+  release:
+    types: [released]
+
+jobs:
+  publish-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v6.0.2
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.9.4
+        with:
+          pixi-version: v0.67.2
+          cache: false
+      - name: Build packages
+        run: |
+          pixi run build
+      - name: Check build
+        run: |
+          pixi run deploy-check               
+      - name: Upload to PyPI
+        run: |
+          twine upload --username __token__ --password ${{ secrets.PYPI_TOKEN }} */dist/*

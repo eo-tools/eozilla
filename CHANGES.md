@@ -98,6 +98,8 @@
   where `xarray.open_zarr()` (and `xarray.open_dataset()`) can no longer open 
   Windows file URIs, like `file:///C:/<path>.zarr`. 
 
+- Added GitHub workflow for publication to PyPI. (#91)
+
 ## Changes in version 0.0.9
 
 ### Enhancements
