@@ -3,6 +3,7 @@ name: publish-pypi
 on:
   release:
     types: [released]
+  workflow_dispatch:
 
 jobs:
   publish-job:
@@ -20,7 +21,7 @@ jobs:
           pixi run build
       - name: Check build
         run: |
-          pixi run deploy-check               
+          pixi run deploy-check
       - name: Upload to PyPI
         run: |
           pixi run twine upload --username __token__ --password ${{ secrets.PYPI_TOKEN }} */dist/*
