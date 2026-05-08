@@ -96,6 +96,7 @@ class ServiceBase(Service, ABC):
             raise ServiceConfigException(f"{e}") from e
         logger = logging.getLogger("uvicorn")
         logger.info(f"Created service instance of type {type(service).__name__}")
+        service.service_ref = service_ref
         service.configure(*args, **kwargs)
         return service
 
@@ -108,6 +109,7 @@ class ServiceBase(Service, ABC):
         self.title = title
         self.description = description
         self.conforms_to = conforms_to or DEFAULT_CONFORMS_TO
+        self.service_ref: str | None = None
         self.logger = logging.getLogger("uvicorn")
 
     # noinspection PyMethodMayBeStatic

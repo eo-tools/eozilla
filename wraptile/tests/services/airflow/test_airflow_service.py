@@ -23,8 +23,8 @@ from wraptile.services.airflow import DEFAULT_AIRFLOW_BASE_URL, AirflowService
 
 def is_airflow_running(url: str, timeout: float = 1.0) -> bool:
     try:
-        requests.head(url, allow_redirects=True, timeout=timeout)
-        return True
+        response = requests.head(url, allow_redirects=True, timeout=timeout)
+        return response.ok
     except requests.RequestException:
         return False
 
