@@ -1,4 +1,4 @@
-# Gavicore Overview
+# Gavicore
 
 The Eozilla _Gavicore_ packages is a small library that provides common 
 classes and functions for other Eozilla packages.

@@ -1,4 +1,4 @@
-# Wraptile Introduction
+# Wraptile
 
 Eozilla _Wraptile_ is a server made for wrapping workflow orchestration 
 systems with a unified restful API that should be almost compliant

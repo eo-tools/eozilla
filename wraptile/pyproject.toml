@@ -44,8 +44,8 @@ dependencies = [
   "typer",
   "uvicorn",
   # local dependency
-  "gavicore >=0.0.9",
-  "procodile >=0.0.9",
+  "gavicore >=0.1.0.dev0",
+  "procodile >=0.1.0.dev0",
 ]
 
 [project.scripts]

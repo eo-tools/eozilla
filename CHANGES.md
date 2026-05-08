@@ -92,8 +92,10 @@
 - Dropped utility function `additional_parameters()` in `procodile` 
   as usage of `additionalParameters` in input descriptions
   is and was discouraged.
-
-- Lifted some mypy restrictions and enabled mypy pydantic plugin.
+- Lifted some `mypy` restrictions and enabled mypy pydantic plugin.
+- Pinned `zarr >=3.1,<3.2` in dev environment due to regression in `zarr 3.2`,
+  where `xarray.open_zarr()` (and `xarray.open_dataset()`) can no longer open 
+  Windows file URIs, like `file:///C:/<path>.zarr`. 
 
 ## Changes in version 0.0.9
 
