@@ -1,6 +1,7 @@
 ## Changes in version 0.1.0
 
 ### Enhancements
+
 - Enhanced **Cuiman** authentication with full OAuth2 Resource Owner Password
   Credentials (ROPC) support, including automatic token refresh and improved
   `cuiman configure` usability (#59):
@@ -88,6 +89,12 @@
     - Replaced one-element enums `JobType`, `MaxOccurs` by string literals. 
     - Replaced `Union[]` by `|` operator.
 
+### Fixes
+
+- Fixed wraptile's local service implementation 
+  (`wraptile.services.local.local_service.LocalService`) to reliably work 
+  on Linux OSes when run in `processes` mode. 
+
 ### Other changes
 
 - Dropped utility function `additional_parameters()` in `procodile` 
@@ -96,9 +103,9 @@
 - Lifted some `mypy` restrictions and enabled mypy pydantic plugin.
 - Pinned `zarr >=3.1,<3.2` in dev environment due to regression in `zarr 3.2`,
   where `xarray.open_zarr()` (and `xarray.open_dataset()`) can no longer open 
-  Windows file URIs, like `file:///C:/<path>.zarr`. 
-
+  Windows file URIs, like `file:///C:/<path>.zarr`.
 - Added GitHub workflow for publication to PyPI. (#91)
+
 
 ## Changes in version 0.0.9
 

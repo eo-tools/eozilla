@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import asyncio
 from concurrent.futures.process import ProcessPoolExecutor
 from concurrent.futures.thread import ThreadPoolExecutor
 from unittest import IsolatedAsyncioTestCase, TestCase
@@ -178,3 +179,32 @@ class LocalServiceTest(IsolatedAsyncioTestCase):
             {"return_value": [2, 3, 5, 7, 11, 13, 17, 19]},
             job_results.model_dump(mode="python"),
         )
+
+    async def test_get_job_results_with_process_pool(self):
+        self.service.configure(processes=True, max_workers=1)
+        try:
+            job_info = await self.service.execute_process(
+                process_id="primes_between",
+                process_request=ProcessRequest(inputs={"max_val": 20}),
+                request=self.get_request(),
+            )
+            job_id = job_info.jobID
+            for _ in range(100):
+                job_info = await self.service.get_job(
+                    job_id=job_id, request=self.get_request()
+                )
+                if job_info.status not in (JobStatus.accepted, JobStatus.running):
+                    break
+                await asyncio.sleep(0.05)
+
+            self.assertEqual(JobStatus.successful, job_info.status)
+            job_results = await self.service.get_job_results(
+                job_id=job_id, request=self.get_request()
+            )
+            self.assertIsInstance(job_results, JobResults)
+            self.assertEqual(
+                {"return_value": [2, 3, 5, 7, 11, 13, 17, 19]},
+                job_results.model_dump(mode="python"),
+            )
+        finally:
+            self.service.configure(processes=False, max_workers=3)
