@@ -98,12 +98,12 @@ def test_auth_headers_fail():
 
 def test_make_token_refresher_returns_none_when_not_login():
     config = AuthConfig(auth_type="token", token="abc")
-    assert config._make_token_refresher() is None
+    assert config._maybe_make_token_refresher() is None
 
 
 def test_make_token_refresher_returns_none_when_no_refresh_token():
     config = AuthConfig(auth_type="login", token="abc")
-    assert config._make_token_refresher() is None
+    assert config._maybe_make_token_refresher() is None
 
 
 @patch("cuiman.api.auth.login.refresh_login")
@@ -119,7 +119,7 @@ def test_make_token_refresher_calls_refresh_login(mock_refresh: MagicMock):
         use_bearer=False,
         token_header="X-Auth-Token",
     )
-    refresher = config._make_token_refresher()
+    refresher = config._maybe_make_token_refresher()
     assert refresher is not None
     headers = refresher()
     mock_refresh.assert_called_once_with(config)
@@ -139,7 +139,7 @@ def test_make_token_refresher_without_new_refresh_token(mock_refresh: MagicMock)
         token="old-token",
         refresh_token="old-refresh",
     )
-    refresher = config._make_token_refresher()
+    refresher = config._maybe_make_token_refresher()
     refresher()
     assert config.token == "new-token"
     assert config.refresh_token == "old-refresh"

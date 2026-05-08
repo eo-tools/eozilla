@@ -75,7 +75,7 @@ class AuthConfig(BaseSettings):
         """
         return get_auth_headers(self)
 
-    def _make_token_refresher(self) -> Callable[[], dict[str, str]] | None:
+    def _maybe_make_token_refresher(self) -> Callable[[], dict[str, str]] | None:
         """Create a sync token refresh callback, or None if not applicable."""
         if self.auth_type != "login" or not self.refresh_token:
             return None
