@@ -11,6 +11,8 @@ import os
 import typing
 from typing import Any
 
+from pydantic import BaseModel
+
 # Prefix used to identify step input environment variables.
 # Reserved for future use if inputs are passed via env vars instead of argv.
 INPUT_PREFIX = "STEP_INPUT_"
@@ -33,12 +35,29 @@ class _XComEncoder(json.JSONEncoder):
 _SCALAR_TYPES = (int, float, bool)
 
 
+def _pydantic_type(hint) -> type[BaseModel] | None:
+    """Return the Pydantic model class for a hint, including Optional[Model]."""
+    if isinstance(hint, type) and issubclass(hint, BaseModel):
+        return hint
+    args = typing.get_args(hint)
+    if args:
+        non_none = [a for a in args if a is not type(None)]
+        if (
+            len(non_none) == 1
+            and isinstance(non_none[0], type)
+            and issubclass(non_none[0], BaseModel)
+        ):
+            return non_none[0]
+    return None
+
+
 def coerce_inputs(func, inputs: dict[str, Any]) -> dict[str, Any]:
-    """Cast string inputs to the types declared in func's signature.
+    """Cast inputs to the types declared in func's signature.
 
     Airflow renders all Jinja {{ params.* }} as strings, so numeric params
     arrive as str even when declared as float/int in the process function.
-    We use the function's type hints (with Annotated stripped) to coerce them.
+    Pydantic models (e.g. PathRef) arrive as dicts after XCom round-trip and
+    are reconstructed from the dict by calling the model's constructor.
 
     Coercion is best-effort: if introspection fails for any reason (e.g. a
     forward reference that can't be resolved at runtime) the original inputs
@@ -55,8 +74,12 @@ def coerce_inputs(func, inputs: dict[str, Any]) -> dict[str, Any]:
     coerced = {}
     for key, value in inputs.items():
         hint = hints.get(key)
-        if hint in _SCALAR_TYPES and isinstance(value, str):
+        if value is None:
+            coerced[key] = value
+        elif hint in _SCALAR_TYPES and isinstance(value, str):
             coerced[key] = hint(value)
+        elif (model_cls := _pydantic_type(hint)) and not isinstance(value, model_cls):
+            coerced[key] = model_cls(value)
         else:
             coerced[key] = value
     return coerced
