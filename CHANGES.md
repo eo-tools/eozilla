@@ -2,8 +2,9 @@
 
 ### Other changes
 
-- Python version is **python >=3.11** in all workspaces
-- Adjusted list of authors in all workspaces
+- Python version is **python >=3.11** in all workspaces.
+- Adjusted list of authors in all workspaces.
+- Added a context diagram to documentation index page and README.
 
 ### Fixes
 
