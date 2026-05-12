@@ -29,6 +29,10 @@ The Eozilla suite of tools comprises:
    compliant with _OGC API - Processes_.
 * **Gavicore**: Common pydantic data models and utilities for the packages above.
 
+The main packages in their use-case context: 
+
+![eozilla-context.png](docs/assets/eozilla-context.png)
+
 ## Installation
 
 The `eozilla` package installs all components of Eozilla.
