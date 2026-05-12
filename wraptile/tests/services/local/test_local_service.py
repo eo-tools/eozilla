@@ -203,6 +203,7 @@ class LocalServiceTest(IsolatedAsyncioTestCase):
                 await asyncio.sleep(0.05)
 
             self.assertEqual(JobStatus.successful, job_info.status)
+            self.assertEqual("Done", job_info.message)
             job_results = await self.service.get_job_results(
                 job_id=job_id, request=self.get_request()
             )
@@ -354,6 +355,7 @@ class LocalServiceTest(IsolatedAsyncioTestCase):
         )
 
         self.assertEqual(JobStatus.successful, job_info.status)
+        self.assertEqual("Done", job_info.message)
         self.assertIsNotNone(job_results)
         assert job_results is not None
         self.assertEqual(
