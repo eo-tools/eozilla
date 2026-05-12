@@ -115,7 +115,7 @@ class ArrayEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
     def _render_item_rows(self):
         return [self._render_item_row(i, v) for i, v in enumerate(self.value)]
 
-    def _render_item_row(self, index, value):
+    def _render_item_row(self, index, value) -> pn.Row:
         def on_delete_item(_event):
             v = list(self.value)
             del v[index]
@@ -129,7 +129,7 @@ class ArrayEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
             styles={"gap": "0.5em"},
         )
 
-    def _render_item_editor(self, index, value):
+    def _render_item_editor(self, index, value) -> pn.widgets.WidgetBase:
         def on_item_value_change(e):
             v = list(self.value)
             v[index] = e.new
