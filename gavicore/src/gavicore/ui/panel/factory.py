@@ -162,7 +162,7 @@ class DefaultPanelFieldFactory(PanelFieldFactoryBase):
     def create_string_field(self, ctx: FieldContext) -> PanelField:
         view_model = ctx.vm.primitive()
         value = view_model.value
-        label = view_model.meta.label
+        label = ctx.label
         enum = view_model.meta.enum
         description = view_model.meta.description
         placeholder = view_model.meta.placeholder or ""
