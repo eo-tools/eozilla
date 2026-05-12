@@ -2,6 +2,8 @@
 [![Codecov](https://codecov.io/gh/eo-tools/eozilla/graph/badge.svg?token=T3EXHBMD0G)](https://codecov.io/gh/eo-tools/eozilla)
 [![Pixi](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json)](https://pixi.sh)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v0.json)](https://github.com/charliermarsh/ruff)
+[![PyPI](https://img.shields.io/pypi/v/eozilla)](https://pypi.org/project/eozilla/)
+[![conda-forge](https://anaconda.org/conda-forge/eozilla/badges/version.svg)](https://anaconda.org/conda-forge/eozilla)
 [![License](https://img.shields.io/github/license/eo-tools/eozilla)](https://github.com/eo-tools/eozilla)
 
 # Eozilla 🦖
