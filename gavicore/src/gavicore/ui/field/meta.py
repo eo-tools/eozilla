@@ -574,9 +574,9 @@ def _get_initial_value(meta: FieldMeta) -> Any:
         case DataType.string:
             if schema.format == "date":
                 return datetime.date.today().isoformat()
-            # create string of length min_length
-            min_length = schema.minLength if schema.minLength is not None else 0
-            return "+" * min_length
+            if schema.format == "date-time":
+                return datetime.datetime.today().isoformat()
+            return ""
         case DataType.array:
             assert isinstance(meta.items, FieldMeta)
             # create array of length min_items
