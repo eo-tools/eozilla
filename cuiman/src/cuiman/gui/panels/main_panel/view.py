@@ -86,11 +86,11 @@ class MainPanelView(pn.viewable.Viewer):
         self._process_select = pn.widgets.Select(
             # name="Process",
             options=process_select_options,
-            value=pn.bind(lambda v: v, self.vm.param.selected_process_id),
+            value=self.vm.selected_process_id,
         )
 
         self._advanced_switch = pn.widgets.Switch(
-            value=pn.bind(lambda v: v, self.vm.param.show_advanced),
+            value=self.vm.show_advanced,
         )
 
         self._process_doc_markdown = pn.pane.Markdown("")
@@ -103,7 +103,7 @@ class MainPanelView(pn.viewable.Viewer):
             elif item == "store_request":
                 self._store_request_dialog.panel.visible = True
 
-        file_menu = pn.widgets.MenuButton(
+        self._file_menu = pn.widgets.MenuButton(
             name="File Actions",
             items=[
                 ("Load Request", "load_request"),
@@ -111,7 +111,7 @@ class MainPanelView(pn.viewable.Viewer):
             ],
             # width=120,
         )
-        file_menu.on_click(_on_file_menu_click)
+        self._file_menu.on_click(_on_file_menu_click)
 
         self._load_request_dialog = FileOpenPanel(
             title="Load Process Request",
@@ -136,17 +136,13 @@ class MainPanelView(pn.viewable.Viewer):
         self._load_request_dialog.panel.visible = False
         self._store_request_dialog.panel.visible = False
 
-        file_menu.disabled = pn.bind(
-            lambda v1, v2: v1 or v2,
-            self._load_request_dialog.panel.param.visible,
-            self._store_request_dialog.panel.param.visible,
-        )
+        self._update_file_menu_disabled()
 
         process_panel = pn.Column(
             PanelHeader(title="Process"),
             pn.layout.FlexBox(
                 self._process_select,
-                file_menu,
+                self._file_menu,
                 align_content="space-between",
                 align_items="flex-end",
             ),
@@ -223,6 +219,14 @@ class MainPanelView(pn.viewable.Viewer):
         self.vm.param.watch(
             lambda _: self._set_own_job_info(None), "selected_process_id"
         )
+        self.vm.param.watch(self._sync_process_select, "selected_process_id")
+        self.vm.param.watch(self._sync_advanced_switch, "show_advanced")
+        self._load_request_dialog.panel.param.watch(
+            self._update_file_menu_disabled, "visible"
+        )
+        self._store_request_dialog.panel.param.watch(
+            self._update_file_menu_disabled, "visible"
+        )
 
         # Reactive bindings
         #
@@ -237,11 +241,6 @@ class MainPanelView(pn.viewable.Viewer):
             self._job_info_panel.param.job_info,
         )
         self._advanced_switch.visible = pn.bind(lambda v: v, self.vm.param.has_advanced)
-        file_menu.disabled = pn.bind(
-            lambda v1, v2: v1 or v2,
-            self._load_request_dialog.panel.param.visible,
-            self._store_request_dialog.panel.param.visible,
-        )
 
         self.vm.select_process(self.vm.get_initial_process_id())
 
@@ -315,6 +314,22 @@ class MainPanelView(pn.viewable.Viewer):
         else:
             output_children.extend(self._create_outputs_ui(process_description))
         self._outputs_panel[:] = output_children
+
+    def _sync_process_select(self, _event=None):
+        selected_process_id = self.vm.selected_process_id
+        if self._process_select.value != selected_process_id:
+            self._process_select.value = selected_process_id
+
+    def _sync_advanced_switch(self, _event=None):
+        show_advanced = self.vm.show_advanced
+        if self._advanced_switch.value != show_advanced:
+            self._advanced_switch.value = show_advanced
+
+    def _update_file_menu_disabled(self, _event=None):
+        self._file_menu.disabled = (
+            self._load_request_dialog.panel.visible
+            or self._store_request_dialog.panel.visible
+        )
 
     def _create_outputs_ui(self, process_description: ProcessDescription) -> list[Any]:
         outputs = process_description.outputs or {}
