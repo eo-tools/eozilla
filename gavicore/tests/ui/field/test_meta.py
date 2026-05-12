@@ -634,7 +634,9 @@ class FieldMetaTest(TestCase):
                 self.assertEqual(expected, meta.get_initial_value())
 
     def test_get_initial_value_for_date_string(self):
-        meta = FieldMeta.from_schema("x", Schema(**{"type": "string", "format": "date"}))
+        meta = FieldMeta.from_schema(
+            "x", Schema(**{"type": "string", "format": "date"})
+        )
 
         self.assertIsInstance(
             datetime.date.fromisoformat(meta.get_initial_value()),
@@ -664,6 +666,27 @@ class FieldMetaTest(TestCase):
         )
 
         self.assertEqual([-1, -1, -1], meta.get_initial_value())
+
+    def test_get_initial_value_for_array_uses_min_items_and_date_format(self):
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(
+                **{
+                    "type": "array",
+                    "items": {"type": "string", "format": "date"},
+                    "minItems": 3,
+                }
+            ),
+        )
+
+        self.assertEqual(
+            [
+                (datetime.date.today() - datetime.timedelta(days=2)).isoformat(),
+                (datetime.date.today() - datetime.timedelta(days=1)).isoformat(),
+                (datetime.date.today() - datetime.timedelta(days=0)).isoformat(),
+            ],
+            meta.get_initial_value(),
+        )
 
     def test_get_initial_value_for_array_without_min_items(self):
         meta = FieldMeta.from_schema(
