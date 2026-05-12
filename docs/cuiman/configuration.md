@@ -108,9 +108,16 @@ client = Client(
 ### Using the CLI
 
 Before using the CLI, you should configure it using the `cuiman configure`
-command. 
+command.
 
-You can override settings anytime from environment variables or by using   
+If any `EOZILLA_*` environment variables are set (e.g. `EOZILLA_API_URL`,
+`EOZILLA_CLIENT_ID`, `EOZILLA_USE_BEARER`), they appear as pre-filled defaults
+in the interactive prompts so you can confirm or override them. This is useful
+in managed deployments (e.g. Kubernetes/JupyterHub) where admins inject
+service-level settings via environment variables and users only need to supply
+their own credentials.
+
+You can override settings anytime from environment variables or by using
 the `--config/-c <file>` option supported by most CLI commands.
 
 ## Basic Settings
@@ -158,16 +165,16 @@ config = ClientConfig(
 Authentication via API access tokens is widely used.
 `cuiman` supports bearer tokens (as used by OAuth 2.0) as well as custom headers.
 
-Note that `cuiman` currently only supports _permanent_ access tokens.
-We have not yet implemented support for _volatile_ access tokens, as
-used in the _OAuth 2.0 Refresh Token Flow_. 
+For auth type `token`, `cuiman` treats access tokens as static and does not
+attempt refresh. If you need refresh-token support, use auth type `login`
+with a server that issues `refresh_token`s.
 
 
 ```python
 config = ClientConfig(
     api_url="...", 
     auth_type="token", 
-    use_bearer=True,
+    use_bearer=True,  # default
 )
 ```
 
@@ -185,12 +192,11 @@ config = ClientConfig(
 ### Auth type `login`
 
 The authorisation type `login` represents a standard enterprise scenario, where 
-an access token is fetched from a server given user credentials.
-This is the case for, e.g., the _OAuth 2.0 Client Credentials_.
-
-Note that `cuiman` currently only supports _permanent_ access tokens.
-We have not yet implemented support for _short-lived_ access tokens that need to be
-refreshed once in a while as is the case for the _OAuth 2.0 Refresh Token Flow_. 
+an access token is fetched from a server given user credentials (e.g., OAuth 2.0
+Resource Owner Password Credentials or similar flows).
+If the server returns a `refresh_token`, `cuiman` keeps it in the configuration
+and refreshes the access token on HTTP 401 using the OAuth 2.0 refresh_token grant.
+If no refresh token is available, the login flow behaves like a static token.
 
 The authorisation type `login` requires configuration of a authorisation
 URL that is used to obtain the access token:
@@ -200,8 +206,16 @@ config = ClientConfig(
     api_url="...", 
     auth_type="login",
     auth_url="...",
+    # OAuth2 client credentials (ROPC grant); client_secret may be omitted
+    # for public clients that do not require one.
+    client_id="...",
+    client_secret="...",
+    grant_type="password",  # default; set by the server's token endpoint requirements
     username="...", 
     password="...",
+    # Optional: set if you already have one; `cuiman configure` stores it
+    # automatically when returned by the auth server.
+    refresh_token="...",
     # See auth_type "token" above
     use_bearer=True,
 )
@@ -223,4 +237,3 @@ config = ClientConfig(
     api_key_header="X-API-Key",  # default
 )
 ```
-

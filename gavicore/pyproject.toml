@@ -4,12 +4,14 @@
 
 [project]
 name = "gavicore"
-version = "0.1.0.dev0"
+version = "0.1.1.dev0"
 description = "Pydantic data models and common utilities for other Eozilla packages"
 readme = "README.md"
 authors = [
-  {name = "Norman Fomferra (Brockmann Consult GmbH)"},
-  {name = "Tejas Morbagal Harish (Brockmann Consult GmbH)"}
+  {name = "b-yogesh", email = "b-yogesh@users.noreply.github.com"},
+  {name = "forman", email = "forman@users.noreply.github.com"},
+  {name = "pont-us", email = "pont-us@users.noreply.github.com"},
+  {name = "TejasMorbagal", email = "TejasMorbagal@users.noreply.github.com"},
 ]
 keywords = [
   "eo",
@@ -24,10 +26,10 @@ classifiers = [
   "Intended Audience :: Developers",
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Software Development",
   "Topic :: Scientific/Engineering",
   "Typing :: Typed",

@@ -3,12 +3,14 @@
 #  https://opensource.org/license/apache-2-0.
 
 from cuiman.api.auth.config import AuthConfig, AuthType
-from cuiman.api.auth.login import login
+from cuiman.api.auth.login import LoginResult, login, login_for_tokens
 from cuiman.api.auth.login_async import login_async
 
 __all__ = [
     "AuthConfig",
     "AuthType",
+    "LoginResult",
     "login",
     "login_async",
+    "login_for_tokens",
 ]

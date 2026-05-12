@@ -2,6 +2,8 @@
 [![Codecov](https://codecov.io/gh/eo-tools/eozilla/graph/badge.svg?token=T3EXHBMD0G)](https://codecov.io/gh/eo-tools/eozilla)
 [![Pixi](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json)](https://pixi.sh)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v0.json)](https://github.com/charliermarsh/ruff)
+[![PyPI](https://img.shields.io/pypi/v/eozilla)](https://pypi.org/project/eozilla/)
+[![conda-forge](https://anaconda.org/conda-forge/eozilla/badges/version.svg)](https://anaconda.org/conda-forge/eozilla)
 [![License](https://img.shields.io/github/license/eo-tools/eozilla)](https://github.com/eo-tools/eozilla)
 
 # Eozilla 🦖
@@ -13,20 +15,25 @@ implementation.
 Eozilla has been developed to cloudify satellite data processor applications and 
 run them in the cloud.
 
-_Note: this project and its documentation are still in an early development stage._
-
 ## Features
 
 The Eozilla suite of tools comprises:
 
-* **Procodile**: A simple Python framework for registering and executing processes.
+* **Procodile**: A simple, lightweight, and expressive Python framework for registering 
+  and executing processes and process workflows.
 * **Appligator**: An EO application bundler and transformer.
-   (Currently limited to generating Airflow DAGs.)
+   It allows for generating tailored Docker images from processes to be executed
+   on external workflow orchestration backends.
 * **Wraptile**: A fast and lightweight HTTP server that implements _OGC API - Processes_
-   for various workflow processing backends, such Airflow or a local executor.
+   for various workflow orchestration backends, 
+   such as [Apache Airflow](https://airflow.apache.org/) or a local process executor.
 * **Cuiman**: A Python client including API, GUI, and CLI for servers
    compliant with _OGC API - Processes_.
 * **Gavicore**: Common pydantic data models and utilities for the packages above.
+
+The main packages in their use-case context: 
+
+![eozilla-context.png](docs/assets/eozilla-context.png)
 
 ## Installation
 

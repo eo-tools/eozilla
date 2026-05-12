@@ -3,7 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 import logging
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 import httpx
 
@@ -22,11 +22,15 @@ class HttpxTransport(Transport, AsyncTransport):
         api_url: str,
         headers: dict[str, str] | None = None,
         return_type_map: dict[type, type] | None = None,
+        token_refresher: Callable[[], dict[str, str]] | None = None,
+        async_token_refresher: (Callable[[], Awaitable[dict[str, str]]] | None) = None,
         debug: bool = False,
     ):
         self.api_url = api_url
         self.headers = headers
         self.return_type_map = return_type_map or {}
+        self.token_refresher = token_refresher
+        self.async_token_refresher = async_token_refresher
         self.debug = debug
         self.sync_httpx: httpx.Client | None = None
         self.async_httpx: httpx.AsyncClient | None = None
@@ -39,22 +43,36 @@ class HttpxTransport(Transport, AsyncTransport):
     def call(self, args: TransportArgs) -> Any:
         if self.sync_httpx is None:
             self.sync_httpx = httpx.Client()
-        args_, kwargs_ = self._get_request_args(args)
-        try:
-            response = self.sync_httpx.request(*args_, **kwargs_)
-        except httpx.HTTPError as e:
-            raise TransportError(f"{e}") from e
+        response = self._sync_request(args)
+        if response.status_code == 401 and self.token_refresher is not None:
+            self.headers = self.token_refresher()
+            response = self._sync_request(args)
         return self._process_response(args, response)
 
     async def async_call(self, args: TransportArgs) -> Any:
         if self.async_httpx is None:
             self.async_httpx = httpx.AsyncClient()
+        response = await self._async_request(args)
+        if response.status_code == 401 and self.async_token_refresher is not None:
+            self.headers = await self.async_token_refresher()
+            response = await self._async_request(args)
+        return self._process_response(args, response)
+
+    def _sync_request(self, args: TransportArgs) -> httpx.Response:
+        assert self.sync_httpx is not None
         args_, kwargs_ = self._get_request_args(args)
         try:
-            response = await self.async_httpx.request(*args_, **kwargs_)
+            return self.sync_httpx.request(*args_, **kwargs_)
         except httpx.HTTPError as e:
             raise TransportError(f"{e}") from e
-        return self._process_response(args, response)
+
+    async def _async_request(self, args: TransportArgs) -> httpx.Response:
+        assert self.async_httpx is not None
+        args_, kwargs_ = self._get_request_args(args)
+        try:
+            return await self.async_httpx.request(*args_, **kwargs_)
+        except httpx.HTTPError as e:
+            raise TransportError(f"{e}") from e
 
     def _get_request_args(
         self, args: TransportArgs

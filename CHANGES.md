@@ -1,6 +1,38 @@
-## Changes in version 0.1.0 (in development)
+## Changes in version 0.1.1 (in development)
+
+### Other changes
+
+- Python version is **python >=3.11** in all workspaces.
+- Adjusted list of authors in all workspaces.
+- Added a context diagram to documentation index page and README.
+
+### Fixes
+
+- Added missing API docs to `docs/cuiman/api.md` (deployed shortly after 0.1.0 release)
+- Fixed the PyPI release workflow (applied shortly after 0.1.0 release)
+
+
+## Changes in version 0.1.0
 
 ### Enhancements
+
+- Enhanced **Cuiman** authentication with full OAuth2 Resource Owner Password
+  Credentials (ROPC) support, including automatic token refresh and improved
+  `cuiman configure` usability (#59):
+  - Added `client_id`, `client_secret`, and `grant_type` fields to `AuthConfig`
+    with corresponding `--client-id` / `--client-secret` CLI options.
+  - Added automatic token refresh: when a `refresh_token` is available,
+    `cuiman` refreshes expired access tokens on 401 responses and retries the
+    request, for both sync and async clients. Refresh tokens are persisted to
+    the config file alongside access tokens.
+  - Environment variables (prefixed `EOZILLA_`) are now surfaced as pre-filled
+    defaults during `cuiman configure`. This allows admins to pre-configure
+    fields like `EOZILLA_API_URL`, `EOZILLA_AUTH_URL`, `EOZILLA_CLIENT_ID`,
+    and `EOZILLA_USE_BEARER` (e.g. via Kubernetes secrets in JupyterHub
+    deployments), so users only need to confirm or override the values and
+    provide their password.
+  - Made `client_secret` optional for OAuth2 public clients that do not
+    require a client secret.
 
 - The **Gavicore** package has been enhanced by a new _UI generator_ which 
   converts OGC API - Process descriptions (or OpenAPI Schema) into user 
@@ -71,13 +103,23 @@
     - Replaced one-element enums `JobType`, `MaxOccurs` by string literals. 
     - Replaced `Union[]` by `|` operator.
 
+### Fixes
+
+- Fixed Wraptile's local service implementation 
+  (`wraptile.services.local.local_service.LocalService`) to reliably work 
+  on Linux OSes when run in `processes` mode. (#97)
+
 ### Other changes
 
 - Dropped utility function `additional_parameters()` in `procodile` 
   as usage of `additionalParameters` in input descriptions
   is and was discouraged.
+- Lifted some `mypy` restrictions and enabled mypy pydantic plugin.
+- Pinned `zarr >=3.1,<3.2` in dev environment due to regression in `zarr 3.2`,
+  where `xarray.open_zarr()` (and `xarray.open_dataset()`) can no longer open 
+  Windows file URIs, like `file:///C:/<path>.zarr`.
+- Added GitHub workflow for publication to PyPI. (#91)
 
-- Lifted some mypy restrictions and enabled mypy pydantic plugin.
 
 ## Changes in version 0.0.9
 
@@ -144,6 +186,8 @@ The following enhancements have been applied to the main panel in `cuiman.gui.pa
 - Removed `gavicore.util.schema.create_schema_instance` with no replacement.
 - Added "S" option (= security rules enabled by Bandit) to `ruff check`
   configuration.
+- The dev tool sync-versions (`pixi run sync-versions`) now also updates 
+  project inter-dependencies to the new root version.
 
 
 ### Breaking Changes

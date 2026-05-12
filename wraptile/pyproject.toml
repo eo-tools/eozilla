@@ -4,12 +4,14 @@
 
 [project]
 name = "wraptile"
-version = "0.1.0.dev0"
+version = "0.1.1.dev0"
 description = "FastAPI server that implements the OGC API - Processes"
 readme = "README.md"
 authors = [
-  {name = "Norman Fomferra (Brockmann Consult GmbH)"},
-  {name = "Tejas Morbagal Harish (Brockmann Consult GmbH)"}
+  {name = "b-yogesh", email = "b-yogesh@users.noreply.github.com"},
+  {name = "forman", email = "forman@users.noreply.github.com"},
+  {name = "pont-us", email = "pont-us@users.noreply.github.com"},
+  {name = "TejasMorbagal", email = "TejasMorbagal@users.noreply.github.com"},
 ]
 keywords = [
   "eo",
@@ -24,10 +26,10 @@ classifiers = [
   "Intended Audience :: Developers",
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Software Development",
   "Topic :: Scientific/Engineering",
   "Typing :: Typed",
@@ -36,7 +38,7 @@ classifiers = [
   "Operating System :: Unix",
   "Operating System :: MacOS",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
   "fastapi",
   "pydantic",
@@ -44,8 +46,8 @@ dependencies = [
   "typer",
   "uvicorn",
   # local dependency
-  "gavicore >=0.0.9",
-  "procodile >=0.0.9",
+  "gavicore >=0.1.1.dev0",
+  "procodile >=0.1.1.dev0",
 ]
 
 [project.scripts]

@@ -74,19 +74,25 @@ config:
 ---
 classDiagram
     direction LR
-    
-    Field --> FieldMeta
+
+    Field ..> FieldMeta
     Field --> View
     Field --> gavicore.ui.vm.ViewModel
     FieldBase --|> Field
+    
+    gavicore.ui.vm.ViewModel --> FieldMeta
+    
+    class Field {    
+        meta: FieldMeta
+        view_model: ViewModel*
+        view: Any*
+    }
 
-    class Field {
+    
+    class FieldBase {
         meta: FieldMeta
         view_model: ViewModel
         view: Any
-    }
-    
-    class FieldBase {
         _bind()*
     }
 
@@ -125,10 +131,21 @@ classDiagram
     FieldGenerator --> FieldFactoryRegistry
     FieldFactoryRegistry *--> FieldFactory 
 
-
     class FieldFactory {
         get_score(meta: FieldMeta)* int
         create_field(ctx: FieldContext)* Field 
+    }
+
+    class FieldFactoryBase {
+        get_score(meta: FieldMeta) int
+        get_boolean_score(meta: FieldMeta)* int
+        get_integer_score(meta: FieldMeta)* int
+        get_..._score(meta: FieldMeta)* int
+
+        create_field(ctx: FieldContext) Field 
+        create_boolean_field(ctx: FieldContext)* Field 
+        create_integer_field(ctx: FieldContext)* Field 
+        create_..._field(ctx: FieldContext)* Field 
     }
 
     class FieldContext {
@@ -169,15 +186,17 @@ classDiagram
 
     ViewModel *--> ViewModelObserver 
     ViewModel --> gavicore.ui.FieldMeta 
-    ViewModelObserver ..> ViewModelChangeEvent : use
-    ViewModel ..> ViewModelChangeEvent : create
-    ViewModelChangeEvent --|> ViewModelChangeEvent : causes 
+    ViewModelObserver ..> ViewModelChangeEvent : consume
+    ViewModel ..> ViewModelChangeEvent : emit
+    ViewModelChangeEvent --|> ViewModelChangeEvent 
     
     class ViewModel {
         meta: FieldMeta
         value: Any
-        watch(observers) 
-        dispose()
+        watch(observer: Callable, ...) Callable 
+        dispose()        
+        _get_value()* Any
+        _set_value(value: Any)*
     }
     
     class ViewModelChangeEvent {
@@ -195,13 +214,47 @@ classDiagram
 
 The framework's view model API is defined in `gavicore.ui.vm`.
 
+### Basic Usage
+
 The package `gavicore.ui.panel` defines a 
 [PanelField][gavicore.ui.panel.PanelField] 
 and a [PanelFieldFactory][gavicore.ui.panel.PanelFieldFactory] 
 for generating UIs from OpenAPI Schema targeting the [Panel](https://panel.holoviz.org/) 
-UI-library. Basically this means, the `PanelField.view` object will be a 
-widget-like component that can be used as part of a larger UI developed 
+UI-library. For example, you can generate a UI from a given OpenAPI schema
+using 
+
+```python
+from gavicore.ui.panel import PanelField
+
+my_field = PanelField.from_schema(my_schema)
+```
+
+The `my_field.view` object will then contain the `Panel` UI and 
+the `my_field.view_model` can be used to get, set, and observe the edited value.
+
+The view is a widget-like component (it is likely a `panel.widgets.WidgetBase`) 
+that can be used as part of a larger UI developed 
 with [Panel](https://panel.holoviz.org/).
 
 The [PanelFieldFactoryBase][gavicore.ui.panel.PanelFieldFactoryBase]
 class eases supporting custom field types targeting the Panel library.
+
+### `schema2ui` Tool
+
+Developers of and contributors to `gavicore.ui` should regulary use the provided
+`schema2ui` tool. It opens a browser tab where you can select an OpenAPI schema from
+a list and generate the UIs for it. This way you can see how the framework renders 
+the supported OpenAPI schemas, which are provided in the 
+[`gavicore/tests/ui/schemas`](https://github.com/eo-tools/eozilla/tree/main/gavicore/tests/ui/schemas)
+folder. The schemas are also used to perform unit-level smoke tests 
+with `PanelField.from_schema()`. 
+
+The tool can be run from the Eozilla's project root folder with
+
+```bash
+pixi run schema2ui
+```
+
+and brings a simple app that looks like this:
+
+![schema2ui](../../assets/schema2ui.png)
