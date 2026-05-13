@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import datetime
 from typing import Annotated, Any
 from unittest import TestCase
 
@@ -584,6 +585,158 @@ class FieldMetaTest(TestCase):
             Schema(**{"type": "boolean", "nullable": False}), nn_meta.schema_
         )
         self.assertIs(True, nn_meta.nullable_parent)
+
+    def test_get_initial_value_uses_default_first(self):
+        meta = FieldMeta.from_schema(
+            "x", Schema(**{"type": "boolean", "default": True, "nullable": True})
+        )
+
+        self.assertIs(True, meta.get_initial_value())
+
+    def test_get_initial_value_uses_first_enum_value_before_nullable(self):
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(
+                **{
+                    "type": "string",
+                    "enum": ["keep", "drop"],
+                    "nullable": True,
+                }
+            ),
+        )
+
+        self.assertEqual("keep", meta.get_initial_value())
+
+    def test_get_initial_value_uses_null_for_nullable_without_default_or_enum(self):
+        meta = FieldMeta.from_schema(
+            "x", Schema(**{"type": "string", "nullable": True})
+        )
+
+        self.assertIsNone(meta.get_initial_value())
+
+    def test_get_initial_value_for_primitives(self):
+        cases = [
+            (Schema(**{"type": "boolean"}), False),
+            (Schema(**{"type": "integer"}), 0),
+            (Schema(**{"type": "integer", "minimum": -4}), -4),
+            (Schema(**{"type": "integer", "maximum": -3}), -3),
+            (Schema(**{"type": "number"}), 0.0),
+            (Schema(**{"type": "number", "minimum": -1.5}), -1.5),
+            (Schema(**{"type": "number", "maximum": -2.5}), -2.5),
+            (Schema(**{"type": "string"}), ""),
+        ]
+
+        for schema, expected in cases:
+            with self.subTest(schema=schema):
+                meta = FieldMeta.from_schema("x", schema)
+                self.assertEqual(expected, meta.get_initial_value())
+
+    def test_get_initial_value_for_date_string(self):
+        meta = FieldMeta.from_schema(
+            "x", Schema(**{"type": "string", "format": "date"})
+        )
+
+        self.assertIsInstance(
+            datetime.date.fromisoformat(meta.get_initial_value()),
+            datetime.date,
+        )
+
+    def test_get_initial_value_for_date_time_string(self):
+        meta = FieldMeta.from_schema(
+            "x", Schema(**{"type": "string", "format": "date-time"})
+        )
+
+        self.assertIsInstance(
+            datetime.datetime.fromisoformat(meta.get_initial_value()),
+            datetime.datetime,
+        )
+
+    def test_get_initial_value_for_array_uses_min_items(self):
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(
+                **{
+                    "type": "array",
+                    "items": {"type": "integer", "maximum": -1},
+                    "minItems": 3,
+                }
+            ),
+        )
+
+        self.assertEqual([-1, -1, -1], meta.get_initial_value())
+
+    def test_get_initial_value_for_array_uses_min_items_and_date_format(self):
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(
+                **{
+                    "type": "array",
+                    "items": {"type": "string", "format": "date"},
+                    "minItems": 3,
+                }
+            ),
+        )
+
+        self.assertEqual(
+            [
+                (datetime.date.today() - datetime.timedelta(days=2)).isoformat(),
+                (datetime.date.today() - datetime.timedelta(days=1)).isoformat(),
+                (datetime.date.today() - datetime.timedelta(days=0)).isoformat(),
+            ],
+            meta.get_initial_value(),
+        )
+
+    def test_get_initial_value_for_array_without_min_items(self):
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(
+                **{
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "minItems": None,
+                }
+            ),
+        )
+
+        self.assertEqual([], meta.get_initial_value())
+
+    def test_get_initial_value_for_object_uses_required_properties_only(self):
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(
+                **{
+                    "type": "object",
+                    "properties": {
+                        "flag": {"type": "boolean"},
+                        "count": {"type": "integer", "minimum": -2},
+                        "label": {"type": "string", "default": "ignored"},
+                    },
+                    "required": ["flag", "count"],
+                }
+            ),
+        )
+
+        self.assertEqual({"flag": False, "count": -2}, meta.get_initial_value())
+
+    def test_get_initial_value_for_object_without_required_properties(self):
+        meta = FieldMeta.from_schema(
+            "x",
+            Schema(
+                **{
+                    "type": "object",
+                    "properties": {
+                        "flag": {"type": "boolean"},
+                    },
+                }
+            ),
+        )
+
+        self.assertEqual({}, meta.get_initial_value())
+
+    def test_get_initial_value_for_untyped_schema(self):
+        meta = FieldMeta.from_schema("x", Schema(**{}))
+
+        self.assertIsNone(meta.get_initial_value())
 
     # noinspection PyMethodMayBeStatic
     def test_pydantic_deserialization_with_extra_fields(self):

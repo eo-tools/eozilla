@@ -558,7 +558,10 @@ def _is_valid_ui_prop(k, v) -> bool:
         return False
 
 
-def _get_initial_value(meta: FieldMeta) -> Any:
+def _get_initial_value(
+    meta: FieldMeta,
+    days_offset: int | None = None,
+) -> Any:
     schema = meta.schema_
     if schema.default is not None:
         return schema.default
@@ -574,17 +577,25 @@ def _get_initial_value(meta: FieldMeta) -> Any:
         case DataType.number:
             return float(_get_initial_number(schema))
         case DataType.string:
-            if schema.format == "date":
-                return datetime.date.today().isoformat()
-            # create string of length min_length
-            min_length = schema.minLength if schema.minLength is not None else 0
-            return "+" * min_length
+            if schema.format in ("date", "date-time"):
+                date = (
+                    datetime.date.today()
+                    if schema.format == "date"
+                    else datetime.datetime.today()
+                )
+                if days_offset is not None:
+                    date -= datetime.timedelta(days=days_offset)
+                return date.isoformat()
+            return ""
         case DataType.array:
             assert isinstance(meta.items, FieldMeta)
             # create array of length min_items
             min_items = schema.minItems if schema.minItems is not None else 0
             item_meta = meta.items
-            return [_get_initial_value(item_meta) for _i in range(min_items)]
+            return [
+                _get_initial_value(item_meta, days_offset=min_items - i - 1)
+                for i in range(min_items)
+            ]
         case DataType.object:
             assert isinstance(meta.properties, dict)
             # Note, we may also consider minProperties, additionalProperties
@@ -592,7 +603,7 @@ def _get_initial_value(meta: FieldMeta) -> Any:
             required = set(schema.required or [])
             properties = meta.properties
             return {
-                k: m.get_initial_value() for k, m in properties.items() if k in required
+                k: _get_initial_value(m) for k, m in properties.items() if k in required
             }
         case _:
             # TODO: handle other cases here: oneOf, anyOf, allOf

@@ -8,6 +8,7 @@
 
 ### Fixes
 
+- Addressed various regressions in the new `gavicore` GUI generator. (#101)
 - Added missing API docs to `docs/cuiman/api.md` (deployed shortly after 0.1.0 release)
 - Fixed the PyPI release workflow (applied shortly after 0.1.0 release)
 
