@@ -6,9 +6,6 @@ from typing import Any
 
 import panel as pn
 import param
-from ipyleaflet import DrawControl, GeoJSON, Map
-
-pn.extension("ipywidgets")
 
 BBox = list[float]
 
@@ -24,7 +21,10 @@ class BBoxEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
         zoom: int = 2,
         **params,
     ):
+        pn.extension("ipywidgets")
         super().__init__(**params)
+
+        from ipyleaflet import DrawControl, Map
 
         # --- draw control
         enabled_tool: dict[str, Any] = {"shapeOptions": {"color": "#0000FF"}}
@@ -79,6 +79,8 @@ class BBoxEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
                 self._map.remove(layer)
 
         if geo_json is not None:
+            from ipyleaflet import GeoJSON
+
             self._map.add(GeoJSON(name="user", data=geo_json))
 
     @staticmethod
@@ -108,7 +110,7 @@ class BBoxEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
         }
 
     # --- map → value
-    def _handle_draw(self, target: DrawControl, action: str, geo_json: dict):
+    def _handle_draw(self, target: Any, action: str, geo_json: dict):
         if action != "created":
             return
 

@@ -26,7 +26,6 @@ from gavicore.util.text import ArrayTextConverter, TextConverter
 
 from .field import PanelField
 from .widgets.array import ArrayEditor, ArrayWidget
-from .widgets.bbox import BBoxEditor
 from .widgets.labeled import LabeledWidget
 from .widgets.nullable import NullableWidget
 
@@ -266,6 +265,8 @@ class DefaultPanelFieldFactory(PanelFieldFactoryBase):
             and min_items == 4
             and max_items == 4
         ):
+            from .widgets.bbox import BBoxEditor
+
             return PanelField(
                 view_model,
                 BBoxEditor(name=ctx.label, value=view_model.value),
