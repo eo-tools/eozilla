@@ -15,19 +15,19 @@ class FilesystemPathInput(pn.custom.PyComponent, pn.widgets.WidgetBase):
     A Panel widget providing shell-style path autocomplete via fsspec.
 
     Args:
-        value: str
+        value:
             The confirmed, resolved path. Updated only on Enter or explicit confirm.
         protocol: A `fsspec` filesystem protocol.
             Defaults to `"file"`, the local filesystem.
         storage_options: Filesystem-specific storage options.
             Defaults to `"file"`, the local filesystem.
-        mode: str: The mode.
-            `"file"` autocomplete includes files and directories
-            - "directory" — autocomplete includes directories only
-        must_exist: bool
+        mode: The mode:
+            - `"file"` autocomplete includes files and directories
+            - `"directory"` — autocomplete includes directories only
+        must_exist:
             If True, `value` is only updated when the path exists on the filesystem.
             If False, non-existing paths are accepted (useful for save-as / new dirs).
-        placeholder: str
+        placeholder:
             Placeholder text shown in the input.
     """
 
