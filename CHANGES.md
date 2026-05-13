@@ -1,16 +1,16 @@
 ## Changes in version 0.1.1 (in development)
 
-### Other changes
-
-- Python version is **python >=3.11** in all workspaces.
-- Adjusted list of authors in all workspaces.
-- Added a context diagram to documentation index page and README.
-
 ### Fixes
 
 - Added missing API docs to `docs/cuiman/api.md` (deployed shortly after 0.1.0 release)
 - Fixed the PyPI release workflow (applied shortly after 0.1.0 release)
 
+### Other changes
+
+- Python version is **python >=3.11** in all workspaces.
+- Adjusted list of authors in all workspaces.
+- Added a context diagram to documentation index page and README.
+- Removed prefix.dev authorization parameters from CI workflow. (#103)
 
 ## Changes in version 0.1.0
 
