@@ -1,5 +1,9 @@
 ## Changes in version 0.1.1 (in development)
 
+### Enhancements
+
+- Users can now store and reload process requests using the Cuiman GUI. (#40)
+
 ### Other changes
 
 - Python version is **python >=3.11** in all workspaces.
