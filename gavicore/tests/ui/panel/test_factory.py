@@ -55,6 +55,25 @@ class DefaultPanelFieldFactoryTest(TestCase):
         field = generator.generate_field(meta)
         self.assertIsInstance(field.view, BBoxEditor)
 
+    def test_create_field_for_bbox_tuple_uses_initial_value(self):
+        generator = FieldGenerator()
+        generator.register_field_factory(DefaultPanelFieldFactory())
+
+        meta = _meta_from_schema(
+            {
+                "type": "array",
+                "items": {"type": "number"},
+                "minItems": 4,
+                "maxItems": 4,
+                "x-ui-widget": "map",
+            }
+        )
+        initial_value = [1.0, 2.0, 3.0, 4.0]
+        field = generator.generate_field(meta, initial_value=initial_value)
+
+        self.assertIsInstance(field.view, BBoxEditor)
+        self.assertEqual(initial_value, field.view.value)
+
     def test_create_field_for_date_tuple(self):
         generator = FieldGenerator()
         generator.register_field_factory(DefaultPanelFieldFactory())
