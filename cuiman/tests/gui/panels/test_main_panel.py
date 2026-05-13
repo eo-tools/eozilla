@@ -28,7 +28,9 @@ bbox_input = InputDescription(
         {
             "type": "array",
             "items": {"type": "number"},
-            "format": "bbox",
+            "x-ui-widget": "map",
+            "minItems": 4,
+            "maxItems": 4,
         }
     ),
 )
