@@ -261,13 +261,15 @@ class DefaultPanelFieldFactory(PanelFieldFactoryBase):
         view_model = ctx.vm.array()
         json_codec: JsonCodec
 
-        if (
-            item_type == DataType.number
-            and (format_ == "bbox" or widget_hint == "map")
+        if item_type == DataType.number and (
+            (format_ == "bbox" or widget_hint == "map")
             and min_items == 4
             and max_items == 4
         ):
-            return PanelField(view_model, BBoxEditor())
+            return PanelField(
+                view_model,
+                BBoxEditor(name=ctx.label, value=view_model.value),
+            )
 
         if (
             item_type == DataType.string

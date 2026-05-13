@@ -230,9 +230,10 @@ A few tuple types are supported that generate special widgets instead of
 the default array editor:
 
 - **geographic bounding boxes**: item type `number` with `minItems: 4`, `maxItems: 4`, 
-  and `x-ui-widget: map` creates a special editor to enter the bounding box
-  using [](). It lets users draw a geometry whose bounding 
-  box will become the effective field value.
+  and `x-ui-widget: map` (or `format: bbox`) creates a special editor to enter the 
+  bounding box using an [ipyleaflet](https://ipyleaflet.readthedocs.io/) map. 
+  It lets users draw a geometry whose bounding box will become the effective field 
+  value.
 
 - **date(-time) ranges**: item type `string` with `minItems: 2`, `maxItems: 2` creates 
   a [date-time range picker](https://panel.holoviz.org/reference/widgets/DatetimeRangePicker.html) 

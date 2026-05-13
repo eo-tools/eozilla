@@ -20,6 +20,7 @@ from gavicore.models import (
     Schema,
 )
 from gavicore.ui.panel import PanelFieldFactoryRegistry
+from gavicore.ui.panel.widgets.bbox import BBoxEditor
 
 bbox_input = InputDescription(
     title="Bounding box",
@@ -67,6 +68,18 @@ class MainFormTest(TestCase):
     def test_with_bbox_input(self):
         main_panel = _create_main_panel({"bbox": bbox_input})
         self.assertIsInstance(main_panel.__panel__(), Panel)
+        inputs_field = main_panel.vm.inputs_field
+        self.assertIsNotNone(inputs_field)
+        assert inputs_field is not None
+        bbox_editor = inputs_field.view.inner_viewable.objects[0]
+        self.assertIsInstance(bbox_editor, BBoxEditor)
+
+        bbox_editor.value = [1.0, 2.0, 3.0, 4.0]
+
+        self.assertEqual(
+            {"bbox": [1.0, 2.0, 3.0, 4.0]},
+            inputs_field.view_model.value,
+        )
 
     def test_with_date_input(self):
         main_panel = _create_main_panel({"date": date_input})

@@ -8,7 +8,7 @@ import panel as pn
 import param
 from ipyleaflet import DrawControl, GeoJSON, Map
 
-pn.extension()
+pn.extension("ipywidgets")
 
 BBox = list[float]
 
@@ -41,7 +41,7 @@ class BBoxEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
         self._map = Map(center=center, zoom=zoom, scroll_wheel_zoom=True)
         self._map.add(draw_control)
 
-        map_widget = pn.pane.IPyWidget(self._map, width=400)
+        map_widget = pn.pane.IPyWidget(self._map, width=400, height=400)
 
         # --- value display
         # TODO: replace by text box to let user enter the 4 coordinates
@@ -49,12 +49,14 @@ class BBoxEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
 
         def on_value_change(e):
             self._update_display(e.new)
+            self._update_bbox_layer(e.new)
 
         # react to value changes
         self.param.watch(on_value_change, "value")
 
-        # initial display
+        # initial display and map layer
         self._update_display(self.value)
+        self._update_bbox_layer(self.value)
 
         # layout
         self._panel = pn.Column(map_widget, self._value_display)
@@ -67,6 +69,43 @@ class BBoxEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
 
     def _update_display(self, value):
         self._value_display.value = f"Selected bbox: {value}"
+
+    def _update_bbox_layer(self, value: Any):
+        self._replace_user_layer(self._bbox_to_geo_json(value))
+
+    def _replace_user_layer(self, geo_json: dict | None):
+        for layer in list(self._map.layers):
+            if getattr(layer, "name", None) == "user":
+                self._map.remove(layer)
+
+        if geo_json is not None:
+            self._map.add(GeoJSON(name="user", data=geo_json))
+
+    @staticmethod
+    def _bbox_to_geo_json(value: Any) -> dict | None:
+        if not isinstance(value, list) or len(value) != 4:
+            return None
+
+        min_lon, min_lat, max_lon, max_lat = value
+        if min_lon == max_lon or min_lat == max_lat:
+            return None
+
+        return {
+            "type": "Feature",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [min_lon, min_lat],
+                        [max_lon, min_lat],
+                        [max_lon, max_lat],
+                        [min_lon, max_lat],
+                        [min_lon, min_lat],
+                    ]
+                ],
+            },
+            "properties": {},
+        }
 
     # --- map → value
     def _handle_draw(self, target: DrawControl, action: str, geo_json: dict):
@@ -85,9 +124,4 @@ class BBoxEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
         bbox: BBox = [min(lons), min(lats), max(lons), max(lats)]
         self.value = bbox
 
-        # replace user layer
-        for layer in list(self._map.layers):
-            if getattr(layer, "name", None) == "user":
-                self._map.remove(layer)
-
-        self._map.add(GeoJSON(name="user", data=geo_json))
+        self._replace_user_layer(geo_json)
