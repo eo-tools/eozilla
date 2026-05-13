@@ -1,18 +1,17 @@
 {
-  "process_id": "simulate_scene",
   "inputs": {
     "var_names": "a, b, c, d",
     "bbox": [
-      -16.270312,
-      32.683028,
-      7.9875,
-      47.388827
+      10.156359,
+      39.742523,
+      15.341906,
+      43.677263
     ],
     "resolution": 0.5,
     "start_date": "2025-01-01",
     "end_date": "2025-02-01",
     "periodicity": 1,
-    "output_path": "Hello.zarr"
+    "output_path": "test.zarr"
   },
   "outputs": {
     "return_value": {
@@ -22,5 +21,6 @@
       "transmissionMode": "reference"
     }
   },
+  "process_id": "simulate_scene",
   "dotpath": true
 }
