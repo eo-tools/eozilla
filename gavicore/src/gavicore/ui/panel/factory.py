@@ -26,7 +26,6 @@ from gavicore.util.text import ArrayTextConverter, TextConverter
 
 from .field import PanelField
 from .widgets.array import ArrayEditor, ArrayWidget
-from .widgets.bbox import BBoxEditor
 from .widgets.labeled import LabeledWidget
 from .widgets.nullable import NullableWidget
 
@@ -62,7 +61,7 @@ class DefaultPanelFieldFactory(PanelFieldFactoryBase):
         return PanelField(
             view_model,
             NullableWidget(
-                name=ctx.name,
+                name=ctx.label,
                 value=ctx.initial_value,
                 inner_widget=non_nullable_field.view,
             ),
@@ -162,7 +161,7 @@ class DefaultPanelFieldFactory(PanelFieldFactoryBase):
     def create_string_field(self, ctx: FieldContext) -> PanelField:
         view_model = ctx.vm.primitive()
         value = view_model.value
-        label = view_model.meta.label
+        label = ctx.label
         enum = view_model.meta.enum
         description = view_model.meta.description
         placeholder = view_model.meta.placeholder or ""
@@ -261,13 +260,17 @@ class DefaultPanelFieldFactory(PanelFieldFactoryBase):
         view_model = ctx.vm.array()
         json_codec: JsonCodec
 
-        if (
-            item_type == DataType.number
-            and (format_ == "bbox" or widget_hint == "map")
+        if item_type == DataType.number and (
+            (format_ == "bbox" or widget_hint == "map")
             and min_items == 4
             and max_items == 4
         ):
-            return PanelField(view_model, BBoxEditor())
+            from .widgets.bbox import BBoxEditor
+
+            return PanelField(
+                view_model,
+                BBoxEditor(name=ctx.label, value=view_model.value),
+            )
 
         if (
             item_type == DataType.string
