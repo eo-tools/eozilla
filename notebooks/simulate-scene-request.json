@@ -1,0 +1,26 @@
+{
+  "inputs": {
+    "var_names": "a, b, c, d",
+    "bbox": [
+      10.156359,
+      39.742523,
+      15.341906,
+      43.677263
+    ],
+    "resolution": 0.5,
+    "start_date": "2025-01-01",
+    "end_date": "2025-02-01",
+    "periodicity": 1,
+    "output_path": "scene.zarr"
+  },
+  "outputs": {
+    "return_value": {
+      "format": {
+        "mediaType": "application/json"
+      },
+      "transmissionMode": "reference"
+    }
+  },
+  "process_id": "simulate_scene",
+  "dotpath": true
+}

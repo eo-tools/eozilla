@@ -294,5 +294,5 @@ class AirflowService(ServiceBase):
             return token_data.get("access_token")
         except requests.exceptions.HTTPError as e:
             raise ServiceException(
-                response.status_code, detail=response.reason, exception=e
+                response.status_code, detail=response.reason or str(e), exception=e
             ) from e

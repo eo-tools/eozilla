@@ -4,6 +4,7 @@
 
 from unittest import TestCase
 
+import fsspec
 from panel.layout import Panel
 
 from cuiman.gui.jobs_observer import JobsObserver
@@ -20,6 +21,7 @@ from gavicore.models import (
     Schema,
 )
 from gavicore.ui.panel import PanelFieldFactoryRegistry
+from gavicore.ui.panel.widgets.bbox import BBoxEditor
 
 bbox_input = InputDescription(
     title="Bounding box",
@@ -27,7 +29,9 @@ bbox_input = InputDescription(
         {
             "type": "array",
             "items": {"type": "number"},
-            "format": "bbox",
+            "x-ui-widget": "map",
+            "minItems": 4,
+            "maxItems": 4,
         }
     ),
 )
@@ -67,10 +71,55 @@ class MainFormTest(TestCase):
     def test_with_bbox_input(self):
         main_panel = _create_main_panel({"bbox": bbox_input})
         self.assertIsInstance(main_panel.__panel__(), Panel)
+        inputs_field = main_panel.vm.inputs_field
+        self.assertIsNotNone(inputs_field)
+        assert inputs_field is not None
+        bbox_editor = inputs_field.view.inner_viewable.objects[0]
+        self.assertIsInstance(bbox_editor, BBoxEditor)
+
+        bbox_editor.value = [1.0, 2.0, 3.0, 4.0]
+
+        self.assertEqual(
+            {"bbox": [1.0, 2.0, 3.0, 4.0]},
+            inputs_field.view_model.value,
+        )
 
     def test_with_date_input(self):
         main_panel = _create_main_panel({"date": date_input})
         self.assertIsInstance(main_panel.__panel__(), Panel)
+
+    def test_process_selector_follows_loaded_request_process(self):
+        process_1 = ProcessDescription(
+            id="gen_scene",
+            title="Generate a scene",
+            version="1",
+            inputs={},
+        )
+        process_2 = ProcessDescription(
+            id="other_scene",
+            title="Generate another scene",
+            version="1",
+            inputs={},
+        )
+        main_panel = _create_main_panel_for_processes([process_1, process_2])
+        fs = fsspec.filesystem("memory")
+        fs.pipe(
+            "/request.json",
+            b'{"process_id": "other_scene", "dotpath": true, "inputs": {}}',
+        )
+
+        main_panel.vm.load_process_request_file(fs, "/request.json")
+
+        self.assertEqual("other_scene", main_panel.vm.selected_process_id)
+        self.assertEqual("other_scene", main_panel._process_select.value)
+
+    def test_file_menu_opens_load_request_dialog(self):
+        main_panel = _create_main_panel({})
+
+        main_panel._file_menu.clicked = "load_request"
+
+        self.assertTrue(main_panel._load_request_dialog.panel.visible)
+        self.assertTrue(main_panel._file_menu.disabled)
 
 
 def _create_main_panel(process_inputs: dict[str, InputDescription]) -> MainPanelView:
@@ -81,8 +130,16 @@ def _create_main_panel(process_inputs: dict[str, InputDescription]) -> MainPanel
         inputs=process_inputs,
     )
 
+    return _create_main_panel_for_processes([process])
+
+
+def _create_main_panel_for_processes(
+    processes: list[ProcessDescription],
+) -> MainPanelView:
+    process_by_id = {process.id: process for process in processes}
+
     def on_get_process(_process_id: str):
-        return process
+        return process_by_id[_process_id]
 
     def on_execute_process(process_id: str, _request: ProcessRequest):
         return JobInfo(
@@ -94,7 +151,7 @@ def _create_main_panel(process_inputs: dict[str, InputDescription]) -> MainPanel
     def on_get_job_results(_job_id: str) -> JobResults:
         return JobResults(**{"return_value": 13})
 
-    process_list = ProcessList(processes=[process], links=[])
+    process_list = ProcessList(processes=processes, links=[])
 
     return MainPanelView(
         process_list,

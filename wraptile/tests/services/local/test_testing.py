@@ -128,10 +128,10 @@ class TestingServiceTest(IsolatedAsyncioTestCase):
             {
                 "type": "array",
                 "default": [-180, -90, 180, 90],
-                "format": "bbox",
                 "items": {"type": "number"},
                 "minItems": 4,
                 "maxItems": 4,
+                "x-ui-widget": "map",
             },
             bbox_input.schema_.model_dump(
                 mode="json",
