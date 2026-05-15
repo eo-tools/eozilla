@@ -242,9 +242,11 @@ class FilesystemPathInput(pn.custom.PyComponent, pn.widgets.WidgetBase):
                 if prefix.endswith(("/", os.sep)) or (p.exists() and p.is_dir()):
                     parent = str(p)
                     stub = ""
+                    local_listing_dir = True
                 else:
                     parent = str(p.parent)
                     stub = p.name
+                    local_listing_dir = False
             else:
                 # Remote: simple string splitting
                 if prefix.endswith(sep):
@@ -282,18 +284,49 @@ class FilesystemPathInput(pn.custom.PyComponent, pn.widgets.WidgetBase):
 
                 # Build display path preserving the user's original prefix style
                 if self._local:
-                    display = str(pathlib.Path(parent) / basename)
+                    display = self._format_local_completion(
+                        prefix, basename, local_listing_dir
+                    )
                 else:
                     display = entry_name
 
                 if entry_type == "directory":
-                    results.append(display + sep)
+                    results.append(display + self._display_separator(prefix))
                 elif self.mode == "file":
                     results.append(display)
 
             return sorted(results)
         except Exception:
             return []
+
+    def _display_separator(self, prefix: str) -> str:
+        if not self._local:
+            return self._separator
+
+        forward = prefix.rfind("/")
+        backward = prefix.rfind("\\")
+        if forward > backward:
+            return "/"
+        if backward >= 0:
+            return "\\"
+        return self._separator
+
+    def _format_local_completion(
+        self, prefix: str, basename: str, listing_dir: bool
+    ) -> str:
+        sep = self._display_separator(prefix)
+
+        if listing_dir:
+            if not prefix:
+                return basename
+            if prefix.endswith(("/", "\\")):
+                return prefix + basename
+            return prefix + sep + basename
+
+        split_at = max(prefix.rfind("/"), prefix.rfind("\\"))
+        if split_at >= 0:
+            return prefix[: split_at + 1] + basename
+        return basename
 
     def _validate_path(self, raw_path: str):
         # Resolve to absolute path for local fs
