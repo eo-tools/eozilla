@@ -83,7 +83,7 @@ def test_generate_airflow_dag_from_workflow():
         '        cmds=["python", "/app/run_step.py"],\n'
         "        arguments=[json.dumps({\n"
         '            "func_module": "tests.airflow.test_gen_workflow_dag",\n'
-        '            "func_qualname": "first_step",\n'
+        '            "func_qualname": "first_step.function",\n'
         '            "inputs": {"id": "{{ params.id }}"},\n'
         "            \"output_keys\": ['a'],\n"
         "        })],\n"
@@ -97,7 +97,7 @@ def test_generate_airflow_dag_from_workflow():
         '        cmds=["python", "/app/run_step.py"],\n'
         "        arguments=[json.dumps({\n"
         '            "func_module": "tests.airflow.test_gen_workflow_dag",\n'
-        '            "func_qualname": "second_step",\n'
+        '            "func_qualname": "second_step.function",\n'
         '            "inputs": {"id": "{{ '
         "ti.xcom_pull(task_ids='first_step')['a'] }}\"},\n"
         "            \"output_keys\": ['return_value'],\n"
@@ -112,7 +112,7 @@ def test_generate_airflow_dag_from_workflow():
         '        cmds=["python", "/app/run_step.py"],\n'
         "        arguments=[json.dumps({\n"
         '            "func_module": "tests.airflow.test_gen_workflow_dag",\n'
-        '            "func_qualname": "third_step",\n'
+        '            "func_qualname": "third_step.function",\n'
         '            "inputs": {"id": "{{ '
         "ti.xcom_pull(task_ids='second_step')['return_value'] }}\"},\n"
         "            \"output_keys\": ['return_value'],\n"
