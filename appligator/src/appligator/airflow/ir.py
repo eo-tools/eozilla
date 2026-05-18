@@ -109,7 +109,7 @@ def workflow_to_ir(
                 id=step_id,
                 runtime="kubernetes",
                 func_module=step.function.__module__,
-                func_qualname=step.function.__qualname__ + ".function",
+                func_qualname=step.function.__qualname__,
                 image=image_name,
                 env_from_secrets=env_from_secrets,
                 resources=resources,
