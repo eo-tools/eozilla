@@ -1,3 +1,17 @@
+## Changes in version 0.1.1
+
+### Fixes
+
+- Fixed **Appligator** DAG generation so that `func_qualname` is suffixed with
+  `.function` when building `TaskIR` objects in `appligator.airflow.ir`.
+  `resolve_function` now walks `module.workflow_object → .function`, reaching
+  the actual Python function rather than the procodile wrapper. This allows
+  type hints on the underlying function to be resolved correctly at runtime.
+  As a side-effect, the main pod now only executes the config step; generation
+  and simulation are left to their dedicated downstream pods, matching the
+  intended task-graph structure.
+
+
 ## Changes in version 0.1.0
 
 ### Enhancements
