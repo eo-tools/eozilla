@@ -255,6 +255,12 @@ class Workflow:
         self.order: list[str] = []
         self.dep_graph: defaultdict[str, set[str]] = defaultdict(set)
 
+    @property
+    def function(self) -> Callable:
+        """Return the underlying main step function (the bare Python callable)."""
+        main_id = next(iter(self.registry.main))
+        return self.registry.main[main_id].function
+
     def __call__(self, **kwargs):
         return self.run(**kwargs)
 
