@@ -134,12 +134,15 @@ def generate_method_code(
     if method.responses.get("201"):
         extra_status_code = ", status_code=201"
 
-    param_list = ", ".join(
+    param_list = "\n".join(
         [
-            *pos_params,
-            *[f"{k}: {v}" for k, v in magic_param_list],
-            "service: Service = fastapi.Depends(get_service)",
-            *kwargs_params,
+            f"{C_TAB}{line}"
+            for line in [
+                *[f"{p}," for p in pos_params],
+                *[f"{k}: {v}," for k, v in magic_param_list],
+                "service: Service = fastapi.Depends(get_service),  # noqa B008",
+                *[f"{p}," for p in kwargs_params],
+            ]
         ]
     )
     service_param_list = ", ".join(
@@ -177,8 +180,16 @@ def generate_method_code(
     return (
         (
             f"# noinspection PyPep8Naming\n"
-            f"@app.{method_name}({path!r}{extra_status_code})\n"
-            f"async def {py_op_name}({param_list}):\n"
+            f"@app.{method_name}("
+            f"{path!r}"
+            f"{extra_status_code}"
+            f", response_model={return_type_union}"
+            f", response_model_exclude_none=True"
+            f", response_model_exclude_unset=True"
+            f")\n"
+            f"async def {py_op_name}(\n"
+            f"{param_list}\n"
+            f"):\n"
             f"{C_TAB}return await service."
             f"{py_op_name}({param_service_list})\n"
         ),
