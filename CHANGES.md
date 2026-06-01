@@ -1,5 +1,10 @@
 ## Changes in version 0.1.1 (in development)
 
+### Enhancements
+
+- Wraptile server now configures CORS so that it can be accessed
+  from browsers running web apps. (#107)
+
 ### Fixes
 
 - Added missing API docs to `docs/cuiman/api.md` (deployed shortly after 0.1.0 release)
