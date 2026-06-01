@@ -16,7 +16,8 @@ from .exceptions import ServiceException
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_credentials=False,  # we disallow Cookie-Auth (FastAPI default)
+    allow_origins=["*"],  # we enforce Token-Auth anyway
     allow_methods=["*"],
     allow_headers=["*"],
 )
