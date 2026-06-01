@@ -2,8 +2,10 @@
 
 ### Enhancements
 
-- Wraptile server now configures CORS so that it can be accessed
-  from browsers running web apps. (#107)
+- Wraptile server enhancements:
+  - Optional and unset properties are now excluded from JSON responses. (#108)
+  - CORS is configured so that the server can be accessed from browsers 
+    running web apps (enforcing token auth, disallowing cookies auth). (#107)
 
 ### Fixes
 
