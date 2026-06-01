@@ -8,8 +8,6 @@ import os
 from functools import cached_property
 from typing import Any, Optional
 
-_log = logging.getLogger(__name__)
-
 import fastapi
 import requests
 from airflow_client.client import (
@@ -41,6 +39,8 @@ from gavicore.models import (
 from procodile.workflow import FINAL_STEP_ID
 from wraptile.exceptions import ServiceException
 from wraptile.services.base import ServiceBase
+
+_log = logging.getLogger(__name__)
 
 DEFAULT_AIRFLOW_BASE_URL = "http://localhost:8080"
 
