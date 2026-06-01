@@ -62,7 +62,7 @@ class DefaultPanelFieldFactory(PanelFieldFactoryBase):
         return PanelField(
             view_model,
             NullableWidget(
-                name=ctx.name,
+                name=ctx.label,
                 value=ctx.initial_value,
                 inner_widget=non_nullable_field.view,
             ),

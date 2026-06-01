@@ -20,7 +20,7 @@ class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
             raise ValueError("inner must have a writable 'value' parameter")
 
         self._toggle = pn.widgets.Switch(
-            name=inner_widget.name,
+            name=self.name,
             value=self.value is not None,
             styles={"margin-bottom": "0px"},
         )
