@@ -4,12 +4,17 @@
 
 - Wraptile server now configures CORS so that it can be accessed
   from browsers running web apps. (#107)
+- Wraptile's Airflow service now maps Airflow DAG `Param` definitions to
+  OGC process input descriptions, so `cuiman`'s GUI renders input fields
+  (including type, title, description, default value, and nullable object params)
+  for Airflow-backed processes.
 
 ### Fixes
 
 - Addressed various regressions in the new `gavicore` GUI generator. (#101)
 - Added missing API docs to `docs/cuiman/api.md` (deployed shortly after 0.1.0 release)
 - Fixed the PyPI release workflow (applied shortly after 0.1.0 release)
+- Fixed nullable input fields showing an empty label in the `cuiman` GUI.
 
 ### Other changes
 

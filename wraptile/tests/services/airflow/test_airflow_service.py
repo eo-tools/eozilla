@@ -4,7 +4,7 @@
 
 import unittest
 import warnings
-from unittest import IsolatedAsyncioTestCase
+from unittest import IsolatedAsyncioTestCase, TestCase
 
 import fastapi
 import requests
@@ -12,6 +12,7 @@ import requests
 from gavicore.models import (
     Capabilities,
     ConformanceDeclaration,
+    DataType,
     ProcessDescription,
     ProcessList,
 )
@@ -19,6 +20,118 @@ from gavicore.util.testing import set_env
 from wraptile.main import app
 from wraptile.provider import ServiceProvider, get_service
 from wraptile.services.airflow import DEFAULT_AIRFLOW_BASE_URL, AirflowService
+
+
+class ParamToInputDescriptionTest(TestCase):
+    def test_string_param(self):
+        result = AirflowService._param_to_input_description(
+            "scene_name",
+            {
+                "value": "scene",
+                "description": "Scene id name.",
+                "schema": {"type": "string", "title": "Scene Name"},
+            },
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result.title, "Scene Name")
+        self.assertEqual(result.description, "Scene id name.")
+        self.assertEqual(result.schema_.type, DataType.string)
+        self.assertEqual(result.schema_.default, "scene")
+        self.assertEqual(result.minOccurs, 1)
+
+    def test_number_param(self):
+        result = AirflowService._param_to_input_description(
+            "target_lat",
+            {
+                "value": 41.808,
+                "description": "Target's center latitude.",
+                "schema": {"type": "number", "title": "Target Lat"},
+            },
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result.schema_.type, DataType.number)
+        self.assertEqual(result.schema_.default, 41.808)
+        self.assertEqual(result.minOccurs, 1)
+
+    def test_integer_param(self):
+        result = AirflowService._param_to_input_description(
+            "spp",
+            {
+                "value": 8,
+                "description": "Number of Monte Carlo samples.",
+                "schema": {"type": "integer", "title": "Spp"},
+            },
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result.schema_.type, DataType.integer)
+        self.assertEqual(result.schema_.default, 8)
+
+    def test_nullable_object_param(self):
+        result = AirflowService._param_to_input_description(
+            "config_output_dir_generation",
+            {
+                "value": {"value": "s3://output/gen_config", "cid": "s3ovh"},
+                "description": "Generation configuration output directory.",
+                "schema": {
+                    "type": "object",
+                    "nullable": True,
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "title": "Value",
+                            "description": "Full path URI",
+                        },
+                        "cid": {"title": "Cid", "description": "Credential ID"},
+                    },
+                    "required": ["value"],
+                },
+            },
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result.schema_.type, DataType.object)
+        self.assertTrue(result.schema_.nullable)
+        self.assertEqual(result.minOccurs, 0)
+        self.assertIsNotNone(result.schema_.properties)
+        self.assertIn("value", result.schema_.properties)
+        self.assertIn("cid", result.schema_.properties)
+        self.assertEqual(result.schema_.properties["value"].type, DataType.string)
+        self.assertEqual(result.schema_.required, ["value"])
+        self.assertEqual(
+            result.schema_.default,
+            {"value": "s3://output/gen_config", "cid": "s3ovh"},
+        )
+
+    def test_title_is_none_when_absent_from_schema(self):
+        # When schema has no title, we leave it None so gavicore's _make_label
+        # can produce a pretty label (e.g. "my_param" → "My Param").
+        result = AirflowService._param_to_input_description(
+            "my_param",
+            {"value": 1, "description": "desc", "schema": {"type": "integer"}},
+        )
+        self.assertIsNotNone(result)
+        self.assertIsNone(result.title)
+        self.assertIsNone(result.schema_.title)
+
+    def test_description_falls_back_to_schema_description(self):
+        result = AirflowService._param_to_input_description(
+            "my_param",
+            {"value": 1, "schema": {"type": "integer", "description": "from schema"}},
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result.description, "from schema")
+
+    def test_non_dict_param_returns_none(self):
+        result = AirflowService._param_to_input_description("bad_param", "not a dict")
+        self.assertIsNone(result)
+
+    def test_missing_schema_key(self):
+        result = AirflowService._param_to_input_description(
+            "bare_param",
+            {"value": 42},
+        )
+        self.assertIsNotNone(result)
+        self.assertIsNone(result.schema_.type)
+        self.assertEqual(result.schema_.default, 42)
 
 
 def is_airflow_running(url: str, timeout: float = 1.0) -> bool:
