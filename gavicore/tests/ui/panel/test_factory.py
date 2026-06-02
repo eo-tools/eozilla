@@ -33,6 +33,27 @@ class DefaultPanelFieldFactoryTest(TestCase):
         )
         field = generator.generate_field(meta)
         self.assertIsInstance(field.view, BBoxEditor)
+        self.assertEqual(field.view_model.value, field.view.value)
+
+        field.view.value = [1.0, 2.0, 3.0, 4.0]
+
+        self.assertEqual([1.0, 2.0, 3.0, 4.0], field.view_model.value)
+
+    def test_create_field_for_bbox_format(self):
+        generator = FieldGenerator()
+        generator.register_field_factory(DefaultPanelFieldFactory())
+
+        meta = _meta_from_schema(
+            {
+                "type": "array",
+                "items": {"type": "number"},
+                "minItems": 4,
+                "maxItems": 4,
+                "format": "bbox",
+            }
+        )
+        field = generator.generate_field(meta)
+        self.assertIsInstance(field.view, BBoxEditor)
 
     def test_create_field_for_date_tuple(self):
         generator = FieldGenerator()
@@ -90,6 +111,72 @@ class DefaultPanelFieldFactoryTest(TestCase):
         assert isinstance(tabs, pn.layout.Tabs)
         tabs.active = 1
         self.assertEqual({"t": "B", "b": 0}, field.view_model.value)
+
+    def test_nested_array_item_edit_keeps_visible_value(self):
+        generator = FieldGenerator()
+        generator.register_field_factory(DefaultPanelFieldFactory())
+        field = generator.generate_field(
+            _meta_from_schema(
+                {
+                    "oneOf": [
+                        {"$ref": "#/$defs/Point"},
+                        {"$ref": "#/$defs/LineString"},
+                    ],
+                    "discriminator": {
+                        "propertyName": "type",
+                    },
+                    "$defs": {
+                        "Coordinate": {
+                            "type": "array",
+                            "items": {"type": "number"},
+                            "minItems": 2,
+                            "maxItems": 3,
+                        },
+                        "Point": {
+                            "type": "object",
+                            "properties": {
+                                "type": {"type": "string"},
+                                "coordinates": {"$ref": "#/$defs/Coordinate"},
+                            },
+                            "required": ["type", "coordinates"],
+                        },
+                        "LineString": {
+                            "type": "object",
+                            "properties": {
+                                "type": {"type": "string"},
+                                "coordinates": {
+                                    "type": "array",
+                                    "items": {"$ref": "#/$defs/Coordinate"},
+                                    "minItems": 2,
+                                },
+                            },
+                            "required": ["type", "coordinates"],
+                        },
+                    },
+                }
+            )
+        )
+
+        tabs = field.view.inner_viewable
+        assert isinstance(tabs, pn.layout.Tabs)
+        tabs.active = 1
+        line_string_view = tabs[1]
+        coordinates_editor = line_string_view.inner_viewable.objects[0]
+        first_row = coordinates_editor._items_box[0]
+        first_item_editor = first_row[0]
+
+        first_item_editor._text.value = "10, 20"
+
+        self.assertEqual(
+            {
+                "type": "LineString",
+                "coordinates": [[10.0, 20.0], [0.0, 0.0]],
+            },
+            field.view_model.value,
+        )
+        self.assertIs(first_item_editor, coordinates_editor._items_box[0][0])
+        self.assertEqual([10.0, 20.0], first_item_editor.value)
+        self.assertEqual("10, 20", first_item_editor._text.value)
 
     def test_create_field_for_combinations(self):
         self.assert_create_field_for_combinations("oneOf")

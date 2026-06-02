@@ -112,7 +112,9 @@ def primes_between(
         "bbox": Field(
             title="Bounding box",
             description="Bounding box in geographical coordinates.",
-            json_schema_extra=dict(format="bbox"),
+            json_schema_extra={"x-ui-widget": "map"},
+            min_length=4,
+            max_length=4,
         ),
         "resolution": Field(
             title="Spatial resolution",

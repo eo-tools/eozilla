@@ -33,6 +33,7 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
         self.value = value
         self._array_converter = array_converter
         self._separator = sep_
+        self._updating_from_text = False
 
         initial_text = self._array_converter.format(value, sep=sep_)
         sep_text = "space or newline" if not sep_ or not sep_.strip() else f"{sep_!r}"
@@ -41,11 +42,12 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
             value=initial_text,
             cols=16,
             rows=1,
-            name=name,
+            name=name or "",
             placeholder=help_text,
             description=description or help_text,
         )
         self._text.param.watch(self._on_text_value_change, "value")
+        self.param.watch(self._on_value_change, "value")
 
     def _on_text_value_change(self, event):
         assert isinstance(event.new, str)
@@ -53,9 +55,21 @@ class ArrayWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
         try:
             value = self._array_converter.parse(text, sep=self._separator)
             if value != self.value:
-                self.value = value
+                self._updating_from_text = True
+                try:
+                    self.value = value
+                finally:
+                    self._updating_from_text = False
         except ValueError as e:
             self.error_message = f"{e}."
+
+    def _on_value_change(self, event):
+        if self._updating_from_text:
+            return
+
+        text = self._array_converter.format(event.new, sep=self._separator)
+        if text != self._text.value:
+            self._text.value = text
 
     def __panel__(self):
         return pn.Column(self._text)
@@ -99,6 +113,7 @@ class ArrayEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
         else:
             panel = pn.Column(self._items_box, self._add_row)
         self._panel = panel
+        self._updating_from_item_editor = False
         self._update_item_rows()
         self.param.watch(self._on_value_change, "value")
 
@@ -106,6 +121,8 @@ class ArrayEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
         self.value = self.value + [self._item_value_factory()]
 
     def _on_value_change(self, _e):
+        if self._updating_from_item_editor:
+            return
         self._update_item_rows()
 
     def _update_item_rows(self):
@@ -115,7 +132,7 @@ class ArrayEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
     def _render_item_rows(self):
         return [self._render_item_row(i, v) for i, v in enumerate(self.value)]
 
-    def _render_item_row(self, index, value):
+    def _render_item_row(self, index, value) -> pn.Row:
         def on_delete_item(_event):
             v = list(self.value)
             del v[index]
@@ -129,11 +146,15 @@ class ArrayEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
             styles={"gap": "0.5em"},
         )
 
-    def _render_item_editor(self, index, value):
+    def _render_item_editor(self, index, value) -> pn.widgets.WidgetBase:
         def on_item_value_change(e):
             v = list(self.value)
             v[index] = e.new
-            self.value = v
+            self._updating_from_item_editor = True
+            try:
+                self.value = v
+            finally:
+                self._updating_from_item_editor = False
 
         item_editor = self._item_editor_factory(index, value)
         item_editor.param.watch(on_item_value_change, "value")
