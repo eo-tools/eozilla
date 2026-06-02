@@ -7,11 +7,19 @@ import time
 from typing import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .exceptions import ServiceException
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=False,  # we disallow Cookie-Auth (FastAPI default)
+    allow_origins=["*"],  # we enforce Token-Auth anyway
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(ServiceException)

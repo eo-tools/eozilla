@@ -19,8 +19,6 @@ jobs:
         with:
           pixi-version: v0.67.2
           cache: true
-          auth-host: prefix.dev
-          auth-token: ${{ secrets.PREFIXDEV_AUTH_TOKEN }}
 
       - name: Run checks
         run: pixi run checks
@@ -38,4 +36,3 @@ jobs:
         run: pixi run build-docs
 
       # Add other pixi tasks here
-
