@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 
 from .exceptions import ServiceException
 
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
