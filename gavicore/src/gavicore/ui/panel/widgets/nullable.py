@@ -13,14 +13,14 @@ class NullableWidget(pn.widgets.WidgetBase, pn.custom.PyComponent):
 
     value = param.Parameter(default=None, allow_None=True)
 
-    def __init__(self, inner_widget: pn.widgets.WidgetBase, **params):
-        super().__init__(**params)
+    def __init__(self, inner_widget: pn.widgets.WidgetBase, name: str = "", **params):
+        super().__init__(name=name or inner_widget.name or "", **params)
 
         if "value" not in inner_widget.param:
             raise ValueError("inner must have a writable 'value' parameter")
 
         self._toggle = pn.widgets.Switch(
-            name=inner_widget.name,
+            name=self.name,
             value=self.value is not None,
             styles={"margin-bottom": "0px"},
         )
