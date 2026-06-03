@@ -3,6 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 import datetime
+import logging
 import os
 from functools import cached_property
 from typing import Any, Optional
@@ -38,6 +39,8 @@ from gavicore.models import (
 from procodile.workflow import FINAL_STEP_ID
 from wraptile.exceptions import ServiceException
 from wraptile.services.base import ServiceBase
+
+_log = logging.getLogger(__name__)
 
 DEFAULT_AIRFLOW_BASE_URL = "http://localhost:8080"
 
@@ -112,12 +115,11 @@ class AirflowService(ServiceBase):
 
         inputs: dict[str, InputDescription] = {}
         if dag_details.params:
-            # TODO: check that 'param_value' will be an instance of 'Param' model
             for param_key, param_value in dag_details.params.items():
-                # TODO: inputs[param_key] = InputDescription(param_value. ...)
-                print(f"    - {param_key} = {param_value} (type {type(param_value)}):")
-        else:
-            print("  No parameters (params) defined for this DAG.")
+                _log.debug("DAG param %r: %r", param_key, param_value)
+                input_desc = self._param_to_input_description(param_key, param_value)
+                if input_desc is not None:
+                    inputs[param_key] = input_desc
 
         # TODO: where to get outputs from?
         outputs: dict[str, OutputDescription] = {}
@@ -129,6 +131,29 @@ class AirflowService(ServiceBase):
             description=dag_details.doc_md or dag_details.description,
             inputs=inputs,
             outputs=outputs,
+        )
+
+    @staticmethod
+    def _param_to_input_description(
+        param_key: str, param_value: Any
+    ) -> InputDescription | None:
+        if not isinstance(param_value, dict):
+            return None
+        schema_dict: dict = param_value.get("schema", {})
+        default = param_value.get("value")
+        title = schema_dict.get("title")
+        description = param_value.get("description") or schema_dict.get("description")
+        nullable = bool(schema_dict.get("nullable", False))
+        schema_override: dict[str, Any] = {"default": default, "description": description}
+        if title is not None:
+            schema_override["title"] = title
+        return InputDescription.model_validate(
+            {
+                "schema": {**schema_dict, **schema_override},
+                "title": title,
+                "description": description,
+                "minOccurs": 0 if nullable else 1,
+            }
         )
 
     async def execute_process(
