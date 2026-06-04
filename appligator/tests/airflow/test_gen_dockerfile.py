@@ -8,6 +8,7 @@ import pytest
 
 from appligator.airflow.gen_dockerfile import (
     _copy_pyproject_toml_stripped,
+    _path_escapes_build_context,
     generate,
 )
 
@@ -425,3 +426,11 @@ class TestCopyPyprojectTomlStripped:
             "pypi-dependencies"
         ]
         assert "appligator" not in feature_deps
+
+
+class TestPathEscapesBuildContext:
+    def test_current_dir_segments_are_ignored(self):
+        assert _path_escapes_build_context("packages/./mypkg") is False
+
+    def test_parent_dir_segments_inside_context_are_collapsed(self):
+        assert _path_escapes_build_context("packages/inner/../mypkg") is False
