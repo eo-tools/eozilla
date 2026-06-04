@@ -255,7 +255,7 @@ class ConformanceDeclaration(OgcBaseModel):
     """The list of conformance classes."""
 
 
-class CRS(OgcBaseModel):
+class CRS(Enum):
     """Predefined CRS IDs."""
 
     CRS84 = "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
