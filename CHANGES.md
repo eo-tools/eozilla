@@ -17,6 +17,7 @@
 - Added missing API docs to `docs/cuiman/api.md` (deployed shortly after 0.1.0 release)
 - Fixed the PyPI release workflow (applied shortly after 0.1.0 release)
 - Fixed nullable input fields showing an empty label in the `cuiman` GUI.
+- Fixed test `appligator\tests\airflow\test_gen_dockerfile.py` failing on Windows OS.
 
 ### Other changes
 

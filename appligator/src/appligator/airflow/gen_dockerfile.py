@@ -4,7 +4,7 @@
 
 import shutil
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -229,7 +229,7 @@ def _copy_pyproject_toml_stripped(src: Path, dest: Path) -> None:
             if not (
                 isinstance(spec, dict)
                 and "path" in spec
-                and (Path(spec["path"]).is_absolute() or spec["path"].startswith(".."))
+                and _path_escapes_build_context(spec["path"])
             )
         }
 
@@ -245,3 +245,29 @@ def _copy_pyproject_toml_stripped(src: Path, dest: Path) -> None:
             )
 
     dest.write_bytes(tomli_w.dumps(data).encode())
+
+
+def _path_escapes_build_context(path: str) -> bool:
+    """Return True when a dependency path would not exist inside the build context.
+
+    TOML path dependencies may use either POSIX-style or Windows-style absolute
+    syntax regardless of the host platform. We therefore classify absolute
+    paths using both pure path parsers and then normalize relative segments to
+    catch paths that walk outside the context via ``..``.
+    """
+    if PurePosixPath(path).is_absolute() or PureWindowsPath(path).is_absolute():
+        return True
+
+    normalized_parts: list[str] = []
+    for part in path.replace("\\", "/").split("/"):
+        if not part or part == ".":
+            continue
+        if part == "..":
+            if normalized_parts and normalized_parts[-1] != "..":
+                normalized_parts.pop()
+            else:
+                normalized_parts.append(part)
+            continue
+        normalized_parts.append(part)
+
+    return bool(normalized_parts and normalized_parts[0] == "..")
