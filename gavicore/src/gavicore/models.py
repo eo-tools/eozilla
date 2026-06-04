@@ -224,8 +224,8 @@ class Link(OgcBaseModel):
 
     # -- recognized extensions
     options: dict[str, Any] | None = Field(None, alias="x-options")
-    """Extra storage options that are required to open the `href` URL
-    from its storage.
+    """Extra options that may be used by clients to access the `href` URL
+    it its file/data storage.
     """
 
 
