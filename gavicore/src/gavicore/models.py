@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from abc import ABC
 from datetime import date
 from enum import Enum
 from typing import Any, Literal, TypeAlias
@@ -13,6 +14,23 @@ from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootMo
 # ---------------------------------------------------------------------
 #    JSONSchema
 # ---------------------------------------------------------------------
+
+
+class OgcBaseModel(BaseModel, ABC):
+    """
+    Abstract base class for all OGC schemas defined in this module.
+
+    All models derived from this class are extensible with additional properties
+    not defined in the corresponding OGC schemas using the `additionalProperties`
+    mechanism defined in the
+    [OpenAPI 3.0 specification](https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.0.md).
+    """
+
+    model_config = ConfigDict(
+        # allow for extensions usually prefixed by "x-", e.g., "x-ui"
+        extra="allow",
+        json_schema_extra={"additionalProperties": True},
+    )
 
 
 class DataType(Enum):
@@ -26,7 +44,7 @@ class DataType(Enum):
     object = "object"
 
 
-class Schema(BaseModel):
+class Schema(OgcBaseModel):
     """Representation of the OpenAPI 3.0 Schema.
 
     The OpenAPI 3.0 Schema is a subset of JSON Schema draft-05
@@ -65,12 +83,6 @@ class Schema(BaseModel):
     application-specific fields are usually prefixed
     by `"x-"`. For example, `x-ui` or `x-ui:widget`.
     """
-
-    model_config = ConfigDict(
-        # allow for extensions usually prefixed by "x-", e.g., "x-ui"
-        extra="allow",
-        json_schema_extra={"additionalProperties": True},
-    )
 
     # general
     type: DataType | None = None
@@ -167,7 +179,7 @@ class Schema(BaseModel):
         )
 
 
-class Discriminator(BaseModel):
+class Discriminator(OgcBaseModel):
     """
     OpenAPI discriminator used in conjunctions with
     [`oneOf`][gavicore.models.Schema.oneOf]/[`anyOf`][gavicore.models.Schema.anyOf]
@@ -192,7 +204,7 @@ class Discriminator(BaseModel):
 # ---------------------------------------------------------------------
 
 
-class Link(BaseModel):
+class Link(OgcBaseModel):
     """A link."""
 
     href: str
@@ -210,13 +222,19 @@ class Link(BaseModel):
     title: str | None = None
     """The link's title."""
 
+    # -- recognized extensions
+    options: dict[str, Any] | None = Field(None, alias="x-options")
+    """Extra storage options that are required to open the `href` URL
+    from its storage.
+    """
+
 
 # ---------------------------------------------------------------------
 #    Service
 # ---------------------------------------------------------------------
 
 
-class Capabilities(BaseModel):
+class Capabilities(OgcBaseModel):
     title: str | None = Field(None, examples=["Example processing server"])
     """Capability title."""
 
@@ -230,14 +248,14 @@ class Capabilities(BaseModel):
     """Related links."""
 
 
-class ConformanceDeclaration(BaseModel):
+class ConformanceDeclaration(OgcBaseModel):
     """Declaration that describes the supported conformance classes."""
 
     conformsTo: list[str]
     """The list of conformance classes."""
 
 
-class CRS(Enum):
+class CRS(OgcBaseModel):
     """Predefined CRS IDs."""
 
     CRS84 = "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
@@ -246,7 +264,7 @@ class CRS(Enum):
     """CRS-84h."""
 
 
-class Bbox(BaseModel):
+class Bbox(OgcBaseModel):
     """A geographical bounding box."""
 
     bbox: list[float] = Field(..., max_length=4, min_length=4)
@@ -273,7 +291,7 @@ InlineValue: TypeAlias = (
 """An inline value."""
 
 
-class Metadata(BaseModel):
+class Metadata(OgcBaseModel):
     """A related metadata reference."""
 
     title: str | None = None
@@ -286,7 +304,7 @@ class Metadata(BaseModel):
     """Metadata's URL."""
 
 
-class AdditionalParameter(BaseModel):
+class AdditionalParameter(OgcBaseModel):
     """Additional parameter. Legacy, do not use."""
 
     name: str
@@ -302,14 +320,8 @@ class AdditionalParameters(Metadata):
     """The list of parameters."""
 
 
-class DescriptionType(BaseModel):
+class DescriptionType(OgcBaseModel):
     """Base class for description/metadata types."""
-
-    model_config = ConfigDict(
-        # allow for extensions usually prefixed by "x-", e.g., "x-ui"
-        extra="allow",
-        json_schema_extra={"additionalProperties": True},
-    )
 
     title: str | None = None
     """Human-readable title."""
@@ -327,7 +339,7 @@ class DescriptionType(BaseModel):
     """Optional list of additional parameters. Mostly ignored."""
 
 
-class Format(BaseModel):
+class Format(OgcBaseModel):
     """Specified a value's data type and encoding."""
 
     mediaType: str | None = None
@@ -396,7 +408,7 @@ class ProcessSummary(DescriptionType):
     """Related links."""
 
 
-class ProcessList(BaseModel):
+class ProcessList(OgcBaseModel):
     """A list of process summaries."""
 
     processes: list[ProcessSummary]
@@ -416,7 +428,7 @@ class ProcessDescription(ProcessSummary):
     """Descriptions of the process outputs."""
 
 
-class Output(BaseModel):
+class Output(OgcBaseModel):
     """Expected output of a process execution."""
 
     format: Format | None = None
@@ -433,7 +445,7 @@ class ResponseType(Enum):
     document = "document"
 
 
-class Subscriber(BaseModel):
+class Subscriber(OgcBaseModel):
     """
     Optional URIs for callbacks for this job.
 
@@ -452,7 +464,7 @@ class Subscriber(BaseModel):
     """Optional callback URI to notify in case of a job failure."""
 
 
-class ProcessRequest(BaseModel):
+class ProcessRequest(OgcBaseModel):
     """A request for a process execution."""
 
     inputs: dict[str, Any] | None = None
@@ -499,13 +511,8 @@ class JobControlOptions(Enum):
     dismiss = "dismiss"
 
 
-class JobInfo(BaseModel):
+class JobInfo(OgcBaseModel):
     """Information about a job."""
-
-    model_config = ConfigDict(
-        # allow for extensions, e.g., using field name prefix "x-"
-        extra="allow",
-    )
 
     jobID: str
     """The job identifier."""
@@ -546,7 +553,7 @@ class JobInfo(BaseModel):
     """Server-side traceback in case of failure."""
 
 
-class JobList(BaseModel):
+class JobList(OgcBaseModel):
     """A list of jobs."""
 
     jobs: list[JobInfo]
@@ -582,15 +589,10 @@ class JobResults(RootModel[dict[str, JobResult] | None]):
 # ---------------------------------------------------------------------
 
 
-class ApiError(BaseModel):
+class ApiError(OgcBaseModel):
     """
     API error information based on RFC 7807.
     """
-
-    model_config = ConfigDict(
-        # allow for extensions, e.g., using field name prefix "x-"
-        extra="allow",
-    )
 
     type: str
     """Error type."""
