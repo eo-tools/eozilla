@@ -12,6 +12,10 @@ from cuiman.api.exceptions import ClientError
 from cuiman.gui.jobs_observer import JobsObserver
 from gavicore.models import JobInfo, JobList
 
+from .util import PanelHeader
+
+header = PanelHeader(title="Job Information")
+
 
 @JobsObserver.register  # virtual subclass, no runtime checks
 class JobInfoPanelView(pn.viewable.Viewer):
@@ -64,7 +68,10 @@ class JobInfoPanelView(pn.viewable.Viewer):
     def _render_layout(self):
         if self.client_error is not None:
             self._layout.visible = True
-            self._layout[:] = [pn.pane.Markdown(f"⚠️ **Error**: {self.client_error}")]
+            self._layout[:] = [
+                header,
+                pn.pane.Markdown(f"⚠️ **Error**: {self.client_error}"),
+            ]
             return
 
         job_info: JobInfo = self.job_info
@@ -72,7 +79,7 @@ class JobInfoPanelView(pn.viewable.Viewer):
             if self._standalone:
                 self._layout.visible = True
                 self._message_pane.object = "ℹ️ No job to display."
-                self._layout.objects[:] = [self._message_pane]
+                self._layout.objects[:] = [header, self._message_pane]
             else:
                 self._layout.visible = False
                 self._layout.objects[:] = []
@@ -98,7 +105,7 @@ class JobInfoPanelView(pn.viewable.Viewer):
         self._message_pane.object = (
             f"**Message**: {job_info.message}" if job_info.message else ""
         )
-        self._layout[:] = [self._message_pane, pn.Row(column1, column2)]
+        self._layout[:] = [header, self._message_pane, pn.Row(column1, column2)]
         # pn.state.notifications.success(f"Change {job_info.updated}", duration=1000)
 
 
