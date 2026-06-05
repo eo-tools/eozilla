@@ -8,6 +8,7 @@ import pytest
 
 from appligator.airflow.gen_dockerfile import (
     _copy_pyproject_toml_stripped,
+    _path_escapes_build_context,
     generate,
 )
 
@@ -384,6 +385,19 @@ class TestCopyPyprojectTomlStripped:
         data = tomllib.loads(dest.read_text())
         assert "mypkg" not in data["tool"]["pixi"]["pypi-dependencies"]
 
+    def test_windows_absolute_path_dep_stripped(self, tmp_path):
+        src = tmp_path / "pyproject.toml"
+        src.write_text(
+            "[tool.pixi.pypi-dependencies]\n"
+            'mypkg = { path = "C:\\\\Users\\\\norma\\\\mypkg", editable = true }\n'
+        )
+        dest = tmp_path / "out.toml"
+        _copy_pyproject_toml_stripped(src, dest)
+        import tomllib
+
+        data = tomllib.loads(dest.read_text())
+        assert "mypkg" not in data["tool"]["pixi"]["pypi-dependencies"]
+
     def test_local_packages_dep_kept(self, tmp_path):
         src = tmp_path / "pyproject.toml"
         src.write_text(
@@ -412,3 +426,11 @@ class TestCopyPyprojectTomlStripped:
             "pypi-dependencies"
         ]
         assert "appligator" not in feature_deps
+
+
+class TestPathEscapesBuildContext:
+    def test_current_dir_segments_are_ignored(self):
+        assert _path_escapes_build_context("packages/./mypkg") is False
+
+    def test_parent_dir_segments_inside_context_are_collapsed(self):
+        assert _path_escapes_build_context("packages/inner/../mypkg") is False
