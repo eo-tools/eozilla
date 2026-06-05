@@ -200,9 +200,7 @@ def _open_finished_job_result(
     process_description = (
         client.get_process(job_info.processID) if job_info.processID else None
     )
-    ctx = _new_open_context(
-        client, job_info, job_results, options, process_description
-    )
+    ctx = _new_open_context(client, job_info, job_results, options, process_description)
     opener_registry = client.config.get_job_result_opener_registry()
     return run_sync(open_job_result, ctx, *opener_registry.opener_types)
 
@@ -214,9 +212,7 @@ async def _async_open_finished_job_result(
     process_description = (
         (await client.get_process(job_info.processID)) if job_info.processID else None
     )
-    ctx = _new_open_context(
-        client, job_info, job_results, options, process_description
-    )
+    ctx = _new_open_context(client, job_info, job_results, options, process_description)
     opener_registry = client.config.get_job_result_opener_registry()
     return await open_job_result(ctx, *opener_registry.opener_types)
 
@@ -245,9 +241,7 @@ def _monitor_update_sync(monitor: JobMonitor | None, job_info: JobInfo) -> None:
         run_sync(monitor.update, job_info)
 
 
-async def _monitor_update_async(
-    monitor: JobMonitor | None, job_info: JobInfo
-) -> None:
+async def _monitor_update_async(monitor: JobMonitor | None, job_info: JobInfo) -> None:
     if monitor is not None:
         await monitor.update(job_info)
 

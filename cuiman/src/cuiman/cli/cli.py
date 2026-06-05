@@ -278,11 +278,12 @@ def new_cli(
         config_file: Annotated[Optional[str], CONFIG_OPTION] = None,
     ):
         """Generate static sync and async service-specific clients."""
-        from .client import use_client
         from cuiman.api.service_client import (
             fetch_process_descriptions,
             write_service_client_modules,
         )
+
+        from .client import use_client
 
         with use_client(ctx, config_file) as client:
             process_descriptions = fetch_process_descriptions(client)

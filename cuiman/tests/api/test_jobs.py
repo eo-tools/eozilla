@@ -73,7 +73,9 @@ class FakeClient:
 
 
 class AsyncFakeClient(FakeClient):
-    async def execute_process(self, process_id: str, request: ProcessRequest) -> JobInfo:
+    async def execute_process(
+        self, process_id: str, request: ProcessRequest
+    ) -> JobInfo:
         return super().execute_process(process_id, request)
 
     async def get_job(self, job_id: str) -> JobInfo:

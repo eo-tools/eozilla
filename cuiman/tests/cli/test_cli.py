@@ -38,7 +38,8 @@ class CliTest(TestCase):
     @patch("cuiman.cli.config.login_for_tokens")
     def test_configure(self, mock_login):
         mock_login.return_value = LoginResult(
-            access_token="dummy-token", refresh_token="dummy-refresh"  # noqa: S106
+            access_token="dummy-token",
+            refresh_token="dummy-refresh",  # noqa: S106
         )
         config_path = Path("config.cfg")
         result = invoke_cli(

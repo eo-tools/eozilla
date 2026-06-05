@@ -144,7 +144,10 @@ class AirflowService(ServiceBase):
         title = schema_dict.get("title")
         description = param_value.get("description") or schema_dict.get("description")
         nullable = bool(schema_dict.get("nullable", False))
-        schema_override: dict[str, Any] = {"default": default, "description": description}
+        schema_override: dict[str, Any] = {
+            "default": default,
+            "description": description,
+        }
         if title is not None:
             schema_override["title"] = title
         return InputDescription.model_validate(
