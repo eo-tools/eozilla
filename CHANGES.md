@@ -28,6 +28,8 @@
 - Adjusted list of authors in all workspaces.
 - Added a context diagram to documentation index page and README.
 - Removed prefix.dev authorization parameters from CI workflow. (#103)
+- All model classes in `gavicore.models` are now extensible, i.e., not 
+  restricted to their defined attributes. (#110)
 
 
 ## Changes in version 0.1.0
