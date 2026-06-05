@@ -8,6 +8,7 @@ from .api.async_client import AsyncClient
 from .api.client import Client
 from .api.config import ClientConfig
 from .api.exceptions import ClientError
+from .api.jobs import JobMonitor, JobOptions
 
 __version__ = version("cuiman")
 
@@ -16,5 +17,7 @@ __all__ = [
     "Client",
     "ClientConfig",
     "ClientError",
+    "JobMonitor",
+    "JobOptions",
     "__version__",
 ]

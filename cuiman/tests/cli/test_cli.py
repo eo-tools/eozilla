@@ -38,7 +38,7 @@ class CliTest(TestCase):
     @patch("cuiman.cli.config.login_for_tokens")
     def test_configure(self, mock_login):
         mock_login.return_value = LoginResult(
-            access_token="dummy-token", refresh_token="dummy-refresh"
+            access_token="dummy-token", refresh_token="dummy-refresh"  # noqa: S106
         )
         config_path = Path("config.cfg")
         result = invoke_cli(
@@ -108,6 +108,24 @@ class CliTest(TestCase):
         result = invoke_cli("list-processes")
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual("links: []\nprocesses: []\n\n", result.output)
+
+    def test_generate_client(self):
+        runner = typer.testing.CliRunner()
+
+        def get_mock_client(_config_path: str | None):
+            return Client(api_url="https://abc.de", _transport=MockTransport())
+
+        with runner.isolated_filesystem():
+            result = runner.invoke(
+                cli,
+                ["generate-client", "acme"],
+                obj={"get_client": get_mock_client},
+            )
+            self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+            self.assertTrue(Path("acme_sync.py").exists())
+            self.assertTrue(Path("acme_async.py").exists())
+            self.assertIn("Generated sync client:", result.output)
+            self.assertIn("Generated async client:", result.output)
 
     def test_get_process(self):
         result = invoke_cli("get-process", "sleep_a_while")
