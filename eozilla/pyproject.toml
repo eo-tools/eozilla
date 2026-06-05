@@ -4,7 +4,7 @@
 
 [project]
 name = "eozilla"
-version = "0.1.1"
+version = "0.1.2.dev0"
 description = "Comprises all packages of the Eozilla suite"
 readme = "README.md"
 authors = [
@@ -41,11 +41,11 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
   # local dependencies
-  "appligator >=0.1.1",
-  "cuiman >=0.1.1",
-  "gavicore >=0.1.1",
-  "procodile >=0.1.1",
-  "wraptile >=0.1.1",
+  "appligator >=0.1.2.dev0",
+  "cuiman >=0.1.2.dev0",
+  "gavicore >=0.1.2.dev0",
+  "procodile >=0.1.2.dev0",
+  "wraptile >=0.1.2.dev0",
 ]
 
 [project.urls]

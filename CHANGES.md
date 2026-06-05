@@ -1,11 +1,10 @@
+## Changes in version 0.1.2 (in development)
+
 ## Changes in version 0.1.1
 
 ### Enhancements
 
 - Users can now store and reload process requests using the Cuiman GUI. (#40)
-
-### Other changes
-
 - Wraptile server enhancements:
   - Optional and unset properties are now excluded from JSON responses. (#108)
   - CORS is configured so that the server can be accessed from browsers 
