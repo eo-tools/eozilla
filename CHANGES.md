@@ -1,5 +1,11 @@
 ## Changes in version 0.1.2 (in development)
 
+### Enhancements
+
+- **Appligator** now supports node selectors and tolerations for generated pods via
+  `--node-selector key=value` and `--toleration key:operator[:value[:effect]]` CLI
+  options (both repeatable and configurable via `appligator-config.yaml`).
+
 ## Changes in version 0.1.1
 
 ### Enhancements
