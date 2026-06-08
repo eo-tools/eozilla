@@ -113,6 +113,61 @@ class ExecuteAndOpenResultTest(TestCase):
             )
         self.assertEqual("urn:eozilla:job-failed", e.value.api_error.type)
 
+    def test_monitor_receives_updates(self):
+        updates: list[JobStatus] = []
+
+        def on_update(job_info: JobInfo) -> None:
+            updates.append(job_info.status)
+
+        client = FakeClient(JobStatus.running, JobStatus.successful)
+        monitor = JobMonitor(on_update)
+        result = execute_and_open_result(
+            client,
+            "process_1",
+            ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
+            job_options=JobOptions(poll_interval=0.01, monitor=monitor),
+        )
+        self.assertEqual(mk_job_results(), result)
+        self.assertEqual(
+            [JobStatus.accepted, JobStatus.running, JobStatus.successful],
+            updates,
+        )
+        self.assertEqual(JobStatus.successful, monitor.latest.status)
+
+    def test_monitor_cancels_job(self):
+        client = FakeClient(JobStatus.running)
+        monitor = JobMonitor()
+        monitor.cancel()
+        with pytest.raises(ClientError, match="was cancelled") as e:
+            execute_and_open_result(
+                client,
+                "process_1",
+                ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
+                job_options=JobOptions(poll_interval=0.01, monitor=monitor),
+            )
+        self.assertTrue(client.dismissed)
+        self.assertEqual("urn:eozilla:job-cancelled", e.value.api_error.type)
+
+    def test_monitor_times_out(self):
+        client = FakeClient(JobStatus.running)
+        with pytest.raises(ClientError, match="did not finish within 0 seconds"):
+            execute_and_open_result(
+                client,
+                "process_1",
+                ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
+                job_options=JobOptions(poll_interval=0, timeout=0),
+            )
+
+    def test_successful_job_without_monitor(self):
+        client = FakeClient(JobStatus.running, JobStatus.successful)
+        result = execute_and_open_result(
+            client,
+            "process_1",
+            ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
+            job_options=JobOptions(poll_interval=0.01),
+        )
+        self.assertEqual(mk_job_results(), result)
+
 
 class AsyncExecuteAndOpenResultTest(IsolatedAsyncioTestCase):
     async def test_monitor_receives_updates(self):
@@ -136,6 +191,27 @@ class AsyncExecuteAndOpenResultTest(IsolatedAsyncioTestCase):
         )
         self.assertEqual(JobStatus.successful, monitor.latest.status)
 
+    async def test_monitor_update_without_handler(self):
+        monitor = JobMonitor()
+
+        await monitor.update(mk_job_info(JobStatus.running))
+
+        self.assertEqual(JobStatus.running, monitor.latest.status)
+        self.assertFalse(monitor.cancellation_requested)
+
+    async def test_monitor_update_with_sync_handler(self):
+        updates: list[JobStatus] = []
+
+        def on_update(job_info: JobInfo) -> None:
+            updates.append(job_info.status)
+
+        monitor = JobMonitor(on_update)
+
+        await monitor.update(mk_job_info(JobStatus.running))
+
+        self.assertEqual([JobStatus.running], updates)
+        self.assertEqual(JobStatus.running, monitor.latest.status)
+
     async def test_monitor_cancels_job(self):
         client = AsyncFakeClient(JobStatus.running)
         monitor = JobMonitor()
@@ -146,6 +222,26 @@ class AsyncExecuteAndOpenResultTest(IsolatedAsyncioTestCase):
                 "process_1",
                 ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
                 job_options=JobOptions(poll_interval=0.01, monitor=monitor),
-            )
+        )
         self.assertTrue(client.dismissed)
         self.assertEqual("urn:eozilla:job-cancelled", e.value.api_error.type)
+
+    async def test_monitor_times_out(self):
+        client = AsyncFakeClient(JobStatus.running)
+        with pytest.raises(ClientError, match="did not finish within 0 seconds"):
+            await async_execute_and_open_result(
+                client,
+                "process_1",
+                ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
+                job_options=JobOptions(poll_interval=0, timeout=0),
+            )
+
+    async def test_successful_job_without_monitor(self):
+        client = AsyncFakeClient(JobStatus.running, JobStatus.successful)
+        result = await async_execute_and_open_result(
+            client,
+            "process_1",
+            ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
+            job_options=JobOptions(poll_interval=0.01),
+        )
+        self.assertEqual(mk_job_results(), result)
