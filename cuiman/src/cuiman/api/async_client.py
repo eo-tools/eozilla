@@ -58,6 +58,7 @@ class AsyncClient(AsyncClientMixin):
             HttpxTransport(
                 api_url=self._config.api_url,
                 headers=self._config.auth_headers,
+                return_type_map=self._config.return_type_map,
                 async_token_refresher=self._config._make_async_token_refresher(),
                 debug=_debug,
             )

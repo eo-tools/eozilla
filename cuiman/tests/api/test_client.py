@@ -3,6 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 from unittest import TestCase
+from unittest.mock import patch
 
 import pytest
 
@@ -17,6 +18,7 @@ from gavicore.models import (
     ProcessDescription,
     ProcessList,
     ProcessRequest,
+    ApiError,
 )
 from gavicore.util.request import ExecutionRequest
 
@@ -65,6 +67,178 @@ class ClientTest(TestCase):
     def test_get_capabilities(self):
         result = self.client.get_capabilities()
         self.assertIsInstance(result, Capabilities)
+
+    def test_default_transport_is_created_from_config(self):
+        return_type_map = {JobInfo: dict}
+        with (
+            patch.object(ClientConfig, "return_type_map", return_type_map),
+            patch("cuiman.api.client.HttpxTransport") as httpx_transport_cls,
+        ):
+            transport = httpx_transport_cls.return_value
+
+            client = Client(
+                api_url="https://acme.ogc.org/api",
+                _debug=True,
+            )
+
+        self.assertIs(client._transport, transport)
+        httpx_transport_cls.assert_called_once()
+        _, kwargs = httpx_transport_cls.call_args
+        self.assertEqual("https://acme.ogc.org/api/", kwargs["api_url"])
+        self.assertEqual({}, kwargs["headers"])
+        self.assertIs(return_type_map, kwargs["return_type_map"])
+        self.assertIsNone(kwargs["token_refresher"])
+        self.assertTrue(kwargs["debug"])
+
+    def test_transport_args_for_all_endpoints(self):
+        request = ProcessRequest(inputs={"bbox": [10, 20, 30, 40]}, outputs={})
+        scenarios = [
+            (
+                lambda: self.client.get_capabilities(timeout=10),
+                Capabilities,
+                {
+                    "path": "/",
+                    "method": "get",
+                    "return_types": {"200": Capabilities},
+                    "error_types": {"500": ApiError},
+                    "extra_kwargs": {"timeout": 10},
+                },
+            ),
+            (
+                lambda: self.client.get_conformance(headers={"X-Test": "yes"}),
+                ConformanceDeclaration,
+                {
+                    "path": "/conformance",
+                    "method": "get",
+                    "return_types": {"200": ConformanceDeclaration},
+                    "error_types": {"500": ApiError},
+                    "extra_kwargs": {"headers": {"X-Test": "yes"}},
+                },
+            ),
+            (
+                lambda: self.client.get_processes(params={"limit": 5}),
+                ProcessList,
+                {
+                    "path": "/processes",
+                    "method": "get",
+                    "return_types": {"200": ProcessList},
+                    "extra_kwargs": {"params": {"limit": 5}},
+                },
+            ),
+            (
+                lambda: self.client.get_process("gobabeb_1", follow_redirects=True),
+                ProcessDescription,
+                {
+                    "path": "/processes/{processID}",
+                    "method": "get",
+                    "path_params": {"processID": "gobabeb_1"},
+                    "return_types": {"200": ProcessDescription},
+                    "error_types": {"404": ApiError},
+                    "extra_kwargs": {"follow_redirects": True},
+                },
+            ),
+            (
+                lambda: self.client.execute_process("gobabeb_1", request, timeout=60),
+                JobInfo,
+                {
+                    "path": "/processes/{processID}/execution",
+                    "method": "post",
+                    "path_params": {"processID": "gobabeb_1"},
+                    "request": request,
+                    "return_types": {"201": JobInfo},
+                    "error_types": {"404": ApiError, "500": ApiError},
+                    "extra_kwargs": {"timeout": 60},
+                },
+            ),
+            (
+                lambda: self.client.get_jobs(timeout=20),
+                JobList,
+                {
+                    "path": "/jobs",
+                    "method": "get",
+                    "return_types": {"200": JobList},
+                    "error_types": {"404": ApiError},
+                    "extra_kwargs": {"timeout": 20},
+                },
+            ),
+            (
+                lambda: self.client.get_job("job_12", timeout=30),
+                JobInfo,
+                {
+                    "path": "/jobs/{jobId}",
+                    "method": "get",
+                    "path_params": {"jobId": "job_12"},
+                    "return_types": {"200": JobInfo},
+                    "error_types": {"404": ApiError, "500": ApiError},
+                    "extra_kwargs": {"timeout": 30},
+                },
+            ),
+            (
+                lambda: self.client.dismiss_job("job_12", timeout=40),
+                JobInfo,
+                {
+                    "path": "/jobs/{jobId}",
+                    "method": "delete",
+                    "path_params": {"jobId": "job_12"},
+                    "return_types": {"200": JobInfo},
+                    "error_types": {"404": ApiError, "500": ApiError},
+                    "extra_kwargs": {"timeout": 40},
+                },
+            ),
+            (
+                lambda: self.client.get_job_results("job_12", timeout=50),
+                JobResults,
+                {
+                    "path": "/jobs/{jobId}/results",
+                    "method": "get",
+                    "path_params": {"jobId": "job_12"},
+                    "return_types": {"200": JobResults},
+                    "error_types": {"404": ApiError, "500": ApiError},
+                    "extra_kwargs": {"timeout": 50},
+                },
+            ),
+        ]
+
+        for call, result_type, expected in scenarios:
+            with self.subTest(path=expected["path"]):
+                self.transport.calls.clear()
+
+                result = call()
+
+                self.assertIsInstance(result, result_type)
+                self.assertEqual(1, len(self.transport.calls))
+                args = self.transport.calls[0]
+                for name, value in expected.items():
+                    self.assertEqual(value, getattr(args, name))
+                self.assertEqual(
+                    expected.get("path_params", {}),
+                    args.path_params,
+                )
+                self.assertEqual(
+                    expected.get("request"),
+                    args.request,
+                )
+                self.assertEqual(
+                    expected.get("error_types", {}),
+                    args.error_types,
+                )
+
+    def test_custom_transport_is_used_without_creating_httpx_transport(self):
+        with patch("cuiman.api.client.HttpxTransport") as httpx_transport_cls:
+            client = Client(
+                api_url="https://acme.ogc.org/api",
+                _transport=self.transport,
+            )
+
+        self.assertIs(client._transport, self.transport)
+        httpx_transport_cls.assert_not_called()
+
+    def test_close_without_transport_is_noop(self):
+        self.client._transport = None
+
+        self.client.close()
+
+        self.assertIsNone(self.client._transport)
 
     def test_get_conformance(self):
         result = self.client.get_conformance()
