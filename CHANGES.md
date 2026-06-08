@@ -1,5 +1,12 @@
 ## Changes in version 0.1.2 (in development)
 
+### Enhancements
+
+- Added new **Cuiman** CLI tool (`cuiman generate-client`) to generate higher-level 
+  client functions for given service. The command generates both a sync and async
+  Python API of the currently configured service. (#115) 
+  
+
 ## Changes in version 0.1.1
 
 ### Enhancements
