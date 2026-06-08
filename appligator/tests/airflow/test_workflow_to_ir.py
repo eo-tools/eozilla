@@ -75,6 +75,8 @@ class TestWorkflowToIR(unittest.TestCase):
             "resources": None,
             "pvc_mounts": [],
             "config_map_mounts": [],
+            "node_selector": None,
+            "tolerations": None,
         }
         expected = {
             "id": "wf",
@@ -120,6 +122,8 @@ class TestWorkflowToIR(unittest.TestCase):
                     "resources": None,
                     "pvc_mounts": [],
                     "config_map_mounts": [],
+                    "node_selector": None,
+                    "tolerations": None,
                     "inputs": {"upstream_task_id": "step"},
                     "outputs": [],
                     "depends_on": ["step"],
