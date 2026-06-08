@@ -6,7 +6,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from appligator.airflow.models import ConfigMapMount, PvcMount
+from appligator.airflow.models import ConfigMapMount, PvcMount, Toleration
 
 
 class AppligatorConfig(BaseModel):
@@ -37,6 +37,13 @@ class AppligatorConfig(BaseModel):
             config_map_name: s2gos-settings
             mount_path: /opt/pixi/s2gos_settings.yaml
             sub_path: s2gos_settings.yaml
+        node_selector:
+          pool: airflow-workers-big
+        tolerations:
+          - key: airflow/component
+            operator: Equal
+            value: worker
+            effect: NoSchedule
     """
 
     image_name: str | None = None
@@ -48,6 +55,8 @@ class AppligatorConfig(BaseModel):
     memory_limit: str | None = None
     pvc_mounts: list[PvcMount] = Field(default_factory=list)
     config_map_mounts: list[ConfigMapMount] = Field(default_factory=list)
+    node_selector: dict[str, str] = Field(default_factory=dict)
+    tolerations: list[Toleration] = Field(default_factory=list)
 
 
 def load_config(path: Path) -> AppligatorConfig:
