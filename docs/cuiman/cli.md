@@ -40,6 +40,7 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 **Commands**:
 
 * `configure`: Configure the client tool.
+* `generate-client`: Generate static sync and async...
 * `list-processes`: List available processes.
 * `get-process`: Get process details.
 * `create-request`: Create an execution request (template) for...
@@ -64,25 +65,36 @@ $ cuiman configure [OPTIONS]
 
 * `--api-url TEXT`: The URL of a service complying to the OGC API - Processes.
 * `-a, --auth-type TEXT`: The authorisation method for the API (none|basic|token|login|api-key).
-* `--auth-url TEXT`: The URL of the authorisation service for the API.
-* `--client-id TEXT`: OAuth2 client ID (used with `auth_type=login`).
-* `--client-secret TEXT`: OAuth2 client secret (optional for public clients).
+* `--auth-url TEXT`: The URL of the authorisation service for the API
 * `-u, --username TEXT`: Username.
 * `-p, --password TEXT`: Password.
+* `--client-id TEXT`: OAuth2 client ID for login authentication.
+* `--client-secret TEXT`: OAuth2 client secret for login authentication.
 * `-t, --token TEXT`: Access token.
 * `--use-bearer`: Use bearer token?
-* `--token-header TEXT`: Access token header.
+* `--token-header TEXT`: Access token header
 * `-c, --config PATH`: Client configuration file.
 * `--help`: Show this message and exit.
 
-For `auth_type=login`, the configure command performs a login call using the
-OAuth2 Resource Owner Password Credentials grant and stores the returned access
-token and (if provided) the `refresh_token` in the config file. When a refresh
-token is present, `cuiman` automatically refreshes on HTTP 401 and retries once.
+## `cuiman generate-client`
 
-Any `EOZILLA_*` environment variables (e.g. `EOZILLA_CLIENT_ID`,
-`EOZILLA_AUTH_URL`) are pre-filled as defaults in the interactive prompts,
-so they can be confirmed or overridden rather than re-typed each time.
+Generate static sync and async service-specific clients.
+
+**Usage**:
+
+```console
+$ cuiman generate-client [OPTIONS] NAME
+```
+
+**Arguments**:
+
+* `NAME`: Service name used for generated module and class names.  [required]
+
+**Options**:
+
+* `-o, --output-dir TEXT`: Directory where generated modules will be written.  [default: .]
+* `-c, --config PATH`: Client configuration file.
+* `--help`: Show this message and exit.
 
 ## `cuiman list-processes`
 

@@ -259,6 +259,40 @@ def new_cli(
         typer.echo(f"Client configuration written to {config_path}")
 
     @t.command()
+    def generate_client(
+        ctx: typer.Context,
+        name: Annotated[
+            str,
+            typer.Argument(
+                help="Service name used for generated module and class names.",
+            ),
+        ],
+        output_dir: Annotated[
+            str,
+            typer.Option(
+                "--output-dir",
+                "-o",
+                help="Directory where generated modules will be written.",
+            ),
+        ] = ".",
+        config_file: Annotated[Optional[str], CONFIG_OPTION] = None,
+    ):
+        """Generate static sync and async service-specific clients."""
+        from cuiman.api.service_client import (
+            fetch_process_descriptions,
+            write_service_client_modules,
+        )
+
+        from .client import use_client
+
+        with use_client(ctx, config_file) as client:
+            process_descriptions = fetch_process_descriptions(client)
+
+        paths = write_service_client_modules(name, process_descriptions, output_dir)
+        typer.echo(f"Generated sync client:  {paths['sync']}")
+        typer.echo(f"Generated async client: {paths['async']}")
+
+    @t.command()
     def list_processes(
         ctx: typer.Context,
         config_file: Annotated[Optional[str], CONFIG_OPTION] = None,

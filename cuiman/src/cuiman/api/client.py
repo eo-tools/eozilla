@@ -49,14 +49,16 @@ class Client(ClientMixin):
         self._config = ClientConfig.create(
             config=config,
             config_path=config_path,
+            load_file=config_path is not None,
             api_url=api_url,
             **config_kwargs,
         )
         if not self._config.api_url:
             raise ValueError("Required setting 'api_url' not configured")
+        api_url_ = f"{self._config.api_url.rstrip('/')}/"
         self._transport = (
             HttpxTransport(
-                api_url=self._config.api_url,
+                api_url=api_url_,
                 headers=self._config.auth_headers,
                 return_type_map=self._config.return_type_map,
                 token_refresher=self._config._maybe_make_token_refresher(),
