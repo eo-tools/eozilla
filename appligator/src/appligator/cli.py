@@ -17,7 +17,7 @@ CLI_NAME = "appligator"
 cli = typer.Typer(name=CLI_NAME)
 
 
-@cli.command()
+@cli.command(name=CLI_NAME)
 def main(
     process_registry_spec: Annotated[
         str | None,
