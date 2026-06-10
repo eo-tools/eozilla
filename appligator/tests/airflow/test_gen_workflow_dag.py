@@ -311,3 +311,22 @@ def test_pvc_and_config_map_mounts_combined():
     assert "k8s.V1ConfigMapVolumeSource(name='my-cfg')" in dag_code
     assert "k8s.V1VolumeMount(name='data', mount_path='/mnt/data')" in dag_code
     assert "k8s.V1VolumeMount(name='cfg', mount_path='/etc/cfg')" in dag_code
+
+
+def test_toleration_seconds_rendered_in_dag():
+    from appligator.airflow.models import Toleration
+
+    dag_code = gen_workflow_dag(
+        dag_id="first_workflow",
+        registry=first_step.registry,
+        image="example:latest",
+        tolerations=[
+            Toleration(
+                key="spot",
+                operator="Exists",
+                effect="NoExecute",
+                toleration_seconds=300,
+            )
+        ],
+    )
+    assert "toleration_seconds=300" in dag_code
