@@ -4,7 +4,8 @@
 
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Any
+from functools import cached_property
+from typing import Any, TYPE_CHECKING
 
 from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
 from gavicore.util.request import ExecutionRequest
@@ -16,6 +17,9 @@ from .defaults import (
 )
 from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
+
+if TYPE_CHECKING:
+    from .app.impl import AppStore
 
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with ClientMixin!
@@ -44,6 +48,17 @@ class AsyncClientMixin(ABC):
     @abstractmethod
     async def get_job_results(self, job_id: str, **kwargs: Any) -> JobResults:
         """Will be overridden by the actual client class."""
+
+    @cached_property
+    def app_store(self) -> "AppStore":
+        from .app.impl import AppStore
+
+        return AppStore()
+
+    def show_app(self, height: int = 600) -> None:
+        from .app.impl import serve
+
+        serve(self.app_store, iframe_height=height)
 
     async def create_execution_request(
         self,

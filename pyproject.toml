@@ -86,6 +86,8 @@ gavicore = { path = "./gavicore", editable = true }
 procodile = { path = "./procodile", editable = true }
 procodile-example = { path = "./procodile-example", editable = true }
 wraptile = { path = "./wraptile", editable = true }
+# Cuiman GUI
+remotestate = ">=0.1,<1"
 # Airflow is only available on PyPI
 apache-airflow-client = "==3.0.2"
 # Documentation
