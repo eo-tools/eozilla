@@ -6,9 +6,15 @@
   `--node-selector key=value` and `--toleration key:operator[:value[:effect]]` CLI
   options (both repeatable and configurable via `appligator-config.yaml`).
 
+### Fixes
+
+- **Appligator** `run_step.py`: improved input coercion to handle Pydantic model
+  inputs.
+
 ### Other changes
 
 - Updated appligator docs
+
 
 ## Changes in version 0.1.1
 
