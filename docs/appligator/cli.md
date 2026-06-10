@@ -27,6 +27,8 @@ $ appligator [OPTIONS] [PROCESS_REGISTRY_SPEC]
 * `--memory-limit TEXT`: Memory limit for every pod (e.g. `2Gi`).
 * `--pvc-mount TEXT`: Mount a PersistentVolumeClaim into every pod. Format: `name:claim_name:mount_path` (e.g. `--pvc-mount output:my-pvc:/mnt/output`). Repeatable.
 * `--config-map-mount TEXT`: Mount a ConfigMap into every pod. Format: `name:config_map_name:mount_path` or `name:config_map_name:mount_path:sub_path` (e.g. `--config-map-mount settings:my-cm:/app/settings.yaml:settings.yaml`). Repeatable.
+* `--node-selector TEXT`: Node selector label for every pod. Format: `key=value` (e.g. `--node-selector pool=airflow-workers-big`). Repeatable.
+* `--toleration TEXT`: Toleration for every pod. Format: `key:operator[:value[:effect]]` (e.g. `--toleration airflow/component:Equal:worker:NoSchedule`). Repeatable.
 * `--install-completion`: Install completion for the current shell.
 * `--show-completion`: Show completion for the current shell, to copy it or customize the installation.
 * `--help`: Show this message and exit.
