@@ -132,6 +132,27 @@ appligator my_app.processes:registry \
     --config-map-mount settings:app-settings:/app/settings.yaml:settings.yaml
 ```
 
+### Node selector
+
+Pin every pod to a specific node pool using `key=value` pairs. Repeatable:
+
+```commandline
+appligator my_app.processes:registry \
+    --image-name myrepo/myimage:latest \
+    --node-selector pool=airflow-workers-big
+```
+
+### Tolerations
+
+Add Kubernetes tolerations to every pod using the format
+`key:operator[:value[:effect]]`. Repeatable:
+
+```commandline
+appligator my_app.processes:registry \
+    --image-name myrepo/myimage:latest \
+    --toleration airflow/component:Equal:worker:NoSchedule
+```
+
 ---
 
 ## Using a config file
@@ -163,6 +184,15 @@ config_map_mounts:
     config_map_name: app-settings
     mount_path: /opt/pixi/app_settings.yaml
     sub_path: app_settings.yaml   # omit to mount the whole ConfigMap as a directory
+
+node_selector:
+  pool: airflow-workers-big
+
+tolerations:
+  - key: airflow/component
+    operator: Equal
+    value: worker
+    effect: NoSchedule
 ```
 
 Then run:
