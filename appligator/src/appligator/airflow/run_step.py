@@ -73,7 +73,7 @@ def coerce_inputs(func, inputs: dict[str, Any]) -> dict[str, Any]:
     except Exception:
         hints = {}  # fall through to json.loads fallback below
 
-    coerced = {}
+    coerced: dict[str, Any] = {}
     for key, value in inputs.items():
         if value is None:
             coerced[key] = value
@@ -92,13 +92,13 @@ def coerce_inputs(func, inputs: dict[str, Any]) -> dict[str, Any]:
                     try:
                         import ast
                         value = ast.literal_eval(value)
-                    except (ValueError, SyntaxError):
+                    except (ValueError, SyntaxError):  # pragma: no cover
                         pass
             # A procodile Workflow called directly returns {"return_value": result}
             # instead of the bare result. Unwrap it so PathRef receives the path string.
             if isinstance(value, dict) and "return_value" in value and "value" not in value:
                 value = value["return_value"]
-            coerced[key] = model_cls(value)
+            coerced[key] = model_cls.model_validate(value)
         elif isinstance(value, str):
             # Fallback: JSON-parse strings that look like non-string scalars.
             # "5.0" → 5.0, "true" → True, but "dummy" stays "dummy".
