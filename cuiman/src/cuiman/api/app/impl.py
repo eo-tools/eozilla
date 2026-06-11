@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import os
 from typing import Any, Literal, TypeVar, Generic
 
 import remotestate as rs
@@ -9,6 +10,8 @@ from gavicore.models import Output
 
 
 T = TypeVar("T")
+
+DIST_ENV_VAR = "EOZILLA_APP_DIST"
 
 
 class ProcessIO(Generic[T]):
@@ -65,5 +68,6 @@ class AppStore:
 
 
 def serve(app_store: AppStore | None = None, iframe_height: int = 600):
+    ui_dist = os.environ.get(DIST_ENV_VAR) or "dist"
     store = (app_store or AppStore()).store
-    rs.serve(rs.Service(store), ui_dist="dist/app", iframe_height=iframe_height)
+    rs.serve(rs.Service(store), ui_dist=ui_dist, iframe_height=iframe_height)
