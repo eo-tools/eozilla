@@ -29,6 +29,16 @@ class ConfigMapMount(BaseModel):
     sub_path: str | None = None
 
 
+class Toleration(BaseModel):
+    """A Kubernetes pod toleration."""
+
+    key: str
+    operator: str = "Equal"
+    value: str | None = None
+    effect: str | None = None
+    toleration_seconds: int | None = None
+
+
 class ResourceRequirements(BaseModel):
     """
     CPU and memory resource requests and limits for a container.
@@ -80,6 +90,8 @@ class TaskIR(BaseModel):
     resources: ResourceRequirements | None = None
     pvc_mounts: list[PvcMount] = Field(default_factory=list)
     config_map_mounts: list[ConfigMapMount] = Field(default_factory=list)
+    node_selector: dict[str, str] | None = None
+    tolerations: list[Toleration] | None = None
 
     # Data flow
     inputs: dict[str, str] = Field(default_factory=dict)
