@@ -12,9 +12,9 @@ import os
 import typing
 from typing import Any
 
-logger = logging.getLogger(__name__)
-
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 # Prefix used to identify step input environment variables.
 # Reserved for future use if inputs are passed via env vars instead of argv.
@@ -141,7 +141,7 @@ def resolve_function(module_name: str, qualname: str):
                 except StopIteration:
                     raise AttributeError(
                         f"Workflow registry has no main step (attr={attr!r})"
-                    )
+                    ) from None
             else:
                 raise
 
