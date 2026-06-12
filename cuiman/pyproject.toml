@@ -81,3 +81,7 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 # packages = ["cuiman"]
+
+[tool.setuptools.package-data]
+cuiman.app = ["dist/**/*"]
+

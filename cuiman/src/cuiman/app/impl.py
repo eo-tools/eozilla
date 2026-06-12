@@ -3,9 +3,18 @@
 #  https://opensource.org/license/apache-2-0.
 
 import os
+from socket import socket
 from typing import Any, Literal, TypeVar, Generic
 
+from importlib.resources import files
+from fastapi.staticfiles import StaticFiles
 import remotestate as rs
+
+from cuiman.app.display import (
+    create_app_iframe,
+    SerializedAppConfig,
+    AppColorSchemeInput,
+)
 from gavicore.models import Output
 
 
@@ -67,7 +76,41 @@ class AppStore:
         return ProcessStore(self.store, process_id)
 
 
-def serve(app_store: AppStore | None = None, iframe_height: int = 600):
-    ui_dist = os.environ.get(DIST_ENV_VAR) or "dist"
+def serve(
+    app_store: AppStore | None = None,
+    compact: bool = True,
+    config: SerializedAppConfig | None = None,
+    scheme: AppColorSchemeInput = "auto",
+    width: str = "100%",
+    height: int = 600,
+):
+    ui_dist = os.environ.get(DIST_ENV_VAR)
+    app_url: str | None = None
+    if ui_dist and ui_dist.startswith("http://") or ui_dist.startswith("https://"):
+        app_url = ui_dist
+    if not app_url:
+        if ui_dist:
+            static_path = ui_dist
+        else:
+            static_path = files("cuiman.app").joinpath("dist")
+        ui_dist = StaticFiles(directory=str(static_path), html=True)
+        port = _find_free_port()
+        app_url = f"http://127.0.0.1:{port}"
+
     store = (app_store or AppStore()).store
-    rs.serve(rs.Service(store), ui_dist=ui_dist, iframe_height=iframe_height)
+    rs.serve(rs.Service(store), ui_dist=ui_dist, port=port)
+
+    create_app_iframe(
+        app_url,
+        compact=compact,
+        config=config,
+        scheme=scheme,
+        width=width,
+        height=height,
+    )
+
+
+def _find_free_port() -> int:
+    with socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return int(s.getsockname()[1])

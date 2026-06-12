@@ -20,7 +20,7 @@ from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
 
 if TYPE_CHECKING:
-    from .app.impl import AppStore
+    from cuiman.app.impl import AppStore
 
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with AsyncClientMixin!
@@ -52,12 +52,12 @@ class ClientMixin(ABC):
 
     @cached_property
     def app_store(self) -> "AppStore":
-        from .app.impl import AppStore
+        from cuiman.app.impl import AppStore
 
         return AppStore()
 
     def show_app(self, height: int = 600) -> None:
-        from .app.impl import serve
+        from cuiman.app.impl import serve
 
         serve(self.app_store, iframe_height=height)
 

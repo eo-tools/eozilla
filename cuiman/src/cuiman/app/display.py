@@ -70,42 +70,38 @@ def display_packaged_app_iframe(
     )
 
 
-def display_app_iframe(
-    build_dir: str | Path,
+def create_app_iframe(
+    base_url: str,
     *,
     compact: bool = True,
     config: SerializedAppConfig | None = None,
     scheme: AppColorSchemeInput = "auto",
     width: str = "100%",
     height: int = 700,
-) -> None:
-    base_url = _serve_directory(Path(build_dir))
-
+) -> HTML:
     if scheme == "auto":
         query = get_query_args(compact=compact, config=config, scheme=None)
-        _display_iframe_auto_scheme_html(
+        return _create_iframe_auto_scheme_html(
             f"{base_url}/index.html{query}",
             width=width,
             height=height,
         )
-        return
+    else:
+        query = get_query_args(compact=compact, config=config, scheme=scheme)
+        return _create_iframe_html(
+            f"{base_url}/index.html{query}",
+            width=width,
+            height=height,
+        )
 
-    query = get_query_args(compact=compact, config=config, scheme=scheme)
-    _display_iframe_html(
-        f"{base_url}/index.html{query}",
-        width=width,
-        height=height,
-    )
 
-
-def _display_iframe_html(
+def _create_iframe_html(
     src: str,
     *,
     width: str,
     height: int,
-) -> None:
-    display(
-        HTML(
+) -> HTML:
+     return   HTML(
             f"""
             <iframe
                 src={json.dumps(src)}
@@ -119,14 +115,13 @@ def _display_iframe_html(
     )
 
 
-def _display_iframe_auto_scheme_html(
+def _create_iframe_auto_scheme_html(
     base_src: str,
     *,
     width: str,
     height: int,
-) -> None:
-    display(
-        HTML(
+) -> HTML:
+       return HTML(
             f"""
             <div class="eozilla-frame-root"></div>
             <script>
@@ -177,7 +172,6 @@ def _display_iframe_auto_scheme_html(
             }})();
             </script>
             """
-        )
     )
 
 
