@@ -507,6 +507,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zarr-3.1.6-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zict-3.0.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-3.23.1-pyhcf101f3_0.conda
+      - pypi: ../remotestate/remotestate-py
       - pypi: ./appligator
       - pypi: ./cuiman
       - pypi: ./eozilla
@@ -520,7 +521,6 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/2d/14/1c65fccf8413d5f5c6e8425f84675169654395098000d8bddc4e9d3390e1/jsbeautifier-1.15.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/53/c7/d168dd2e2120b1a61ffdcf6eaa6d992620a793d3bf7e12a59704eda1d83b/apache_airflow_client-3.0.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/96/fd/a40c621ff207f3ce8e484aa0fc8ba4eb6e3ecf52e15b42ba764b457a9550/editorconfig-0.17.1-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/c3/51/fdb91f958dc241bd79b796de4f0ded3fc9d14f8fb9048709482753772edc/remotestate-0.1.0-py3-none-any.whl
       osx-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/adwaita-icon-theme-49.0-unix_0.conda
@@ -981,6 +981,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zlib-ng-2.3.3-h8bce59a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstandard-0.25.0-py314hd1e8ddb_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-h3eecb57_6.conda
+      - pypi: ../remotestate/remotestate-py
       - pypi: ./appligator
       - pypi: ./cuiman
       - pypi: ./eozilla
@@ -994,7 +995,6 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/2d/14/1c65fccf8413d5f5c6e8425f84675169654395098000d8bddc4e9d3390e1/jsbeautifier-1.15.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/53/c7/d168dd2e2120b1a61ffdcf6eaa6d992620a793d3bf7e12a59704eda1d83b/apache_airflow_client-3.0.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/96/fd/a40c621ff207f3ce8e484aa0fc8ba4eb6e3ecf52e15b42ba764b457a9550/editorconfig-0.17.1-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/c3/51/fdb91f958dc241bd79b796de4f0ded3fc9d14f8fb9048709482753772edc/remotestate-0.1.0-py3-none-any.whl
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/anaconda-auth-0.14.4-pyhd8ed1ab_0.conda
@@ -1452,6 +1452,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py314hc5dbbe4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
+      - pypi: ../remotestate/remotestate-py
       - pypi: ./appligator
       - pypi: ./cuiman
       - pypi: ./eozilla
@@ -1465,7 +1466,6 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/2d/14/1c65fccf8413d5f5c6e8425f84675169654395098000d8bddc4e9d3390e1/jsbeautifier-1.15.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/53/c7/d168dd2e2120b1a61ffdcf6eaa6d992620a793d3bf7e12a59704eda1d83b/apache_airflow_client-3.0.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/96/fd/a40c621ff207f3ce8e484aa0fc8ba4eb6e3ecf52e15b42ba764b457a9550/editorconfig-0.17.1-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/c3/51/fdb91f958dc241bd79b796de4f0ded3fc9d14f8fb9048709482753772edc/remotestate-0.1.0-py3-none-any.whl
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
   build_number: 20
@@ -14622,6 +14622,13 @@ packages:
   purls: []
   size: 388453
   timestamp: 1764777142545
+- pypi: ../remotestate/remotestate-py
+  name: remotestate
+  requires_dist:
+  - fastapi>=0.136,<0.137
+  - pydantic>=2,<3
+  - uvicorn>=0.46,<0.47
+  requires_python: '>=3.12'
 - pypi: ./appligator
   name: appligator
   requires_dist:
@@ -14644,7 +14651,7 @@ packages:
   - pydantic
   - pydantic-settings
   - pyyaml
-  - remotestate
+  - remotestate>=0.1.0,<1
   - typer
   - uri-template
   - httpx
@@ -14749,12 +14756,3 @@ packages:
   requires_dist:
   - mypy>=1.15 ; extra == 'dev'
   requires_python: '>=3.9'
-- pypi: https://files.pythonhosted.org/packages/c3/51/fdb91f958dc241bd79b796de4f0ded3fc9d14f8fb9048709482753772edc/remotestate-0.1.0-py3-none-any.whl
-  name: remotestate
-  version: 0.1.0
-  sha256: aaeb909a860939dcd6080ea60dcd05e652df017b6205490e2b00cb5748b0a311
-  requires_dist:
-  - fastapi>=0.136,<0.137
-  - pydantic>=2,<3
-  - uvicorn>=0.46,<0.47
-  requires_python: '>=3.12'

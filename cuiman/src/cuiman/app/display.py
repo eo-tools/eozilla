@@ -4,105 +4,41 @@
 
 from __future__ import annotations
 
-import base64
+
 import json
-from typing import Literal
-from urllib.parse import urlencode
-from contextlib import ExitStack
-from functools import partial
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
-from socket import socket
-from threading import Thread
-from types import ModuleType
-from importlib import resources
 
-from IPython.display import HTML, display
-from pydantic import BaseModel
+from IPython.display import DisplayObject, HTML
 
 
-_APP_SERVERS: list[tuple[ThreadingHTTPServer, Thread]] = []
-# noinspection PyAbstractClass
-_APP_RESOURCE_STACK = ExitStack()
-
-
-AppColorScheme = Literal["dark", "light"]
-AppColorSchemeInput = AppColorScheme | Literal["auto"] | None
-
-ServiceProviderType = Literal["test", "dev", "custom", "system"]
-ServiceProviderOption = bool | int | float | str
-
-
-class ServiceProviderMeta(BaseModel):
-    type: ServiceProviderType
-    title: str
-    description: str | None = None
-    disabled: bool | None = None
-    hidden: bool | None = None
-
-
-class SerializedAppConfig(BaseModel):
-    serviceProviderId: str
-    serviceProviderMeta: ServiceProviderMeta
-    serviceProviderOptions: dict[str, ServiceProviderOption] = {}
-
-
-def display_packaged_app_iframe(
-    package: str | ModuleType,
-    resource_dir: str = "app",
+def get_app_display_object(
+    app_url: str,
     *,
-    compact: bool = True,
-    config: SerializedAppConfig | None = None,
-    scheme: AppColorSchemeInput = "auto",
+    auto_scheme: bool = False,
     width: str = "100%",
     height: int = 700,
-) -> None:
-    resource = resources.files(package).joinpath(resource_dir)
-    build_dir = _APP_RESOURCE_STACK.enter_context(resources.as_file(resource))
-
-    display_app_iframe(
-        build_dir,
-        compact=compact,
-        config=config,
-        scheme=scheme,
-        width=width,
-        height=height,
-    )
-
-
-def create_app_iframe(
-    base_url: str,
-    *,
-    compact: bool = True,
-    config: SerializedAppConfig | None = None,
-    scheme: AppColorSchemeInput = "auto",
-    width: str = "100%",
-    height: int = 700,
-) -> HTML:
-    if scheme == "auto":
-        query = get_query_args(compact=compact, config=config, scheme=None)
-        return _create_iframe_auto_scheme_html(
-            f"{base_url}/index.html{query}",
+) -> DisplayObject:
+    if auto_scheme:
+        return _get_iframe_auto_scheme_html(
+            app_url,
             width=width,
             height=height,
         )
     else:
-        query = get_query_args(compact=compact, config=config, scheme=scheme)
-        return _create_iframe_html(
-            f"{base_url}/index.html{query}",
+        return _get_iframe_html(
+            app_url,
             width=width,
             height=height,
         )
 
 
-def _create_iframe_html(
+def _get_iframe_html(
     src: str,
     *,
     width: str,
     height: int,
 ) -> HTML:
-     return   HTML(
-            f"""
+    return HTML(
+        f"""
             <iframe
                 src={json.dumps(src)}
                 width={json.dumps(width)}
@@ -111,18 +47,17 @@ def _create_iframe_html(
                 allow="clipboard-read; clipboard-write"
             ></iframe>
             """
-        )
     )
 
 
-def _create_iframe_auto_scheme_html(
+def _get_iframe_auto_scheme_html(
     base_src: str,
     *,
     width: str,
     height: int,
 ) -> HTML:
-       return HTML(
-            f"""
+    return HTML(
+        f"""
             <div class="eozilla-frame-root"></div>
             <script>
             (() => {{
@@ -173,47 +108,3 @@ def _create_iframe_auto_scheme_html(
             </script>
             """
     )
-
-
-def get_query_args(
-    compact: bool = True,
-    scheme: AppColorScheme | None = None,
-    config: SerializedAppConfig | None = None,
-) -> str:
-    params: dict[str, str] = {}
-
-    if compact:
-        params["compact"] = "1"
-
-    if scheme is not None:
-        params["scheme"] = scheme
-
-    if config is not None:
-        params["config"] = _base64url_json(config)
-
-    return f"?{urlencode(params)}" if params else ""
-
-
-def _base64url_json(value: BaseModel) -> str:
-    data = value.model_dump(mode="json", exclude_none=True)
-    json_bytes = json.dumps(data, separators=(",", ":")).encode("utf-8")
-    return base64.urlsafe_b64encode(json_bytes).decode("ascii").rstrip("=")
-
-
-def _serve_directory(directory: Path) -> str:
-    directory = directory.resolve()
-    port = _find_free_port()
-
-    handler = partial(SimpleHTTPRequestHandler, directory=str(directory))
-    server = ThreadingHTTPServer(("127.0.0.1", port), handler)
-    thread = Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-
-    _APP_SERVERS.append((server, thread))
-    return f"http://127.0.0.1:{port}"
-
-
-def _find_free_port() -> int:
-    with socket() as s:
-        s.bind(("127.0.0.1", 0))
-        return int(s.getsockname()[1])

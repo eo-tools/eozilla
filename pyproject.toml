@@ -87,7 +87,8 @@ procodile = { path = "./procodile", editable = true }
 procodile-example = { path = "./procodile-example", editable = true }
 wraptile = { path = "./wraptile", editable = true }
 # Cuiman GUI
-remotestate = ">=0.1,<1"
+# remotestate = ">=0.1,<1"
+remotestate = { path = "../remotestate/remotestate-py", editable = true }
 # Airflow is only available on PyPI
 apache-airflow-client = "==3.0.2"
 # Documentation

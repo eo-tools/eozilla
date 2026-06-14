@@ -20,7 +20,7 @@ from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
 
 if TYPE_CHECKING:
-    from cuiman.app.impl import AppStore
+    import remotestate as rs
 
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with AsyncClientMixin!
@@ -51,15 +51,15 @@ class ClientMixin(ABC):
         """Will be overridden by the actual client class."""
 
     @cached_property
-    def app_store(self) -> "AppStore":
-        from cuiman.app.impl import AppStore
+    def ui_data(self) -> "rs.Store":
+        from cuiman.app import create_remote_store
 
-        return AppStore()
+        return create_remote_store()
 
-    def show_app(self, height: int = 600) -> None:
-        from cuiman.app.impl import serve
+    def show_ui(self, height: int = 600) -> None:
+        from cuiman.app import serve
 
-        serve(self.app_store, iframe_height=height)
+        serve(self.config, self.ui_data, height=height)
 
     def create_execution_request(
         self,
