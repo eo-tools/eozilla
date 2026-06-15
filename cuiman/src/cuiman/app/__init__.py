@@ -3,9 +3,9 @@
 #  https://opensource.org/license/apache-2-0.
 
 from .serve import serve
-from .store import create_remote_store
+from .store import create_app_remote_store
 
 __all__ = [
-    "create_remote_store",
+    "create_app_remote_store",
     "serve",
 ]

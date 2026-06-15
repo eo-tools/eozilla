@@ -6,11 +6,10 @@ from typing import Any
 
 import remotestate as rs
 
-
 PROCESS_REQUESTS_KEY = "processRequests"
 
 
-def create_remote_store() -> rs.Store:
+def create_app_remote_store() -> rs.Store:
     return rs.Store(
         {
             PROCESS_REQUESTS_KEY: {},
@@ -20,7 +19,7 @@ def create_remote_store() -> rs.Store:
 
 
 def _create_defaults(path: rs.path.Path) -> Any:
-    print(f"_create_defaults: {rs.path.path_to_str(path)!r}")
+    # print(f"_create_defaults: {rs.path.path_to_str(path)!r}")
     if path[0] == rs.path.Property(PROCESS_REQUESTS_KEY):
         if len(path) == 2:
             # If e.g., path == "processRequests.generate_cube"

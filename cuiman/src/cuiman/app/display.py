@@ -10,7 +10,7 @@ import json
 from IPython.display import DisplayObject, HTML
 
 
-def get_app_display_object(
+def create_app_display_object(
     app_url: str,
     auto_scheme: bool,
     width: int | str,
@@ -36,17 +36,15 @@ def _get_iframe_html(
     width: int | str,
     height: int | str,
 ) -> HTML:
-    return HTML(
-        f"""
+    return HTML(f"""
             <iframe
                 src={json.dumps(src)}
-                width={json.dumps(width)}
-                height={json.dumps(height)}
-                style={json.dumps(f"border: 0; width: {width}; height: {height};")}
+                width={json.dumps(_norm_size(width))}
+                height={json.dumps(_norm_size(height))}
+                style={json.dumps(f"border: 0; width: {_norm_size(width)}; height: {_norm_size(height)};")}
                 allow="clipboard-read; clipboard-write"
             ></iframe>
-            """
-    )
+            """)
 
 
 def _get_iframe_auto_scheme_html(
@@ -55,8 +53,7 @@ def _get_iframe_auto_scheme_html(
     width: int | str,
     height: int | str,
 ) -> HTML:
-    return HTML(
-        f"""
+    return HTML(f"""
             <div class="eozilla-frame-root"></div>
             <script>
             (() => {{
@@ -95,15 +92,20 @@ def _get_iframe_auto_scheme_html(
 
               const iframe = document.createElement("iframe");
               iframe.src = src.toString();
-              iframe.width = {json.dumps(width)};
-              iframe.height = {json.dumps(height)};
+              iframe.width = {json.dumps(_norm_size(width))};
+              iframe.height = {json.dumps(_norm_size(height))};
               iframe.style.border = "0";
-              iframe.style.width = {json.dumps(width)};
-              iframe.style.height = {json.dumps(height)};
+              iframe.style.width = {json.dumps(_norm_size(width))};
+              iframe.style.height = {json.dumps(_norm_size(height))};
               iframe.allow = "clipboard-read; clipboard-write";
 
               root.replaceChildren(iframe);
             }})();
             </script>
-            """
-    )
+            """)
+
+
+def _norm_size(size: int | float | str) -> str:
+    if isinstance(size, str):
+        return size
+    return f"{size}px"

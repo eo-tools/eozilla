@@ -52,9 +52,9 @@ class ClientMixin(ABC):
 
     @cached_property
     def ui_data(self) -> "rs.Store":
-        from cuiman.app import create_remote_store
+        from cuiman.app import create_app_remote_store
 
-        return create_remote_store()
+        return create_app_remote_store()
 
     def show_ui(self, height: int = 600) -> None:
         from cuiman.app import serve

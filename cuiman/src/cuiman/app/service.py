@@ -9,7 +9,6 @@ from pydantic import BaseModel
 
 from cuiman.api.config import ClientConfig
 
-
 ServiceProviderType = Literal["test", "dev", "custom", "system"]
 ServiceProviderOption = bool | int | float | str | None
 
@@ -28,7 +27,7 @@ class ServiceProvider(BaseModel):
     options: dict[str, ServiceProviderOption] = {}
 
 
-def get_service_provider(client_config: ClientConfig) -> ServiceProvider:
+def create_app_service_provider(client_config: ClientConfig) -> ServiceProvider:
     # noinspection PyTypeChecker
     return ServiceProvider(
         id="client",

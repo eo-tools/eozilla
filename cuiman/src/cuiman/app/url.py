@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from .service import ServiceProvider
 
 
-def get_app_url(
+def create_app_url(
     base_url: str,
     ws_url: str,
     *,
