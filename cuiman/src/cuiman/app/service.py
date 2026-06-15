@@ -22,22 +22,22 @@ class ServiceProviderMeta(BaseModel):
     hidden: bool | None = None
 
 
-class AppConfig(BaseModel):
-    serviceProviderId: str
-    serviceProviderMeta: ServiceProviderMeta
-    serviceProviderOptions: dict[str, ServiceProviderOption] = {}
+class ServiceProvider(BaseModel):
+    id: str
+    meta: ServiceProviderMeta
+    options: dict[str, ServiceProviderOption] = {}
 
 
-def get_app_config(client_config: ClientConfig) -> AppConfig:
+def get_service_provider(client_config: ClientConfig) -> ServiceProvider:
     # noinspection PyTypeChecker
-    return AppConfig(
-        serviceProviderId="client",
-        serviceProviderMeta=ServiceProviderMeta(
+    return ServiceProvider(
+        id="client",
+        meta=ServiceProviderMeta(
             type="custom",
             title="Client",
             description="In-app provider",
         ),
-        serviceProviderOptions={
+        options={
             "apiUrl": client_config.api_url,
             "authType": client_config.auth_type,
             "authUrl": client_config.auth_url,

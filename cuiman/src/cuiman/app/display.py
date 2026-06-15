@@ -12,10 +12,9 @@ from IPython.display import DisplayObject, HTML
 
 def get_app_display_object(
     app_url: str,
-    *,
-    auto_scheme: bool = False,
-    width: str = "100%",
-    height: int = 700,
+    auto_scheme: bool,
+    width: int | str,
+    height: int | str,
 ) -> DisplayObject:
     if auto_scheme:
         return _get_iframe_auto_scheme_html(
@@ -34,16 +33,16 @@ def get_app_display_object(
 def _get_iframe_html(
     src: str,
     *,
-    width: str,
-    height: int,
+    width: int | str,
+    height: int | str,
 ) -> HTML:
     return HTML(
         f"""
             <iframe
                 src={json.dumps(src)}
                 width={json.dumps(width)}
-                height={json.dumps(str(height))}
-                style={json.dumps(f"border: 0; width: {width}; height: {height}px;")}
+                height={json.dumps(height)}
+                style={json.dumps(f"border: 0; width: {width}; height: {height};")}
                 allow="clipboard-read; clipboard-write"
             ></iframe>
             """
@@ -53,8 +52,8 @@ def _get_iframe_html(
 def _get_iframe_auto_scheme_html(
     base_src: str,
     *,
-    width: str,
-    height: int,
+    width: int | str,
+    height: int | str,
 ) -> HTML:
     return HTML(
         f"""
@@ -97,10 +96,10 @@ def _get_iframe_auto_scheme_html(
               const iframe = document.createElement("iframe");
               iframe.src = src.toString();
               iframe.width = {json.dumps(width)};
-              iframe.height = {json.dumps(str(height))};
+              iframe.height = {json.dumps(height)};
               iframe.style.border = "0";
               iframe.style.width = {json.dumps(width)};
-              iframe.style.height = {json.dumps(f"{height}px")};
+              iframe.style.height = {json.dumps(height)};
               iframe.allow = "clipboard-read; clipboard-write";
 
               root.replaceChildren(iframe);

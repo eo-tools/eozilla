@@ -14,7 +14,7 @@ from urllib.parse import urlencode
 
 from pydantic import BaseModel
 
-from .config import AppConfig
+from .service import ServiceProvider
 
 
 def get_app_url(
@@ -23,12 +23,12 @@ def get_app_url(
     *,
     compact: bool = True,
     scheme: Literal["dark", "light", "auto"] | None = None,
-    config: AppConfig | None = None,
+    service: ServiceProvider | None = None,
 ) -> str:
     query = get_query_args(
         ws_url=ws_url,
         compact=compact,
-        config=config,
+        service=service,
         scheme=scheme if scheme != "auto" else None,
     )
     return f"{base_url}/index.html{query}"
@@ -38,7 +38,7 @@ def get_query_args(
     ws_url: str | None = None,
     compact: bool = True,
     scheme: Literal["dark", "light"] | None = None,
-    config: AppConfig | None = None,
+    service: ServiceProvider | None = None,
     nocache: bool = True,
 ) -> str:
     params: dict[str, str] = {}
@@ -55,8 +55,8 @@ def get_query_args(
     if scheme is not None:
         params["scheme"] = scheme
 
-    if config is not None:
-        params["config"] = _base64url_json(config)
+    if service is not None:
+        params["service"] = _base64url_json(service)
 
     return f"?{urlencode(params)}" if params else ""
 

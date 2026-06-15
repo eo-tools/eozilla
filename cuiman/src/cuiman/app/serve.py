@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 import remotestate as rs
 
 from cuiman.api.config import ClientConfig
-from .config import get_app_config
+from .service import get_service_provider
 from .display import get_app_display_object
 from .url import get_app_url
 
@@ -58,7 +58,7 @@ def serve(
         f"ws://127.0.0.1:{port}/ws",
         compact=compact,
         scheme=scheme,
-        config=get_app_config(config),
+        service=get_service_provider(config),
     )
 
     if open_in_browser:
@@ -70,7 +70,7 @@ def serve(
         from IPython.display import display
 
         display_object = get_app_display_object(
-            app_url, auto_scheme=scheme == "auto", width=width, height=height
+            app_url, scheme == "auto", width, height
         )
         display(display_object)
 

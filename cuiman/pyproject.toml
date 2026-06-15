@@ -47,7 +47,7 @@ dependencies = [
   "pydantic",
   "pydantic-settings",
   "pyyaml",
-  "remotestate >=0.1.0,<1",
+  "remotestate >=0.2.0.dev0,<1",
   "typer",
   "uri-template",
   "httpx",
