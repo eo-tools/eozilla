@@ -4,10 +4,8 @@
 
 import os
 from importlib.resources import files
-from socket import socket
-from typing import Any, Literal
+from typing import Literal
 
-from fastapi.staticfiles import StaticFiles
 import remotestate as rs
 
 from cuiman.api.config import ClientConfig
@@ -27,82 +25,45 @@ def serve(
     scheme: Literal["dark", "light", "auto"] = "auto",
     width: int | str = "100%",
     height: int | str = 600,
-    open_in_browser: bool = False,
-    open_in_notebook: bool = True,
-):
-    # --- Serve the app
+    display: Literal["browser", "notebook", "none"] = "notebook",
+) -> rs.ServeResult:
+    app_dist = _get_app_dist_url_or_dir(os.environ.get(DIST_ENV_VAR))
 
-    server_host = "127.0.0.1"
-    server_port = _find_free_port()
-
-    app_dist_url, app_dist_dir = _get_app_dist_url_or_dir(
-        dist_url_or_dir=os.environ.get(DIST_ENV_VAR),
-        server_host=server_host,
-        server_port=server_port,
-    )
-
-    rs.serve(
+    server = rs.serve(
         rs.Service(ui_data),
-        ui_dist=app_dist_dir,
-        host=server_host,
-        port=server_port,
-        open_browser=False,
-        open_iframe=False,
+        ui_dist=app_dist,
+        host="127.0.0.1",
+        display="none",
     )
 
-    # --- Open the app
-
-    app_url = create_app_url(
-        app_dist_url,
-        f"ws://{server_host}:{server_port}/ws",
-        compact=compact,
-        debug=debug,
-        scheme=scheme,
-        service=create_app_service_provider(config),
-    )
-
-    if open_in_browser:
-        import webbrowser
-
-        webbrowser.open(app_url)
-
-    elif open_in_notebook:
-        from IPython.display import display
-
-        display_object = create_app_display_object(
-            app_url, scheme == "auto", width, height
+    if display != "none":
+        app_url = create_app_url(
+            server.ui_base_url,
+            server.ws_url,
+            compact=compact,
+            debug=debug,
+            scheme=scheme,
+            service=create_app_service_provider(config),
         )
-        display(display_object)
+
+        if display == "browser":
+            import webbrowser
+
+            webbrowser.open(app_url)
+
+        elif display == "notebook":
+            from IPython.display import display as ipython_display
+
+            display_object = create_app_display_object(
+                app_url, scheme == "auto", width, height
+            )
+            ipython_display(display_object)
+
+    return server
 
 
-def _get_app_dist_url_or_dir(
-    dist_url_or_dir: str | None,
-    server_host: str | None,
-    server_port: int | None,
-) -> tuple[str, StaticFiles | None]:
-    server_host = "127.0.0.1" if server_host is None else server_host
-    server_port = _find_free_port() if server_port is None else server_port
-    dist_url = f"http://{server_host}:{server_port}"
-    dist_dir: StaticFiles | None = None
-    if isinstance(dist_url_or_dir, str) and dist_url_or_dir:
-        if _is_url_str(dist_url_or_dir):
-            dist_url = dist_url_or_dir
-        else:
-            dist_dir = StaticFiles(directory=dist_url_or_dir, html=True)
-    else:
-        # noinspection PyStringConversionWithoutDunderMethod
-        directory = str(files("cuiman.app").joinpath("dist"))
-        dist_dir = StaticFiles(directory=directory, html=True)
-    return dist_url, dist_dir
+def _get_app_dist_url_or_dir(dist_url_or_dir: str | None) -> str:
+    if dist_url_or_dir:
+        return dist_url_or_dir
 
-
-def _find_free_port() -> int:
-    with socket() as s:
-        s.bind(("127.0.0.1", 0))
-        return int(s.getsockname()[1])
-
-
-def _is_url_str(value: Any) -> bool:
-    return isinstance(value, str) and (
-        value.startswith("http://") or value.startswith("https://")
-    )
+    return str(files("cuiman.app").joinpath("dist"))
