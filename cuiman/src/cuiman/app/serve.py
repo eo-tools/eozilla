@@ -1,7 +1,3 @@
-#  Copyright (c) 2026 by the Eozilla team and contributors
-#  Permissions are hereby granted under the terms of the Apache 2.0 License:
-#  https://opensource.org/license/apache-2-0.
-
 import os
 from importlib.resources import files
 from typing import Literal
@@ -9,8 +5,8 @@ from typing import Literal
 import remotestate as rs
 
 from cuiman.api.config import ClientConfig
-from .service import create_app_service_provider
 from .display import create_app_display_object
+from .service import create_app_service_provider
 from .url import create_app_url
 
 DIST_ENV_VAR = "EOZILLA_APP_DIST"
@@ -36,28 +32,30 @@ def serve(
         display="none",
     )
 
-    if display != "none":
-        app_url = create_app_url(
-            server.ui_base_url,
-            server.ws_url,
-            compact=compact,
-            debug=debug,
-            scheme=scheme,
-            service=create_app_service_provider(config),
+    if display == "none":
+        return server
+
+    app_url = create_app_url(
+        server.ui_base_url,
+        server.ws_url,
+        compact=compact,
+        debug=debug,
+        scheme=scheme,
+        service=create_app_service_provider(config),
+    )
+
+    if display == "browser":
+        import webbrowser
+
+        webbrowser.open(app_url)
+
+    elif display == "notebook":
+        from IPython.display import display as ipython_display
+
+        display_object = create_app_display_object(
+            app_url, scheme == "auto", width, height
         )
-
-        if display == "browser":
-            import webbrowser
-
-            webbrowser.open(app_url)
-
-        elif display == "notebook":
-            from IPython.display import display as ipython_display
-
-            display_object = create_app_display_object(
-                app_url, scheme == "auto", width, height
-            )
-            ipython_display(display_object)
+        ipython_display(display_object)
 
     return server
 
