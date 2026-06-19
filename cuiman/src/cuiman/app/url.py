@@ -26,6 +26,12 @@ def create_app_url(
     scheme: Literal["dark", "light", "auto"] | None = None,
     service: ServiceProvider | None = None,
 ) -> str:
+    if base_url.startswith("https://") and ws_url.startswith("ws://"):
+        raise ValueError(
+            f"Cannot use a URL {base_url} with an insecure WebSocket "
+            f"URL at {ws_url}. Use an HTTP URL, mount the app locally, or serve the "
+            "backend with TLS so the WebSocket URL is wss://."
+        )
     query = get_query_args(
         ws_url=ws_url,
         compact=compact,
@@ -33,7 +39,7 @@ def create_app_url(
         scheme=scheme if scheme != "auto" else None,
         service=service,
     )
-    return f"{base_url}/index.html{query}"
+    return f"{base_url}{'' if base_url.endswith('/') else '/'}index.html{query}"
 
 
 def get_query_args(

@@ -6,6 +6,8 @@ import base64
 import json
 from urllib.parse import parse_qs, urlsplit
 
+import pytest
+
 from cuiman.app import url
 from cuiman.app.service import ServiceProvider, ServiceProviderMeta
 
@@ -15,11 +17,19 @@ def decode_base64url_json(value: str) -> dict:
     return json.loads(base64.urlsafe_b64decode(value + padding))
 
 
+def test_create_app_url_raises_for_https_and_ws(monkeypatch):
+    with pytest.raises(ValueError, match="Cannot use a URL https://app.example.test "):
+        url.create_app_url(
+            "https://app.example.test",
+            "ws://127.0.0.1:9876/ws",
+        )
+
+
 def test_create_app_url_omits_auto_scheme(monkeypatch):
     monkeypatch.setattr(url.time, "time", lambda: 1234.9)
 
     app_url = url.create_app_url(
-        "https://app.example.test",
+        "http://localhost:5173/",
         "ws://127.0.0.1:9876/ws",
         compact=True,
         debug=True,
@@ -27,8 +37,8 @@ def test_create_app_url_omits_auto_scheme(monkeypatch):
     )
 
     parts = urlsplit(app_url)
-    assert parts.scheme == "https"
-    assert parts.netloc == "app.example.test"
+    assert parts.scheme == "http"
+    assert parts.netloc == "localhost:5173"
     assert parts.path == "/index.html"
 
     query = parse_qs(parts.query)
