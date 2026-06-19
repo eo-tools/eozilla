@@ -22,6 +22,7 @@ def test_create_app_url_omits_auto_scheme(monkeypatch):
         "https://app.example.test",
         "ws://127.0.0.1:9876/ws",
         compact=True,
+        debug=True,
         scheme="auto",
     )
 
@@ -35,6 +36,7 @@ def test_create_app_url_omits_auto_scheme(monkeypatch):
         "_t": ["1234"],
         "ws": ["ws://127.0.0.1:9876/ws"],
         "compact": ["1"],
+        "debug": ["1"],
     }
 
 
@@ -64,6 +66,7 @@ def test_get_query_args_encodes_explicit_options(monkeypatch):
     assert query["ws"] == ["ws://localhost/ws"]
     assert query["compact"] == ["1"]
     assert query["scheme"] == ["dark"]
+    assert "debug" not in query
 
     assert decode_base64url_json(query["service"][0]) == {
         "id": "client",

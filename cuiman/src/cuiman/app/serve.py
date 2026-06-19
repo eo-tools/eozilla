@@ -23,6 +23,7 @@ def serve(
     ui_data: rs.Store,
     *,
     compact: bool = True,
+    debug: bool = False,
     scheme: Literal["dark", "light", "auto"] = "auto",
     width: int | str = "100%",
     height: int | str = 600,
@@ -55,6 +56,7 @@ def serve(
         app_dist_url,
         f"ws://{server_host}:{server_port}/ws",
         compact=compact,
+        debug=debug,
         scheme=scheme,
         service=create_app_service_provider(config),
     )

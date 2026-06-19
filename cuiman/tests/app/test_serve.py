@@ -194,12 +194,13 @@ def install_serve_fakes(monkeypatch):
     def fake_serve(service, **kwargs):
         calls["served"].append({"service": service, **kwargs})
 
-    def fake_create_app_url(base_url, ws_url, *, compact, scheme, service):
+    def fake_create_app_url(base_url, ws_url, *, compact, debug, scheme, service):
         calls["url"].append(
             {
                 "base_url": base_url,
                 "ws_url": ws_url,
                 "compact": compact,
+                "debug": debug,
                 "scheme": scheme,
                 "service": service,
             }

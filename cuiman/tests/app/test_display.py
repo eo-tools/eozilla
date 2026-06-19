@@ -17,9 +17,9 @@ def test_create_app_display_object_returns_plain_iframe_html():
 
     assert isinstance(display_object, HTML)
     assert 'src="https://example.test/app?x=1&y=two"' in display_object.data
-    assert "width=320" in display_object.data
+    assert 'width="320px"' in display_object.data
     assert 'height="75vh"' in display_object.data
-    assert 'style="border: 0; width: 320; height: 75vh;"' in display_object.data
+    assert 'style="border: 0; width: 320px; height: 75vh;"' in display_object.data
     assert 'allow="clipboard-read; clipboard-write"' in display_object.data
 
 
@@ -38,4 +38,4 @@ def test_create_app_display_object_returns_auto_scheme_html():
     )
     assert 'src.searchParams.set("scheme", scheme)' in display_object.data
     assert 'iframe.width = "100%"' in display_object.data
-    assert "iframe.height = 600" in display_object.data
+    assert 'iframe.height = "600px"' in display_object.data

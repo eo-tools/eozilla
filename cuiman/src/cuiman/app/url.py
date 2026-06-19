@@ -22,41 +22,47 @@ def create_app_url(
     ws_url: str,
     *,
     compact: bool = True,
+    debug: bool = False,
     scheme: Literal["dark", "light", "auto"] | None = None,
     service: ServiceProvider | None = None,
 ) -> str:
     query = get_query_args(
         ws_url=ws_url,
         compact=compact,
-        service=service,
+        debug=debug,
         scheme=scheme if scheme != "auto" else None,
+        service=service,
     )
     return f"{base_url}/index.html{query}"
 
 
 def get_query_args(
-    ws_url: str | None = None,
     compact: bool = True,
+    debug: bool = False,
+    nocache: bool = True,
     scheme: Literal["dark", "light"] | None = None,
     service: ServiceProvider | None = None,
-    nocache: bool = True,
+    ws_url: str | None = None,
 ) -> str:
     params: dict[str, str] = {}
-
-    if nocache:
-        params["_t"] = str(int(time.time()))
-
-    if ws_url:
-        params["ws"] = ws_url
 
     if compact:
         params["compact"] = "1"
 
+    if debug:
+        params["debug"] = "1"
+
     if scheme is not None:
         params["scheme"] = scheme
 
+    if nocache:
+        params["_t"] = str(int(time.time()))
+
     if service is not None:
         params["service"] = _base64url_json(service)
+
+    if ws_url:
+        params["ws"] = ws_url
 
     return f"?{urlencode(params)}" if params else ""
 
