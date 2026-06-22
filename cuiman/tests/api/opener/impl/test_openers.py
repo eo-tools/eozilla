@@ -11,14 +11,14 @@ import pytest
 import xarray as xr
 from PIL import Image
 
-from cuiman.api.opener import JobResultOpenError
+from cuiman.api.opener import JobResultOpenContext, JobResultOpenError
 from cuiman.api.opener.impl import (
     GeopandasDataFrameOpener,
     PandasDataFrameOpener,
     PngImageOpener,
     XarrayDatasetOpener,
 )
-from gavicore.models import Link
+from gavicore.models import JobResults, Link
 
 from .test_base import create_ctx
 
@@ -213,6 +213,25 @@ class PngImageOpenerTest(IsolatedAsyncioTestCase):
             "s3://my-bucket/images/photo.png", "rb"
         )
         fake_opened.copy.assert_called_once()
+
+    async def test_accept_job_result(self):
+        opener = PngImageOpener()
+
+        ctx = JobResultOpenContext(
+            config=create_ctx(Link(href="/image.png", type="image/png")).config,
+            job_id="test",
+            job_results=JobResults(**{"return_value": Link(href="/image.png", type="image/png")}),
+            data_type=Image.Image,
+        )
+        self.assertTrue(await opener.accept_job_result(ctx))
+
+        ctx_wrong_type = JobResultOpenContext(
+            config=create_ctx(Link(href="/image.png", type="image/png")).config,
+            job_id="test",
+            job_results=JobResults(**{"return_value": Link(href="/image.png", type="image/png")}),
+            data_type=int,
+        )
+        self.assertFalse(await opener.accept_job_result(ctx_wrong_type))
 
     async def test_open_job_result_s3_without_s3fs(self):
         opener = PngImageOpener()
