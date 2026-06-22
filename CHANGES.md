@@ -1,5 +1,10 @@
 ## Changes in version 0.1.2 (in development)
 
+### Enhancements
+
+- Added `PngImageOpener` to cuiman's job result opener framework, supporting
+  PNG files from both local paths and S3-compatible object storage (via `s3fs`).
+
 ### Other changes
 
 - Updated appligator docs
