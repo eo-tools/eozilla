@@ -31,10 +31,10 @@ class PngImageOpenerImpl(PathOpener):
         if path_like.startswith("s3://"):
             try:
                 import s3fs
-            except ImportError:
+            except ImportError as e:
                 raise JobResultOpenError(
                     "s3fs is required to open PNG files from S3"
-                )
+                ) from e
             storage_options = ctx.options.get("storage_options", {})
             fs = s3fs.S3FileSystem(**storage_options)
             with fs.open(path_like, "rb") as f:
