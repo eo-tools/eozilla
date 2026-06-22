@@ -32,3 +32,12 @@ class XarrayDatasetOpener(OptionalModuleOpener):
         from ._xr import XarrayDatasetOpenerImpl
 
         return XarrayDatasetOpenerImpl()
+
+
+class PngImageOpener(OptionalModuleOpener):
+    required = ("PIL",)
+
+    def _create_implementing_opener(self) -> JobResultOpener:
+        from ._png import PngImageOpenerImpl
+
+        return PngImageOpenerImpl()

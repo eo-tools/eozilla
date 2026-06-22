@@ -9,6 +9,7 @@ from .base import (
 from .openers import (
     GeopandasDataFrameOpener,
     PandasDataFrameOpener,
+    PngImageOpener,
     XarrayDatasetOpener,
 )
 
@@ -17,5 +18,6 @@ __all__ = [
     "OptionalModuleOpener",
     "GeopandasDataFrameOpener",
     "PandasDataFrameOpener",
+    "PngImageOpener",
     "XarrayDatasetOpener",
 ]
