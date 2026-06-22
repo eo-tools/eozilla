@@ -30,7 +30,7 @@ class PngImageOpenerImpl(PathOpener):
     ) -> Any:
         if path_like.startswith("s3://"):
             try:
-                import s3fs
+                import s3fs  # type: ignore[import-not-found]
             except ImportError as e:
                 raise JobResultOpenError(
                     "s3fs is required to open PNG files from S3"
