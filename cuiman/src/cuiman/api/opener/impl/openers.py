@@ -34,7 +34,7 @@ class XarrayDatasetOpener(OptionalModuleOpener):
         return XarrayDatasetOpenerImpl()
 
 
-class PngImageOpener(OptionalModuleOpener):
+class ImageOpener(OptionalModuleOpener):
     required = ("PIL",)
 
     def _create_implementing_opener(self) -> JobResultOpener:
