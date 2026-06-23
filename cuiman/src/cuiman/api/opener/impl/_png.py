@@ -11,7 +11,7 @@ from cuiman.api.opener import JobResultOpenContext, JobResultOpenError
 from .base import PathOpener
 
 
-class PngImageOpenerImpl(PathOpener):
+class ImageOpenerImpl(PathOpener):
     def accept_data_type(self, data_type: type) -> bool:
         return data_type is Image.Image
 
