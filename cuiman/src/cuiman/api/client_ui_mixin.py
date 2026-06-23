@@ -5,6 +5,7 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import TYPE_CHECKING
+from typing import Literal
 
 from cuiman.api.ishell import has_ishell
 
