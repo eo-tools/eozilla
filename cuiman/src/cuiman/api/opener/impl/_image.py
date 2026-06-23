@@ -16,10 +16,10 @@ class ImageOpenerImpl(PathOpener):
         return data_type is Image.Image
 
     def accept_media_type(self, media_type: str) -> bool:
-        return media_type == "image/png"
+        return media_type in Image.MIME.values()
 
     def accept_filename_ext(self, filename_ext: str) -> bool:
-        return filename_ext.lower() == ".png"
+        return filename_ext.lower() in Image.registered_extensions()
 
     async def open_path_like(
         self,
@@ -33,7 +33,7 @@ class ImageOpenerImpl(PathOpener):
                 import s3fs  # type: ignore[import-not-found]
             except ImportError as e:
                 raise JobResultOpenError(
-                    "s3fs is required to open PNG files from S3"
+                    "s3fs is required to open image files from S3"
                 ) from e
             storage_options = ctx.options.get("storage_options", {})
             fs = s3fs.S3FileSystem(**storage_options)

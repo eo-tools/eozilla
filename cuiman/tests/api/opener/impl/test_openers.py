@@ -14,8 +14,8 @@ from PIL import Image
 from cuiman.api.opener import JobResultOpenContext, JobResultOpenError
 from cuiman.api.opener.impl import (
     GeopandasDataFrameOpener,
+    ImageOpener,
     PandasDataFrameOpener,
-    PngImageOpener,
     XarrayDatasetOpener,
 )
 from gavicore.models import JobResults, Link
@@ -168,18 +168,18 @@ class XarrayDatasetOpenerTest(IsolatedAsyncioTestCase):
         )
 
 
-class PngImageOpenerTest(IsolatedAsyncioTestCase):
+class ImageOpenerTest(IsolatedAsyncioTestCase):
     def test_opener_is_usable(self):
-        self.assertTrue(PngImageOpener.is_usable())
+        self.assertTrue(ImageOpener.is_usable())
         with patch.dict("sys.modules", {"PIL": None}):
-            self.assertFalse(PngImageOpener.is_usable())
+            self.assertFalse(ImageOpener.is_usable())
 
     @patch("PIL.Image.open")
     async def test_open_job_result_local(self, mock_image_open):
         fake_image = Image.new("RGB", (10, 10))
         mock_image_open.return_value = fake_image
 
-        opener = PngImageOpener()
+        opener = ImageOpener()
         ctx = create_ctx(Link(href="/path/to/image.png", type="image/png"))
         result = await opener.open_job_result(ctx)
         self.assertIs(result, fake_image)
@@ -200,7 +200,7 @@ class PngImageOpenerTest(IsolatedAsyncioTestCase):
 
         with patch.dict("sys.modules", {"s3fs": mock_s3fs_module}):
             with patch("PIL.Image.open", return_value=fake_opened):
-                opener = PngImageOpener()
+                opener = ImageOpener()
                 ctx = create_ctx(
                     Link(href="s3://my-bucket/images/photo.png", type="image/png")
                 )
@@ -209,18 +209,18 @@ class PngImageOpenerTest(IsolatedAsyncioTestCase):
 
         self.assertIs(result, fake_image)
         mock_s3fs_module.S3FileSystem.assert_called_once_with(anon=True)
-        mock_fs.open.assert_called_once_with(
-            "s3://my-bucket/images/photo.png", "rb"
-        )
+        mock_fs.open.assert_called_once_with("s3://my-bucket/images/photo.png", "rb")
         fake_opened.copy.assert_called_once()
 
     async def test_accept_job_result(self):
-        opener = PngImageOpener()
+        opener = ImageOpener()
 
         ctx = JobResultOpenContext(
             config=create_ctx(Link(href="/image.png", type="image/png")).config,
             job_id="test",
-            job_results=JobResults(**{"return_value": Link(href="/image.png", type="image/png")}),
+            job_results=JobResults(
+                **{"return_value": Link(href="/image.png", type="image/png")}
+            ),
             data_type=Image.Image,
         )
         self.assertTrue(await opener.accept_job_result(ctx))
@@ -228,16 +228,16 @@ class PngImageOpenerTest(IsolatedAsyncioTestCase):
         ctx_wrong_type = JobResultOpenContext(
             config=create_ctx(Link(href="/image.png", type="image/png")).config,
             job_id="test",
-            job_results=JobResults(**{"return_value": Link(href="/image.png", type="image/png")}),
+            job_results=JobResults(
+                **{"return_value": Link(href="/image.png", type="image/png")}
+            ),
             data_type=int,
         )
         self.assertFalse(await opener.accept_job_result(ctx_wrong_type))
 
     async def test_open_job_result_s3_without_s3fs(self):
-        opener = PngImageOpener()
-        ctx = create_ctx(
-            Link(href="s3://my-bucket/images/photo.png", type="image/png")
-        )
+        opener = ImageOpener()
+        ctx = create_ctx(Link(href="s3://my-bucket/images/photo.png", type="image/png"))
         with patch.dict("sys.modules", {"s3fs": None}):
             with pytest.raises(JobResultOpenError, match="s3fs is required"):
                 await opener.open_job_result(ctx)

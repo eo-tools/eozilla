@@ -38,6 +38,6 @@ class ImageOpener(OptionalModuleOpener):
     required = ("PIL",)
 
     def _create_implementing_opener(self) -> JobResultOpener:
-        from ._png import PngImageOpenerImpl
+        from ._image import ImageOpenerImpl
 
-        return PngImageOpenerImpl()
+        return ImageOpenerImpl()
