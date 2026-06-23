@@ -4,7 +4,6 @@
 
 import asyncio
 from abc import ABC, abstractmethod
-from functools import cached_property
 from typing import Any, TYPE_CHECKING
 
 from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
@@ -19,7 +18,7 @@ from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
 
 if TYPE_CHECKING:
-    import remotestate as rs
+    pass
 
 
 # -----------------------------------------------------
@@ -49,17 +48,6 @@ class AsyncClientMixin(ABC):
     @abstractmethod
     async def get_job_results(self, job_id: str, **kwargs: Any) -> JobResults:
         """Will be overridden by the actual client class."""
-
-    @cached_property
-    def ui_data(self) -> "rs.Store":
-        from cuiman.app import create_app_remote_store
-
-        return create_app_remote_store()
-
-    def show_ui(self, height: int = 600) -> None:
-        from cuiman.app import serve
-
-        serve(self.config, self.ui_data, height=height)
 
     async def create_execution_request(
         self,
