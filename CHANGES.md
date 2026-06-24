@@ -2,8 +2,9 @@
 
 ### Enhancements
 
-- Added `PngImageOpener` to cuiman's job result opener framework, supporting
-  PNG files from both local paths and S3-compatible object storage (via `s3fs`).
+- Added `ImageOpener` to cuiman's job result opener framework, supporting
+  all PIL-compatible image formats from both local paths and S3-compatible
+  object storage (via the optional `s3fs` package).
 
 ### Other changes
 
