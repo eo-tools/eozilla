@@ -1,5 +1,11 @@
 ## Changes in version 0.1.2 (in development)
 
+### Enhancements
+
+- Added `ImageOpener` to cuiman's job result opener framework, supporting
+  all PIL-compatible image formats from both local paths and S3-compatible
+  object storage (via the optional `s3fs` package).
+
 ### Other changes
 
 - Updated appligator docs
