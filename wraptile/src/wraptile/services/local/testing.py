@@ -107,7 +107,6 @@ def primes_between(
             title="Variable names",
             description="Comma-separated list of variable names.",
             schema=Schema(),  # type: ignore[call-arg]
-            **{"x-ui:advanced": True},
         ),
         "bbox": Field(
             title="Bounding box",
@@ -121,6 +120,7 @@ def primes_between(
             description="Spatial resolution in degree.",
             ge=0.01,
             le=1.0,
+            **{"x-ui-advanced": True},
         ),
         "start_date": Field(
             title="Start date",
@@ -135,12 +135,12 @@ def primes_between(
             description="Size of time steps in days.",
             ge=1,
             le=10,
+            **{"x-ui-advanced": True},
         ),
         "output_path": InputDescription(
             title="Output path",
             description="Local output path or URI.",
             schema=Schema(minLength=1),  # type: ignore[call-arg]
-            **{"x-ui:advanced": True},
         ),
     },
 )
