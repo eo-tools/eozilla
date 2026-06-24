@@ -5,12 +5,13 @@
 import datetime
 import time
 from pathlib import Path
+
 from typing import Annotated, Optional
 
 import pydantic
 from pydantic import Field
 
-from gavicore.models import InputDescription, Link, Schema
+from gavicore.models import InputDescription, OutputDescription, Link, Schema
 from procodile import FromMain, FromStep, JobContext
 from wraptile.services.local import LocalService
 
@@ -309,3 +310,103 @@ def store_data(
 ) -> tuple[tuple[str, str], str]:
     print("Storing data")
     return id, second_input
+
+
+@registry.process(
+    id="218",
+    title="L3B AOI Indicators Processor",
+    version="5.0.4",
+    description="Site Processing L3B NDVI Processor (demo from ESA Sen3CAP project).",
+    inputs={
+        "start_date": InputDescription(
+            title="Start date",
+            schema=Schema(
+                **{
+                    "type": "string",
+                    "format": "date",
+                    "nullable": False,
+                    "x-ui-order": 10,
+                }
+            ),
+        ),
+        "end_date": InputDescription(
+            title="End date",
+            schema=Schema(
+                **{
+                    "type": "string",
+                    "format": "date",
+                    "nullable": False,
+                    "x-ui-order": 11,
+                }
+            ),
+        ),
+        "geometry": InputDescription(
+            title="Geometry (WKT)",
+            schema=Schema(
+                **{
+                    "type": "string",
+                    "format": "wkt",
+                    "nullable": False,
+                    "x-ui-widget": "map",
+                    "x-ui-order": 20,
+                }
+            ),
+        ),
+        "indicator_name": InputDescription(
+            title="L3B Indicator Name",
+            schema=Schema(
+                **{
+                    "type": "string",
+                    "enum": ["NDVI", "LAI", "FAPAR", "FCOVER", "NDWI"],
+                    "nullable": True,
+                    "x-ui-widget": "radio",
+                    "x-ui-advanced": True,
+                    "x-ui-order": 30,
+                }
+            ),
+        ),
+        "site_extend": InputDescription(
+            title="Site extent",
+            schema=Schema(
+                **{
+                    "type": "string",
+                    "format": "wkt",
+                    "nullable": True,
+                    "x-ui-order": 40,
+                }
+            ),
+        ),
+    },
+    outputs={
+        "return_value": OutputDescription(
+            title="stacitemsfile",
+            schema=Schema(
+                **{
+                    "type": "string",
+                    "format": "uri",
+                    "nullable": False,
+                }
+            ),
+        )
+    },
+)
+def processor(
+    start_date: str,
+    end_date: str,
+    geometry: str,
+    indicator_name: str,
+    site_extend: str,
+) -> dict[str, str]:
+    ctx = JobContext.get()
+    ctx.report_progress(message="Started processing")
+    for i in range(10):
+        time.sleep(0.5)
+        ctx.report_progress(progress=(i + 1) * 10)
+    ctx.report_progress(message="Ended processing")
+    return dict(
+        start_date=start_date,
+        end_date=end_date,
+        geometry=geometry,
+        indicator_name=indicator_name,
+        site_extend=site_extend,
+    )
