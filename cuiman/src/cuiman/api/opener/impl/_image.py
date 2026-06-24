@@ -17,7 +17,6 @@ class ImageOpenerImpl(PathOpener):
         return data_type is Image.Image
 
     def accept_media_type(self, media_type: str) -> bool:
-        Image.init()
         return media_type in Image.MIME.values()
 
     def accept_filename_ext(self, filename_ext: str) -> bool:
