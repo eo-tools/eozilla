@@ -59,7 +59,7 @@ class Client(ClientUiMixin, ClientMixin):
             HttpxTransport(
                 api_url=self._config.api_url,
                 headers=self._config.auth_headers,
-                token_refresher=self._config._make_token_refresher(),
+                token_refresher=self._config._maybe_make_token_refresher(),
                 debug=_debug,
             )
             if _transport is None
