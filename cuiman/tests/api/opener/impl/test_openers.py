@@ -235,9 +235,8 @@ class ImageOpenerTest(IsolatedAsyncioTestCase):
         )
         self.assertFalse(await opener.accept_job_result(ctx_wrong_type))
 
-    async def test_open_job_result_s3_without_s3fs(self):
+    async def test_accept_job_result_s3_without_s3fs(self):
         opener = ImageOpener()
         ctx = create_ctx(Link(href="s3://my-bucket/images/photo.png", type="image/png"))
         with patch.dict("sys.modules", {"s3fs": None}):
-            with pytest.raises(JobResultOpenError, match="s3fs is required"):
-                await opener.open_job_result(ctx)
+            self.assertFalse(await opener.accept_job_result(ctx))

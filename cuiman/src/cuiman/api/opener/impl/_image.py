@@ -2,11 +2,12 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from importlib.util import find_spec
 from typing import Any
 
 from PIL import Image
 
-from cuiman.api.opener import JobResultOpenContext, JobResultOpenError
+from cuiman.api.opener import JobResultOpenContext
 
 from .base import PathOpener
 
@@ -21,6 +22,14 @@ class ImageOpenerImpl(PathOpener):
     def accept_filename_ext(self, filename_ext: str) -> bool:
         return filename_ext.lower() in Image.registered_extensions()
 
+    async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
+        if not await super().accept_job_result(ctx):
+            return False
+        path_like = self.get_path_like(ctx)
+        if path_like and path_like.startswith("s3://") and find_spec("s3fs") is None:
+            return False
+        return True
+
     async def open_path_like(
         self,
         path_like: str,
@@ -29,12 +38,8 @@ class ImageOpenerImpl(PathOpener):
         ctx: JobResultOpenContext,
     ) -> Any:
         if path_like.startswith("s3://"):
-            try:
-                import s3fs  # type: ignore[import-not-found]
-            except ImportError as e:
-                raise JobResultOpenError(
-                    "s3fs is required to open image files from S3"
-                ) from e
+            import s3fs  # type: ignore[import-not-found]
+
             storage_options = ctx.options.get("storage_options", {})
             fs = s3fs.S3FileSystem(**storage_options)
             with fs.open(path_like, "rb") as f:
