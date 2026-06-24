@@ -238,5 +238,6 @@ class ImageOpenerTest(IsolatedAsyncioTestCase):
     async def test_accept_job_result_s3_without_s3fs(self):
         opener = ImageOpener()
         ctx = create_ctx(Link(href="s3://my-bucket/images/photo.png", type="image/png"))
+        ctx.data_type = Image.Image
         with patch.dict("sys.modules", {"s3fs": None}):
             self.assertFalse(await opener.accept_job_result(ctx))
