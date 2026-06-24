@@ -106,7 +106,7 @@ def main():
     sync_code = sync_code.replace("{{ hr_async }}", "synchronous")
     sync_code = sync_code.replace(
         "{{ refresher_kwarg }}",
-        "token_refresher=self._config._make_token_refresher(),",
+        "token_refresher=self._config._maybe_make_token_refresher(),",
     )
 
     write_file(
