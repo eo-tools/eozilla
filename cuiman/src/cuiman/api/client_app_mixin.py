@@ -54,6 +54,7 @@ class ClientAppMixin(ABC):
     def show_app(
         self,
         *,
+        compact: bool | None = None,
         debug: bool = False,
         scheme: Literal["dark", "light", "auto"] = "auto",
         width: int | str = "100%",
@@ -70,6 +71,7 @@ class ClientAppMixin(ABC):
         app reads and writes.
 
         Args:
+            compact: Compact mode. Defaults to True, if ``display`` is "notebook".
             debug: Enable app debug mode.
             scheme: Color scheme to use in the app. ``"auto"`` follows the
                 surrounding notebook theme when the app is embedded.
@@ -83,12 +85,13 @@ class ClientAppMixin(ABC):
         display_ = (
             ("notebook" if has_ishell else "browser") if display == "auto" else display
         )
+        compact_ = (compact if isinstance(compact, bool) else display_ == "notebook",)
 
         # noinspection PyTypeChecker
         serve(
             self.config,
             self.app_store,
-            compact=display_ == "notebook",
+            compact=compact_,
             debug=debug,
             scheme=scheme,
             width=width,
