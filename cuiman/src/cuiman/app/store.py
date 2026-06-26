@@ -19,14 +19,11 @@ def create_app_remote_store() -> rs.Store:
 
 
 def _create_defaults(path: rs.path.Path) -> Any:
-    if path[0] == rs.path.Property(PROCESS_REQUESTS_KEY):
+    if path[0] == PROCESS_REQUESTS_KEY:
         if len(path) == 2:
             # If e.g., path == "processRequests.generate_cube"
             return dict(inputs={}, outputs={})
-        if len(path) == 3 and path[2] in (
-            rs.path.Property("inputs"),
-            rs.path.Property("outputs"),
-        ):
+        if len(path) == 3 and path[2] in ("inputs", "outputs"):
             # If e.g., path == "processRequests.generate_cube.inputs"
             return {}
     raise KeyError(rs.path.format_path(path))
