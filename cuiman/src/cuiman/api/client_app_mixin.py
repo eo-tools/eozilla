@@ -26,6 +26,27 @@ class ClientAppMixin(ABC):
 
     @cached_property
     def app_store(self) -> "rs.Store":
+        """
+        Shared state store used by the Cuiman app.
+
+        Use this store to inspect or update the data shown by
+        [show_app()][cuiman.api.client_app_mixin.ClientAppMixin.show_app].
+
+        Currently, the app store comprises a single state variable
+        ``processRequests`` which is a mapping from process ID to
+        process requests. A process request comprises basically two
+        attributes:
+
+        - ``inputs``: a mapping from input name to an input's value.
+        - ``outputs``: the outputs to be generated. Just used to detect
+          whether an output is included or now.
+
+        The most convenient way to work with nested app state is the
+        ``at`` accessor. Examples:
+
+        - ``client.app_store.at.processRequests.myProcess.inputs.threshold = 0.75``
+        - ``client.app_store.at.processRequests.myProcess = {"inputs": {...}}``
+        """
         from cuiman.app import create_app_remote_store
 
         return create_app_remote_store()
@@ -39,6 +60,24 @@ class ClientAppMixin(ABC):
         height: int | str = 600,
         display: Literal["browser", "notebook", "auto"] = "auto",
     ) -> None:
+        """
+        Show the Cuiman app for this client.
+
+        The app connects to this client's API configuration and uses
+        [app_store][cuiman.api.client_app_mixin.ClientAppMixin.app_store] as
+        its shared state. You can keep using ``client.app_store`` while the app
+        is open, including its ``at`` accessor, to interact with the data the
+        app reads and writes.
+
+        Args:
+            debug: Enable app debug mode.
+            scheme: Color scheme to use in the app. ``"auto"`` follows the
+                surrounding notebook theme when the app is embedded.
+            width: Width of the notebook iframe.
+            height: Height of the notebook iframe.
+            display: Where to show the app. ``"auto"`` embeds it in notebooks
+                and opens it in a browser otherwise.
+        """
         from cuiman.app import serve
 
         display_ = (
