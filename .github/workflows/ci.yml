@@ -14,13 +14,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Diagnosis
-        run: |
-          pixi install --locked || true
-          pixi lock || true
-          git status
-          git diff -- pixi.lock
-
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.6
         with:
