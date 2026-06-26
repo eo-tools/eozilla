@@ -109,6 +109,7 @@ class TestingServiceTest(IsolatedAsyncioTestCase):
                 "simulate_scene",
                 "sleep_a_while",
                 "process_pipeline",
+                "218",
             },
             set(process_dict.keys()),
         )

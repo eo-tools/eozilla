@@ -432,6 +432,12 @@ cmd = "python -m tools.sync_versions"
 [tool.pixi.tasks.schema2ui]
 cmd = "python gavicore/src/gavicore/ui/panel/schema2ui.py"
 
+
+# pixi run jptr
+
+[tool.pixi.tasks.jptr]
+cmd = "jupyter-lab"
+
 # docs
 
 [tool.pixi.tasks.serve-docs]

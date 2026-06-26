@@ -4,8 +4,8 @@
 
 import importlib
 import webbrowser
+from dataclasses import dataclass
 
-import pytest
 from IPython import display as ipython_display
 
 from cuiman.api.config import ClientConfig
@@ -14,112 +14,72 @@ from cuiman.app.store import create_app_remote_store
 serve_module = importlib.import_module("cuiman.app.serve")
 
 
-def test_find_free_port_returns_available_port():
-    port = serve_module._find_free_port()
-
-    assert isinstance(port, int)
-    assert 0 < port < 65536
-
-
-@pytest.mark.parametrize(
-    "value, expected",
-    [
-        ("http://example.test/app", True),
-        ("https://example.test/app", True),
-        ("ftp://example.test/app", False),
-        ("C:/dist", False),
-        (None, False),
-        (42, False),
-    ],
-)
-def test_is_url_str(value, expected):
-    assert serve_module._is_url_str(value) is expected
-
-
 def test_get_app_dist_url_or_dir_uses_default_dist(monkeypatch):
     monkeypatch.setattr(serve_module, "files", lambda package: FakeFiles(package))
-    monkeypatch.setattr(serve_module, "StaticFiles", FakeStaticFiles)
 
-    dist_url, dist_dir = serve_module._get_app_dist_url_or_dir(
-        None,
-        server_host="127.0.0.1",
-        server_port=1234,
+    dist = serve_module._get_app_dist_url_or_dir(None)
+
+    assert dist == "fake/cuiman.app/dist"
+
+
+def test_get_app_dist_url_or_dir_accepts_explicit_dist_url_or_dir():
+    assert (
+        serve_module._get_app_dist_url_or_dir("https://cdn.example.test/app")
+        == "https://cdn.example.test/app"
+    )
+    assert serve_module._get_app_dist_url_or_dir("C:/app/dist") == "C:/app/dist"
+
+
+def test_serve_returns_server_without_display(monkeypatch):
+    calls = install_serve_fakes(monkeypatch)
+
+    server = serve_module.serve(
+        ClientConfig(api_url="https://api.example.test"),
+        create_app_remote_store(),
+        display="none",
     )
 
-    assert dist_url == "http://127.0.0.1:1234"
-    assert isinstance(dist_dir, FakeStaticFiles)
-    assert dist_dir.directory == "fake/cuiman.app/dist"
-    assert dist_dir.html is True
-
-
-def test_get_app_dist_url_or_dir_accepts_explicit_dist_dir(monkeypatch):
-    monkeypatch.setattr(serve_module, "StaticFiles", FakeStaticFiles)
-
-    dist_url, dist_dir = serve_module._get_app_dist_url_or_dir(
-        "C:/app/dist",
-        server_host="localhost",
-        server_port=1234,
-    )
-
-    assert dist_url == "http://localhost:1234"
-    assert isinstance(dist_dir, FakeStaticFiles)
-    assert dist_dir.directory == "C:/app/dist"
-    assert dist_dir.html is True
-
-
-def test_get_app_dist_url_or_dir_accepts_explicit_dist_url():
-    dist_url, dist_dir = serve_module._get_app_dist_url_or_dir(
-        "https://cdn.example.test/app",
-        server_host="localhost",
-        server_port=1234,
-    )
-
-    assert dist_url == "https://cdn.example.test/app"
-    assert dist_dir is None
-
-
-def test_get_app_dist_url_or_dir_falls_back_when_host_and_port_are_none(monkeypatch):
-    monkeypatch.setattr(serve_module, "_find_free_port", lambda: 5555)
-
-    dist_url, dist_dir = serve_module._get_app_dist_url_or_dir(
-        "https://cdn.example.test/app",
-        server_host=None,
-        server_port=None,
-    )
-
-    assert dist_url == "https://cdn.example.test/app"
-    assert dist_dir is None
+    assert server is calls["server"]
+    assert calls["served"] == [
+        {
+            "service": "service-wrapper",
+            "ui_dist": "https://app.example.test",
+            "host": "127.0.0.1",
+            "display": "none",
+        }
+    ]
+    assert calls["url"] == []
+    assert calls["browser_open"] == []
+    assert calls["display"] == []
 
 
 def test_serve_opens_browser(monkeypatch):
     calls = install_serve_fakes(monkeypatch)
-    monkeypatch.setattr(webbrowser, "open", calls["browser_open"].append)
 
     serve_module.serve(
         ClientConfig(api_url="https://api.example.test"),
         create_app_remote_store(),
         compact=False,
+        debug=True,
         scheme="light",
-        open_in_browser=True,
-        open_in_notebook=True,
+        display="browser",
     )
 
     assert calls["served"] == [
         {
             "service": "service-wrapper",
-            "ui_dist": None,
+            "ui_dist": "https://app.example.test",
             "host": "127.0.0.1",
-            "port": 8765,
-            "open_browser": False,
-            "open_iframe": False,
+            "display": "none",
         }
     ]
-    assert calls["url"][0]["base_url"] == "https://app.example.test"
+    assert calls["url"][0]["base_url"] == "http://127.0.0.1:8765"
     assert calls["url"][0]["ws_url"] == "ws://127.0.0.1:8765/ws"
     assert calls["url"][0]["compact"] is False
+    assert calls["url"][0]["debug"] is True
     assert calls["url"][0]["scheme"] == "light"
     assert calls["url"][0]["service"].options["apiUrl"] == "https://api.example.test/"
-    assert calls["browser_open"] == ["https://app.example.test/index.html"]
+    assert calls["browser_open"] == ["http://127.0.0.1:8765/index.html"]
     assert calls["display"] == []
 
 
@@ -143,18 +103,18 @@ def test_serve_displays_in_notebook(monkeypatch):
         scheme="auto",
         width="80%",
         height=500,
-        open_in_browser=False,
-        open_in_notebook=True,
+        display="notebook",
     )
 
     assert calls["display"] == [
         {
-            "app_url": "https://app.example.test/index.html",
+            "app_url": "http://127.0.0.1:8765/index.html",
             "auto_scheme": True,
             "width": "80%",
             "height": 500,
         }
     ]
+    assert calls["browser_open"] == []
 
 
 class FakeFiles:
@@ -173,10 +133,10 @@ class FakePath:
         return self.value
 
 
-class FakeStaticFiles:
-    def __init__(self, *, directory, html):
-        self.directory = directory
-        self.html = html
+@dataclass
+class FakeServeResult:
+    ui_base_url: str = "http://127.0.0.1:8765"
+    ws_url: str = "ws://127.0.0.1:8765/ws"
 
 
 def install_serve_fakes(monkeypatch):
@@ -185,14 +145,15 @@ def install_serve_fakes(monkeypatch):
         "display": [],
         "served": [],
         "url": [],
+        "server": FakeServeResult(),
     }
 
     monkeypatch.setenv(serve_module.DIST_ENV_VAR, "https://app.example.test")
-    monkeypatch.setattr(serve_module, "_find_free_port", lambda: 8765)
     monkeypatch.setattr(serve_module.rs, "Service", lambda store: "service-wrapper")
 
     def fake_serve(service, **kwargs):
         calls["served"].append({"service": service, **kwargs})
+        return calls["server"]
 
     def fake_create_app_url(base_url, ws_url, *, compact, debug, scheme, service):
         calls["url"].append(
@@ -205,8 +166,9 @@ def install_serve_fakes(monkeypatch):
                 "service": service,
             }
         )
-        return "https://app.example.test/index.html"
+        return f"{base_url}/index.html"
 
     monkeypatch.setattr(serve_module.rs, "serve", fake_serve)
     monkeypatch.setattr(serve_module, "create_app_url", fake_create_app_url)
+    monkeypatch.setattr(webbrowser, "open", calls["browser_open"].append)
     return calls

@@ -41,10 +41,10 @@ def test_remote_store():
     }
 
     assert changes == [
-        {"processRequests.generate_cube.inputs.date_range": [10, 20]},
-        {"processRequests.generate_cube.inputs.bbox": [1, 2, 3, 4]},
+        {("processRequests", "generate_cube", "inputs", "date_range"): [10, 20]},
+        {("processRequests", "generate_cube", "inputs", "bbox"): [1, 2, 3, 4]},
         {
-            "processRequests.generate_cube.outputs.return_value": {
+            ("processRequests", "generate_cube", "outputs", "return_value"): {
                 "mediaType": "image/png"
             }
         },
