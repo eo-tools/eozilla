@@ -4,7 +4,7 @@
 
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
 from gavicore.util.request import ExecutionRequest
@@ -16,6 +16,10 @@ from .defaults import (
 )
 from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
+
+if TYPE_CHECKING:
+    pass
+
 
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with ClientMixin!

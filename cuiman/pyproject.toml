@@ -47,6 +47,7 @@ dependencies = [
   "pydantic",
   "pydantic-settings",
   "pyyaml",
+  "remotestate >=0.3.1,<1",
   "typer",
   "uri-template",
   "httpx",
@@ -80,3 +81,7 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 # packages = ["cuiman"]
+
+[tool.setuptools.package-data]
+cuiman.app = ["dist/**/*"]
+
