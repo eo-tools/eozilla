@@ -112,16 +112,16 @@ def primes_between(
         "bbox": Field(
             title="Bounding box",
             description="Bounding box in geographical coordinates.",
-            json_schema_extra={"x-ui-widget": "map"},
             min_length=4,
             max_length=4,
+            json_schema_extra={"x-ui-widget": "map"},
         ),
         "resolution": Field(
             title="Spatial resolution",
             description="Spatial resolution in degree.",
             ge=0.01,
             le=1.0,
-            **{"x-ui-advanced": True},
+            json_schema_extra={"x-ui-advanced": True},
         ),
         "start_date": Field(
             title="Start date",
@@ -136,7 +136,7 @@ def primes_between(
             description="Size of time steps in days.",
             ge=1,
             le=10,
-            **{"x-ui-advanced": True},
+            json_schema_extra={"x-ui-advanced": True},
         ),
         "output_path": InputDescription(
             title="Output path",
