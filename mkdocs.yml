@@ -13,7 +13,8 @@ nav:
   - Appligator:
     - Overview: appligator/index.md
     - Usage: appligator/usage.md
-    - CLI: appligator/cli.md
+    - Generating Dockerfiles: appligator/gen_dockerfile.md
+    - CLI Reference: appligator/cli.md
   - Cuiman:
     - Overview: cuiman/index.md
     - Configuration: cuiman/configuration.md
