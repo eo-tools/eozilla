@@ -17,15 +17,15 @@ from gavicore.models import (
     ProcessRequest,
 )
 
+from .client_app_mixin import ClientAppMixin
 from .client_mixin import ClientMixin
-from .client_ui_mixin import ClientUiMixin
 from .config import ClientConfig
 from .ishell import has_ishell as _  # noqa F401
 from .transport import Transport, TransportArgs
 from .transport.httpx import HttpxTransport
 
 
-class Client(ClientUiMixin, ClientMixin):
+class Client(ClientAppMixin, ClientMixin):
     """
     The client API for the web service (synchronous mode).
 

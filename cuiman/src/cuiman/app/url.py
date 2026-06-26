@@ -4,12 +4,10 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
-import time
-
 import base64
 import json
+import time
+from typing import Literal
 from urllib.parse import urlencode
 
 from pydantic import BaseModel

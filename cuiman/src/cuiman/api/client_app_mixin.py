@@ -14,9 +14,9 @@ if TYPE_CHECKING:
     import remotestate as rs
 
 
-class ClientUiMixin(ABC):
+class ClientAppMixin(ABC):
     """
-    Extra methods for the Client UI.
+    Extra methods for the Client App.
     """
 
     @property
@@ -25,19 +25,19 @@ class ClientUiMixin(ABC):
         """Will be overridden by the actual client class."""
 
     @cached_property
-    def ui_data(self) -> "rs.Store":
+    def app_store(self) -> "rs.Store":
         from cuiman.app import create_app_remote_store
 
         return create_app_remote_store()
 
-    def show_ui(
+    def show_app(
         self,
         *,
         debug: bool = False,
         scheme: Literal["dark", "light", "auto"] = "auto",
         width: int | str = "100%",
         height: int | str = 600,
-        display: Literal["browser", "notebook", "auto", "none"] = "auto",
+        display: Literal["browser", "notebook", "auto"] = "auto",
     ) -> None:
         from cuiman.app import serve
 
@@ -45,9 +45,10 @@ class ClientUiMixin(ABC):
             ("notebook" if has_ishell else "browser") if display == "auto" else display
         )
 
+        # noinspection PyTypeChecker
         serve(
             self.config,
-            self.ui_data,
+            self.app_store,
             compact=display_ == "notebook",
             debug=debug,
             scheme=scheme,

@@ -4,10 +4,9 @@
 
 from __future__ import annotations
 
-
 import json
 
-from IPython.display import DisplayObject, HTML
+from IPython.display import HTML, DisplayObject
 
 
 def create_app_display_object(

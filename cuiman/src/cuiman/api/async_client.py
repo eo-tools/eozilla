@@ -18,14 +18,14 @@ from gavicore.models import (
 )
 
 from .async_client_mixin import AsyncClientMixin
-from .client_ui_mixin import ClientUiMixin
+from .client_app_mixin import ClientAppMixin
 from .config import ClientConfig
 from .ishell import has_ishell as _  # noqa F401
 from .transport import AsyncTransport, TransportArgs
 from .transport.httpx import HttpxTransport
 
 
-class AsyncClient(ClientUiMixin, AsyncClientMixin):
+class AsyncClient(ClientAppMixin, AsyncClientMixin):
     """
     The client API for the web service (asynchronous mode).
 

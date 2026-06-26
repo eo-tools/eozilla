@@ -5,6 +5,7 @@ from typing import Literal
 import remotestate as rs
 
 from cuiman.api.config import ClientConfig
+
 from .display import create_app_display_object
 from .service import create_app_service_provider
 from .url import create_app_url

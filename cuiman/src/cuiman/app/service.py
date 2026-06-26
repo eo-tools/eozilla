@@ -4,7 +4,6 @@
 
 from typing import Literal
 
-
 from pydantic import BaseModel
 
 from cuiman.api.config import ClientConfig
