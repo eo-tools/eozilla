@@ -13,6 +13,9 @@ from cuiman import Client, __version__
 from cuiman.api.auth.login import LoginResult
 from cuiman.cli.cli import cli, new_cli
 
+# noinspection PyProtectedMember
+from cuiman.cli.cli import _wait_until_interrupted
+
 from ..helpers import MockTransport
 
 
@@ -38,7 +41,8 @@ class CliTest(TestCase):
     @patch("cuiman.cli.config.login_for_tokens")
     def test_configure(self, mock_login):
         mock_login.return_value = LoginResult(
-            access_token="dummy-token", refresh_token="dummy-refresh"
+            access_token="dummy-token",  # noqa: S106
+            refresh_token="dummy-refresh",  # noqa: S106
         )
         config_path = Path("config.cfg")
         result = invoke_cli(
@@ -168,6 +172,15 @@ class CliTest(TestCase):
         mock_serve.assert_called_once()
         mock_wait_until_interrupted.assert_called_once()
         self.assertEqual("browser", mock_serve.call_args.kwargs["display"])
+
+    @patch("typer.echo")
+    @patch("time.sleep", side_effect=KeyboardInterrupt)
+    def test_wait_until_interrupted(self, mock_sleep, mock_echo):
+        _wait_until_interrupted()
+
+        mock_sleep.assert_called_once_with(1)
+        mock_echo.assert_any_call("App is running. Press Ctrl+C to stop.")
+        mock_echo.assert_any_call("Stopping app.")
 
     @classmethod
     def get_result_msg(cls, result: typer.testing.Result):
