@@ -13,9 +13,15 @@
     with the app's data state. Renders the app in a notebook cell or a new browser tab.
   - Added a new CLI command `cuiman show-app`. Opens the app in a new browser tab.
 
+### Fixes
+
+- Fixed **Cuiman**'s automatic app display selection to detect an initialized
+  IPython interactive shell, instead of only checking whether IPython is
+  installed. (#130)
+
 ### Other changes
 
-- Updated appligator docs
+- Updated appligator docs.
 
 ## Changes in version 0.1.1
 
