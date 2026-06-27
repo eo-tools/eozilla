@@ -450,22 +450,25 @@ def new_cli(
         debug: bool = False,
     ):
         """Show the client app in a browser."""
-        import time
         from .client import use_client
-
-        def wait_until_interrupted() -> None:
-            typer.echo("App is running. Press Ctrl+C to stop.")
-            try:
-                while True:
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                typer.echo("Stopping app.")
 
         with use_client(ctx, config_file) as client:
             client.show_app(display="browser", debug=debug)
-            wait_until_interrupted()
+            _wait_until_interrupted()
 
     return t
+
+
+def _wait_until_interrupted() -> None:
+    """Used by 'cuiman show-app'."""
+    import time
+
+    typer.echo("App is running. Press Ctrl+C to stop.")
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        typer.echo("Stopping app.")
 
 
 cli: typer.Typer = new_cli()

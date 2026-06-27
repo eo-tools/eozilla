@@ -159,7 +159,7 @@ class CliTest(TestCase):
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual("null\n...\n\n", result.output)
 
-    @patch("cuiman.cli.cli.wait_until_interrupted")
+    @patch("cuiman.cli.cli._wait_until_interrupted")
     @patch("cuiman.app.serve")
     def test_show_app(self, mock_serve, mock_wait_until_interrupted):
         result = invoke_cli("show-app")
