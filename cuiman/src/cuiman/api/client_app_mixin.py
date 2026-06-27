@@ -85,7 +85,7 @@ class ClientAppMixin(ABC):
         display_ = (
             ("notebook" if has_ishell else "browser") if display == "auto" else display
         )
-        compact_ = (compact if isinstance(compact, bool) else display_ == "notebook",)
+        compact_ = compact if isinstance(compact, bool) else display_ == "notebook"
 
         # noinspection PyTypeChecker
         serve(
