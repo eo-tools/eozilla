@@ -51,6 +51,57 @@ def test_remote_store():
     ]
 
 
+def test_remote_store_with_subscripts():
+    rs_store = create_app_remote_store()
+
+    changes = []
+
+    import copy
+
+    def record_changes(change):
+        changes.append(copy.deepcopy(change))
+
+    rs_store.subscribe(record_changes)
+
+    rs_store[
+        "processRequests", "218", "inputs", "c30145a7-029c-4499-98bc-9903ca46531c"
+    ] = "2026-06-01"
+    rs_store.at["processRequests"]["218"]["inputs"][
+        "472efeab-514a-4e15-9dba-d5812d653065"
+    ] = "2026-06-07"
+    # mixed
+    rs_store.at.processRequests["218"].inputs[
+        "bed1920e-51c0-406e-b22e-70d1f86d95d4"
+    ] = "POLYGON (( 9.66 53.75,10.38 53.75,10.38 53.35, 9.66 53.35, 9.66 53.75))"
+
+    assert changes == [
+        {
+            (
+                "processRequests",
+                "218",
+                "inputs",
+                "c30145a7-029c-4499-98bc-9903ca46531c",
+            ): "2026-06-01"
+        },
+        {
+            (
+                "processRequests",
+                "218",
+                "inputs",
+                "472efeab-514a-4e15-9dba-d5812d653065",
+            ): "2026-06-07"
+        },
+        {
+            (
+                "processRequests",
+                "218",
+                "inputs",
+                "bed1920e-51c0-406e-b22e-70d1f86d95d4",
+            ): "POLYGON (( 9.66 53.75,10.38 53.75,10.38 53.35, 9.66 53.35, 9.66 53.75))"
+        },
+    ]
+
+
 def test_create_defaults():
     assert _create_defaults(rs.path.parse_path("processRequests.generate_cube")) == {
         "inputs": {},
