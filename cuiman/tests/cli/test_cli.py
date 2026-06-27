@@ -11,10 +11,9 @@ import yaml
 
 from cuiman import Client, __version__
 from cuiman.api.auth.login import LoginResult
-from cuiman.cli.cli import cli, new_cli
 
 # noinspection PyProtectedMember
-from cuiman.cli.cli import _wait_until_interrupted
+from cuiman.cli.cli import _wait_until_interrupted, cli, new_cli
 
 from ..helpers import MockTransport
 
