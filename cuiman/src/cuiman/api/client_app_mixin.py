@@ -59,7 +59,7 @@ class ClientAppMixin(ABC):
         width: int | str = "100%",
         height: int | str = 600,
         display: Literal["browser", "notebook", "auto"] = "auto",
-    ) -> None:
+    ) -> "rs.ServeResult":
         """
         Show the Cuiman app for this client.
 
@@ -77,6 +77,8 @@ class ClientAppMixin(ABC):
             height: Height of the notebook iframe.
             display: Where to show the app. ``"auto"`` embeds it in notebooks
                 and opens it in a browser otherwise.
+        Return:
+            An instance of type ``remotestate.ServeResult``.
         """
         from cuiman.app import serve
 
@@ -85,7 +87,7 @@ class ClientAppMixin(ABC):
         )
 
         # noinspection PyTypeChecker
-        serve(
+        return serve(
             self.config,
             self.app_store,
             compact=display_ == "notebook",

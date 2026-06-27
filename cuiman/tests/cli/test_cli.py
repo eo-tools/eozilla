@@ -159,6 +159,16 @@ class CliTest(TestCase):
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual("null\n...\n\n", result.output)
 
+    @patch("cuiman.cli.cli.wait_until_interrupted")
+    @patch("cuiman.app.serve")
+    def test_show_app(self, mock_serve, mock_wait_until_interrupted):
+        result = invoke_cli("show-app")
+
+        self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+        mock_serve.assert_called_once()
+        mock_wait_until_interrupted.assert_called_once()
+        self.assertEqual("browser", mock_serve.call_args.kwargs["display"])
+
     @classmethod
     def get_result_msg(cls, result: typer.testing.Result):
         if result.exit_code != 0:

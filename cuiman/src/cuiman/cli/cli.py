@@ -443,6 +443,28 @@ def new_cli(
             job_results = client.get_job_results(job_id)
         output(get_renderer(output_format).render_job_results(job_results))
 
+    @t.command()
+    def show_app(
+        ctx: typer.Context,
+        config_file: Annotated[Optional[str], CONFIG_OPTION] = None,
+        debug: bool = False,
+    ):
+        """Show the client app in a browser."""
+        import time
+        from .client import use_client
+
+        def wait_until_interrupted() -> None:
+            typer.echo("App is running. Press Ctrl+C to stop.")
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                typer.echo("Stopping app.")
+
+        with use_client(ctx, config_file) as client:
+            client.show_app(display="browser", debug=debug)
+            wait_until_interrupted()
+
     return t
 
 

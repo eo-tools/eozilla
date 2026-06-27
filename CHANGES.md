@@ -2,9 +2,16 @@
 
 ### Enhancements
 
-- Added `ImageOpener` to cuiman's job result opener framework, supporting
+- Added `ImageOpener` to **Cuiman**'s job result opener framework, supporting
   all PIL-compatible image formats from both local paths and S3-compatible
   object storage (via the optional `s3fs` package).
+
+- **Cuiman** has a new experimental, alternative GUI - the Eozilla app. 
+  The app is a native React app that doesn't require 
+  the `panel` library anymore. (#124)
+  - Added a new client method `show_app()` and new property `app_store` to interact 
+    with the app's data state. Renders the app in a notebook cell or a new browser tab.
+  - Added a new CLI command `cuiman show-app`. Opens the app in a new browser tab.
 
 ### Other changes
 
