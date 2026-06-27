@@ -9,7 +9,6 @@ from unittest.mock import patch
 from IPython.core.interactiveshell import InteractiveShell
 
 from cuiman import ClientError
-from cuiman.api.ishell import has_ishell
 from gavicore.models import ApiError
 
 
@@ -27,7 +26,12 @@ class IShellTest(TestCase):
         cls.handler = staticmethod(_register_exception_handler())
 
     def test_has_ishell_ok(self):
-        self.assertTrue(has_ishell)
+        InteractiveShell.instance()  # ensure initialized() returns True
+        sys.modules.pop("cuiman.api.ishell", None)
+        import cuiman.api.ishell as ishell
+
+        self.assertTrue(ishell.has_ishell_module)
+        self.assertTrue(ishell.has_ishell)
 
     def test_exception_handler_ok(self):
         self.assertIsNotNone(self.handler)
@@ -57,13 +61,24 @@ class IShellTest(TestCase):
 
 
 def test_ishell_registers_handler_when_shell_already_initialized():
-    # Covers the module-level branch: has_ishell=True AND initialized()=True
+    # Covers the module-level branch: has_ishell=True.
     InteractiveShell.instance()  # idempotent; ensures initialized() returns True
     sys.modules.pop("cuiman.api.ishell", None)
     import cuiman.api.ishell as ishell
 
     assert ishell.exception_handler is not None
     assert callable(ishell.exception_handler)
+
+
+def test_ishell_without_initialized_shell():
+    sys.modules.pop("cuiman.api.ishell", None)
+
+    with patch.object(InteractiveShell, "initialized", return_value=False):
+        import cuiman.api.ishell as ishell
+
+        assert ishell.has_ishell_module is True
+        assert ishell.has_ishell is False
+        assert ishell.exception_handler is None
 
 
 def test_ishell_without_ipython(monkeypatch):
@@ -76,6 +91,7 @@ def test_ishell_without_ipython(monkeypatch):
         # Now import the module fresh
         import cuiman.api.ishell as ishell
 
+        assert ishell.has_ishell_module is False
         assert ishell.has_ishell is False
         assert ishell.exception_handler is None
 
@@ -90,5 +106,6 @@ def test_ishell_without_interactiveshell(monkeypatch):
         # Now import the module fresh
         import cuiman.api.ishell as ishell
 
+        assert ishell.has_ishell_module is False
         assert ishell.has_ishell is False
         assert ishell.exception_handler is None
