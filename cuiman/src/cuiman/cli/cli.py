@@ -56,6 +56,12 @@ CONFIG_OPTION = typer.Option(
     metavar="PATH",
 )
 
+DEBUG_OPTION = typer.Option(
+    "--debug",
+    "-d",
+    help="Output debugging information to the browser's dev console.",
+)
+
 FORMAT_OPTION = typer.Option(
     ...,
     "--format",
@@ -447,7 +453,7 @@ def new_cli(
     def show_app(
         ctx: typer.Context,
         config_file: Annotated[Optional[str], CONFIG_OPTION] = None,
-        debug: bool = False,
+        debug: Annotated[bool, DEBUG_OPTION] = False,
     ):
         """Show the client app in a browser."""
         from .client import use_client
