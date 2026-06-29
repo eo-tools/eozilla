@@ -7,9 +7,9 @@ from abc import ABC, abstractmethod
 from inspect import isclass
 from typing import Any
 
+from ..exceptions import ClientWarning
 from .context import JobResultOpenContext
 from .errors import JobResultOpenError
-from ..exceptions import ClientWarning
 
 
 class JobResultOpener(ABC):
