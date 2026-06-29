@@ -393,8 +393,8 @@ def processor(
     start_date: str,
     end_date: str,
     geometry: str,
-    indicator_name: str,
-    site_extend: str,
+    indicator_name: str | None,
+    site_extend: str | None,
 ) -> dict[str, str]:
     ctx = JobContext.get()
     ctx.report_progress(message="Started processing")
