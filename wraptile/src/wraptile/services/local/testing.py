@@ -402,10 +402,14 @@ def processor(
         time.sleep(0.5)
         ctx.report_progress(progress=(i + 1) * 10)
     ctx.report_progress(message="Ended processing")
-    return dict(
-        start_date=start_date,
-        end_date=end_date,
-        geometry=geometry,
-        indicator_name=indicator_name,
-        site_extend=site_extend,
-    )
+    return {
+        k: v
+        for k, v in dict(
+            start_date=start_date,
+            end_date=end_date,
+            geometry=geometry,
+            indicator_name=indicator_name,
+            site_extend=site_extend,
+        ).items()
+        if v is not None
+    }

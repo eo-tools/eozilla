@@ -3,6 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 import asyncio
+import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
@@ -14,6 +15,7 @@ from .defaults import (
     DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
 )
+from .exceptions import ClientError, ClientWarning
 from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
 
@@ -125,9 +127,18 @@ class AsyncClientMixin(ABC):
         if job_info.status != JobStatus.successful:
             raise JobResultStatusError(job_info)
         job_results = await self.get_job_results(job_id)
-        process_description = (
-            (await self.get_process(job_info.processID)) if job_info.processID else None
-        )
+        process_id = job_info.processID
+        process_description: ProcessDescription | None = None
+        if process_id:
+            try:
+                process_description = await self.get_process(process_id)
+            except ClientError:
+                warnings.warn(
+                    "An error occurred while getting process "
+                    f"description for process ID {process_id!r}",
+                    category=ClientWarning,
+                    stacklevel=2,
+                )
         ctx = JobResultOpenContext(
             config=self.config,
             job_id=job_id,

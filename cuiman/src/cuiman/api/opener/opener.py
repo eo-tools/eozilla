@@ -9,6 +9,7 @@ from typing import Any
 
 from .context import JobResultOpenContext
 from .errors import JobResultOpenError
+from ..exceptions import ClientWarning
 
 
 class JobResultOpener(ABC):
@@ -80,7 +81,7 @@ async def open_job_result(
     Args:
         ctx: The context used by the openers to check whether
             an output can be opened and, if so, to open it.
-        openers: The list of openers to use.
+        opener_types: The list of opener types to use.
 
     Returns:
         The value from opening a job result.
@@ -90,7 +91,8 @@ async def open_job_result(
             openers raised while opening.
     """
     # Use first matching opener, otherwise try next
-    errors: list[Exception] = []
+    errors: list[tuple[type[JobResultOpener], Exception]] = []
+    accepted_opener_count: int = 0
     for opener_type in opener_types:
         assert_opener_type_valid(opener_type)
 
@@ -102,8 +104,10 @@ async def open_job_result(
             _warn(opener_type, e)
 
         if opener is not None:
+            accepted: bool
             try:
                 accepted = await opener.accept_job_result(ctx)
+                accepted_opener_count += int(accepted)
             except Exception as e:
                 _warn(type(opener), e)
                 accepted = False
@@ -112,7 +116,7 @@ async def open_job_result(
                 try:
                     return await opener.open_job_result(ctx)
                 except Exception as e:
-                    errors.append(e)
+                    errors.append((opener_type, e))
 
     # Error management
     if not errors:
@@ -120,23 +124,21 @@ async def open_job_result(
             raise JobResultOpenError("No job result openers provided")
         else:
             raise JobResultOpenError("No job result opener found")
-    first_error = errors[0]
-    num_other_openers = len(errors) - 1
-    msg_detail = ""
-    if num_other_openers == 1:
-        msg_detail = " (one other opener failed too)"
-    elif num_other_openers > 1:
-        msg_detail = f" ({num_other_openers} other openers failed too)"
+    error_messages = "\n".join(f"* {t.__name__}: {e}" for t, e in errors)
     raise JobResultOpenError(
-        f"Job result opener failure{msg_detail}: {first_error}"
-    ) from first_error
+        f"Job result opener failure:\n{error_messages}"
+    ) from ExceptionGroup(
+        f"{len(errors)} of {accepted_opener_count} possible opener"
+        f"{'' if accepted_opener_count == 1 else 's'} failed",
+        [e for _, e in errors],
+    )
 
 
 def _warn(opener_type: type[JobResultOpener], error: Exception):
     warnings.warn(
         "Unexpected error occurred in "
         f"{opener_type.__name__}: {type(error).__name__}: {error}",
-        UserWarning,
+        category=ClientWarning,
         stacklevel=2,
     )
 
