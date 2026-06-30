@@ -393,8 +393,8 @@ def processor(
     start_date: str,
     end_date: str,
     geometry: str,
-    indicator_name: str,
-    site_extend: str,
+    indicator_name: str | None,
+    site_extend: str | None,
 ) -> dict[str, str]:
     ctx = JobContext.get()
     ctx.report_progress(message="Started processing")
@@ -402,10 +402,14 @@ def processor(
         time.sleep(0.5)
         ctx.report_progress(progress=(i + 1) * 10)
     ctx.report_progress(message="Ended processing")
-    return dict(
-        start_date=start_date,
-        end_date=end_date,
-        geometry=geometry,
-        indicator_name=indicator_name,
-        site_extend=site_extend,
-    )
+    return {
+        k: v
+        for k, v in dict(
+            start_date=start_date,
+            end_date=end_date,
+            geometry=geometry,
+            indicator_name=indicator_name,
+            site_extend=site_extend,
+        ).items()
+        if v is not None
+    }
