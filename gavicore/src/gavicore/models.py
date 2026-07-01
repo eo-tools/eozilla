@@ -398,6 +398,9 @@ class ProcessSummary(DescriptionType):
     version: str
     """Process version number."""
 
+    mutable: bool | None = None
+    """Mutability of procses. This value is true for processes deployed dynamically to DRU-enabled servers."""
+
     jobControlOptions: list[JobControlOptions] | None = None
     """Available options to control process execution."""
 
