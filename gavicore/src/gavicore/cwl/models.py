@@ -4,6 +4,47 @@ from typing import Any, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, model_validator
 
+"""Pydantic models for a deliberately small CWL subset.
+
+This module models the part of CWL that is useful for deploying simple
+containerized processes through OGC API - Processes Part 2: Deploy, Replace,
+Update.
+
+The goal is not to implement CWL as a general workflow language or to provide a
+complete CWL runner. Instead, CWL is treated as a deployment description format:
+it describes a command-line tool, its container image, its inputs, its outputs,
+and the basic command-line bindings needed to execute it.
+
+Supported concepts include:
+
+* `CommandLineTool`
+* `cwlVersion: v1.0`
+* `baseCommand`
+* `DockerRequirement`
+* primitive input types
+* `File` and `Directory`
+* optional types such as `string?`
+* arrays
+* enums
+* defaults
+* `label` and `doc`
+* basic `inputBinding`
+* basic `outputBinding.glob`
+
+This subset is intentionally restrictive. It excludes features that would require
+a substantially more complex CWL execution engine, such as workflows, scatter,
+sub-workflows, JavaScript expressions, `valueFrom`, `outputEval`, dynamic runtime
+expressions, and step-level input expressions.
+
+For an OGC API - Processes Part 2 server, this is usually the more useful
+boundary: the server can import a CWL document into its own internal process
+model, publish the corresponding process description, and execute the referenced
+container with validated inputs. More advanced CWL features can be added later,
+but they should be treated as explicit extensions rather than assumed support for
+the full CWL specification.
+"""
+
+
 CwlVersion: TypeAlias = Literal["v1.0"]
 CommandLineToolClass: TypeAlias = Literal["CommandLineTool"]
 
