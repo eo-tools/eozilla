@@ -26,7 +26,7 @@ $ appligator [OPTIONS] [PROCESS_REGISTRY_SPEC]
 
 **Options**:
 
-* `--dags-folder PATH`: An Airflow DAGs folder to which to write the outputs.  [default: C:\Users\norma\Projects\eozilla\eozilla-airflow\dags]
+* `--dags-folder PATH`: An Airflow DAGs folder to which to write the outputs.  [default: <eozilla-root>/eozilla-airflow/dags`]
 * `--image-name TEXT`: Name of the Docker image which is created from your workflow and required packages that Airflow will use for running the workflows in the registry.
 * `--config-file FILE`: Path to an appligator-config.yaml file. Values from the file are used as defaults; any flag passed explicitly on the command line takes precedence.
 * `--version / --no-version`: Show version and exit.  [default: no-version]
