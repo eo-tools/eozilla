@@ -6,12 +6,14 @@ import logging
 import os
 import shlex
 from abc import ABC
+from importlib import import_module
 from typing import Optional
 
 import fastapi
 import yaml
 from starlette.routing import Route
 
+from gavicore.dru_service import DRUService
 from gavicore.models import (
     Capabilities,
     ConformanceDeclaration,
@@ -92,6 +94,22 @@ class ServiceBase(Service, ABC):
                 name="service",
                 example="path.to.module:service",
             )
+
+            if issubclass(service.__class__, DRUService):
+                try:
+                    app_module = import_module("wraptile.app")
+                    app: fastapi.FastAPI = app_module["app"]
+
+                    route_module = import_module("wraptile.dru_rotues")
+                    router: fastapi.APIRouter = route_module["dru_router"]
+                except AttributeError:
+                    raise ServiceConfigException("Unable to load additional DRU routes") from None
+                else:
+                    app.include_router(router)
+
+                    logging.getLogger("uvicorn").info(
+                        "Loaded additional routes to support Deploy, Redeploy, Undeploy"
+                    )
         except (ValueError, TypeError) as e:
             raise ServiceConfigException(f"{e}") from e
         logger = logging.getLogger("uvicorn")
