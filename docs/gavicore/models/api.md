@@ -31,6 +31,29 @@
 ::: gavicore.models.JobResult
 
 
+## `gavicore.models` - OGC Application Package and Workflow descriptions
+
+::: gavicore.models.CWLDescription
+
+::: gavicore.models.ContainerConfig
+
+::: gavicore.models.InputBinding
+
+::: gavicore.models.OutputBinding
+
+::: gavicore.models.ContainerBindings
+
+::: gavicore.models.ExecutionUnitContainer
+
+::: gavicore.models.ContainerImage
+
+::: gavicore.models.GenericExecutionUnit
+
+::: gavicore.models.ExecutionUnitBase
+
+::: gavicore.models.OGCApplicationPackage
+
+
 ## `gavicore.models` - OpenAPI Schema
 
 ::: gavicore.models.DataType
