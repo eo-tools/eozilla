@@ -1,3 +1,11 @@
+## Changes in version 0.2.0 (in development)
+
+### Enhancements
+
+- Added the CWL subset supported by Eozilla as pydantic models in new 
+  module `gavicore.cwl.models`.
+
+
 ## Changes in version 0.1.2 (in development)
 
 ### Enhancements
