@@ -7,7 +7,7 @@ from unittest import TestCase
 
 from gavicore.dru_service import DRUService
 
-from .test_service import REQUIRED_METHODS
+from .test_service import REQUIRED_METHODS as REQUIRED_SERVICE_METHODS
 
 REQUIRED_DRU_METHODS = {
     "deploy_process",
@@ -16,7 +16,7 @@ REQUIRED_DRU_METHODS = {
     "get_formal_description",
 }
 
-REQUIRED_DRU_METHODS |= REQUIRED_METHODS
+REQUIRED_DRU_METHODS |= REQUIRED_SERVICE_METHODS
 
 
 class DRUServiceTest(TestCase):
