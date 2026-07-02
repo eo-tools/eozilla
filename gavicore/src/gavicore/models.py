@@ -753,6 +753,13 @@ ExecutionUnitBase: TypeAlias = (
 """Execution unit encoding of a process."""
 
 
+class OGCApplicationPackageProcessDescription(BaseModel):
+    """Wrapper around `ProcessDescription` to insert additional field name."""
+
+    process: ProcessDescription | None = None
+    """The process description."""
+
+
 class OGCApplicationPackage(BaseModel):
     """
     An OGC Application Package is a document that describes a process in sufficient detail so that an implementation of this Standard can dynamically deploy that process and make it accessible via an the processes API defined in "OGC API - Processes - Part 1: Core".
@@ -760,7 +767,7 @@ class OGCApplicationPackage(BaseModel):
     For more information, see: /req/ogcapppkg/schema
     """
 
-    processDescription: ProcessDescription | None = None
+    processDescription: OGCApplicationPackageProcessDescription | None = None
     """Process description of a given process."""
 
     executionUnit: ExecutionUnitBase | list[ExecutionUnitBase]
