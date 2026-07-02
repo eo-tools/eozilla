@@ -98,10 +98,10 @@ class ServiceBase(Service, ABC):
             if issubclass(service.__class__, DRUService):
                 try:
                     app_module = import_module("wraptile.app")
-                    app: fastapi.FastAPI = app_module["app"]
+                    app: fastapi.FastAPI = getattr(app_module, "app")
 
-                    route_module = import_module("wraptile.dru_rotues")
-                    router: fastapi.APIRouter = route_module["dru_router"]
+                    route_module = import_module("wraptile.dru_routes")
+                    router: fastapi.APIRouter = getattr(route_module, "dru_router")
                 except AttributeError:
                     raise ServiceConfigException("Unable to load additional DRU routes") from None
                 else:
