@@ -398,6 +398,9 @@ class ProcessSummary(DescriptionType):
     version: str
     """Process version number."""
 
+    mutable: bool | None = None
+    """Mutability of procses. This value is true for processes deployed dynamically to DRU-enabled servers."""
+
     jobControlOptions: list[JobControlOptions] | None = None
     """Available options to control process execution."""
 
@@ -582,6 +585,193 @@ class JobResults(RootModel[dict[str, JobResult] | None]):
     """
 
     root: dict[str, JobResult] | None = None
+
+
+# ---------------------------------------------------------------------
+#    OGC Application Package and Workflow descriptions
+# ---------------------------------------------------------------------
+
+
+class CWLDescription(BaseModel):
+    """
+    Possible encoding of an execution unit as CWL.
+    """
+
+    mediaType: Literal["application/cwl"]
+    """Media type used to identify the execution unit type. Must always be 'application/cwl'"""
+
+    value: str | None = None
+    # TODO: value points to https://raw.githubusercontent.com/common-workflow-language/cwl-v1.2/main/json-schema/cwl.yaml; object currently not modeled correctly
+    """JSON-encoded CWL document."""
+
+
+class ContainerConfig(OgcBaseModel):
+    """Hardware requirements and configuration properties for executing the process."""
+
+    cpuMin: int | None = Field(None, ge=1)
+    """Minimum number of CPUs required to run the process (unit is CPU core)."""
+
+    cpuMax: int | None = None
+    """Maximum number of CPU dedicated to the process (unit is CPU core)."""
+
+    memoryMin: int | float | None = None
+    """Minimum RAM memory required to run the application (unit is GB)."""
+
+    memoryMax: int | float | None = None
+    """Maximum RAM memory dedicated to the application (unit is GB)."""
+
+    storageTempMin: int | float | None = None
+    """ Minimum required temporary storage size (unit is GB)."""
+
+    storageOutputsMin: int | float | None = None
+    """Minimum required output storage size (unit is GB)."""
+
+    jobTimeout: int | float | None = None
+    """Timeout delay for a job execution (in seconds)."""
+
+
+class InputBinding(BaseModel):
+    """Defines how to specify the input for the execution unit.
+
+    . The value of various properties defined below can be expressions.
+      . The expression language SHALL be JavaScript(???).
+    . The "$(...)" syntax can be used to reference the current input or other
+        process inputs in an expression.
+        . The value "self" refers to the value of the current input.
+        . The value "inputs.<other_input>" refers to the value of another
+        process input.
+        . If the input is defined as a string of format "file" or "directory"
+        then the meta-values ".path", ".basename", ".nameroot" and ".nameext"
+        can be used to manipulate file or directory name without having to
+        resort to complex regular expressions.
+            . ".path" returns the path of a file name without the file name
+            . ".basename" returns the name of the file without the path
+            . ".nameroot" returns the basename without any extension
+            . ".nameext" returns the extension of the basename
+    """
+
+    prefix: str | None = None
+    """Command line prefix to add before the value."""
+
+    position: int | str | None = None
+    """
+    . The zero-based sorting key.
+    . The value can be an integer or a string.
+    . If the value is a string then it should be an expression that evaluates
+    to a single integer value or null.
+    """
+
+    valueFrom: str | None = None
+    """
+    . If valueFrom is a constant string value, use this as the value.
+    . If valueFrom is an expression, evaluate the expression to yield the
+    actual value to use to build the command line.
+    . If the value of the associated input parameter is null, valueFrom is
+    not evaluated and nothing is added to the command line.
+    """
+
+    itemSeparator: str | None = None
+    """ Join the array elements into a single string with the elements separated by itemSeparator."""
+
+    shellQuote: bool | None = None
+    """
+    . A Boolean that controls whether the value is quoted on the command.
+    . A value of true (or if shecllQuote is not provided) means that the
+    implementation SHALL not permit the interpretation of any shell
+    metacharacters or directives.
+    . A value of false should be used to inject metacharacters for operations
+    such as pipes.
+    """
+
+
+class OutputBinding(OgcBaseModel):
+    """Defines how to retrieve the output result from the command."""
+
+    glob: str | list[str] | None = None
+    """
+    . Wildcard pattern to find the output on disk or mounted volume.
+    . Uses UNIX "glob" wildcard patterns (see: "man 7 glob").
+    . See inputBinding.yaml (modeled as InputBinding) for referencing input values in an output
+      binding "glob" expression.
+    """
+
+
+class ContainerBindings(BaseModel):
+    """Input and output bindings of a container image execution unit."""
+
+    inputBindings: InputBinding | None = None
+    """Input bindings."""
+
+    outputBindings: OutputBinding | None = None
+    """Output bindings."""
+
+
+class ExecutionUnitContainer(OgcBaseModel):
+    """Execution unit described by a container image."""
+
+    image: str
+    """Container image reference for the execution unit."""
+
+    deployment: Literal["local", "remote", "hpc", "cloud"] | None = None
+    """Deployment information for the execution unit."""
+
+    config: ContainerConfig | None = None
+    """Optional configuration for image execution."""
+
+    bindings: ContainerBindings | None = None
+    """Binding properties for inputs and outputs."""
+
+
+class ContainerImage(BaseModel):
+    """The execute unit is a container image."""
+
+    type: Literal["docker", "oci"]
+    """Type of container image."""
+
+    value: ExecutionUnitContainer | None = None
+    """Description of container image"""
+
+
+class GenericExecutionUnit(BaseModel):
+    """A generic execution unit.
+
+    The standard notes:
+        The execution unit is not Docker/OCI or CWL and cannot be properly
+        described via the "mediaType" property of a qualified value
+        using an RFC 2046 media type (e.g. an "R" or "Python" script).
+        In this case a community-defined or custom token may be used
+        with the "type" property.
+    """
+
+    type: str
+    """Type of execution unit"""
+
+
+ExecutionUnitBase: TypeAlias = (
+    Link | CWLDescription | ContainerImage | GenericExecutionUnit
+)
+"""Execution unit encoding of a process."""
+
+
+class OGCApplicationPackageProcessDescription(BaseModel):
+    """Wrapper around `ProcessDescription` to insert additional field name."""
+
+    process: ProcessDescription | None = None
+    """The process description."""
+
+
+class OGCApplicationPackage(BaseModel):
+    """
+    An OGC Application Package is a document that describes a process in sufficient detail so that an implementation of this Standard can dynamically deploy that process and make it accessible via an the processes API defined in "OGC API - Processes - Part 1: Core".
+
+    For more information, see: /req/ogcapppkg/schema
+    """
+
+    processDescription: OGCApplicationPackageProcessDescription | None = None
+    """Process description of a given process."""
+
+    executionUnit: ExecutionUnitBase | list[ExecutionUnitBase]
+    """The execution unit of process."""
 
 
 # ---------------------------------------------------------------------

@@ -7,12 +7,13 @@ from importlib.metadata import version
 
 from pydantic import BaseModel
 
-from . import models, service
+from . import dru_service, models, service
 
 __version__ = version("gavicore")
 
 __all__ = [
     "__version__",
+    "dru_service",
     "models",
     "service",
 ]
