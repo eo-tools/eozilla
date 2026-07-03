@@ -31,14 +31,16 @@ $ appligator [OPTIONS] [PROCESS_REGISTRY_SPEC]
 * `--config-file FILE`: Path to an appligator-config.yaml file. Values from the file are used as defaults; any flag passed explicitly on the command line takes precedence.
 * `--version / --no-version`: Show version and exit.  [default: no-version]
 * `--skip-build / --no-skip-build`: Skip building the Docker image and only generate DAG files.  [default: skip-build]
-* `--secret-name TEXT`: Kubernetes secret name to inject as environment variables into every pod (repeatable, e.g. --secret-name my-secret --secret-name other-secret).
-* `--dag-name TEXT`: Custom name for the generated DAG file (without .py extension). Defaults to the process ID. If multiple processes are in the registry, each gets a suffix: <dag-name>_<process_id>.py.
-* `--cpu-request TEXT`: CPU request for every pod (e.g. '500m', '1').
-* `--memory-request TEXT`: Memory request for every pod (e.g. '256Mi', '1Gi').
-* `--cpu-limit TEXT`: CPU limit for every pod (e.g. '2').
-* `--memory-limit TEXT`: Memory limit for every pod (e.g. '2Gi').
-* `--pvc-mount TEXT`: Mount a PersistentVolumeClaim into every pod. Format: name:claim_name:mount_path (e.g. --pvc-mount output:my-pvc:/mnt/output). Repeatable.
-* `--config-map-mount TEXT`: Mount a ConfigMap into every pod. Format: name:config_map_name:mount_path or name:config_map_name:mount_path:sub_path (e.g. --config-map-mount settings:my-cm:/app/settings.yaml:settings.yaml). Repeatable.
+* `--secret-name TEXT`: Kubernetes secret name to inject as environment variables into every pod. Repeatable — supply the flag multiple times to add more than one secret (e.g. `--secret-name my-secret --secret-name other-secret`).
+* `--dag-name TEXT`: Custom name for the generated DAG file (without `.py` extension). Defaults to the process ID. If multiple processes are in the registry, each gets a suffix: `<dag-name>_<process_id>.py`.
+* `--cpu-request TEXT`: CPU request for every pod (e.g. `500m`, `1`).
+* `--memory-request TEXT`: Memory request for every pod (e.g. `256Mi`, `1Gi`).
+* `--cpu-limit TEXT`: CPU limit for every pod (e.g. `2`).
+* `--memory-limit TEXT`: Memory limit for every pod (e.g. `2Gi`).
+* `--pvc-mount TEXT`: Mount a PersistentVolumeClaim into every pod. Format: `name:claim_name:mount_path` (e.g. `--pvc-mount output:my-pvc:/mnt/output`). Repeatable.
+* `--config-map-mount TEXT`: Mount a ConfigMap into every pod. Format: `name:config_map_name:mount_path` or `name:config_map_name:mount_path:sub_path` (e.g. `--config-map-mount settings:my-cm:/app/settings.yaml:settings.yaml`). Repeatable.
+* `--node-selector TEXT`: Node selector label for every pod. Format: `key=value` (e.g. `--node-selector pool=airflow-workers-big`). Repeatable.
+* `--toleration TEXT`: Toleration for every pod. Format: `key:operator[:value[:effect]]` (e.g. `--toleration airflow/component:Equal:worker:NoSchedule`). Repeatable.
 * `--install-completion`: Install completion for the current shell.
 * `--show-completion`: Show completion for the current shell, to copy it or customize the installation.
 * `--help`: Show this message and exit.

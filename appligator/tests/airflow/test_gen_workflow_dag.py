@@ -239,6 +239,62 @@ def test_config_map_mount_with_sub_path_rendered_in_dag():
     ) in dag_code
 
 
+def test_node_selector_rendered_in_dag():
+    dag_code = gen_workflow_dag(
+        dag_id="first_workflow",
+        registry=first_step.registry,
+        image="example:latest",
+        node_selector={"pool": "airflow-workers-big"},
+    )
+    assert "from kubernetes.client import models as k8s" in dag_code
+    assert "_node_selector = {'pool': 'airflow-workers-big'}" in dag_code
+    assert "node_selector=_node_selector" in dag_code
+    assert "_tolerations" not in dag_code
+
+
+def test_tolerations_rendered_in_dag():
+    from appligator.airflow.models import Toleration
+
+    dag_code = gen_workflow_dag(
+        dag_id="first_workflow",
+        registry=first_step.registry,
+        image="example:latest",
+        tolerations=[
+            Toleration(
+                key="airflow/component",
+                operator="Equal",
+                value="worker",
+                effect="NoSchedule",
+            )
+        ],
+    )
+    assert "from kubernetes.client import models as k8s" in dag_code
+    assert "_tolerations = [" in dag_code
+    assert "k8s.V1Toleration(" in dag_code
+    assert "key='airflow/component'" in dag_code
+    assert "operator='Equal'" in dag_code
+    assert "value='worker'" in dag_code
+    assert "effect='NoSchedule'" in dag_code
+    assert "tolerations=_tolerations" in dag_code
+    assert "_node_selector" not in dag_code
+
+
+def test_node_selector_and_tolerations_combined():
+    from appligator.airflow.models import Toleration
+
+    dag_code = gen_workflow_dag(
+        dag_id="first_workflow",
+        registry=first_step.registry,
+        image="example:latest",
+        node_selector={"pool": "workers"},
+        tolerations=[Toleration(key="dedicated", operator="Equal", value="app", effect="NoSchedule")],
+    )
+    assert "_node_selector = {'pool': 'workers'}" in dag_code
+    assert "_tolerations = [" in dag_code
+    assert "node_selector=_node_selector" in dag_code
+    assert "tolerations=_tolerations" in dag_code
+
+
 def test_pvc_and_config_map_mounts_combined():
     dag_code = gen_workflow_dag(
         dag_id="first_workflow",
@@ -255,3 +311,22 @@ def test_pvc_and_config_map_mounts_combined():
     assert "k8s.V1ConfigMapVolumeSource(name='my-cfg')" in dag_code
     assert "k8s.V1VolumeMount(name='data', mount_path='/mnt/data')" in dag_code
     assert "k8s.V1VolumeMount(name='cfg', mount_path='/etc/cfg')" in dag_code
+
+
+def test_toleration_seconds_rendered_in_dag():
+    from appligator.airflow.models import Toleration
+
+    dag_code = gen_workflow_dag(
+        dag_id="first_workflow",
+        registry=first_step.registry,
+        image="example:latest",
+        tolerations=[
+            Toleration(
+                key="spot",
+                operator="Exists",
+                effect="NoExecute",
+                toleration_seconds=300,
+            )
+        ],
+    )
+    assert "toleration_seconds=300" in dag_code

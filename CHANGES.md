@@ -2,10 +2,13 @@
 
 ### Enhancements
 
+
+- **Appligator** now supports node selectors and tolerations for generated pods via
+  `--node-selector key=value` and `--toleration key:operator[:value[:effect]]` CLI
+  options (both repeatable and configurable via `appligator-config.yaml`).
 - Added `ImageOpener` to **Cuiman**'s job result opener framework, supporting
   all PIL-compatible image formats from both local paths and S3-compatible
   object storage (via the optional `s3fs` package).
-
 - **Cuiman** has a new experimental, alternative GUI - the Eozilla app. 
   The app is a native React app that doesn't require 
   the `panel` library anymore. (#124)
