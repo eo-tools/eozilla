@@ -23,39 +23,6 @@ logger = logging.getLogger(__name__)
 INPUT_PREFIX = "STEP_INPUT_"
 
 
-class _XComEncoder(json.JSONEncoder):
-    """Serialize types that json.dump can't handle natively.
-
-    Airflow reads step outputs from a JSON file (XCom).  Standard json.dump
-    fails on Pydantic models and other domain objects, so we serialise them
-    here rather than requiring every step function to return plain dicts.
-    """
-
-    def default(self, obj):
-        if hasattr(obj, "model_dump"):  # Pydantic models (e.g. PathRef)
-            return obj.model_dump()
-        return str(obj)
-
-
-_SCALAR_TYPES = (int, float, bool)
-
-
-def _pydantic_type(hint) -> type[BaseModel] | None:
-    """Return the Pydantic model class from a hint, including Optional[Model]."""
-    if isinstance(hint, type) and issubclass(hint, BaseModel):
-        return hint
-    args = typing.get_args(hint)
-    if args:
-        non_none = [a for a in args if a is not type(None)]
-        if (
-            len(non_none) == 1
-            and isinstance(non_none[0], type)
-            and issubclass(non_none[0], BaseModel)
-        ):
-            return non_none[0]
-    return None
-
-
 def coerce_inputs(func, inputs: dict[str, Any]) -> dict[str, Any]:
     """Cast inputs to the types declared in func's signature.
 
@@ -222,6 +189,39 @@ def main(
     os.makedirs(XCOM_DIR, exist_ok=True)
     with open(XCOM_FILE, "w") as f:
         json.dump(output, f, cls=_XComEncoder)
+
+
+class _XComEncoder(json.JSONEncoder):
+    """Serialize types that json.dump can't handle natively.
+
+    Airflow reads step outputs from a JSON file (XCom).  Standard json.dump
+    fails on Pydantic models and other domain objects, so we serialise them
+    here rather than requiring every step function to return plain dicts.
+    """
+
+    def default(self, obj):
+        if hasattr(obj, "model_dump"):  # Pydantic models (e.g. PathRef)
+            return obj.model_dump()
+        return str(obj)
+
+
+_SCALAR_TYPES = (int, float, bool)
+
+
+def _pydantic_type(hint) -> type[BaseModel] | None:
+    """Return the Pydantic model class from a hint, including Optional[Model]."""
+    if isinstance(hint, type) and issubclass(hint, BaseModel):
+        return hint
+    args = typing.get_args(hint)
+    if args:
+        non_none = [a for a in args if a is not type(None)]
+        if (
+            len(non_none) == 1
+            and isinstance(non_none[0], type)
+            and issubclass(non_none[0], BaseModel)
+        ):
+            return non_none[0]
+    return None
 
 
 if __name__ == "__main__":  # pragma: no cover
