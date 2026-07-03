@@ -14,6 +14,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from gavicore.util.dynimp import import_value
+
 logger = logging.getLogger(__name__)
 
 # Prefix used to identify step input environment variables.
@@ -116,34 +118,45 @@ def resolve_function(module_name: str, qualname: str):
     """Import *module_name* and return the object at *qualname*.
 
     *qualname* may be a dotted path to a nested attribute, e.g.
-    ``"MyClass.my_method"``, which is walked attribute-by-attribute after the
-    module is imported.
+    ``"MyClass.my_method"``, resolved via gavicore's
+    ``import_value("module:qualname", ...)``.
 
-    If a segment of *qualname* is ``"function"`` and the current object is a
-    procodile Workflow (which stores its main callable in registry.main), the
-    main function is extracted directly.  This handles both old procodile
+    If the final segment of *qualname* is ``"function"`` and it can't be
+    resolved directly but the parent object is a procodile Workflow (which
+    stores its main callable in registry.main), the main function is
+    extracted from the registry instead. This handles both old procodile
     builds (no .function property) and new ones transparently.
     """
-    module = importlib.import_module(module_name)
-    obj = module
-    for attr in qualname.split("."):
+    importlib.import_module(module_name)  # let ImportError propagate as-is
+    try:
+        obj = import_value(f"{module_name}:{qualname}", type=object, name="step target")
+    except ValueError as e:
+        attr = qualname.rsplit(".", 1)[-1]
+        if attr != "function":
+            raise AttributeError(str(e)) from e
+
+        parent_qualname = qualname.rsplit(".", 1)[0] if "." in qualname else None
         try:
-            obj = getattr(obj, attr)
-        except AttributeError:
-            if (
-                attr == "function"
-                and hasattr(obj, "registry")
-                and hasattr(obj.registry, "main")
-            ):
-                try:
-                    main_id = next(iter(obj.registry.main))
-                    obj = obj.registry.main[main_id].function
-                except StopIteration:
-                    raise AttributeError(
-                        f"Workflow registry has no main step (attr={attr!r})"
-                    ) from None
-            else:
-                raise
+            parent = (
+                import_value(
+                    f"{module_name}:{parent_qualname}", type=object, name="step target"
+                )
+                if parent_qualname
+                else importlib.import_module(module_name)
+            )
+        except ValueError as pe:
+            raise AttributeError(str(pe)) from pe
+
+        if not (hasattr(parent, "registry") and hasattr(parent.registry, "main")):
+            raise AttributeError(str(e)) from e
+
+        try:
+            main_id = next(iter(parent.registry.main))
+        except StopIteration:
+            raise AttributeError(
+                f"Workflow registry has no main step (attr={attr!r})"
+            ) from None
+        obj = parent.registry.main[main_id].function
 
     # If the resolved object is a procodile Step (has a .function attribute
     # holding the original callable), use the bare function so that calling it
