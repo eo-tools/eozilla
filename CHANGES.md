@@ -9,11 +9,18 @@
 ### Fixes
 
 - **Appligator** `run_step.py`: improved input coercion to handle Pydantic model
-  inputs.
+  inputs. Wrapped step outputs (e.g. `{"return_value": {...}}`) are now unwrapped
+  by shape (single-entry dict) rather than by matching a hardcoded key name, so
+  any OGC output name is handled correctly, not just procodile's `"return_value"`
+  default.
 
 ### Other changes
 
 - Updated appligator docs
+- **Appligator** `run_step.py`: function resolution now delegates to
+  `gavicore.util.dynimp.import_value` for consistent dynamic-import error
+  handling, keeping only the procodile-specific Workflow-registry fallback as
+  bespoke logic.
 
 
 ## Changes in version 0.1.1

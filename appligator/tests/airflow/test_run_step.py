@@ -329,6 +329,21 @@ class TestResolveFunction(unittest.TestCase):
         with self.assertRaises(AttributeError):
             resolve_function("_test_resolve_reraised", "workflow.missing")
 
+    def test_function_fallback_with_unresolvable_parent_reraises(self):
+        self._make_module("_test_resolve_no_parent")
+
+        with self.assertRaises(AttributeError):
+            resolve_function("_test_resolve_no_parent", "nonexistent.function")
+
+    def test_function_fallback_on_non_workflow_reraises(self):
+        # Parent resolves fine, but isn't a procodile Workflow (no .registry),
+        # so the fallback doesn't apply and the original error is re-raised.
+        plain_obj = types.SimpleNamespace()  # no .function, no .registry
+        self._make_module("_test_resolve_non_workflow", plain_obj=plain_obj)
+
+        with self.assertRaises(AttributeError):
+            resolve_function("_test_resolve_non_workflow", "plain_obj.function")
+
     def test_step_function_unwrap(self):
         bare_func = lambda: "bare"  # noqa: E731
         step = types.SimpleNamespace(function=bare_func)
