@@ -5,19 +5,31 @@
 import importlib.util
 from typing import Any, Callable
 
-has_ishell: bool
+has_ishell_module: bool
 """Whether `IPython.core.interactiveshell` is available."""
+
+has_ishell: bool
+"""Whether an `IPython.core.interactiveshell.InteractiveShell` is initialized."""
 
 
 try:
-    has_ishell = importlib.util.find_spec("IPython.core.interactiveshell") is not None
+    has_ishell_module = (
+        importlib.util.find_spec("IPython.core.interactiveshell") is not None
+    )
 except (ImportError, ModuleNotFoundError):
+    has_ishell_module = False
+
+if has_ishell_module:
+    from IPython.core.interactiveshell import InteractiveShell
+
+    has_ishell = InteractiveShell.initialized()
+else:
     has_ishell = False
 
 exception_handler: Callable[[Any, Any, Any, Any], None] | None = None
 """Custom exception handler for `IPython.core.interactiveshell.InteractiveShell`."""
 
-__all__ = ["has_ishell", "exception_handler"]
+__all__ = ["has_ishell_module", "has_ishell", "exception_handler"]
 
 
 def _register_exception_handler() -> Callable[[Any, Any, Any, Any], None]:
@@ -55,7 +67,4 @@ def _register_exception_handler() -> Callable[[Any, Any, Any, Any], None]:
 
 
 if has_ishell:
-    from IPython.core.interactiveshell import InteractiveShell
-
-    if InteractiveShell.initialized():
-        exception_handler = _register_exception_handler()
+    exception_handler = _register_exception_handler()

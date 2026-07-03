@@ -28,6 +28,14 @@ class MyGoodOpener(JobResultOpener):
         return results_root
 
 
+class MyOpensEverythingOpener(JobResultOpener):
+    async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
+        return True
+
+    async def open_job_result(self, ctx: JobResultOpenContext) -> Any:
+        return 137
+
+
 class MyAcceptRaisesOpener(JobResultOpener):
     async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
         raise KeyError("Key not found")
@@ -42,6 +50,18 @@ class MyOpenRaisesOpener(JobResultOpener):
 
     async def open_job_result(self, ctx: JobResultOpenContext) -> Any:
         raise FileNotFoundError("File not found")
+
+
+class MyOpenRaisesOpener1(MyOpenRaisesOpener):
+    pass
+
+
+class MyOpenRaisesOpener2(MyOpenRaisesOpener):
+    pass
+
+
+class MyOpenRaisesOpener3(MyOpenRaisesOpener):
+    pass
 
 
 class MyUnableOpener(JobResultOpener):
@@ -89,39 +109,63 @@ async def test_open_job_result_ok_others_failing():
         == 2.5
     )
 
+    assert (
+        await open_job_result(
+            ctx,
+            MyOpensEverythingOpener,
+            MyOpenRaisesOpener1,
+            MyOpenRaisesOpener2,
+            MyOpenRaisesOpener3,
+        )
+        == 137
+    )
+
+    assert (
+        await open_job_result(
+            ctx,
+            MyOpenRaisesOpener1,
+            MyOpenRaisesOpener2,
+            MyOpenRaisesOpener3,
+            MyOpensEverythingOpener,
+        )
+        == 137
+    )
+
 
 @pytest.mark.asyncio
 async def test_open_job_result_fails():
     ctx = new_ctx(data_type=dict)
 
     with pytest.raises(
-        JobResultOpenError, match="Job result opener failure: File not found"
+        JobResultOpenError,
+        match=r"Job result opener failure:\n\* MyOpenRaisesOpener: File not found",
     ):
         await open_job_result(ctx, MyOpenRaisesOpener)
 
     with pytest.raises(
         JobResultOpenError,
         match=(
-            r"Job result opener failure \(one other opener failed too\): "
-            r"File not found"
-        ),
-    ):
-        await open_job_result(ctx, MyOpenRaisesOpener, MyOpenRaisesOpener)
-
-    with pytest.raises(
-        JobResultOpenError,
-        match=(
-            r"Job result opener failure \(3 other openers failed too\): "
-            r"File not found"
+            r"Job result opener failure:\n"
+            r"\* MyOpenRaisesOpener1: File not found\n"
+            r"\* MyOpenRaisesOpener2: File not found\n"
+            r"\* MyOpenRaisesOpener3: File not found"
         ),
     ):
         await open_job_result(
-            ctx,
-            MyOpenRaisesOpener,
-            MyOpenRaisesOpener,
-            MyOpenRaisesOpener,
-            MyOpenRaisesOpener,
+            ctx, MyOpenRaisesOpener1, MyOpenRaisesOpener2, MyOpenRaisesOpener3
         )
+
+
+@pytest.mark.asyncio
+async def test_open_job_result_counts_accepted_openers_only():
+    ctx = new_ctx(data_type=dict)
+
+    with pytest.raises(JobResultOpenError) as exc_info:
+        await open_job_result(ctx, MyUnableOpener, MyOpenRaisesOpener)
+
+    cause = exc_info.value.__cause__
+    assert isinstance(cause, ExceptionGroup)
+    assert str(cause) == "1 of 1 possible opener failed (1 sub-exception)"
 
 
 @pytest.mark.asyncio

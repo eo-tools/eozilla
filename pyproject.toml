@@ -86,6 +86,9 @@ gavicore = { path = "./gavicore", editable = true }
 procodile = { path = "./procodile", editable = true }
 procodile-example = { path = "./procodile-example", editable = true }
 wraptile = { path = "./wraptile", editable = true }
+# Cuiman GUI
+remotestate = ">=0.3.1,<1"
+# remotestate = { path = "../remotestate/remotestate-py", editable = true }
 # Airflow is only available on PyPI
 apache-airflow-client = "==3.0.2"
 # Documentation
@@ -428,6 +431,12 @@ cmd = "python -m tools.sync_versions"
 
 [tool.pixi.tasks.schema2ui]
 cmd = "python gavicore/src/gavicore/ui/panel/schema2ui.py"
+
+
+# pixi run jptr
+
+[tool.pixi.tasks.jptr]
+cmd = "jupyter-lab"
 
 # docs
 
