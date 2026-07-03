@@ -12,7 +12,7 @@ import os
 import typing
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from gavicore.util.dynimp import import_value
 
@@ -96,11 +96,20 @@ def coerce_inputs(func, inputs: dict[str, Any]) -> dict[str, Any]:
                         value = ast.literal_eval(value)
                     except (ValueError, SyntaxError):  # pragma: no cover
                         pass
-            # A procodile Workflow called directly returns {"return_value": result}
-            # instead of the bare result. Unwrap it so PathRef receives the path string.
-            if isinstance(value, dict) and "return_value" in value and "value" not in value:
-                value = value["return_value"]
-            coerced[key] = model_cls.model_validate(value)
+            try:
+                coerced[key] = model_cls.model_validate(value)
+            except ValidationError:
+                # OGC job results are a mapping of output name -> value
+                # (Link | QualifiedValue | InlineValue); a procodile Workflow
+                # called directly returns that same shape for its single
+                # output. The output name is arbitrary per OGC (procodile
+                # only defaults it to "return_value" when none is declared),
+                # so unwrap by shape -- a single-entry dict -- rather than
+                # matching a specific key.
+                if not isinstance(value, dict) or len(value) != 1:
+                    raise
+                (inner_value,) = value.values()
+                coerced[key] = model_cls.model_validate(inner_value)
         elif isinstance(value, str):
             # Fallback: JSON-parse strings that look like non-string scalars.
             # "5.0" → 5.0, "true" → True, but "dummy" stays "dummy".

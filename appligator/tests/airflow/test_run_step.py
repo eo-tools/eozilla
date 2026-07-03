@@ -12,7 +12,7 @@ import unittest
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from appligator.airflow import run_step
 from appligator.airflow.run_step import _XComEncoder, _pydantic_type, coerce_inputs, resolve_function
@@ -209,6 +209,31 @@ class TestCoerceInputs(unittest.TestCase):
         result = coerce_inputs(func, {"ref": {"return_value": {"path": "/data"}}})
         self.assertIsInstance(result["ref"], MyModel)
         self.assertEqual(result["ref"].path, "/data")
+
+    def test_unwraps_arbitrary_output_name_wrapper(self):
+        # OGC job results are name -> value mappings; the output name is
+        # arbitrary and need not be "return_value".
+        class MyModel(BaseModel):
+            path: str
+
+        def func(ref: MyModel):
+            pass
+
+        result = coerce_inputs(func, {"ref": {"some_output_name": {"path": "/data"}}})
+        self.assertIsInstance(result["ref"], MyModel)
+        self.assertEqual(result["ref"].path, "/data")
+
+    def test_does_not_unwrap_multi_entry_dict(self):
+        class MyModel(BaseModel):
+            path: str
+
+        def func(ref: MyModel):
+            pass
+
+        with self.assertRaises(ValidationError):
+            coerce_inputs(
+                func, {"ref": {"output_a": {"path": "/a"}, "output_b": {"path": "/b"}}}
+            )
 
     def test_no_coercion_when_already_model_instance(self):
         class MyModel(BaseModel):
