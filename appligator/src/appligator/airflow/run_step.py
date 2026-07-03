@@ -16,7 +16,7 @@ from pydantic import BaseModel, ValidationError
 
 from gavicore.util.dynimp import import_value
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("appligator.airflow")
 
 # Prefix used to identify step input environment variables.
 # Reserved for future use if inputs are passed via env vars instead of argv.
