@@ -22,3 +22,7 @@ class ClientError(Exception):
     def __init__(self, message: str, api_error: ApiError):
         super().__init__(message)
         self.api_error = api_error
+
+
+class ClientWarning(UserWarning):
+    """Special warning type used by the client."""

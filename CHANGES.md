@@ -2,13 +2,29 @@
 
 ### Enhancements
 
+
 - **Appligator** now supports node selectors and tolerations for generated pods via
   `--node-selector key=value` and `--toleration key:operator[:value[:effect]]` CLI
   options (both repeatable and configurable via `appligator-config.yaml`).
+- Added `ImageOpener` to **Cuiman**'s job result opener framework, supporting
+  all PIL-compatible image formats from both local paths and S3-compatible
+  object storage (via the optional `s3fs` package).
+- **Cuiman** has a new experimental, alternative GUI - the Eozilla app. 
+  The app is a native React app that doesn't require 
+  the `panel` library anymore. (#124)
+  - Added a new client method `show_app()` and new property `app_store` to interact 
+    with the app's data state. Renders the app in a notebook cell or a new browser tab.
+  - Added a new CLI command `cuiman show-app`. Opens the app in a new browser tab.
+
+### Fixes
+
+- Fixed **Cuiman**'s automatic app display selection to detect an initialized
+  IPython interactive shell, instead of only checking whether IPython is
+  installed. (#130)
 
 ### Other changes
 
-- Updated appligator docs
+- Updated appligator docs.
 
 ## Changes in version 0.1.1
 
