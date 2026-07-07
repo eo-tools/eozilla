@@ -20,11 +20,10 @@
 - Fixed **Cuiman**'s automatic app display selection to detect an initialized
   IPython interactive shell, instead of only checking whether IPython is
   installed. (#130)
-
-### Fixes
-
-- **Appligator** `run_step.py`: improved input coercion to handle Pydantic model
-  inputs. Wrapped step outputs (e.g. `{"return_value": {...}}`) are now unwrapped
+- **Appligator** `run_step.py`: improved input coercion, casting string and dict
+  XCom values into the parameter types declared in the step function's signature
+  (e.g. `"5.0"` into `float`, a dict into a Pydantic model). Wrapped step outputs
+  (e.g. `{"return_value": {...}}`) are now unwrapped
   by shape (single-entry dict) rather than by matching a hardcoded key name, so
   any OGC output name is handled correctly, not just procodile's `"return_value"`
   default.

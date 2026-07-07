@@ -10,7 +10,7 @@ import json
 import logging
 import os
 import typing
-from typing import Any
+from typing import Any, Callable
 
 from pydantic import BaseModel, ValidationError
 
@@ -23,8 +23,8 @@ logger = logging.getLogger("appligator.airflow")
 INPUT_PREFIX = "STEP_INPUT_"
 
 
-def coerce_inputs(func, inputs: dict[str, Any]) -> dict[str, Any]:
-    """Cast inputs to the types declared in func's signature.
+def coerce_inputs(func: Callable[..., Any], inputs: dict[str, Any]) -> dict[str, Any]:
+    """Cast Airflow XCom inputs to the types declared in the signature of `func`.
 
     Airflow renders all Jinja {{ params.* }} as strings, so numeric params
     arrive as str even when declared as float/int in the process function.
