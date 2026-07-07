@@ -7,7 +7,7 @@ from __future__ import annotations
 from abc import ABC
 from datetime import date
 from enum import Enum
-from typing import Any, Literal, TypeAlias
+from typing import Any, Literal, TypeAlias, Annotated
 
 from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 
@@ -597,8 +597,8 @@ class CWLDescription(BaseModel):
     Possible encoding of an execution unit as CWL.
     """
 
-    mediaType: Literal["application/cwl"]
-    """Media type used to identify the execution unit type. Must always be 'application/cwl'"""
+    media_type: Annotated[Literal["application/cwl"], Field(..., alias="mediaType")]
+    """Media type used to identify the execution unit type. Must always be 'application/cwl'."""
 
     value: str | None = None
     # TODO: value points to https://raw.githubusercontent.com/common-workflow-language/cwl-v1.2/main/json-schema/cwl.yaml; object currently not modeled correctly
