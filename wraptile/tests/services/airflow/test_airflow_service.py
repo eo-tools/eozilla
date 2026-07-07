@@ -5,6 +5,7 @@
 import unittest
 import warnings
 from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest.mock import MagicMock, patch
 
 import fastapi
 import requests
@@ -132,6 +133,75 @@ class ParamToInputDescriptionTest(TestCase):
         self.assertIsNotNone(result)
         self.assertIsNone(result.schema_.type)
         self.assertEqual(result.schema_.default, 42)
+
+
+_KEYCLOAK_ENV = {
+    "KEYCLOAK_TOKEN_URL": "https://kc.example/realms/eozilla-auth/protocol/openid-connect/token",
+    "WRAPTILE_CLIENT_ID": "wraptile",
+    "WRAPTILE_CLIENT_SECRET": "s3cr3t",
+}
+
+
+class AirflowAccessTokenTest(TestCase):
+    """The wraptile->airflow bearer-token logic (Keycloak vs. legacy basic)."""
+
+    def _token_response(self, token: str = "kc-token", expires_in: int = 300):  # noqa: S107
+        resp = MagicMock()
+        resp.raise_for_status.return_value = None
+        resp.json.return_value = {"access_token": token, "expires_in": expires_in}
+        return resp
+
+    @patch.dict("os.environ", _KEYCLOAK_ENV, clear=True)
+    @patch("wraptile.services.airflow.airflow_service.requests.post")
+    def test_keycloak_mode_selected_and_token_cached(self, mock_post):
+        mock_post.return_value = self._token_response()
+        service = AirflowService(title="t")
+
+        # First call mints via client_credentials against the Keycloak token URL.
+        token = service._airflow_access_token("https://airflow.internal:8443")
+        self.assertEqual(token, "kc-token")
+        mock_post.assert_called_once()
+        args, kwargs = mock_post.call_args
+        self.assertEqual(args[0], _KEYCLOAK_ENV["KEYCLOAK_TOKEN_URL"])
+        self.assertEqual(kwargs["data"]["grant_type"], "client_credentials")
+        self.assertEqual(kwargs["data"]["client_id"], "wraptile")
+        self.assertEqual(kwargs["data"]["audience"], "airflow")
+
+        # Second call is served from cache — no extra network round-trip.
+        self.assertEqual(
+            service._airflow_access_token("https://airflow.internal:8443"), "kc-token"
+        )
+        mock_post.assert_called_once()
+
+    @patch.dict("os.environ", _KEYCLOAK_ENV, clear=True)
+    @patch("wraptile.services.airflow.airflow_service.requests.post")
+    def test_keycloak_token_refreshed_when_expired(self, mock_post):
+        mock_post.side_effect = [
+            self._token_response("first"),
+            self._token_response("second"),
+        ]
+        service = AirflowService(title="t")
+        self.assertEqual(service._fetch_keycloak_service_token(), "first")
+        # Force expiry, then a new token is fetched.
+        service._service_token_expiry = 0.0
+        self.assertEqual(service._fetch_keycloak_service_token(), "second")
+        self.assertEqual(mock_post.call_count, 2)
+
+    @patch.dict("os.environ", {}, clear=True)
+    def test_basic_mode_requires_password(self):
+        service = AirflowService(title="t")
+        with self.assertRaises(RuntimeError):
+            service._airflow_access_token(DEFAULT_AIRFLOW_BASE_URL)
+
+    @patch.dict("os.environ", {}, clear=True)
+    @patch.object(AirflowService, "fetch_access_token", return_value="airflow-native")
+    def test_basic_mode_falls_back_to_native_token(self, mock_fetch):
+        service = AirflowService(title="t")
+        service.configure(airflow_password="pw", airflow_username="admin")  # noqa: S106
+        self.assertEqual(
+            service._airflow_access_token(DEFAULT_AIRFLOW_BASE_URL), "airflow-native"
+        )
+        mock_fetch.assert_called_once()
 
 
 def is_airflow_running(url: str, timeout: float = 1.0) -> bool:
