@@ -40,3 +40,25 @@ The possible options are
 * `--airflow-password=TEXT`: The Airflow password. 
   For an Airflow installation with the simple Auth manager, use the one from
   `.airflow/simple_auth_manager_passwords.json.generated`.
+
+### Airflow authentication
+
+By default, the Airflow service authenticates with a username and password
+against Airflow's own `/auth/token` endpoint (see options above, or the
+`AIRFLOW_USERNAME` / `AIRFLOW_PASSWORD` env vars).
+
+If a Keycloak-based gateway is set up in front of Airflow, set these env vars
+to switch to Keycloak client-credentials auth instead:
+
+* `KEYCLOAK_TOKEN_URL`: The Keycloak realm's token endpoint, e.g.
+  `https://kc/realms/eo/protocol/openid-connect/token`.
+* `WRAPTILE_CLIENT_ID`: The confidential client ID registered in Keycloak for
+  wraptile's service account.
+* `WRAPTILE_CLIENT_SECRET`: The client secret for that service account.
+* `KEYCLOAK_AUDIENCE` (optional): The `audience` sent with the token request,
+  defaults to `airflow`.
+
+When `KEYCLOAK_TOKEN_URL` and `WRAPTILE_CLIENT_ID` are both set, wraptile mints
+a `client_credentials` token (`aud=airflow`) instead of using
+`--airflow-username` / `--airflow-password`. The token is cached and refreshed
+shortly before it expires.
