@@ -1,5 +1,10 @@
 # `gavicore.ui` Description
 
+!!! warning
+    `gavicore.ui` and its Panel-based `schema2ui` workflow are deprecated.
+    They remain available on the `maintenance/0.1.x` branch for existing users,
+    but they will not work in newer Eozilla versions.
+
 The `gavicore.ui` package contains the code to generate widgets and panels 
 
 - from plain OpenAPI Schema instances of type [Schema][gavicore.models.Schema], 

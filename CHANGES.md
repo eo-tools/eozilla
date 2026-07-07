@@ -24,6 +24,11 @@
 
 ### Other changes
 
+- Deprecated the legacy `cuiman.gui` notebook UI, `schema2ui`, and the
+  GUI-only `ClientConfig.accept_process()`, `accept_input()`, and
+  `is_advanced_input()` hooks on the `maintenance/0.1.x` branch. These
+  legacy APIs remain available there, but they will not work in newer
+  Eozilla versions.
 - Updated appligator docs.
 
 ## Changes in version 0.1.1
