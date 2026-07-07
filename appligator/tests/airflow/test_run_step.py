@@ -12,10 +12,10 @@ import unittest
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from appligator.airflow import run_step
-from appligator.airflow.run_step import _XComEncoder, coerce_inputs
+from appligator.airflow.run_step import _XComEncoder, _pydantic_type, coerce_inputs, resolve_function
 
 
 def make_test_module():
@@ -149,3 +149,205 @@ class TestCoerceInputs(unittest.TestCase):
             self.assertEqual(result, {"a": "value"})
         finally:
             typing.get_type_hints = original
+
+    def test_none_passthrough(self):
+        def func(a: int):
+            pass
+
+        result = coerce_inputs(func, {"a": None})
+        self.assertIsNone(result["a"])
+
+    def test_json_fallback_parses_numeric_string(self):
+        def func(x):  # no annotation — falls through to json.loads fallback
+            pass
+
+        result = coerce_inputs(func, {"x": "5.0"})
+        self.assertEqual(result["x"], 5.0)
+
+    def test_coerces_dict_to_pydantic_model(self):
+        class MyModel(BaseModel):
+            path: str
+
+        def func(ref: MyModel):
+            pass
+
+        result = coerce_inputs(func, {"ref": {"path": "/tmp/foo"}})
+        self.assertIsInstance(result["ref"], MyModel)
+        self.assertEqual(result["ref"].path, "/tmp/foo")
+
+    def test_coerces_json_string_to_pydantic_model(self):
+        class MyModel(BaseModel):
+            path: str
+
+        def func(ref: MyModel):
+            pass
+
+        result = coerce_inputs(func, {"ref": '{"path": "/tmp/bar"}'})
+        self.assertIsInstance(result["ref"], MyModel)
+        self.assertEqual(result["ref"].path, "/tmp/bar")
+
+    def test_coerces_python_repr_string_to_pydantic_model(self):
+        class MyModel(BaseModel):
+            path: str
+
+        def func(ref: MyModel):
+            pass
+
+        # Single-quoted Python repr — invalid JSON, valid ast.literal_eval
+        result = coerce_inputs(func, {"ref": "{'path': '/tmp/baz'}"})
+        self.assertIsInstance(result["ref"], MyModel)
+        self.assertEqual(result["ref"].path, "/tmp/baz")
+
+    def test_unwraps_return_value_wrapper_before_model_construction(self):
+        class MyModel(BaseModel):
+            path: str
+
+        def func(ref: MyModel):
+            pass
+
+        # Procodile Workflow returns {"return_value": actual_value}
+        result = coerce_inputs(func, {"ref": {"return_value": {"path": "/data"}}})
+        self.assertIsInstance(result["ref"], MyModel)
+        self.assertEqual(result["ref"].path, "/data")
+
+    def test_unwraps_arbitrary_output_name_wrapper(self):
+        # OGC job results are name -> value mappings; the output name is
+        # arbitrary and need not be "return_value".
+        class MyModel(BaseModel):
+            path: str
+
+        def func(ref: MyModel):
+            pass
+
+        result = coerce_inputs(func, {"ref": {"some_output_name": {"path": "/data"}}})
+        self.assertIsInstance(result["ref"], MyModel)
+        self.assertEqual(result["ref"].path, "/data")
+
+    def test_does_not_unwrap_multi_entry_dict(self):
+        class MyModel(BaseModel):
+            path: str
+
+        def func(ref: MyModel):
+            pass
+
+        with self.assertRaises(ValidationError):
+            coerce_inputs(
+                func, {"ref": {"output_a": {"path": "/a"}, "output_b": {"path": "/b"}}}
+            )
+
+    def test_no_coercion_when_already_model_instance(self):
+        class MyModel(BaseModel):
+            path: str
+
+        def func(ref: MyModel):
+            pass
+
+        existing = MyModel(path="/existing")
+        result = coerce_inputs(func, {"ref": existing})
+        self.assertIs(result["ref"], existing)
+
+    def test_optional_pydantic_model_coercion(self):
+        class MyModel(BaseModel):
+            path: str
+
+        def func(ref: typing.Optional[MyModel] = None):
+            pass
+
+        result = coerce_inputs(func, {"ref": {"path": "/opt"}})
+        self.assertIsInstance(result["ref"], MyModel)
+        self.assertEqual(result["ref"].path, "/opt")
+
+
+class TestPydanticType(unittest.TestCase):
+    def test_direct_basemodel_subclass(self):
+        class MyModel(BaseModel):
+            x: int
+
+        self.assertIs(_pydantic_type(MyModel), MyModel)
+
+    def test_optional_basemodel(self):
+        class MyModel(BaseModel):
+            x: int
+
+        self.assertIs(_pydantic_type(typing.Optional[MyModel]), MyModel)
+
+    def test_non_model_type_returns_none(self):
+        self.assertIsNone(_pydantic_type(int))
+
+    def test_non_type_hint_returns_none(self):
+        self.assertIsNone(_pydantic_type(None))
+
+
+class TestResolveFunction(unittest.TestCase):
+    def _make_module(self, name, **attrs):
+        mod = types.ModuleType(name)
+        for k, v in attrs.items():
+            setattr(mod, k, v)
+        sys.modules[name] = mod
+        return mod
+
+    def tearDown(self):
+        for key in list(sys.modules):
+            if key.startswith("_test_resolve_"):
+                del sys.modules[key]
+
+    def test_resolves_simple_function(self):
+        def my_func():
+            return 42
+
+        self._make_module("_test_resolve_simple", my_func=my_func)
+        self.assertIs(resolve_function("_test_resolve_simple", "my_func"), my_func)
+
+    def test_resolves_nested_attribute(self):
+        inner = types.SimpleNamespace(value=99)
+        self._make_module("_test_resolve_nested", inner=inner)
+        self.assertIs(resolve_function("_test_resolve_nested", "inner.value"), 99)
+
+    def test_procodile_registry_fallback(self):
+        step_func = lambda: "result"  # noqa: E731
+        step = types.SimpleNamespace(function=step_func)
+        registry = types.SimpleNamespace(main={"step_id": step})
+        workflow = types.SimpleNamespace(registry=registry)
+        self._make_module("_test_resolve_registry", my_workflow=workflow)
+
+        result = resolve_function("_test_resolve_registry", "my_workflow.function")
+        self.assertIs(result, step_func)
+
+    def test_procodile_empty_registry_raises_attribute_error(self):
+        registry = types.SimpleNamespace(main={})
+        workflow = types.SimpleNamespace(registry=registry)
+        self._make_module("_test_resolve_empty_registry", my_workflow=workflow)
+
+        with self.assertRaises(AttributeError) as ctx:
+            resolve_function("_test_resolve_empty_registry", "my_workflow.function")
+        self.assertIn("no main step", str(ctx.exception))
+
+    def test_non_function_attribute_error_reraises(self):
+        workflow = types.SimpleNamespace()  # no .missing attr
+        self._make_module("_test_resolve_reraised", workflow=workflow)
+
+        with self.assertRaises(AttributeError):
+            resolve_function("_test_resolve_reraised", "workflow.missing")
+
+    def test_function_fallback_with_unresolvable_parent_reraises(self):
+        self._make_module("_test_resolve_no_parent")
+
+        with self.assertRaises(AttributeError):
+            resolve_function("_test_resolve_no_parent", "nonexistent.function")
+
+    def test_function_fallback_on_non_workflow_reraises(self):
+        # Parent resolves fine, but isn't a procodile Workflow (no .registry),
+        # so the fallback doesn't apply and the original error is re-raised.
+        plain_obj = types.SimpleNamespace()  # no .function, no .registry
+        self._make_module("_test_resolve_non_workflow", plain_obj=plain_obj)
+
+        with self.assertRaises(AttributeError):
+            resolve_function("_test_resolve_non_workflow", "plain_obj.function")
+
+    def test_step_function_unwrap(self):
+        bare_func = lambda: "bare"  # noqa: E731
+        step = types.SimpleNamespace(function=bare_func)
+        self._make_module("_test_resolve_step", my_step=step)
+
+        result = resolve_function("_test_resolve_step", "my_step")
+        self.assertIs(result, bare_func)

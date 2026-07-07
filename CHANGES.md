@@ -2,7 +2,6 @@
 
 ### Enhancements
 
-
 - **Appligator** now supports node selectors and tolerations for generated pods via
   `--node-selector key=value` and `--toleration key:operator[:value[:effect]]` CLI
   options (both repeatable and configurable via `appligator-config.yaml`).
@@ -21,10 +20,22 @@
 - Fixed **Cuiman**'s automatic app display selection to detect an initialized
   IPython interactive shell, instead of only checking whether IPython is
   installed. (#130)
+- **Appligator** `run_step.py`: improved input coercion, casting string and dict
+  XCom values into the parameter types declared in the step function's signature
+  (e.g. `"5.0"` into `float`, a dict into a Pydantic model). Wrapped step outputs
+  (e.g. `{"return_value": {...}}`) are now unwrapped
+  by shape (single-entry dict) rather than by matching a hardcoded key name, so
+  any OGC output name is handled correctly, not just procodile's `"return_value"`
+  default.
 
 ### Other changes
 
-- Updated appligator docs.
+- Updated appligator docs
+- **Appligator** `run_step.py`: function resolution now delegates to
+  `gavicore.util.dynimp.import_value` for consistent dynamic-import error
+  handling, keeping only the procodile-specific Workflow-registry fallback as
+  bespoke logic.
+
 
 ## Changes in version 0.1.1
 
