@@ -53,10 +53,8 @@
     font-size: .6rem;
 }
 
-/* Neutralize dark-theme influence inside the wrapper */
-/* Force .xr-wrap and .bk-panel-models-layout-Column to keep light colors, even in dark theme */
-[data-md-color-scheme="slate"] .xr-wrap,
-[data-md-color-scheme="slate"] .bk-panel-models-layout-Column {
+/* Neutralize dark-theme influence inside notebook wrappers */
+[data-md-color-scheme="slate"] .xr-wrap {
     color-scheme: light !important;
     background: #f6f8fa !important;
     color: #000 !important;

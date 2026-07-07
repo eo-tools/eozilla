@@ -5,7 +5,7 @@
 [project]
 name = "cuiman"
 version = "0.1.2.dev0"
-description = "Provides a client Python API, GUI, and CLI for servers compliant with OGC API - Processes"
+description = "Provides a client Python API, app, and CLI for servers compliant with OGC API - Processes"
 readme = "README.md"
 authors = [
   {name = "b-yogesh", email = "b-yogesh@users.noreply.github.com"},
@@ -41,9 +41,6 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
   "click",
-  "ipyfilechooser",
-  "ipyleaflet",
-  "panel",
   "pydantic",
   "pydantic-settings",
   "pyyaml",
@@ -84,4 +81,3 @@ include = [
 
 [tool.setuptools.package-data]
 cuiman.app = ["dist/**/*"]
-

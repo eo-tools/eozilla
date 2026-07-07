@@ -155,20 +155,6 @@ class ClientConfigTest(TestCase):
             ),
             True,
         )
-        self.assert_advanced_inputs_are_recognized(
-            InputDescription(
-                schema={"type": "integer"},
-                **{"x-ui:advanced": True},
-            ),
-            True,
-        )
-        self.assert_advanced_inputs_are_recognized(
-            InputDescription(
-                schema={"type": "integer"},
-                **{"x-ui": {"advanced": True}},
-            ),
-            True,
-        )
 
     def assert_advanced_inputs_are_recognized(
         self, input_description: InputDescription, expected: bool

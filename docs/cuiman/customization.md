@@ -18,7 +18,6 @@ The `cuiman` API allows for the following customizations:
    to initialize custom default values.
 3. Applications can customize the way how job results are opened.
 4. Applications can create their own CLI instance with custom settings.
-5. Applications can customize the way the process input GUIs are generated.
 
 
 ## API customisation
@@ -74,9 +73,3 @@ cli: typer.Typer = new_cli(
 if __name__ == "__main__":  # pragma: no cover
     cli()
 ```
-
-## GUI customisation
-
-Please refer to the chapter [GUI-Generation](./gui-generation.md)
-dedicated to the generation and customization of the client GUI generated
-from OGC process descriptions.

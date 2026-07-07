@@ -37,14 +37,9 @@ mypy = "*"
 pytest = "*"
 pytest-asyncio = "*"
 pytest-cov = "*"
-# GUI testing
-ipyleaflet = "*"
-ipywidgets = "*"
-ipywidgets_bokeh = "*"
+# Notebook-based docs and examples
 jupyter = "*"
 notebook = "*"
-panel = "*"
-watchfiles = "*"
 # Use cases testing
 dask = "*"
 geopandas = "*"
@@ -86,7 +81,7 @@ gavicore = { path = "./gavicore", editable = true }
 procodile = { path = "./procodile", editable = true }
 procodile-example = { path = "./procodile-example", editable = true }
 wraptile = { path = "./wraptile", editable = true }
-# Cuiman GUI
+# Cuiman app runtime
 remotestate = ">=0.3.1,<1"
 # remotestate = { path = "../remotestate/remotestate-py", editable = true }
 # Airflow is only available on PyPI
@@ -143,8 +138,6 @@ isort = { relative-imports-order = "closest-to-furthest" }
 
 [tool.coverage.report]
 omit = [
-    "cuiman/src/cuiman/gui/**/*",
-    "gavicore/src/gavicore/ui/panel/**/*",
     "procodile-example/src/**/*",
     "wraptile/src/wraptile/services/airflow/**/*",
 ]
@@ -170,6 +163,9 @@ exclude = [
 ########################## Tasks ###############################
 
 # pixi run test
+
+[tool.pixi.tasks.pytest]
+depends-on = ["tests"]
 
 [tool.pixi.tasks.tests]
 depends-on = [
@@ -427,10 +423,6 @@ cmd = "python -m twine upload dist/*"
 [tool.pixi.tasks.sync-versions]
 cmd = "python -m tools.sync_versions"
 
-# pixi run schema2ui
-
-[tool.pixi.tasks.schema2ui]
-cmd = "python gavicore/src/gavicore/ui/panel/schema2ui.py"
 
 
 # pixi run jptr
@@ -452,5 +444,3 @@ cmd = "mkdocs build"
 omit = [
     'appligator/src/appligator/airflow/gen_image.py'
 ]
-
-

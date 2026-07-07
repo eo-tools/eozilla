@@ -18,7 +18,6 @@ from pydantic import Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
-from gavicore.ui import FieldFactoryRegistry, FieldMeta
 
 from .auth import AuthConfig
 from .defaults import DEFAULT_API_URL
@@ -254,16 +253,10 @@ class ClientConfig(AuthConfig, BaseSettings):
                 for p in parameters:
                     if p.name == "level" and p.value == ["advanced"]:
                         return True
-        # The way it should be done is using "x-ui" properties.
-        # Ideally, we should pass an already parsed FieldMeta into the
-        # is_advanced_input() method.
-        field_meta = FieldMeta.from_input_description(input_name, input_description)
-        return field_meta.advanced or field_meta.level == "advanced"
+        return False
 
     @classmethod
-    def register_job_result_opener(
-        cls, opener_type: type[JobResultOpener]
-    ) -> Callable[[], None]:
+    def register_job_result_opener(cls, opener_type: type[JobResultOpener]) -> Callable[[], None]:
         """Register a job result opener.
 
         Args:
@@ -285,33 +278,6 @@ class ClientConfig(AuthConfig, BaseSettings):
         Note that the registry contains types/classes, not instances.
         """
         return JobResultOpenerRegistry.create_default()
-
-    @classmethod
-    @cache
-    def get_field_factory_registry(cls) -> FieldFactoryRegistry:
-        """
-        Get the registry for factories that generate UI fields from
-        process inputs.
-
-        Used in the GUI client `cuiman.gui.Client`. Use it to register
-        factories that customize the way the client GUI is generated.
-
-        The default registry contains factories that creates UI fields for
-        the [Panel](https://panel.holoviz.org/) library as this is the primary
-        library used in the GUI client.
-
-        The default registry type is
-        `gavicore.ui.panel.PanelFieldFactoryRegistry`.
-
-        The type of registered field factories is
-        `gavicore.ui.panel.PanelFieldFactory`.
-
-        The type of the field instances created by the factories must be
-        `gavicore.ui.panel.PanelField`.
-        """
-        from gavicore.ui.panel import PanelFieldFactoryRegistry
-
-        return PanelFieldFactoryRegistry.create_default()
 
 
 # Set Eozilla defaults.

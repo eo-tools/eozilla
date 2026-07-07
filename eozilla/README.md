@@ -24,7 +24,7 @@ The Eozilla suite of tools comprises:
    (Currently limited to generating Airflow DAGs.)
 * `wraptile`: A fast and lightweight HTTP server that implements _OGC API - Processes_
    for various workflow processing backends, such Airflow or a local executor.
-* `cuiman`: A Python client including API, GUI, and CLI for servers
+* `cuiman`: A Python client including API, app, and CLI for servers
    compliant with _OGC API - Processes_.
 * `gavicore`: Common pydantic data models and utilities for the packages above.
 

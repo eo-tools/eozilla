@@ -69,16 +69,6 @@ client.get_processes()
 client.get_jobs()
 ```
 
-Run Eozilla client GUI (in Jupyter notebooks)
-
-```python
-from cuiman.gui import Client
-
-client = Client()
-client.show()
-client.show_jobs()
-```
-
 Run Eozilla client CLI
 
 ```commandline

@@ -13,9 +13,4 @@ It currently comprises the following top-level packages:
 - [`service`](service/description.md) - a Python representation of the   
   [OGC API - Processes, Part 1](https://github.com/opengeospatial/ogcapi-processes) 
   interface.
-- [`ui`](ui/description.md) - provides a framework capable of creating user interfaces
-  from the [InputDescription][gavicore.models.InputDescription] and 
-  [Schema][gavicore.models.Schema] models. 
-  See dedicated usage chapters in [GUI Generation](../cuiman/gui-generation.md).
 - [`util`](util/description.md) - various submodules with various reusable utilities.
-
