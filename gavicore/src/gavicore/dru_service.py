@@ -28,8 +28,8 @@ class DRUService(Service, ABC):
         [OGC API - Processes — Part 2 (DRU)](https://docs.ogc.org/DRAFTS/20-044.html#deploy).
 
         Args:
-            w: Optional workflow id used as the entry point when
-                registring a new process.
+            w: Optionally point to the workflow identifier for deploying a
+                CWL containing multiple workflow definitions.
         """
 
     @abstractmethod
@@ -52,8 +52,8 @@ class DRUService(Service, ABC):
         Args:
             process_id: Unique identifier of registered process
                 that is to be replaced.
-            w: Optional workflow id used as the entry point when
-                registring a new process.
+            w: Optionally point to the workflow identifier for deploying a
+                CWL containing multiple workflow definitions.
         """
 
     @abstractmethod
