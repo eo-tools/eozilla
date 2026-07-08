@@ -120,8 +120,6 @@ pixi run generate
 
 This will generate Eozilla's
 
-- [pydantic](https://docs.pydantic.dev/) models in `gavicore/src/gavicore/models.py` 
-(uses [datamodel-code-generator](https://koxudaxi.github.io/datamodel-code-generator/))
 - client implementation in `cuiman/src/cuiman/client.py` and CLI documentation `docs/cli.md`
 - server routes in `wraptile/src/wraptile/routes.py` and the 
   service interface in `wraptile/src/wraptile/service.py`

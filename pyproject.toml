@@ -1,6 +1,6 @@
 [project]
 name = "eozilla"
-version = "0.1.2"
+version = "0.2.0.dev0"
 description = "A suite of tools around workflow orchestration systems and the OGC API - Processes"
 requires-python = ">=3.11"
 
@@ -37,10 +37,7 @@ mypy = "*"
 pytest = "*"
 pytest-asyncio = "*"
 pytest-cov = "*"
-# GUI testing
-ipyleaflet = "*"
-ipywidgets = "*"
-ipywidgets_bokeh = "*"
+# Notebooks
 jupyter = "*"
 notebook = "*"
 panel = "*"
@@ -53,7 +50,6 @@ xarray = "*"
 # zarr 3.2.x can no longer work with Windows file URIs, like file:///C:/...
 zarr = ">=3.1,<3.2"
 # Needed in /tools
-datamodel-code-generator = "*"
 tomlkit = "*"  # to sync versions
 # Documentation
 mkdocs = "==1.6.1"
