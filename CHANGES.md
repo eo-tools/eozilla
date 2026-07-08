@@ -10,7 +10,8 @@
   all PIL-compatible image formats from both local paths and S3-compatible
   object storage (via the optional `s3fs` package).
 - **Cuiman** has a new experimental, alternative GUI - the Eozilla app. 
-  The app is a native React app for the client experience. (#124)
+  The app is a native React app that doesn't require 
+  the `panel` library anymore. (#124)
   - Added a new client method `show_app()` and new property `app_store` to interact 
     with the app's data state. Renders the app in a notebook cell or a new browser tab.
   - Added a new CLI command `cuiman show-app`. Opens the app in a new browser tab.
@@ -29,15 +30,22 @@
 
 ### Enhancements
 
+- Users can now store and reload process requests using the Cuiman GUI. (#40)
 - Wraptile server enhancements:
   - Optional and unset properties are now excluded from JSON responses. (#108)
   - CORS is configured so that the server can be accessed from browsers 
     running web apps (enforcing token auth, disallowing cookies auth). (#107)
+  - Wraptile's Airflow service now maps Airflow DAG `Param` definitions to
+    OGC process input descriptions, so `cuiman`'s GUI renders input fields
+    (including type, title, description, default value, and nullable object params)
+    for Airflow-backed processes.
 
 ### Fixes
 
+- Addressed various regressions in the new `gavicore` GUI generator. (#101)
 - Added missing API docs to `docs/cuiman/api.md` (deployed shortly after 0.1.0 release)
 - Fixed the PyPI release workflow (applied shortly after 0.1.0 release)
+- Fixed nullable input fields showing an empty label in the `cuiman` GUI.
 - Fixed test `appligator\tests\airflow\test_gen_dockerfile.py` failing on Windows OS.
 
 ### Other changes
@@ -71,6 +79,18 @@
     provide their password.
   - Made `client_secret` optional for OAuth2 public clients that do not
     require a client secret.
+
+- The **Gavicore** package has been enhanced by a new _UI generator_ which 
+  converts OGC API - Process descriptions (or OpenAPI Schema) into user 
+  interfaces for editing input parameters:
+  - Added a new extendable UI generation framework in `gavicore.ui`.
+  - The framework itself does not enforce a dedicated widget library, 
+    but it can be configured to output UIs for any Python widget library. 
+  - Support for UI generated with the [Panel](https://panel.holoviz.org/) 
+    library is inbuilt as it is used in the Cuiman GUI.
+  - Dropped subpackage `cuiman.gui.component`.
+  - Added a pixi tool to demonstrate and debug generated UIs from 
+    OpenAPI Schema: `pixi run schema2ui`.
 
 - Enhanced the **Appligator** package with Dockerfile generation and 
   improved Airflow DAG generation:
@@ -151,6 +171,16 @@
 
 ### Enhancements
 
+The following enhancements have been applied to the main panel in `cuiman.gui.panels`:
+  - Added functional "Get Results" button
+  - Moved not-yet-functional process request file actions into a custom drop-down-menu.
+  - Added preliminary output GUI to the main panel.
+    Only shown, if multiple output values are used. The UI is still 
+    experimental and subject to change. (#36)
+  - Added switch "Show advanced inputs". 
+  - Fixed updating job details display.
+- Added tooltips to GUI widgets that support it in the `cuiman` GUI client.
+  Tooltip texts are taken from the process input `description` metadata.
 - Added `cuiman` dependency `pydantic-settings` introduced in version 0.0.8. (#53)
 - By using `inputs` and `outputs` keyword arguments of 
   `procodile.ProcessRegistry.process()` it is now possible to also provide 
@@ -163,6 +193,8 @@
   - Override class members in `cuiman.ClientConfig` to initialize custom default values,
     override model classes, and implement application-specific behaviour.
   - Create a dedicated CLI instance with customized settings.
+  - The `show()` method of the `cuiman.gui.Client` now supports passing application-
+    specific parameters, e.g., to filter processes and process inputs. 
 - Added a couple of common authentication methods to `cuiman` client API and CLI 
   configuration (via command `configure`): basic, login, token, api-key methods are 
   now supported.
@@ -184,11 +216,18 @@
 
 ### Fixes
 
+- Fixed problem where the GUI client's `show_jobs()` showed an empty panel
+  although jobs are shown by `get_jobs()`. (#35) 
+- No longer showing "No job selected" in the GUI client's main panel.
+  If no job given, the job info panel is now hidden.
+- Removed persistent error message in GUI client's job info panel.
 - Fixed `gavicore.util.schema.inline_schema_refs` crashing on schemas with 
   `additionalProperties: false` (e.g., Pydantic models using `extra="forbid"`).
 
 ### Other changes
 
+- Refactored panels in `cuiman.gui.panels` package to follow MVVM 
+  (Model–View–ViewModel) style.
 - Renamed `gavicore.util.schema.create_json_schema` into `create_schema_dict`.
 - Removed `gavicore.util.schema.create_schema_instance` with no replacement.
 - Added "S" option (= security rules enabled by Bandit) to `ruff check`
