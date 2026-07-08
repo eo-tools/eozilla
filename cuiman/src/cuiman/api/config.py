@@ -16,7 +16,6 @@ from typing import (
 import yaml
 from pydantic import Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing_extensions import deprecated
 
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 from gavicore.ui import FieldFactoryRegistry, FieldMeta
@@ -157,10 +156,6 @@ class ClientConfig(AuthConfig, BaseSettings):
 
     # noinspection PyUnusedLocal
     @classmethod
-    @deprecated(
-        "ClientConfig.accept_process() is deprecated, only used by the legacy "
-        "cuiman.gui client, and will not work in newer Eozilla versions."
-    )
     def accept_process(
         cls, process_summary: ProcessSummary, **filter_kwargs: Any
     ) -> bool:
@@ -188,10 +183,6 @@ class ClientConfig(AuthConfig, BaseSettings):
 
     # noinspection PyUnusedLocal
     @classmethod
-    @deprecated(
-        "ClientConfig.accept_input() is deprecated, only used by the legacy "
-        "cuiman.gui client, and will not work in newer Eozilla versions."
-    )
     def accept_input(
         cls,
         process_description: ProcessDescription,
@@ -226,10 +217,6 @@ class ClientConfig(AuthConfig, BaseSettings):
 
     # noinspection PyUnusedLocal
     @classmethod
-    @deprecated(
-        "ClientConfig.is_advanced_input() is deprecated, only used by the legacy "
-        "cuiman.gui client, and will not work in newer Eozilla versions."
-    )
     def is_advanced_input(
         cls,
         process_description: ProcessDescription,

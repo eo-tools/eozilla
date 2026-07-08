@@ -87,7 +87,7 @@ procodile = { path = "./procodile", editable = true }
 procodile-example = { path = "./procodile-example", editable = true }
 wraptile = { path = "./wraptile", editable = true }
 # Cuiman GUI
-remotestate = ">=0.3.1,<1"
+remotestate = ">=0.3.3,<1"
 # remotestate = { path = "../remotestate/remotestate-py", editable = true }
 # Airflow is only available on PyPI
 apache-airflow-client = "==3.0.2"
@@ -427,10 +427,10 @@ cmd = "python -m twine upload dist/*"
 [tool.pixi.tasks.sync-versions]
 cmd = "python -m tools.sync_versions"
 
-# pixi run schema2ui
+# pixi run jl
 
-[tool.pixi.tasks.schema2ui]
-cmd = "python gavicore/src/gavicore/ui/panel/schema2ui.py"
+[tool.pixi.tasks.jl]
+cmd = "jupyter-lab"
 
 
 # pixi run jptr
