@@ -139,15 +139,20 @@ The exact location and format of this configuration depends on the MCP host.
 
 For ChatGPT, use the Streamable HTTP server instead. ChatGPT needs a reachable
 HTTPS MCP endpoint, so expose `http://127.0.0.1:8765/mcp` through Secure MCP
-Tunnel, ngrok, Cloudflare Tunnel, or another development tunnel. Then create a
-ChatGPT connector whose Connector URL points to the public `/mcp` URL, for
-example:
+Tunnel, ngrok, Cloudflare Tunnel, or another development tunnel. 
 
-```text
-https://your-tunnel.example/mcp
+The simplest temporary tunnel for example using Cloudflare with Windows Powershell:
+
+```ps
+winget install Cloudflare.cloudflared
+cloudflared tunnel --url http://127.0.0.1:8765
 ```
 
-In ChatGPT, the rough flow is:
+This will expose the MCP server address via a temporary HTTPS URL, like
+`https://warning-foods-preliminary-showing.trycloudflare.com`.
+
+Then create a ChatGPT connector whose Connector URL points to the public 
+`/mcp` URL. In ChatGPT, the rough flow is:
 
 ```text
 Settings -> Apps & Connectors -> Advanced settings -> enable Developer mode
@@ -256,6 +261,3 @@ Expected output for the second command includes:
 ```text
 FastMCP
 ```
-
-
-
