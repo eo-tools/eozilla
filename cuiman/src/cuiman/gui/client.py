@@ -7,6 +7,7 @@ import time
 from typing import Any, Optional
 
 import panel as pn
+from typing_extensions import deprecated
 
 from cuiman.api.client import Client as ApiClient
 from cuiman.api.config import ClientConfig
@@ -17,6 +18,10 @@ from gavicore.models import ProcessList
 from .jobs_event_bus import JobsEventBus
 
 
+@deprecated(
+    "cuiman.gui.Client is deprecated, depends on the legacy notebook GUI, "
+    "and will not work in newer Eozilla versions."
+)
 class Client(ApiClient):
     def __init__(
         self,
@@ -33,6 +38,10 @@ class Client(ApiClient):
     def _reset_state(self):
         self._update_thread = None
 
+    @deprecated(
+        "Client.show() is deprecated, only supports the legacy cuiman.gui "
+        "notebook UI, and will not work in newer Eozilla versions."
+    )
     def show(self, **kwargs: Any):
         """Shows the client's main GUI.
 
@@ -69,6 +78,10 @@ class Client(ApiClient):
         self._ensure_update_thread_is_running()
         return main_panel
 
+    @deprecated(
+        "Client.show_jobs() is deprecated, only supports the legacy cuiman.gui "
+        "notebook UI, and will not work in newer Eozilla versions."
+    )
     def show_jobs(self) -> pn.viewable.Viewer:
         from .panels import JobsPanelView, JobsPanelViewModel
 
@@ -84,6 +97,10 @@ class Client(ApiClient):
         self._jobs_event_bus.register(view_model)
         return JobsPanelView(view_model)
 
+    @deprecated(
+        "Client.show_job() is deprecated, only supports the legacy cuiman.gui "
+        "notebook UI, and will not work in newer Eozilla versions."
+    )
     def show_job(self, job_id: str):
         from .panels import JobInfoPanelView
 

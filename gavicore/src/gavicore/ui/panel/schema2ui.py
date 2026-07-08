@@ -9,6 +9,7 @@ from typing import Annotated, Any
 import panel as pn
 import typer
 import yaml
+from typing_extensions import deprecated
 
 from gavicore.models import Schema
 from gavicore.ui import FieldFactoryRegistry, FieldMeta
@@ -26,6 +27,10 @@ app = typer.Typer()
 
 
 @app.command(name=APP_NAME)
+@deprecated(
+    "schema2ui is deprecated, only supports the legacy Panel-based UI generator, "
+    "and will not work in newer Eozilla versions."
+)
 def main(
     schema_path: Annotated[
         str,
@@ -38,6 +43,10 @@ def main(
     schemas_to_ui(schema_path)
 
 
+@deprecated(
+    "schemas_to_ui() is deprecated, only supports the legacy Panel-based UI "
+    "generator, and will not work in newer Eozilla versions."
+)
 def schemas_to_ui(
     *schema_paths: str,
     registry: FieldFactoryRegistry["PanelField"] | None = None,

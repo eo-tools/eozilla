@@ -2,39 +2,37 @@
 
 ### Enhancements
 
-- **Appligator** now supports node selectors and tolerations for generated pods via
-  `--node-selector key=value` and `--toleration key:operator[:value[:effect]]` CLI
-  options (both repeatable and configurable via `appligator-config.yaml`).
+- **Appligator** enhancements:
+  - It now supports node selectors and tolerations for generated pods via
+    `--node-selector key=value` and `--toleration key:operator[:value[:effect]]` CLI
+    options (both repeatable and configurable via `appligator-config.yaml`).
+  - In `run_step.py`: function resolution now delegates to
+    `gavicore.util.dynimp.import_value` for consistent dynamic-import error
+    handling, keeping only the procodile-specific Workflow-registry fallback as
+    bespoke logic.
+  - Updated Appligator documentation accordingly.
 - Added `ImageOpener` to **Cuiman**'s job result opener framework, supporting
   all PIL-compatible image formats from both local paths and S3-compatible
   object storage (via the optional `s3fs` package).
-- **Cuiman** has a new experimental, alternative GUI - the Eozilla app. 
-  The app is a native React app that doesn't require 
-  the `panel` library anymore. (#124)
-  - Added a new client method `show_app()` and new property `app_store` to interact 
-    with the app's data state. Renders the app in a notebook cell or a new browser tab.
-  - Added a new CLI command `cuiman show-app`. Opens the app in a new browser tab.
 
 ### Fixes
 
 - Fixed **Cuiman**'s automatic app display selection to detect an initialized
   IPython interactive shell, instead of only checking whether IPython is
   installed. (#130)
-- **Appligator** `run_step.py`: improved input coercion, casting string and dict
-  XCom values into the parameter types declared in the step function's signature
-  (e.g. `"5.0"` into `float`, a dict into a Pydantic model). Wrapped step outputs
-  (e.g. `{"return_value": {...}}`) are now unwrapped
-  by shape (single-entry dict) rather than by matching a hardcoded key name, so
-  any OGC output name is handled correctly, not just procodile's `"return_value"`
-  default.
 
 ### Other changes
 
-- Updated appligator docs
-- **Appligator** `run_step.py`: function resolution now delegates to
-  `gavicore.util.dynimp.import_value` for consistent dynamic-import error
-  handling, keeping only the procodile-specific Workflow-registry fallback as
-  bespoke logic.
+For upcoming **Cuiman 0.2.0** we decided to no longer use the `panel` library
+for the Cuiman GUI. Therefore, the following items have been deprecated and will 
+be removed in Eozilla 0.2.0:
+
+- the `gavicore.ui` package and the `schema2ui` tool,
+- the `cuiman.gui` package,
+- the `ClientConfig` hook methods,
+  - `accept_process()`, 
+  - `accept_input()`, and
+  - `is_advanced_input()`. 
 
 
 ## Changes in version 0.1.1

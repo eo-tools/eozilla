@@ -79,6 +79,10 @@ client.show()
 client.show_jobs()
 ```
 
+The `cuiman.gui` notebook UI shown above is deprecated and only kept on the
+`maintenance/0.1.x` branch for existing users. It will not work in newer
+Eozilla versions.
+
 Run Eozilla client CLI
 
 ```commandline

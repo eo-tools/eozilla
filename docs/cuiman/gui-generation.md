@@ -1,5 +1,11 @@
 # Cuiman GUI-Generation 
 
+!!! warning
+    This document describes Cuiman's legacy notebook GUI based on `cuiman.gui`
+    and `gavicore.ui`. It remains available on the `maintenance/0.1.x` branch
+    for existing users, but it is deprecated and will not work in newer
+    Eozilla versions.
+
 The Cuiman GUI to build process requests is generated from a selected 
 [OGC process descriptions](https://docs.ogc.org/is/18-062r2/18-062r2.html#toc35).
 For a given process, the input descriptions are used to build an 
