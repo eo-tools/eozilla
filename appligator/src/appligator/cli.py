@@ -164,7 +164,12 @@ def main(
     from appligator import __version__
     from appligator.airflow.gen_image import gen_image
     from appligator.airflow.gen_workflow_dag import gen_workflow_dag
-    from appligator.airflow.models import ConfigMapMount, PvcMount, ResourceRequirements, Toleration
+    from appligator.airflow.models import (
+        ConfigMapMount,
+        PvcMount,
+        ResourceRequirements,
+        Toleration,
+    )
     from appligator.config import AppligatorConfig, load_config
     from gavicore.util.dynimp import import_value
     from procodile import ProcessRegistry
@@ -254,7 +259,9 @@ def main(
         k, v = spec.split("=", 1)
         parsed_node_selector[k] = v
     effective_node_selector = (
-        parsed_node_selector if node_selector is not None else (cfg.node_selector or None)
+        parsed_node_selector
+        if node_selector is not None
+        else (cfg.node_selector or None)
     )
 
     parsed_tolerations: list[Toleration] = []
