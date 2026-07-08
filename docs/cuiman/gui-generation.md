@@ -1,22 +1,17 @@
 # Cuiman GUI-Generation 
 
-!!! warning
-    This document describes Cuiman's legacy notebook GUI based on `cuiman.gui`
-    and `gavicore.ui`. It remains available on the `maintenance/0.1.x` branch
-    for existing users, but it is deprecated and will not work in newer
-    Eozilla versions.
-
-The Cuiman GUI to build process requests is generated from a selected 
-[OGC process descriptions](https://docs.ogc.org/is/18-062r2/18-062r2.html#toc35).
-For a given process, the input descriptions are used to build an 
+The UI for the process inputs is generated from the  
+[OGC process description](https://docs.ogc.org/is/18-062r2/18-062r2.html#toc35)
+of the currently selected process. The input descriptions are used to build an 
 [OpenAPI Schema v3.0](https://swagger.io/specification/v3/) of type `object` 
-comprising the inputs as properties. The GUI is generated from this root schemas. 
+comprising the OpenAPI schemas of individual inputs as object properties. 
+The process UI is generated from this root object schema. 
 
 The pipeline in short:
 
     Process Input Descriptions
        ↓
-    Schema
+    OpenAPI Root Schema
        ↓
     Field Metadata
        ↓
@@ -26,16 +21,15 @@ The pipeline in short:
 The UI generation at its core is not aware of the target UI library
 that is used to render the UI and let users interact with it.
 
-The framework used to generate UIs is implemented in the Eozilla 
-Gavicore package `gavicore.ui` and is documented 
-[here](../gavicore/ui/description.md).  
+The framework used to generate UIs is implemented in the 
+[Eozilla App](https://github.com/eo-tools/eozilla-app) and is documented 
+[here](https://github.com/eo-tools/eozilla-app/blob/main/schema-form.md).  
 
-## Customizing Schemas
+## Customizing the UI
 
-Cuiman's default UI library is [Panel](https://panel.holoviz.org/).
-Therefore, most of the customization configuration is directly mapped
-to configuration of the underlying Panel widgets and viewables.
-
+The UI generated from the process inputs can be customized by
+the way the inputs' OpenAPI schemas are defined. 
+This is described in the following.
 
 ### Schema Mapping Overview
 
@@ -271,7 +265,7 @@ order that corresponds to order of the `properties` in the object schema.
 - `x-ui-layout: { layout }`: specifies a layout. A layout is an object with
   two properties `type` and `items`. `type` is either `column` (default)
   or `row` and `items` is an optional list of property names or of other layout 
-  objects. If `items` is not not given, it defaults to all properties that 
+  objects. If `items` is not given, it defaults to all properties that 
   have not yet been part of the layout.
 - `x-ui-order: <order>`: an integer value that can be used in the property schemas
   to specify the fields order. The default order value is the index of 
@@ -289,7 +283,7 @@ If the switch is unselected, the effective value of the field will be
 ### `oneOf` and `anyOf` Schemas
 
 The values of both `oneOf` and `anyOf` are lists that define 
-alternative schemas. They create create a **tabs panel** with a tab 
+alternative schemas. They create a **tabs panel** with a tab 
 generated for each subschemas `s{i}`. 
 
 Given that all subschemas are of type `object` an optional schema
@@ -306,119 +300,3 @@ discriminator's optional `mapping` keys.
 The `allOf` schema combination creates a field for the schema resulting from
 merging all its subschemas. Typically, the item schemas are objects and `allOf`
 is used to represent a type derived form two or more subtypes.
-
-
-## Customizing the UI Generation
-
-Under the hood the `cuiman.gui` package uses the common package 
-`gavicore.ui` that provides the core UI generation framework.
-Within that framework, `gavicore.ui.panel` implements a UI generator 
-using the [panel](https://pypi.org/project/panel/) package.
-However, [panel](https://pypi.org/project/panel/) is an optional package to Gavicore
-as usually only Eozilla/Cuiman client applications require a GUI.
-
-### 1. Define the required customization
-
-Let's say we want to generate a custom UI for a 2-tuple representing
-a numeric value range, whose values can be validated by the following 
-schema: 
-
-```yaml
-    type: array
-    items: 
-      type: number
-      minimum: -1.0
-      maximum: 1.0
-    minItems: 2
-    maxItems: 2
-    default: [-1.0, 1.0]
-```
-
-The UI field to be generated for this schema should be a 
-[numeric range slider](https://panel.holoviz.org/reference/widgets/EditableRangeSlider.html). 
-Furthermore, we say that the field is only used if `x-ui-widget: range-input`.
-
-### 2. Create a custom field factory
-
-In order to generate the desired UI field, we'll develop a custom
-`gavicore.ui.panel.PanelFieldFactory` class and register an instance of it 
-in the framework. 
-
-The `PanelFieldFactory` is a typed abstract base class that implements 
-the generic `gavicore.ui.FieldFactory` interface. A `FieldFactory` is 
-responsible for calculating a "suitability score" for a given field metadata
- `gavicore.ui.FieldMeta` which includes the OpenAPI schema and derived metadata.
-
-The framework selects the factory with the highest score for a given schema.
-The default score returned by the inbuilt factories is `5`.
-If a factory was selected, it is asked to create a `gavicore.ui.Field` given the
-current `gavicore.ui.FieldContext`. A `PanelFieldFactory` is supposed to only create 
-`gavicore.ui.panel.PanelField` instances.
-
-The above is best explained by example. First we create a new class
-`NumberRangeFactory` that derives from `PanelFieldFactoryBase`:
-
-```python
-from gavicore.models import DataType
-from gavicore.ui import FieldContext, FieldMeta
-from gavicore.ui.panel import PanelField, PanelFieldFactoryBase
-
-
-class NumberRangeFactory(PanelFieldFactoryBase):
-    def get_array_score(self, meta: FieldMeta) -> int:
-        """Compute the score of this factory for an array schema."""
-        ...
-
-    def create_array_field(self, ctx: FieldContext) -> PanelField:
-        """Create the Panel field for the selected array schema."""
-        ...
-```
-
-### 3. Implement the custom field factory
-
-Lets implement `get_array_score()` first:
-
-```python
-    def get_array_score(self, meta: FieldMeta) -> int:
-        schema = meta.schema_
-        assert schema.type == DataType.array  # will never fail 
-        is_range_input = (
-            meta.widget == 'range-input' 
-            and schema.items is not None 
-            and schema.items.type == DataType.number
-            and schema.minItems == 2 
-            and schema.maxItems == 2
-        )
-        return 100 if is_range_input else 0
-```
-
-Now `create_array_field()`:
-
-```python
-    def create_array_field(self, ctx: FieldContext) -> int:
-        # A view model is a reactive holder for some value, 
-        # here an array value:
-        view_model=ctx.vm.array()
-        # The view must derive from type pn.widgets.WidgetBase
-        view = pn.widgets.EditableRangeSlider(
-            name=ctx.label,  # always use ctx.label for adding labels to widgets 
-            value=view_model.value, # the view model's initial value is used here
-        )
-        return PanelField(view_model=view_model, view=view)
-```
-
-### 4. Register the custom field factory
-
-Finally, we register an instance of the new class in the Cuiman client's 
-configuration:
-
-```python
-from cuiman.api import ClientConfig
-
-config = ClientConfig.default_config
-config.get_field_factory_registry().register(NumberRangeFactory())
-```
-
-The next time you run the Cuiman GUI client, it will consider that factory
-for generating its GUIs for a given OGC process description, provided
-that the above code is executed once before the GUI is used.

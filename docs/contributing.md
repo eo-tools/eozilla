@@ -72,16 +72,11 @@ client.get_jobs()
 Run Eozilla client GUI (in Jupyter notebooks)
 
 ```python
-from cuiman.gui import Client
+from cuiman import Client
 
 client = Client()
-client.show()
-client.show_jobs()
+client.show_app()
 ```
-
-The `cuiman.gui` notebook UI shown above is deprecated and only kept on the
-`maintenance/0.1.x` branch for existing users. It will not work in newer
-Eozilla versions.
 
 Run Eozilla client CLI
 
