@@ -49,7 +49,6 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 * `get-job`: Get job details.
 * `dismiss-job`: Cancel a running or delete a finished job.
 * `get-job-results`: Get job results.
-* `show-app`: Show the client app in a browser.
 
 ## `cuiman configure`
 
@@ -272,20 +271,4 @@ $ cuiman get-job-results [OPTIONS] JOB_ID
 
 * `-c, --config PATH`: Client configuration file.
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
-* `--help`: Show this message and exit.
-
-## `cuiman show-app`
-
-Show the client app in a browser.
-
-**Usage**:
-
-```console
-$ cuiman show-app [OPTIONS]
-```
-
-**Options**:
-
-* `-c, --config PATH`: Client configuration file.
-* `-d, --debug`: Output debugging information to the browser's dev console.
 * `--help`: Show this message and exit.

@@ -15,7 +15,12 @@ from typing import Annotated
 from pydantic import BaseModel, ValidationError
 
 from appligator.airflow import run_step
-from appligator.airflow.run_step import _XComEncoder, _pydantic_type, coerce_inputs, resolve_function
+from appligator.airflow.run_step import (
+    _pydantic_type,
+    _XComEncoder,
+    coerce_inputs,
+    resolve_function,
+)
 
 
 def make_test_module():

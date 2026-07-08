@@ -76,8 +76,12 @@ class KubernetesOperatorHandler(OperatorHandler):
                 f"\n        volume_mounts=[{', '.join(mount_entries)}],"
             )
 
-        node_selector_block = "\n        node_selector=_node_selector," if task.node_selector else ""
-        tolerations_block = "\n        tolerations=_tolerations," if task.tolerations else ""
+        node_selector_block = (
+            "\n        node_selector=_node_selector," if task.node_selector else ""
+        )
+        tolerations_block = (
+            "\n        tolerations=_tolerations," if task.tolerations else ""
+        )
 
         return f"""
     tasks["{task.id}"] = KubernetesPodOperator(

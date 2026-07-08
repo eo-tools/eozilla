@@ -60,6 +60,7 @@ def coerce_inputs(func: Callable[..., Any], inputs: dict[str, Any]) -> dict[str,
                 except (json.JSONDecodeError, ValueError):
                     try:
                         import ast
+
                         value = ast.literal_eval(value)
                     except (ValueError, SyntaxError):  # pragma: no cover
                         pass
