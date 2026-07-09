@@ -11,6 +11,8 @@
 
 ### Other changes
 
+- Fixed typing in `gavicore.uitil.cli.AliasedGroup` wrt `typer >=0.26.8`.
+
 Most other changes relate to the replacement of the Panel-based UI: 
 
 - Removed deprecated `wraptile.gui.*` 
