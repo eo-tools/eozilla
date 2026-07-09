@@ -35,16 +35,6 @@ REQUIRED_CLASSES = {
     "ProcessRequest",
     "ProcessSummary",
     "Schema",
-    "CWLDescription",
-    "ContainerConfig",
-    "InputBinding",
-    "OutputBinding",
-    "ContainerBindings",
-    "ExecutionUnitContainer",
-    "ContainerImage",
-    "GenericExecutionUnit",
-    "OGCApplicationPackageProcessDescription",
-    "OGCApplicationPackage",
 }
 
 T = TypeVar("T", bound=BaseModel)

@@ -1,10 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from .models import (
-    OGCApplicationPackage,
-    ProcessSummary,
-)
+from .dru_models import OGCApplicationPackage
+from .models import ProcessSummary
 from .service import Service
 
 
