@@ -4,7 +4,7 @@
 
 [project]
 name = "wraptile"
-version = "0.1.2.dev0"
+version = "0.1.2"
 description = "FastAPI server that implements the OGC API - Processes"
 readme = "README.md"
 authors = [
@@ -46,8 +46,8 @@ dependencies = [
   "typer",
   "uvicorn",
   # local dependency
-  "gavicore >=0.1.2.dev0",
-  "procodile >=0.1.2.dev0",
+  "gavicore >=0.1.2",
+  "procodile >=0.1.2",
 ]
 
 [project.scripts]
