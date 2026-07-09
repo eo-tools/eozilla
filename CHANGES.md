@@ -12,6 +12,7 @@
 ### Other changes
 
 - Fixed typing in `gavicore.uitil.cli.AliasedGroup` wrt `typer >=0.26.8`.
+- CI is now also performed for branches named `feature/**`.
 
 Most other changes relate to the replacement of the Panel-based UI: 
 

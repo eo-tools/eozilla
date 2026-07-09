@@ -12,6 +12,7 @@ from .config import ClientConfig
 
 if TYPE_CHECKING:
     import remotestate as rs
+
     from cuiman.app import AppState
 
 
