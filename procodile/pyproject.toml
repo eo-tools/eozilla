@@ -4,7 +4,7 @@
 
 [project]
 name = "procodile"
-version = "0.1.2.dev0"
+version = "0.1.2"
 description = "A light-weight processor development framework"
 readme = "README.md"
 authors = [
@@ -44,7 +44,7 @@ dependencies = [
   "pyyaml",
   "typer",
   # local dependency
-  "gavicore >=0.1.2.dev0",
+  "gavicore >=0.1.2",
 ]
 
 [project.urls]
