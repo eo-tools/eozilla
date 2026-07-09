@@ -20,6 +20,8 @@
 - Fixed **Cuiman**'s automatic app display selection to detect an initialized
   IPython interactive shell, instead of only checking whether IPython is
   installed. (#130)
+- Unpinned Pixi version in GitHub workflows to avoid incompatibility with new
+  lockfile versions. (#145)
 
 ### Other changes
 
