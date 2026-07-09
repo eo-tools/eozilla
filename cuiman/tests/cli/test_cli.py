@@ -13,7 +13,7 @@ from cuiman import Client, __version__
 from cuiman.api.auth.login import LoginResult
 
 # noinspection PyProtectedMember
-from cuiman.cli.cli import cli, new_cli
+from cuiman.cli.cli import _wait_until_interrupted, cli, new_cli
 
 from ..helpers import MockTransport
 
@@ -161,6 +161,25 @@ class CliTest(TestCase):
         result = invoke_cli("get-job-results", "job_4")
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual("null\n...\n\n", result.output)
+
+    @patch("cuiman.cli.cli._wait_until_interrupted")
+    @patch("cuiman.app.serve")
+    def test_show_app(self, mock_serve, mock_wait_until_interrupted):
+        result = invoke_cli("show-app")
+
+        self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+        mock_serve.assert_called_once()
+        mock_wait_until_interrupted.assert_called_once()
+        self.assertEqual("browser", mock_serve.call_args.kwargs["display"])
+
+    @patch("typer.echo")
+    @patch("time.sleep", side_effect=KeyboardInterrupt)
+    def test_wait_until_interrupted(self, mock_sleep, mock_echo):
+        _wait_until_interrupted()
+
+        mock_sleep.assert_called_once_with(1)
+        mock_echo.assert_any_call("App is running. Press Ctrl+C to stop.")
+        mock_echo.assert_any_call("Stopping app.")
 
     @classmethod
     def get_result_msg(cls, result: typer.testing.Result):
