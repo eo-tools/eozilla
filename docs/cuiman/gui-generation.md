@@ -1,17 +1,17 @@
 # Cuiman GUI-Generation
 
-The UI for the process inputs is generated from the
+The UI for the process inputs is generated from the  
 [OGC process description](https://docs.ogc.org/is/18-062r2/18-062r2.html#toc35)
-of the currently selected process. The input descriptions are used to build an
-[OpenAPI Schema v3.0](https://swagger.io/specification/v3/) of type `object`
-comprising the inputs as properties.
-The GUI is generated from this root schema.
+of the currently selected process. The input descriptions are used to build an 
+[OpenAPI Schema v3.0](https://swagger.io/specification/v3/) of type `object` 
+comprising the OpenAPI schemas of individual inputs as object properties. 
+The process UI is generated from this root object schema. 
 
 The pipeline in short:
 
     Process Input Descriptions
        ↓
-    Schema
+    OpenAPI Root Schema
        ↓
     Field Metadata
        ↓
@@ -28,7 +28,7 @@ The framework used to generate UIs is implemented in the
 ## Customizing the UI
 
 The UI generated from the process inputs can be customized by
-the way the inputs' OpenAPI schemas are defined.
+the way the inputs' OpenAPI schemas are defined. 
 This is described in the following.
 
 ### Schema Mapping Overview
