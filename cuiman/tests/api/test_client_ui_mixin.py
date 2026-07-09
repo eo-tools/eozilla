@@ -3,6 +3,8 @@
 #  https://opensource.org/license/apache-2-0.
 
 
+from types import SimpleNamespace
+
 import cuiman.app as app
 from cuiman.api import client_app_mixin
 from cuiman.api.client_app_mixin import ClientAppMixin
@@ -20,8 +22,9 @@ def test_app_store_is_created_and_cached():
 def test_show_app_serves_notebook_display_in_interactive_shell(monkeypatch):
     calls = []
     store = object()
+    state = SimpleNamespace(store=store)
     monkeypatch.setattr(client_app_mixin, "has_ishell", True)
-    monkeypatch.setattr(app, "AppState", lambda: store)
+    monkeypatch.setattr(app, "AppState", lambda: state)
     monkeypatch.setattr(
         app, "serve", lambda *args, **kwargs: calls.append((args, kwargs))
     )
@@ -47,7 +50,8 @@ def test_show_app_serves_notebook_display_in_interactive_shell(monkeypatch):
 def test_show_ui_serves_explicit_browser_display(monkeypatch):
     calls = []
     store = object()
-    monkeypatch.setattr(app, "AppState", lambda: store)
+    state = SimpleNamespace(store=store)
+    monkeypatch.setattr(app, "AppState", lambda: state)
     monkeypatch.setattr(
         app, "serve", lambda *args, **kwargs: calls.append((args, kwargs))
     )
