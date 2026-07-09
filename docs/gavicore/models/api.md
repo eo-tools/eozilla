@@ -33,25 +33,25 @@
 
 ## `gavicore.models` - OGC Application Package and Workflow descriptions
 
-::: gavicore.models.CWLDescription
+::: gavicore.dru_models.OGCApplicationPackage
 
-::: gavicore.models.ContainerConfig
+::: gavicore.dru_models.OGCApplicationPackageProcessDescription
 
-::: gavicore.models.InputBinding
+::: gavicore.dru_models.CWLDescription
 
-::: gavicore.models.OutputBinding
+::: gavicore.dru_models.ContainerImage
 
-::: gavicore.models.ContainerBindings
+::: gavicore.dru_models.ExecutionUnitContainer
 
-::: gavicore.models.ExecutionUnitContainer
+::: gavicore.dru_models.ContainerConfig
 
-::: gavicore.models.ContainerImage
+::: gavicore.dru_models.ContainerBindings
 
-::: gavicore.models.GenericExecutionUnit
+::: gavicore.dru_models.InputBinding
 
-::: gavicore.models.ExecutionUnitBase
+::: gavicore.dru_models.OutputBinding
 
-::: gavicore.models.OGCApplicationPackage
+::: gavicore.dru_models.GenericExecutionUnit
 
 
 ## `gavicore.models` - OpenAPI Schema
