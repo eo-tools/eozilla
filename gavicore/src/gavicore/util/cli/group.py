@@ -2,10 +2,8 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import click
 import typer.core
-
-# noinspection PyProtectedMember
-from typer._click import core as click_core
 
 
 class AliasedGroup(typer.core.TyperGroup):
@@ -16,13 +14,11 @@ class AliasedGroup(typer.core.TyperGroup):
     """
 
     @staticmethod
-    def to_alias(name: str) -> str:
+    def to_alias(name: str):
         """Create a short alias for given command name."""
         return "".join(map(lambda n: n[0], name.split("-")))
 
-    def get_command(
-        self, ctx: click_core.Context, cmd_name: str
-    ) -> click_core.Command | None:
+    def get_command(self, ctx, cmd_name):
         rv = super().get_command(ctx, cmd_name)
 
         if rv is not None:
@@ -38,13 +34,13 @@ class AliasedGroup(typer.core.TyperGroup):
             return None
 
         if len(matches) == 1:
-            return super().get_command(ctx, matches[0])
+            return click.Group.get_command(self, ctx, matches[0])
 
         ctx.fail(f"Too many matches: {', '.join(sorted(matches))}")
 
     def resolve_command(
-        self, ctx: click_core.Context, args: list[str]
-    ) -> tuple[str | None, click_core.Command | None, list[str]]:
+        self, ctx, args
+    ) -> tuple[str | None, click.Command | None, list[str]]:
         # always return the full command name
         _, cmd, args = super().resolve_command(ctx, args)
         if cmd is not None:
@@ -52,6 +48,6 @@ class AliasedGroup(typer.core.TyperGroup):
         else:
             return None, None, args
 
-    def list_commands(self, ctx: click_core.Context) -> list[str]:
+    def list_commands(self, ctx):
         # prevent alphabetical ordering
         return list(self.commands)

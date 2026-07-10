@@ -4,19 +4,18 @@
 
 import unittest
 
+import click
 import pytest
-from typer._click import core as click
-from typer.core import TyperCommand
 
 from gavicore.util.cli.group import AliasedGroup
 
 
 class AliasedGroupTest(unittest.TestCase):
     def setUp(self):
-        tca = TyperCommand("test-command-a")
-        tcb = TyperCommand("test-command-b")
-        tcc1 = TyperCommand("test-command-c")
-        tcc2 = TyperCommand("tiger-claw-command")
+        tca = click.Command("test-command-a")
+        tcb = click.Command("test-command-b")
+        tcc1 = click.Command("test-command-c")
+        tcc2 = click.Command("tiger-claw-command")
         self.group = AliasedGroup(name="test-group", commands=[tca, tcb, tcc1, tcc2])
 
     def test_get_command_ok(self):

@@ -4,10 +4,8 @@
 
 from typing import Annotated, Final, Optional
 
+import click
 import typer.core
-
-# noinspection PyProtectedMember
-from typer._click import exceptions as click_exceptions
 
 from cuiman.api.auth import AuthType
 from cuiman.api.auth.config import AUTH_TYPE_NAMES
@@ -249,9 +247,7 @@ def new_cli(
         from .config import configure_client_with_prompt
 
         if auth_type is not None and auth_type not in AUTH_TYPE_NAMES:
-            raise click_exceptions.ClickException(
-                f"Invalid authentication type: {auth_type}"
-            )
+            raise click.ClickException(f"Invalid authentication type: {auth_type}")
 
         config_path = configure_client_with_prompt(
             config_path=config_file,
@@ -453,32 +449,7 @@ def new_cli(
             job_results = client.get_job_results(job_id)
         output(get_renderer(output_format).render_job_results(job_results))
 
-    @t.command()
-    def show_app(
-        ctx: typer.Context,
-        config_file: Annotated[Optional[str], CONFIG_OPTION] = None,
-        debug: Annotated[bool, DEBUG_OPTION] = False,
-    ):
-        """Show the client app in a browser."""
-        from .client import use_client
-
-        with use_client(ctx, config_file) as client:
-            client.show_app(display="browser", debug=debug)
-            _wait_until_interrupted()
-
     return t
-
-
-def _wait_until_interrupted() -> None:
-    """Used by 'cuiman show-app'."""
-    import time
-
-    typer.echo("App is running. Press Ctrl+C to stop.")
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        typer.echo("Stopping app.")
 
 
 cli: typer.Typer = new_cli()

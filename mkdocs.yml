@@ -35,6 +35,9 @@ nav:
     - gavicore.service:
       - Description: gavicore/service/description.md
       - API Reference: gavicore/service/api.md
+    - gavicore.ui:
+      - Description: gavicore/ui/description.md
+      - API Reference: gavicore/ui/api.md
     - gavicore.util:
       - Description: gavicore/util/description.md
       - API Reference: gavicore/util/api.md

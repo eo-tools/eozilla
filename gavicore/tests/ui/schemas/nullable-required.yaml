@@ -1,0 +1,19 @@
+type: object
+properties:
+  input_1:
+    title: "Required"
+    type: string
+  input_2:
+    title: "Required + Nullable "
+    type: string
+    nullable: true
+  input_3:
+    title: "Optional"
+    type: string
+  input_4:
+    title: "Optional + Nullable"
+    type: string
+    nullable: true
+required:
+  - input_1
+  - input_2

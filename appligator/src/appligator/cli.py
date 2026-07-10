@@ -322,7 +322,7 @@ def main(
             tolerations=effective_tolerations or None,
         )
         dag_file = dags_folder / f"{file_stem}.py"
-        with dag_file.open("w", encoding="utf-8") as stream:
+        with dag_file.open("w") as stream:
             stream.write(
                 f"# WARNING - THIS IS GENERATED CODE\n"
                 f"#   Generator: Eozilla Appligator v{__version__}\n"
