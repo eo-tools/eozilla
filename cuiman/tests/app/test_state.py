@@ -4,6 +4,7 @@
 
 import pytest
 import remotestate as rs
+from remotestate import StoreAt
 
 from gavicore.models import ProcessRequest, ResponseType
 
@@ -17,7 +18,7 @@ from cuiman.app.state import (
 )
 
 
-def test_app_state():
+def test_app_state_remote_store():
     app_state = AppState()
     rs_store = app_state.store
     assert isinstance(rs_store, rs.Store)
@@ -61,7 +62,7 @@ def test_app_state():
     ]
 
 
-def test_remote_store_with_subscripts():
+def test_remote_store_remote_store_with_subscripts():
     app_state = AppState()
     rs_store = app_state.store
 
@@ -115,6 +116,10 @@ def test_remote_store_with_subscripts():
 
 def test_app_state_process_request_helpers():
     app_state = AppState()
+
+    assert hasattr(app_state.process_requests, "value")
+    assert hasattr(app_state.process_requests, "__getattr__")
+    assert hasattr(app_state.process_requests, "__setattr__")
 
     assert app_state.store.get("processRequests") == {}
     assert app_state.at["processRequests"] is not None
