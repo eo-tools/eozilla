@@ -43,6 +43,7 @@ Most other changes relate to the replacement of the Panel-based UI:
 - Added `ImageOpener` to **Cuiman**'s job result opener framework, supporting
   all PIL-compatible image formats from both local paths and S3-compatible
   object storage (via the optional `s3fs` package).
+- Documented the release process. (#149)
 
 ### Fixes
 

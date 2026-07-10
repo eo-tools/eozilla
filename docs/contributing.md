@@ -154,6 +154,26 @@ Docs saved to: eozilla/docs/procodile/cli.md
 Docs saved to: eozilla/docs/appligator/cli.md
 ```
 
+### Releasing
+
+Creating a tagged release on GitHub automatically runs the repository's
+`publish-pypi` workflow, which creates packages on PyPI. The publication
+of the PyPI packages, in turn, triggers the creation of package update
+pull requests in the corresponding conda-forge feedstock repositories.
+During the build process, conda-forge tests each package with its current
+dependencies, so it's important to merge these PRs in an order corresponding
+to the graph of dependencies between eozilla packages. For instance, tests
+for procodile 0.1.2 will fail if the corresponding gavicore 0.1.2 package is
+not yet published on conda-forge. Merging can be done in four batches:
+
+1. gavicore (dependency of everything)
+2. cuiman and procodile (only depend on gavicore)
+3. wraptile and appligator (depend on procodile and gavicore)
+4. eozilla (depends on everything)
+
+After each merge, it takes some time (usually around an hour) for the updated
+package to become available on conda-forge.
+
 ## License
 
 The Eozilla project is open source made available under the terms and 
