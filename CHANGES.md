@@ -1,3 +1,32 @@
+## Changes in version 0.2.0 (in development)
+
+### Enhancements
+
+**Cuiman** enhancements:
+
+- Replaced the [Panel](https://panel.holoviz.org/)-based GUI by a modern
+  web interface, the [Eozilla App](https://github.com/eo-tools/eozilla-app).
+- Added package `wraptile.app` representing the new app-based GUI
+- Updated `notebooks/cuiman-gui.ipynb` to demonstrate new app-based GUI
+
+### Other changes
+
+- Fixed typing in `gavicore.uitil.cli.AliasedGroup` wrt `typer >=0.26.8`.
+- CI is now also performed for branches named `feature/**`.
+
+Most other changes relate to the replacement of the Panel-based UI: 
+
+- Removed deprecated `wraptile.gui.*` 
+- Removed deprecated `gavicore.ui` (actually _moved_ to https://github.com/bcdev/schema2ui)
+- Removed also `gavicore.util` modules that where only used by the former panel UI:
+  - gavicore.util.json
+  - gavicore.util.text
+  - gavicore.util.undefined
+ - Updated documentation accordingly
+ - Regenerated CLI docs
+ - No longer requiring `panel`, `param`, and other dependencies such as `datamodel-code-generator`.
+
+
 ## Changes in version 0.1.2
 
 ### Enhancements
