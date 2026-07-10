@@ -4,9 +4,11 @@
 
 from unittest import TestCase
 
-import click
 import pytest
 import typer
+
+# noinspection PyProtectedMember
+from typer._click import exceptions as click_exceptions
 
 from cuiman import ClientError
 from cuiman.api.client import Client
@@ -27,7 +29,7 @@ class UseClientTest(TestCase):
 
     # noinspection PyMethodMayBeStatic
     def test_fail_with_client_error(self):
-        with pytest.raises(click.exceptions.Exit):
+        with pytest.raises(click_exceptions.Exit):
             with use_client(new_cli_context(), None):
                 raise ClientError(
                     "Not found",
@@ -57,7 +59,7 @@ class UseClientTest(TestCase):
 
     # noinspection PyMethodMayBeStatic
     def test_fail_with_transport_error(self):
-        with pytest.raises(click.exceptions.Exit):
+        with pytest.raises(click_exceptions.Exit):
             with use_client(new_cli_context(), None):
                 raise TransportError("connection could not be established")
 

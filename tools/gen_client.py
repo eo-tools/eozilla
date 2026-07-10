@@ -32,13 +32,14 @@ from gavicore.models import {{ model_imports }}
 
 from .async_client_mixin import AsyncClientMixin
 from .client_mixin import ClientMixin
+from .client_app_mixin import ClientAppMixin
 from .config import ClientConfig
 from .ishell import has_ishell as _  # noqa F401
 from .transport import {{ uc_async }}Transport, TransportArgs
 from .transport.httpx import HttpxTransport
 
 
-class {{ uc_async }}Client({{ uc_async }}ClientMixin):
+class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
     \"\"\"    
     The client API for the web service ({{ hr_async }} mode).
 
