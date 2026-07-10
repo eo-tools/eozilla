@@ -1,0 +1,175 @@
+#  Copyright (c) 2025-2026 by the Eozilla team and contributors
+#  Permissions are hereby granted under the terms of the Apache 2.0 License:
+#  https://opensource.org/license/apache-2-0.
+
+from unittest import TestCase
+
+import fsspec
+from panel.layout import Panel
+
+from cuiman.gui.jobs_observer import JobsObserver
+from cuiman.gui.panels import MainPanelView
+from gavicore.models import (
+    InputDescription,
+    JobInfo,
+    JobResults,
+    JobStatus,
+    ProcessDescription,
+    ProcessList,
+    ProcessRequest,
+    ProcessSummary,
+    Schema,
+)
+from gavicore.ui.panel import PanelFieldFactoryRegistry
+from gavicore.ui.panel.widgets.bbox import BBoxEditor
+
+bbox_input = InputDescription(
+    title="Bounding box",
+    schema=Schema.model_validate(
+        {
+            "type": "array",
+            "items": {"type": "number"},
+            "x-ui-widget": "map",
+            "minItems": 4,
+            "maxItems": 4,
+        }
+    ),
+)
+
+date_input = InputDescription(
+    title="Date",
+    schema=Schema.model_validate(
+        {
+            "type": "string",
+            "format": "date",
+            "default": "2025-01-01",
+        }
+    ),
+)
+
+int_input = InputDescription(
+    title="Periodicity",
+    schema=Schema.model_validate(
+        {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+        },
+    ),
+)
+
+
+class MainFormTest(TestCase):
+    def test_is_observer(self):
+        main_panel = _create_main_panel({})
+        self.assertIsInstance(main_panel, JobsObserver)
+
+    def test_with_int_input(self):
+        main_panel = _create_main_panel({"periodicity": int_input})
+        self.assertIsInstance(main_panel.__panel__(), Panel)
+
+    def test_with_bbox_input(self):
+        main_panel = _create_main_panel({"bbox": bbox_input})
+        self.assertIsInstance(main_panel.__panel__(), Panel)
+        inputs_field = main_panel.vm.inputs_field
+        self.assertIsNotNone(inputs_field)
+        assert inputs_field is not None
+        bbox_editor = inputs_field.view.inner_viewable.objects[0]
+        self.assertIsInstance(bbox_editor, BBoxEditor)
+
+        bbox_editor.value = [1.0, 2.0, 3.0, 4.0]
+
+        self.assertEqual(
+            {"bbox": [1.0, 2.0, 3.0, 4.0]},
+            inputs_field.view_model.value,
+        )
+
+    def test_with_date_input(self):
+        main_panel = _create_main_panel({"date": date_input})
+        self.assertIsInstance(main_panel.__panel__(), Panel)
+
+    def test_process_selector_follows_loaded_request_process(self):
+        process_1 = ProcessDescription(
+            id="gen_scene",
+            title="Generate a scene",
+            version="1",
+            inputs={},
+        )
+        process_2 = ProcessDescription(
+            id="other_scene",
+            title="Generate another scene",
+            version="1",
+            inputs={},
+        )
+        main_panel = _create_main_panel_for_processes([process_1, process_2])
+        fs = fsspec.filesystem("memory")
+        fs.pipe(
+            "/request.json",
+            b'{"process_id": "other_scene", "dotpath": true, "inputs": {}}',
+        )
+
+        main_panel.vm.load_process_request_file(fs, "/request.json")
+
+        self.assertEqual("other_scene", main_panel.vm.selected_process_id)
+        self.assertEqual("other_scene", main_panel._process_select.value)
+
+    def test_file_menu_opens_load_request_dialog(self):
+        main_panel = _create_main_panel({})
+
+        main_panel._file_menu.clicked = "load_request"
+
+        self.assertTrue(main_panel._load_request_dialog.panel.visible)
+        self.assertTrue(main_panel._file_menu.disabled)
+
+
+def _create_main_panel(process_inputs: dict[str, InputDescription]) -> MainPanelView:
+    process = ProcessDescription(
+        id="gen_scene",
+        title="Generate a scene",
+        version="1",
+        inputs=process_inputs,
+    )
+
+    return _create_main_panel_for_processes([process])
+
+
+def _create_main_panel_for_processes(
+    processes: list[ProcessDescription],
+) -> MainPanelView:
+    process_by_id = {process.id: process for process in processes}
+
+    def on_get_process(_process_id: str):
+        return process_by_id[_process_id]
+
+    def on_execute_process(process_id: str, _request: ProcessRequest):
+        return JobInfo(
+            jobID="job_8",
+            processID=process_id,
+            status=JobStatus.successful,
+        )
+
+    def on_get_job_results(_job_id: str) -> JobResults:
+        return JobResults(**{"return_value": 13})
+
+    process_list = ProcessList(processes=processes, links=[])
+
+    return MainPanelView(
+        process_list,
+        None,
+        on_get_process,
+        on_execute_process,
+        on_get_job_results,
+        accept_process,
+        is_advanced_input,
+        field_factory_registry=PanelFieldFactoryRegistry.create_default(),
+    )
+
+
+# noinspection PyUnusedLocal
+def accept_process(p: ProcessSummary) -> bool:
+    return True
+
+
+# noinspection PyUnusedLocal
+def is_advanced_input(p: ProcessDescription, i_name: str, i: InputDescription) -> bool:
+    return False

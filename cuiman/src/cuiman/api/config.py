@@ -16,8 +16,10 @@ from typing import (
 import yaml
 from pydantic import Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing_extensions import deprecated
 
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
+from gavicore.ui import FieldFactoryRegistry, FieldMeta
 
 from .auth import AuthConfig
 from .defaults import DEFAULT_API_URL
@@ -153,6 +155,124 @@ class ClientConfig(AuthConfig, BaseSettings):
     def validate_api_url(cls, v: str | None) -> str | None:
         return None if v is None or v == "" else str(HttpUrl(v))
 
+    # noinspection PyUnusedLocal
+    @classmethod
+    @deprecated(
+        "ClientConfig.accept_process() is deprecated, only used by the legacy "
+        "cuiman.gui client, and will not work in newer Eozilla versions."
+    )
+    def accept_process(
+        cls, process_summary: ProcessSummary, **filter_kwargs: Any
+    ) -> bool:
+        """
+        Predicate function that is used to filter the list of processes.
+        The function is intended to be overridden by subclasses in order to allow
+        for evaluating the given `process_summary` in an application-specific way.
+        This includes the using custom fields in the given
+        [ProcessSummary][gavicore.models.ProcessSummary] instance.
+
+        Applications may use the [extend_model()][gavicore.util.model.extend_model]
+        function to enhance existing model classes by their custom fields.
+
+        The default implementation unconditionally returns `True`.
+
+        Args:
+            process_summary: A process summary.
+            filter_kwargs: Implementation specific arguments passed
+                by a user of this class.
+
+        Returns:
+            `True` to accept the given process, otherwise `False`.
+        """
+        return True
+
+    # noinspection PyUnusedLocal
+    @classmethod
+    @deprecated(
+        "ClientConfig.accept_input() is deprecated, only used by the legacy "
+        "cuiman.gui client, and will not work in newer Eozilla versions."
+    )
+    def accept_input(
+        cls,
+        process_description: ProcessDescription,
+        input_name: str,
+        input_description: InputDescription,
+        **filter_kwargs: Any,
+    ) -> bool:
+        """
+        Predicate function that is used to filter the list of inputs of a process.
+        The function is intended to be overridden by subclasses in order to allow
+        for evaluating the given `input_description` in an application-specific way.
+        This includes the using custom fields in the given
+        [InputDescription][gavicore.models.InputDescription] instance.
+
+        Applications may use the [extend_model()][gavicore.util.model.extend_model]
+        function to enhance existing model classes by their custom fields.
+
+        The default implementation unconditionally returns `True`.
+
+        Args:
+            process_description: The process description.
+            input_name: The input's name.
+            input_description: A description of an
+                input of the given `process_description`.
+            filter_kwargs: Implementation specific arguments passed
+                by a user of this class.
+
+        Returns:
+            `True` to accept the given input, otherwise `False`.
+        """
+        return True
+
+    # noinspection PyUnusedLocal
+    @classmethod
+    @deprecated(
+        "ClientConfig.is_advanced_input() is deprecated, only used by the legacy "
+        "cuiman.gui client, and will not work in newer Eozilla versions."
+    )
+    def is_advanced_input(
+        cls,
+        process_description: ProcessDescription,
+        input_name: str,
+        input_description: InputDescription,
+    ) -> bool:
+        """
+        Experimental method, do not use!
+
+        Designed to be overridden by a custom `ClientConfig` class
+        from which an instance will be assigned to `ClientConfig.default_config`
+        to become effective.
+
+        The default implementations checks if the given `input_description`
+        has `additionalParameters`, and if so, if a parameter with name
+        `"level"` has value `["advanced"]` (a list!).
+
+        Args:
+            process_description: The process description.
+            input_name: The input's name.
+            input_description: A description of an
+                input of the given `process_description`.
+
+        Returns:
+            `True` if the input is advanced
+            (e.g. for advanced process users only).
+        """
+        # The following approach uses additionalParameters but its use
+        # is discouraged. (We receive such metadata currently from
+        # the TAO Process API).
+        additional_parameters = input_description.additionalParameters
+        if additional_parameters:
+            parameters = additional_parameters.parameters
+            if parameters:
+                for p in parameters:
+                    if p.name == "level" and p.value == ["advanced"]:
+                        return True
+        # The way it should be done is using "x-ui" properties.
+        # Ideally, we should pass an already parsed FieldMeta into the
+        # is_advanced_input() method.
+        field_meta = FieldMeta.from_input_description(input_name, input_description)
+        return field_meta.advanced or field_meta.level == "advanced"
+
     @classmethod
     def register_job_result_opener(
         cls, opener_type: type[JobResultOpener]
@@ -178,6 +298,33 @@ class ClientConfig(AuthConfig, BaseSettings):
         Note that the registry contains types/classes, not instances.
         """
         return JobResultOpenerRegistry.create_default()
+
+    @classmethod
+    @cache
+    def get_field_factory_registry(cls) -> FieldFactoryRegistry:
+        """
+        Get the registry for factories that generate UI fields from
+        process inputs.
+
+        Used in the GUI client `cuiman.gui.Client`. Use it to register
+        factories that customize the way the client GUI is generated.
+
+        The default registry contains factories that creates UI fields for
+        the [Panel](https://panel.holoviz.org/) library as this is the primary
+        library used in the GUI client.
+
+        The default registry type is
+        `gavicore.ui.panel.PanelFieldFactoryRegistry`.
+
+        The type of registered field factories is
+        `gavicore.ui.panel.PanelFieldFactory`.
+
+        The type of the field instances created by the factories must be
+        `gavicore.ui.panel.PanelField`.
+        """
+        from gavicore.ui.panel import PanelFieldFactoryRegistry
+
+        return PanelFieldFactoryRegistry.create_default()
 
 
 # Set Eozilla defaults.

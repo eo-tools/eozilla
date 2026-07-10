@@ -1,0 +1,129 @@
+#  Copyright (c) 2025-2026 by the Eozilla team and contributors
+#  Permissions are hereby granted under the terms of the Apache 2.0 License:
+#  https://opensource.org/license/apache-2-0.
+
+from typing import Any
+
+import panel as pn
+import param
+
+BBox = list[float]
+
+
+class BBoxEditor(pn.widgets.WidgetBase, pn.custom.PyComponent):
+    """An editor for editing bounding boxes in a map view."""
+
+    value = param.List(default=[0, 40, 20, 60], allow_None=False)
+
+    def __init__(
+        self,
+        center: tuple[float, float] = (0, 0),
+        zoom: int = 2,
+        **params,
+    ):
+        pn.extension("ipywidgets")
+        super().__init__(**params)
+
+        from ipyleaflet import DrawControl, Map
+
+        # --- draw control
+        enabled_tool: dict[str, Any] = {"shapeOptions": {"color": "#0000FF"}}
+        disabled_tool: dict[str, Any] = {}
+        draw_control = DrawControl()
+        draw_control.rectangle = enabled_tool
+        draw_control.circle = enabled_tool
+        draw_control.polygon = enabled_tool
+        draw_control.polyline = disabled_tool
+        draw_control.circlemarker = disabled_tool
+        draw_control.on_draw(self._handle_draw)
+
+        # --- map
+        self._map = Map(center=center, zoom=zoom, scroll_wheel_zoom=True)
+        self._map.add(draw_control)
+
+        map_widget = pn.pane.IPyWidget(self._map, width=400, height=400)
+
+        # --- value display
+        # TODO: replace by text box to let user enter the 4 coordinates
+        self._value_display = pn.widgets.StaticText()
+
+        def on_value_change(e):
+            self._update_display(e.new)
+            self._update_bbox_layer(e.new)
+
+        # react to value changes
+        self.param.watch(on_value_change, "value")
+
+        # initial display and map layer
+        self._update_display(self.value)
+        self._update_bbox_layer(self.value)
+
+        # layout
+        self._panel = pn.Column(map_widget, self._value_display)
+
+    # --- Panel rendering
+    def __panel__(self):
+        return self._panel
+
+    # --- value → UI
+
+    def _update_display(self, value):
+        self._value_display.value = f"Selected bbox: {value}"
+
+    def _update_bbox_layer(self, value: Any):
+        self._replace_user_layer(self._bbox_to_geo_json(value))
+
+    def _replace_user_layer(self, geo_json: dict | None):
+        for layer in list(self._map.layers):
+            if getattr(layer, "name", None) == "user":
+                self._map.remove(layer)
+
+        if geo_json is not None:
+            from ipyleaflet import GeoJSON
+
+            self._map.add(GeoJSON(name="user", data=geo_json))
+
+    @staticmethod
+    def _bbox_to_geo_json(value: Any) -> dict | None:
+        if not isinstance(value, list) or len(value) != 4:
+            return None
+
+        min_lon, min_lat, max_lon, max_lat = value
+        if min_lon == max_lon or min_lat == max_lat:
+            return None
+
+        return {
+            "type": "Feature",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [min_lon, min_lat],
+                        [max_lon, min_lat],
+                        [max_lon, max_lat],
+                        [min_lon, max_lat],
+                        [min_lon, min_lat],
+                    ]
+                ],
+            },
+            "properties": {},
+        }
+
+    # --- map → value
+    def _handle_draw(self, target: Any, action: str, geo_json: dict):
+        if action != "created":
+            return
+
+        if geo_json["geometry"]["type"] != "Polygon":
+            return
+
+        target.clear()
+
+        coords = geo_json["geometry"]["coordinates"][0]
+        lons = [c[0] for c in coords]
+        lats = [c[1] for c in coords]
+
+        bbox: BBox = [min(lons), min(lats), max(lons), max(lats)]
+        self.value = bbox
+
+        self._replace_user_layer(geo_json)
