@@ -4,9 +4,6 @@
 
 import pytest
 import remotestate as rs
-from remotestate import StoreAt
-
-from gavicore.models import ProcessRequest, ResponseType
 
 # noinspection PyProtectedMember
 from cuiman.app.state import (
@@ -16,6 +13,7 @@ from cuiman.app.state import (
     _normalize_process_request_dicts,
     _normalize_process_requests,
 )
+from gavicore.models import ProcessRequest, ResponseType
 
 
 def test_app_state_remote_store():
