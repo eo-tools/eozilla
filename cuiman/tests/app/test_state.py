@@ -7,6 +7,7 @@ import remotestate as rs
 
 from gavicore.models import ProcessRequest, ResponseType
 
+# noinspection PyProtectedMember
 from cuiman.app.state import (
     AppState,
     _create_defaults,
@@ -115,8 +116,8 @@ def test_remote_store_with_subscripts():
 def test_app_state_process_request_helpers():
     app_state = AppState()
 
-    assert app_state.at["processRequests"] == {}
-    assert app_state.process_requests == {}
+    assert app_state.store.get("processRequests") == {}
+    assert app_state.at["processRequests"] is not None
     assert app_state.get_process_request("missing") is None
 
     app_state.set_process_request("from_model", ProcessRequest(inputs={"value": 1}))
@@ -132,17 +133,15 @@ def test_app_state_process_request_helpers():
 
     from_model = app_state.get_process_request("from_model")
     assert from_model is not None
-    assert (
-        from_model.model_dump(mode="json", exclude_defaults=True, exclude_none=True)
-        == {"inputs": {"value": 1}}
-    )
+    assert from_model.model_dump(
+        mode="json", exclude_defaults=True, exclude_none=True
+    ) == {"inputs": {"value": 1}}
 
     from_dict = app_state.get_process_request("from_dict")
     assert from_dict is not None
-    assert (
-        from_dict.model_dump(mode="json", exclude_defaults=True, exclude_none=True)
-        == {"inputs": {"value": 2}, "response": "document"}
-    )
+    assert from_dict.model_dump(
+        mode="json", exclude_defaults=True, exclude_none=True
+    ) == {"inputs": {"value": 2}, "response": "document"}
 
     app_state.process_requests = {
         "dict_input": {"inputs": {"value": 3}},
@@ -152,23 +151,21 @@ def test_app_state_process_request_helpers():
         ),
     }
 
-    assert app_state.process_requests == {
+    assert app_state.store.get("processRequests") == {
         "dict_input": {"inputs": {"value": 3}},
         "model_input": {"inputs": {"value": 4}, "response": "document"},
     }
     dict_input = app_state.get_process_request("dict_input")
     assert dict_input is not None
-    assert (
-        dict_input.model_dump(mode="json", exclude_defaults=True, exclude_none=True)
-        == {"inputs": {"value": 3}}
-    )
+    assert dict_input.model_dump(
+        mode="json", exclude_defaults=True, exclude_none=True
+    ) == {"inputs": {"value": 3}}
 
     model_input = app_state.get_process_request("model_input")
     assert model_input is not None
-    assert (
-        model_input.model_dump(mode="json", exclude_defaults=True, exclude_none=True)
-        == {"inputs": {"value": 4}, "response": "document"}
-    )
+    assert model_input.model_dump(
+        mode="json", exclude_defaults=True, exclude_none=True
+    ) == {"inputs": {"value": 4}, "response": "document"}
 
 
 def test_create_defaults():
@@ -208,16 +205,13 @@ def test_normalize_process_requests_and_reject_invalid_values():
             "from_model": request,
         }
     )
-    assert (
-        {
-            key: value.model_dump(mode="json", exclude_defaults=True, exclude_none=True)
-            for key, value in normalized_requests.items()
-        }
-        == {
-            "from_dict": {"inputs": {"value": 2}},
-            "from_model": {"inputs": {"value": 1}, "response": "document"},
-        }
-    )
+    assert {
+        key: value.model_dump(mode="json", exclude_defaults=True, exclude_none=True)
+        for key, value in normalized_requests.items()
+    } == {
+        "from_dict": {"inputs": {"value": 2}},
+        "from_model": {"inputs": {"value": 1}, "response": "document"},
+    }
 
     assert _normalize_process_request_dicts(
         {
