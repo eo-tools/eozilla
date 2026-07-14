@@ -45,7 +45,7 @@ dependencies = [
   "pyyaml",
   "tomli-w",
   "tomli; python_version < '3.11'",
-  "typer",
+  "typer >=0.26.0,<1",
   # local dependency
   "gavicore >=0.2.0.dev0",
   "procodile >=0.2.0.dev0",

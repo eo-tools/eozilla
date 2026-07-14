@@ -11,6 +11,8 @@
 
 ### Other changes
 
+- We require `typer >=0.26` and no longer depend on `click`. 
+  See https://typer.tiangolo.com/tutorial/click/.
 - Fixed typing in `gavicore.uitil.cli.AliasedGroup` wrt `typer >=0.26.8`.
 - GitHub CI is now also performed for branches named `feature/**`.
 
