@@ -1,0 +1,55 @@
+# Repo-local Codex configuration for this workspace.
+#
+# Use this file for project-scoped Codex defaults such as sandbox behavior,
+# enabled tools/plugins, and other Codex runtime settings that should apply
+# to this repository.
+#
+# For the meaning of individual settings, consult the Codex manual and the
+# official OpenAI developer documentation for Codex configuration:
+#
+# https://learn.chatgpt.com/docs/config-file/config-advanced
+#
+# Repo workflow conventions and review expectations belong in AGENTS.md.
+
+model = "gpt-5.4-mini"
+model_reasoning_effort = "high"
+service_tier = "default"
+
+# Local repo default for this workspace.
+# "elevated" gives Codex more room for standard dev workflows such as
+# running tests, linters, and repo inspection commands.
+[windows]
+sandbox = "elevated"
+
+[desktop]
+ambient-suggestions-enabled = true
+conversationDetailMode = "STEPS_COMMANDS"
+default-service-tier = "priority"
+followUpQueueMode = "queue"
+
+[features]
+js_repl = false
+
+# Tool / plugin availability for this repo.
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+[plugins."github@openai-curated"]
+enabled = true
+
+[plugins."pdf@openai-primary-runtime"]
+enabled = true
+
+[plugins."browser@openai-bundled"]
+enabled = true
+
+[plugins."template-creator@openai-primary-runtime"]
+enabled = true
+
+# Repo-level working rules live in AGENTS.md.
