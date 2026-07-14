@@ -26,22 +26,37 @@ class ClientAppMixin(ABC):
     def config(self) -> ClientConfig:
         """Will be overridden by the actual client class."""
 
-    @cached_property
-    def app_state(self) -> "AppState":
+    def show_app(
+        self,
+        *,
+        compact: bool | None = None,
+        debug: bool = False,
+        scheme: Literal["dark", "light", "auto"] = "auto",
+        width: int | str = "100%",
+        height: int | str = 600,
+        display: Literal["browser", "notebook", "auto"] = "auto",
+    ) -> "App":
         """
-        Shared, reactive state used by the Cuiman app.
+        Show the Cuiman app for this client.
 
-        Use the returned object to inspect or update the internal app state
-        rendered by [show_app()][cuiman.api.client_app_mixin.ClientAppMixin.show_app].
+        The app connects to this client's API configuration, renders the app GUI,
+        and returns an object that provides the serve result and a shared
+        [app state][cuiman.app.AppState], which you can interact with.
 
-        Currently, the app state only manages the process requests being
+        The app state currently only manages the process requests being
         edited and executed by a user. The requests are a mapping from process IDs
         to process requests.
 
+        Display the app and get the app instance:
+
+        ```
+        app = client.show_app()
+        ```
+
         You can get and set process requests using the methods
 
-        - ``client.app_state.get_process_request(process_id)``
-        - ``client.app_state.set_process_request(process_id, process_request)``
+        - ``app.state.get_process_request(process_id)``
+        - ``app.state.set_process_request(process_id, process_request)``
 
         where ``process_id`` is the process ID and ``process_request`` is a dict
         or a ``ProcessRequest`` object that comprises basically two attributes:
@@ -53,31 +68,8 @@ class ClientAppMixin(ABC):
         Another convenient way to work with the nested app state is the
         ``process_requests`` property:
 
-        - ``client.app_state.process_requests.my_process.inputs.threshold = 0.75``
-        - ``client.app_state.process_requests.my_process = {"inputs": {...}}``
-        """
-        from cuiman.app import AppState
-
-        return AppState()
-
-    def show_app(
-        self,
-        *,
-        compact: bool | None = None,
-        debug: bool = False,
-        scheme: Literal["dark", "light", "auto"] = "auto",
-        width: int | str = "100%",
-        height: int | str = 600,
-        display: Literal["browser", "notebook", "auto"] = "auto",
-    ) -> "rs.ServeResult":
-        """
-        Show the Cuiman app for this client.
-
-        The app connects to this client's API configuration and uses
-        [app_state][cuiman.api.client_app_mixin.ClientAppMixin.app_state] as
-        its shared state. You can keep using ``client.app_state`` while the app
-        is open, including its ``at`` accessor, to interact with the data the
-        app reads and writes.
+        - ``app.state.process_requests.my_process.inputs.threshold = 0.75``
+        - ``app.state.process_requests.my_process = {"inputs": {...}}``
 
         Args:
             compact: Compact mode. Defaults to True, if ``display`` is "notebook".
@@ -89,19 +81,21 @@ class ClientAppMixin(ABC):
             display: Where to show the app. ``"auto"`` embeds it in notebooks
                 and opens it in a browser otherwise.
         Return:
-            An instance of type ``remotestate.ServeResult``.
+            An ``App`` instance.
         """
-        from cuiman.app import serve
+        from cuiman.app import App, serve
 
         display_ = (
             ("notebook" if has_ishell else "browser") if display == "auto" else display
         )
         compact_ = compact if isinstance(compact, bool) else display_ == "notebook"
 
+        remote_store = App.create_remote_store()
+
         # noinspection PyTypeChecker
-        return serve(
+        serve_result = serve(
             self.config,
-            self.app_state.store,
+            remote_store,
             compact=compact_,
             debug=debug,
             scheme=scheme,
@@ -109,3 +103,5 @@ class ClientAppMixin(ABC):
             height=height,
             display=display_,
         )
+
+        return App(remote_store, serve_result)

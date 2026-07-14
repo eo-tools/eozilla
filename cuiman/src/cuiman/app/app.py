@@ -2,20 +2,45 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from __future__ import annotations
+
 from typing import Any
 
 import remotestate as rs
 
 from gavicore.models import ProcessRequest
+from gavicore.util.ensure import ensure_type
 
 PROCESS_REQUESTS_KEY = "processRequests"
 
 ProcessRequestInput = ProcessRequest | dict[str, Any]
 
 
-class AppState:
-    def __init__(self) -> None:
-        self._store = rs.Store(
+class App:
+    """The app instance displayed and returned by `Client.show_app()`.
+    It allows for convenient interaction with the app's data state,
+    """
+
+    def __init__(self, remote_store: rs.Store, serve_result: rs.ServeResult) -> None:
+        ensure_type("remote_store", remote_store, rs.Store)
+        ensure_type("serve_result", serve_result, rs.ServeResult)
+        self._serve_result = serve_result
+        self._remote_store = remote_store
+
+    @property
+    def remote_store(self) -> rs.Store:
+        """The app's remote store."""
+        return self._remote_store
+
+    @property
+    def serve_result(self) -> rs.ServeResult:
+        """The result from `remotestate.serve()`."""
+        return self._serve_result
+
+    @classmethod
+    def create_remote_store(cls) -> rs.Store:
+        """Create a new `remotestate.Store` instance for an app instance."""
+        return rs.Store(
             {
                 PROCESS_REQUESTS_KEY: {},
             },
@@ -23,24 +48,30 @@ class AppState:
         )
 
     @property
-    def store(self) -> rs.Store:
-        return self._store
+    def at(self) -> rs.StoreAt:
+        """The underlying `remotestore.StoreAt` instance which provides access
+        to the state data via keys, indexes, and attributes.
+        """
+        return self._remote_store.at
 
     @property
-    def at(self):
-        return self._store.at
-
-    @property
-    def process_requests(self) -> Any:
-        return self._store.at[PROCESS_REQUESTS_KEY]
+    def process_requests(self) -> rs.StoreAt:
+        """The `remotestore.StoreAt` instance that accesses
+        the app's current process requests.
+        """
+        return self._remote_store.at[PROCESS_REQUESTS_KEY]
 
     @process_requests.setter
-    def process_requests(self, process_requests: dict[str, ProcessRequestInput]):
+    def process_requests(
+        self, process_requests: dict[str, ProcessRequestInput]
+    ) -> None:
+        """Allows for changing the app's current process requests."""
         request_dicts = _normalize_process_request_dicts(process_requests)
-        self._store.set([PROCESS_REQUESTS_KEY], request_dicts)
+        self._remote_store.set([PROCESS_REQUESTS_KEY], request_dicts)
 
     def get_process_request(self, process_id: str) -> ProcessRequest | None:
-        process_requests = self._store.get(PROCESS_REQUESTS_KEY)
+        """Get a process request."""
+        process_requests = self._remote_store.get(PROCESS_REQUESTS_KEY)
         assert isinstance(process_requests, dict)
         process_request = process_requests.get(process_id)
         if process_request is None:
@@ -49,9 +80,10 @@ class AppState:
 
     def set_process_request(
         self, process_id: str, process_request: ProcessRequestInput
-    ):
+    ) -> None:
+        """Set a process request."""
         request_dict = _normalize_process_request_dict(process_request)
-        self._store.at[PROCESS_REQUESTS_KEY][process_id] = request_dict
+        self._remote_store.at[PROCESS_REQUESTS_KEY][process_id] = request_dict
 
 
 def _normalize_process_requests(
