@@ -52,8 +52,8 @@ class ClientAppMixin(ABC):
 
         You can get and set process requests using the methods
 
-        - ``app.state.get_process_request(process_id)``
-        - ``app.state.set_process_request(process_id, process_request)``
+        - ``app.get_process_request(process_id)``
+        - ``app.set_process_request(process_id, process_request)``
 
         where ``process_id`` is the process ID and ``process_request`` is a dict
         or a ``ProcessRequest`` object that comprises basically two attributes:
@@ -65,8 +65,8 @@ class ClientAppMixin(ABC):
         Another convenient way to work with the nested app state is the
         ``process_requests`` property:
 
-        - ``app.state.process_requests.my_process.inputs.threshold = 0.75``
-        - ``app.state.process_requests.my_process = {"inputs": {...}}``
+        - ``app.process_requests.my_process.inputs.threshold = 0.75``
+        - ``app.process_requests.my_process = {"inputs": {...}}``
 
         Args:
             compact: Compact mode. Defaults to True, if ``display`` is "notebook".
