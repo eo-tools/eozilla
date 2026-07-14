@@ -4,8 +4,9 @@
 
 from pathlib import Path
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+import remotestate as rs
 import typer.testing
 import yaml
 
@@ -165,6 +166,8 @@ class CliTest(TestCase):
     @patch("cuiman.cli.cli._wait_until_interrupted")
     @patch("cuiman.app.serve")
     def test_show_app(self, mock_serve, mock_wait_until_interrupted):
+        mock_serve.return_value = MagicMock(spec=rs.ServeResult)
+
         result = invoke_cli("show-app")
 
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
