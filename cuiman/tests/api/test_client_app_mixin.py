@@ -2,66 +2,75 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from __future__ import annotations
 
-from types import SimpleNamespace
-
-import cuiman.app as app
-from cuiman.api import client_app_mixin
+import cuiman.app as app_package
+import cuiman.app.app as app_module
+import cuiman.api.client_app_mixin as client_app_mixin
 from cuiman.api.client_app_mixin import ClientAppMixin
 from cuiman.api.config import ClientConfig
-from cuiman.app import AppState
+from cuiman.app import App
 
 
-def test_app_store_is_created_and_cached():
-    client = FakeAppClient()
-
-    assert isinstance(client.app_state, AppState)
-    assert client.app_state is client.app_state
-
-
-def test_show_app_serves_notebook_display_in_interactive_shell(monkeypatch):
+def test_show_app_uses_notebook_display_and_explicit_compact(monkeypatch):
     calls = []
-    store = object()
-    state = SimpleNamespace(store=store)
+    serve_result = object()
+
     monkeypatch.setattr(client_app_mixin, "has_ishell", True)
-    monkeypatch.setattr(app, "AppState", lambda: state)
+    monkeypatch.setattr(app_module, "ensure_type", lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        app, "serve", lambda *args, **kwargs: calls.append((args, kwargs))
+        app_package,
+        "serve",
+        lambda *args, **kwargs: calls.append((args, kwargs)) or serve_result,
     )
 
     client = FakeAppClient()
-    client.show_app(debug=True, scheme="dark", width="80%", height=400)
 
-    assert calls == [
-        (
-            (client.config, store),
-            {
-                "compact": True,
-                "debug": True,
-                "scheme": "dark",
-                "width": "80%",
-                "height": 400,
-                "display": "notebook",
-            },
-        )
-    ]
+    app = client.show_app(compact=False, debug=True, scheme="dark", width="80%", height=400)
+
+    assert len(calls) == 1
+    assert calls[0][0][0] == client.config
+    assert calls[0][1] == {
+        "compact": False,
+        "debug": True,
+        "scheme": "dark",
+        "width": "80%",
+        "height": 400,
+        "display": "notebook",
+    }
+    assert isinstance(app, App)
+    assert app.serve_result is serve_result
+    assert app.remote_store.get("processRequests") == {}
 
 
-def test_show_ui_serves_explicit_browser_display(monkeypatch):
+def test_show_app_uses_browser_display_when_no_shell(monkeypatch):
     calls = []
-    store = object()
-    state = SimpleNamespace(store=store)
-    monkeypatch.setattr(app, "AppState", lambda: state)
+    serve_result = object()
+
+    monkeypatch.setattr(client_app_mixin, "has_ishell", False)
+    monkeypatch.setattr(app_module, "ensure_type", lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        app, "serve", lambda *args, **kwargs: calls.append((args, kwargs))
+        app_package,
+        "serve",
+        lambda *args, **kwargs: calls.append((args, kwargs)) or serve_result,
     )
 
     client = FakeAppClient()
-    client.show_app(display="browser")
 
-    assert calls[0][0] == (client.config, store)
-    assert calls[0][1]["compact"] is False
-    assert calls[0][1]["display"] == "browser"
+    app = client.show_app()
+
+    assert len(calls) == 1
+    assert calls[0][0][0] == client.config
+    assert calls[0][1] == {
+        "compact": False,
+        "debug": False,
+        "scheme": "auto",
+        "width": "100%",
+        "height": 600,
+        "display": "browser",
+    }
+    assert isinstance(app, App)
+    assert app.serve_result is serve_result
 
 
 class FakeAppClient(ClientAppMixin):
