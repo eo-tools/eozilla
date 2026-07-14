@@ -4,13 +4,17 @@
 
 """Bearer tokens for the wraptile->airflow hop.
 
-Two ways to obtain one, selected by :func:`create_token_provider`:
+Two ways to obtain one, selected by :meth:`TokenConfig.create_token_provider`:
 
 * :class:`ClientCredentialsTokenProvider` — the OAuth2 ``client_credentials``
   grant against any OIDC-compliant identity provider. The resulting token is
   what the gateway in front of Airflow validates (issuer, audience, roles).
 * :class:`AirflowNativeTokenProvider` — Airflow's own ``/auth/token`` endpoint,
   the fallback for deployments without a gateway in the path.
+
+The environment is read in exactly one place, :meth:`TokenConfig.from_env`;
+everything downstream of it takes a :class:`TokenConfig` and is testable
+without touching ``os.environ``.
 
 Nothing here is specific to a particular identity provider: only the standard
 OAuth2 token endpoint and grant are used.
@@ -19,6 +23,8 @@ OAuth2 token endpoint and grant are used.
 import abc
 import os
 import time
+from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Optional
 
 import requests
@@ -33,6 +39,10 @@ TOKEN_REFRESH_MARGIN = 30
 DEFAULT_TOKEN_LIFETIME = 300
 
 TOKEN_REQUEST_TIMEOUT = 10
+
+DEFAULT_AUDIENCE = "airflow"
+
+DEFAULT_AIRFLOW_USERNAME = "admin"
 
 
 class TokenProvider(abc.ABC):
@@ -107,6 +117,96 @@ class AirflowNativeTokenProvider(TokenProvider):
         return _json_or_raise(response)["access_token"]
 
 
+@dataclass(frozen=True)
+class TokenConfig:
+    """Everything needed to decide *how* to obtain an Airflow bearer token.
+
+    Construct it directly in tests, or via :meth:`from_env` in production.
+    The OIDC path wins whenever it is configured; the Airflow-native path is
+    the fallback.
+    """
+
+    airflow_base_url: str
+    oidc_token_url: Optional[str] = None
+    oidc_client_id: Optional[str] = None
+    oidc_client_secret: Optional[str] = None
+    oidc_audience: str = DEFAULT_AUDIENCE
+    airflow_username: str = DEFAULT_AIRFLOW_USERNAME
+    airflow_password: Optional[str] = None
+
+    @classmethod
+    def from_env(
+        cls,
+        base_url: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        env: Optional[Mapping[str, str]] = None,
+        # Airflow credentials passed by the caller take precedence over the
+        # environment; the OIDC settings are environment-only (deployment
+        # decides whether a gateway is in the path, not the call site).
+    ) -> "TokenConfig":
+        """Read the token settings from a mapping, `os.environ` by default.
+
+        Args:
+            base_url: Base URL of the Airflow web API, used by the native
+                fallback.
+            username: Airflow username, defaults to env `AIRFLOW_USERNAME`,
+                then `admin`.
+            password: Airflow password, defaults to env `AIRFLOW_PASSWORD`.
+            env: The environment to read; injected by tests.
+        """
+        env = os.environ if env is None else env
+        return cls(
+            airflow_base_url=base_url,
+            oidc_token_url=env.get("OIDC_TOKEN_URL") or None,
+            oidc_client_id=env.get("OIDC_CLIENT_ID") or None,
+            oidc_client_secret=env.get("OIDC_CLIENT_SECRET") or None,
+            oidc_audience=env.get("OIDC_AUDIENCE") or DEFAULT_AUDIENCE,
+            airflow_username=(
+                username or env.get("AIRFLOW_USERNAME") or DEFAULT_AIRFLOW_USERNAME
+            ),
+            airflow_password=password or env.get("AIRFLOW_PASSWORD") or None,
+        )
+
+    @property
+    def uses_client_credentials(self) -> bool:
+        """Whether the OIDC client-credentials grant is configured at all."""
+        return bool(self.oidc_token_url or self.oidc_client_id)
+
+    def create_token_provider(self) -> TokenProvider:
+        """Build the token provider this configuration selects.
+
+        Raises:
+            RuntimeError: If the OIDC settings are only half-filled, or if the
+                native fallback has no Airflow password.
+        """
+        if self.uses_client_credentials:
+            if not (self.oidc_token_url and self.oidc_client_id):
+                # Half-configuring OIDC is a deployment mistake. Falling back to
+                # the native endpoint here would paper over it and send Airflow
+                # a token the gateway was meant to validate.
+                raise RuntimeError(
+                    "incomplete OIDC configuration; please set both env vars"
+                    " OIDC_TOKEN_URL and OIDC_CLIENT_ID"
+                )
+            return ClientCredentialsTokenProvider(
+                token_url=self.oidc_token_url,
+                client_id=self.oidc_client_id,
+                client_secret=self.oidc_client_secret,
+                audience=self.oidc_audience,
+            )
+
+        if not self.airflow_password:
+            raise RuntimeError(
+                "missing Airflow password; please set env var AIRFLOW_PASSWORD"
+            )
+        return AirflowNativeTokenProvider(
+            self.airflow_base_url,
+            username=self.airflow_username,
+            password=self.airflow_password,
+        )
+
+
 def create_token_provider(
     base_url: str,
     username: Optional[str] = None,
@@ -114,34 +214,11 @@ def create_token_provider(
 ) -> TokenProvider:
     """Select the token provider from the environment.
 
-    Uses the client-credentials grant when `OIDC_TOKEN_URL` and `OIDC_CLIENT_ID`
-    are both set, otherwise falls back to Airflow's native token endpoint.
-
-    Args:
-        base_url: Base URL of the Airflow web API, used by the native fallback.
-        username: Airflow username, defaults to env `AIRFLOW_USERNAME`/`admin`.
-        password: Airflow password, defaults to env `AIRFLOW_PASSWORD`.
-
-    Raises:
-        RuntimeError: In the fallback case, if no Airflow password is available.
+    Convenience wrapper over ``TokenConfig.from_env(...).create_token_provider()``.
     """
-    token_url = os.getenv("OIDC_TOKEN_URL")
-    client_id = os.getenv("OIDC_CLIENT_ID")
-    if token_url and client_id:
-        return ClientCredentialsTokenProvider(
-            token_url=token_url,
-            client_id=client_id,
-            client_secret=os.getenv("OIDC_CLIENT_SECRET"),
-            audience=os.getenv("OIDC_AUDIENCE", "airflow"),
-        )
-
-    username = username or os.getenv("AIRFLOW_USERNAME") or "admin"
-    password = password or os.getenv("AIRFLOW_PASSWORD")
-    if not password:
-        raise RuntimeError(
-            "missing Airflow password; please set env var AIRFLOW_PASSWORD"
-        )
-    return AirflowNativeTokenProvider(base_url, username=username, password=password)
+    return TokenConfig.from_env(
+        base_url, username=username, password=password
+    ).create_token_provider()
 
 
 def _json_or_raise(response: requests.Response) -> dict:
