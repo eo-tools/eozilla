@@ -254,7 +254,9 @@ class TestKubernetesOperatorHandler(unittest.TestCase):
             image="img",
             inputs={},
             outputs=[],
-            tolerations=[Toleration(key="k", operator="Equal", value="v", effect="NoSchedule")],
+            tolerations=[
+                Toleration(key="k", operator="Equal", value="v", effect="NoSchedule")
+            ],
         )
         rendered = self.handler.render(task)
         self.assertIn("tolerations=_tolerations", rendered)

@@ -3,7 +3,6 @@
 #  https://opensource.org/license/apache-2-0.
 
 from abc import ABC, abstractmethod
-from functools import cached_property
 from typing import TYPE_CHECKING, Literal
 
 from cuiman.api.ishell import has_ishell
@@ -11,7 +10,7 @@ from cuiman.api.ishell import has_ishell
 from .config import ClientConfig
 
 if TYPE_CHECKING:
-    import remotestate as rs
+    from cuiman.app import App
 
 
 class ClientAppMixin(ABC):
@@ -24,33 +23,6 @@ class ClientAppMixin(ABC):
     def config(self) -> ClientConfig:
         """Will be overridden by the actual client class."""
 
-    @cached_property
-    def app_store(self) -> "rs.Store":
-        """
-        Shared state store used by the Cuiman app.
-
-        Use this store to inspect or update the data shown by
-        [show_app()][cuiman.api.client_app_mixin.ClientAppMixin.show_app].
-
-        Currently, the app store comprises a single state variable
-        ``processRequests`` which is a mapping from process ID to
-        process requests. A process request comprises basically two
-        attributes:
-
-        - ``inputs``: a mapping from input name to an input's value.
-        - ``outputs``: the outputs to be generated. Just used to detect
-          whether an output is included or now.
-
-        The most convenient way to work with nested app state is the
-        ``at`` accessor. Examples:
-
-        - ``client.app_store.at.processRequests.myProcess.inputs.threshold = 0.75``
-        - ``client.app_store.at.processRequests.myProcess = {"inputs": {...}}``
-        """
-        from cuiman.app import create_app_remote_store
-
-        return create_app_remote_store()
-
     def show_app(
         self,
         *,
@@ -60,15 +32,41 @@ class ClientAppMixin(ABC):
         width: int | str = "100%",
         height: int | str = 600,
         display: Literal["browser", "notebook", "auto"] = "auto",
-    ) -> "rs.ServeResult":
+    ) -> "App":
         """
         Show the Cuiman app for this client.
 
-        The app connects to this client's API configuration and uses
-        [app_store][cuiman.api.client_app_mixin.ClientAppMixin.app_store] as
-        its shared state. You can keep using ``client.app_store`` while the app
-        is open, including its ``at`` accessor, to interact with the data the
-        app reads and writes.
+        The app connects to this client's API configuration, renders the app GUI,
+        and returns an object that provides the serve result and a shared
+        [app state][cuiman.app.AppState], which you can interact with.
+
+        The app state currently only manages the process requests being
+        edited and executed by a user. The requests are a mapping from process IDs
+        to process requests.
+
+        Display the app and get the app instance:
+
+        ```
+        app = client.show_app()
+        ```
+
+        You can get and set process requests using the methods
+
+        - ``app.get_process_request(process_id)``
+        - ``app.set_process_request(process_id, process_request)``
+
+        where ``process_id`` is the process ID and ``process_request`` is a dict
+        or a ``ProcessRequest`` object that comprises basically two attributes:
+
+        - ``inputs``: a mapping from input name to an input's value.
+        - ``outputs``: the outputs to be generated. Just used to detect
+          whether an output is included or now.
+
+        Another convenient way to work with the nested app state is the
+        ``process_requests`` property:
+
+        - ``app.process_requests.my_process.inputs.threshold = 0.75``
+        - ``app.process_requests.my_process = {"inputs": {...}}``
 
         Args:
             compact: Compact mode. Defaults to True, if ``display`` is "notebook".
@@ -80,19 +78,21 @@ class ClientAppMixin(ABC):
             display: Where to show the app. ``"auto"`` embeds it in notebooks
                 and opens it in a browser otherwise.
         Return:
-            An instance of type ``remotestate.ServeResult``.
+            An ``App`` instance.
         """
-        from cuiman.app import serve
+        from cuiman.app import App, serve
 
         display_ = (
             ("notebook" if has_ishell else "browser") if display == "auto" else display
         )
         compact_ = compact if isinstance(compact, bool) else display_ == "notebook"
 
+        remote_store = App.create_remote_store()
+
         # noinspection PyTypeChecker
-        return serve(
+        serve_result = serve(
             self.config,
-            self.app_store,
+            remote_store,
             compact=compact_,
             debug=debug,
             scheme=scheme,
@@ -100,3 +100,5 @@ class ClientAppMixin(ABC):
             height=height,
             display=display_,
         )
+
+        return App(remote_store, serve_result)

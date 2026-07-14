@@ -15,7 +15,7 @@ DIST_ENV_VAR = "EOZILLA_APP_DIST"
 
 def serve(
     config: ClientConfig,
-    ui_data: rs.Store,
+    store: rs.Store,
     *,
     compact: bool = True,
     debug: bool = False,
@@ -27,7 +27,7 @@ def serve(
     app_dist = _get_app_dist_url_or_dir(os.environ.get(DIST_ENV_VAR))
 
     server = rs.serve(
-        rs.Service(ui_data),
+        rs.Service(store),
         ui_dist=app_dist,
         host="127.0.0.1",
         display="none",

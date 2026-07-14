@@ -15,19 +15,48 @@
 
 ### Enhancements
 
+**Cuiman** enhancements:
 
-- **Appligator** now supports node selectors and tolerations for generated pods via
-  `--node-selector key=value` and `--toleration key:operator[:value[:effect]]` CLI
-  options (both repeatable and configurable via `appligator-config.yaml`).
+- Replaced the [Panel](https://panel.holoviz.org/)-based GUI by a modern
+  web interface, the [Eozilla App](https://github.com/eo-tools/eozilla-app).
+- Updated `notebooks/cuiman-gui.ipynb` to demonstrate new app-based GUI.
+- Added package `cuiman.app` that implements the new app-based GUI.
+
+### Other changes
+
+- Fixed typing in `gavicore.uitil.cli.AliasedGroup` wrt `typer >=0.26.8`.
+- GitHub CI is now also performed for branches named `feature/**`.
+
+Most other changes relate to the replacement of the Panel-based UI: 
+
+- Removed deprecated `wraptile.gui.*` 
+- Removed deprecated `gavicore.ui` (actually _moved_ to https://github.com/bcdev/schema2ui)
+- Removed also `gavicore.util` modules that where only used by the former panel UI:
+  - gavicore.util.json
+  - gavicore.util.text
+  - gavicore.util.undefined
+ - Updated documentation accordingly
+ - Regenerated CLI docs
+ - No longer requiring `panel`, `param`, and other dependencies such as `datamodel-code-generator`.
+
+
+## Changes in version 0.1.2
+
+### Enhancements
+
+- **Appligator** enhancements:
+  - It now supports node selectors and tolerations for generated pods via
+    `--node-selector key=value` and `--toleration key:operator[:value[:effect]]` CLI
+    options (both repeatable and configurable via `appligator-config.yaml`).
+  - In `run_step.py`: function resolution now delegates to
+    `gavicore.util.dynimp.import_value` for consistent dynamic-import error
+    handling, keeping only the procodile-specific Workflow-registry fallback as
+    bespoke logic.
+  - Updated Appligator documentation accordingly.
 - Added `ImageOpener` to **Cuiman**'s job result opener framework, supporting
   all PIL-compatible image formats from both local paths and S3-compatible
   object storage (via the optional `s3fs` package).
-- **Cuiman** has a new experimental, alternative GUI - the Eozilla app. 
-  The app is a native React app that doesn't require 
-  the `panel` library anymore. (#124)
-  - Added a new client method `show_app()` and new property `app_store` to interact 
-    with the app's data state. Renders the app in a notebook cell or a new browser tab.
-  - Added a new CLI command `cuiman show-app`. Opens the app in a new browser tab.
+- Documented the release process. (#149)
 
 ### Fixes
 
@@ -37,7 +66,17 @@
 
 ### Other changes
 
-- Updated appligator docs.
+For upcoming **Cuiman 0.2.0** we decided to no longer use the `panel` library
+for the Cuiman GUI. Therefore, the following items have been deprecated and will 
+be removed in Eozilla 0.2.0:
+
+- the `gavicore.ui` package and the `schema2ui` tool,
+- the `cuiman.gui` package,
+- the `ClientConfig` hook methods,
+  - `accept_process()`, 
+  - `accept_input()`, and
+  - `is_advanced_input()`. 
+
 
 ## Changes in version 0.1.1
 
