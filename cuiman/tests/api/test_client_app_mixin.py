@@ -4,9 +4,9 @@
 
 from __future__ import annotations
 
+import cuiman.api.client_app_mixin as client_app_mixin
 import cuiman.app as app_package
 import cuiman.app.app as app_module
-import cuiman.api.client_app_mixin as client_app_mixin
 from cuiman.api.client_app_mixin import ClientAppMixin
 from cuiman.api.config import ClientConfig
 from cuiman.app import App
@@ -26,7 +26,9 @@ def test_show_app_uses_notebook_display_and_explicit_compact(monkeypatch):
 
     client = FakeAppClient()
 
-    app = client.show_app(compact=False, debug=True, scheme="dark", width="80%", height=400)
+    app = client.show_app(
+        compact=False, debug=True, scheme="dark", width="80%", height=400
+    )
 
     assert len(calls) == 1
     assert calls[0][0][0] == client.config

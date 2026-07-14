@@ -3,7 +3,6 @@
 #  https://opensource.org/license/apache-2-0.
 
 from abc import ABC, abstractmethod
-from functools import cached_property
 from typing import TYPE_CHECKING, Literal
 
 from cuiman.api.ishell import has_ishell
@@ -11,9 +10,7 @@ from cuiman.api.ishell import has_ishell
 from .config import ClientConfig
 
 if TYPE_CHECKING:
-    import remotestate as rs
-
-    from cuiman.app import AppState
+    from cuiman.app import App
 
 
 class ClientAppMixin(ABC):
