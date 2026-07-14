@@ -6,8 +6,8 @@
 
 - Replaced the [Panel](https://panel.holoviz.org/)-based GUI by a modern
   web interface, the [Eozilla App](https://github.com/eo-tools/eozilla-app).
-- Added package `wraptile.app` representing the new app-based GUI
-- Updated `notebooks/cuiman-gui.ipynb` to demonstrate new app-based GUI
+- Updated `notebooks/cuiman-gui.ipynb` to demonstrate new app-based GUI.
+- Added package `cuiman.app` that implements the new app-based GUI.
 
 ### Other changes
 

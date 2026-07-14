@@ -425,16 +425,18 @@ cmd = "python -m tools.sync_versions"
 [tool.pixi.tasks.jl]
 cmd = "jupyter-lab"
 
+# pixi run serve
 
-# pixi run jptr
+[tool.pixi.tasks.serve]
+cmd = "wraptile run -- wraptile.services.local.testing:service"
 
-[tool.pixi.tasks.jptr]
-cmd = "jupyter-lab"
 
-# docs
+# pixi run serve-docs
 
 [tool.pixi.tasks.serve-docs]
 cmd = "mkdocs serve"
+
+# pixi run build-docs
 
 [tool.pixi.tasks.build-docs]
 cmd = "mkdocs build"

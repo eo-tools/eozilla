@@ -9,7 +9,6 @@ import typer.core
 # noinspection PyProtectedMember
 from typer._click import exceptions as click_exceptions
 
-from cuiman.api.auth import AuthType
 from cuiman.api.auth.config import AUTH_TYPE_NAMES
 from cuiman.cli.output import OutputFormat
 from gavicore.util.cli.group import AliasedGroup
@@ -84,7 +83,6 @@ def new_cli(
     help: str | None = None,
     summary: str | None = None,
     version: str | None = None,
-    auth_strategy: AuthType | None = None,
 ) -> typer.Typer:
     """
     Create a server CLI instance for the given, optional name and help text.
@@ -98,8 +96,6 @@ def new_cli(
             if `help` is not provided. Should end with a dot '.'.
         version: Optional version string. If not provided, the
             `cuiman` version will be used.
-        auth_strategy: Optional client authentication strategy.
-            Defaults to no-authentication (`AuthStrategy.NONE`).
     Return:
         a `typer.Typer` instance
     """

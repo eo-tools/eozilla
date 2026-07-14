@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from IPython import display as ipython_display
 
 from cuiman.api.config import ClientConfig
-from cuiman.app.state import AppState
+from cuiman.app import App
 
 serve_module = importlib.import_module("cuiman.app.serve")
 
@@ -35,7 +35,7 @@ def test_serve_returns_server_without_display(monkeypatch):
 
     server = serve_module.serve(
         ClientConfig(api_url="https://api.example.test"),
-        AppState().store,
+        App.create_remote_store(),
         display="none",
     )
 
@@ -58,7 +58,7 @@ def test_serve_opens_browser(monkeypatch):
 
     serve_module.serve(
         ClientConfig(api_url="https://api.example.test"),
-        AppState().store,
+        App.create_remote_store(),
         compact=False,
         debug=True,
         scheme="light",
@@ -99,7 +99,7 @@ def test_serve_displays_in_notebook(monkeypatch):
 
     serve_module.serve(
         ClientConfig(api_url="https://api.example.test"),
-        AppState().store,
+        App.create_remote_store(),
         scheme="auto",
         width="80%",
         height=500,
