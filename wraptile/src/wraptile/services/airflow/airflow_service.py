@@ -5,11 +5,9 @@
 import datetime
 import logging
 import os
-import time
 from typing import Any, Optional
 
 import fastapi
-import requests
 from airflow_client.client import (
     ApiClient,
     ApiException,
@@ -38,15 +36,12 @@ from gavicore.models import (
 )
 from procodile.workflow import FINAL_STEP_ID
 from wraptile.exceptions import ServiceException
+from wraptile.services.airflow.tokens import TokenProvider, create_token_provider
 from wraptile.services.base import ServiceBase
 
 _log = logging.getLogger(__name__)
 
 DEFAULT_AIRFLOW_BASE_URL = "http://localhost:8080"
-
-# Refresh the Keycloak service token this many seconds before it expires so a
-# request never carries an already-expired bearer (Keycloak TTL is ~300s).
-_TOKEN_REFRESH_MARGIN = 30
 
 
 class AirflowService(ServiceBase):
@@ -60,10 +55,7 @@ class AirflowService(ServiceBase):
         self._airflow_base_url: Optional[str] = None
         self._airflow_username: Optional[str] = None
         self._airflow_password: Optional[str] = None
-        # Keycloak client-credentials service token (aud=airflow), cached and
-        # refreshed on expiry, plus the shared ApiClient it authenticates.
-        self._service_token: Optional[str] = None
-        self._service_token_expiry: float = 0.0
+        self._token_provider_instance: Optional[TokenProvider] = None
         self._api_client: Optional[ApiClient] = None
 
     def configure(
@@ -300,7 +292,7 @@ class AirflowService(ServiceBase):
             or os.getenv("AIRFLOW_API_BASE_URL")
             or DEFAULT_AIRFLOW_BASE_URL
         )
-        access_token = self._airflow_access_token(airflow_base_url)
+        access_token = self._token_provider(airflow_base_url).get_token()
         if self._api_client is None:
             self._api_client = ApiClient(
                 Configuration(host=airflow_base_url, access_token=access_token)
@@ -312,83 +304,11 @@ class AirflowService(ServiceBase):
             self._api_client.configuration.access_token = access_token
         return self._api_client
 
-    def _airflow_access_token(self, base_url: str) -> str:
-        """Bearer token for the wraptile->airflow hop.
-
-        Keycloak mode (recommended): mint a client_credentials token
-        (aud=airflow) validated by the Envoy gateway's SecurityPolicy. Selected
-        when the KEYCLOAK_TOKEN_URL / WRAPTILE_CLIENT_ID env vars are present.
-
-        Basic mode (legacy fallback): fetch Airflow's own token via username /
-        password against its native /auth/token endpoint.
-        """
-        if os.getenv("KEYCLOAK_TOKEN_URL") and os.getenv("WRAPTILE_CLIENT_ID"):
-            return self._fetch_keycloak_service_token()
-        airflow_username: str = (
-            self._airflow_username or os.getenv("AIRFLOW_USERNAME") or "admin"
-        )
-        airflow_password = self._airflow_password or os.getenv("AIRFLOW_PASSWORD")
-        if not airflow_password:
-            raise RuntimeError(
-                "missing Airflow password; please set env var AIRFLOW_PASSWORD"
+    def _token_provider(self, base_url: str) -> TokenProvider:
+        if self._token_provider_instance is None:
+            self._token_provider_instance = create_token_provider(
+                base_url,
+                username=self._airflow_username,
+                password=self._airflow_password,
             )
-        return self.fetch_access_token(
-            base_url,
-            username=airflow_username,
-            password=airflow_password,
-        )
-
-    def _fetch_keycloak_service_token(self) -> str:
-        """client_credentials grant for the wraptile->airflow hop (aud=airflow).
-
-        Cached and refreshed shortly before expiry so we don't fetch a token
-        per request.
-        """
-        now = time.monotonic()
-        if self._service_token and now < self._service_token_expiry:
-            return self._service_token
-        response = requests.post(
-            os.environ["KEYCLOAK_TOKEN_URL"],
-            data={
-                "grant_type": "client_credentials",
-                "client_id": os.environ["WRAPTILE_CLIENT_ID"],
-                "client_secret": os.environ["WRAPTILE_CLIENT_SECRET"],
-                # The confidential client's audience mapper already stamps
-                # aud=airflow; sending it explicitly is harmless and defensive.
-                "audience": os.getenv("KEYCLOAK_AUDIENCE", "airflow"),
-            },
-            timeout=10,
-        )
-        try:
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            raise ServiceException(
-                response.status_code, detail=response.reason or str(e), exception=e
-            ) from e
-        token_data = response.json()
-        self._service_token = token_data["access_token"]
-        self._service_token_expiry = (
-            now + token_data.get("expires_in", 300) - _TOKEN_REFRESH_MARGIN
-        )
-        return self._service_token
-
-    @classmethod
-    def fetch_access_token(
-        cls,
-        base_url: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-    ) -> str:
-        response = requests.post(
-            f"{base_url}/auth/token",
-            json={"username": username, "password": password},
-            timeout=10,
-        )
-        try:
-            response.raise_for_status()
-            token_data = response.json()
-            return token_data.get("access_token")
-        except requests.exceptions.HTTPError as e:
-            raise ServiceException(
-                response.status_code, detail=response.reason or str(e), exception=e
-            ) from e
+        return self._token_provider_instance
