@@ -15,6 +15,7 @@ from cuiman.api.auth.login import LoginResult
 
 # noinspection PyProtectedMember
 from cuiman.cli.cli import _wait_until_interrupted, cli, new_cli
+from gavicore.util.testing import use_temp_dir
 
 from ..helpers import MockTransport
 
@@ -128,7 +129,7 @@ class CliTest(TestCase):
         def get_mock_client(_config_path: str | None):
             return Client(api_url="https://abc.de", _transport=MockTransport())
 
-        with runner.isolated_filesystem():
+        with use_temp_dir():
             result = runner.invoke(
                 cli,
                 ["generate-client", "acme"],
