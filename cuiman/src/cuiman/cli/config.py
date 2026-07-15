@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 from typing import Any
 
-import click
 import typer
 from pydantic import BaseModel
 
@@ -20,14 +19,11 @@ def get_config(config_path: Path | str | None) -> ClientConfig:
     file_config = ClientConfig.from_file(config_path=config_path)
     if file_config is None:
         if config_path is None:
-            raise click.ClickException(
-                "The client tool has not yet been configured;"
-                " please use the 'configure' command to set it up."
+            raise ValueError(
+                "The client tool has not yet been configured; "
+                "please use the 'configure' command to set it up."
             )
-        else:
-            raise click.ClickException(
-                f"Configuration file {config_path} not found or empty."
-            )
+        raise ValueError(f"Configuration file {config_path} not found or empty.")
     return ClientConfig.create(config=file_config)
 
 
@@ -54,13 +50,7 @@ def configure_client_with_prompt(
 
     # TODO: add URL validator
     _prompt_for_str(ctx, "api_url", "Process API URL", DEFAULT_API_URL)
-    auth_type = _prompt_for_str(
-        ctx,
-        "auth_type",
-        "API authorisation type",
-        DEFAULT_AUTH_TYPE,
-        choice=click.Choice(AUTH_TYPE_NAMES, case_sensitive=False),
-    )
+    auth_type = _prompt_for_auth_type(ctx)
     if auth_type and auth_type != "none":
         _configure_auth_with_prompt(ctx, auth_type)
 
@@ -123,15 +113,28 @@ def _configure_token_type_with_prompt(ctx: _Context) -> None:
         _prompt_for_str(ctx, "token_header", "Access token header", "X-Auth-Token")
 
 
-def _prompt_for_str(
-    ctx: _Context, key: str, text: str, default: str, choice: click.Choice | None = None
-) -> str:
+def _prompt_for_auth_type(ctx: _Context) -> str:
+    auth_type = _prompt_for_str(
+        ctx,
+        "auth_type",
+        f"API authorisation type ({'|'.join(AUTH_TYPE_NAMES)})",
+        DEFAULT_AUTH_TYPE,
+    ).casefold()
+    if auth_type not in AUTH_TYPE_NAMES:
+        raise ValueError(
+            f"Invalid authentication type: {auth_type}. "
+            f"Expected one of: {', '.join(AUTH_TYPE_NAMES)}."
+        )
+    return auth_type
+
+
+def _prompt_for_str(ctx: _Context, key: str, text: str, default: str) -> str:
     value: str | None = ctx.cli_params.get(key)
     if value is None:
         value = (
             typer.prompt(
                 text,
-                type=choice or str,
+                type=str,
                 default=ctx.prev_params.get(key) or default,
             )
             or ""

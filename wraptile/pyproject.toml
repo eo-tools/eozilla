@@ -43,7 +43,7 @@ dependencies = [
   "fastapi",
   "pydantic",
   "pyyaml",
-  "typer",
+  "typer >=0.26.0,<1",
   "uvicorn",
   # local dependency
   "gavicore >=0.2.0.dev0",

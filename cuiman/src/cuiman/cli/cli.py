@@ -6,9 +6,6 @@ from typing import Annotated, Final, Optional
 
 import typer.core
 
-# noinspection PyProtectedMember
-from typer._click import exceptions as click_exceptions
-
 from cuiman.api.auth.config import AUTH_TYPE_NAMES
 from cuiman.cli.output import OutputFormat
 from gavicore.util.cli.group import AliasedGroup
@@ -145,7 +142,11 @@ def new_cli(
             from cuiman import Client
             from cuiman.cli.config import get_config
 
-            config = get_config(config_path)
+            try:
+                config = get_config(config_path)
+            except ValueError as exc:
+                typer.echo(str(exc), err=True)
+                raise typer.Exit(code=1) from exc
             # "pragma: no cover" is here because coverage reports
             # the next line as uncovered, but that's definitely no true.
             return Client(config=config)  # pragma: no cover
@@ -245,23 +246,26 @@ def new_cli(
         from .config import configure_client_with_prompt
 
         if auth_type is not None and auth_type not in AUTH_TYPE_NAMES:
-            raise click_exceptions.ClickException(
-                f"Invalid authentication type: {auth_type}"
-            )
+            typer.echo(f"Invalid authentication type: {auth_type}", err=True)
+            raise typer.Exit(code=1)
 
-        config_path = configure_client_with_prompt(
-            config_path=config_file,
-            api_url=api_url,
-            auth_type=auth_type,  # type: ignore[arg-type]
-            auth_url=auth_url,
-            client_id=client_id,
-            client_secret=client_secret,
-            username=username,
-            password=password,
-            token=token,
-            use_bearer=use_bearer,
-            token_header=token_header,
-        )
+        try:
+            config_path = configure_client_with_prompt(
+                config_path=config_file,
+                api_url=api_url,
+                auth_type=auth_type,  # type: ignore[arg-type]
+                auth_url=auth_url,
+                client_id=client_id,
+                client_secret=client_secret,
+                username=username,
+                password=password,
+                token=token,
+                use_bearer=use_bearer,
+                token_header=token_header,
+            )
+        except ValueError as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=1) from exc
         typer.echo(f"Client configuration written to {config_path}")
 
     @t.command()

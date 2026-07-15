@@ -5,8 +5,9 @@
 import unittest
 
 import pytest
-from typer._click import core as click
+import typer
 from typer.core import TyperCommand
+from typer.testing import CliRunner
 
 from gavicore.util.cli.group import AliasedGroup
 
@@ -24,14 +25,14 @@ class AliasedGroupTest(unittest.TestCase):
         self.assert_alias_ok("test-command-b", "tcb")
 
     def test_get_command_fail(self):
-        ctx = click.Context(self.group)
-        with pytest.raises(click.UsageError):
+        ctx = typer.Context(self.group)
+        with pytest.raises(typer.BadParameter, match="Too many matches"):
             self.group.get_command(ctx, "tcc")
         self.assertIsNone(self.group.get_command(ctx, "test-command-d"))
         self.assertIsNone(self.group.get_command(ctx, "tcd"))
 
     def assert_alias_ok(self, command_name, command_alias_name):
-        ctx = click.Context(self.group)
+        ctx = typer.Context(self.group)
         command = self.group.get_command(ctx, command_name)
         self.assertIsNotNone(command)
         self.assertEqual(command_name, command.name)
@@ -40,19 +41,29 @@ class AliasedGroupTest(unittest.TestCase):
         self.assertEqual(command_name, alias_command.name)
 
     def test_resolve_command_ok(self):
-        ctx = click.Context(self.group)
+        ctx = typer.Context(self.group)
         result = self.group.resolve_command(ctx, ["tcb"])
         self.assertIsInstance(result, tuple)
         self.assertEqual(3, len(result))
         self.assertEqual("test-command-b", result[0])
-        self.assertIsInstance(result[1], click.Command)
+        self.assertIsInstance(result[1], TyperCommand)
         self.assertEqual([], result[2])
 
     def test_resolve_command_fail(self):
-        ctx = click.Context(self.group, resilient_parsing=True)
+        ctx = typer.Context(self.group, resilient_parsing=True)
         result = self.group.resolve_command(ctx, ["tcx"])
         self.assertEqual((None, None, []), result)
 
-        ctx = click.Context(self.group, resilient_parsing=False)
-        with pytest.raises(click.UsageError):
-            self.group.resolve_command(ctx, ["tcx"])
+        app = typer.Typer(cls=AliasedGroup)
+
+        @app.command("test-command")
+        def test_command():
+            pass
+
+        @app.command("other-command")
+        def other_command():
+            pass
+
+        result = CliRunner().invoke(app, ["tcx"])
+        self.assertEqual(2, result.exit_code)
+        self.assertIn("No such command", result.output)

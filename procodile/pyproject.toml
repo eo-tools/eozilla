@@ -42,7 +42,7 @@ requires-python = ">=3.10"
 dependencies = [
   "pydantic",
   "pyyaml",
-  "typer",
+  "typer >=0.26.0,<1",
   # local dependency
   "gavicore >=0.2.0.dev0",
 ]
