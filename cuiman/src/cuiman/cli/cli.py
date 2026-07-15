@@ -4,10 +4,8 @@
 
 from typing import Annotated, Final, Optional
 
-import click
 import typer.core
 
-from cuiman.api.auth import AuthType
 from cuiman.api.auth.config import AUTH_TYPE_NAMES
 from cuiman.cli.output import OutputFormat
 from gavicore.util.cli.group import AliasedGroup
@@ -56,6 +54,12 @@ CONFIG_OPTION = typer.Option(
     metavar="PATH",
 )
 
+DEBUG_OPTION = typer.Option(
+    "--debug",
+    "-d",
+    help="Output debugging information to the browser's dev console.",
+)
+
 FORMAT_OPTION = typer.Option(
     ...,
     "--format",
@@ -76,7 +80,6 @@ def new_cli(
     help: str | None = None,
     summary: str | None = None,
     version: str | None = None,
-    auth_strategy: AuthType | None = None,
 ) -> typer.Typer:
     """
     Create a server CLI instance for the given, optional name and help text.
@@ -90,8 +93,6 @@ def new_cli(
             if `help` is not provided. Should end with a dot '.'.
         version: Optional version string. If not provided, the
             `cuiman` version will be used.
-        auth_strategy: Optional client authentication strategy.
-            Defaults to no-authentication (`AuthStrategy.NONE`).
     Return:
         a `typer.Typer` instance
     """
@@ -141,7 +142,11 @@ def new_cli(
             from cuiman import Client
             from cuiman.cli.config import get_config
 
-            config = get_config(config_path)
+            try:
+                config = get_config(config_path)
+            except ValueError as exc:
+                typer.echo(str(exc), err=True)
+                raise typer.Exit(code=1) from exc
             # "pragma: no cover" is here because coverage reports
             # the next line as uncovered, but that's definitely no true.
             return Client(config=config)  # pragma: no cover
@@ -241,21 +246,26 @@ def new_cli(
         from .config import configure_client_with_prompt
 
         if auth_type is not None and auth_type not in AUTH_TYPE_NAMES:
-            raise click.ClickException(f"Invalid authentication type: {auth_type}")
+            typer.echo(f"Invalid authentication type: {auth_type}", err=True)
+            raise typer.Exit(code=1)
 
-        config_path = configure_client_with_prompt(
-            config_path=config_file,
-            api_url=api_url,
-            auth_type=auth_type,  # type: ignore[arg-type]
-            auth_url=auth_url,
-            client_id=client_id,
-            client_secret=client_secret,
-            username=username,
-            password=password,
-            token=token,
-            use_bearer=use_bearer,
-            token_header=token_header,
-        )
+        try:
+            config_path = configure_client_with_prompt(
+                config_path=config_file,
+                api_url=api_url,
+                auth_type=auth_type,  # type: ignore[arg-type]
+                auth_url=auth_url,
+                client_id=client_id,
+                client_secret=client_secret,
+                username=username,
+                password=password,
+                token=token,
+                use_bearer=use_bearer,
+                token_header=token_header,
+            )
+        except ValueError as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=1) from exc
         typer.echo(f"Client configuration written to {config_path}")
 
     @t.command()
@@ -477,7 +487,32 @@ def new_cli(
             job_results = client.get_job_results(job_id)
         output(get_renderer(output_format).render_job_results(job_results))
 
+    @t.command()
+    def show_app(
+        ctx: typer.Context,
+        config_file: Annotated[Optional[str], CONFIG_OPTION] = None,
+        debug: Annotated[bool, DEBUG_OPTION] = False,
+    ):
+        """Show the client app in a browser."""
+        from .client import use_client
+
+        with use_client(ctx, config_file) as client:
+            client.show_app(display="browser", debug=debug)
+            _wait_until_interrupted()
+
     return t
+
+
+def _wait_until_interrupted() -> None:
+    """Used by 'cuiman show-app'."""
+    import time
+
+    typer.echo("App is running. Press Ctrl+C to stop.")
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        typer.echo("Stopping app.")
 
 
 cli: typer.Typer = new_cli()

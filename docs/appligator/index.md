@@ -5,7 +5,7 @@ they can be recognized and executed by specific workflow orchestrators.
 
 Currently, Appligator can generate [Docker](https://www.docker.com/) images 
 and [Apache Airflow](https://airflow.apache.org/) DAGs from processes written with 
-[Procodile](../procodile/introduction.md). 
+[Procodile](../procodile/index.md). 
 
 In the future we will also allow targeting other workflow orchestration backends, 
 especially by generating

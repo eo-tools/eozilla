@@ -9,8 +9,10 @@ import pytest
 
 from cuiman.api.async_client import AsyncClient
 from cuiman.api.client import Client
+from cuiman.api.exceptions import ClientError, ClientWarning
 from cuiman.api.opener import JobResultStatusError
 from gavicore.models import (
+    ApiError,
     JobInfo,
     JobResults,
     JobStatus,
@@ -47,6 +49,10 @@ def mk_job_results():
 
 def mk_process_description():
     return ProcessDescription(id="test", version="0.0.0")
+
+
+def mk_client_error():
+    return ClientError("boom", ApiError(type="server"))
 
 
 successful_run = [JobStatus.accepted, JobStatus.running, JobStatus.successful]
@@ -117,6 +123,29 @@ class ClientOpenJobResultTest(TestCase):
             client.open_job_result(
                 "job_12", timeout=timeout, poll_interval=poll_interval
             )
+
+    @patch.object(Client, "get_job", return_value=mk_job_info(JobStatus.successful))
+    @patch.object(Client, "get_job_results", return_value=mk_job_results())
+    @patch.object(Client, "get_process", side_effect=mk_client_error())
+    def test_process_description_error_warns(
+        self,
+        _get_job: MagicMock,
+        _get_job_results: MagicMock,
+        _get_process: MagicMock,
+    ):
+        client = Client(api_url="https://acme.ogc.org/api")
+        client.config.register_job_result_opener(AllOpener)
+
+        with pytest.warns(
+            ClientWarning,
+            match=(
+                "An error occurred while getting process "
+                "description for process ID 'test'"
+            ),
+        ):
+            result = client.open_job_result("job_12", timeout=30, poll_interval=0.01)
+
+        self.assertIsInstance(result, JobResults)
 
 
 class AsyncClientOpenJobResultTest(IsolatedAsyncioTestCase):
@@ -223,3 +252,43 @@ class AsyncClientOpenJobResultTest(IsolatedAsyncioTestCase):
             await client.open_job_result(
                 "job_12", timeout=timeout, poll_interval=poll_interval
             )
+
+    @patch.object(
+        AsyncClient,
+        "get_job",
+        return_value=mk_job_info(JobStatus.successful),
+        new_callable=AsyncMock,
+    )
+    @patch.object(
+        AsyncClient,
+        "get_job_results",
+        return_value=mk_job_results(),
+        new_callable=AsyncMock,
+    )
+    @patch.object(
+        AsyncClient,
+        "get_process",
+        side_effect=mk_client_error(),
+        new_callable=AsyncMock,
+    )
+    async def test_process_description_error_warns(
+        self,
+        _get_job: MagicMock,
+        _get_job_results: MagicMock,
+        _get_process: MagicMock,
+    ):
+        client = AsyncClient(api_url="https://acme.ogc.org/api")
+        client.config.register_job_result_opener(AllOpener)
+
+        with pytest.warns(
+            ClientWarning,
+            match=(
+                "An error occurred while getting process "
+                "description for process ID 'test'"
+            ),
+        ):
+            result = await client.open_job_result(
+                "job_12", timeout=30, poll_interval=0.01
+            )
+
+        self.assertIsInstance(result, JobResults)

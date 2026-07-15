@@ -158,7 +158,7 @@ class HttpxSyncTransportTest(TestCase):
         with pytest.raises(ClientError, match="This is no JSON") as e:
             transport.call(args)
         ce: ClientError = e.value
-        self.assertEqual("This is no JSON", str(ce))
+        self.assertEqual("Failed parsing JSON API response: This is no JSON", str(ce))
         self.assertEqual(
             ApiError(
                 type="ValueError",

@@ -226,6 +226,56 @@ class TestKubernetesOperatorHandler(unittest.TestCase):
         self.assertIn("requests=", rendered)
         self.assertNotIn("limits=", rendered)
 
+    def test_render_with_node_selector(self):
+        from appligator.airflow.models import Toleration
+
+        task = TaskIR(
+            id="t",
+            runtime="kubernetes",
+            func_module="m",
+            func_qualname="f",
+            image="img",
+            inputs={},
+            outputs=[],
+            node_selector={"pool": "airflow-workers-big"},
+        )
+        rendered = self.handler.render(task)
+        self.assertIn("node_selector=_node_selector", rendered)
+        self.assertNotIn("tolerations=_tolerations", rendered)
+
+    def test_render_with_tolerations(self):
+        from appligator.airflow.models import Toleration
+
+        task = TaskIR(
+            id="t",
+            runtime="kubernetes",
+            func_module="m",
+            func_qualname="f",
+            image="img",
+            inputs={},
+            outputs=[],
+            tolerations=[
+                Toleration(key="k", operator="Equal", value="v", effect="NoSchedule")
+            ],
+        )
+        rendered = self.handler.render(task)
+        self.assertIn("tolerations=_tolerations", rendered)
+        self.assertNotIn("node_selector=_node_selector", rendered)
+
+    def test_no_node_selector_or_tolerations_when_not_set(self):
+        task = TaskIR(
+            id="t",
+            runtime="kubernetes",
+            func_module="m",
+            func_qualname="f",
+            image="img",
+            inputs={},
+            outputs=[],
+        )
+        rendered = self.handler.render(task)
+        self.assertNotIn("node_selector=", rendered)
+        self.assertNotIn("tolerations=", rendered)
+
     def test_no_volume_blocks_when_no_mounts(self):
         task = TaskIR(
             id="t",

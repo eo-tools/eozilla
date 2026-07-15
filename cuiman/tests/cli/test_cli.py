@@ -4,14 +4,17 @@
 
 from pathlib import Path
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+import remotestate as rs
 import typer.testing
 import yaml
 
 from cuiman import Client, __version__
 from cuiman.api.auth.login import LoginResult
-from cuiman.cli.cli import cli, new_cli
+
+# noinspection PyProtectedMember
+from cuiman.cli.cli import _wait_until_interrupted, cli, new_cli
 
 from ..helpers import MockTransport
 
@@ -38,7 +41,7 @@ class CliTest(TestCase):
     @patch("cuiman.cli.config.login_for_tokens")
     def test_configure(self, mock_login):
         mock_login.return_value = LoginResult(
-            access_token="dummy-token",
+            access_token="dummy-token",  # noqa: S106
             refresh_token="dummy-refresh",  # noqa: S106
         )
         config_path = Path("config.cfg")
@@ -104,6 +107,15 @@ class CliTest(TestCase):
         self.assertTrue("Invalid authentication type: torken" in result.stderr)
         if config_path.exists():
             config_path.unlink()
+
+    @patch("cuiman.cli.config.configure_client_with_prompt")
+    def test_configure_with_configuration_error(self, mock_configure):
+        mock_configure.side_effect = ValueError("bad config")
+
+        result = invoke_cli("configure")
+
+        self.assertEqual(1, result.exit_code, msg=self.get_result_msg(result))
+        self.assertEqual("bad config\n", result.stderr)
 
     def test_get_processes(self):
         result = invoke_cli("list-processes")
@@ -178,6 +190,27 @@ class CliTest(TestCase):
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual("null\n...\n\n", result.output)
 
+    @patch("cuiman.cli.cli._wait_until_interrupted")
+    @patch("cuiman.app.serve")
+    def test_show_app(self, mock_serve, mock_wait_until_interrupted):
+        mock_serve.return_value = MagicMock(spec=rs.ServeResult)
+
+        result = invoke_cli("show-app")
+
+        self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+        mock_serve.assert_called_once()
+        mock_wait_until_interrupted.assert_called_once()
+        self.assertEqual("browser", mock_serve.call_args.kwargs["display"])
+
+    @patch("typer.echo")
+    @patch("time.sleep", side_effect=KeyboardInterrupt)
+    def test_wait_until_interrupted(self, mock_sleep, mock_echo):
+        _wait_until_interrupted()
+
+        mock_sleep.assert_called_once_with(1)
+        mock_echo.assert_any_call("App is running. Press Ctrl+C to stop.")
+        mock_echo.assert_any_call("Stopping app.")
+
     @classmethod
     def get_result_msg(cls, result: typer.testing.Result):
         if result.exit_code != 0:
@@ -191,6 +224,16 @@ class CliTest(TestCase):
 
 
 class CliWithRealClientTest(TestCase):
+    @patch("cuiman.cli.config.get_config")
+    def test_get_processes_configuration_error(self, mock_get_config):
+        mock_get_config.side_effect = ValueError("missing config")
+
+        runner = typer.testing.CliRunner()
+        result = runner.invoke(cli, ["list-processes"])
+
+        self.assertEqual(1, result.exit_code)
+        self.assertEqual("missing config\n", result.stderr)
+
     def test_get_processes(self):
         """Test code in app so that the non-mocked Client is used."""
         runner = typer.testing.CliRunner()

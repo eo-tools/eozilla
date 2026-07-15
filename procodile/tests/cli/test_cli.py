@@ -82,7 +82,10 @@ class CliTestMixin:
     def test_execute_process_fail(self):
         result = self.invoke_cli("execute-process", "f5")
         self.assertEqual(1, result.exit_code, msg=self.get_result_msg(result))
-        self.assertIn("Process 'f5' not found.", result.output)
+        self.assertTrue(
+            "Process 'f5' not found." in result.output
+            or "Process 'f5' not found." in result.stderr
+        )
 
     def test_list_processes(self):
         result = self.invoke_cli("list-processes")
@@ -148,7 +151,10 @@ class CliTestMixin:
     def test_get_process_fail(self):
         result = self.invoke_cli("get-process", "f9")
         self.assertEqual(1, result.exit_code, msg=self.get_result_msg(result))
-        self.assertIn("Process 'f9' not found.", result.output)
+        self.assertTrue(
+            "Process 'f9' not found." in result.output
+            or "Process 'f9' not found." in result.stderr
+        )
 
     def test_help(self):
         result = self.invoke_cli("--help")

@@ -17,7 +17,7 @@ CLI_NAME = "appligator"
 cli = typer.Typer(name=CLI_NAME)
 
 
-@cli.command()
+@cli.command(name=CLI_NAME)
 def main(
     process_registry_spec: Annotated[
         str | None,
@@ -122,6 +122,27 @@ def main(
             ),
         ),
     ] = None,
+    node_selector: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--node-selector",
+            help=(
+                "Node selector label for every pod. "
+                "Format: key=value (e.g. --node-selector pool=airflow-workers-big). Repeatable."
+            ),
+        ),
+    ] = None,
+    tolerations: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--toleration",
+            help=(
+                "Toleration for every pod. "
+                "Format: key:operator[:value[:effect]] "
+                "(e.g. --toleration airflow/component:Equal:worker:NoSchedule). Repeatable."
+            ),
+        ),
+    ] = None,
 ):
     """
     Generate various application formats from your processes.
@@ -143,7 +164,12 @@ def main(
     from appligator import __version__
     from appligator.airflow.gen_image import gen_image
     from appligator.airflow.gen_workflow_dag import gen_workflow_dag
-    from appligator.airflow.models import ConfigMapMount, PvcMount, ResourceRequirements
+    from appligator.airflow.models import (
+        ConfigMapMount,
+        PvcMount,
+        ResourceRequirements,
+        Toleration,
+    )
     from appligator.config import AppligatorConfig, load_config
     from gavicore.util.dynimp import import_value
     from procodile import ProcessRegistry
@@ -225,6 +251,39 @@ def main(
         else cfg.config_map_mounts
     )
 
+    parsed_node_selector: dict[str, str] = {}
+    for spec in node_selector or []:
+        if "=" not in spec:
+            typer.echo(f"Error: --node-selector must be key=value, got: {spec!r}")
+            raise typer.Exit(1)
+        k, v = spec.split("=", 1)
+        parsed_node_selector[k] = v
+    effective_node_selector = (
+        parsed_node_selector
+        if node_selector is not None
+        else (cfg.node_selector or None)
+    )
+
+    parsed_tolerations: list[Toleration] = []
+    for spec in tolerations or []:
+        parts = spec.split(":", 3)
+        if len(parts) < 2:  # noqa: PLR2004
+            typer.echo(
+                f"Error: --toleration must be key:operator[:value[:effect]], got: {spec!r}"
+            )
+            raise typer.Exit(1)
+        parsed_tolerations.append(
+            Toleration(
+                key=parts[0],
+                operator=parts[1],
+                value=parts[2] if len(parts) > 2 and parts[2] else None,  # noqa: PLR2004
+                effect=parts[3] if len(parts) > 3 and parts[3] else None,  # noqa: PLR2004
+            )
+        )
+    effective_tolerations = (
+        parsed_tolerations if tolerations is not None else (cfg.tolerations or None)
+    )
+
     process_registry: ProcessRegistry = import_value(
         process_registry_spec,
         type=ProcessRegistry,
@@ -259,9 +318,11 @@ def main(
             resources=resources,
             pvc_mounts=effective_pvc_mounts or None,
             config_map_mounts=effective_config_map_mounts or None,
+            node_selector=effective_node_selector or None,
+            tolerations=effective_tolerations or None,
         )
         dag_file = dags_folder / f"{file_stem}.py"
-        with dag_file.open("w") as stream:
+        with dag_file.open("w", encoding="utf-8") as stream:
             stream.write(
                 f"# WARNING - THIS IS GENERATED CODE\n"
                 f"#   Generator: Eozilla Appligator v{__version__}\n"

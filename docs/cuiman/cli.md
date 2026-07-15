@@ -12,7 +12,7 @@ For details see https://ogcapi.ogc.org/processes/.
 You can use shorter command name aliases, e.g., use command name `vr`
 for `validate-request`, or `lp` for `list-processes`.
 
-The tool&#x27;s exit codes are as follows:
+The tool's exit codes are as follows:
 
 * `0` - normal exit
 * `1` - user errors, argument errors
@@ -21,7 +21,7 @@ The tool&#x27;s exit codes are as follows:
 
 If the `--traceback` flag is set, the original Python exception traceback
 will be shown and the exit code will always be `1`. 
-Otherwise, only the error message is shown.
+Otherwise, only the error message is shown. 
 
 **Usage**:
 
@@ -50,6 +50,7 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 * `get-job`: Get job details.
 * `dismiss-job`: Cancel a running or delete a finished job.
 * `get-job-results`: Get job results.
+* `show-app`: Show the client app in a browser.
 
 ## `cuiman configure`
 
@@ -65,7 +66,7 @@ $ cuiman configure [OPTIONS]
 
 * `--api-url TEXT`: The URL of a service complying to the OGC API - Processes.
 * `-a, --auth-type TEXT`: The authorisation method for the API (none|basic|token|login|api-key).
-* `--auth-url TEXT`: The URL of the authorisation service for the API
+* `--auth-url TEXT`: The URL of the authorisation service for the API 
 * `-u, --username TEXT`: Username.
 * `-p, --password TEXT`: Password.
 * `--client-id TEXT`: OAuth2 client ID for login authentication.
@@ -183,7 +184,7 @@ $ cuiman validate-request [OPTIONS] [PROCESS_ID]
 
 * `-d, --dotpath`: Input names use dot-path notion to encode nested values, e.g., `-i scene.colors.bg=red`.
 * `-i, --input [NAME=VALUE]...`: Process input value.
-* `-r, --request PATH`: Execution request file. Use `-` to read from &lt;stdin&gt;.
+* `-r, --request PATH`: Execution request file. Use `-` to read from <stdin>.
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
 * `--help`: Show this message and exit.
 
@@ -213,7 +214,7 @@ $ cuiman execute-process [OPTIONS] [PROCESS_ID]
 * `-d, --dotpath`: Input names use dot-path notion to encode nested values, e.g., `-i scene.colors.bg=red`.
 * `-i, --input [NAME=VALUE]...`: Process input value.
 * `-s, --subscriber [NAME=URL]...`: Process subscriber URL.
-* `-r, --request PATH`: Execution request file. Use `-` to read from &lt;stdin&gt;.
+* `-r, --request PATH`: Execution request file. Use `-` to read from <stdin>.
 * `-c, --config PATH`: Client configuration file.
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
 * `--help`: Show this message and exit.
@@ -292,4 +293,20 @@ $ cuiman get-job-results [OPTIONS] JOB_ID
 
 * `-c, --config PATH`: Client configuration file.
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
+* `--help`: Show this message and exit.
+
+## `cuiman show-app`
+
+Show the client app in a browser.
+
+**Usage**:
+
+```console
+$ cuiman show-app [OPTIONS]
+```
+
+**Options**:
+
+* `-c, --config PATH`: Client configuration file.
+* `-d, --debug`: Output debugging information to the browser's dev console.
 * `--help`: Show this message and exit.
