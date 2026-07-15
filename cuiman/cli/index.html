@@ -456,6 +456,8 @@
       
         
       
+        
+      
     
     
     
@@ -545,6 +547,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../appligator/gen_dockerfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generating Dockerfiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../appligator/cli/" class="md-nav__link">
         
   
@@ -552,7 +582,7 @@
   <span class="md-ellipsis">
     
   
-    CLI
+    CLI Reference
   
 
     
@@ -2236,7 +2266,7 @@ herewith resembles the core functionality of the OGC API - Processes, Part 1.
 For details see https://ogcapi.ogc.org/processes/.</p>
 <p>You can use shorter command name aliases, e.g., use command name <code>vr</code>
 for <code>validate-request</code>, or <code>lp</code> for <code>list-processes</code>.</p>
-<p>The tool&#x27;s exit codes are as follows:</p>
+<p>The tool's exit codes are as follows:</p>
 <ul>
 <li><code>0</code> - normal exit</li>
 <li><code>1</code> - user errors, argument errors</li>
@@ -2245,7 +2275,7 @@ for <code>validate-request</code>, or <code>lp</code> for <code>list-processes</
 </ul>
 <p>If the <code>--traceback</code> flag is set, the original Python exception traceback
 will be shown and the exit code will always be <code>1</code>. 
-Otherwise, only the error message is shown.</p>
+Otherwise, only the error message is shown. </p>
 <p><strong>Usage</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="gp">$ </span>cuiman<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
 </code></pre></div>
@@ -2279,24 +2309,17 @@ Otherwise, only the error message is shown.</p>
 <ul>
 <li><code>--api-url TEXT</code>: The URL of a service complying to the OGC API - Processes.</li>
 <li><code>-a, --auth-type TEXT</code>: The authorisation method for the API (none|basic|token|login|api-key).</li>
-<li><code>--auth-url TEXT</code>: The URL of the authorisation service for the API.</li>
-<li><code>--client-id TEXT</code>: OAuth2 client ID (used with <code>auth_type=login</code>).</li>
-<li><code>--client-secret TEXT</code>: OAuth2 client secret (optional for public clients).</li>
+<li><code>--auth-url TEXT</code>: The URL of the authorisation service for the API </li>
 <li><code>-u, --username TEXT</code>: Username.</li>
 <li><code>-p, --password TEXT</code>: Password.</li>
+<li><code>--client-id TEXT</code>: OAuth2 client ID for login authentication.</li>
+<li><code>--client-secret TEXT</code>: OAuth2 client secret for login authentication.</li>
 <li><code>-t, --token TEXT</code>: Access token.</li>
 <li><code>--use-bearer</code>: Use bearer token?</li>
-<li><code>--token-header TEXT</code>: Access token header.</li>
+<li><code>--token-header TEXT</code>: Access token header</li>
 <li><code>-c, --config PATH</code>: Client configuration file.</li>
 <li><code>--help</code>: Show this message and exit.</li>
 </ul>
-<p>For <code>auth_type=login</code>, the configure command performs a login call using the
-OAuth2 Resource Owner Password Credentials grant and stores the returned access
-token and (if provided) the <code>refresh_token</code> in the config file. When a refresh
-token is present, <code>cuiman</code> automatically refreshes on HTTP 401 and retries once.</p>
-<p>Any <code>EOZILLA_*</code> environment variables (e.g. <code>EOZILLA_CLIENT_ID</code>,
-<code>EOZILLA_AUTH_URL</code>) are pre-filled as defaults in the interactive prompts,
-so they can be confirmed or overridden rather than re-typed each time.</p>
 <h2 id="cuiman-list-processes"><code>cuiman list-processes</code></h2>
 <p>List available processes.</p>
 <p><strong>Usage</strong>:</p>
@@ -2361,7 +2384,7 @@ settings with the same name found in the given request file or <code>stdin</code
 <ul>
 <li><code>-d, --dotpath</code>: Input names use dot-path notion to encode nested values, e.g., <code>-i scene.colors.bg=red</code>.</li>
 <li><code>-i, --input [NAME=VALUE]...</code>: Process input value.</li>
-<li><code>-r, --request PATH</code>: Execution request file. Use <code>-</code> to read from &lt;stdin&gt;.</li>
+<li><code>-r, --request PATH</code>: Execution request file. Use <code>-</code> to read from <stdin>.</li>
 <li><code>-f, --format [simple|json|yaml]</code>: Output format.  [default: yaml]</li>
 <li><code>--help</code>: Show this message and exit.</li>
 </ul>
@@ -2384,7 +2407,7 @@ settings with same name found in the given request file or <code>stdin</code>, i
 <li><code>-d, --dotpath</code>: Input names use dot-path notion to encode nested values, e.g., <code>-i scene.colors.bg=red</code>.</li>
 <li><code>-i, --input [NAME=VALUE]...</code>: Process input value.</li>
 <li><code>-s, --subscriber [NAME=URL]...</code>: Process subscriber URL.</li>
-<li><code>-r, --request PATH</code>: Execution request file. Use <code>-</code> to read from &lt;stdin&gt;.</li>
+<li><code>-r, --request PATH</code>: Execution request file. Use <code>-</code> to read from <stdin>.</li>
 <li><code>-c, --config PATH</code>: Client configuration file.</li>
 <li><code>-f, --format [simple|json|yaml]</code>: Output format.  [default: yaml]</li>
 <li><code>--help</code>: Show this message and exit.</li>

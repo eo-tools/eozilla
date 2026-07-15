@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../usage/">
+        <link rel="prev" href="../gen_dockerfile/">
       
       
         <link rel="next" href="../../cuiman/">
@@ -23,7 +23,7 @@
     
     
       
-        <title>CLI - Eozilla 🦖</title>
+        <title>CLI Reference - Eozilla 🦖</title>
       
     
     
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              CLI
+              CLI Reference
             
           </span>
         </div>
@@ -458,6 +458,8 @@
       
         
       
+        
+      
     
     
     
@@ -547,6 +549,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../gen_dockerfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generating Dockerfiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -559,24 +589,6 @@
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CLI
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -584,7 +596,7 @@
   <span class="md-ellipsis">
     
   
-    CLI
+    CLI Reference
   
 
     
@@ -593,36 +605,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#config-file" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Config file
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -1989,25 +1971,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#config-file" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Config file
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -2031,76 +1994,40 @@
 <p>WARNING: This tool is under development and subject to change anytime.</p>
 <p>Currently, it expects a <em>process registry</em> as input, which must be
 provided in form a Python module path plus an attribute path separated
-by a colon: &quot;my.module.path:my.registry_obj&quot;. The type of the registry
+by a colon: "my.module.path:my.registry_obj". The type of the registry
 must be <code>procodile.ProcessRegistry</code>. In the future the tool will be
 able to handle other input types.</p>
 <p>It is also currently limited to generating DAGs for Airflow 3+.
 The plan is to extend it to also output Docker images with or
 without metadata such as the OGC CWL standard (= EOAP).</p>
 <p><strong>Usage</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>main<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>PROCESS_REGISTRY_SPEC<span class="o">]</span>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>appligator<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>PROCESS_REGISTRY_SPEC<span class="o">]</span>
 </code></pre></div>
 <p><strong>Arguments</strong>:</p>
 <ul>
-<li><code>[PROCESS_REGISTRY_SPEC]</code>: Process registry specification. For example &#x27;wraptile.services.local.testing:service.process_registry&#x27;.</li>
+<li><code>[PROCESS_REGISTRY_SPEC]</code>: Process registry specification. For example 'wraptile.services.local.testing:service.process_registry'.</li>
 </ul>
 <p><strong>Options</strong>:</p>
 <ul>
-<li><code>--dags-folder PATH</code>: An Airflow DAGs folder to which to write the outputs.  [default: C:\Users\norma\Projects\eozilla\eozilla-airflow\dags]</li>
-<li><code>--image-name TEXT</code>: Name of the Docker image Airflow will use for the generated pods.  [default: appligator_workflow_image:v1]</li>
-<li><code>--config-file PATH</code>: Path to an <code>appligator-config.yaml</code> file. Values from the file are used as defaults; any flag passed explicitly on the command line takes precedence.</li>
+<li><code>--dags-folder PATH</code>: An Airflow DAGs folder to which to write the outputs.  [default: <eozilla-root>/eozilla-airflow/dags`]</li>
+<li><code>--image-name TEXT</code>: Name of the Docker image which is created from your workflow and required packages that Airflow will use for running the workflows in the registry.</li>
+<li><code>--config-file FILE</code>: Path to an appligator-config.yaml file. Values from the file are used as defaults; any flag passed explicitly on the command line takes precedence.</li>
+<li><code>--version / --no-version</code>: Show version and exit.  [default: no-version]</li>
 <li><code>--skip-build / --no-skip-build</code>: Skip building the Docker image and only generate DAG files.  [default: skip-build]</li>
 <li><code>--secret-name TEXT</code>: Kubernetes secret name to inject as environment variables into every pod. Repeatable — supply the flag multiple times to add more than one secret (e.g. <code>--secret-name my-secret --secret-name other-secret</code>).</li>
-<li><code>--dag-name TEXT</code>: Custom stem for the generated DAG file(s) instead of the process ID. With a single process, produces <code>&lt;dag-name&gt;.py</code>. With multiple processes, produces <code>&lt;dag-name&gt;_&lt;process_id&gt;.py</code> for each.</li>
-<li><code>--cpu-request TEXT</code>: CPU request applied to every generated pod (e.g. <code>500m</code>, <code>1</code>).</li>
-<li><code>--memory-request TEXT</code>: Memory request applied to every generated pod (e.g. <code>256Mi</code>, <code>1Gi</code>).</li>
-<li><code>--cpu-limit TEXT</code>: CPU limit applied to every generated pod (e.g. <code>2</code>).</li>
-<li><code>--memory-limit TEXT</code>: Memory limit applied to every generated pod (e.g. <code>2Gi</code>).</li>
+<li><code>--dag-name TEXT</code>: Custom name for the generated DAG file (without <code>.py</code> extension). Defaults to the process ID. If multiple processes are in the registry, each gets a suffix: <code>&lt;dag-name&gt;_&lt;process_id&gt;.py</code>.</li>
+<li><code>--cpu-request TEXT</code>: CPU request for every pod (e.g. <code>500m</code>, <code>1</code>).</li>
+<li><code>--memory-request TEXT</code>: Memory request for every pod (e.g. <code>256Mi</code>, <code>1Gi</code>).</li>
+<li><code>--cpu-limit TEXT</code>: CPU limit for every pod (e.g. <code>2</code>).</li>
+<li><code>--memory-limit TEXT</code>: Memory limit for every pod (e.g. <code>2Gi</code>).</li>
 <li><code>--pvc-mount TEXT</code>: Mount a PersistentVolumeClaim into every pod. Format: <code>name:claim_name:mount_path</code> (e.g. <code>--pvc-mount output:my-pvc:/mnt/output</code>). Repeatable.</li>
 <li><code>--config-map-mount TEXT</code>: Mount a ConfigMap into every pod. Format: <code>name:config_map_name:mount_path</code> or <code>name:config_map_name:mount_path:sub_path</code> (e.g. <code>--config-map-mount settings:my-cm:/app/settings.yaml:settings.yaml</code>). Repeatable.</li>
-<li><code>--version / --no-version</code>: Show version and exit.  [default: no-version]</li>
+<li><code>--node-selector TEXT</code>: Node selector label for every pod. Format: <code>key=value</code> (e.g. <code>--node-selector pool=airflow-workers-big</code>). Repeatable.</li>
+<li><code>--toleration TEXT</code>: Toleration for every pod. Format: <code>key:operator[:value[:effect]]</code> (e.g. <code>--toleration airflow/component:Equal:worker:NoSchedule</code>). Repeatable.</li>
 <li><code>--install-completion</code>: Install completion for the current shell.</li>
 <li><code>--show-completion</code>: Show completion for the current shell, to copy it or customize the installation.</li>
 <li><code>--help</code>: Show this message and exit.</li>
 </ul>
-<hr />
-<h2 id="config-file">Config file</h2>
-<p>For production deployments it is more practical to keep all Kubernetes options
-in a versioned YAML file rather than passing them as CLI flags on every run.</p>
-<p>Create an <code>appligator-config.yaml</code> next to your workflow code:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">image_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myrepo/myimage:latest</span>
-<span class="nt">dag_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_workflow</span>
-
-<span class="nt">secret_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-credentials</span>
-
-<span class="nt">cpu_request</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500m</span>
-<span class="nt">memory_request</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1Gi</span>
-<span class="nt">cpu_limit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
-<span class="nt">memory_limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2Gi</span>
-
-<span class="nt">pvc_mounts</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output</span>
-<span class="w">    </span><span class="nt">claim_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output-pvc</span>
-<span class="w">    </span><span class="nt">mount_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/mnt/output</span>
-
-<span class="nt">config_map_mounts</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-settings</span>
-<span class="w">    </span><span class="nt">config_map_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-settings</span>
-<span class="w">    </span><span class="nt">mount_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/pixi/app_settings.yaml</span>
-<span class="w">    </span><span class="nt">sub_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app_settings.yaml</span><span class="w">   </span><span class="c1"># omit to mount the whole ConfigMap as a directory</span>
-</code></pre></div>
-<p>Then run:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>appligator<span class="w"> </span>my.module:registry<span class="w"> </span>--config-file<span class="w"> </span>appligator-config.yaml
-</code></pre></div>
-<p>Any flag supplied explicitly on the command line overrides the corresponding
-value in the file. For example, to use the same config file but point at a
-different image during a one-off test:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>appligator<span class="w"> </span>my.module:registry<span class="w"> </span>--config-file<span class="w"> </span>appligator-config.yaml<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--image-name<span class="w"> </span>myrepo/myimage:dev
-</code></pre></div>
-<p>All fields in the config file are optional. An empty file (or a file containing
-only <code>{}</code>) is valid and simply means "no defaults".</p>
 
 
 

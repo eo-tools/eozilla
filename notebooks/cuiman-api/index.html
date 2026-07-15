@@ -266,11 +266,23 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="../../appligator/gen_dockerfile/">
+<span class="md-ellipsis">
+    
+  
+    Generating Dockerfiles
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="../../appligator/cli/">
 <span class="md-ellipsis">
     
   
-    CLI
+    CLI Reference
   
 
     
@@ -1629,10 +1641,10 @@ from gavicore.models import ProcessRequest</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">api_url</span><span class="o">=</span><span class="s2">"http://localhost:8008/"</span><span class="p">,</span> <span class="n">auth_type</span><span class="o">=</span><span class="s2">"none"</span><span class="p">)</span>
 <span class="n">client</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-2">client = Client()
+<div class="clipboard-copy-txt" id="cell-2">client = Client(api_url="http://localhost:8008/", auth_type="none")
 client</div>
 </div>
 </div>
@@ -1648,7 +1660,7 @@ client</div>
 <pre><code class="text-json">{
   "api_key": null,
   "api_key_header": "X-API-Key",
-  "api_url": "http://127.0.0.1:8008/",
+  "api_url": "http://localhost:8008/",
   "auth_type": "none",
   "auth_url": null,
   "client_id": null,
@@ -1703,98 +1715,98 @@ client</div>
   "description": "Local test server implementing the OGC API - Processes 1.0 Standard",
   "links": [
     {
-      "href": "http://127.0.0.1:8008/",
+      "href": "http://localhost:8008/",
       "hreflang": "en",
       "rel": "self",
       "title": "get_capabilities",
       "type": "application/json"
     },
     {
-      "href": "http://127.0.0.1:8008/openapi.json",
+      "href": "http://localhost:8008/openapi.json",
       "hreflang": "en",
       "rel": "service",
       "title": "openapi",
       "type": "application/json"
     },
     {
-      "href": "http://127.0.0.1:8008/docs",
+      "href": "http://localhost:8008/docs",
       "hreflang": "en",
       "rel": "service",
       "title": "swagger_ui_html",
       "type": "text/html"
     },
     {
-      "href": "http://127.0.0.1:8008/docs/oauth2-redirect",
+      "href": "http://localhost:8008/docs/oauth2-redirect",
       "hreflang": "en",
       "rel": "service",
       "title": "swagger_ui_redirect",
       "type": "text/html"
     },
     {
-      "href": "http://127.0.0.1:8008/redoc",
+      "href": "http://localhost:8008/redoc",
       "hreflang": "en",
       "rel": "service",
       "title": "redoc_html",
       "type": "text/html"
     },
     {
-      "href": "http://127.0.0.1:8008/",
+      "href": "http://localhost:8008/",
       "hreflang": "en",
       "rel": "service",
       "title": "get_capabilities",
       "type": "application/json"
     },
     {
-      "href": "http://127.0.0.1:8008/conformance",
+      "href": "http://localhost:8008/conformance",
       "hreflang": "en",
       "rel": "service",
       "title": "get_conformance",
       "type": "application/json"
     },
     {
-      "href": "http://127.0.0.1:8008/processes",
+      "href": "http://localhost:8008/processes",
       "hreflang": "en",
       "rel": "service",
       "title": "get_processes",
       "type": "application/json"
     },
     {
-      "href": "http://127.0.0.1:8008/processes/{processID}",
+      "href": "http://localhost:8008/processes/{processID}",
       "hreflang": "en",
       "rel": "service",
       "title": "get_process",
       "type": "application/json"
     },
     {
-      "href": "http://127.0.0.1:8008/processes/{processID}/execution",
+      "href": "http://localhost:8008/processes/{processID}/execution",
       "hreflang": "en",
       "rel": "service",
       "title": "execute_process",
       "type": "application/json"
     },
     {
-      "href": "http://127.0.0.1:8008/jobs",
+      "href": "http://localhost:8008/jobs",
       "hreflang": "en",
       "rel": "service",
       "title": "get_jobs",
       "type": "application/json"
     },
     {
-      "href": "http://127.0.0.1:8008/jobs/{jobId}",
+      "href": "http://localhost:8008/jobs/{jobId}",
       "hreflang": "en",
       "rel": "service",
       "title": "get_job",
       "type": "application/json"
     },
     {
-      "href": "http://127.0.0.1:8008/jobs/{jobId}",
+      "href": "http://localhost:8008/jobs/{jobId}",
       "hreflang": "en",
       "rel": "service",
       "title": "dismiss_job",
       "type": "application/json"
     },
     {
-      "href": "http://127.0.0.1:8008/jobs/{jobId}/results",
+      "href": "http://localhost:8008/jobs/{jobId}/results",
       "hreflang": "en",
       "rel": "service",
       "title": "get_job_results",
@@ -1892,7 +1904,7 @@ client</div>
 <pre><code class="text-json">{
   "links": [
     {
-      "href": "http://127.0.0.1:8008/processes",
+      "href": "http://localhost:8008/processes",
       "hreflang": "en",
       "rel": "self",
       "title": "get_processes",
@@ -1928,6 +1940,12 @@ client</div>
       "id": "process_pipeline",
       "title": "A Big Workflow",
       "version": "0.0.0"
+    },
+    {
+      "description": "Site Processing L3B NDVI Processor (demo from ESA Sen3CAP project).",
+      "id": "218",
+      "title": "L3B AOI Indicators Processor",
+      "version": "5.0.4"
     }
   ]
 }</code></pre>

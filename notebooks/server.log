@@ -1,0 +1,66 @@
+2026-06-29 09:31:43,755 INFO uvicorn.error: Started server process [74285]
+2026-06-29 09:31:43,755 INFO uvicorn.error: Waiting for application startup.
+2026-06-29 09:31:43,755 INFO uvicorn.error: Application startup complete.
+2026-06-29 09:31:43,755 INFO uvicorn.error: Uvicorn running on http://127.0.0.1:50143 (Press CTRL+C to quit)
+2026-06-29 09:31:43,803 INFO uvicorn.access: 127.0.0.1:50144 - "GET /index.html?compact=1&_t=1782718303&service=eyJpZCI6ImNsaWVudCIsIm1ldGEiOnsidHlwZSI6ImN1c3RvbSIsInRpdGxlIjoiQ2xpZW50IiwiZGVzY3JpcHRpb24iOiJJbi1hcHAgcHJvdmlkZXIifSwib3B0aW9ucyI6eyJhdXRoVHlwZSI6Im5vbmUiLCJhcGlVcmwiOiJodHRwOi8vbG9jYWxob3N0OjgwMDgvIn19&ws=ws%3A%2F%2F127.0.0.1%3A50143%2Fws&scheme=light HTTP/1.1" 200
+2026-06-29 09:31:43,811 INFO uvicorn.access: 127.0.0.1:50144 - "GET /assets/index-C2x7QHW4.js HTTP/1.1" 200
+2026-06-29 09:31:43,813 INFO uvicorn.access: 127.0.0.1:50145 - "GET /assets/index-DGRoA5Ld.css HTTP/1.1" 200
+2026-06-29 09:31:43,865 INFO uvicorn.error: 127.0.0.1:50146 - "WebSocket /ws" [accepted]
+2026-06-29 09:31:43,865 INFO uvicorn.error: connection open
+2026-06-29 09:31:43,878 INFO uvicorn.access: 127.0.0.1:50145 - "GET /privacy.md HTTP/1.1" 200
+2026-06-29 09:32:13,646 INFO uvicorn.error: Started server process [74425]
+2026-06-29 09:32:13,646 INFO uvicorn.error: Waiting for application startup.
+2026-06-29 09:32:13,646 INFO uvicorn.error: Application startup complete.
+2026-06-29 09:32:13,647 INFO uvicorn.error: Uvicorn running on http://127.0.0.1:50184 (Press CTRL+C to quit)
+2026-06-29 09:32:13,704 INFO uvicorn.access: 127.0.0.1:50185 - "GET /index.html?compact=1&_t=1782718333&service=eyJpZCI6ImNsaWVudCIsIm1ldGEiOnsidHlwZSI6ImN1c3RvbSIsInRpdGxlIjoiQ2xpZW50IiwiZGVzY3JpcHRpb24iOiJJbi1hcHAgcHJvdmlkZXIifSwib3B0aW9ucyI6eyJhdXRoVHlwZSI6Im5vbmUiLCJhcGlVcmwiOiJodHRwOi8vbG9jYWxob3N0OjgwMDgvIn19&ws=ws%3A%2F%2F127.0.0.1%3A50184%2Fws&scheme=light HTTP/1.1" 200
+2026-06-29 09:32:13,710 INFO uvicorn.access: 127.0.0.1:50185 - "GET /assets/index-C2x7QHW4.js HTTP/1.1" 200
+2026-06-29 09:32:13,711 INFO uvicorn.access: 127.0.0.1:50186 - "GET /assets/index-DGRoA5Ld.css HTTP/1.1" 200
+2026-06-29 09:32:13,756 INFO uvicorn.error: 127.0.0.1:50187 - "WebSocket /ws" [accepted]
+2026-06-29 09:32:13,757 INFO uvicorn.error: connection open
+2026-06-29 09:32:13,770 INFO uvicorn.access: 127.0.0.1:50186 - "GET /privacy.md HTTP/1.1" 200
+2026-06-29 09:32:16,327 INFO uvicorn.error: connection closed
+2026-06-29 09:32:16,379 INFO uvicorn.error: Shutting down
+2026-06-29 09:32:16,392 INFO uvicorn.error: Started server process [74425]
+2026-06-29 09:32:16,393 INFO uvicorn.error: Waiting for application startup.
+2026-06-29 09:32:16,393 INFO uvicorn.error: Application startup complete.
+2026-06-29 09:32:16,393 INFO uvicorn.error: Uvicorn running on http://127.0.0.1:50189 (Press CTRL+C to quit)
+2026-06-29 09:32:16,465 INFO uvicorn.access: 127.0.0.1:50190 - "GET /index.html?compact=1&_t=1782718336&service=eyJpZCI6ImNsaWVudCIsIm1ldGEiOnsidHlwZSI6ImN1c3RvbSIsInRpdGxlIjoiQ2xpZW50IiwiZGVzY3JpcHRpb24iOiJJbi1hcHAgcHJvdmlkZXIifSwib3B0aW9ucyI6eyJhdXRoVHlwZSI6Im5vbmUiLCJhcGlVcmwiOiJodHRwOi8vbG9jYWxob3N0OjgwMDgvIn19&ws=ws%3A%2F%2F127.0.0.1%3A50189%2Fws&scheme=light HTTP/1.1" 200
+2026-06-29 09:32:16,476 INFO uvicorn.access: 127.0.0.1:50191 - "GET /assets/index-DGRoA5Ld.css HTTP/1.1" 200
+2026-06-29 09:32:16,477 INFO uvicorn.access: 127.0.0.1:50190 - "GET /assets/index-C2x7QHW4.js HTTP/1.1" 200
+2026-06-29 09:32:16,480 INFO uvicorn.error: Waiting for application shutdown.
+2026-06-29 09:32:16,480 INFO uvicorn.error: Application shutdown complete.
+2026-06-29 09:32:16,481 INFO uvicorn.error: Finished server process [74425]
+2026-06-29 09:32:16,513 INFO uvicorn.error: 127.0.0.1:50192 - "WebSocket /ws" [accepted]
+2026-06-29 09:32:16,514 INFO uvicorn.error: connection open
+2026-06-29 09:32:16,519 INFO uvicorn.access: 127.0.0.1:50191 - "GET /privacy.md HTTP/1.1" 200
+2026-07-06 12:00:08,369 INFO uvicorn.error: Started server process [79326]
+2026-07-06 12:00:08,369 INFO uvicorn.error: Waiting for application startup.
+2026-07-06 12:00:08,369 INFO uvicorn.error: Application startup complete.
+2026-07-06 12:00:08,370 INFO uvicorn.error: Uvicorn running on http://127.0.0.1:63321 (Press CTRL+C to quit)
+2026-07-06 12:00:08,416 INFO uvicorn.access: 127.0.0.1:63322 - "GET /index.html?compact=1&_t=1783332008&service=eyJpZCI6ImNsaWVudCIsIm1ldGEiOnsidHlwZSI6ImN1c3RvbSIsInRpdGxlIjoiQ2xpZW50IiwiZGVzY3JpcHRpb24iOiJJbi1hcHAgcHJvdmlkZXIifSwib3B0aW9ucyI6eyJhdXRoVHlwZSI6Im5vbmUiLCJhcGlVcmwiOiJodHRwOi8vbG9jYWxob3N0OjgwMDgvIn19&ws=ws%3A%2F%2F127.0.0.1%3A63321%2Fws&scheme=light HTTP/1.1" 200
+2026-07-06 12:00:08,423 INFO uvicorn.access: 127.0.0.1:63322 - "GET /assets/index-b_dgshsL.js HTTP/1.1" 200
+2026-07-06 12:00:08,424 INFO uvicorn.access: 127.0.0.1:63323 - "GET /assets/index-Cq5fy1FJ.css HTTP/1.1" 200
+2026-07-06 12:00:08,468 INFO uvicorn.error: 127.0.0.1:63324 - "WebSocket /ws" [accepted]
+2026-07-06 12:00:08,469 INFO uvicorn.error: connection open
+2026-07-06 12:00:08,481 INFO uvicorn.access: 127.0.0.1:63323 - "GET /privacy.md HTTP/1.1" 200
+2026-07-06 12:00:26,938 INFO uvicorn.error: connection closed
+2026-07-10 09:10:19,382 INFO uvicorn.error: Started server process [60042]
+2026-07-10 09:10:19,383 INFO uvicorn.error: Waiting for application startup.
+2026-07-10 09:10:19,383 INFO uvicorn.error: Application startup complete.
+2026-07-10 09:10:19,384 INFO uvicorn.error: Uvicorn running on http://127.0.0.1:50849 (Press CTRL+C to quit)
+2026-07-10 09:10:19,441 INFO uvicorn.access: 127.0.0.1:50850 - "GET /index.html?compact=1&_t=1783667419&service=eyJpZCI6ImNsaWVudCIsIm1ldGEiOnsidHlwZSI6ImN1c3RvbSIsInRpdGxlIjoiQ2xpZW50IiwiZGVzY3JpcHRpb24iOiJJbi1hcHAgcHJvdmlkZXIifSwib3B0aW9ucyI6eyJhdXRoVHlwZSI6Im5vbmUiLCJhcGlVcmwiOiJodHRwOi8vbG9jYWxob3N0OjgwMDgvIn19&ws=ws%3A%2F%2F127.0.0.1%3A50849%2Fws&scheme=light HTTP/1.1" 200
+2026-07-10 09:10:19,478 INFO uvicorn.access: 127.0.0.1:50850 - "GET /assets/index-dz-RC-XE.js HTTP/1.1" 200
+2026-07-10 09:10:19,479 INFO uvicorn.access: 127.0.0.1:50851 - "GET /assets/index-CQWiwpJb.css HTTP/1.1" 200
+2026-07-10 09:10:19,540 INFO uvicorn.error: 127.0.0.1:50852 - "WebSocket /ws" [accepted]
+2026-07-10 09:10:19,540 INFO uvicorn.error: connection open
+2026-07-10 09:10:19,555 INFO uvicorn.access: 127.0.0.1:50851 - "GET /privacy.md HTTP/1.1" 200
+2026-07-10 14:52:49,834 INFO uvicorn.error: Started server process [41810]
+2026-07-10 14:52:49,835 INFO uvicorn.error: Waiting for application startup.
+2026-07-10 14:52:49,835 INFO uvicorn.error: Application startup complete.
+2026-07-10 14:52:49,836 INFO uvicorn.error: Uvicorn running on http://127.0.0.1:56200 (Press CTRL+C to quit)
+2026-07-10 14:52:49,893 INFO uvicorn.access: 127.0.0.1:56201 - "GET /index.html?compact=1&_t=1783687969&service=eyJpZCI6ImNsaWVudCIsIm1ldGEiOnsidHlwZSI6ImN1c3RvbSIsInRpdGxlIjoiQ2xpZW50IiwiZGVzY3JpcHRpb24iOiJJbi1hcHAgcHJvdmlkZXIifSwib3B0aW9ucyI6eyJhdXRoVHlwZSI6Im5vbmUiLCJhcGlVcmwiOiJodHRwOi8vbG9jYWxob3N0OjgwMDgvIn19&ws=ws%3A%2F%2F127.0.0.1%3A56200%2Fws&scheme=light HTTP/1.1" 200
+2026-07-10 14:52:49,900 INFO uvicorn.access: 127.0.0.1:56201 - "GET /assets/index-dz-RC-XE.js HTTP/1.1" 200
+2026-07-10 14:52:49,901 INFO uvicorn.access: 127.0.0.1:56202 - "GET /assets/index-CQWiwpJb.css HTTP/1.1" 200
+2026-07-10 14:52:49,958 INFO uvicorn.error: 127.0.0.1:56203 - "WebSocket /ws" [accepted]
+2026-07-10 14:52:49,958 INFO uvicorn.error: connection open
+2026-07-10 14:52:49,972 INFO uvicorn.access: 127.0.0.1:56202 - "GET /privacy.md HTTP/1.1" 200

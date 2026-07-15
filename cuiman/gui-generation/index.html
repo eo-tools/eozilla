@@ -456,6 +456,8 @@
       
         
       
+        
+      
     
     
     
@@ -545,6 +547,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../appligator/gen_dockerfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generating Dockerfiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../appligator/cli/" class="md-nav__link">
         
   
@@ -552,7 +582,7 @@
   <span class="md-ellipsis">
     
   
-    CLI
+    CLI Reference
   
 
     
@@ -2362,6 +2392,13 @@
 
 
 <h1 id="cuiman-gui-generation">Cuiman GUI-Generation</h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This document describes Cuiman's legacy notebook GUI based on <code>cuiman.gui</code>
+and <code>gavicore.ui</code>. It remains available on the <code>maintenance/0.1.x</code> branch
+for existing users, but it is deprecated and will not work in newer
+Eozilla versions.</p>
+</div>
 <p>The Cuiman GUI to build process requests is generated from a selected 
 <a href="https://docs.ogc.org/is/18-062r2/18-062r2.html#toc35">OGC process descriptions</a>.
 For a given process, the input descriptions are used to build an 
@@ -2566,9 +2603,10 @@ the default array editor:</p>
 <ul>
 <li>
 <p><strong>geographic bounding boxes</strong>: item type <code>number</code> with <code>minItems: 4</code>, <code>maxItems: 4</code>, 
-  and <code>x-ui-widget: map</code> creates a special editor to enter the bounding box
-  using <a href=""></a>. It lets users draw a geometry whose bounding 
-  box will become the effective field value.</p>
+  and <code>x-ui-widget: map</code> (or <code>format: bbox</code>) creates a special editor to enter the 
+  bounding box using an <a href="https://ipyleaflet.readthedocs.io/">ipyleaflet</a> map. 
+  It lets users draw a geometry whose bounding box will become the effective field 
+  value.</p>
 </li>
 <li>
 <p><strong>date(-time) ranges</strong>: item type <code>string</code> with <code>minItems: 2</code>, <code>maxItems: 2</code> creates 

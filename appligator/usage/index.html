@@ -12,7 +12,7 @@
         <link rel="prev" href="../">
       
       
-        <link rel="next" href="../cli/">
+        <link rel="next" href="../gen_dockerfile/">
       
       
         
@@ -458,6 +458,8 @@
       
         
       
+        
+      
     
     
     
@@ -531,6 +533,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -548,6 +568,219 @@
 
       </a>
       
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-recipe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage Recipe
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage Recipe">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-define-a-process-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Define a process registry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-generate-airflow-dag-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Generate Airflow DAG files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-build-the-docker-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Build the Docker image
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resource-requests-and-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource requests and limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secrets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#persistent-volume-claims" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Persistent Volume Claims
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configmaps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConfigMaps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#node-selector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Node selector
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tolerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tolerations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-a-config-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using a config file
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gen_dockerfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generating Dockerfiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -567,7 +800,7 @@
   <span class="md-ellipsis">
     
   
-    CLI
+    CLI Reference
   
 
     
@@ -1941,6 +2174,180 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-recipe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage Recipe
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage Recipe">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-define-a-process-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Define a process registry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-generate-airflow-dag-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Generate Airflow DAG files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-build-the-docker-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Build the Docker image
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resource-requests-and-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource requests and limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secrets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#persistent-volume-claims" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Persistent Volume Claims
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configmaps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConfigMaps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#node-selector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Node selector
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tolerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tolerations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-a-config-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using a config file
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1960,7 +2367,155 @@
 
 
 <h1 id="appligator-usage">Appligator Usage</h1>
-<p><em>Coming soon...</em></p>
+<h2 id="installation">Installation</h2>
+<p>Eozilla Appligator is distributed by the Python package <code>appligator</code>.
+Depending on your package manager, use one of the following:</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>appligator
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>conda<span class="w"> </span>install<span class="w"> </span>appligator
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>pixi<span class="w"> </span>add<span class="w"> </span>appligator
+</code></pre></div>
+<h2 id="overview">Overview</h2>
+<p>Appligator takes a <a href="../../procodile/">Procodile</a> <code>ProcessRegistry</code> and
+transforms its workflows into artifacts that can be run by workflow orchestrators.
+Currently Appligator targets <a href="https://airflow.apache.org/">Apache Airflow</a> and
+produces two kinds of output:</p>
+<ul>
+<li><strong>Airflow DAG files</strong> — standalone Python DAG definitions ready to drop into
+  an Airflow DAGs folder, with each workflow step executed as a
+  <code>KubernetesPodOperator</code> task.</li>
+<li><strong>Docker images</strong> — container images carrying your workflow code and its
+  dependencies (optional, controlled by <code>--skip-build</code> / <code>--no-skip-build</code>).</li>
+</ul>
+<hr />
+<h2 id="usage-recipe">Usage Recipe</h2>
+<h3 id="1-define-a-process-registry">1. Define a process registry</h3>
+<p>Follow the <a href="../../procodile/usage/">Procodile usage guide</a> to create a
+<code>ProcessRegistry</code> with one or more workflows. For example, in
+<code>my_app/processes.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">procodile</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessRegistry</span>
+
+<span class="n">registry</span> <span class="o">=</span> <span class="n">ProcessRegistry</span><span class="p">()</span>
+
+<span class="nd">@registry</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;my_workflow&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_workflow</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="o">...</span>
+</code></pre></div>
+<h3 id="2-generate-airflow-dag-files">2. Generate Airflow DAG files</h3>
+<p>Point <code>appligator</code> at the registry using the <code>module.path:attribute</code> notation
+and choose a destination DAGs folder:</p>
+<div class="highlight"><pre><span></span><code>appligator my_app.processes:registry \
+    --dags-folder /path/to/airflow/dags \
+    --image-name myrepo/myimage:latest
+</code></pre></div>
+<p>For each process in the registry, Appligator writes a standalone Python DAG
+file to <code>--dags-folder</code>. The file name defaults to <code>&lt;process_id&gt;.py</code>; use
+<code>--dag-name</code> to override it. With multiple processes and a custom name, each
+file gets a <code>&lt;dag-name&gt;_&lt;process_id&gt;.py</code> suffix.</p>
+<h3 id="3-build-the-docker-image">3. Build the Docker image</h3>
+<p>By default, <code>--skip-build</code> is active and no image is built. To build the image
+as part of the same run, add <code>--no-skip-build</code>:</p>
+<div class="highlight"><pre><span></span><code>appligator my_app.processes:registry \
+    --dags-folder /path/to/airflow/dags \
+    --image-name myrepo/myimage:latest \
+    --no-skip-build
+</code></pre></div>
+<p>For production, build a pixi-based image separately using
+<a href="../gen_dockerfile/"><code>appligator.airflow.gen_dockerfile.generate</code></a>.
+This produces a lean, reproducible two-stage image and lets you control when
+and how the build happens (e.g. in a CI pipeline).</p>
+<hr />
+<h2 id="kubernetes-configuration">Kubernetes configuration</h2>
+<p>Appligator forwards several Kubernetes settings to every generated
+<code>KubernetesPodOperator</code> task.</p>
+<h3 id="resource-requests-and-limits">Resource requests and limits</h3>
+<div class="highlight"><pre><span></span><code>appligator my_app.processes:registry \
+    --image-name myrepo/myimage:latest \
+    --cpu-request 500m --memory-request 1Gi \
+    --cpu-limit 2 --memory-limit 4Gi
+</code></pre></div>
+<h3 id="secrets">Secrets</h3>
+<p>Inject Kubernetes secrets as environment variables into every pod.
+The flag is repeatable:</p>
+<div class="highlight"><pre><span></span><code>appligator my_app.processes:registry \
+    --image-name myrepo/myimage:latest \
+    --secret-name app-credentials \
+    --secret-name other-secret
+</code></pre></div>
+<h3 id="persistent-volume-claims">Persistent Volume Claims</h3>
+<p>Mount a PVC into every pod using <code>name:claim_name:mount_path</code>. Repeatable:</p>
+<div class="highlight"><pre><span></span><code>appligator my_app.processes:registry \
+    --image-name myrepo/myimage:latest \
+    --pvc-mount output:my-output-pvc:/mnt/output
+</code></pre></div>
+<h3 id="configmaps">ConfigMaps</h3>
+<p>Mount a ConfigMap using <code>name:config_map_name:mount_path</code> or
+<code>name:config_map_name:mount_path:sub_path</code>. Repeatable:</p>
+<div class="highlight"><pre><span></span><code>appligator my_app.processes:registry \
+    --image-name myrepo/myimage:latest \
+    --config-map-mount settings:app-settings:/app/settings.yaml:settings.yaml
+</code></pre></div>
+<h3 id="node-selector">Node selector</h3>
+<p>Pin every pod to a specific node pool using <code>key=value</code> pairs. Repeatable:</p>
+<div class="highlight"><pre><span></span><code>appligator my_app.processes:registry \
+    --image-name myrepo/myimage:latest \
+    --node-selector pool=airflow-workers-big
+</code></pre></div>
+<h3 id="tolerations">Tolerations</h3>
+<p>Add Kubernetes tolerations to every pod using the format
+<code>key:operator[:value[:effect]]</code>. Repeatable:</p>
+<div class="highlight"><pre><span></span><code>appligator my_app.processes:registry \
+    --image-name myrepo/myimage:latest \
+    --toleration airflow/component:Equal:worker:NoSchedule
+</code></pre></div>
+<hr />
+<h2 id="using-a-config-file">Using a config file</h2>
+<p>For repeated or production runs it is more practical to keep all options in a
+versioned YAML file rather than spelling them out on the command line every time.</p>
+<p>Create an <code>appligator-config.yaml</code> next to your workflow code:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">image_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myrepo/myimage:latest</span>
+<span class="nt">dag_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_workflow</span>
+
+<span class="nt">secret_names</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-credentials</span>
+
+<span class="nt">cpu_request</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500m</span>
+<span class="nt">memory_request</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1Gi</span>
+<span class="nt">cpu_limit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
+<span class="nt">memory_limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2Gi</span>
+
+<span class="nt">pvc_mounts</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output</span>
+<span class="w">    </span><span class="nt">claim_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output-pvc</span>
+<span class="w">    </span><span class="nt">mount_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/mnt/output</span>
+
+<span class="nt">config_map_mounts</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-settings</span>
+<span class="w">    </span><span class="nt">config_map_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-settings</span>
+<span class="w">    </span><span class="nt">mount_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/pixi/app_settings.yaml</span>
+<span class="w">    </span><span class="nt">sub_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app_settings.yaml</span><span class="w">   </span><span class="c1"># omit to mount the whole ConfigMap as a directory</span>
+
+<span class="nt">node_selector</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">airflow-workers-big</span>
+
+<span class="nt">tolerations</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">airflow/component</span>
+<span class="w">    </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Equal</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker</span>
+<span class="w">    </span><span class="nt">effect</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NoSchedule</span>
+</code></pre></div>
+<p>Then run:</p>
+<div class="highlight"><pre><span></span><code>appligator my_app.processes:registry --config-file appligator-config.yaml
+</code></pre></div>
+<p>Any flag supplied explicitly on the command line overrides the corresponding
+value from the file:</p>
+<div class="highlight"><pre><span></span><code>appligator my_app.processes:registry \
+    --config-file appligator-config.yaml \
+    --image-name myrepo/myimage:dev
+</code></pre></div>
+<p>All fields in the config file are optional. An empty file (or a file
+containing only <code>{}</code>) is valid and simply means "no defaults".</p>
 
 
 
