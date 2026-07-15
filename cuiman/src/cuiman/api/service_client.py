@@ -204,18 +204,27 @@ def _render_inputs(inputs: list[_InputSpec]) -> str:
 
 def _render_method_docstring(spec: _MethodSpec) -> str:
     lines = [f"Execute process ``{spec.process_id}`` and return its opened result."]
+    tab = 4 * " "
+    indent = 2 * tab
     if spec.title:
-        lines.extend(["", _clean_doc_line(spec.title)])
+        lines.append("")
+        lines.extend([indent + _clean_doc_line(l) for l in spec.title.split("\n")])
     if spec.description:
-        lines.extend(["", _clean_doc_line(spec.description)])
-    lines.extend(["", "Args:"])
+        lines.append("")
+        lines.extend(
+            [indent + _clean_doc_line(l) for l in spec.description.split("\n")]
+        )
+    lines.extend(["", f"{indent}Args:"])
     for input_spec in spec.inputs:
         desc = input_spec.description or input_spec.title or "Process input."
-        lines.append(f"    {input_spec.param_name}: {_clean_doc_line(desc)}")
-    lines.append("    job_options: Optional job execution and result-opening options.")
-    lines.extend(["", "Raises:"])
+        lines.append(f"{indent}{tab}{input_spec.param_name}: {_clean_doc_line(desc)}")
     lines.append(
-        "    ClientError: If the API call, job execution, or result opening fails."
+        f"{indent}{tab}job_options: Optional job execution and result-opening options."
+    )
+    lines.append("")
+    lines.append(f"{indent}Raises:")
+    lines.append(
+        f"{indent}{tab}ClientError: If the API call, job execution, or result opening fails."
     )
     doc = "\n".join(lines).replace('"""', r"\"\"\"")
     return f'        """{doc}\n        """\n'
