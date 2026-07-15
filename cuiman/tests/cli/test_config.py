@@ -88,6 +88,22 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
         )
 
     @patch("typer.prompt")
+    def test_auth_type_invalid(self, mock_prompt: MagicMock):
+        mock_prompt.side_effect = [
+            "http://localhost:9090",
+            "torken",
+        ]
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"Invalid authentication type: torken\. "
+                r"Expected one of:"
+            ),
+        ):
+            configure_client_with_prompt()
+
+    @patch("typer.prompt")
     def test_auth_type_basic(self, mock_prompt: MagicMock):
         # Simulate sequential responses to typer.prompt()
         mock_prompt.side_effect = [
