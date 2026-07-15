@@ -2,10 +2,10 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from .app import App
 from .serve import serve
-from .store import create_app_remote_store
 
 __all__ = [
-    "create_app_remote_store",
+    "App",
     "serve",
 ]

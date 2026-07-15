@@ -3,7 +3,12 @@
 #  https://opensource.org/license/apache-2-0.
 
 from appligator.airflow.ir import workflow_to_ir
-from appligator.airflow.models import ConfigMapMount, PvcMount, ResourceRequirements, Toleration
+from appligator.airflow.models import (
+    ConfigMapMount,
+    PvcMount,
+    ResourceRequirements,
+    Toleration,
+)
 from appligator.airflow.renderer import AirflowRenderer
 from procodile.workflow import WorkflowStepRegistry
 

@@ -287,7 +287,11 @@ def test_node_selector_and_tolerations_combined():
         registry=first_step.registry,
         image="example:latest",
         node_selector={"pool": "workers"},
-        tolerations=[Toleration(key="dedicated", operator="Equal", value="app", effect="NoSchedule")],
+        tolerations=[
+            Toleration(
+                key="dedicated", operator="Equal", value="app", effect="NoSchedule"
+            )
+        ],
     )
     assert "_node_selector = {'pool': 'workers'}" in dag_code
     assert "_tolerations = [" in dag_code

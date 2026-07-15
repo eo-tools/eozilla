@@ -4,8 +4,9 @@
 
 from pathlib import Path
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+import remotestate as rs
 import typer.testing
 import yaml
 
@@ -107,6 +108,15 @@ class CliTest(TestCase):
         if config_path.exists():
             config_path.unlink()
 
+    @patch("cuiman.cli.config.configure_client_with_prompt")
+    def test_configure_with_configuration_error(self, mock_configure):
+        mock_configure.side_effect = ValueError("bad config")
+
+        result = invoke_cli("configure")
+
+        self.assertEqual(1, result.exit_code, msg=self.get_result_msg(result))
+        self.assertEqual("bad config\n", result.stderr)
+
     def test_get_processes(self):
         result = invoke_cli("list-processes")
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
@@ -165,6 +175,8 @@ class CliTest(TestCase):
     @patch("cuiman.cli.cli._wait_until_interrupted")
     @patch("cuiman.app.serve")
     def test_show_app(self, mock_serve, mock_wait_until_interrupted):
+        mock_serve.return_value = MagicMock(spec=rs.ServeResult)
+
         result = invoke_cli("show-app")
 
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
@@ -194,6 +206,16 @@ class CliTest(TestCase):
 
 
 class CliWithRealClientTest(TestCase):
+    @patch("cuiman.cli.config.get_config")
+    def test_get_processes_configuration_error(self, mock_get_config):
+        mock_get_config.side_effect = ValueError("missing config")
+
+        runner = typer.testing.CliRunner()
+        result = runner.invoke(cli, ["list-processes"])
+
+        self.assertEqual(1, result.exit_code)
+        self.assertEqual("missing config\n", result.stderr)
+
     def test_get_processes(self):
         """Test code in app so that the non-mocked Client is used."""
         runner = typer.testing.CliRunner()

@@ -41,8 +41,12 @@ class AirflowRenderer:
         lines: list[str] = []
 
         needs_k8s = any(
-            t.env_from_secrets or t.resources or t.pvc_mounts or t.config_map_mounts
-            or t.node_selector or t.tolerations
+            t.env_from_secrets
+            or t.resources
+            or t.pvc_mounts
+            or t.config_map_mounts
+            or t.node_selector
+            or t.tolerations
             for t in workflow.tasks
         )
         lines.extend(render_header(needs_k8s=needs_k8s))
@@ -75,9 +79,7 @@ def render_k8s_shared_config(workflow: WorkflowIR) -> str | None:
     node_selector = next(
         (t.node_selector for t in workflow.tasks if t.node_selector), None
     )
-    tolerations = next(
-        (t.tolerations for t in workflow.tasks if t.tolerations), None
-    )
+    tolerations = next((t.tolerations for t in workflow.tasks if t.tolerations), None)
 
     if not node_selector and not tolerations:
         return None

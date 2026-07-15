@@ -4,7 +4,7 @@
 
 [project]
 name = "gavicore"
-version = "0.1.2.dev0"
+version = "0.2.0.dev0"
 description = "Pydantic data models and common utilities for other Eozilla packages"
 readme = "README.md"
 authors = [
@@ -38,13 +38,11 @@ classifiers = [
   "Operating System :: Unix",
   "Operating System :: MacOS",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-  "click",
-  # "panel",  # TODO: declare as optional dependency
   "pydantic",
   "pyyaml",
-  "typer",
+  "typer >=0.26.0,<1",
 ]
 
 [project.urls]
