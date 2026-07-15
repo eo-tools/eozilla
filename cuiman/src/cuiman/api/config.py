@@ -78,17 +78,15 @@ class ClientConfig(AuthConfig, BaseSettings):
         *,
         config: Optional["ClientConfig"] = None,
         config_path: Optional[Path | str] = None,
-        load_file: bool = True,
         **config_kwargs,
     ) -> "ClientConfig":
         # 0. from defaults
         config_dict = cls.default_config.to_dict()
 
         # 1. from file
-        if load_file:
-            file_config = cls.from_file(config_path=config_path)
-            if file_config is not None:
-                _update_if_not_none(config_dict, file_config.to_dict())
+        file_config = cls.from_file(config_path=config_path)
+        if file_config is not None:
+            _update_if_not_none(config_dict, file_config.to_dict())
 
         # 2. from env
         env_config = cls()
