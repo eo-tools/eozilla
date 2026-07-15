@@ -73,6 +73,7 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
             HttpxTransport(
                 api_url=f"{self._config.api_url.rstrip('/')}/",
                 headers=self._config.auth_headers,
+                return_type_map=self._config.return_type_map,
                 {{ refresher_kwarg }}
                 debug=_debug,
             )
