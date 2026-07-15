@@ -5,6 +5,7 @@
 import unittest
 import warnings
 from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest.mock import MagicMock, patch
 
 import fastapi
 import requests
@@ -132,6 +133,26 @@ class ParamToInputDescriptionTest(TestCase):
         self.assertIsNotNone(result)
         self.assertIsNone(result.schema_.type)
         self.assertEqual(result.schema_.default, 42)
+
+
+class AirflowTokenProviderWiringTest(TestCase):
+    """The service delegates bearer-token retrieval to a TokenProvider."""
+
+    @patch.dict("os.environ", {}, clear=True)
+    @patch("wraptile.services.airflow.airflow_service.create_token_provider")
+    def test_provider_created_once_and_reused(self, mock_create):
+        mock_create.return_value = MagicMock(
+            **{"get_token.return_value": "tok"},
+        )
+        service = AirflowService(title="t")
+        service.configure(airflow_password="pw")  # noqa: S106
+
+        self.assertIs(service.airflow_client, service.airflow_client)
+        # The provider is built lazily, once, and re-consulted for each client
+        # access so an expired token gets refreshed.
+        mock_create.assert_called_once()
+        self.assertEqual(mock_create.call_args.args[0], DEFAULT_AIRFLOW_BASE_URL)
+        self.assertEqual(mock_create.return_value.get_token.call_count, 2)
 
 
 def is_airflow_running(url: str, timeout: float = 1.0) -> bool:

@@ -1,5 +1,18 @@
 ## Changes in version 0.2.0 (in development)
 
+### Enchancements
+
+- **Wraptile**'s Airflow service now supports OAuth2 service-to-service
+  authentication for the wraptile-Airflow hop, against any OIDC-compliant
+  identity provider: when `OIDC_TOKEN_URL` and `OIDC_CLIENT_ID` are set, it
+  mints a `client_credentials` token (`aud=airflow`) validated by the gateway,
+  cached and refreshed shortly before expiry. Falls back to the existing
+  username/password flow against Airflow's native token endpoint when those env
+  vars are unset. Token retrieval lives in the new
+  `wraptile.services.airflow.tokens` module.
+
+## Changes in version 0.1.2
+
 ### Enhancements
 
 **Cuiman** enhancements:
