@@ -15,8 +15,8 @@
 
 **Cuiman** enhancements:
 
-- Added a new CLI command `cuiman generate-client NAME` that generates the 
-  Python code for a client service-specific, higher-level client functions.
+- Added an experimental CLI command `cuiman generate-client NAME` that generates 
+  the Python code for a client service-specific, higher-level client functions.
   The generated classes have methods that directly represent the processes 
   of the currently configured processing service. (#115) 
 - Replaced the [Panel](https://panel.holoviz.org/)-based GUI by a modern
