@@ -6,7 +6,6 @@ from typing import Any, cast
 
 import typer.core
 
-
 _Command = typer.core.TyperCommand | typer.core.TyperGroup
 
 
@@ -22,9 +21,7 @@ class AliasedGroup(typer.core.TyperGroup):
         """Create a short alias for given command name."""
         return "".join(map(lambda n: n[0], name.split("-")))
 
-    def get_command(
-        self, ctx: Any, cmd_name: str
-    ) -> _Command | None:
+    def get_command(self, ctx: Any, cmd_name: str) -> _Command | None:
         rv = super().get_command(ctx, cmd_name)
 
         if rv is not None:

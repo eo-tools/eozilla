@@ -15,6 +15,7 @@ from cuiman.api.auth.login import LoginResult
 
 # noinspection PyProtectedMember
 from cuiman.cli.cli import _wait_until_interrupted, cli, new_cli
+from gavicore.util.testing import use_temp_dir
 
 from ..helpers import MockTransport
 
@@ -121,6 +122,24 @@ class CliTest(TestCase):
         result = invoke_cli("list-processes")
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual("links: []\nprocesses: []\n\n", result.output)
+
+    def test_generate_client(self):
+        runner = typer.testing.CliRunner()
+
+        def get_mock_client(_config_path: str | None):
+            return Client(api_url="https://abc.de", _transport=MockTransport())
+
+        with use_temp_dir():
+            result = runner.invoke(
+                cli,
+                ["generate-client", "acme"],
+                obj={"get_client": get_mock_client},
+            )
+            self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+            self.assertTrue(Path("acme_sync.py").exists())
+            self.assertTrue(Path("acme_async.py").exists())
+            self.assertIn("Generated sync client:", result.output)
+            self.assertIn("Generated async client:", result.output)
 
     def test_get_process(self):
         result = invoke_cli("get-process", "sleep_a_while")

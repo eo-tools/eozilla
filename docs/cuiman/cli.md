@@ -40,6 +40,7 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 **Commands**:
 
 * `configure`: Configure the client tool.
+* `generate-client`: Generate the Python code for...
 * `list-processes`: List available processes.
 * `get-process`: Get process details.
 * `create-request`: Create an execution request (template) for...
@@ -73,6 +74,30 @@ $ cuiman configure [OPTIONS]
 * `-t, --token TEXT`: Access token.
 * `--use-bearer`: Use bearer token?
 * `--token-header TEXT`: Access token header
+* `-c, --config PATH`: Client configuration file.
+* `--help`: Show this message and exit.
+
+## `cuiman generate-client`
+
+Generate the Python code for service-specific, higher-level client functions.
+
+The command generates classes for both sync and async clients, which
+have methods that directly represent the processes of the currently configured
+processing service.
+
+**Usage**:
+
+```console
+$ cuiman generate-client [OPTIONS] NAME
+```
+
+**Arguments**:
+
+* `NAME`: Service name used for generated module and class names.  [required]
+
+**Options**:
+
+* `-o, --output-dir TEXT`: Directory where generated modules will be written.  [default: .]
 * `-c, --config PATH`: Client configuration file.
 * `--help`: Show this message and exit.
 
