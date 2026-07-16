@@ -8,9 +8,10 @@ from unittest.mock import patch
 import pytest
 
 from cuiman import ClientConfig
-from cuiman.api.client import Client
 from cuiman.api.auth.login import LoginResult
+from cuiman.api.client import Client
 from gavicore.models import (
+    ApiError,
     Capabilities,
     ConformanceDeclaration,
     JobInfo,
@@ -19,7 +20,6 @@ from gavicore.models import (
     ProcessDescription,
     ProcessList,
     ProcessRequest,
-    ApiError,
 )
 from gavicore.util.request import ExecutionRequest
 

@@ -222,7 +222,7 @@ class AsyncExecuteAndOpenResultTest(IsolatedAsyncioTestCase):
                 "process_1",
                 ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
                 job_options=JobOptions(poll_interval=0.01, monitor=monitor),
-        )
+            )
         self.assertTrue(client.dismissed)
         self.assertEqual("urn:eozilla:job-cancelled", e.value.api_error.type)
 

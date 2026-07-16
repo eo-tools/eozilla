@@ -8,13 +8,13 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest import IsolatedAsyncioTestCase, TestCase
 
+from cuiman.api import service_client
 from cuiman.api.jobs import JobOptions
 from cuiman.api.service_client import (
     fetch_process_descriptions,
     generate_service_client_modules,
     write_service_client_modules,
 )
-from cuiman.api import service_client
 from gavicore.models import DataType, InputDescription, ProcessDescription, Schema
 
 
