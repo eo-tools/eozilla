@@ -80,7 +80,9 @@ gavicore = { path = "./gavicore", editable = true }
 procodile = { path = "./procodile", editable = true }
 procodile-example = { path = "./procodile-example", editable = true }
 wraptile = { path = "./wraptile", editable = true }
-# Cuiman GUI
+# Cuiman AI experiments
+mcp = { version = ">=1.2.0", extras = ["cli"] }
+# Cuiman GUI / Eozilla App
 remotestate = ">=0.3.3,<1"
 # remotestate = { path = "../remotestate/remotestate-py", editable = true }
 # Airflow is only available on PyPI
@@ -137,6 +139,7 @@ isort = { relative-imports-order = "closest-to-furthest" }
 
 [tool.coverage.report]
 omit = [
+    "cuiman-ai/src/cuiman_ai/gui/**/*",
     "procodile-example/src/**/*",
     "wraptile/src/wraptile/services/airflow/**/*",
 ]
