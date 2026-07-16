@@ -287,7 +287,12 @@ def new_cli(
         ] = ".",
         config_file: Annotated[Optional[str], CONFIG_OPTION] = None,
     ):
-        """Generate static sync and async service-specific clients."""
+        """Generate the Python code for service-specific, higher-level client functions.
+
+        The command generates classes for both sync and async clients, which
+        have methods that directly represent the processes of the currently configured
+        processing service.
+        """
         from cuiman.api.service_client import (
             fetch_process_descriptions,
             write_service_client_modules,

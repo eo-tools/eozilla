@@ -40,7 +40,7 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 **Commands**:
 
 * `configure`: Configure the client tool.
-* `generate-client`: Generate static sync and async...
+* `generate-client`: Generate the Python code for...
 * `list-processes`: List available processes.
 * `get-process`: Get process details.
 * `create-request`: Create an execution request (template) for...
@@ -79,7 +79,11 @@ $ cuiman configure [OPTIONS]
 
 ## `cuiman generate-client`
 
-Generate static sync and async service-specific clients.
+Generate the Python code for service-specific, higher-level client functions.
+
+The command generates classes for both sync and async clients, which
+have methods that directly represent the processes of the currently configured
+processing service.
 
 **Usage**:
 
