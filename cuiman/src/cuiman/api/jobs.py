@@ -7,7 +7,7 @@ import inspect
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Final, Protocol
 
 from gavicore.models import (
     ApiError,
@@ -29,6 +29,9 @@ from .opener import JobResultOpenContext
 from .opener.opener import open_job_result
 
 JobUpdateHandler = Callable[[JobInfo], Awaitable[None] | None]
+
+CLIENT_CLOSED_REQUEST_STATUS: Final[int] = 499
+"""Non-standard HTTP status used when a job is cancelled by the client."""
 
 
 class JobMonitor:
@@ -253,7 +256,9 @@ def _ensure_successful_job(job_info: JobInfo) -> None:
 
 
 def _job_status_error(job_info: JobInfo) -> ClientError:
-    status = 499 if job_info.status == JobStatus.dismissed else 500
+    status = (
+        CLIENT_CLOSED_REQUEST_STATUS if job_info.status == JobStatus.dismissed else 500
+    )
     return _new_client_error(
         f"Cannot open results of job #{job_info.jobID} "
         f"because the job status is '{job_info.status.value}'",
@@ -280,7 +285,7 @@ def _job_cancelled_error(job_info: JobInfo) -> ClientError:
         f"Job #{job_info.jobID} was cancelled",
         type_="urn:eozilla:job-cancelled",
         title="Job cancelled",
-        status=499,
+        status=CLIENT_CLOSED_REQUEST_STATUS,
         detail=job_info.message,
     )
 

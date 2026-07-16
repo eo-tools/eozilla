@@ -9,6 +9,7 @@ import pytest
 from cuiman.api.config import ClientConfig
 from cuiman.api.exceptions import ClientError
 from cuiman.api.jobs import (
+    CLIENT_CLOSED_REQUEST_STATUS,
     JobMonitor,
     JobOptions,
     async_execute_and_open_result,
@@ -113,6 +114,18 @@ class ExecuteAndOpenResultTest(TestCase):
             )
         self.assertEqual("urn:eozilla:job-failed", e.value.api_error.type)
 
+    def test_dismissed_job_uses_client_closed_request_status(self):
+        client = FakeClient(JobStatus.dismissed)
+        with pytest.raises(ClientError, match="job status is 'dismissed'") as e:
+            execute_and_open_result(
+                client,
+                "process_1",
+                ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
+                job_options=JobOptions(poll_interval=0.01),
+            )
+        self.assertEqual("urn:eozilla:job-dismissed", e.value.api_error.type)
+        self.assertEqual(CLIENT_CLOSED_REQUEST_STATUS, e.value.api_error.status)
+
     def test_monitor_receives_updates(self):
         updates: list[JobStatus] = []
 
@@ -147,6 +160,7 @@ class ExecuteAndOpenResultTest(TestCase):
             )
         self.assertTrue(client.dismissed)
         self.assertEqual("urn:eozilla:job-cancelled", e.value.api_error.type)
+        self.assertEqual(CLIENT_CLOSED_REQUEST_STATUS, e.value.api_error.status)
 
     def test_monitor_times_out(self):
         client = FakeClient(JobStatus.running)
@@ -225,6 +239,7 @@ class AsyncExecuteAndOpenResultTest(IsolatedAsyncioTestCase):
             )
         self.assertTrue(client.dismissed)
         self.assertEqual("urn:eozilla:job-cancelled", e.value.api_error.type)
+        self.assertEqual(CLIENT_CLOSED_REQUEST_STATUS, e.value.api_error.status)
 
     async def test_monitor_times_out(self):
         client = AsyncFakeClient(JobStatus.running)
