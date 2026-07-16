@@ -96,7 +96,4 @@ def use_temp_dir(
         if temp_dir is None:
             import shutil
 
-            try:
-                shutil.rmtree(dt)
-            except OSError:
-                pass
+            shutil.rmtree(dt, ignore_errors=True)
