@@ -2,7 +2,9 @@
 
 ### Enchancements
 
-- **Wraptile**'s Airflow service now supports OAuth2 service-to-service
+**Wraptile** enhancements:
+
+- The wraptile's Airflow service now supports OAuth2 service-to-service
   authentication for the wraptile-Airflow hop, against any OIDC-compliant
   identity provider: when `OIDC_TOKEN_URL` and `OIDC_CLIENT_ID` are set, it
   mints a `client_credentials` token (`aud=airflow`) validated by the gateway,
@@ -11,16 +13,16 @@
   vars are unset. Token retrieval lives in the new
   `wraptile.services.airflow.tokens` module.
 
-## Changes in version 0.1.2
-
-### Enhancements
-
 **Cuiman** enhancements:
 
+- Added a new CLI command `cuiman generate-client NAME` that generates the 
+  Python code for a client service-specific, higher-level client functions.
+  The generated classes have methods that directly represent the processes 
+  of the currently configured processing service. (#115) 
 - Replaced the [Panel](https://panel.holoviz.org/)-based GUI by a modern
   web interface, the [Eozilla App](https://github.com/eo-tools/eozilla-app).
-- Updated `notebooks/cuiman-gui.ipynb` to demonstrate new app-based GUI.
-- Added package `cuiman.app` that implements the new app-based GUI.
+  - Updated `notebooks/cuiman-gui.ipynb` to demonstrate new app-based GUI.
+  - Added package `cuiman.app` that implements the new app-based GUI.
 
 ### Other changes
 

@@ -2,10 +2,11 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from unittest import IsolatedAsyncioTestCase, TestCase
+import inspect
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
+from unittest import IsolatedAsyncioTestCase, TestCase
 
 from cuiman.api.jobs import JobOptions
 from cuiman.api.service_client import (
@@ -109,6 +110,70 @@ class GenerateServiceClientModulesTest(TestCase):
         self.assertIn("job_options: JobOptions | None = None", generated.sync_code)
         self.assertIn("job_options: JobOptions | None = None", generated.async_code)
 
+    def test_generate_service_client_modules_separates_multiple_methods(self):
+        generated = generate_service_client_modules(
+            "demo",
+            [
+                ProcessDescription(id="first", version="1.0.0"),
+                ProcessDescription(id="second", version="1.0.0"),
+            ],
+        )
+
+        self.assertIn(
+            f"{2 * service_client.TAB})\n\n{service_client.TAB}def second(",
+            generated.sync_code,
+        )
+
+    def test_generated_method_has_clean_docstring(self):
+        process = ProcessDescription(
+            id='say-"""-hello',
+            version="1.0.0",
+            title='A """quoted""" title\non two lines',
+            description="First description line\nsecond description line",
+            inputs={
+                "message": InputDescription(
+                    description='Say """hello"""\nover two lines',
+                    schema=Schema(type=DataType.string),
+                ),
+                "fallback": InputDescription(schema=Schema(type=DataType.integer)),
+            },
+        )
+        generated = generate_service_client_modules("demo", [process])
+        namespace: dict[str, object] = {}
+
+        exec(generated.sync_code, namespace)  # noqa: S102
+
+        method = namespace["DemoClient"].say_hello
+        self.assertEqual(
+            inspect.cleandoc(
+                '''
+                Execute process ``say-"""-hello`` and return its opened result.
+
+                A """quoted""" title
+                on two lines
+
+                First description line
+                second description line
+
+                Args:
+                    message: Say """hello""" over two lines
+                    fallback: Process input.
+                    job_options: Optional job execution and result-opening options.
+
+                Raises:
+                    ClientError: If the API call, job execution, or result opening fails.
+                '''
+            ),
+            inspect.getdoc(method),
+        )
+        self.assertIn(
+            f'{2 * service_client.TAB}"""Execute process',
+            generated.sync_code,
+        )
+        self.assertFalse(
+            any(line.endswith(" ") for line in generated.sync_code.splitlines())
+        )
+
     def test_sync_client_class_executes_generated_method(self):
         generated = generate_service_client_modules("s2gos", [mk_process_description()])
         self.assertEqual("s2gos_sync", generated.sync_module_name)
@@ -206,13 +271,17 @@ class GenerateServiceClientModulesTest(TestCase):
 
         default_schema = Schema(type=DataType.string, default="alpha")
         default_input = InputDescription(schema=default_schema)
-        self.assertEqual(("'alpha'", False), service_client._get_default_code(default_input))
+        self.assertEqual(
+            ("'alpha'", False), service_client._get_default_code(default_input)
+        )
 
         optional_input = InputDescription(
             minOccurs=0,
             schema=Schema(type=DataType.integer),
         )
-        self.assertEqual(("None", True), service_client._get_default_code(optional_input))
+        self.assertEqual(
+            ("None", True), service_client._get_default_code(optional_input)
+        )
         self.assertEqual(
             "int | None",
             service_client._get_type_hint(optional_input.schema_, include_none=True),
