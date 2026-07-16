@@ -4,10 +4,15 @@
 
 from __future__ import annotations
 
+import pydantic
+from functools import cache
+
+from collections.abc import Generator
+
 from abc import ABC
 from datetime import date
 from enum import Enum
-from typing import Any, Literal, TypeAlias
+from typing import Any, Literal, TypeAlias, ClassVar
 
 from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 
@@ -591,27 +596,78 @@ class JobResults(RootModel[dict[str, JobResult] | None]):
 
 class ApiError(OgcBaseModel):
     """
-    API error information based on RFC 7807.
+    API error information based on
+    [RFC-7807](https://datatracker.ietf.org/doc/html/rfc7807).
     """
 
+    BUILTIN_ERROR_URI: ClassVar[str] = (
+        "https://docs.python.org/3/library/exceptions.html"
+    )
+
+    VALIDATION_ERROR_URI: ClassVar[str] = (
+        "https://pydantic.dev/docs/validation/latest/api/"
+        "pydantic-core/pydantic_core/"
+        "#pydantic_core.ValidationError"
+    )
+
     type: str
-    """Error type."""
+    """A URI identifying the problem type,
+    e.g., ``https://example.com/probs/validation-error``.
+    """
 
     title: str | None = None
-    """Error title."""
+    """A short, human-readable summary of the problem."""
 
     status: int | None = None
-    """HTTP status code."""
+    """The HTTP status code, e.g., ``422``."""
 
     detail: str | None = None
-    """Detailed error message."""
+    """A detailed explanation of the problem."""
 
     instance: str | None = None
-    """Instance information."""
+    """A URI identifying the specific occurrence of the problem."""
 
     # -- recognized extensions
     traceback: str | list[str] | None = Field(None, alias="x-traceback")
     """Server-side traceback."""
+
+    @classmethod
+    def from_exception(
+        cls,
+        exc: Exception,
+        path: str | None = None,
+        status: int | None = None,
+        title: str | None = None,
+        detail: str | None = None,
+    ) -> "ApiError":
+        """Create an API error from given values."""
+        import traceback
+
+        return cls(
+            type=cls._exc_to_type_uri(exc),
+            instance=path,
+            status=status,
+            title=title,
+            detail=detail or str(exc),
+            **{"x-traceback": traceback.format_exception(type(exc), value=exc)},
+        )
+
+    @classmethod
+    def _exc_to_type_uri(cls, exc: Exception) -> str:
+        if isinstance(exc, pydantic.ValidationError):
+            return f"{cls.VALIDATION_ERROR_URI}"
+
+        exc_type = type(exc)
+        builtin_exc = cls._closest_builtin_exc(exc_type)
+        exc_name = builtin_exc.__name__
+        return f"{cls.BUILTIN_ERROR_URI}#{exc_name}"
+
+    @classmethod
+    def _closest_builtin_exc(cls, exc_type: type[BaseException]) -> type[BaseException]:
+        for base_cls in exc_type.__mro__:
+            if base_cls.__module__ == "builtins" and issubclass(cls, BaseException):
+                return base_cls
+        raise TypeError(f"{exc_type!r} is not an exception type")
 
 
 Format.model_rebuild()

@@ -2,7 +2,6 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-import traceback
 from http import HTTPStatus
 from typing import Optional
 
@@ -10,9 +9,15 @@ from fastapi import HTTPException
 
 from gavicore.models import ApiError
 
+DEFAULT_API_ERROR_URI = (
+    "https://eo-tools.github.io/eozilla/wraptile/api/exceptions/#ServiceException"
+)
+
 
 class ServiceException(HTTPException):
     """Raised if a service error occurred."""
+
+    content: ApiError
 
     def __init__(
         self,
@@ -21,21 +26,22 @@ class ServiceException(HTTPException):
         exception: Optional[Exception] = None,
     ):
         super().__init__(status_code=status_code, detail=detail)
-        self.content = ApiError(
-            type=type(exception).__name__ if exception is not None else "ApiError",
-            status=status_code,
-            title=HTTPStatus(status_code).phrase,
-            detail=detail,
-            **{
-                "x-traceback": (
-                    traceback.format_exception(
-                        type(exception), exception, exception.__traceback__
-                    )
-                    if exception is not None
-                    else None
-                )
-            },
-        )
+        title = HTTPStatus(status_code).phrase
+        if exception is not None:
+            api_error = ApiError.from_exception(
+                exception,
+                status=status_code,
+                title=title,
+                detail=detail,
+            )
+        else:
+            api_error = ApiError(
+                type=DEFAULT_API_ERROR_URI,
+                status=status_code,
+                title=title,
+                detail=detail,
+            )
+        self.content = api_error
 
 
 class ServiceConfigException(ServiceException):

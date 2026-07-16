@@ -100,10 +100,11 @@ class HttpxTransport(Transport, AsyncTransport):
         except (ValueError, TypeError) as e:
             raise ClientError(
                 f"Failed parsing JSON API response: {e}",
-                api_error=ApiError(
-                    type=type(e).__name__,
+                api_error=ApiError.from_exception(
+                    exc=e,
+                    path=args.path,
+                    status=response.status_code,
                     title="Expected JSON response from API",
-                    detail=f"{e}",
                 ),
             ) from e
         try:

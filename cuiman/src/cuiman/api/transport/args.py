@@ -78,14 +78,15 @@ class TransportArgs:
             try:
                 api_error = ApiError(**json_data)
             except pydantic.ValidationError as e:
-                api_error = ApiError(
-                    type="ValidationError",
+                api_error = ApiError.from_exception(
+                    exc=e,
+                    status=status_code,
                     title="Received invalid error details from API",
                     detail=f"{e}",
                 )
         else:
             api_error = ApiError(
-                type="ValidationError",
+                type=ApiError.VALIDATION_ERROR_URI,
                 title="Missing error details from API",
                 detail=f"JSON object expected, but got {type(json_data).__name__}",
             )
