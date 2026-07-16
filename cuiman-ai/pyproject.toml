@@ -54,9 +54,12 @@ pytest-asyncio = "*"
 pytest-cov = "*"
 
 [tool.pixi.pypi-dependencies]
-cuiman = { path = "../cuiman", editable = true }
+# source package
 cuiman_ai = { path = ".", editable = true }
+# eozilla source packages
+cuiman = { path = "../cuiman", editable = true }
 gavicore = { path = "../gavicore", editable = true }
+# PyPI-only depedencies
 mcp = { version = ">=1.2.0", extras = ["cli"] }
 
 [tool.pixi.tasks]
