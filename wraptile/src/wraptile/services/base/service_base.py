@@ -103,7 +103,9 @@ class ServiceBase(Service, ABC):
                     route_module = import_module("wraptile.dru_routes")
                     router: fastapi.APIRouter = getattr(route_module, "dru_router")
                 except AttributeError:
-                    raise ServiceConfigException("Unable to load additional DRU routes") from None
+                    raise ServiceConfigException(
+                        "Unable to load additional DRU routes"
+                    ) from None
                 else:
                     app.include_router(router)
 
