@@ -27,10 +27,24 @@ dru_router = fastapi.APIRouter()
     openapi_extra={
         "requestBody": {
             "content": {
-                # TODO: CWL schema is still outstanding
-                "application/cwl": {"schema": ""},
-                "application/cwl+json": {"schema": ""},
-                "application/cwl+yaml": {"schema": ""},
+                "application/cwl": {
+                    "schema": {
+                        "type": "object",
+                        "additionalProperties": True,
+                    }
+                },
+                "application/cwl+json": {
+                    "schema": {
+                        "type": "object",
+                        "additionalProperties": True,
+                    }
+                },
+                "application/cwl+yaml": {
+                    "schema": {
+                        "type": "object",
+                        "additionalProperties": True,
+                    }
+                },
             },
             "required": True,
         }
