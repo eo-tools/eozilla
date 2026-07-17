@@ -14,8 +14,8 @@ class TransportArgsTest(TestCase):
         args = TransportArgs("/jobs", method="get")
         client_error = args.get_exception_for_status(
             401,
-            "Not implemented",
             {"type": "ValueError", "title": "No jobs", "status": 401},
+            "Not implemented",
         )
         self.assertIsInstance(client_error, ClientError)
         self.assertEqual("Not implemented (status 401)", f"{client_error}")
@@ -28,7 +28,7 @@ class TransportArgsTest(TestCase):
     def test_get_error_for_json_fail_1(self):
         args = TransportArgs("/jobs", method="get")
         client_error = args.get_exception_for_status(
-            501, "Not implemented", {"message": "Wrong error"}
+            501, {"message": "Wrong error"}, "Not implemented"
         )
         self.assertIsInstance(client_error, ClientError)
         self.assertEqual("Not implemented (status 501)", f"{client_error}")
@@ -37,7 +37,7 @@ class TransportArgsTest(TestCase):
 
     def test_get_error_for_json_fail_2(self):
         args = TransportArgs("/jobs", method="get")
-        client_error = args.get_exception_for_status(501, "Not implemented", 13)
+        client_error = args.get_exception_for_status(501, 13, "Not implemented")
         self.assertIsInstance(client_error, ClientError)
         self.assertEqual("Not implemented (status 501)", f"{client_error}")
         self.assertIsInstance(client_error.api_error, ApiError)

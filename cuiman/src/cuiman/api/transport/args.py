@@ -3,8 +3,9 @@
 #  https://opensource.org/license/apache-2-0.
 
 import inspect
+import json
 from dataclasses import dataclass, field
-from typing import Any, Literal, Optional
+from typing import Any, Final, Literal
 
 import pydantic
 import uri_template
@@ -12,6 +13,11 @@ from pydantic import BaseModel
 
 from cuiman.api.exceptions import ClientError
 from gavicore.models import ApiError
+
+
+CLIENT_ERROR_URI: Final[str] = (
+    "https://eo-tools.github.io/eozilla/cuiman/api/#cuiman.ClientError"
+)
 
 
 @dataclass
@@ -66,10 +72,7 @@ class TransportArgs:
 
     # noinspection PyMethodMayBeStatic
     def get_exception_for_status(
-        self,
-        status_code: int,
-        message: str,
-        json_data: Optional[Any] = None,
+        self, status_code: int, json_data: Any, message: str
     ) -> ClientError:
         status_key = str(status_code)
         # Currently, all error types fall back to ApiError
@@ -78,16 +81,23 @@ class TransportArgs:
             try:
                 api_error = ApiError(**json_data)
             except pydantic.ValidationError as e:
-                api_error = ApiError.from_exception(
-                    exc=e,
+                api_error = ApiError(
+                    type=CLIENT_ERROR_URI,
                     status=status_code,
-                    title="Received invalid error details from API",
-                    detail=f"{e}",
+                    title="Received invalid error description from API",
+                    detail=(
+                        f"Expected RFC7807-compliant error description, "
+                        f"but parsing received data produced an error:\n{e}"
+                    ),
                 )
         else:
             api_error = ApiError(
-                type=ApiError.VALIDATION_ERROR_URI,
-                title="Missing error details from API",
-                detail=f"JSON object expected, but got {type(json_data).__name__}",
+                type=CLIENT_ERROR_URI,
+                status=status_code,
+                title="Missing error description from API",
+                detail=(
+                    f"Expected RFC7807-compliant error description, "
+                    f"but received data:\n{json.dumps(json_data)}"
+                ),
             )
         return ClientError(f"{message} (status {status_code})", api_error=api_error)

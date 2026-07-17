@@ -10,7 +10,7 @@ import httpx
 from cuiman.api.exceptions import ClientError
 from gavicore.models import ApiError
 
-from .args import TransportArgs
+from .args import TransportArgs, CLIENT_ERROR_URI
 from .transport import AsyncTransport, Transport, TransportError
 
 
@@ -98,13 +98,15 @@ class HttpxTransport(Transport, AsyncTransport):
             # use args.return_types for this decision.
             response_json = response.json()
         except (ValueError, TypeError) as e:
+            message = "Expected JSON response from API"
             raise ClientError(
-                f"Failed parsing JSON API response: {e}",
-                api_error=ApiError.from_exception(
-                    exc=e,
-                    path=args.path,
+                message,
+                api_error=ApiError(
+                    type=CLIENT_ERROR_URI,
+                    instance=args.path,
                     status=response.status_code,
-                    title="Expected JSON response from API",
+                    title=message,
+                    detail=str(e),
                 ),
             ) from e
         try:
@@ -114,7 +116,9 @@ class HttpxTransport(Transport, AsyncTransport):
             )
         except httpx.HTTPError as e:
             raise args.get_exception_for_status(
-                response.status_code, f"{e}", response_json
+                response.status_code,
+                response_json,
+                f"{e}",
             ) from e
 
     def close(self):

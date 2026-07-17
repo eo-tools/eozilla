@@ -635,6 +635,7 @@ class ApiError(OgcBaseModel):
     def from_exception(
         cls,
         exc: Exception,
+        /,
         path: str | None = None,
         status: int | None = None,
         title: str | None = None,
