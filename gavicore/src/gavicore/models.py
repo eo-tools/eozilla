@@ -692,7 +692,7 @@ class ApiError(OgcBaseModel):
                 base_cls, BaseException
             ):
                 return base_cls
-        assert False, "Should never come here."
+        raise AssertionError("Should never come here.")
 
 
 Format.model_rebuild()
