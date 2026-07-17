@@ -24,6 +24,13 @@
   - Updated `notebooks/cuiman-gui.ipynb` to demonstrate new app-based GUI.
   - Added package `cuiman.app` that implements the new app-based GUI.
 
+**Gavicore** enhancements:
+
+- The `gavicore.model.ApiError` docstrings have been improved and made consistent
+  with [RFC7807](https://datatracker.ietf.org/doc/html/rfc7807). 
+  A new method `ApiError.create()` helps constructing compliant instances. (#164)
+
+
 ### Other changes
 
 - We require `typer >=0.26` and no longer depend on `click`. 
