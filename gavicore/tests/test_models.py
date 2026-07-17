@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Any, TypeVar
 from unittest import TestCase
 
+import pytest
 from pydantic import BaseModel, ValidationError
 
 import gavicore.models as m
@@ -131,9 +132,13 @@ class ModelsTest(TestCase):
         )
         self.assertEqual({"widget": "text"}, output_description.model_extra.get("x-ui"))
 
-    def test_api_error_closest_builtin_exc(self):
-        self.assertIs(m.ApiError._closest_builtin_exc(CustomValueError), ValueError)
-        self.assertIs(m.ApiError._closest_builtin_exc(CustomException), Exception)
+    def _assert_extendable_model(self, model_cls: type[T], data: dict[str, Any]) -> T:
+        model_instance = model_cls(**data)
+        self.assertEqual(
+            data,
+            model_instance.model_dump(mode="json", by_alias=True, exclude_unset=True),
+        )
+        return model_instance
 
     def test_api_error_create_without_exception(self):
         api_error = m.ApiError.create(
@@ -198,10 +203,17 @@ class ModelsTest(TestCase):
         self.assertIsInstance(api_error.traceback, list)
         self.assertTrue(api_error.traceback)
 
-    def _assert_extendable_model(self, model_cls: type[T], data: dict[str, Any]) -> T:
-        model_instance = model_cls(**data)
-        self.assertEqual(
-            data,
-            model_instance.model_dump(mode="json", by_alias=True, exclude_unset=True),
-        )
-        return model_instance
+    # noinspection PyMethodMayBeStatic
+    def test_api_error_create_from_non_exception(self):
+        with pytest.raises(
+            TypeError, match="exc must have type BaseException, but was str"
+        ):
+            # noinspection PyTypeChecker
+            m.ApiError.create(exc="I'm a str", status=422)
+
+    def test_api_error_closest_builtin_exc(self):
+        self.assertIs(m.ApiError._closest_builtin_exc(CustomValueError), ValueError)
+        self.assertIs(m.ApiError._closest_builtin_exc(CustomException), Exception)
+        with pytest.raises(AssertionError, match="Should never come here."):
+            # noinspection PyTypeChecker
+            self.assertIs(m.ApiError._closest_builtin_exc(m.ApiError), Exception)

@@ -676,6 +676,8 @@ class ApiError(OgcBaseModel):
 
     @classmethod
     def _type_uri_from_exc(cls, exc: BaseException) -> str:
+        ensure_type("exc", exc, BaseException)
+
         if isinstance(exc, pydantic.ValidationError):
             return f"{cls.VALIDATION_ERROR_URI}"
 
@@ -691,7 +693,7 @@ class ApiError(OgcBaseModel):
                 base_cls, BaseException
             ):
                 return base_cls
-        raise TypeError(f"{exc_type!r} is not an exception type")
+        assert False, "Should never come here."
 
 
 Format.model_rebuild()
