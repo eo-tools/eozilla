@@ -659,6 +659,7 @@ class ApiError(OgcBaseModel):
         if exc is not None:
             import traceback as tb
 
+            ensure_type("exc", exc, BaseException)
             type_uri = type_uri or cls._type_uri_from_exc(exc)
             title = title or str(exc)
             traceback = traceback or tb.format_exception(exc)
@@ -676,11 +677,8 @@ class ApiError(OgcBaseModel):
 
     @classmethod
     def _type_uri_from_exc(cls, exc: BaseException) -> str:
-        ensure_type("exc", exc, BaseException)
-
         if isinstance(exc, pydantic.ValidationError):
-            return f"{cls.VALIDATION_ERROR_URI}"
-
+            return cls.VALIDATION_ERROR_URI
         exc_type: Type[BaseException] = type(exc)
         builtin_exc = cls._closest_builtin_exc(exc_type)
         exc_name = builtin_exc.__name__
@@ -688,6 +686,7 @@ class ApiError(OgcBaseModel):
 
     @classmethod
     def _closest_builtin_exc(cls, exc_type: Type[BaseException]) -> Type[BaseException]:
+        # noinspection PyTypeChecker
         for base_cls in exc_type.__mro__:
             if base_cls.__module__ == "builtins" and issubclass(
                 base_cls, BaseException
