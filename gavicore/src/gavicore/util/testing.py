@@ -5,6 +5,7 @@
 import os
 from collections.abc import Generator
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Callable
 
 from pydantic import BaseModel
@@ -62,3 +63,37 @@ def set_env(**new_env: str | None) -> Callable[[], None]:
             del os.environ[kn]
 
     return restore_env
+
+
+@contextmanager
+def use_temp_dir(
+    temp_dir: str | os.PathLike[str] | Path | None = None,
+) -> Generator[Path]:
+    """A context manager that creates a temporary directory and
+    changes the current working directory to it. This isolates tests
+    that affect the contents of the CWD to prevent them from
+    interfering with each other.
+
+    Vendored from ``click.CliRunner.isolated_filesystem()``,
+    as it is not available in ``typer.CliRunner`` (as of typer 0.26.8).
+
+    Args:
+        temp_dir: Create the temporary directory under this
+            directory. If given, the created directory is not removed
+            when exiting.
+    """
+    import tempfile
+
+    cwd = os.getcwd()
+    dt = tempfile.mkdtemp(dir=temp_dir)
+    os.chdir(dt)
+
+    try:
+        yield Path(dt)
+    finally:
+        os.chdir(cwd)
+
+        if temp_dir is None:
+            import shutil
+
+            shutil.rmtree(dt, ignore_errors=True)
