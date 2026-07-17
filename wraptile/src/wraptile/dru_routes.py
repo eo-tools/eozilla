@@ -26,6 +26,9 @@ dru_router = fastapi.APIRouter()
     response_model_exclude_unset=True,
     openapi_extra={
         "requestBody": {
+            # NOTE: schemas of the request body below are kept abstract since swagger-ui resolves `$ref`,
+            #       thus slowing down its web interface considerably.
+            #       Querying the `openapi.json` directly does not result in slow downs.
             "content": {
                 "application/cwl": {
                     "schema": {
