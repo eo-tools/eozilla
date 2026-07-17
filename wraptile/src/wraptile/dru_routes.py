@@ -1,7 +1,8 @@
 import fastapi
 
+from gavicore.dru_models import OGCApplicationPackage
 from gavicore.dru_service import DRUService
-from gavicore.models import ApiError, OGCApplicationPackage, ProcessSummary
+from gavicore.models import ApiError, ProcessSummary
 
 from .ogcapppkg_response import OgcApplicationPackageResponse
 from .provider import get_service
