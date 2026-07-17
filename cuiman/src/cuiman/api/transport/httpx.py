@@ -10,7 +10,7 @@ import httpx
 from cuiman.api.exceptions import ClientError
 from gavicore.models import ApiError
 
-from .args import TransportArgs, CLIENT_ERROR_URI
+from .args import CLIENT_ERROR_URI, TransportArgs
 from .transport import AsyncTransport, Transport, TransportError
 
 

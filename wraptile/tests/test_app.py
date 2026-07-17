@@ -7,6 +7,7 @@ from unittest import TestCase
 
 from fastapi.testclient import TestClient
 
+from wraptile.exceptions import DEFAULT_API_ERROR_URI
 from wraptile.logging import LogMessageFilter
 from wraptile.main import app
 from wraptile.provider import ServiceProvider
@@ -41,7 +42,7 @@ class AppTest(TestCase):
         self.assertEqual(404, response.status_code)
         self.assertEqual(
             {
-                "type": "ApiError",
+                "type": DEFAULT_API_ERROR_URI,
                 "status": 404,
                 "title": "Not Found",
                 "detail": "Process 'primos_batman' does not exist",

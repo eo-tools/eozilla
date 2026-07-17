@@ -6,6 +6,7 @@ from unittest import TestCase
 
 from cuiman.api.exceptions import ClientError
 from cuiman.api.transport import TransportArgs
+from cuiman.api.transport.args import CLIENT_ERROR_URI
 from gavicore.models import ApiError
 
 
@@ -14,14 +15,22 @@ class TransportArgsTest(TestCase):
         args = TransportArgs("/jobs", method="get")
         client_error = args.get_exception_for_status(
             401,
-            {"type": "ValueError", "title": "No jobs", "status": 401},
+            {
+                "type": "https://world.of.errors.com/NoJobsError",
+                "title": "No jobs",
+                "status": 401,
+            },
             "Not implemented",
         )
         self.assertIsInstance(client_error, ClientError)
         self.assertEqual("Not implemented (status 401)", f"{client_error}")
         self.assertIsInstance(client_error.api_error, ApiError)
         self.assertEqual(
-            ApiError(type="ValueError", title="No jobs", status=401),
+            ApiError(
+                type="https://world.of.errors.com/NoJobsError",
+                title="No jobs",
+                status=401,
+            ),
             client_error.api_error,
         )
 
@@ -33,7 +42,7 @@ class TransportArgsTest(TestCase):
         self.assertIsInstance(client_error, ClientError)
         self.assertEqual("Not implemented (status 501)", f"{client_error}")
         self.assertIsInstance(client_error.api_error, ApiError)
-        self.assertEqual("ValidationError", client_error.api_error.type)
+        self.assertEqual(CLIENT_ERROR_URI, client_error.api_error.type)
 
     def test_get_error_for_json_fail_2(self):
         args = TransportArgs("/jobs", method="get")
@@ -41,7 +50,7 @@ class TransportArgsTest(TestCase):
         self.assertIsInstance(client_error, ClientError)
         self.assertEqual("Not implemented (status 501)", f"{client_error}")
         self.assertIsInstance(client_error.api_error, ApiError)
-        self.assertEqual("ValidationError", client_error.api_error.type)
+        self.assertEqual(CLIENT_ERROR_URI, client_error.api_error.type)
 
     def test_invalid_uri_template(self):
         with self.assertRaises(ValueError):

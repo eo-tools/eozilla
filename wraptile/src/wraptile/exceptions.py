@@ -12,6 +12,7 @@ from gavicore.models import ApiError
 DEFAULT_API_ERROR_URI = (
     "https://eo-tools.github.io/eozilla/wraptile/api/exceptions/#ServiceException"
 )
+"""Default URI used for the ``type`` field of an ``ApiError``."""
 
 
 class ServiceException(HTTPException):
@@ -28,20 +29,20 @@ class ServiceException(HTTPException):
         super().__init__(status_code=status_code, detail=detail)
         title = HTTPStatus(status_code).phrase
         if exception is not None:
-            api_error = ApiError.from_exception(
-                exception,
+            content = ApiError.create(
+                exc=exception,
                 status=status_code,
                 title=title,
                 detail=detail,
             )
         else:
-            api_error = ApiError(
+            content = ApiError(
                 type=DEFAULT_API_ERROR_URI,
                 status=status_code,
                 title=title,
                 detail=detail,
             )
-        self.content = api_error
+        self.content = content
 
 
 class ServiceConfigException(ServiceException):

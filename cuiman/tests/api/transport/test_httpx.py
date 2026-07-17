@@ -11,6 +11,7 @@ import pytest
 
 from cuiman.api.exceptions import ClientError
 from cuiman.api.transport import TransportArgs, TransportError
+from cuiman.api.transport.args import CLIENT_ERROR_URI
 from cuiman.api.transport.httpx import HttpxTransport
 from gavicore.models import ApiError, ConformanceDeclaration
 
@@ -155,15 +156,17 @@ class HttpxSyncTransportTest(TestCase):
             return_types={"200": ConformanceDeclaration},
             error_types={"401": ApiError},
         )
-        with pytest.raises(ClientError, match="This is no JSON") as e:
+        with pytest.raises(ClientError, match="Expected JSON response from API") as e:
             transport.call(args)
         ce: ClientError = e.value
-        self.assertEqual("Failed parsing JSON API response: This is no JSON", str(ce))
+        self.assertEqual("Expected JSON response from API", str(ce))
         self.assertEqual(
             ApiError(
-                type="ValueError",
+                type=CLIENT_ERROR_URI,
+                status=500,
                 title="Expected JSON response from API",
                 detail="This is no JSON",
+                instance="/conformance",
             ),
             ce.api_error,
         )
