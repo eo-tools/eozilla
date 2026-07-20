@@ -5,7 +5,7 @@
 from unittest import TestCase
 
 from gavicore.models import ApiError
-from wraptile.exceptions import DEFAULT_API_ERROR_URI, ServiceException
+from wraptile.exceptions import ServiceException
 
 
 class JSONContentExceptionTest(TestCase):
@@ -13,7 +13,7 @@ class JSONContentExceptionTest(TestCase):
         exc = ServiceException(401, "Bibo not authorized")
         self.assertEqual(
             ApiError(
-                type=DEFAULT_API_ERROR_URI,
+                type="FIX ME!",
                 status=401,
                 title="Unauthorized",
                 detail="Bibo not authorized",
