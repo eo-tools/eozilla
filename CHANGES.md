@@ -26,6 +26,11 @@
   - Updated `notebooks/cuiman-gui.ipynb` to demonstrate new app-based GUI.
   - Added package `cuiman.app` that implements the new app-based GUI.
 
+### Fixes
+
+- Fixed `cuiman`'s config handling to create `~/.eozilla` safely and avoid
+  leaking `~/.eozilla/config` between test runs on Linux. (#167)
+
 ### Other changes
 
 - We require `typer >=0.26` and no longer depend on `click`. 

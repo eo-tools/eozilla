@@ -115,7 +115,7 @@ class ClientConfig(AuthConfig, BaseSettings):
 
     def write(self, config_path: Optional[str | Path] = None) -> Path:
         config_path = self.normalize_config_path(config_path)
-        config_path.parent.mkdir(exist_ok=True)
+        config_path.parent.mkdir(parents=True, exist_ok=True)
         with config_path.open("wt") as stream:
             yaml.dump(
                 self.model_dump(mode="json", by_alias=True, exclude_none=True), stream
