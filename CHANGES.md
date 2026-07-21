@@ -26,6 +26,13 @@
   - Updated `notebooks/cuiman-gui.ipynb` to demonstrate new app-based GUI.
   - Added package `cuiman.app` that implements the new app-based GUI.
 
+### Fixes
+
+- Fixed test isolation in `cuiman`'s client tests: the default-transport tests
+  no longer read the developer's real `~/.eozilla/config`, which could inject a
+  logged-in token into the request headers and fail the assertion that an
+  unauthenticated client sends none. (#167)
+
 ### Other changes
 
 - We require `typer >=0.26` and no longer depend on `click`. 
