@@ -19,17 +19,20 @@ two-step exchange:
 2. exchange it at Airflow's ``/auth/token`` for an **Airflow** JWT, which
    authenticates every subsequent API call.
 
-Providers, selected by :meth:`TokenConfig.create_token_provider`:
+Providers, selected by
+[`TokenConfig.create_token_provider`][wraptile.services.airflow.tokens.TokenConfig.create_token_provider]:
 
-* :class:`AirflowGatewayTokenProvider` — the two-step exchange above; the
+* [`AirflowGatewayTokenProvider`][wraptile.services.airflow.tokens.AirflowGatewayTokenProvider] — the two-step exchange above; the
   correct path whenever an IdP is configured.
-* :class:`ClientCredentialsTokenProvider` — step 1 alone. It is a *component*
+* [`ClientCredentialsTokenProvider`][wraptile.services.airflow.tokens.ClientCredentialsTokenProvider] — step 1 alone. It is a *component*
   of the exchange, not a way to talk to Airflow: its token is IdP currency.
-* :class:`AirflowNativeTokenProvider` — Airflow's ``/auth/token`` by password,
+* [`AirflowNativeTokenProvider`][wraptile.services.airflow.tokens.AirflowNativeTokenProvider] — Airflow's ``/auth/token`` by password,
   for deployments with neither an IdP nor a gateway.
 
-The environment is read in exactly one place, :meth:`TokenConfig.from_env`;
-everything downstream of it takes a :class:`TokenConfig` and is testable
+The environment is read in exactly one place,
+[`TokenConfig.from_env`][wraptile.services.airflow.tokens.TokenConfig.from_env];
+everything downstream of it takes a
+[`TokenConfig`][wraptile.services.airflow.tokens.TokenConfig] and is testable
 without touching ``os.environ``.
 
 Nothing here is specific to a particular identity provider: only the standard
@@ -189,7 +192,8 @@ class AirflowNativeTokenProvider(TokenProvider):
     correctly, disabled), and this sends no ``Authorization`` header, so a
     gateway enforcing JWT on ``/auth/token`` rejects it with 401 before Airflow
     ever sees it. When an IdP is configured, use
-    :class:`AirflowGatewayTokenProvider` instead.
+    [`AirflowGatewayTokenProvider`][wraptile.services.airflow.tokens.AirflowGatewayTokenProvider]
+    instead.
     """
 
     def __init__(self, base_url: str, username: str, password: str):
@@ -210,7 +214,9 @@ class AirflowNativeTokenProvider(TokenProvider):
 class TokenConfig:
     """Everything needed to decide *how* to obtain an Airflow bearer token.
 
-    Construct it directly in tests, or via :meth:`from_env` in production.
+    Construct it directly in tests, or via
+    [`from_env`][wraptile.services.airflow.tokens.TokenConfig.from_env] in
+    production.
     The OIDC path wins whenever it is configured; the Airflow-native path is
     the fallback.
     """
@@ -265,8 +271,10 @@ class TokenConfig:
     def create_token_provider(self) -> TokenProvider:
         """Build the token provider this configuration selects.
 
-        With OIDC configured this returns :class:`AirflowGatewayTokenProvider`,
-        never the bare :class:`ClientCredentialsTokenProvider` — the latter's
+        With OIDC configured this returns
+        [`AirflowGatewayTokenProvider`][wraptile.services.airflow.tokens.AirflowGatewayTokenProvider],
+        never the bare
+        [`ClientCredentialsTokenProvider`][wraptile.services.airflow.tokens.ClientCredentialsTokenProvider] — the latter's
         token is IdP currency, which Airflow rejects with
         ``403 "Invalid JWT token"``. The exchange is not an extra hop to be
         optimised away; it is the only thing Airflow's API accepts.
