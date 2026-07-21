@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import os
 from pathlib import Path
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import AsyncMock, patch
@@ -81,8 +82,9 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
             patch.object(ClientConfig, "return_type_map", return_type_map),
             # Isolate from any real ~/.eozilla/config on the developer's machine,
             # which would otherwise inject a logged-in token into the headers.
+            # os.devnull is not a directory, so this path can never exist.
             patch.object(
-                ClientConfig, "default_path", Path("/nonexistent/.eozilla/config")
+                ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
             ),
             patch("cuiman.api.async_client.HttpxTransport") as httpx_transport_cls,
         ):
