@@ -7,19 +7,9 @@ from enum import Enum
 from typing import Any, TypeVar
 from unittest import TestCase
 
-import pytest
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 import gavicore.models as m
-
-
-class CustomValueError(ValueError):
-    pass
-
-
-class CustomException(Exception):
-    pass
-
 
 REQUIRED_ENUMS = {
     "CRS",
@@ -139,81 +129,3 @@ class ModelsTest(TestCase):
             model_instance.model_dump(mode="json", by_alias=True, exclude_unset=True),
         )
         return model_instance
-
-    def test_api_error_create_without_exception(self):
-        api_error = m.ApiError.create(
-            type_uri="https://example.com/probs/invalid-request",
-            title="Invalid request",
-            status=400,
-            detail="Missing required field.",
-            instance="/requests/123",
-        )
-
-        self.assertEqual(
-            m.ApiError(
-                type="https://example.com/probs/invalid-request",
-                title="Invalid request",
-                status=400,
-                detail="Missing required field.",
-                instance="/requests/123",
-            ),
-            api_error,
-        )
-
-    def test_api_error_create_from_builtin_exception(self):
-        try:
-            raise RuntimeError("Boom")
-        except RuntimeError as exc:
-            runtime_error = exc
-
-        api_error = m.ApiError.create(
-            exc=runtime_error,
-            status=500,
-            detail="The request failed.",
-            instance="/jobs/42",
-        )
-
-        self.assertEqual(
-            "https://docs.python.org/3/library/exceptions.html#RuntimeError",
-            api_error.type,
-        )
-        self.assertEqual("Boom", api_error.title)
-        self.assertEqual(500, api_error.status)
-        self.assertEqual("The request failed.", api_error.detail)
-        self.assertEqual("/jobs/42", api_error.instance)
-        self.assertIsInstance(api_error.traceback, list)
-        self.assertTrue(api_error.traceback)
-
-    def test_api_error_create_from_validation_error(self):
-        class Payload(BaseModel):
-            count: int
-
-        try:
-            # noinspection PyTypeChecker
-            Payload(count="not an int")
-        except ValidationError as exc:
-            validation_error = exc
-
-        # noinspection PyUnboundLocalVariable
-        api_error = m.ApiError.create(exc=validation_error, status=422)
-
-        self.assertEqual(m.ApiError.VALIDATION_ERROR_URI, api_error.type)
-        self.assertEqual(str(validation_error), api_error.title)
-        self.assertEqual(422, api_error.status)
-        self.assertIsInstance(api_error.traceback, list)
-        self.assertTrue(api_error.traceback)
-
-    # noinspection PyMethodMayBeStatic
-    def test_api_error_create_from_non_exception(self):
-        with pytest.raises(
-            TypeError, match="exc must have type BaseException, but was str"
-        ):
-            # noinspection PyTypeChecker
-            m.ApiError.create(exc="I'm a str", status=422)
-
-    def test_api_error_closest_builtin_exc(self):
-        self.assertIs(m.ApiError._closest_builtin_exc(CustomValueError), ValueError)
-        self.assertIs(m.ApiError._closest_builtin_exc(CustomException), Exception)
-        with pytest.raises(AssertionError, match="Should never come here."):
-            # noinspection PyTypeChecker
-            self.assertIs(m.ApiError._closest_builtin_exc(m.ApiError), Exception)

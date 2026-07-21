@@ -41,7 +41,7 @@ class AppTest(TestCase):
         self.assertEqual(404, response.status_code)
         self.assertEqual(
             {
-                "type": "FIX ME!",
+                "type": "http://www.opengis.net/def/exceptions/ogcapi-processes-1/1.0/no-such-process",
                 "status": 404,
                 "title": "Not Found",
                 "detail": "Process 'primos_batman' does not exist",

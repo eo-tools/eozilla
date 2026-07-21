@@ -27,8 +27,9 @@
 **Gavicore** enhancements:
 
 - The `gavicore.model.ApiError` docstrings have been improved and made consistent
-  with [RFC7807](https://datatracker.ietf.org/doc/html/rfc7807). 
-  A new method `ApiError.create()` helps constructing compliant instances. (#163)
+  with [RFC7807](https://datatracker.ietf.org/doc/html/rfc7807). The function
+  `create_api_error` in the new module `gavicore.service.errors` can be used to 
+  build compliant instances. (#163)
 
 
 ### Other changes
