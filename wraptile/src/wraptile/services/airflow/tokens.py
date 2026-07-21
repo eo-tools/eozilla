@@ -4,20 +4,39 @@
 
 """Bearer tokens for the wraptile->airflow hop.
 
-Two ways to obtain one, selected by :meth:`TokenConfig.create_token_provider`:
+Airflow's API accepts **only tokens Airflow itself issued**. An IdP token is not
+an Airflow bearer, even when Airflow is configured against that IdP: an auth
+manager uses the IdP to authenticate a login and to answer authorization
+queries, then mints its own JWT. Sending the IdP token to ``/api/v2/*`` yields
+``403 "Invalid JWT token"``.
 
-* :class:`ClientCredentialsTokenProvider` — the OAuth2 ``client_credentials``
-  grant against any OIDC-compliant identity provider. The resulting token is
-  what the gateway in front of Airflow validates (issuer, audience, roles).
-* :class:`AirflowNativeTokenProvider` — Airflow's own ``/auth/token`` endpoint,
-  the fallback for deployments without a gateway in the path.
+So the token the *gateway* wants and the token *Airflow* wants are different,
+and both travel on the same ``Authorization`` header. The hop is therefore a
+two-step exchange:
 
-The environment is read in exactly one place, :meth:`TokenConfig.from_env`;
-everything downstream of it takes a :class:`TokenConfig` and is testable
+1. mint an IdP token via ``client_credentials`` — the gateway validates this
+   (issuer, audience, roles) on the ``/auth/token`` request;
+2. exchange it at Airflow's ``/auth/token`` for an **Airflow** JWT, which
+   authenticates every subsequent API call.
+
+Providers, selected by
+[`TokenConfig.create_token_provider`][wraptile.services.airflow.tokens.TokenConfig.create_token_provider]:
+
+* [`AirflowGatewayTokenProvider`][wraptile.services.airflow.tokens.AirflowGatewayTokenProvider] — the two-step exchange above; the
+  correct path whenever an IdP is configured.
+* [`ClientCredentialsTokenProvider`][wraptile.services.airflow.tokens.ClientCredentialsTokenProvider] — step 1 alone. It is a *component*
+  of the exchange, not a way to talk to Airflow: its token is IdP currency.
+* [`AirflowNativeTokenProvider`][wraptile.services.airflow.tokens.AirflowNativeTokenProvider] — Airflow's ``/auth/token`` by password,
+  for deployments with neither an IdP nor a gateway.
+
+The environment is read in exactly one place,
+[`TokenConfig.from_env`][wraptile.services.airflow.tokens.TokenConfig.from_env];
+everything downstream of it takes a
+[`TokenConfig`][wraptile.services.airflow.tokens.TokenConfig] and is testable
 without touching ``os.environ``.
 
 Nothing here is specific to a particular identity provider: only the standard
-OAuth2 token endpoint and grant are used.
+OAuth2 token endpoint and grants are used.
 """
 
 import abc
@@ -100,8 +119,82 @@ class ClientCredentialsTokenProvider(TokenProvider):
         return self._token
 
 
+class AirflowGatewayTokenProvider(TokenProvider):
+    """Exchange an IdP service token for an Airflow-issued JWT.
+
+    Airflow's API rejects IdP tokens (``403 "Invalid JWT token"``) — it accepts
+    only JWTs it minted. Airflow's ``/auth/token`` performs the exchange, and a
+    gateway in front of it validates the IdP token on *that* request. Hence two
+    tokens, each authenticating a different leg:
+
+    * the IdP token goes on the ``Authorization`` header, satisfying the gateway;
+    * the client credentials go in the body, satisfying Airflow.
+
+    Both are needed simultaneously. Without a gateway the header is simply
+    ignored, so this provider is also correct when Airflow is reached directly.
+
+    The Airflow JWT is cached against **its own** expiry, which is unrelated to
+    the IdP token's: ``inner`` re-mints independently on its own schedule.
+    Deriving one lifetime from the other silently breaks the hop the moment the
+    shorter one lapses.
+    """
+
+    def __init__(
+        self,
+        base_url: str,
+        client_id: str,
+        client_secret: Optional[str],
+        inner: TokenProvider,
+    ):
+        self._base_url = base_url
+        self._client_id = client_id
+        self._client_secret = client_secret
+        self._inner = inner
+        self._token: Optional[str] = None
+        self._expiry: float = 0.0
+
+    def get_token(self) -> str:
+        now = time.monotonic()
+        if self._token and now < self._expiry:
+            return self._token
+
+        body = {"grant_type": "client_credentials", "client_id": self._client_id}
+        if self._client_secret:
+            body["client_secret"] = self._client_secret
+
+        response = requests.post(
+            f"{self._base_url}/auth/token",
+            json=body,
+            # The IdP token authenticates this request to the gateway, not to
+            # Airflow; Airflow authenticates it from the body above.
+            headers={"Authorization": f"Bearer {self._inner.get_token()}"},
+            timeout=TOKEN_REQUEST_TIMEOUT,
+        )
+        token_data = _json_or_raise(response)
+        self._token = token_data["access_token"]
+        # Airflow's response carries no "expires_in"; its lifetime comes from
+        # the server's api_auth.jwt_expiration_time. Assume the conservative
+        # default and re-mint early — an over-eager exchange costs one request,
+        # a stale JWT costs a 403 mid-flight.
+        self._expiry = (
+            now
+            + token_data.get("expires_in", DEFAULT_TOKEN_LIFETIME)
+            - TOKEN_REFRESH_MARGIN
+        )
+        return self._token
+
+
 class AirflowNativeTokenProvider(TokenProvider):
-    """Airflow's own ``/auth/token`` endpoint, authenticated by password."""
+    """Airflow's own ``/auth/token`` endpoint, authenticated by password.
+
+    Only for deployments with **no IdP and no gateway**: the password grant
+    requires direct access grants enabled on the IdP client (normally, and
+    correctly, disabled), and this sends no ``Authorization`` header, so a
+    gateway enforcing JWT on ``/auth/token`` rejects it with 401 before Airflow
+    ever sees it. When an IdP is configured, use
+    [`AirflowGatewayTokenProvider`][wraptile.services.airflow.tokens.AirflowGatewayTokenProvider]
+    instead.
+    """
 
     def __init__(self, base_url: str, username: str, password: str):
         self._base_url = base_url
@@ -121,7 +214,9 @@ class AirflowNativeTokenProvider(TokenProvider):
 class TokenConfig:
     """Everything needed to decide *how* to obtain an Airflow bearer token.
 
-    Construct it directly in tests, or via :meth:`from_env` in production.
+    Construct it directly in tests, or via
+    [`from_env`][wraptile.services.airflow.tokens.TokenConfig.from_env] in
+    production.
     The OIDC path wins whenever it is configured; the Airflow-native path is
     the fallback.
     """
@@ -176,6 +271,14 @@ class TokenConfig:
     def create_token_provider(self) -> TokenProvider:
         """Build the token provider this configuration selects.
 
+        With OIDC configured this returns
+        [`AirflowGatewayTokenProvider`][wraptile.services.airflow.tokens.AirflowGatewayTokenProvider],
+        never the bare
+        [`ClientCredentialsTokenProvider`][wraptile.services.airflow.tokens.ClientCredentialsTokenProvider] — the latter's
+        token is IdP currency, which Airflow rejects with
+        ``403 "Invalid JWT token"``. The exchange is not an extra hop to be
+        optimised away; it is the only thing Airflow's API accepts.
+
         Raises:
             RuntimeError: If the OIDC settings are only half-filled, or if the
                 native fallback has no Airflow password.
@@ -189,11 +292,16 @@ class TokenConfig:
                     "incomplete OIDC configuration; please set both env vars"
                     " OIDC_TOKEN_URL and OIDC_CLIENT_ID"
                 )
-            return ClientCredentialsTokenProvider(
-                token_url=self.oidc_token_url,
+            return AirflowGatewayTokenProvider(
+                self.airflow_base_url,
                 client_id=self.oidc_client_id,
                 client_secret=self.oidc_client_secret,
-                audience=self.oidc_audience,
+                inner=ClientCredentialsTokenProvider(
+                    token_url=self.oidc_token_url,
+                    client_id=self.oidc_client_id,
+                    client_secret=self.oidc_client_secret,
+                    audience=self.oidc_audience,
+                ),
             )
 
         if not self.airflow_password:

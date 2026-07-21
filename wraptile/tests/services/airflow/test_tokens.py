@@ -9,9 +9,11 @@ import requests
 
 from wraptile.exceptions import ServiceException
 from wraptile.services.airflow.tokens import (
+    AirflowGatewayTokenProvider,
     AirflowNativeTokenProvider,
     ClientCredentialsTokenProvider,
     TokenConfig,
+    TokenProvider,
     create_token_provider,
 )
 
@@ -89,6 +91,117 @@ class ClientCredentialsTokenProviderTest(TestCase):
         self.assertEqual(ctx.exception.status_code, 401)
 
 
+class _StubTokenProvider(TokenProvider):
+    """Stands in for the IdP leg so the exchange can be tested on its own."""
+
+    def __init__(self, token: str = "idp-token"):  # noqa: S107
+        self.token = token
+        self.calls = 0
+
+    def get_token(self) -> str:
+        self.calls += 1
+        return self.token
+
+
+class AirflowGatewayTokenProviderTest(TestCase):
+    def _provider(self, inner=None):
+        return AirflowGatewayTokenProvider(
+            "http://airflow:8080",
+            client_id="wraptile",
+            client_secret="s3cr3t",  # noqa: S106
+            inner=inner or _StubTokenProvider(),
+        )
+
+    @patch("wraptile.services.airflow.tokens.requests.post")
+    def test_exchanges_idp_token_for_airflow_jwt(self, mock_post):
+        mock_post.return_value = _token_response("airflow-jwt")
+
+        self.assertEqual(self._provider().get_token(), "airflow-jwt")
+
+        args, kwargs = mock_post.call_args
+        self.assertEqual(args[0], "http://airflow:8080/auth/token")
+        # The IdP token authenticates the request to the gateway...
+        self.assertEqual(kwargs["headers"]["Authorization"], "Bearer idp-token")
+        # ...and the client credentials authenticate it to Airflow. Both legs,
+        # one request: dropping either one breaks the hop.
+        self.assertEqual(
+            kwargs["json"],
+            {
+                "grant_type": "client_credentials",
+                "client_id": "wraptile",
+                "client_secret": "s3cr3t",
+            },
+        )
+
+    @patch("wraptile.services.airflow.tokens.requests.post")
+    def test_returns_airflow_jwt_not_the_idp_token(self, mock_post):
+        # The bug this whole provider exists to prevent: handing Airflow the IdP
+        # token yields 403 "Invalid JWT token" on every API call.
+        mock_post.return_value = _token_response("airflow-jwt")
+        inner = _StubTokenProvider("idp-token")
+
+        token = self._provider(inner).get_token()
+
+        self.assertEqual(token, "airflow-jwt")
+        self.assertNotEqual(token, inner.token)
+
+    @patch("wraptile.services.airflow.tokens.requests.post")
+    def test_caches_the_airflow_jwt(self, mock_post):
+        mock_post.return_value = _token_response("airflow-jwt")
+        provider = self._provider()
+
+        self.assertEqual(provider.get_token(), "airflow-jwt")
+        self.assertEqual(provider.get_token(), "airflow-jwt")
+        mock_post.assert_called_once()
+
+    @patch("wraptile.services.airflow.tokens.requests.post")
+    def test_re_exchanges_when_the_airflow_jwt_expires(self, mock_post):
+        mock_post.side_effect = [_token_response("first"), _token_response("second")]
+        provider = self._provider()
+
+        self.assertEqual(provider.get_token(), "first")
+        provider._expiry = 0.0
+        self.assertEqual(provider.get_token(), "second")
+        self.assertEqual(mock_post.call_count, 2)
+
+    @patch("wraptile.services.airflow.tokens.requests.post")
+    def test_idp_token_lifetime_is_independent_of_the_airflow_jwt(self, mock_post):
+        # The two tokens expire on unrelated schedules. The inner provider does
+        # its own caching, so the exchange must re-ask it every time rather than
+        # pinning the IdP token to the Airflow JWT's lifetime.
+        mock_post.side_effect = [_token_response("first"), _token_response("second")]
+        inner = _StubTokenProvider()
+        provider = self._provider(inner)
+
+        provider.get_token()
+        provider._expiry = 0.0
+        provider.get_token()
+
+        self.assertEqual(inner.calls, 2)
+
+    @patch("wraptile.services.airflow.tokens.requests.post")
+    def test_omits_secret_for_a_public_client(self, mock_post):
+        mock_post.return_value = _token_response()
+        AirflowGatewayTokenProvider(
+            "http://airflow:8080",
+            client_id="public-client",
+            client_secret=None,
+            inner=_StubTokenProvider(),
+        ).get_token()
+
+        self.assertNotIn("client_secret", mock_post.call_args.kwargs["json"])
+
+    @patch("wraptile.services.airflow.tokens.requests.post")
+    def test_http_error_becomes_service_exception(self, mock_post):
+        response = MagicMock(status_code=403, reason="Forbidden")
+        response.raise_for_status.side_effect = requests.exceptions.HTTPError("nope")
+        mock_post.return_value = response
+
+        with self.assertRaises(ServiceException) as ctx:
+            self._provider().get_token()
+        self.assertEqual(ctx.exception.status_code, 403)
+
+
 class AirflowNativeTokenProviderTest(TestCase):
     @patch("wraptile.services.airflow.tokens.requests.post")
     def test_posts_credentials_to_auth_token(self, mock_post):
@@ -147,14 +260,19 @@ class TokenConfigFromEnvTest(TestCase):
 
 
 class CreateTokenProviderTest(TestCase):
-    def test_client_credentials_selected_when_configured(self):
+    def test_oidc_selects_the_exchange_not_the_bare_idp_token(self):
+        # Returning ClientCredentialsTokenProvider here would send Airflow an
+        # IdP token, which it rejects with 403 on every call. The bare provider
+        # is only ever the inner leg of the exchange.
         provider = TokenConfig(
             airflow_base_url="http://airflow:8080",
             oidc_token_url=_OIDC_ENV["OIDC_TOKEN_URL"],
             oidc_client_id="wraptile",
         ).create_token_provider()
-        self.assertIsInstance(provider, ClientCredentialsTokenProvider)
-        self.assertEqual(provider._audience, "airflow")
+        self.assertIsInstance(provider, AirflowGatewayTokenProvider)
+        self.assertIsInstance(provider._inner, ClientCredentialsTokenProvider)
+        self.assertEqual(provider._inner._audience, "airflow")
+        self.assertEqual(provider._base_url, "http://airflow:8080")
 
     def test_falls_back_to_native_provider(self):
         provider = TokenConfig(
@@ -184,4 +302,4 @@ class CreateTokenProviderTest(TestCase):
     @patch.dict("os.environ", _OIDC_ENV, clear=True)
     def test_module_function_reads_the_environment(self):
         provider = create_token_provider("http://airflow:8080")
-        self.assertIsInstance(provider, ClientCredentialsTokenProvider)
+        self.assertIsInstance(provider, AirflowGatewayTokenProvider)
