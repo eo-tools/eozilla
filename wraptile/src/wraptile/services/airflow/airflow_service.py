@@ -173,7 +173,9 @@ class AirflowService(ServiceBase):
         try:
             dag_run = self.airflow_dag_run_api.trigger_dag_run(process_id, dag_run_body)
         except ApiException as e:
-            raise ServiceException(e.status, e.reason, exception=e) from e
+            raise ServiceException(
+                e.status, e.reason, exception=e, is_job_problem=True
+            ) from e
         return self.dag_run_to_job_info(dag_run)
 
     async def get_jobs(self, request: fastapi.Request, *args, **kwargs) -> JobList:
@@ -184,14 +186,18 @@ class AirflowService(ServiceBase):
                 owners=None,  # TODO important, get for current user only
             )
         except ApiException as e:
-            raise ServiceException(e.status, detail=e.reason, exception=e) from e
+            raise ServiceException(
+                e.status, detail=e.reason, exception=e, is_job_problem=True
+            ) from e
 
         jobs: list[JobInfo] = []
         for dag in dag_collection.dags:
             try:
                 dag_run_collection = self.airflow_dag_run_api.get_dag_runs(dag.dag_id)
             except ApiException as e:
-                raise ServiceException(e.status, e.reason, exception=e) from e
+                raise ServiceException(
+                    e.status, e.reason, exception=e, is_job_problem=True
+                ) from e
             jobs.extend(
                 self.dag_run_to_job_info(dag_run)
                 for dag_run in dag_run_collection.dag_runs
@@ -203,7 +209,9 @@ class AirflowService(ServiceBase):
         try:
             dag_run = self.airflow_dag_run_api.get_dag_run(dag_id, job_id)
         except ApiException as e:
-            raise ServiceException(e.status, e.reason, exception=e) from e
+            raise ServiceException(
+                e.status, e.reason, exception=e, is_job_problem=True
+            ) from e
         return self.dag_run_to_job_info(dag_run)
 
     async def dismiss_job(self, job_id: str, *args, **kwargs) -> JobInfo:
@@ -217,7 +225,9 @@ class AirflowService(ServiceBase):
                 dag_id, job_id, dag_run_patch
             )
         except ApiException as e:
-            raise ServiceException(e.status, e.reason, exception=e) from e
+            raise ServiceException(
+                e.status, e.reason, exception=e, is_job_problem=True
+            ) from e
         return self.dag_run_to_job_info(dag_run)
 
     async def get_job_results(self, job_id: str, *args, **kwargs) -> JobResults:

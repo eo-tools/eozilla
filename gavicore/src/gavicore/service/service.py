@@ -4,7 +4,7 @@
 
 from abc import ABC, abstractmethod
 
-from .models import (
+from gavicore.models import (
     Capabilities,
     ConformanceDeclaration,
     JobInfo,

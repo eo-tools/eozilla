@@ -26,6 +26,13 @@
   - Updated `notebooks/cuiman-gui.ipynb` to demonstrate new app-based GUI.
   - Added package `cuiman.app` that implements the new app-based GUI.
 
+**Gavicore** enhancements:
+
+- The `gavicore.model.ApiError` docstrings have been improved and made consistent
+  with [RFC7807](https://datatracker.ietf.org/doc/html/rfc7807). The function
+  `create_api_error` in the new module `gavicore.service.errors` can be used to 
+  build compliant instances. (#163)
+
 ### Fixes
 
 - Fixed test isolation in `cuiman`'s client tests: the default-transport tests

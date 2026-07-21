@@ -591,23 +591,26 @@ class JobResults(RootModel[dict[str, JobResult] | None]):
 
 class ApiError(OgcBaseModel):
     """
-    API error information based on RFC 7807.
+    API error information based on
+    [RFC7807](https://datatracker.ietf.org/doc/html/rfc7807).
     """
 
     type: str
-    """Error type."""
+    """A URI identifying the problem type,
+    e.g., ``https://example.com/probs/validation-error``.
+    """
 
     title: str | None = None
-    """Error title."""
+    """A short, human-readable summary of the problem."""
 
     status: int | None = None
-    """HTTP status code."""
+    """The HTTP status code, e.g., ``422``."""
 
     detail: str | None = None
-    """Detailed error message."""
+    """A detailed explanation of the problem."""
 
     instance: str | None = None
-    """Instance information."""
+    """A URI identifying the specific occurrence of the problem."""
 
     # -- recognized extensions
     traceback: str | list[str] | None = Field(None, alias="x-traceback")

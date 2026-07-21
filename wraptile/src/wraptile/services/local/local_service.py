@@ -21,6 +21,7 @@ from gavicore.models import (
     ProcessRequest,
     ProcessSummary,
 )
+from gavicore.service.errors import ErrorTypeId
 from gavicore.util.dynimp import import_value
 from procodile import Job, Process, ProcessRegistry
 from wraptile.exceptions import ServiceException
@@ -102,6 +103,7 @@ class LocalService(ServiceBase):
                 400,
                 detail=f"Invalid parameterization for process {process_id!r}: {e}",
                 exception=e,
+                type_id="bad-request",
             ) from e
         executor = self._ensure_executor()
         use_processes = isinstance(executor, ProcessPoolExecutor)
@@ -239,7 +241,11 @@ class LocalService(ServiceBase):
     def _get_process(self, process_id: str) -> Process:
         process = self.process_registry.get(process_id)
         if process is None:
-            raise ServiceException(404, detail=f"Process {process_id!r} does not exist")
+            raise ServiceException(
+                404,
+                detail=f"Process {process_id!r} does not exist",
+                type_id="no-such-process",
+            )
         return process
 
     def _get_job(
@@ -247,10 +253,20 @@ class LocalService(ServiceBase):
     ) -> Job:
         job = self.jobs.get(job_id)
         if job is None:
-            raise ServiceException(404, detail=f"Job {job_id!r} does not exist")
+            raise ServiceException(
+                404, detail=f"Job {job_id!r} does not exist", type_id="no-such-job"
+            )
         message = forbidden_status_codes.get(job.job_info.status)
+        type_id: ErrorTypeId | None = None
+        if job.job_info.status in (JobStatus.accepted, JobStatus.running):
+            type_id = "result-not-ready"
         if message:
-            raise ServiceException(403, detail=f"Job {job_id!r} {message}")
+            raise ServiceException(
+                403,
+                detail=f"Job {job_id!r} {message}",
+                is_job_problem=True,
+                type_id=type_id,
+            )
         return job
 
 

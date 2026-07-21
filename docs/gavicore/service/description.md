@@ -3,11 +3,15 @@
 
 ## Overview
 
-This package defines the core interface [Service][gavicore.service.Service] 
+This package defines the core interface [`Service`][gavicore.service.Service] 
 which is an abstraction of the Wraptile server's backend implementation.
 
+In addition, it provides a utility module [`errors`][gavicore.service.errors] 
+which helps creating RFC7807-compliant error objects of type 
+[`ApiError`][gavicore.models.ApiError].
+
 The following class diagram provides an overview of how 
-[Service][gavicore.service.Service] relates to other model classes defined in 
+[`Service`][gavicore.service.Service] relates to other model classes defined in 
 Gavicore.
 
 
