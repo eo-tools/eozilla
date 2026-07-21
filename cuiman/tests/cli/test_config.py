@@ -26,7 +26,6 @@ class ConfigTestMixin:
         self.restore_env = set_env(
             **{k: None for k, v in os.environ.items() if k.startswith("EOZILLA_")}
         )
-        self.must_restore_config = False
         # If a config backup exists, delete it
         if DEFAULT_CONFIG_BACKUP_PATH.exists():
             os.remove(DEFAULT_CONFIG_BACKUP_PATH)
@@ -43,6 +42,10 @@ class ConfigTestMixin:
             if DEFAULT_CONFIG_PATH.exists():
                 os.remove(DEFAULT_CONFIG_PATH)
             DEFAULT_CONFIG_BACKUP_PATH.rename(DEFAULT_CONFIG_PATH)
+        elif DEFAULT_CONFIG_PATH.exists():
+            # The test created a fresh config file, so remove it to avoid
+            # leaking state into the next run.
+            os.remove(DEFAULT_CONFIG_PATH)
 
 
 class GetConfigTest(ConfigTestMixin, unittest.TestCase):
