@@ -1,6 +1,6 @@
 [project]
 name = "eozilla"
-version = "0.2.0.dev0"
+version = "0.2.0.dev1"
 description = "A suite of tools around workflow orchestration systems and the OGC API - Processes"
 requires-python = ">=3.11"
 
@@ -69,7 +69,7 @@ griffe-pydantic = ">=1.3.1,<2"
 
 [tool.pixi.pypi-dependencies]
 # For PyPI builds (maybe replace by some pixi-friendly tool)
-build = ">=1.3.0,<2"
+build = ">=1.3.0,<1.5.1"
 # I wished we could have "no-deps=true" here,
 # or even better "[tool.pixi.workspaces]".
 # See https://github.com/prefix-dev/pixi/issues/1417.
@@ -141,6 +141,12 @@ omit = [
     "wraptile/src/wraptile/services/airflow/**/*",
 ]
 
+[tool.coverage.run]
+# TODO: remove this when `gen_image` is implemented
+omit = [
+    'appligator/src/appligator/airflow/gen_image.py'
+]
+
 [tool.mypy]
 python_version = "3.12"
 check_untyped_defs = true
@@ -163,6 +169,39 @@ exclude = [
 
 # pixi run test
 
+[tool.pixi.tasks]
+test-appligator = "pytest appligator/tests"
+test-cuiman = "pytest cuiman/tests"
+test-eozilla = "pytest eozilla/tests"
+test-gavicore = "pytest gavicore/tests"
+test-procodile = "pytest procodile/tests"
+test-wraptile = "pytest wraptile/tests"
+cov-report-html = "coverage html -d .cov-report && coverage report"
+cov-report-xml = "coverage xml -o coverage.xml && coverage report"
+cov-appligator = "pytest --cov appligator/src/appligator --cov-report= --cov-append appligator/tests"
+cov-cuiman = "pytest --cov cuiman/src/cuiman --cov-report= --cov-append cuiman/tests"
+cov-eozilla = "pytest --cov eozilla/src/eozilla --cov-report= --cov-append eozilla/tests"
+cov-gavicore = "pytest --cov gavicore/src/gavicore --cov-report= --cov-append gavicore/tests"
+cov-procodile = "pytest --cov procodile/src/procodile --cov-report= --cov-append procodile/tests"
+cov-wraptile = "pytest --cov wraptile/src/wraptile --cov-report= --cov-append wraptile/tests"
+format = "python tools/format.py"
+check-appligator = "ruff check appligator/src"
+check-cuiman = "ruff check cuiman/src"
+check-eozilla = "ruff check eozilla/src"
+check-gavicore = "ruff check gavicore/src"
+check-procodile = "ruff check procodile/src"
+check-wraptile = "ruff check wraptile/src"
+typecheck = "mypy ."
+gen-server = "python -m tools.gen_server"
+gen-client = "python -m tools.gen_client"
+gen-cli-docs = "python -m tools.gen_cli_docs"
+gen-dags = "appligator wraptile.services.local.testing:service.process_registry"
+sync-versions = "python -m tools.sync_versions"
+jl = "jupyter-lab"
+serve = "wraptile run -- wraptile.services.local.testing:service"
+serve-docs = "mkdocs serve"
+build-docs = "mkdocs build"
+
 [tool.pixi.tasks.tests]
 depends-on = [
     "test-appligator",
@@ -172,24 +211,6 @@ depends-on = [
     "test-procodile",
     "test-wraptile",
 ]
-
-[tool.pixi.tasks.test-appligator]
-cmd = "pytest appligator/tests"
-
-[tool.pixi.tasks.test-cuiman]
-cmd = "pytest cuiman/tests"
-
-[tool.pixi.tasks.test-eozilla]
-cmd = "pytest eozilla/tests"
-
-[tool.pixi.tasks.test-gavicore]
-cmd = "pytest gavicore/tests"
-
-[tool.pixi.tasks.test-procodile]
-cmd = "pytest procodile/tests"
-
-[tool.pixi.tasks.test-wraptile]
-cmd = "pytest wraptile/tests"
 
 
 # pixi run coverage / coverage-ci
@@ -210,35 +231,6 @@ depends-on = [
     "cov-procodile",
 ]
 
-[tool.pixi.tasks.cov-report-html]
-cmd = "coverage html -d .cov-report && coverage report"
-
-[tool.pixi.tasks.cov-report-xml]
-cmd = "coverage xml -o coverage.xml && coverage report"
-
-[tool.pixi.tasks.cov-appligator]
-cmd = "pytest --cov appligator/src/appligator --cov-report= --cov-append appligator/tests"
-
-[tool.pixi.tasks.cov-cuiman]
-cmd = "pytest --cov cuiman/src/cuiman --cov-report= --cov-append cuiman/tests"
-
-[tool.pixi.tasks.cov-eozilla]
-cmd = "pytest --cov eozilla/src/eozilla --cov-report= --cov-append eozilla/tests"
-
-[tool.pixi.tasks.cov-gavicore]
-cmd = "pytest --cov gavicore/src/gavicore --cov-report= --cov-append gavicore/tests"
-
-[tool.pixi.tasks.cov-procodile]
-cmd = "pytest --cov procodile/src/procodile --cov-report= --cov-append procodile/tests"
-
-[tool.pixi.tasks.cov-wraptile]
-cmd = "pytest --cov wraptile/src/wraptile --cov-report= --cov-append wraptile/tests"
-
-# pixi run format
-
-[tool.pixi.tasks.format]
-cmd = "python tools/format.py"
-
 # pixi run check
 
 [tool.pixi.tasks.checks]
@@ -252,54 +244,14 @@ depends-on = [
     "typecheck"
 ]
 
-[tool.pixi.tasks.check-appligator]
-cmd = "ruff check appligator/src"
-
-[tool.pixi.tasks.check-cuiman]
-cmd = "ruff check cuiman/src"
-
-[tool.pixi.tasks.check-eozilla]
-cmd = "ruff check eozilla/src"
-
-[tool.pixi.tasks.check-gavicore]
-cmd = "ruff check gavicore/src"
-
-[tool.pixi.tasks.check-procodile]
-cmd = "ruff check procodile/src"
-
-[tool.pixi.tasks.check-wraptile]
-cmd = "ruff check wraptile/src"
-
-[tool.pixi.tasks.typecheck]
-cmd = "mypy ."
-
 # pixi run generate
 
 [tool.pixi.tasks.generate]
 depends-on = [
-    # We no longer generate models
-    # "gen-models",
     "gen-server",
     "gen-client",
     "gen-cli-docs",
 ]
-
-# Use with caution,
-# we no longer use generated models
-[tool.pixi.tasks.gen-models]
-cmd = "echo 'WARNING: We no longer use generated models' && python -m tools.gen_models"
-
-[tool.pixi.tasks.gen-server]
-cmd = "python -m tools.gen_server"
-
-[tool.pixi.tasks.gen-client]
-cmd = "python -m tools.gen_client"
-
-[tool.pixi.tasks.gen-cli-docs]
-cmd = "python -m tools.gen_cli_docs"
-
-[tool.pixi.tasks.gen-dags]
-cmd = "appligator wraptile.services.local.testing:service.process_registry"
 
 # pixi run build
 
@@ -412,39 +364,4 @@ cmd = "python -m twine upload dist/*"
 [tool.pixi.tasks.deploy-wraptile]
 cwd = "wraptile"
 cmd = "python -m twine upload dist/*"
-
-
-# pixi run sync-versions
-
-[tool.pixi.tasks.sync-versions]
-cmd = "python -m tools.sync_versions"
-
-# pixi run jl
-
-[tool.pixi.tasks.jl]
-cmd = "jupyter-lab"
-
-# pixi run serve
-
-[tool.pixi.tasks.serve]
-cmd = "wraptile run -- wraptile.services.local.testing:service"
-
-
-# pixi run serve-docs
-
-[tool.pixi.tasks.serve-docs]
-cmd = "mkdocs serve"
-
-# pixi run build-docs
-
-[tool.pixi.tasks.build-docs]
-cmd = "mkdocs build"
-
-
-[tool.coverage.run]
-# TODO: remove this when `gen_image` is implemented
-omit = [
-    'appligator/src/appligator/airflow/gen_image.py'
-]
-
 

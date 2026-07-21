@@ -4,7 +4,7 @@
 
 [project]
 name = "cuiman"
-version = "0.2.0.dev0"
+version = "0.2.0.dev1"
 description = "Provides a client Python API, GUI, and CLI for servers compliant with OGC API - Processes"
 readme = "README.md"
 authors = [
@@ -48,7 +48,7 @@ dependencies = [
   "uri-template",
   "httpx",
   # local dependency
-  "gavicore >=0.2.0.dev0",
+  "gavicore >=0.2.0.dev1",
 ]
 
 [project.scripts]
