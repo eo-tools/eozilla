@@ -100,7 +100,8 @@ class ErrorsTest(TestCase):
         self.assertEqual("traceback text", api_error.traceback)
 
     def test_create_api_error_rejects_invalid_type_id(self):
-        with pytest.raises(ValueError, match="Invalid type_id: unknown-problem"):
+        with pytest.raises(ValueError, match="Unknown type_id: unknown-problem"):
+            # noinspection PyTypeChecker
             errors.create_api_error("unknown-problem")
 
     def test_create_api_error_rejects_non_string_type_id(self):

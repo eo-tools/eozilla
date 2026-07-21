@@ -110,6 +110,7 @@ def get_error_type_uri(type_id: ErrorTypeId) -> str:
     Returns:
         The canonical URI representing the given error type.
     """
+    ensure_type("type_id", type_id, str)
     if not is_error_type_id(type_id):
         raise ValueError(f"Unknown type_id: {type_id}")
     if type_id in _OGC_ERROR_TYPE_URIS:
@@ -182,9 +183,7 @@ def create_api_error(
     Returns:
         The constructed [`ApiError`][gavicore.models.ApiError] instance.
     """
-    ensure_type("type_id", type_id, str)
-    if not is_error_type_id(type_id):
-        raise ValueError(f"Invalid type_id: {type_id}")
+    type_uri = get_error_type_uri(type_id)
 
     if exception is not None:
         import traceback as tb
@@ -194,7 +193,7 @@ def create_api_error(
         traceback = traceback or tb.format_exception(exception)
 
     return ApiError(
-        type=get_error_type_uri(type_id),
+        type=type_uri,
         status=status,
         title=title,
         detail=detail,
