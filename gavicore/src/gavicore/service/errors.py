@@ -4,12 +4,12 @@
 
 from __future__ import annotations
 
-"""Helpers for resolving API problem types and building `ApiError` values."""
-
 from typing import Final, Literal, TypeAlias, TypeGuard, get_args
 
 from gavicore.models import ApiError
 from gavicore.util.ensure import ensure_type
+
+"""Helpers for resolving API problem types and building `ApiError` values."""
 
 ErrorTypeId: TypeAlias = Literal[
     # OGC API - Processes Part 1 (Core)
