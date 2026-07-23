@@ -39,3 +39,46 @@ def test_create_app_display_object_returns_auto_scheme_html():
     assert 'src.searchParams.set("scheme", scheme)' in display_object.data
     assert 'iframe.width = "100%"' in display_object.data
     assert 'iframe.height = "600px"' in display_object.data
+
+
+def test_create_app_display_object_uses_jupyter_proxy():
+    display_object = create_app_display_object(
+        "https://app.example.test/index.html?service=client",
+        auto_scheme=False,
+        width="100%",
+        height=600,
+        proxy_port=8765,
+    )
+
+    assert "const proxyPort = 8765" in display_object.data
+    assert "function getJupyterProxyUrl(port, path)" in display_object.data
+    assert "document.body.dataset.baseUrl" in display_object.data
+    assert 'getJupyterProxyUrl(proxyPort, "ws")' in display_object.data
+    assert 'src.searchParams.set("ws", wsUrl.toString())' in display_object.data
+
+
+def test_create_app_display_object_uses_proxy_for_local_app():
+    display_object = create_app_display_object(
+        "http://127.0.0.1:8765/index.html?service=client",
+        auto_scheme=False,
+        width="100%",
+        height=600,
+        proxy_port=8765,
+        proxy_app=True,
+    )
+
+    assert 'src = new URL("index.html", proxyUrl)' in display_object.data
+    assert "src.search = query" in display_object.data
+
+
+def test_create_app_display_object_opens_browser_with_link_fallback():
+    display_object = create_app_display_object(
+        "http://127.0.0.1:8765/index.html",
+        auto_scheme=False,
+        width="100%",
+        height=600,
+        open_in_browser=True,
+    )
+
+    assert 'window.open(src.toString(), "_blank", "noopener")' in display_object.data
+    assert 'link.textContent = "Open Cuiman app"' in display_object.data

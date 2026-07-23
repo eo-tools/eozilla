@@ -11,22 +11,30 @@ from IPython.display import HTML, DisplayObject
 
 def create_app_display_object(
     app_url: str,
+    *,
     auto_scheme: bool,
     width: int | str,
     height: int | str,
+    proxy_port: int | None = None,
+    proxy_app: bool = False,
+    open_in_browser: bool = False,
 ) -> DisplayObject:
-    if auto_scheme:
-        return _get_iframe_auto_scheme_html(
+    """Create the notebook display object for the Cuiman app."""
+    if auto_scheme or proxy_port is not None or open_in_browser:
+        return _get_iframe_script_html(
             app_url,
+            auto_scheme=auto_scheme,
             width=width,
             height=height,
+            proxy_port=proxy_port,
+            proxy_app=proxy_app,
+            open_in_browser=open_in_browser,
         )
-    else:
-        return _get_iframe_html(
-            app_url,
-            width=width,
-            height=height,
-        )
+    return _get_iframe_html(
+        app_url,
+        width=width,
+        height=height,
+    )
 
 
 def _get_iframe_html(
@@ -46,11 +54,15 @@ def _get_iframe_html(
             """)
 
 
-def _get_iframe_auto_scheme_html(
+def _get_iframe_script_html(
     base_src: str,
     *,
+    auto_scheme: bool,
     width: int | str,
     height: int | str,
+    proxy_port: int | None,
+    proxy_app: bool,
+    open_in_browser: bool,
 ) -> HTML:
     return HTML(f"""
             <div class="eozilla-frame-root"></div>
@@ -81,12 +93,52 @@ def _get_iframe_auto_scheme_html(
                 return null;
               }}
 
-              const root = document.currentScript.previousElementSibling;
-              const scheme = detectJupyterScheme();
-              const src = new URL({json.dumps(base_src)}, window.location.href);
+              function getJupyterProxyUrl(port, path) {{
+                const baseUrl =
+                  document.body.dataset.baseUrl ??
+                  document.documentElement.dataset.baseUrl ??
+                  "/";
+                const jupyterUrl = new URL(baseUrl, window.location.origin);
+                return new URL(`proxy/${{port}}/${{path}}`, jupyterUrl);
+              }}
 
-              if (scheme) {{
-                src.searchParams.set("scheme", scheme);
+              const root = document.currentScript.previousElementSibling;
+              let src = new URL({json.dumps(base_src)}, window.location.href);
+              const proxyPort = {json.dumps(proxy_port)};
+
+              if (proxyPort !== null) {{
+                const proxyUrl = getJupyterProxyUrl(proxyPort, "");
+                const wsUrl = getJupyterProxyUrl(proxyPort, "ws");
+                wsUrl.protocol =
+                  window.location.protocol === "https:" ? "wss:" : "ws:";
+
+                if ({json.dumps(proxy_app)}) {{
+                  const query = src.search;
+                  src = new URL("index.html", proxyUrl);
+                  src.search = query;
+                }}
+
+                src.searchParams.set("ws", wsUrl.toString());
+              }}
+
+              if ({json.dumps(auto_scheme)}) {{
+                const scheme = detectJupyterScheme();
+                if (scheme) {{
+                  src.searchParams.set("scheme", scheme);
+                }}
+              }}
+
+              if ({json.dumps(open_in_browser)}) {{
+                const opened = window.open(src.toString(), "_blank", "noopener");
+                if (!opened) {{
+                  const link = document.createElement("a");
+                  link.href = src.toString();
+                  link.target = "_blank";
+                  link.rel = "noopener";
+                  link.textContent = "Open Cuiman app";
+                  root.replaceChildren(link);
+                }}
+                return;
               }}
 
               const iframe = document.createElement("iframe");
