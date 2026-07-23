@@ -228,7 +228,9 @@ class AirflowService(ServiceBase):
             raise ServiceException(
                 e.status, e.reason, exception=e, is_job_problem=True
             ) from e
-        return self.dag_run_to_job_info(dag_run)
+        job_info: JobInfo = self.dag_run_to_job_info(dag_run)
+        job_info.status = JobStatus.dismissed
+        return job_info
 
     async def get_job_results(self, job_id: str, *args, **kwargs) -> JobResults:
         dag_id = self.get_dag_id_from_job_id(job_id)
