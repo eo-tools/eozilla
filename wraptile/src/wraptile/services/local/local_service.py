@@ -162,6 +162,7 @@ class LocalService(ServiceBase):
             del self.jobs[job_id]
             self.job_results.pop(job_id, None)
             self.job_uses_processes.pop(job_id, None)
+        job.job_info.status = JobStatus.dismissed
         return job.job_info
 
     async def get_job_results(self, job_id: str, *args, **_kwargs) -> JobResults:
