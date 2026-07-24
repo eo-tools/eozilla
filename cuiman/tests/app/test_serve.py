@@ -104,8 +104,6 @@ def test_serve_displays_in_notebook(monkeypatch):
             **kwargs,
         },
     )
-    monkeypatch.setattr(serve_module, "_use_jupyter_server_proxy", lambda proxy: False)
-
     serve_module.serve(
         ClientConfig(api_url="https://api.example.test"),
         App.create_remote_store(),
@@ -113,6 +111,7 @@ def test_serve_displays_in_notebook(monkeypatch):
         width="80%",
         height=500,
         display="notebook",
+        proxy="never",
     )
 
     assert calls["display"] == [
@@ -123,6 +122,7 @@ def test_serve_displays_in_notebook(monkeypatch):
             "height": 500,
             "proxy_port": None,
             "proxy_app": False,
+            "auto_proxy": False,
             "open_in_browser": False,
         }
     ]
@@ -137,12 +137,11 @@ def test_serve_uses_jupyter_proxy_in_notebook(monkeypatch):
         "create_app_display_object",
         lambda app_url, **kwargs: kwargs,
     )
-    monkeypatch.setattr(serve_module, "_use_jupyter_server_proxy", lambda proxy: True)
-
     serve_module.serve(
         ClientConfig(api_url="https://api.example.test"),
         App.create_remote_store(),
         display="notebook",
+        proxy="always",
     )
 
     assert calls["display"] == [
@@ -152,6 +151,7 @@ def test_serve_uses_jupyter_proxy_in_notebook(monkeypatch):
             "height": 600,
             "proxy_port": 8765,
             "proxy_app": True,
+            "auto_proxy": False,
             "open_in_browser": False,
         }
     ]
@@ -166,12 +166,11 @@ def test_serve_opens_browser_from_notebook(monkeypatch):
         "create_app_display_object",
         lambda app_url, **kwargs: {"app_url": app_url, **kwargs},
     )
-    monkeypatch.setattr(serve_module, "_use_jupyter_server_proxy", lambda proxy: False)
-
     serve_module.serve(
         ClientConfig(api_url="https://api.example.test"),
         App.create_remote_store(),
         display="browser",
+        proxy="never",
     )
 
     assert calls["browser_open"] == []
@@ -183,6 +182,7 @@ def test_serve_opens_browser_from_notebook(monkeypatch):
             "height": 600,
             "proxy_port": None,
             "proxy_app": False,
+            "auto_proxy": False,
             "open_in_browser": True,
         }
     ]
@@ -197,12 +197,11 @@ def test_serve_opens_proxy_browser_from_notebook(monkeypatch):
         "create_app_display_object",
         lambda app_url, **kwargs: kwargs,
     )
-    monkeypatch.setattr(serve_module, "_use_jupyter_server_proxy", lambda proxy: True)
-
     serve_module.serve(
         ClientConfig(api_url="https://api.example.test"),
         App.create_remote_store(),
         display="browser",
+        proxy="always",
     )
 
     assert calls["display"] == [
@@ -212,21 +211,38 @@ def test_serve_opens_proxy_browser_from_notebook(monkeypatch):
             "height": 600,
             "proxy_port": 8765,
             "proxy_app": True,
+            "auto_proxy": False,
             "open_in_browser": True,
         }
     ]
 
 
-def test_use_jupyter_server_proxy_respects_strategy(monkeypatch):
-    monkeypatch.setattr(serve_module, "find_spec", lambda name: object())
+def test_serve_auto_proxy_is_resolved_in_notebook(monkeypatch):
+    calls = install_serve_fakes(monkeypatch)
+    monkeypatch.setattr(ipython_display, "display", calls["display"].append)
+    monkeypatch.setattr(
+        serve_module,
+        "create_app_display_object",
+        lambda app_url, **kwargs: kwargs,
+    )
 
-    assert serve_module._use_jupyter_server_proxy("auto")
-    assert serve_module._use_jupyter_server_proxy("always")
-    assert not serve_module._use_jupyter_server_proxy("never")
+    serve_module.serve(
+        ClientConfig(api_url="https://api.example.test"),
+        App.create_remote_store(),
+        display="notebook",
+    )
 
-    monkeypatch.setattr(serve_module, "find_spec", lambda name: None)
-
-    assert not serve_module._use_jupyter_server_proxy("auto")
+    assert calls["display"] == [
+        {
+            "auto_scheme": True,
+            "width": "100%",
+            "height": 600,
+            "proxy_port": 8765,
+            "proxy_app": True,
+            "auto_proxy": True,
+            "open_in_browser": False,
+        }
+    ]
 
 
 class FakeFiles:

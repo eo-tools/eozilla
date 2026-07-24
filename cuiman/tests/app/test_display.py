@@ -53,6 +53,8 @@ def test_create_app_display_object_uses_jupyter_proxy():
     assert "const proxyPort = 8765" in display_object.data
     assert "function getJupyterProxyUrl(port, path)" in display_object.data
     assert "document.body.dataset.baseUrl" in display_object.data
+    assert "`${basePath}proxy/${port}/${path}`" in display_object.data
+    assert "async function isJupyterProxyAvailable(url)" in display_object.data
     assert 'getJupyterProxyUrl(proxyPort, "ws")' in display_object.data
     assert 'src.searchParams.set("ws", wsUrl.toString())' in display_object.data
 
@@ -67,8 +69,24 @@ def test_create_app_display_object_uses_proxy_for_local_app():
         proxy_app=True,
     )
 
-    assert 'src = new URL("index.html", proxyUrl)' in display_object.data
+    assert 'src = getJupyterProxyUrl(proxyPort, "index.html")' in display_object.data
     assert "src.search = query" in display_object.data
+
+
+def test_create_app_display_object_probes_proxy_in_auto_mode():
+    display_object = create_app_display_object(
+        "http://127.0.0.1:8765/index.html",
+        auto_scheme=False,
+        width="100%",
+        height=600,
+        proxy_port=8765,
+        proxy_app=True,
+        auto_proxy=True,
+    )
+
+    assert "(async () => {" in display_object.data
+    assert "(await isJupyterProxyAvailable(proxyUrl))" in display_object.data
+    assert "if (useProxy)" in display_object.data
 
 
 def test_create_app_display_object_opens_browser_with_link_fallback():

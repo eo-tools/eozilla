@@ -17,6 +17,7 @@ def create_app_display_object(
     height: int | str,
     proxy_port: int | None = None,
     proxy_app: bool = False,
+    auto_proxy: bool = False,
     open_in_browser: bool = False,
 ) -> DisplayObject:
     """Create the notebook display object for the Cuiman app."""
@@ -28,6 +29,7 @@ def create_app_display_object(
             height=height,
             proxy_port=proxy_port,
             proxy_app=proxy_app,
+            auto_proxy=auto_proxy,
             open_in_browser=open_in_browser,
         )
     return _get_iframe_html(
@@ -62,12 +64,13 @@ def _get_iframe_script_html(
     height: int | str,
     proxy_port: int | None,
     proxy_app: bool,
+    auto_proxy: bool,
     open_in_browser: bool,
 ) -> HTML:
     return HTML(f"""
             <div class="eozilla-frame-root"></div>
             <script>
-            (() => {{
+            (async () => {{
               function detectJupyterScheme() {{
                 const body = document.body;
                 const root = document.documentElement;
@@ -98,8 +101,20 @@ def _get_iframe_script_html(
                   document.body.dataset.baseUrl ??
                   document.documentElement.dataset.baseUrl ??
                   "/";
-                const jupyterUrl = new URL(baseUrl, window.location.origin);
-                return new URL(`proxy/${{port}}/${{path}}`, jupyterUrl);
+                const basePath = baseUrl.endsWith("/") ? baseUrl : `${{baseUrl}}/`;
+                return new URL(
+                  `${{basePath}}proxy/${{port}}/${{path}}`,
+                  window.location.origin,
+                );
+              }}
+
+              async function isJupyterProxyAvailable(url) {{
+                try {{
+                  const response = await fetch(url, {{ method: "HEAD" }});
+                  return response.ok;
+                }} catch {{
+                  return false;
+                }}
               }}
 
               const root = document.currentScript.previousElementSibling;
@@ -107,18 +122,24 @@ def _get_iframe_script_html(
               const proxyPort = {json.dumps(proxy_port)};
 
               if (proxyPort !== null) {{
-                const proxyUrl = getJupyterProxyUrl(proxyPort, "");
+                const proxyUrl = getJupyterProxyUrl(proxyPort, "index.html");
                 const wsUrl = getJupyterProxyUrl(proxyPort, "ws");
                 wsUrl.protocol =
                   window.location.protocol === "https:" ? "wss:" : "ws:";
 
-                if ({json.dumps(proxy_app)}) {{
+                const useProxy =
+                  !{json.dumps(auto_proxy)} ||
+                  (await isJupyterProxyAvailable(proxyUrl));
+
+                if (useProxy && {json.dumps(proxy_app)}) {{
                   const query = src.search;
-                  src = new URL("index.html", proxyUrl);
+                  src = getJupyterProxyUrl(proxyPort, "index.html");
                   src.search = query;
                 }}
 
-                src.searchParams.set("ws", wsUrl.toString());
+                if (useProxy) {{
+                  src.searchParams.set("ws", wsUrl.toString());
+                }}
               }}
 
               if ({json.dumps(auto_scheme)}) {{

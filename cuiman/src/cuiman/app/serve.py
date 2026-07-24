@@ -1,5 +1,4 @@
 import os
-from importlib.util import find_spec
 from importlib.resources import files
 from typing import Literal
 
@@ -59,8 +58,9 @@ def serve(
             are opened by notebook-side JavaScript so that remote deployments
             use the user's browser.
         proxy: Whether notebook traffic uses ``jupyter-server-proxy``.
-            ``"auto"`` uses it when available, ``"never"`` disables it, and
-            ``"always"`` assumes it is configured on the Jupyter server.
+            ``"auto"`` checks for it from the notebook browser and falls back
+            to the normal local URL when unavailable, ``"never"`` disables it,
+            and ``"always"`` assumes it is configured on the Jupyter server.
 
     Returns:
         The running ``remotestate`` server result. Call its ``stop()`` method
@@ -96,7 +96,7 @@ def serve(
     if display in {"browser", "notebook"}:
         from IPython.display import display as ipython_display
 
-        proxy_port = server.port if _use_jupyter_server_proxy(proxy) else None
+        proxy_port = server.port if proxy != "never" else None
         proxy_app = proxy_port is not None and server.ui_base_url == server.server_url
         display_object = create_app_display_object(
             app_url,
@@ -105,6 +105,7 @@ def serve(
             height=height,
             proxy_port=proxy_port,
             proxy_app=proxy_app,
+            auto_proxy=proxy == "auto",
             open_in_browser=display == "browser",
         )
         ipython_display(display_object)
@@ -117,14 +118,3 @@ def _get_app_dist_url_or_dir(dist_url_or_dir: str | None) -> str:
         return dist_url_or_dir
 
     return str(files("cuiman.app").joinpath("dist"))
-
-
-def _use_jupyter_server_proxy(proxy: ProxyMode) -> bool:
-    if proxy == "always":
-        return True
-    if proxy == "never":
-        return False
-    # if proxy == "auto":
-    # Has jupyter-server-proxy been installed?
-    # If so, we assume it is enabled in JupyterLab.
-    return find_spec("jupyter_server_proxy") is not None
