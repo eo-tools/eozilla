@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Literal
 
 from cuiman.api.ishell import has_ishell
+from cuiman.app.serve import ProxyMode
 
 from .config import ClientConfig
 
@@ -32,6 +33,7 @@ class ClientAppMixin(ABC):
         width: int | str = "100%",
         height: int | str = 600,
         display: Literal["browser", "notebook", "auto"] = "auto",
+        proxy: ProxyMode = "auto",
     ) -> "App":
         """
         Show the Cuiman app for this client.
@@ -77,6 +79,9 @@ class ClientAppMixin(ABC):
             height: Height of the notebook iframe.
             display: Where to show the app. ``"auto"`` embeds it in notebooks
                 and opens it in a browser otherwise.
+            proxy: Whether notebook traffic uses ``jupyter-server-proxy``. ``"auto"``
+                uses it when available, ``"never"`` disables it, and ``"always"``
+                requires it.
         Return:
             An ``App`` instance.
         """
@@ -99,6 +104,7 @@ class ClientAppMixin(ABC):
             width=width,
             height=height,
             display=display_,
+            proxy=proxy,
         )
 
         return App(remote_store, serve_result)

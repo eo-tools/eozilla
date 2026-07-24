@@ -5,28 +5,45 @@
 from __future__ import annotations
 
 import json
+from importlib import resources
 
 from IPython.display import HTML, DisplayObject
+
+_NOTEBOOK_DISPLAY_SCRIPT = (
+    resources.files("cuiman.app")
+    .joinpath("notebook-display.js")
+    .read_text(encoding="utf-8")
+)
 
 
 def create_app_display_object(
     app_url: str,
+    *,
     auto_scheme: bool,
     width: int | str,
     height: int | str,
+    proxy_port: int | None = None,
+    proxy_app: bool = False,
+    auto_proxy: bool = False,
+    open_in_browser: bool = False,
 ) -> DisplayObject:
-    if auto_scheme:
-        return _get_iframe_auto_scheme_html(
+    """Create the notebook display object for the Cuiman app."""
+    if auto_scheme or proxy_port is not None or open_in_browser:
+        return _get_iframe_script_html(
             app_url,
+            auto_scheme=auto_scheme,
             width=width,
             height=height,
+            proxy_port=proxy_port,
+            proxy_app=proxy_app,
+            auto_proxy=auto_proxy,
+            open_in_browser=open_in_browser,
         )
-    else:
-        return _get_iframe_html(
-            app_url,
-            width=width,
-            height=height,
-        )
+    return _get_iframe_html(
+        app_url,
+        width=width,
+        height=height,
+    )
 
 
 def _get_iframe_html(
@@ -46,60 +63,37 @@ def _get_iframe_html(
             """)
 
 
-def _get_iframe_auto_scheme_html(
+def _get_iframe_script_html(
     base_src: str,
     *,
+    auto_scheme: bool,
     width: int | str,
     height: int | str,
+    proxy_port: int | None,
+    proxy_app: bool,
+    auto_proxy: bool,
+    open_in_browser: bool,
 ) -> HTML:
+    config = {
+        "baseSrc": base_src,
+        "autoScheme": auto_scheme,
+        "width": _norm_size(width),
+        "height": _norm_size(height),
+        "proxyPort": proxy_port,
+        "proxyApp": proxy_app,
+        "autoProxy": auto_proxy,
+        "openInBrowser": open_in_browser,
+    }
+    config_json = json.dumps(config, separators=(",", ":")).replace("<", "\\u003c")
+
+    # Inline the package resource so notebook output needs no additional asset URL.
     return HTML(f"""
             <div class="eozilla-frame-root"></div>
+            <script type="application/json" class="eozilla-frame-config">
+              {config_json}
+            </script>
             <script>
-            (() => {{
-              function detectJupyterScheme() {{
-                const body = document.body;
-                const root = document.documentElement;
-
-                const themeLight =
-                  body.getAttribute("data-jp-theme-light") ??
-                  root.getAttribute("data-jp-theme-light");
-
-                if (themeLight === "true") return "light";
-                if (themeLight === "false") return "dark";
-
-                const bg =
-                  getComputedStyle(root).getPropertyValue("--jp-layout-color0") ||
-                  getComputedStyle(body).backgroundColor;
-
-                const match = bg.match(/\\d+/g);
-                if (match && match.length >= 3) {{
-                  const [r, g, b] = match.slice(0, 3).map(Number);
-                  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-                  return luminance < 0.5 ? "dark" : "light";
-                }}
-
-                return null;
-              }}
-
-              const root = document.currentScript.previousElementSibling;
-              const scheme = detectJupyterScheme();
-              const src = new URL({json.dumps(base_src)}, window.location.href);
-
-              if (scheme) {{
-                src.searchParams.set("scheme", scheme);
-              }}
-
-              const iframe = document.createElement("iframe");
-              iframe.src = src.toString();
-              iframe.width = {json.dumps(_norm_size(width))};
-              iframe.height = {json.dumps(_norm_size(height))};
-              iframe.style.border = "0";
-              iframe.style.width = {json.dumps(_norm_size(width))};
-              iframe.style.height = {json.dumps(_norm_size(height))};
-              iframe.allow = "clipboard-read; clipboard-write";
-
-              root.replaceChildren(iframe);
-            }})();
+{_NOTEBOOK_DISPLAY_SCRIPT}
             </script>
             """)
 
