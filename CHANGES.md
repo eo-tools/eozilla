@@ -17,6 +17,11 @@
 
 **Cuiman** enhancements:
 
+- The app GUI now works in remote JupyterLab and JupyterHub deployments when
+  [`jupyter-server-proxy`](https://jupyter-server-proxy.readthedocs.io/) is
+  available: `client.show_app()` routes its local server through the Jupyter
+  proxy, including when opening the app in a browser. Local notebook use is
+  unchanged. (#172)
 - Added an experimental CLI command `cuiman generate-client NAME` that generates 
   the Python code for a client service-specific, higher-level client functions.
   The generated classes have methods that directly represent the processes 

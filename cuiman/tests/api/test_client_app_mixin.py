@@ -39,6 +39,7 @@ def test_show_app_uses_notebook_display_and_explicit_compact(monkeypatch):
         "width": "80%",
         "height": 400,
         "display": "notebook",
+        "proxy": "auto",
     }
     assert isinstance(app, App)
     assert app.serve_result is serve_result
@@ -70,6 +71,7 @@ def test_show_app_uses_browser_display_when_no_shell(monkeypatch):
         "width": "100%",
         "height": 600,
         "display": "browser",
+        "proxy": "auto",
     }
     assert isinstance(app, App)
     assert app.serve_result is serve_result
