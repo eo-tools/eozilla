@@ -96,11 +96,32 @@ def _get_iframe_script_html(
                 return null;
               }}
 
-              function getJupyterProxyUrl(port, path) {{
-                const baseUrl =
+              function getJupyterBaseUrl() {{
+                const configElement = document.getElementById(
+                  "jupyter-config-data",
+                );
+                let configBaseUrl = null;
+
+                if (configElement?.textContent) {{
+                  try {{
+                    configBaseUrl = JSON.parse(
+                      configElement.textContent,
+                    ).baseUrl;
+                  }} catch {{
+                    configBaseUrl = null;
+                  }}
+                }}
+
+                return (
+                  configBaseUrl ??
                   document.body.dataset.baseUrl ??
                   document.documentElement.dataset.baseUrl ??
-                  "/";
+                  "/"
+                );
+              }}
+
+              function getJupyterProxyUrl(port, path) {{
+                const baseUrl = getJupyterBaseUrl();
                 const basePath = baseUrl.endsWith("/") ? baseUrl : `${{baseUrl}}/`;
                 return new URL(
                   `${{basePath}}proxy/${{port}}/${{path}}`,
@@ -111,36 +132,67 @@ def _get_iframe_script_html(
               async function isJupyterProxyAvailable(url) {{
                 try {{
                   const response = await fetch(url, {{ method: "GET" }});
+                  console.debug("[cuiman] Jupyter proxy probe", {{
+                    url: url.toString(),
+                    status: response.status,
+                    available: response.ok,
+                  }});
                   return response.ok;
-                }} catch {{
+                }} catch (error) {{
+                  console.debug("[cuiman] Jupyter proxy probe failed", {{
+                    url: url.toString(),
+                    error: String(error),
+                  }});
                   return false;
                 }}
               }}
 
               const root = document.currentScript.previousElementSibling;
               let src = new URL({json.dumps(base_src)}, window.location.href);
+              let wsUrl = src.searchParams.get("ws");
               const proxyPort = {json.dumps(proxy_port)};
+              const proxyApp = {json.dumps(proxy_app)};
+              const autoProxy = {json.dumps(auto_proxy)};
+              const openInBrowser = {json.dumps(open_in_browser)};
+
+              console.debug("[cuiman] display setup", {{
+                jupyterBaseUrl:
+                  proxyPort === null ? null : getJupyterBaseUrl(),
+                proxyPort,
+                proxyApp,
+                autoProxy,
+                openInBrowser,
+              }});
 
               if (proxyPort !== null) {{
                 const proxyUrl = getJupyterProxyUrl(proxyPort, "index.html");
-                const wsUrl = getJupyterProxyUrl(proxyPort, "ws");
-                wsUrl.protocol =
+                const proxyWsUrl = getJupyterProxyUrl(proxyPort, "ws");
+                proxyWsUrl.protocol =
                   window.location.protocol === "https:" ? "wss:" : "ws:";
 
                 const useProxy =
-                  !{json.dumps(auto_proxy)} ||
+                  !autoProxy ||
                   (await isJupyterProxyAvailable(proxyUrl));
 
-                if (useProxy && {json.dumps(proxy_app)}) {{
+                if (useProxy && proxyApp) {{
                   const query = src.search;
                   src = getJupyterProxyUrl(proxyPort, "index.html");
                   src.search = query;
                 }}
 
                 if (useProxy) {{
-                  src.searchParams.set("ws", wsUrl.toString());
+                  wsUrl = proxyWsUrl.toString();
                 }}
               }}
+
+              if (wsUrl !== null) {{
+                src.searchParams.set("ws", wsUrl);
+              }}
+
+              console.debug("[cuiman] display target", {{
+                appUrl: `${{src.origin}}${{src.pathname}}`,
+                wsUrl,
+              }});
 
               if ({json.dumps(auto_scheme)}) {{
                 const scheme = detectJupyterScheme();
@@ -149,7 +201,7 @@ def _get_iframe_script_html(
                 }}
               }}
 
-              if ({json.dumps(open_in_browser)}) {{
+              if (openInBrowser) {{
                 const opened = window.open(src.toString(), "_blank", "noopener");
                 if (!opened) {{
                   const link = document.createElement("a");

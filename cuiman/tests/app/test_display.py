@@ -51,13 +51,18 @@ def test_create_app_display_object_uses_jupyter_proxy():
     )
 
     assert "const proxyPort = 8765" in display_object.data
+    assert "function getJupyterBaseUrl()" in display_object.data
+    assert '"jupyter-config-data"' in display_object.data
+    assert ").baseUrl" in display_object.data
     assert "function getJupyterProxyUrl(port, path)" in display_object.data
-    assert "document.body.dataset.baseUrl" in display_object.data
     assert "`${basePath}proxy/${port}/${path}`" in display_object.data
     assert "async function isJupyterProxyAvailable(url)" in display_object.data
     assert 'fetch(url, { method: "GET" })' in display_object.data
+    assert 'console.debug("[cuiman] Jupyter proxy probe"' in display_object.data
+    assert 'console.debug("[cuiman] display setup"' in display_object.data
+    assert 'console.debug("[cuiman] display target"' in display_object.data
     assert 'getJupyterProxyUrl(proxyPort, "ws")' in display_object.data
-    assert 'src.searchParams.set("ws", wsUrl.toString())' in display_object.data
+    assert 'src.searchParams.set("ws", wsUrl)' in display_object.data
 
 
 def test_create_app_display_object_uses_proxy_for_local_app():
