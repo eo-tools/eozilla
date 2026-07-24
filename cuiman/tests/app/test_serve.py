@@ -5,6 +5,7 @@
 import importlib
 import webbrowser
 from dataclasses import dataclass
+from importlib.resources import files
 
 from IPython import display as ipython_display
 
@@ -28,6 +29,14 @@ def test_get_app_dist_url_or_dir_accepts_explicit_dist_url_or_dir():
         == "https://cdn.example.test/app"
     )
     assert serve_module._get_app_dist_url_or_dir("C:/app/dist") == "C:/app/dist"
+
+
+def test_bundled_app_uses_relative_asset_urls():
+    index_html = files("cuiman.app").joinpath("dist/index.html").read_text()
+
+    assert 'href="./eozilla-small.svg"' in index_html
+    assert 'src="./assets/' in index_html
+    assert 'href="./assets/' in index_html
 
 
 def test_serve_returns_server_without_display(monkeypatch):
