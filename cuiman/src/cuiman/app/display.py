@@ -110,7 +110,7 @@ def _get_iframe_script_html(
 
               async function isJupyterProxyAvailable(url) {{
                 try {{
-                  const response = await fetch(url, {{ method: "HEAD" }});
+                  const response = await fetch(url, {{ method: "GET" }});
                   return response.ok;
                 }} catch {{
                   return false;

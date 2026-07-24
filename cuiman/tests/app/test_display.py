@@ -55,6 +55,7 @@ def test_create_app_display_object_uses_jupyter_proxy():
     assert "document.body.dataset.baseUrl" in display_object.data
     assert "`${basePath}proxy/${port}/${path}`" in display_object.data
     assert "async function isJupyterProxyAvailable(url)" in display_object.data
+    assert 'fetch(url, { method: "GET" })' in display_object.data
     assert 'getJupyterProxyUrl(proxyPort, "ws")' in display_object.data
     assert 'src.searchParams.set("ws", wsUrl.toString())' in display_object.data
 
