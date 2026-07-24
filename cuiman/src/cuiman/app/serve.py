@@ -61,6 +61,8 @@ def serve(
             ``"auto"`` checks for it from the notebook browser and falls back
             to the normal local URL when unavailable, ``"never"`` disables it,
             and ``"always"`` assumes it is configured on the Jupyter server.
+            When enabled, URLs using loopback hosts in the app's client
+            configuration are routed through the proxy as well.
 
     Returns:
         The running ``remotestate`` server result. Call its ``stop()`` method

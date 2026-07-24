@@ -1,6 +1,10 @@
 (async () => {
   "use strict";
 
+  // `proxy` is the browser-visible Jupyter Server Proxy base URL. The app
+  // uses it only for loopback service URLs; external URLs remain unchanged.
+  const PROXY_QUERY_PARAM = "proxy";
+
   /**
    * @typedef {Object} NotebookDisplayConfig
    * @property {string} baseSrc
@@ -59,13 +63,14 @@
     );
   }
 
-  function getJupyterProxyUrl(port, path) {
+  function getJupyterProxyBaseUrl() {
     const baseUrl = getJupyterBaseUrl();
     const basePath = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
-    return new URL(
-      `${basePath}proxy/${port}/${path}`,
-      window.location.origin,
-    );
+    return new URL(`${basePath}proxy/`, window.location.origin);
+  }
+
+  function getJupyterProxyUrl(port, path) {
+    return new URL(`${port}/${path}`, getJupyterProxyBaseUrl());
   }
 
   async function isJupyterProxyAvailable(url) {
@@ -112,6 +117,7 @@
 
   let src = new URL(baseSrc, window.location.href);
   let wsUrl = src.searchParams.get("ws");
+  let useProxy = false;
 
   console.debug("[cuiman] display setup", {
     jupyterBaseUrl: proxyPort === null ? null : getJupyterBaseUrl(),
@@ -127,8 +133,7 @@
     proxyWsUrl.protocol =
       window.location.protocol === "https:" ? "wss:" : "ws:";
 
-    const useProxy =
-      !autoProxy || (await isJupyterProxyAvailable(proxyUrl));
+    useProxy = !autoProxy || (await isJupyterProxyAvailable(proxyUrl));
 
     if (useProxy && proxyApp) {
       const query = src.search;
@@ -141,6 +146,13 @@
     }
   }
 
+  if (useProxy) {
+    src.searchParams.set(
+      PROXY_QUERY_PARAM,
+      getJupyterProxyBaseUrl().toString(),
+    );
+  }
+
   if (wsUrl !== null) {
     src.searchParams.set("ws", wsUrl);
   }
@@ -148,6 +160,7 @@
   console.debug("[cuiman] display target", {
     appUrl: `${src.origin}${src.pathname}`,
     wsUrl,
+    proxy: src.searchParams.get(PROXY_QUERY_PARAM),
   });
 
   if (autoScheme) {

@@ -17,11 +17,6 @@
 
 **Cuiman** enhancements:
 
-- The app GUI now works in remote JupyterLab and JupyterHub deployments when
-  [`jupyter-server-proxy`](https://jupyter-server-proxy.readthedocs.io/) is
-  available: `client.show_app()` routes its local server through the Jupyter
-  proxy, including when opening the app in a browser. Local notebook use is
-  unchanged. (#172)
 - Added an experimental CLI command `cuiman generate-client NAME` that generates 
   the Python code for a client service-specific, higher-level client functions.
   The generated classes have methods that directly represent the processes 
@@ -30,6 +25,11 @@
   web interface, the [Eozilla App](https://github.com/eo-tools/eozilla-app).
   - Updated `notebooks/cuiman-gui.ipynb` to demonstrate new app-based GUI.
   - Added package `cuiman.app` that implements the new app-based GUI.
+- The app GUI also works in remote JupyterLab and JupyterHub deployments when
+  [`jupyter-server-proxy`](https://jupyter-server-proxy.readthedocs.io/) is
+  available: `client.show_app()` routes its local app server and loopback URLs
+  from its client configuration through the Jupyter proxy, including when
+  opening the app in a browser. Local notebook use is unchanged. (#172)
 
 **Gavicore** enhancements:
 
