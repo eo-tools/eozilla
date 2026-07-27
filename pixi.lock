@@ -520,9 +520,9 @@ environments:
       - pypi: ./wraptile
       - pypi: https://files.pythonhosted.org/packages/0d/fe/6bea5c9162869c5beba5d9c8abbed835ec85bf1ec1fba05a3822325c45f3/build-1.5.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/1a/4b/6fd6dd632019b7f522f1b1f794ab6115cd79890330986614be56fd18f0eb/mkdocs_mermaid2_plugin-1.2.3-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/1a/8b/b884fc91f05bb32b57c3149df39d67e4b7f25ca7d4403413ab1ef101581c/remotestate-0.3.4.dev1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/0b/607e06204b207c29a86759c763624aabbdd16613844564536847d71ad461/jsbeautifier-2.0.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/53/c7/d168dd2e2120b1a61ffdcf6eaa6d992620a793d3bf7e12a59704eda1d83b/apache_airflow_client-3.0.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/87/44/18ca9a090acc7bf5eb1fbdbb9ad3cb2e73fd56690438a037f5374ec288c5/remotestate-0.3.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/96/fd/a40c621ff207f3ce8e484aa0fc8ba4eb6e3ecf52e15b42ba764b457a9550/editorconfig-0.17.1-py3-none-any.whl
       osx-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_2.conda
@@ -985,9 +985,9 @@ environments:
       - pypi: ./wraptile
       - pypi: https://files.pythonhosted.org/packages/0d/fe/6bea5c9162869c5beba5d9c8abbed835ec85bf1ec1fba05a3822325c45f3/build-1.5.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/1a/4b/6fd6dd632019b7f522f1b1f794ab6115cd79890330986614be56fd18f0eb/mkdocs_mermaid2_plugin-1.2.3-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/1a/8b/b884fc91f05bb32b57c3149df39d67e4b7f25ca7d4403413ab1ef101581c/remotestate-0.3.4.dev1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/0b/607e06204b207c29a86759c763624aabbdd16613844564536847d71ad461/jsbeautifier-2.0.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/53/c7/d168dd2e2120b1a61ffdcf6eaa6d992620a793d3bf7e12a59704eda1d83b/apache_airflow_client-3.0.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/87/44/18ca9a090acc7bf5eb1fbdbb9ad3cb2e73fd56690438a037f5374ec288c5/remotestate-0.3.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/96/fd/a40c621ff207f3ce8e484aa0fc8ba4eb6e3ecf52e15b42ba764b457a9550/editorconfig-0.17.1-py3-none-any.whl
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_2.conda
@@ -1450,9 +1450,9 @@ environments:
       - pypi: ./wraptile
       - pypi: https://files.pythonhosted.org/packages/0d/fe/6bea5c9162869c5beba5d9c8abbed835ec85bf1ec1fba05a3822325c45f3/build-1.5.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/1a/4b/6fd6dd632019b7f522f1b1f794ab6115cd79890330986614be56fd18f0eb/mkdocs_mermaid2_plugin-1.2.3-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/1a/8b/b884fc91f05bb32b57c3149df39d67e4b7f25ca7d4403413ab1ef101581c/remotestate-0.3.4.dev1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/0b/607e06204b207c29a86759c763624aabbdd16613844564536847d71ad461/jsbeautifier-2.0.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/53/c7/d168dd2e2120b1a61ffdcf6eaa6d992620a793d3bf7e12a59704eda1d83b/apache_airflow_client-3.0.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/87/44/18ca9a090acc7bf5eb1fbdbb9ad3cb2e73fd56690438a037f5374ec288c5/remotestate-0.3.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/96/fd/a40c621ff207f3ce8e484aa0fc8ba4eb6e3ecf52e15b42ba764b457a9550/editorconfig-0.17.1-py3-none-any.whl
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
@@ -16502,7 +16502,7 @@ packages:
   - pydantic
   - pydantic-settings
   - pyyaml
-  - remotestate>=0.3.4.dev1,<1
+  - remotestate>=0.3.4,<1
   - typer>=0.26.0,<1
   - uri-template
   - httpx
@@ -16577,15 +16577,6 @@ packages:
   - packaging ; extra == 'test'
   - requests-html ; extra == 'test'
   requires_python: '>=3.8'
-- pypi: https://files.pythonhosted.org/packages/1a/8b/b884fc91f05bb32b57c3149df39d67e4b7f25ca7d4403413ab1ef101581c/remotestate-0.3.4.dev1-py3-none-any.whl
-  name: remotestate
-  version: 0.3.4.dev1
-  sha256: fc96523bf30c815ce3b90214f45ee43c3bcdeef64754c9f5a9d139054b82c72a
-  requires_dist:
-  - fastapi>=0.136,<1
-  - pydantic>=2,<3
-  - uvicorn>=0.46,<1
-  requires_python: '>=3.12'
 - pypi: https://files.pythonhosted.org/packages/51/0b/607e06204b207c29a86759c763624aabbdd16613844564536847d71ad461/jsbeautifier-2.0.3-py3-none-any.whl
   name: jsbeautifier
   version: 2.0.3
@@ -16601,6 +16592,15 @@ packages:
   - python-dateutil
   - urllib3>=2.1.0
   requires_python: ~=3.9
+- pypi: https://files.pythonhosted.org/packages/87/44/18ca9a090acc7bf5eb1fbdbb9ad3cb2e73fd56690438a037f5374ec288c5/remotestate-0.3.4-py3-none-any.whl
+  name: remotestate
+  version: 0.3.4
+  sha256: 33b173adb0a74727032896c4ea7547920f1ac06137452f3db5289680bb24e0ea
+  requires_dist:
+  - fastapi>=0.136,<1
+  - pydantic>=2,<3
+  - uvicorn>=0.46,<1
+  requires_python: '>=3.12'
 - pypi: https://files.pythonhosted.org/packages/96/fd/a40c621ff207f3ce8e484aa0fc8ba4eb6e3ecf52e15b42ba764b457a9550/editorconfig-0.17.1-py3-none-any.whl
   name: editorconfig
   version: 0.17.1
