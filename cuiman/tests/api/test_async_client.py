@@ -110,7 +110,12 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
         new_access = "new-access-token"
         new_refresh = "new-refresh-token"
 
-        with patch("cuiman.api.async_client.HttpxTransport") as httpx_transport_cls:
+        with (
+            patch.object(
+                ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
+            ),
+            patch("cuiman.api.async_client.HttpxTransport") as httpx_transport_cls,
+        ):
             client = AsyncClient(
                 api_url="https://acme.ogc.org/api",
                 auth_type="login",
