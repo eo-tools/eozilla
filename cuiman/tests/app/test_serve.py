@@ -55,6 +55,7 @@ def test_serve_returns_server_without_display(monkeypatch):
             "ui_dist": "https://app.example.test",
             "host": "127.0.0.1",
             "display": "none",
+            "cors_origins": ["*"],
         }
     ]
     assert calls["url"] == []
@@ -81,6 +82,7 @@ def test_serve_opens_browser(monkeypatch):
             "ui_dist": "https://app.example.test",
             "host": "127.0.0.1",
             "display": "none",
+            "cors_origins": ["*"],
         }
     ]
     assert calls["url"][0]["base_url"] == "http://127.0.0.1:8765"
