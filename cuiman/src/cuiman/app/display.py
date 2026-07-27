@@ -5,8 +5,15 @@
 from __future__ import annotations
 
 import json
+from importlib import resources
 
 from IPython.display import HTML, DisplayObject
+
+_NOTEBOOK_DISPLAY_SCRIPT = (
+    resources.files("cuiman.app")
+    .joinpath("notebook-display.js")
+    .read_text(encoding="utf-8")
+)
 
 
 def create_app_display_object(
@@ -67,164 +74,26 @@ def _get_iframe_script_html(
     auto_proxy: bool,
     open_in_browser: bool,
 ) -> HTML:
+    config = {
+        "baseSrc": base_src,
+        "autoScheme": auto_scheme,
+        "width": _norm_size(width),
+        "height": _norm_size(height),
+        "proxyPort": proxy_port,
+        "proxyApp": proxy_app,
+        "autoProxy": auto_proxy,
+        "openInBrowser": open_in_browser,
+    }
+    config_json = json.dumps(config, separators=(",", ":")).replace("<", "\\u003c")
+
+    # Inline the package resource so notebook output needs no additional asset URL.
     return HTML(f"""
             <div class="eozilla-frame-root"></div>
+            <script type="application/json" class="eozilla-frame-config">
+              {config_json}
+            </script>
             <script>
-            (async () => {{
-              function detectJupyterScheme() {{
-                const body = document.body;
-                const root = document.documentElement;
-
-                const themeLight =
-                  body.getAttribute("data-jp-theme-light") ??
-                  root.getAttribute("data-jp-theme-light");
-
-                if (themeLight === "true") return "light";
-                if (themeLight === "false") return "dark";
-
-                const bg =
-                  getComputedStyle(root).getPropertyValue("--jp-layout-color0") ||
-                  getComputedStyle(body).backgroundColor;
-
-                const match = bg.match(/\\d+/g);
-                if (match && match.length >= 3) {{
-                  const [r, g, b] = match.slice(0, 3).map(Number);
-                  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-                  return luminance < 0.5 ? "dark" : "light";
-                }}
-
-                return null;
-              }}
-
-              function getJupyterBaseUrl() {{
-                const configElement = document.getElementById(
-                  "jupyter-config-data",
-                );
-                let configBaseUrl = null;
-
-                if (configElement?.textContent) {{
-                  try {{
-                    configBaseUrl = JSON.parse(
-                      configElement.textContent,
-                    ).baseUrl;
-                  }} catch {{
-                    configBaseUrl = null;
-                  }}
-                }}
-
-                return (
-                  configBaseUrl ??
-                  document.body.dataset.baseUrl ??
-                  document.documentElement.dataset.baseUrl ??
-                  "/"
-                );
-              }}
-
-              function getJupyterProxyUrl(port, path) {{
-                const baseUrl = getJupyterBaseUrl();
-                const basePath = baseUrl.endsWith("/") ? baseUrl : `${{baseUrl}}/`;
-                return new URL(
-                  `${{basePath}}proxy/${{port}}/${{path}}`,
-                  window.location.origin,
-                );
-              }}
-
-              async function isJupyterProxyAvailable(url) {{
-                try {{
-                  const response = await fetch(url, {{ method: "GET" }});
-                  console.debug("[cuiman] Jupyter proxy probe", {{
-                    url: url.toString(),
-                    status: response.status,
-                    available: response.ok,
-                  }});
-                  return response.ok;
-                }} catch (error) {{
-                  console.debug("[cuiman] Jupyter proxy probe failed", {{
-                    url: url.toString(),
-                    error: String(error),
-                  }});
-                  return false;
-                }}
-              }}
-
-              const root = document.currentScript.previousElementSibling;
-              let src = new URL({json.dumps(base_src)}, window.location.href);
-              let wsUrl = src.searchParams.get("ws");
-              const proxyPort = {json.dumps(proxy_port)};
-              const proxyApp = {json.dumps(proxy_app)};
-              const autoProxy = {json.dumps(auto_proxy)};
-              const openInBrowser = {json.dumps(open_in_browser)};
-
-              console.debug("[cuiman] display setup", {{
-                jupyterBaseUrl:
-                  proxyPort === null ? null : getJupyterBaseUrl(),
-                proxyPort,
-                proxyApp,
-                autoProxy,
-                openInBrowser,
-              }});
-
-              if (proxyPort !== null) {{
-                const proxyUrl = getJupyterProxyUrl(proxyPort, "index.html");
-                const proxyWsUrl = getJupyterProxyUrl(proxyPort, "ws");
-                proxyWsUrl.protocol =
-                  window.location.protocol === "https:" ? "wss:" : "ws:";
-
-                const useProxy =
-                  !autoProxy ||
-                  (await isJupyterProxyAvailable(proxyUrl));
-
-                if (useProxy && proxyApp) {{
-                  const query = src.search;
-                  src = getJupyterProxyUrl(proxyPort, "index.html");
-                  src.search = query;
-                }}
-
-                if (useProxy) {{
-                  wsUrl = proxyWsUrl.toString();
-                }}
-              }}
-
-              if (wsUrl !== null) {{
-                src.searchParams.set("ws", wsUrl);
-              }}
-
-              console.debug("[cuiman] display target", {{
-                appUrl: `${{src.origin}}${{src.pathname}}`,
-                wsUrl,
-              }});
-
-              if ({json.dumps(auto_scheme)}) {{
-                const scheme = detectJupyterScheme();
-                if (scheme) {{
-                  src.searchParams.set("scheme", scheme);
-                }}
-              }}
-
-              if (openInBrowser) {{
-                const opened = window.open(src.toString(), "_blank", "noopener");
-                if (!opened) {{
-                  const link = document.createElement("a");
-                  link.href = src.toString();
-                  link.target = "_blank";
-                  link.rel = "noopener";
-                  link.textContent = "Open Cuiman app";
-                  root.replaceChildren(link);
-                }}
-                return;
-              }}
-
-              const iframe = document.createElement("iframe");
-              iframe.src = src.toString();
-              iframe.width = {json.dumps(_norm_size(width))};
-              iframe.height = {json.dumps(_norm_size(height))};
-              iframe.style.border = "0";
-              iframe.style.width = {json.dumps(_norm_size(width))};
-              iframe.style.height = {json.dumps(_norm_size(height))};
-              iframe.allow = "clipboard-read; clipboard-write";
-
-              root.replaceChildren(iframe);
-            }})();
+{_NOTEBOOK_DISPLAY_SCRIPT}
             </script>
             """)
 
