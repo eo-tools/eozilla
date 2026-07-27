@@ -74,6 +74,7 @@ def serve(
         rs.Service(store),
         ui_dist=app_dist,
         host="127.0.0.1",
+        cors_origins=["*"],
         display="none",
     )
 
