@@ -24,7 +24,9 @@
 - Replaced the [Panel](https://panel.holoviz.org/)-based GUI by a modern
   web interface, the [Eozilla App](https://github.com/eo-tools/eozilla-app).
   - Updated `notebooks/cuiman-gui.ipynb` to demonstrate new app-based GUI.
-  - Added package `cuiman.app` that implements the new app-based GUI.
+  - Added subpackage `cuiman.app` that implements the new app-based GUI.
+  - Added PyPI dependency [`remotestate`](https://pypi.org/project/remotestate/) 
+    that allows for interactivity between Python and the app's UI state.
 - The app GUI also works in remote JupyterLab and JupyterHub deployments when
   [`jupyter-server-proxy`](https://jupyter-server-proxy.readthedocs.io/) is
   available: `client.show_app()` routes its local app server and loopback URLs
