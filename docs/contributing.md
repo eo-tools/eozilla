@@ -47,7 +47,7 @@ pixi shell
 
 ### Running the Eozilla server with a local test service
 
-Run local test server
+Run local test server (or use shorter command `pixi run serve`)
 
 ```commandline
 wraptile run -- wraptile.services.local.testing:service
@@ -56,7 +56,7 @@ wraptile run -- wraptile.services.local.testing:service
 The dev mode is useful if you are changing server code:
 
 ```commandline
-wraptile dev wraptile.services.local.testing:service
+wraptile dev -- wraptile.services.local.testing:service
 ```
 
 Run the Eozilla client Python API
@@ -84,18 +84,17 @@ Run Eozilla client CLI
 $ cuiman --help
 ```
 
-### Formatting & Linting
+### Formatting & code checking
 
 ```commandline
-pixi run isort .
-pixi run ruff format 
-pixi run ruff check
+pixi run format 
+pixi run checks
 ```
 
 ### Testing & Coverage
 
 ```commandline
-pixi run test
+pixi run tests
 pixi run coverage
 ```
 
@@ -107,6 +106,53 @@ then synchronize versions in workspaces `tools/pyproject.toml` using
 ```commandline
 pixi run sync-versions
 ```
+
+### Cuiman GUI changes
+
+The cuiman package bundles the [Eozilla App](https://github.com/eo-tools/eozilla-app)
+to use it as the client GUI.
+Eozilla App is a single page web application (SPA) build with React and TypeScript.
+To change its code, it is best to check it out into the eozilla root project folder.
+
+Clone Eozilla (if not already done):
+
+```commandline
+git clone https://github.com/eo-tools/eozilla.git
+cd ./eozilla
+pixi install
+```
+
+then clone and install Eozilla App:
+
+```commandline
+git clone https://github.com/eo-tools/eozilla-app.git
+cd ./eozilla-app
+npm install
+```
+
+If you do not have a process API available, you can run the local test server
+for development in another terminal (also within the `eozilla-app` folder):
+
+```commandline
+npm run eozilla:dev
+```
+
+Note, this is equivalent to running the following command `pixi run serve` 
+in the `eozilla` folder.
+
+Then run the Eozilla App in a browser using the [vite]() dev server:
+
+```commandline
+npm run dev
+```
+
+Once you are done, you can bundle a new app build with the 
+Eozilla Cuiman package:
+
+```commandline
+npm run eozilla:build
+```
+
 
 ### Code generation
 
