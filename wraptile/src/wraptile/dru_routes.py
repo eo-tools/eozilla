@@ -1,7 +1,7 @@
 import fastapi
 
-from gavicore.dru_models import OGCApplicationPackage
-from gavicore.dru_service import DRUService
+from gavicore.dru_models import OgcApplicationPackage
+from gavicore.dru_service import DruService
 from gavicore.models import ApiError, ProcessSummary
 
 from .ap_response import OgcApplicationPackageResponse
@@ -57,7 +57,7 @@ async def deploy_process(
     request: fastapi.Request,
     response: fastapi.Response,
     w: str | None = None,
-    service: DRUService = fastapi.Depends(get_service),  # noqa B008
+    service: DruService = fastapi.Depends(get_service),  # noqa B008
 ):
     return await service.deploy_process(
         w=w,
@@ -68,7 +68,7 @@ async def deploy_process(
 
 # noinspection PyPep8Naming
 @dru_router.put(
-    "/processes/{processID}",
+    "/processes/{processId}",
     response_model=ProcessSummary,
     responses={
         "201": {"model": ProcessSummary},
@@ -94,14 +94,14 @@ async def deploy_process(
     },
 )
 async def replace_process(
-    processID: str,
+    processId: str,
     request: fastapi.Request,
     response: fastapi.Response,
     w: str | None = None,
-    service: DRUService = fastapi.Depends(get_service),  # noqa B008
+    service: DruService = fastapi.Depends(get_service),  # noqa B008
 ):
     return await service.replace_process(
-        process_id=processID,
+        process_id=processId,
         w=w,
         request=request,
         response=response,
@@ -110,7 +110,7 @@ async def replace_process(
 
 # noinspection PyPep8Naming
 @dru_router.delete(
-    "/processes/{processID}",
+    "/processes/{processId}",
     status_code=204,
     responses={
         "403": {"model": ApiError},
@@ -121,20 +121,20 @@ async def replace_process(
     response_model_exclude_unset=True,
 )
 async def undeploy_process(
-    processID: str,
+    processId: str,
     request: fastapi.Request,
     response: fastapi.Response,
-    service: DRUService = fastapi.Depends(get_service),  # noqa B008
+    service: DruService = fastapi.Depends(get_service),  # noqa B008
 ):
     return await service.undeploy_process(
-        process_id=processID, request=request, response=response
+        process_id=processId, request=request, response=response
     )
 
 
 # noinspection PyPep8Naming
 @dru_router.get(
-    "/processes/{processID}/package",
-    response_model=OGCApplicationPackage,
+    "/processes/{processId}/package",
+    response_model=OgcApplicationPackage,
     response_class=OgcApplicationPackageResponse,
     responses={
         "403": {"model": ApiError},
@@ -145,11 +145,11 @@ async def undeploy_process(
     response_model_exclude_unset=True,
 )
 async def get_formal_description(
-    processID: str,
+    processId: str,
     request: fastapi.Request,
     response: fastapi.Response,
-    service: DRUService = fastapi.Depends(get_service),  # noqa B008
+    service: DruService = fastapi.Depends(get_service),  # noqa B008
 ):
     return await service.get_formal_description(
-        process_id=processID, request=request, response=response
+        process_id=processId, request=request, response=response
     )

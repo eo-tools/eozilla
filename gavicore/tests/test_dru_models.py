@@ -11,9 +11,9 @@ from pydantic import BaseModel
 import gavicore.dru_models as m
 
 REQUIRED_CLASSES = {
-    "OGCApplicationPackage",
-    "OGCApplicationPackageProcessDescription",
-    "CWLDescription",
+    "OgcApplicationPackage",
+    "OgcApplicationPackageProcessDescription",
+    "CwlDescription",
     "ContainerImage",
     "ExecutionUnitContainer",
     "ContainerConfig",

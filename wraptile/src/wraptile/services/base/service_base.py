@@ -13,7 +13,7 @@ import fastapi
 import yaml
 from starlette.routing import Route
 
-from gavicore.dru_service import DRUService
+from gavicore.dru_service import DruService
 from gavicore.models import (
     Capabilities,
     ConformanceDeclaration,
@@ -95,7 +95,7 @@ class ServiceBase(Service, ABC):
                 example="path.to.module:service",
             )
 
-            if issubclass(service.__class__, DRUService):
+            if issubclass(service.__class__, DruService):
                 try:
                     app_module = import_module("wraptile.app")
                     app: fastapi.FastAPI = getattr(app_module, "app")
