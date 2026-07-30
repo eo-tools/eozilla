@@ -16493,8 +16493,8 @@ packages:
   - tomli-w
   - tomli ; python_full_version < '3.11'
   - typer>=0.26.0,<1
-  - gavicore>=0.2.0.dev1
-  - procodile>=0.2.0.dev1
+  - gavicore>=0.2.0
+  - procodile>=0.2.0
   requires_python: '>=3.11'
 - pypi: ./cuiman
   name: cuiman
@@ -16506,16 +16506,16 @@ packages:
   - typer>=0.26.0,<1
   - uri-template
   - httpx
-  - gavicore>=0.2.0.dev1
+  - gavicore>=0.2.0
   requires_python: '>=3.10'
 - pypi: ./eozilla
   name: eozilla
   requires_dist:
-  - appligator>=0.2.0.dev1
-  - cuiman>=0.2.0.dev1
-  - gavicore>=0.2.0.dev1
-  - procodile>=0.2.0.dev1
-  - wraptile>=0.2.0.dev1
+  - appligator>=0.2.0
+  - cuiman>=0.2.0
+  - gavicore>=0.2.0
+  - procodile>=0.2.0
+  - wraptile>=0.2.0
   requires_python: '>=3.10'
 - pypi: ./gavicore
   name: gavicore
@@ -16530,7 +16530,7 @@ packages:
   - pydantic
   - pyyaml
   - typer>=0.26.0,<1
-  - gavicore>=0.2.0.dev1
+  - gavicore>=0.2.0
   requires_python: '>=3.10'
 - pypi: ./procodile-example
   name: procodile-example
@@ -16543,8 +16543,8 @@ packages:
   - pyyaml
   - typer>=0.26.0,<1
   - uvicorn
-  - gavicore>=0.2.0.dev1
-  - procodile>=0.2.0.dev1
+  - gavicore>=0.2.0
+  - procodile>=0.2.0
   requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/0d/fe/6bea5c9162869c5beba5d9c8abbed835ec85bf1ec1fba05a3822325c45f3/build-1.5.0-py3-none-any.whl
   name: build
