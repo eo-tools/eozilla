@@ -1,4 +1,4 @@
-## Changes in version 0.2.0 (in development)
+## Changes in version 0.2.0
 
 ### Enchancements
 
