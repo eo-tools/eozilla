@@ -68,15 +68,33 @@ _AUTH_TYPE_TO_APPLICABLE_KEYS: dict[str, tuple[str, ...]] = {
 }
 
 
+def _effective_auth_type(client_config: ClientConfig) -> str:
+    """
+    Resolve the auth type to forward to the app.
+
+    ``"login"`` means the *Python* client performs a username/password login
+    to obtain a token. By the time this is called (e.g. from ``show_app()``),
+    that login has already happened and ``client_config.token`` holds a
+    resolved access token — the app doesn't need to (and can't) repeat that
+    login. Forwarding ``auth_type="login"`` verbatim makes the app treat it
+    like an interactive OAuth2/PKCE login, discarding the already-valid
+    token and forcing a redundant sign-in. Once a token is resolved, forward
+    it as ``"token"`` instead, so the app connects immediately.
+    """
+    auth_type = client_config.auth_type or "none"
+    if auth_type == "login" and client_config.token:
+        return "token"
+    return auth_type
+
+
 def _config_to_service_options(client_config: ClientConfig) -> dict[str, Any]:
     """
     Convert a ClientConfig object to a JSON-serializable dict, which includes
     only keywords applicable to the given ``auth_config.auth_type``.
     """
     auth_keys = set(AuthConfig.model_fields.keys())
-    applicable_auth_keys = _AUTH_TYPE_TO_APPLICABLE_KEYS[
-        client_config.auth_type or "none"
-    ]
+    effective_auth_type = _effective_auth_type(client_config)
+    applicable_auth_keys = _AUTH_TYPE_TO_APPLICABLE_KEYS[effective_auth_type]
     auth_config_dict = {
         k: v
         for k, v in client_config.model_dump(
@@ -85,6 +103,8 @@ def _config_to_service_options(client_config: ClientConfig) -> dict[str, Any]:
         ).items()
         if k not in auth_keys or k in applicable_auth_keys
     }
+    if "auth_type" in auth_config_dict:
+        auth_config_dict["auth_type"] = effective_auth_type
     # Additional cleanup
     if "token_header" in auth_config_dict and client_config.use_bearer:
         del auth_config_dict["token_header"]

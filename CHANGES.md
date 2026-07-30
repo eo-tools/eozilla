@@ -46,6 +46,12 @@
   no longer read the developer's real `~/.eozilla/config`, which could inject a
   logged-in token into the request headers and fail the assertion that an
   unauthenticated client sends none. (#167)
+- Fixed `client.show_app()` forcing a redundant interactive OAuth2/PKCE login
+  in the app GUI even when the Python client had already authenticated
+  (`auth_type="login"` with a resolved token). The client config bridge in
+  `cuiman.app.service` now forwards an already-authenticated `"login"` config
+  to the app as `auth_type="token"`, so the app connects immediately using
+  the existing bearer token instead of discarding it and re-prompting.
 
 ### Other changes
 
