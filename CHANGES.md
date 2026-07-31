@@ -8,6 +8,7 @@
   `cuiman.app.service` now forwards an already-authenticated `"login"` config
   to the app as `auth_type="token"`, so the app connects immediately using
   the existing bearer token instead of discarding it and re-prompting.
+- Added missing ipython dependency for cuiman. (#188)
 
 ## Changes in version 0.2.0
 
