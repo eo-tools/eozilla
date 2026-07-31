@@ -9,9 +9,13 @@
   to the app as `auth_type="token"`, so the app connects immediately using
   the existing bearer token instead of discarding it and re-prompting.
 
+### Other changes
+
+- Updated installation instructions. (#189)
+
 ## Changes in version 0.2.0
 
-### Enchancements
+### Enhancements
 
 **Wraptile** enhancements:
 
