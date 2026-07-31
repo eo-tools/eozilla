@@ -304,6 +304,21 @@ class LocalServiceTest(IsolatedAsyncioTestCase):
                 request=self.get_request(),
             )
 
+    async def test_restart_without_original_request_fails(self):
+        job_info = await self.service.execute_process(
+            process_id="primes_between",
+            process_request=ProcessRequest(inputs={"max_val": 20}),
+            request=self.get_request(),
+        )
+        self.service.jobs[job_info.jobID].job_info.status = JobStatus.failed
+        del self.service.job_requests[job_info.jobID]
+
+        with pytest.raises(ServiceException, match="Original request.*not available"):
+            await self.service.restart_job(
+                job_id=job_info.jobID,
+                request=self.get_request(),
+            )
+
     def test_ensure_executor_reconfigures_missing_executor(self):
         self.service.executor = None
         executor = self.service._ensure_executor()
