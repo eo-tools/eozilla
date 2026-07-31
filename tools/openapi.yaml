@@ -382,6 +382,50 @@ paths:
             text/html:
               schema:
                 type: string
+  /jobs/{jobId}/restart:
+    post:
+      tags:
+      - Restart
+      summary: restart a failed or dismissed job
+      description: |
+        Create a new job using the original process request of a failed or
+        dismissed job.
+      operationId: restartJob
+      parameters:
+      - name: jobId
+        in: path
+        description: Local identifier of the job to restart
+        required: true
+        schema:
+          type: string
+      responses:
+        "201":
+          description: The restarted job.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobInfo'
+        "403":
+          description: The job cannot be restarted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        "404":
+          description: The requested job was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        "500":
+          description: A server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+            text/html:
+              schema:
+                type: string
 components:
   schemas:
     #------------------------------------------------------

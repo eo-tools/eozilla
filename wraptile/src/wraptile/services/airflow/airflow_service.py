@@ -230,6 +230,25 @@ class AirflowService(ServiceBase):
             ) from e
         return self.dag_run_to_job_info(dag_run)
 
+    async def restart_job(self, job_id: str, *args, **kwargs) -> JobInfo:
+        """Create a new DAG run using the original run configuration."""
+        dag_id = self.get_dag_id_from_job_id(job_id)
+        try:
+            dag_run = self.airflow_dag_run_api.get_dag_run(dag_id, job_id)
+        except ApiException as e:
+            raise ServiceException(
+                e.status, e.reason, exception=e, is_job_problem=True
+            ) from e
+        job_info = self.dag_run_to_job_info(dag_run)
+        if job_info.status not in (JobStatus.failed, JobStatus.dismissed):
+            raise ServiceException(
+                403,
+                detail=f"Job {job_id!r} cannot be restarted unless it failed or was dismissed",
+                is_job_problem=True,
+            )
+        process_request = ProcessRequest(inputs=dag_run.conf or {})
+        return await self.execute_process(dag_id, process_request)
+
     async def get_job_results(self, job_id: str, *args, **kwargs) -> JobResults:
         dag_id = self.get_dag_id_from_job_id(job_id)
         return_value: Optional[Any] = None

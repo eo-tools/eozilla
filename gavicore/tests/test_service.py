@@ -18,6 +18,7 @@ REQUIRED_METHODS = {
     "get_processes",
     "get_job",
     "get_jobs",
+    "restart_job",
 }
 
 

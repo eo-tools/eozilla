@@ -55,7 +55,7 @@ def main():
         [
             "from abc import ABC, abstractmethod\n",
             "\n",
-            f"from .models import {model_list}\n",
+            f"from ..models import {model_list}\n",
             "\n",
             "class Service(ABC):\n",
             service_code,

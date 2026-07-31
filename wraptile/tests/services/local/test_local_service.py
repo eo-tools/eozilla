@@ -266,8 +266,43 @@ class LocalServiceTest(IsolatedAsyncioTestCase):
         self.service.job_uses_processes[job_id] = False
         await self.service.dismiss_job(job_id=job_id, request=self.get_request())
         self.assertNotIn(job_id, self.service.jobs)
+        self.assertNotIn(job_id, self.service.job_requests)
         self.assertNotIn(job_id, self.service.job_results)
         self.assertNotIn(job_id, self.service.job_uses_processes)
+
+    async def test_restart_failed_job_reuses_original_request(self):
+        request = ProcessRequest(inputs={"max_val": 20})
+        failed_job = await self.service.execute_process(
+            process_id="primes_between",
+            process_request=request,
+            request=self.get_request(),
+        )
+        self.service.jobs[failed_job.jobID].job_info.status = JobStatus.failed
+
+        restarted_job = await self.service.restart_job(
+            job_id=failed_job.jobID,
+            request=self.get_request(),
+        )
+
+        self.assertNotEqual(failed_job.jobID, restarted_job.jobID)
+        self.assertEqual("primes_between", restarted_job.processID)
+        self.assertEqual(request, self.service.job_requests[restarted_job.jobID])
+
+    async def test_restart_non_failed_job_fails(self):
+        job_info = await self.service.execute_process(
+            process_id="primes_between",
+            process_request=ProcessRequest(inputs={"max_val": 20}),
+            request=self.get_request(),
+        )
+        self.service.jobs[job_info.jobID].job_info.status = JobStatus.successful
+
+        with pytest.raises(
+            ServiceException, match="cannot be restarted after succeeding"
+        ):
+            await self.service.restart_job(
+                job_id=job_info.jobID,
+                request=self.get_request(),
+            )
 
     def test_ensure_executor_reconfigures_missing_executor(self):
         self.service.executor = None

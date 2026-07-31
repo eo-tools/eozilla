@@ -40,6 +40,7 @@ class LocalService(ServiceBase):
 
         self.process_registry = process_registry or ProcessRegistry()
         self.jobs: dict[str, Job] = {}
+        self.job_requests: dict[str, ProcessRequest] = {}
         self.job_results: dict[str, JobResults | None] = {}
         self.job_uses_processes: dict[str, bool] = {}
         self._executor_uses_processes = False
@@ -117,6 +118,7 @@ class LocalService(ServiceBase):
                     ),
                 )
         self.jobs[job_id] = job
+        self.job_requests[job_id] = process_request.model_copy(deep=True)
         self.job_uses_processes[job_id] = use_processes
         if use_processes:
             assert self.service_ref is not None
@@ -160,9 +162,34 @@ class LocalService(ServiceBase):
             JobStatus.failed,
         ):
             del self.jobs[job_id]
+            self.job_requests.pop(job_id, None)
             self.job_results.pop(job_id, None)
             self.job_uses_processes.pop(job_id, None)
         return job.job_info
+
+    async def restart_job(self, job_id: str, *args, **_kwargs) -> JobInfo:
+        """Create a new job using a failed or dismissed job's request."""
+        job = self._get_job(
+            job_id,
+            forbidden_status_codes={
+                JobStatus.accepted: "cannot be restarted before it has finished",
+                JobStatus.running: "cannot be restarted while it is running",
+                JobStatus.successful: "cannot be restarted after succeeding",
+            },
+        )
+        assert job.job_info.status in (JobStatus.failed, JobStatus.dismissed)
+        process_id = job.job_info.processID
+        process_request = self.job_requests.get(job_id)
+        if process_id is None or process_request is None:
+            raise ServiceException(
+                500,
+                detail=f"Original request for job {job_id!r} is not available",
+                is_job_problem=True,
+            )
+        return await self.execute_process(
+            process_id,
+            process_request.model_copy(deep=True),
+        )
 
     async def get_job_results(self, job_id: str, *args, **_kwargs) -> JobResults:
         job = self._get_job(

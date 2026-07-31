@@ -51,6 +51,9 @@ class MyService(ServiceBase):
     async def dismiss_job(self, job_id: str, *args, **kwargs) -> JobInfo:
         raise NotImplementedError
 
+    async def restart_job(self, job_id: str, *args, **kwargs) -> JobInfo:
+        raise NotImplementedError
+
     async def get_job_results(self, job_id: str, *args, **kwargs) -> JobResults:
         raise NotImplementedError
 

@@ -7,6 +7,7 @@ from unittest import TestCase
 
 from fastapi.testclient import TestClient
 
+from gavicore.models import JobStatus
 from wraptile.logging import LogMessageFilter
 from wraptile.main import app
 from wraptile.provider import ServiceProvider
@@ -70,6 +71,16 @@ class AppTest(TestCase):
         job_id = response.json()["jobID"]
         response = client.delete(f"/jobs/{job_id}")
         self.assertEqual(200, response.status_code)
+
+    def test_restart_failed_job(self):
+        response = client.post("/processes/primes_between/execution", json={})
+        job_id = response.json()["jobID"]
+        service.jobs[job_id].job_info.status = JobStatus.failed
+
+        response = client.post(f"/jobs/{job_id}/restart")
+
+        self.assertEqual(201, response.status_code)
+        self.assertNotEqual(job_id, response.json()["jobID"])
 
     def test_get_job_results(self):
         response = client.post("/processes/primes_between/execution", json={})
