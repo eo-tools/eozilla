@@ -16499,6 +16499,7 @@ packages:
 - pypi: ./cuiman
   name: cuiman
   requires_dist:
+  - ipython
   - pydantic
   - pydantic-settings
   - pyyaml
