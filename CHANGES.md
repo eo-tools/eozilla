@@ -10,9 +10,13 @@
   the existing bearer token instead of discarding it and re-prompting.
 - Added missing ipython dependency for cuiman. (#188)
 
+### Other changes
+
+- Updated installation instructions. (#189)
+
 ## Changes in version 0.2.0
 
-### Enchancements
+### Enhancements
 
 **Wraptile** enhancements:
 

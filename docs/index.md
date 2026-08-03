@@ -65,8 +65,24 @@ appligator --help
 wraptile --help
 ```
 
-We currently package Eozilla only as pip packages distributed via PyPI, but
-we will publish `conda-forge` packages soon.
+The Eozilla suite is also available as conda-forge packages, installable
+with pixi…
+
+```bash
+mkdir eozilla-test
+cd eozilla-test
+
+pixi init
+pixi add python
+pixi add eozilla
+pixi shell
+```
+…or with mamba, micromamba, or conda:
+
+```bash
+mamba create --channel conda-forge --name eozilla-test eozilla
+mamba activate eozilla-test
+```
 
 ## Package Dependencies
 
