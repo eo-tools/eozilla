@@ -1,5 +1,12 @@
 ## Changes in version 0.2.1 (in development)
 
+### Enhancements
+
+- **Wraptile** now supports restarting failed or dismissed jobs with
+  `POST /jobs/{jobId}/restart`. Local services reuse the original process
+  request, while Airflow services replay the original DAG-run configuration.
+  (#41)
+
 ### Fixes
 
 - Fixed `client.show_app()` forcing a redundant interactive OAuth2/PKCE login
