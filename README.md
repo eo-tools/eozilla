@@ -86,7 +86,7 @@ pixi shell
 …or with mamba, micromamba, or conda:
 
 ```bash
-mamba create --name eozilla-test eozilla
+mamba create --channel conda-forge --name eozilla-test eozilla
 mamba activate eozilla-test
 ```
 
