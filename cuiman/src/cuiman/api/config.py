@@ -135,6 +135,8 @@ class ClientConfig(BaseSettings):
         with config_path_.open("rt") as stream:
             # Note, we may switch TOML
             config_dict = yaml.safe_load(stream)
+        if isinstance(config_dict, dict):
+            config_dict = _convert_legacy_file_config(config_dict)
         return cls.new_instance(**config_dict)
 
     def write(self, config_path: Optional[str | Path] = None) -> Path:
@@ -235,3 +237,64 @@ def _update_if_not_none(target: dict[str, Any], updates: dict[str, Any]):
             _update_if_not_none(target[key], value)
         else:
             target[key] = value
+
+
+_LEGACY_AUTH_KEYS = {
+    "api_key",
+    "api_key_header",
+    "auth_type",
+    "auth_url",
+    "client_id",
+    "client_secret",
+    "grant_type",
+    "password",
+    "refresh_token",
+    "token",
+    "token_header",
+    "use_bearer",
+    "username",
+}
+
+
+def _convert_legacy_file_config(config: dict[str, Any]) -> dict[str, Any]:
+    """Convert the former flat CLI auth configuration to nested auth data."""
+    if "auth" in config or "auth_type" not in config:
+        return config
+
+    converted = {
+        key: value for key, value in config.items() if key not in _LEGACY_AUTH_KEYS
+    }
+    auth_type = config.get("auth_type") or "none"
+    auth: dict[str, Any] = {"auth_type": auth_type}
+
+    if auth_type == "basic":
+        _copy_legacy_values(auth, config, "username", "password")
+    elif auth_type == "token":
+        _copy_legacy_values(
+            auth,
+            config,
+            ("token", "access_token"),
+            "use_bearer",
+            ("token_header", "access_token_header"),
+        )
+    elif auth_type == "login" and "auth_url" in config:
+        raise ValueError(
+            "Legacy configuration format detected, please run 'cuiman configure'"
+        )
+    elif auth_type == "api-key":
+        _copy_legacy_values(auth, config, "api_key", "api_key_header")
+
+    converted["auth"] = auth
+    return converted
+
+
+def _copy_legacy_values(
+    target: dict[str, Any],
+    source: dict[str, Any],
+    *keys: str | tuple[str, str],
+) -> None:
+    for key in keys:
+        source_key, target_key = key if isinstance(key, tuple) else (key, key)
+        value = source.get(source_key)
+        if value is not None:
+            target[target_key] = value

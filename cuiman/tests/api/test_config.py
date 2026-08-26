@@ -9,7 +9,15 @@ import tempfile
 from pathlib import Path
 from unittest import TestCase
 
-from cuiman.api.auth import LoginAuthConfig, NoAuthConfig
+import yaml
+
+from cuiman.api.auth import (
+    ApiKeyAuthConfig,
+    BasicAuthConfig,
+    LoginAuthConfig,
+    NoAuthConfig,
+    TokenAuthConfig,
+)
 from cuiman.api.config import ClientConfig, _update_if_not_none
 from cuiman.api.defaults import DEFAULT_API_URL
 
@@ -79,6 +87,92 @@ class ClientConfigTest(TestCase):
             config = ClientConfig.create(config_path=config_path)
 
         self.assertEqual(original, config)
+
+    def test_from_file_converts_legacy_flat_auth_configurations(self):
+        common = {
+            "api_url": "https://eozilla.example.test",
+            "api_key_header": "X-API-Key",
+            "grant_type": "password",
+            "token_header": "X-Auth-Token",
+            "use_bearer": True,
+        }
+        cases = [
+            (
+                {"auth_type": "none"},
+                NoAuthConfig(),
+            ),
+            (
+                {
+                    "auth_type": "basic",
+                    "auth_url": "https://ignored.example.test",
+                    "username": "basic-user",
+                    "password": "basic-password",
+                },
+                BasicAuthConfig(
+                    username="basic-user",
+                    password="basic-password",
+                ),
+            ),
+            (
+                {
+                    "auth_type": "token",
+                    "token": "legacy-token",
+                    "use_bearer": False,
+                    "token_header": "X-Legacy-Token",
+                },
+                TokenAuthConfig(
+                    access_token="legacy-token",
+                    use_bearer=False,
+                    access_token_header="X-Legacy-Token",
+                ),
+            ),
+            (
+                {
+                    "auth_type": "api-key",
+                    "api_key": "legacy-key",
+                    "api_key_header": "X-Legacy-Key",
+                },
+                ApiKeyAuthConfig(
+                    api_key="legacy-key",
+                    api_key_header="X-Legacy-Key",
+                ),
+            ),
+        ]
+
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            for index, (legacy_auth, expected_auth) in enumerate(cases):
+                with self.subTest(auth_type=legacy_auth["auth_type"]):
+                    config_path = Path(tmp_dir_name) / f"legacy-{index}.yaml"
+                    contents = yaml.safe_dump({**common, **legacy_auth})
+                    config_path.write_text(contents)
+
+                    config = ClientConfig.from_file(config_path)
+
+                    self.assertIsNotNone(config)
+                    self.assertEqual(expected_auth, config.auth)
+                    self.assertEqual(contents, config_path.read_text())
+
+    def test_from_file_rejects_legacy_login_auth_configuration(self):
+        legacy_config = {
+            "api_url": "https://eozilla.example.test",
+            "auth_type": "login",
+            "auth_url": "https://identity.example.test/token",
+            "username": "user",
+            "password": "password",
+        }
+
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            config_path = Path(tmp_dir_name) / "config.yaml"
+            contents = yaml.safe_dump(legacy_config)
+            config_path.write_text(contents)
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "Legacy configuration format detected, please run 'cuiman configure'",
+            ):
+                ClientConfig.from_file(config_path)
+
+            self.assertEqual(contents, config_path.read_text())
 
     def test_create_merges_nested_auth_overrides(self):
         original = ClientConfig(

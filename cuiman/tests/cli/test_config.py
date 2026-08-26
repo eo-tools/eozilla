@@ -2,7 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-# ruff: noqa: S106
+# ruff: noqa: S105, S106
 
 import os
 import unittest
@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import yaml
 
 from cuiman import ClientConfig
 from cuiman.api.auth import (
@@ -58,6 +59,34 @@ class GetConfigTest(ConfigTestMixin, unittest.TestCase):
             ),
         ):
             get_config(None)
+
+    def test_get_config_rejects_legacy_cli_login_auth(self):
+        legacy_config = {
+            "api_url": "https://eozilla.example.test",
+            "auth_type": "login",
+            "auth_url": "https://identity.example.test/token",
+            "username": "user",
+            "password": "password",
+            "client_id": "client",
+            "client_secret": "secret",
+            "grant_type": "password",
+            "token": "access",
+            "refresh_token": "refresh",
+            "use_bearer": True,
+            "token_header": "X-Auth-Token",
+            "api_key_header": "X-API-Key",
+        }
+        ClientConfig.default_path.write_text(yaml.safe_dump(legacy_config))
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Legacy configuration format detected, please run 'cuiman configure'",
+        ):
+            get_config(None)
+
+        self.assertEqual(
+            legacy_config, yaml.safe_load(ClientConfig.default_path.read_text())
+        )
 
 
 class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
