@@ -4,13 +4,22 @@
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import typer
 from pydantic import BaseModel
 
-from cuiman.api.auth import login_for_tokens
-from cuiman.api.auth.config import AUTH_TYPE_NAMES, AuthConfig
+from cuiman.api.auth import (
+    LoginAuthConfig,
+    OAuth2AuthConfig,
+    login_for_tokens,
+    obtain_oauth2_tokens,
+)
+from cuiman.api.auth.config import (
+    AUTH_TYPE_NAMES,
+    OAUTH2_GRANT_TYPE_NAMES,
+    OAuth2GrantType,
+)
 from cuiman.api.config import ClientConfig
 from cuiman.api.defaults import DEFAULT_API_URL, DEFAULT_AUTH_TYPE
 
@@ -40,11 +49,13 @@ def configure_client_with_prompt(
     config_path: Path | str | None = None,
     **cli_params: str | bool | None,
 ) -> Path:
+    previous = ClientConfig.create(config_path=config_path).to_dict()
+    previous_auth = previous.pop("auth", {})
     ctx = _Context(
         cli_params=cli_params,
         # ClientConfig.create() merges file config with env vars, so env var values
         # surface as prompt defaults rather than silently bypassing prompts.
-        prev_params=ClientConfig.create(config_path=config_path).to_dict(),
+        prev_params={**previous, **previous_auth},
         curr_params={},
     )
 
@@ -54,7 +65,13 @@ def configure_client_with_prompt(
     if auth_type and auth_type != "none":
         _configure_auth_with_prompt(ctx, auth_type)
 
-    config = ClientConfig.new_instance(**ctx.curr_params)
+    auth_params = {
+        key: value for key, value in ctx.curr_params.items() if key != "api_url"
+    }
+    config = ClientConfig.new_instance(
+        api_url=ctx.curr_params["api_url"],
+        auth=auth_params,
+    )
     return config.write(config_path=config_path)
 
 
@@ -63,6 +80,8 @@ def _configure_auth_with_prompt(ctx: _Context, auth_type: str) -> None:
         _configure_basic_auth_with_prompt(ctx)
     elif auth_type == "login":
         _configure_login_auth_with_prompt(ctx)
+    elif auth_type == "oauth2":
+        _configure_oauth2_auth_with_prompt(ctx)
     elif auth_type == "token":
         _configure_token_auth_with_prompt(ctx)
     elif auth_type == "api-key":
@@ -74,21 +93,31 @@ def _configure_basic_auth_with_prompt(ctx: _Context) -> None:
 
 
 def _configure_login_auth_with_prompt(ctx: _Context) -> None:
-    # TODO: add URL validator
-    _prompt_for_str(ctx, "auth_url", "Authentication URL", "")
-    _prompt_for_str(ctx, "client_id", "client ID", "")
-    _prompt_for_str(ctx, "client_secret", "client secret", "")
+    _prompt_for_str(ctx, "login_url", "Login URL", "")
     _configure_username_password_with_prompt(ctx)
-    auth_config = AuthConfig(**ctx.curr_params)
+    auth_config = LoginAuthConfig(**_current_auth_params(ctx))
     result = login_for_tokens(auth_config)
-    ctx.curr_params["token"] = result.access_token
+    ctx.curr_params["access_token"] = result.access_token
+    _configure_token_type_with_prompt(ctx)
+
+
+def _configure_oauth2_auth_with_prompt(ctx: _Context) -> None:
+    _prompt_for_str(ctx, "token_url", "OAuth2 token URL", "")
+    grant_type = _prompt_for_oauth2_grant_type(ctx)
+    if grant_type == "password":
+        _configure_username_password_with_prompt(ctx)
+    _prompt_for_str(ctx, "client_id", "OAuth2 client ID", "")
+    _prompt_for_str(ctx, "client_secret", "OAuth2 client secret", "")
+    auth_config = OAuth2AuthConfig(**_current_auth_params(ctx))
+    result = obtain_oauth2_tokens(auth_config)
+    ctx.curr_params["access_token"] = result.access_token
     if result.refresh_token:
         ctx.curr_params["refresh_token"] = result.refresh_token
     _configure_token_type_with_prompt(ctx)
 
 
 def _configure_token_auth_with_prompt(ctx: _Context) -> None:
-    _prompt_for_str(ctx, "token", "API access token", "")
+    _prompt_for_str(ctx, "access_token", "API access token", "")
     _configure_token_type_with_prompt(ctx)
 
 
@@ -110,7 +139,16 @@ def _configure_username_password_with_prompt(ctx: _Context) -> None:
 def _configure_token_type_with_prompt(ctx: _Context) -> None:
     use_bearer = _prompt_for_bool(ctx, "use_bearer", "Use bearer token?", True)
     if not use_bearer:
-        _prompt_for_str(ctx, "token_header", "Access token header", "X-Auth-Token")
+        _prompt_for_str(
+            ctx,
+            "access_token_header",
+            "Access token header",
+            "X-Auth-Token",
+        )
+
+
+def _current_auth_params(ctx: _Context) -> dict[str, Any]:
+    return {key: value for key, value in ctx.curr_params.items() if key != "api_url"}
 
 
 def _prompt_for_auth_type(ctx: _Context) -> str:
@@ -126,6 +164,21 @@ def _prompt_for_auth_type(ctx: _Context) -> str:
             f"Expected one of: {', '.join(AUTH_TYPE_NAMES)}."
         )
     return auth_type
+
+
+def _prompt_for_oauth2_grant_type(ctx: _Context) -> OAuth2GrantType:
+    grant_type = _prompt_for_str(
+        ctx,
+        "grant_type",
+        f"OAuth2 grant type ({'|'.join(OAUTH2_GRANT_TYPE_NAMES)})",
+        "password",
+    ).casefold()
+    if grant_type not in OAUTH2_GRANT_TYPE_NAMES:
+        raise ValueError(
+            f"Invalid OAuth2 grant type: {grant_type}. "
+            f"Expected one of: {', '.join(OAUTH2_GRANT_TYPE_NAMES)}."
+        )
+    return cast(OAuth2GrantType, grant_type)
 
 
 def _prompt_for_str(ctx: _Context, key: str, text: str, default: str) -> str:

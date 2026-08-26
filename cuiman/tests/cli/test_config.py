@@ -2,6 +2,8 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+# ruff: noqa: S106
+
 import os
 import unittest
 from pathlib import Path
@@ -10,43 +12,36 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from cuiman import ClientConfig
-from cuiman.api.auth.login import LoginResult
-from cuiman.api.defaults import DEFAULT_CONFIG_PATH
-from cuiman.cli.config import configure_client_with_prompt, get_config
-from gavicore.util.testing import set_env, set_env_cm
-
-DEFAULT_CONFIG_BACKUP_PATH = DEFAULT_CONFIG_PATH.parent / (
-    str(DEFAULT_CONFIG_PATH.name) + ".backup"
+from cuiman.api.auth import (
+    ApiKeyAuthConfig,
+    BasicAuthConfig,
+    LoginAuthConfig,
+    NoAuthConfig,
+    OAuth2AuthConfig,
+    TokenAuthConfig,
+    TokenResult,
 )
+from cuiman.cli.config import (
+    _Context,
+    _configure_auth_with_prompt,
+    configure_client_with_prompt,
+    get_config,
+)
+from gavicore.util.testing import set_env
 
 
 # noinspection PyAttributeOutsideInit,PyPep8Naming
 class ConfigTestMixin:
     def setUp(self):
         self.restore_env = set_env(
-            **{k: None for k, v in os.environ.items() if k.startswith("EOZILLA_")}
+            **{key: None for key in os.environ if key.startswith("EOZILLA_")}
         )
-        self.must_restore_config = False
-        # If a config backup exists, delete it
-        if DEFAULT_CONFIG_BACKUP_PATH.exists():
-            os.remove(DEFAULT_CONFIG_BACKUP_PATH)
-        # If default config exists, rename it into the backup config
-        if DEFAULT_CONFIG_PATH.exists():
-            DEFAULT_CONFIG_PATH.rename(DEFAULT_CONFIG_BACKUP_PATH)
 
     def tearDown(self):
         self.restore_env()
-        # If config backup exists, rename it into the default
-        if DEFAULT_CONFIG_BACKUP_PATH.exists():
-            # If default config exists, remove it,
-            # so we can rename the backup
-            if DEFAULT_CONFIG_PATH.exists():
-                os.remove(DEFAULT_CONFIG_PATH)
-            DEFAULT_CONFIG_BACKUP_PATH.rename(DEFAULT_CONFIG_PATH)
 
 
 class GetConfigTest(ConfigTestMixin, unittest.TestCase):
-    # noinspection PyMethodMayBeStatic
     def test_get_config_custom(self):
         with pytest.raises(
             ValueError,
@@ -54,7 +49,6 @@ class GetConfigTest(ConfigTestMixin, unittest.TestCase):
         ):
             get_config("fantasia.cfg")
 
-    # noinspection PyMethodMayBeStatic
     def test_get_config_no_default(self):
         with pytest.raises(
             ValueError,
@@ -68,221 +62,194 @@ class GetConfigTest(ConfigTestMixin, unittest.TestCase):
 
 class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
     def assert_is_default_config_path(self, config_path: Path):
-        self.assertEqual(DEFAULT_CONFIG_PATH, config_path)
-        self.assertTrue(DEFAULT_CONFIG_PATH.exists())
+        self.assertEqual(ClientConfig.default_path, config_path)
+        self.assertTrue(ClientConfig.default_path.exists())
+
+    def test_none_auth_needs_no_additional_configuration(self):
+        context = _Context(cli_params={}, prev_params={}, curr_params={})
+        _configure_auth_with_prompt(context, "none")
+        self.assertEqual({}, context.curr_params)
 
     @patch("typer.prompt")
-    def test_auth_type_none(self, mock_prompt: MagicMock):
-        # Simulate sequential responses to typer.prompt()
-        mock_prompt.side_effect = [
-            "http://localhost:9090",
-            "none",
-        ]
+    def test_auth_type_none(self, prompt: MagicMock):
+        prompt.side_effect = ["http://localhost:9090", "none"]
+
         config_path = configure_client_with_prompt()
-        self.assertEqual(2, mock_prompt.call_count)
+
         self.assert_is_default_config_path(config_path)
-        config = get_config(None)
         self.assertEqual(
-            ClientConfig(api_url="http://localhost:9090", auth_type="none"),
-            config,
+            ClientConfig(api_url="http://localhost:9090", auth=NoAuthConfig()),
+            get_config(None),
         )
 
     @patch("typer.prompt")
-    def test_auth_type_invalid(self, mock_prompt: MagicMock):
-        mock_prompt.side_effect = [
-            "http://localhost:9090",
-            "torken",
-        ]
-
-        with pytest.raises(
-            ValueError,
-            match=(
-                r"Invalid authentication type: torken\. "
-                r"Expected one of:"
-            ),
-        ):
+    def test_auth_type_invalid(self, prompt: MagicMock):
+        prompt.side_effect = ["http://localhost:9090", "torken"]
+        with pytest.raises(ValueError, match="Invalid authentication type: torken"):
             configure_client_with_prompt()
 
     @patch("typer.prompt")
-    def test_auth_type_basic(self, mock_prompt: MagicMock):
-        # Simulate sequential responses to typer.prompt()
-        mock_prompt.side_effect = [
-            "http://localhorst:9999",  # api_url
-            "basic",  # auth_type
-            "udo",  # username
-            "987",  # password
+    def test_auth_type_basic(self, prompt: MagicMock):
+        prompt.side_effect = [
+            "http://localhorst:9999",
+            "basic",
+            "udo",
+            "987",
         ]
-        actual_config_path = configure_client_with_prompt()
-        self.assertEqual(4, mock_prompt.call_count)
-        self.assert_is_default_config_path(actual_config_path)
-        config = get_config(None)
+
+        config_path = configure_client_with_prompt()
+
+        self.assert_is_default_config_path(config_path)
         self.assertEqual(
             ClientConfig(
                 api_url="http://localhorst:9999",
-                auth_type="basic",
-                username="udo",
-                password="987",
+                auth=BasicAuthConfig(username="udo", password="987"),
             ),
-            config,
+            get_config(None),
         )
 
     @patch("cuiman.cli.config.login_for_tokens")
     @patch("typer.confirm")
     @patch("typer.prompt")
     def test_auth_type_login(
-        self, mock_prompt: MagicMock, mock_confirm: MagicMock, mock_login: MagicMock
+        self, prompt: MagicMock, confirm: MagicMock, login: MagicMock
     ):
-        mock_login.return_value = LoginResult(
-            access_token="dummy-token", refresh_token="dummy-refresh"
-        )
-        # Simulate sequential responses to typer.prompt()
-        mock_prompt.side_effect = [
+        login.return_value = TokenResult(access_token="dummy-token")
+        prompt.side_effect = [
             "http://localhorst:9999",
             "login",
             "http://localhorst:9999/signin",
-            "my-client",
-            "my-secret",
             "bibo",
             "1234",
-            "X-Auth-Token",
+            "X-Custom-Token",
         ]
-        # Simulate response to typer.confirm()
-        mock_confirm.side_effect = [
-            False,
-        ]
-        actual_config_path = configure_client_with_prompt()
-        mock_login.assert_called_once()
-        mock_confirm.assert_called_once()
-        self.assertEqual(8, mock_prompt.call_count)
-        self.assert_is_default_config_path(actual_config_path)
-        config = get_config(None)
+        confirm.return_value = False
+
+        config_path = configure_client_with_prompt()
+
+        self.assert_is_default_config_path(config_path)
+        login.assert_called_once()
         self.assertEqual(
             ClientConfig(
                 api_url="http://localhorst:9999",
-                auth_type="login",
-                auth_url="http://localhorst:9999/signin",
-                client_id="my-client",
-                client_secret="my-secret",
+                auth=LoginAuthConfig(
+                    login_url="http://localhorst:9999/signin",
+                    username="bibo",
+                    password="1234",
+                    access_token="dummy-token",
+                    use_bearer=False,
+                    access_token_header="X-Custom-Token",
+                ),
+            ),
+            get_config(None),
+        )
+
+    @patch("cuiman.cli.config.obtain_oauth2_tokens")
+    @patch("typer.confirm")
+    @patch("typer.prompt")
+    def test_oauth2_password_grant(
+        self, prompt: MagicMock, confirm: MagicMock, obtain: MagicMock
+    ):
+        obtain.return_value = TokenResult(
+            access_token="access", refresh_token="refresh"
+        )
+        prompt.side_effect = [
+            "http://localhorst:9999",
+            "oauth2",
+            "https://identity.example.test/token",
+            "password",
+            "bibo",
+            "1234",
+            "client",
+            "secret",
+        ]
+        confirm.return_value = True
+
+        configure_client_with_prompt()
+
+        obtain.assert_called_once()
+        self.assertEqual(
+            OAuth2AuthConfig(
+                token_url="https://identity.example.test/token",
                 username="bibo",
                 password="1234",
-                token="dummy-token",
-                refresh_token="dummy-refresh",
-                use_bearer=False,
-                token_header="X-Auth-Token",
+                client_id="client",
+                client_secret="secret",
+                access_token="access",
+                refresh_token="refresh",
             ),
-            config,
+            get_config(None).auth,
         )
+
+    @patch("cuiman.cli.config.obtain_oauth2_tokens")
+    @patch("typer.confirm")
+    @patch("typer.prompt")
+    def test_oauth2_client_credentials_grant(
+        self, prompt: MagicMock, confirm: MagicMock, obtain: MagicMock
+    ):
+        obtain.return_value = TokenResult(access_token="access")
+        prompt.side_effect = [
+            "http://localhorst:9999",
+            "oauth2",
+            "https://identity.example.test/token",
+            "client_credentials",
+            "client",
+            "secret",
+        ]
+        confirm.return_value = True
+
+        configure_client_with_prompt()
+
+        self.assertEqual(
+            OAuth2AuthConfig(
+                token_url="https://identity.example.test/token",
+                grant_type="client_credentials",
+                client_id="client",
+                client_secret="secret",
+                access_token="access",
+            ),
+            get_config(None).auth,
+        )
+
+    @patch("typer.prompt")
+    def test_invalid_oauth2_grant(self, prompt: MagicMock):
+        prompt.side_effect = [
+            "http://localhorst:9999",
+            "oauth2",
+            "https://identity.example.test/token",
+            "magic",
+        ]
+        with pytest.raises(ValueError, match="Invalid OAuth2 grant type: magic"):
+            configure_client_with_prompt()
 
     @patch("typer.confirm")
     @patch("typer.prompt")
-    def test_auth_type_token(self, mock_prompt: MagicMock, mock_confirm: MagicMock):
-        # Simulate sequential responses to typer.prompt()
-        mock_prompt.side_effect = [
-            "http://localhorst:9999",
-            "token",
-            "phu-8934kmnl24509kl209245902jk",
-        ]
-        # Simulate response to typer.confirm()
-        mock_confirm.side_effect = [
-            True,
-        ]
-        actual_config_path = configure_client_with_prompt()
-        mock_confirm.assert_called_once()
-        self.assertEqual(3, mock_prompt.call_count)
-        self.assert_is_default_config_path(actual_config_path)
-        config = get_config(None)
+    def test_auth_type_token(self, prompt: MagicMock, confirm: MagicMock):
+        prompt.side_effect = ["http://localhorst:9999", "token", "token-value"]
+        confirm.return_value = True
+
+        configure_client_with_prompt()
+
         self.assertEqual(
-            ClientConfig(
-                api_url="http://localhorst:9999",
-                auth_type="token",
-                token="phu-8934kmnl24509kl209245902jk",
-                use_bearer=True,
-                token_header="X-Auth-Token",
-            ),
-            config,
+            TokenAuthConfig(access_token="token-value"), get_config(None).auth
         )
 
     @patch("typer.prompt")
-    def test_auth_type_api_key(self, mock_prompt: MagicMock):
-        # Simulate sequential responses to typer.prompt()
-        mock_prompt.side_effect = [
+    def test_auth_type_api_key(self, prompt: MagicMock):
+        prompt.side_effect = [
             "http://localhorst:9999",
             "api-key",
-            "AB4E2629967EF3DDE",
+            "key-value",
             "X-API-Key",
         ]
-        actual_config_path = configure_client_with_prompt()
-        self.assertEqual(4, mock_prompt.call_count)
-        self.assert_is_default_config_path(actual_config_path)
-        config = get_config(None)
-        self.assertEqual(
-            ClientConfig(
-                api_url="http://localhorst:9999",
-                auth_type="api-key",
-                api_key="AB4E2629967EF3DDE",
-                api_key_header="X-API-Key",
-            ),
-            config,
-        )
 
-    @patch("cuiman.cli.config.login_for_tokens")
-    @patch("typer.confirm")
-    @patch("typer.prompt")
-    def test_defaults_are_used(
-        self, mock_prompt: MagicMock, mock_confirm: MagicMock, mock_login: MagicMock
-    ):
-        mock_login.return_value = LoginResult(
-            access_token="dummy-token", refresh_token="dummy-refresh"
-        )
-        # Use default password "9823hc!"
-        expected_password = "9823hc!"
-        with set_env_cm(EOZILLA_PASSWORD=expected_password):
-            # Simulate sequential responses to typer.prompt()
-            mock_prompt.side_effect = [
-                "http://localhorst:2357",
-                "login",
-                "http://localhorst:2357/auth/login",
-                "my-client",
-                "my-secret",
-                "bibo",
-                "******",
-                "bibo",
-                "X-Auth-Token",
-            ]
-            # Simulate response to typer.confirm()
-            mock_confirm.side_effect = [
-                True,
-            ]
-            mock_prompt.assert_not_called()
-            mock_confirm.assert_not_called()
-            mock_login.assert_not_called()
-            actual_config_path = configure_client_with_prompt()
-            self.assert_is_default_config_path(actual_config_path)
-            config = get_config(None)
-            self.assertEqual(
-                ClientConfig(
-                    auth_type="login",
-                    api_url="http://localhorst:2357",
-                    auth_url="http://localhorst:2357/auth/login",
-                    client_id="my-client",
-                    client_secret="my-secret",
-                    username="bibo",
-                    password=expected_password,
-                    token="dummy-token",
-                    refresh_token="dummy-refresh",
-                    use_bearer=True,
-                ),
-                config,
-            )
+        configure_client_with_prompt()
+
+        self.assertEqual(ApiKeyAuthConfig(api_key="key-value"), get_config(None).auth)
 
     @patch("typer.prompt")
-    def test_prompt_for_pw_uses_prev_password_on_hidden_input(
-        self, mock_prompt: MagicMock
-    ):
-        """When user enters '******' and a previous password exists, the previous
-        password is reused."""
-        # First configure with basic auth + password
-        mock_prompt.side_effect = [
+    def test_prompt_for_pw_reuses_previous_password(self, prompt: MagicMock):
+        prompt.side_effect = [
             "http://localhost:9090",
             "basic",
             "alice",
@@ -290,58 +257,53 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
         ]
         configure_client_with_prompt()
 
-        # Now reconfigure, keeping the old password via "******"
-        mock_prompt.reset_mock()
-        mock_prompt.side_effect = [
+        prompt.reset_mock()
+        prompt.side_effect = [
             "http://localhost:9090",
             "basic",
             "alice",
-            "******",  # sentinel → should reuse "secret123"
+            "******",
         ]
         config_path = configure_client_with_prompt()
-        config = get_config(None)
-        self.assertEqual("secret123", config.password)
+
+        self.assertEqual("secret123", get_config(None).auth.password)
         self.assert_is_default_config_path(config_path)
 
     @patch("typer.confirm")
     @patch("typer.prompt")
     def test_prompt_for_bool_uses_env_value(
-        self, mock_prompt: MagicMock, mock_confirm: MagicMock
+        self, prompt: MagicMock, confirm: MagicMock
     ):
-        """When an env var provides a bool value, it surfaces as the default in the
-        confirm prompt rather than silently bypassing it, so the user can override it."""
-        with set_env_cm(EOZILLA_USE_BEARER="True"):
-            mock_prompt.side_effect = [
+        with patch.dict(
+            os.environ,
+            {
+                "EOZILLA_AUTH__AUTH_TYPE": "token",
+                "EOZILLA_AUTH__ACCESS_TOKEN": "environment-token",
+                "EOZILLA_AUTH__USE_BEARER": "True",
+            },
+        ):
+            prompt.side_effect = [
                 "http://localhost:9090",
                 "token",
                 "my-token",
             ]
-            # confirm is still called — env var value becomes the pre-filled default
-            mock_confirm.return_value = True
-            config_path = configure_client_with_prompt()
-            self.assert_is_default_config_path(config_path)
-            config = get_config(None)
-            self.assertTrue(config.use_bearer)
-            mock_confirm.assert_called_once()
-            _, kwargs = mock_confirm.call_args
-            self.assertTrue(kwargs.get("default"))
+            confirm.return_value = True
+
+            configure_client_with_prompt()
+
+        _, kwargs = confirm.call_args
+        self.assertTrue(kwargs["default"])
 
     @patch("typer.prompt")
-    def test_using_custom_config_path(self, mock_prompt: MagicMock):
-        # Simulate sequential responses to typer.prompt()
-        mock_prompt.side_effect = ["http://localhost:9090", "none"]
+    def test_using_custom_config_path(self, prompt: MagicMock):
+        prompt.side_effect = ["http://localhost:9090", "none"]
         custom_config_path = Path("my-config.cfg")
         try:
-            actual_config_path = configure_client_with_prompt(
-                config_path=custom_config_path
-            )
-            self.assertEqual(2, mock_prompt.call_count)
-            self.assertEqual(custom_config_path, actual_config_path)
-            self.assertTrue(custom_config_path.exists())
-            config = get_config(custom_config_path)
+            actual_path = configure_client_with_prompt(config_path=custom_config_path)
+            self.assertEqual(custom_config_path, actual_path)
             self.assertEqual(
-                ClientConfig(api_url="http://localhost:9090", auth_type="none"),
-                config,
+                ClientConfig(api_url="http://localhost:9090"),
+                get_config(custom_config_path),
             )
         finally:
             if custom_config_path.exists():

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import (
     Annotated,
     Any,
+    Awaitable,
     Callable,
     ClassVar,
     Optional,
@@ -15,16 +16,16 @@ from typing import (
 
 import yaml
 from pydantic import Field, HttpUrl, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, EnvSettingsSource, SettingsConfigDict
 
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 
-from .auth import AuthConfig
+from .auth import AuthConfig, NoAuthConfig
 from .defaults import DEFAULT_API_URL
 from .opener import JobResultOpener, JobResultOpenerRegistry
 
 
-class ClientConfig(AuthConfig, BaseSettings):
+class ClientConfig(BaseSettings):
     """Client configuration.
 
     Args:
@@ -34,6 +35,7 @@ class ClientConfig(AuthConfig, BaseSettings):
 
     model_config = SettingsConfigDict(
         env_prefix="EOZILLA_",
+        env_nested_delimiter="__",
         extra="forbid",
     )
 
@@ -67,6 +69,26 @@ class ClientConfig(AuthConfig, BaseSettings):
     OGC API - Processes, Part 1 - Core.
     """
 
+    auth: AuthConfig = Field(default_factory=NoAuthConfig)
+    """Authentication configuration selected by its ``auth_type`` field."""
+
+    @property
+    def auth_headers(self) -> dict[str, str]:
+        """Return the HTTP authentication headers for this client."""
+        return self.auth.auth_headers
+
+    def _maybe_make_token_refresher(
+        self,
+    ) -> Callable[[], dict[str, str]] | None:
+        """Create a synchronous token renewal callback when supported."""
+        return self.auth.make_token_refresher()
+
+    def _make_async_token_refresher(
+        self,
+    ) -> Callable[[], Awaitable[dict[str, str]]] | None:
+        """Create an asynchronous token renewal callback when supported."""
+        return self.auth.make_async_token_refresher()
+
     def _repr_json_(self):
         return self.model_dump(mode="json", by_alias=True), dict(
             root="Client configuration:"
@@ -88,9 +110,11 @@ class ClientConfig(AuthConfig, BaseSettings):
         if file_config is not None:
             _update_if_not_none(config_dict, file_config.to_dict())
 
-        # 2. from env
-        env_config = cls()
-        _update_if_not_none(config_dict, env_config.to_dict())
+        # 2. from env. Read raw settings so a partial nested auth override can
+        # be merged with the auth model loaded from defaults or a file before
+        # the discriminated union is validated.
+        env_config = EnvSettingsSource(cls)()
+        _update_if_not_none(config_dict, env_config)
 
         # 3. from config
         if config is not None:
@@ -140,13 +164,16 @@ class ClientConfig(AuthConfig, BaseSettings):
         return config_cls(**kwargs)
 
     def to_dict(self):
-        return self.model_dump(
+        config_dict = self.model_dump(
             mode="json",
             by_alias=True,
             exclude_none=True,
             exclude_defaults=True,
             exclude_unset=True,
         )
+        if "auth" in config_dict:
+            config_dict["auth"]["auth_type"] = self.auth.auth_type
+        return config_dict
 
     # noinspection PyMethodParameters
     @field_validator("api_url")
@@ -201,4 +228,10 @@ AdvancedInputPredicate: TypeAlias = Callable[
 
 
 def _update_if_not_none(target: dict[str, Any], updates: dict[str, Any]):
-    target.update({k: v for k, v in updates.items() if v is not None})
+    for key, value in updates.items():
+        if value is None:
+            continue
+        if isinstance(value, dict) and isinstance(target.get(key), dict):
+            _update_if_not_none(target[key], value)
+        else:
+            target[key] = value

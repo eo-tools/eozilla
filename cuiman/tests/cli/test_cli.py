@@ -11,7 +11,7 @@ import typer.testing
 import yaml
 
 from cuiman import Client, __version__
-from cuiman.api.auth.login import LoginResult
+from cuiman.api.auth import TokenResult
 
 # noinspection PyProtectedMember
 from cuiman.cli.cli import _wait_until_interrupted, cli, new_cli
@@ -41,7 +41,7 @@ class CliTest(TestCase):
 
     @patch("cuiman.cli.config.login_for_tokens")
     def test_configure(self, mock_login):
-        mock_login.return_value = LoginResult(
+        mock_login.return_value = TokenResult(
             access_token="dummy-token",  # noqa: S106
             refresh_token="dummy-refresh",  # noqa: S106
         )
@@ -54,12 +54,8 @@ class CliTest(TestCase):
             "http://localhorst:2357",
             "--auth-type",
             "login",
-            "--auth-url",
+            "--login-url",
             "http://localhorst:2357/auth/login",
-            "--client-id",
-            "my-client",
-            "--client-secret",
-            "my-secret",
             "--username",
             "bibo",
             "--password",
@@ -74,18 +70,15 @@ class CliTest(TestCase):
             self.assertEqual(
                 {
                     "api_url": "http://localhorst:2357/",
-                    "auth_type": "login",
-                    "auth_url": "http://localhorst:2357/auth/login",
-                    "client_id": "my-client",
-                    "client_secret": "my-secret",
-                    "grant_type": "password",
-                    "refresh_token": "dummy-refresh",
-                    "username": "bibo",
-                    "password": "1234",
-                    "token": "dummy-token",
-                    "use_bearer": True,
-                    "token_header": "X-Auth-Token",
-                    "api_key_header": "X-API-Key",
+                    "auth": {
+                        "auth_type": "login",
+                        "login_url": "http://localhorst:2357/auth/login",
+                        "username": "bibo",
+                        "password": "1234",
+                        "access_token": "dummy-token",
+                        "use_bearer": True,
+                        "access_token_header": "X-Auth-Token",
+                    },
                 },
                 config,
             )
@@ -101,7 +94,7 @@ class CliTest(TestCase):
             "http://localhost:2357",
             "--auth-type",
             "torken",  # INVALID
-            "--token",
+            "--access-token",
             "x-lkdkadf878akj134lk1lk5lk432lkk",
         )
         self.assertEqual(1, result.exit_code, msg=self.get_result_msg(result))
