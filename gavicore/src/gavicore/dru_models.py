@@ -52,6 +52,8 @@ class CwlDescription(BaseModel):
     """Media type used to identify the execution unit type.
     Must always be 'application/cwl'."""
 
+    # NOTE: field must follow CWL schema, which cannot easily
+    #       be converted to Pydantic model.
     value: str | None = None
     """JSON-encoded CWL document."""
 
@@ -118,7 +120,7 @@ class ContainerBindings(BaseModel):
     """Output bindings."""
 
 
-class InputBinding(BaseModel):
+class InputBinding(OgcBaseModel):
     """Defines how to specify the input for the execution unit.
 
     - The value of various properties defined below can be expressions.
