@@ -13,6 +13,22 @@
     with the app's data state. Renders the app in a notebook cell or a new browser tab.
   - Added a new CLI command `cuiman show-app`. Opens the app in a new browser tab.
 
+- **Wraptile** defines the routes needed to support the Deployment, Replacement,
+  Undeployment (Deletion) and formal description of processes as described by
+  the OGC API - Processes - Part 2: Deploy, Replace, Undeploy draft specification
+  - wraptile's fastapi app instance is now loaded eagerly, i.e. a call to `get_service`
+    is performed on startup to trigger the dependency injection when a DRU-capable
+    service implementation is detected
+  - added new routes and HTTP methods:
+    - HTTP POST to `/processes`
+    - HTTP PUT to `/processes/{processId}`
+    - HTTP DELETE to `/processes/{processId}`
+    - HTTP GET to `/processes/{processId}/package`
+  - add a new reponse class `OgcApplicationPackageResponse`
+
+- **Gavicore** defines the interface and models needed to implement a DRU
+  compliant service accepting CWL-encoded processes
+
 ### Fixes
 
 - Fixed **Cuiman**'s automatic app display selection to detect an initialized

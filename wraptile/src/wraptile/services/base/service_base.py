@@ -96,22 +96,17 @@ class ServiceBase(Service, ABC):
             )
 
             if issubclass(service.__class__, DruService):
-                try:
-                    app_module = import_module("wraptile.app")
-                    app: fastapi.FastAPI = getattr(app_module, "app")
+                app_module = import_module("wraptile.app")
+                app: fastapi.FastAPI = getattr(app_module, "app")
 
-                    route_module = import_module("wraptile.dru_routes")
-                    router: fastapi.APIRouter = getattr(route_module, "dru_router")
-                except AttributeError:
-                    raise ServiceConfigException(
-                        "Unable to load additional DRU routes"
-                    ) from None
-                else:
-                    app.include_router(router)
+                route_module = import_module("wraptile.dru_routes")
+                router: fastapi.APIRouter = getattr(route_module, "dru_router")
 
-                    logging.getLogger("uvicorn").info(
-                        "Loaded additional routes to support Deploy, Redeploy, Undeploy"
-                    )
+                app.include_router(router)
+
+                logging.getLogger("uvicorn").info(
+                    "Loaded additional routes to support Deploy, Redeploy, Undeploy"
+                )
         except (ValueError, TypeError) as e:
             raise ServiceConfigException(f"{e}") from e
         logger = logging.getLogger("uvicorn")
