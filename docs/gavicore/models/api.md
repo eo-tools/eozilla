@@ -33,9 +33,9 @@
 
 ## `gavicore.models` - OGC Application Package and Workflow descriptions
 
-::: gavicore.dru_models.OGCApplicationPackage
+::: gavicore.dru_models.OgcApplicationPackage
 
-::: gavicore.dru_models.OGCApplicationPackageProcessDescription
+::: gavicore.dru_models.OgcApplicationPackageProcessDescription
 
 ::: gavicore.dru_models.CWLDescription
 

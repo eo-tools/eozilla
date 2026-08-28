@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from .dru_models import OGCApplicationPackage
+from .dru_models import OgcApplicationPackage
 from .models import ProcessSummary
 from .service import Service
 
 
-class DRUService(Service, ABC):
-    """The DRUService interface extends the Service interface by providing
+class DruService(Service, ABC):
+    """The DruService interface extends the Service interface by providing
     four endpoints defined per
     [OGC API - Processes — Part 2 (DRU)](https://docs.ogc.org/DRAFTS/20-044.html)."""
 
@@ -70,7 +70,7 @@ class DRUService(Service, ABC):
     @abstractmethod
     async def get_formal_description(
         self, process_id: str, *args, **kwargs
-    ) -> OGCApplicationPackage:
+    ) -> OgcApplicationPackage:
         """Retrieve a formal description of a previously deployed process
         via the deploy operation.
         The returned description relates to the most recent deployment.

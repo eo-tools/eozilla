@@ -2,4 +2,4 @@
 
 ::: gavicore.service.Service
 
-::: gavicore.dru_service.DRUService
+::: gavicore.dru_service.DruService

@@ -5,7 +5,7 @@
 import inspect
 from unittest import TestCase
 
-from gavicore.dru_service import DRUService
+from gavicore.dru_service import DruService
 
 from .test_service import REQUIRED_METHODS as REQUIRED_SERVICE_METHODS
 
@@ -22,6 +22,6 @@ REQUIRED_DRU_METHODS |= REQUIRED_SERVICE_METHODS
 class DRUServiceTest(TestCase):
     def test_methods(self):
         all_method_names = set(
-            name for name, obj in inspect.getmembers(DRUService, inspect.isfunction)
+            name for name, obj in inspect.getmembers(DruService, inspect.isfunction)
         )
         self.assertSetEqual(REQUIRED_DRU_METHODS, set(all_method_names))

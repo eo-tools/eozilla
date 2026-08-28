@@ -15,7 +15,7 @@ from .models import Link, OgcBaseModel, ProcessDescription
 # ---------------------------------------------------------------------
 
 
-class OGCApplicationPackage(BaseModel):
+class OgcApplicationPackage(BaseModel):
     """
     An OGC Application Package is a document that describes a process in
     sufficient detail so that an implementation of this Standard can
@@ -25,25 +25,25 @@ class OGCApplicationPackage(BaseModel):
     For more information, see: /req/ogcapppkg/schema
     """
 
-    process_description: OGCApplicationPackageProcessDescription | None = Field(
+    process_description: OgcApplicationPackageProcessDescription | None = Field(
         None, alias="processDescription"
     )
     """Process description of a given process."""
 
-    execution_uni: ExecutionUnitBase | list[ExecutionUnitBase] = Field(
+    execution_unit: ExecutionUnitBase | list[ExecutionUnitBase] = Field(
         alias="executionUnit"
     )
     """The execution unit of process."""
 
 
-class OGCApplicationPackageProcessDescription(BaseModel):
+class OgcApplicationPackageProcessDescription(BaseModel):
     """Wrapper around `ProcessDescription` to insert additional field name."""
 
     process: ProcessDescription | None = None
     """The process description."""
 
 
-class CWLDescription(BaseModel):
+class CwlDescription(BaseModel):
     """
     Possible encoding of an execution unit as CWL.
     """
@@ -52,6 +52,8 @@ class CWLDescription(BaseModel):
     """Media type used to identify the execution unit type.
     Must always be 'application/cwl'."""
 
+    # NOTE: field must follow CWL schema, which cannot easily
+    #       be converted to Pydantic model.
     value: str | None = None
     """JSON-encoded CWL document."""
 
@@ -118,7 +120,7 @@ class ContainerBindings(BaseModel):
     """Output bindings."""
 
 
-class InputBinding(BaseModel):
+class InputBinding(OgcBaseModel):
     """Defines how to specify the input for the execution unit.
 
     - The value of various properties defined below can be expressions.
@@ -202,11 +204,11 @@ class GenericExecutionUnit(BaseModel):
 
 
 ExecutionUnitBase: TypeAlias = (
-    Link | CWLDescription | ContainerImage | GenericExecutionUnit
+    Link | CwlDescription | ContainerImage | GenericExecutionUnit
 )
 """Execution unit encoding of a process."""
 
 ContainerBindings.model_rebuild()
 ExecutionUnitContainer.model_rebuild()
 ContainerImage.model_rebuild()
-OGCApplicationPackage.model_rebuild()
+OgcApplicationPackage.model_rebuild()
