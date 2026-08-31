@@ -29,6 +29,7 @@ In a module `src/anolis_client/api.py`:
 from pathlib import Path
 from pydantic_settings import SettingsConfigDict
 from cuiman.api import AsyncClient, Client, ClientConfig, ClientError
+from cuiman.api.auth import NoAuthConfig
 
 # Custom configuration class
 class AnolisClientConfig(ClientConfig):
@@ -42,11 +43,14 @@ class AnolisClientConfig(ClientConfig):
 ClientConfig.default_path = Path("~").expanduser() / ".anolis-client"
 ClientConfig.default_config = AnolisClientConfig(
     api_url="https://anolis.api.org/process-api/v1",
-    auth_url="https://anolis.api.org/auth/login",
-    auth_type="login",
-    use_bearer=True,
+    auth=NoAuthConfig(),
 )
 ```
+
+Set a complete nested `auth` configuration through a configuration file or
+environment variables. Authentication models require their credentials at
+construction time; for example, a proprietary login uses `auth.login_url`,
+while OAuth 2.0 uses `auth.token_url`.
 
 ## CLI customisation
 
