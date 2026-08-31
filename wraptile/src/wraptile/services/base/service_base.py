@@ -6,7 +6,6 @@ import logging
 import os
 import shlex
 from abc import ABC
-from importlib import import_module
 from typing import Optional
 
 import fastapi
@@ -96,13 +95,10 @@ class ServiceBase(Service, ABC):
             )
 
             if issubclass(service.__class__, DruService):
-                app_module = import_module("wraptile.app")
-                app: fastapi.FastAPI = getattr(app_module, "app")
+                from wraptile.app import app as app_module
+                from wraptile.dru_routes import dru_router
 
-                route_module = import_module("wraptile.dru_routes")
-                router: fastapi.APIRouter = getattr(route_module, "dru_router")
-
-                app.include_router(router)
+                app_module.include_router(dru_router)
 
                 logging.getLogger("uvicorn").info(
                     "Loaded additional routes to support Deploy, Redeploy, Undeploy"

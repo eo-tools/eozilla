@@ -37,7 +37,7 @@
 
 ::: gavicore.dru_models.OgcApplicationPackageProcessDescription
 
-::: gavicore.dru_models.CWLDescription
+::: gavicore.dru_models.CwlDescription
 
 ::: gavicore.dru_models.ContainerImage
 
