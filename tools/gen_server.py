@@ -19,7 +19,7 @@ from tools.openapi import OAMethod, OASchema, load_openapi_schema
 GENERATOR_NAME = str(Path(__file__).name)
 
 ROUTES_PATH = EOZILLA_PATH / "wraptile/src/wraptile/routes.py"
-SERVICE_PATH = EOZILLA_PATH / "gavicore/src/gavicore/service.py"
+SERVICE_PATH = EOZILLA_PATH / "gavicore/src/gavicore/service/service.py"
 
 magic_param_list = [
     ("request", "fastapi.Request"),

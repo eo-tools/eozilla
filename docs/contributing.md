@@ -47,7 +47,7 @@ pixi shell
 
 ### Running the Eozilla server with a local test service
 
-Run local test server
+Run local test server (or use shorter command `pixi run serve`)
 
 ```commandline
 wraptile run -- wraptile.services.local.testing:service
@@ -56,7 +56,7 @@ wraptile run -- wraptile.services.local.testing:service
 The dev mode is useful if you are changing server code:
 
 ```commandline
-wraptile dev wraptile.services.local.testing:service
+wraptile dev -- wraptile.services.local.testing:service
 ```
 
 Run the Eozilla client Python API
@@ -72,11 +72,10 @@ client.get_jobs()
 Run Eozilla client GUI (in Jupyter notebooks)
 
 ```python
-from cuiman.gui import Client
+from cuiman import Client
 
 client = Client()
-client.show()
-client.show_jobs()
+client.show_app()
 ```
 
 Run Eozilla client CLI
@@ -85,18 +84,17 @@ Run Eozilla client CLI
 $ cuiman --help
 ```
 
-### Formatting & Linting
+### Formatting & code checking
 
 ```commandline
-pixi run isort .
-pixi run ruff format 
-pixi run ruff check
+pixi run format 
+pixi run checks
 ```
 
 ### Testing & Coverage
 
 ```commandline
-pixi run test
+pixi run tests
 pixi run coverage
 ```
 
@@ -108,6 +106,53 @@ then synchronize versions in workspaces `tools/pyproject.toml` using
 ```commandline
 pixi run sync-versions
 ```
+
+### Cuiman GUI changes
+
+The cuiman package bundles the [Eozilla App](https://github.com/eo-tools/eozilla-app)
+to use it as the client GUI.
+Eozilla App is a single page web application (SPA) build with React and TypeScript.
+To change its code, it is best to check it out into the eozilla root project folder.
+
+Clone Eozilla (if not already done):
+
+```commandline
+git clone https://github.com/eo-tools/eozilla.git
+cd ./eozilla
+pixi install
+```
+
+then clone and install Eozilla App:
+
+```commandline
+git clone https://github.com/eo-tools/eozilla-app.git
+cd ./eozilla-app
+npm install
+```
+
+If you do not have a process API available, you can run the local test server
+for development in another terminal (also within the `eozilla-app` folder):
+
+```commandline
+npm run eozilla:dev
+```
+
+Note, this is equivalent to running the following command `pixi run serve` 
+in the `eozilla` folder.
+
+Then run the Eozilla App in a browser using the [vite]() dev server:
+
+```commandline
+npm run dev
+```
+
+Once you are done, you can bundle a new app build with the 
+Eozilla Cuiman package:
+
+```commandline
+npm run eozilla:build
+```
+
 
 ### Code generation
 
@@ -121,8 +166,6 @@ pixi run generate
 
 This will generate Eozilla's
 
-- [pydantic](https://docs.pydantic.dev/) models in `gavicore/src/gavicore/models.py` 
-(uses [datamodel-code-generator](https://koxudaxi.github.io/datamodel-code-generator/))
 - client implementation in `cuiman/src/cuiman/client.py` and CLI documentation `docs/cli.md`
 - server routes in `wraptile/src/wraptile/routes.py` and the 
   service interface in `wraptile/src/wraptile/service.py`
@@ -156,6 +199,26 @@ Docs saved to: eozilla/docs/wraptile/cli.md
 Docs saved to: eozilla/docs/procodile/cli.md
 Docs saved to: eozilla/docs/appligator/cli.md
 ```
+
+### Releasing
+
+Creating a tagged release on GitHub automatically runs the repository's
+`publish-pypi` workflow, which creates packages on PyPI. The publication
+of the PyPI packages, in turn, triggers the creation of package update
+pull requests in the corresponding conda-forge feedstock repositories.
+During the build process, conda-forge tests each package with its current
+dependencies, so it's important to merge these PRs in an order corresponding
+to the graph of dependencies between eozilla packages. For instance, tests
+for procodile 0.1.2 will fail if the corresponding gavicore 0.1.2 package is
+not yet published on conda-forge. Merging can be done in four batches:
+
+1. gavicore (dependency of everything)
+2. cuiman and procodile (only depend on gavicore)
+3. wraptile and appligator (depend on procodile and gavicore)
+4. eozilla (depends on everything)
+
+After each merge, it takes some time (usually around an hour) for the updated
+package to become available on conda-forge.
 
 ## License
 

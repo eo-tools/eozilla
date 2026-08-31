@@ -5,6 +5,7 @@
 import inspect
 from unittest import TestCase
 
+from gavicore import service
 from gavicore.service import Service
 
 REQUIRED_METHODS = {
@@ -26,3 +27,8 @@ class ServiceTest(TestCase):
             name for name, obj in inspect.getmembers(Service, inspect.isfunction)
         )
         self.assertSetEqual(REQUIRED_METHODS, set(all_method_names))
+
+    def test_exports_errors_module(self):
+        self.assertIn("errors", service.__all__)
+        self.assertTrue(hasattr(service.errors, "create_api_error"))
+        self.assertTrue(hasattr(service.errors, "get_error_type_id"))

@@ -5,11 +5,12 @@
 import importlib
 import webbrowser
 from dataclasses import dataclass
+from importlib.resources import files
 
 from IPython import display as ipython_display
 
 from cuiman.api.config import ClientConfig
-from cuiman.app.store import create_app_remote_store
+from cuiman.app import App
 
 serve_module = importlib.import_module("cuiman.app.serve")
 
@@ -30,12 +31,20 @@ def test_get_app_dist_url_or_dir_accepts_explicit_dist_url_or_dir():
     assert serve_module._get_app_dist_url_or_dir("C:/app/dist") == "C:/app/dist"
 
 
+def test_bundled_app_uses_relative_asset_urls():
+    index_html = files("cuiman.app").joinpath("dist/index.html").read_text()
+
+    assert 'href="./eozilla-small.svg"' in index_html
+    assert 'src="./assets/' in index_html
+    assert 'href="./assets/' in index_html
+
+
 def test_serve_returns_server_without_display(monkeypatch):
     calls = install_serve_fakes(monkeypatch)
 
     server = serve_module.serve(
         ClientConfig(api_url="https://api.example.test"),
-        create_app_remote_store(),
+        App.create_remote_store(),
         display="none",
     )
 
@@ -46,6 +55,7 @@ def test_serve_returns_server_without_display(monkeypatch):
             "ui_dist": "https://app.example.test",
             "host": "127.0.0.1",
             "display": "none",
+            "cors_origins": ["*"],
         }
     ]
     assert calls["url"] == []
@@ -55,10 +65,11 @@ def test_serve_returns_server_without_display(monkeypatch):
 
 def test_serve_opens_browser(monkeypatch):
     calls = install_serve_fakes(monkeypatch)
+    monkeypatch.setattr(serve_module, "has_ishell", False)
 
     serve_module.serve(
         ClientConfig(api_url="https://api.example.test"),
-        create_app_remote_store(),
+        App.create_remote_store(),
         compact=False,
         debug=True,
         scheme="light",
@@ -71,6 +82,7 @@ def test_serve_opens_browser(monkeypatch):
             "ui_dist": "https://app.example.test",
             "host": "127.0.0.1",
             "display": "none",
+            "cors_origins": ["*"],
         }
     ]
     assert calls["url"][0]["base_url"] == "http://127.0.0.1:8765"
@@ -89,21 +101,19 @@ def test_serve_displays_in_notebook(monkeypatch):
     monkeypatch.setattr(
         serve_module,
         "create_app_display_object",
-        lambda app_url, auto_scheme, width, height: {
+        lambda app_url, **kwargs: {
             "app_url": app_url,
-            "auto_scheme": auto_scheme,
-            "width": width,
-            "height": height,
+            **kwargs,
         },
     )
-
     serve_module.serve(
         ClientConfig(api_url="https://api.example.test"),
-        create_app_remote_store(),
+        App.create_remote_store(),
         scheme="auto",
         width="80%",
         height=500,
         display="notebook",
+        proxy="never",
     )
 
     assert calls["display"] == [
@@ -112,15 +122,136 @@ def test_serve_displays_in_notebook(monkeypatch):
             "auto_scheme": True,
             "width": "80%",
             "height": 500,
+            "proxy_port": None,
+            "proxy_app": False,
+            "auto_proxy": False,
+            "open_in_browser": False,
         }
     ]
     assert calls["browser_open"] == []
+
+
+def test_serve_uses_jupyter_proxy_in_notebook(monkeypatch):
+    calls = install_serve_fakes(monkeypatch)
+    monkeypatch.setattr(ipython_display, "display", calls["display"].append)
+    monkeypatch.setattr(
+        serve_module,
+        "create_app_display_object",
+        lambda app_url, **kwargs: kwargs,
+    )
+    serve_module.serve(
+        ClientConfig(api_url="https://api.example.test"),
+        App.create_remote_store(),
+        display="notebook",
+        proxy="always",
+    )
+
+    assert calls["display"] == [
+        {
+            "auto_scheme": True,
+            "width": "100%",
+            "height": 600,
+            "proxy_port": 8765,
+            "proxy_app": True,
+            "auto_proxy": False,
+            "open_in_browser": False,
+        }
+    ]
+
+
+def test_serve_opens_browser_from_notebook(monkeypatch):
+    calls = install_serve_fakes(monkeypatch)
+    monkeypatch.setattr(serve_module, "has_ishell", True)
+    monkeypatch.setattr(ipython_display, "display", calls["display"].append)
+    monkeypatch.setattr(
+        serve_module,
+        "create_app_display_object",
+        lambda app_url, **kwargs: {"app_url": app_url, **kwargs},
+    )
+    serve_module.serve(
+        ClientConfig(api_url="https://api.example.test"),
+        App.create_remote_store(),
+        display="browser",
+        proxy="never",
+    )
+
+    assert calls["browser_open"] == []
+    assert calls["display"] == [
+        {
+            "app_url": "http://127.0.0.1:8765/index.html",
+            "auto_scheme": False,
+            "width": "100%",
+            "height": 600,
+            "proxy_port": None,
+            "proxy_app": False,
+            "auto_proxy": False,
+            "open_in_browser": True,
+        }
+    ]
+
+
+def test_serve_opens_proxy_browser_from_notebook(monkeypatch):
+    calls = install_serve_fakes(monkeypatch)
+    monkeypatch.setattr(serve_module, "has_ishell", True)
+    monkeypatch.setattr(ipython_display, "display", calls["display"].append)
+    monkeypatch.setattr(
+        serve_module,
+        "create_app_display_object",
+        lambda app_url, **kwargs: kwargs,
+    )
+    serve_module.serve(
+        ClientConfig(api_url="https://api.example.test"),
+        App.create_remote_store(),
+        display="browser",
+        proxy="always",
+    )
+
+    assert calls["display"] == [
+        {
+            "auto_scheme": False,
+            "width": "100%",
+            "height": 600,
+            "proxy_port": 8765,
+            "proxy_app": True,
+            "auto_proxy": False,
+            "open_in_browser": True,
+        }
+    ]
+
+
+def test_serve_auto_proxy_is_resolved_in_notebook(monkeypatch):
+    calls = install_serve_fakes(monkeypatch)
+    monkeypatch.setattr(ipython_display, "display", calls["display"].append)
+    monkeypatch.setattr(
+        serve_module,
+        "create_app_display_object",
+        lambda app_url, **kwargs: kwargs,
+    )
+
+    serve_module.serve(
+        ClientConfig(api_url="https://api.example.test"),
+        App.create_remote_store(),
+        display="notebook",
+    )
+
+    assert calls["display"] == [
+        {
+            "auto_scheme": True,
+            "width": "100%",
+            "height": 600,
+            "proxy_port": 8765,
+            "proxy_app": True,
+            "auto_proxy": True,
+            "open_in_browser": False,
+        }
+    ]
 
 
 class FakeFiles:
     def __init__(self, package):
         self.package = package
 
+    # noinspection SpellCheckingInspection
     def joinpath(self, path):
         return FakePath(f"fake/{self.package}/{path}")
 
@@ -135,8 +266,10 @@ class FakePath:
 
 @dataclass
 class FakeServeResult:
+    server_url: str = "http://127.0.0.1:8765"
     ui_base_url: str = "http://127.0.0.1:8765"
     ws_url: str = "ws://127.0.0.1:8765/ws"
+    port: int = 8765
 
 
 def install_serve_fakes(monkeypatch):

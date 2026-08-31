@@ -1,17 +1,106 @@
-## Changes in version 0.1.2 (in development)
+## Changes in version 0.2.1 (in development)
+
+### Fixes
+
+- Fixed `client.show_app()` forcing a redundant interactive OAuth2/PKCE login
+  in the app GUI even when the Python client had already authenticated
+  (`auth_type="login"` with a resolved token). The client config bridge in
+  `cuiman.app.service` now forwards an already-authenticated `"login"` config
+  to the app as `auth_type="token"`, so the app connects immediately using
+  the existing bearer token instead of discarding it and re-prompting.
+- Added missing ipython dependency for cuiman. (#188)
+
+### Other changes
+
+- Updated installation instructions. (#189)
+
+## Changes in version 0.2.0
 
 ### Enhancements
 
+**Wraptile** enhancements:
+
+- The wraptile's Airflow service now supports OAuth2 service-to-service
+  authentication for the wraptile-Airflow hop, against any OIDC-compliant
+  identity provider. When `OIDC_TOKEN_URL` and `OIDC_CLIENT_ID` are set, it
+  performs a **two-step token exchange**: it mints a `client_credentials` token
+  at the identity provider, then exchanges it at Airflow's `/auth/token` for an
+  **Airflow-issued** JWT, which authenticates the actual API calls. The Airflow
+  JWT is cached and refreshed shortly before expiry, independently of the
+  provider token. Falls back to the existing username/password flow against
+  Airflow's native token endpoint when those env vars are unset. Token retrieval
+  lives in the new `wraptile.services.airflow.tokens` module.
+
+**Cuiman** enhancements:
+
+- Added an experimental CLI command `cuiman generate-client NAME` that generates 
+  the Python code for a client service-specific, higher-level client functions.
+  The generated classes have methods that directly represent the processes 
+  of the currently configured processing service. (#115) 
+- Replaced the [Panel](https://panel.holoviz.org/)-based GUI by a modern
+  web interface, the [Eozilla App](https://github.com/eo-tools/eozilla-app).
+  - Updated `notebooks/cuiman-gui.ipynb` to demonstrate new app-based GUI.
+  - Added subpackage `cuiman.app` that implements the new app-based GUI.
+  - Added PyPI dependency [`remotestate`](https://pypi.org/project/remotestate/) 
+    that allows for interactivity between Python and the app's UI state.
+- The app GUI also works in remote JupyterLab and JupyterHub deployments when
+  [`jupyter-server-proxy`](https://jupyter-server-proxy.readthedocs.io/) is
+  available: `client.show_app()` routes its local app server and loopback URLs
+  from its client configuration through the Jupyter proxy, including when
+  opening the app in a browser. Local notebook use is unchanged. (#172)
+
+**Gavicore** enhancements:
+
+- The `gavicore.model.ApiError` docstrings have been improved and made consistent
+  with [RFC7807](https://datatracker.ietf.org/doc/html/rfc7807). The function
+  `create_api_error` in the new module `gavicore.service.errors` can be used to 
+  build compliant instances. (#163)
+
+### Fixes
+
+- Fixed test isolation in `cuiman`'s client tests: the default-transport tests
+  no longer read the developer's real `~/.eozilla/config`, which could inject a
+  logged-in token into the request headers and fail the assertion that an
+  unauthenticated client sends none. (#167)
+
+### Other changes
+
+- Simplified the root Pixi task definitions by flattening cmd-only tasks.
+- We require `typer >=0.26` and no longer depend on `click`. 
+  See https://typer.tiangolo.com/tutorial/click/.
+- Fixed typing in `gavicore.uitil.cli.AliasedGroup` wrt `typer >=0.26.8`.
+- GitHub CI is now also performed for branches named `feature/**`.
+
+Most other changes relate to the replacement of the Panel-based UI: 
+
+- Removed deprecated `wraptile.gui.*` 
+- Removed deprecated `gavicore.ui` (actually _moved_ to https://github.com/bcdev/schema2ui)
+- Removed also `gavicore.util` modules that where only used by the former panel UI:
+  - gavicore.util.json
+  - gavicore.util.text
+  - gavicore.util.undefined
+ - Updated documentation accordingly
+ - Regenerated CLI docs
+ - No longer requiring `panel`, `param`, and other dependencies such as `datamodel-code-generator`.
+
+
+## Changes in version 0.1.2
+
+### Enhancements
+
+- **Appligator** enhancements:
+  - It now supports node selectors and tolerations for generated pods via
+    `--node-selector key=value` and `--toleration key:operator[:value[:effect]]` CLI
+    options (both repeatable and configurable via `appligator-config.yaml`).
+  - In `run_step.py`: function resolution now delegates to
+    `gavicore.util.dynimp.import_value` for consistent dynamic-import error
+    handling, keeping only the procodile-specific Workflow-registry fallback as
+    bespoke logic.
+  - Updated Appligator documentation accordingly.
 - Added `ImageOpener` to **Cuiman**'s job result opener framework, supporting
   all PIL-compatible image formats from both local paths and S3-compatible
   object storage (via the optional `s3fs` package).
-
-- **Cuiman** has a new experimental, alternative GUI - the Eozilla app. 
-  The app is a native React app that doesn't require 
-  the `panel` library anymore. (#124)
-  - Added a new client method `show_app()` and new property `app_store` to interact 
-    with the app's data state. Renders the app in a notebook cell or a new browser tab.
-  - Added a new CLI command `cuiman show-app`. Opens the app in a new browser tab.
+- Documented the release process. (#149)
 
 - **Wraptile** defines the routes needed to support the Deployment, Replacement,
   Undeployment (Deletion) and formal description of processes as described by
@@ -37,7 +126,24 @@
 
 ### Other changes
 
-- Updated appligator docs.
+For upcoming **Cuiman 0.2.0** we decided to no longer use the `panel` library
+for the Cuiman GUI. Therefore, the following items have been deprecated and will 
+be removed in Eozilla 0.2.0:
+
+- the `gavicore.ui` package and the `schema2ui` tool,
+- the `cuiman.gui` package,
+- the `ClientConfig` hook methods,
+  - `accept_process()`, 
+  - `accept_input()`, and
+  - `is_advanced_input()`. 
+
+
+### Enhancements
+
+- Added new **Cuiman** CLI tool (`cuiman generate-client`) to generate higher-level 
+  client functions for given service. The command generates both a sync and async
+  Python API of the currently configured service. (#115) 
+  
 
 ## Changes in version 0.1.1
 

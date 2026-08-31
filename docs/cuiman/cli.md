@@ -12,7 +12,7 @@ For details see https://ogcapi.ogc.org/processes/.
 You can use shorter command name aliases, e.g., use command name `vr`
 for `validate-request`, or `lp` for `list-processes`.
 
-The tool&#x27;s exit codes are as follows:
+The tool's exit codes are as follows:
 
 * `0` - normal exit
 * `1` - user errors, argument errors
@@ -21,7 +21,7 @@ The tool&#x27;s exit codes are as follows:
 
 If the `--traceback` flag is set, the original Python exception traceback
 will be shown and the exit code will always be `1`. 
-Otherwise, only the error message is shown.
+Otherwise, only the error message is shown. 
 
 **Usage**:
 
@@ -40,6 +40,7 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 **Commands**:
 
 * `configure`: Configure the client tool.
+* `generate-client`: Generate the Python code for...
 * `list-processes`: List available processes.
 * `get-process`: Get process details.
 * `create-request`: Create an execution request (template) for...
@@ -49,6 +50,7 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 * `get-job`: Get job details.
 * `dismiss-job`: Cancel a running or delete a finished job.
 * `get-job-results`: Get job results.
+* `show-app`: Show the client app in a browser.
 
 ## `cuiman configure`
 
@@ -64,25 +66,40 @@ $ cuiman configure [OPTIONS]
 
 * `--api-url TEXT`: The URL of a service complying to the OGC API - Processes.
 * `-a, --auth-type TEXT`: The authorisation method for the API (none|basic|token|login|api-key).
-* `--auth-url TEXT`: The URL of the authorisation service for the API.
-* `--client-id TEXT`: OAuth2 client ID (used with `auth_type=login`).
-* `--client-secret TEXT`: OAuth2 client secret (optional for public clients).
+* `--auth-url TEXT`: The URL of the authorisation service for the API 
 * `-u, --username TEXT`: Username.
 * `-p, --password TEXT`: Password.
+* `--client-id TEXT`: OAuth2 client ID for login authentication.
+* `--client-secret TEXT`: OAuth2 client secret for login authentication.
 * `-t, --token TEXT`: Access token.
 * `--use-bearer`: Use bearer token?
-* `--token-header TEXT`: Access token header.
+* `--token-header TEXT`: Access token header
 * `-c, --config PATH`: Client configuration file.
 * `--help`: Show this message and exit.
 
-For `auth_type=login`, the configure command performs a login call using the
-OAuth2 Resource Owner Password Credentials grant and stores the returned access
-token and (if provided) the `refresh_token` in the config file. When a refresh
-token is present, `cuiman` automatically refreshes on HTTP 401 and retries once.
+## `cuiman generate-client`
 
-Any `EOZILLA_*` environment variables (e.g. `EOZILLA_CLIENT_ID`,
-`EOZILLA_AUTH_URL`) are pre-filled as defaults in the interactive prompts,
-so they can be confirmed or overridden rather than re-typed each time.
+Generate the Python code for service-specific, higher-level client functions.
+
+The command generates classes for both sync and async clients, which
+have methods that directly represent the processes of the currently configured
+processing service.
+
+**Usage**:
+
+```console
+$ cuiman generate-client [OPTIONS] NAME
+```
+
+**Arguments**:
+
+* `NAME`: Service name used for generated module and class names.  [required]
+
+**Options**:
+
+* `-o, --output-dir TEXT`: Directory where generated modules will be written.  [default: .]
+* `-c, --config PATH`: Client configuration file.
+* `--help`: Show this message and exit.
 
 ## `cuiman list-processes`
 
@@ -171,7 +188,7 @@ $ cuiman validate-request [OPTIONS] [PROCESS_ID]
 
 * `-d, --dotpath`: Input names use dot-path notion to encode nested values, e.g., `-i scene.colors.bg=red`.
 * `-i, --input [NAME=VALUE]...`: Process input value.
-* `-r, --request PATH`: Execution request file. Use `-` to read from &lt;stdin&gt;.
+* `-r, --request PATH`: Execution request file. Use `-` to read from <stdin>.
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
 * `--help`: Show this message and exit.
 
@@ -201,7 +218,7 @@ $ cuiman execute-process [OPTIONS] [PROCESS_ID]
 * `-d, --dotpath`: Input names use dot-path notion to encode nested values, e.g., `-i scene.colors.bg=red`.
 * `-i, --input [NAME=VALUE]...`: Process input value.
 * `-s, --subscriber [NAME=URL]...`: Process subscriber URL.
-* `-r, --request PATH`: Execution request file. Use `-` to read from &lt;stdin&gt;.
+* `-r, --request PATH`: Execution request file. Use `-` to read from <stdin>.
 * `-c, --config PATH`: Client configuration file.
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
 * `--help`: Show this message and exit.
@@ -280,4 +297,20 @@ $ cuiman get-job-results [OPTIONS] JOB_ID
 
 * `-c, --config PATH`: Client configuration file.
 * `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
+* `--help`: Show this message and exit.
+
+## `cuiman show-app`
+
+Show the client app in a browser.
+
+**Usage**:
+
+```console
+$ cuiman show-app [OPTIONS]
+```
+
+**Options**:
+
+* `-c, --config PATH`: Client configuration file.
+* `-d, --debug`: Output debugging information to the browser's dev console.
 * `--help`: Show this message and exit.

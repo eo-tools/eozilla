@@ -49,7 +49,7 @@ $ procodile-example execute-process [OPTIONS] [PROCESS_ID]
 * `-d, --dotpath`: Input names use dot-path notion to encode nested values, e.g., `-i scene.colors.bg=red`.
 * `-i, --input [NAME=VALUE]...`: Process input value.
 * `-s, --subscriber [NAME=URL]...`: Process subscriber URL.
-* `-r, --request PATH`: Execution request file. Use `-` to read from &lt;stdin&gt;.
+* `-r, --request PATH`: Execution request file. Use `-` to read from <stdin>.
 * `--help`: Show this message and exit.
 
 ## `procodile-example list-processes`

@@ -3,12 +3,13 @@
 #  https://opensource.org/license/apache-2-0.
 
 import os
+from pathlib import Path
 from unittest import TestCase
 
 import pytest
 
 from gavicore.models import Schema
-from gavicore.util.testing import BaseModelMixin, set_env_cm
+from gavicore.util.testing import BaseModelMixin, set_env_cm, use_temp_dir
 
 
 class TestingTest(BaseModelMixin, TestCase):
@@ -30,3 +31,11 @@ class TestingTest(BaseModelMixin, TestCase):
             self.assertEqual("xyz", os.environ.get("EOZILLA_USER_NAME"))
             self.assertNotEqual(old_env, os.environ)
         self.assertEqual(old_env, os.environ)
+
+    def test_use_temp_dir(self):
+        with use_temp_dir() as temp_dir:
+            self.assertIsInstance(temp_dir, Path)
+            with open("test.txt", "w") as f:
+                f.write("Hello.")
+            self.assertEqual(["test.txt"], [f.name for f in temp_dir.iterdir()])
+        self.assertFalse(temp_dir.exists())

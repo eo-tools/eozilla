@@ -9,6 +9,7 @@ from appligator.airflow.models import (
     PvcMount,
     ResourceRequirements,
     TaskIR,
+    Toleration,
     WorkflowIR,
 )
 from gavicore.models import InputDescription
@@ -24,6 +25,8 @@ def workflow_to_ir(
     resources: ResourceRequirements | None = None,
     pvc_mounts: list[PvcMount] | None = None,
     config_map_mounts: list[ConfigMapMount] | None = None,
+    node_selector: dict[str, str] | None = None,
+    tolerations: list[Toleration] | None = None,
 ) -> WorkflowIR:
     """
     Convert a WorkflowStepRegistry into a fully normalized WorkflowIR (Workflow
@@ -79,6 +82,8 @@ def workflow_to_ir(
             resources=resources,
             pvc_mounts=pvc_mounts or [],
             config_map_mounts=config_map_mounts or [],
+            node_selector=node_selector,
+            tolerations=tolerations,
             inputs={name: f"param:{name}" for name in params},
             outputs=list((main_step.description.outputs or {}).keys()),
             depends_on=[],
@@ -115,6 +120,8 @@ def workflow_to_ir(
                 resources=resources,
                 pvc_mounts=pvc_mounts or [],
                 config_map_mounts=config_map_mounts or [],
+                node_selector=node_selector,
+                tolerations=tolerations,
                 inputs=inputs,
                 outputs=list((step.description.outputs or {}).keys()),
                 depends_on=sorted(set(depends_on)),

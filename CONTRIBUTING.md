@@ -10,7 +10,7 @@ a malfunction or error, then please
 
 If you'd like to submit code or documentation changes, we ask you to provide a 
 pull request (PR) 
-[here](https://github.com/eo-tools/cuiman/pulls). 
+[here](https://github.com/eo-tools/eozilla/pulls). 
 For code and configuration changes, your PR must be linked to a 
 corresponding issue. 
 
@@ -54,3 +54,7 @@ and effectively avoid circular dependencies.
 Package classes, functions, constants, type aliases considered public API 
 should have docstrings according to the 
 [Google Style](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings).
+
+
+A more complete contribution guide can be found in
+[Contributing to the project](docs/contributing.md).

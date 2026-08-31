@@ -3,7 +3,12 @@
 #  https://opensource.org/license/apache-2-0.
 
 from appligator.airflow.ir import workflow_to_ir
-from appligator.airflow.models import ConfigMapMount, PvcMount, ResourceRequirements
+from appligator.airflow.models import (
+    ConfigMapMount,
+    PvcMount,
+    ResourceRequirements,
+    Toleration,
+)
 from appligator.airflow.renderer import AirflowRenderer
 from procodile.workflow import WorkflowStepRegistry
 
@@ -16,6 +21,8 @@ def gen_workflow_dag(
     resources: ResourceRequirements | None = None,
     pvc_mounts: list[PvcMount] | None = None,
     config_map_mounts: list[ConfigMapMount] | None = None,
+    node_selector: dict[str, str] | None = None,
+    tolerations: list[Toleration] | None = None,
 ) -> str:
     """Generates a fully-formed Airflow DAG Python file."""
 
@@ -34,6 +41,8 @@ def gen_workflow_dag(
         resources=resources,
         pvc_mounts=pvc_mounts,
         config_map_mounts=config_map_mounts,
+        node_selector=node_selector,
+        tolerations=tolerations,
     )
 
     dag_code = AirflowRenderer().render(ir)

@@ -7,7 +7,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import click
 import pytest
 
 from cuiman import ClientConfig
@@ -50,7 +49,7 @@ class GetConfigTest(ConfigTestMixin, unittest.TestCase):
     # noinspection PyMethodMayBeStatic
     def test_get_config_custom(self):
         with pytest.raises(
-            click.ClickException,
+            ValueError,
             match="Configuration file fantasia.cfg not found or empty.",
         ):
             get_config("fantasia.cfg")
@@ -58,7 +57,7 @@ class GetConfigTest(ConfigTestMixin, unittest.TestCase):
     # noinspection PyMethodMayBeStatic
     def test_get_config_no_default(self):
         with pytest.raises(
-            click.ClickException,
+            ValueError,
             match=(
                 r"The client tool has not yet been configured; "
                 r"please use the 'configure' command to set it up\."
@@ -87,6 +86,22 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
             ClientConfig(api_url="http://localhost:9090", auth_type="none"),
             config,
         )
+
+    @patch("typer.prompt")
+    def test_auth_type_invalid(self, mock_prompt: MagicMock):
+        mock_prompt.side_effect = [
+            "http://localhost:9090",
+            "torken",
+        ]
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"Invalid authentication type: torken\. "
+                r"Expected one of:"
+            ),
+        ):
+            configure_client_with_prompt()
 
     @patch("typer.prompt")
     def test_auth_type_basic(self, mock_prompt: MagicMock):

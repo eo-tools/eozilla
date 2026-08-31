@@ -5,7 +5,6 @@
 import json
 from typing import TYPE_CHECKING, Annotated, Any, Callable, Optional, Union
 
-import click
 import typer
 
 from gavicore.util.cli.group import AliasedGroup
@@ -155,7 +154,8 @@ def new_cli(
         process_id_ = execution_request.process_id
         process = registry.get(process_id_)
         if process is None:
-            raise click.ClickException(f"Process {process_id_!r} not found.")
+            typer.echo(f"Process {process_id_!r} not found.", err=True)
+            raise typer.Exit(code=1)
 
         job = Job.create(process, request=execution_request.to_process_request())
         job_results = job.run()
@@ -194,7 +194,8 @@ def new_cli(
         registry = _get_process_registry(ctx)
         process = registry.get(process_id)
         if process is None:
-            raise click.ClickException(f"Process {process_id!r} not found.")
+            typer.echo(f"Process {process_id!r} not found.", err=True)
+            raise typer.Exit(code=1)
 
         typer.echo(
             json.dumps(

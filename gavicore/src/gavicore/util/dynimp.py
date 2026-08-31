@@ -24,7 +24,7 @@ def import_value(
     Args:
         ref: A value reference of the form "<module>:<attr>".
         type: Expected type of the reference
-        name: Name of the reference
+        name: Name of the reference (for error messages)
         example: An example reference (for error messages)
 
     Returns:

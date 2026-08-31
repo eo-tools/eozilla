@@ -261,3 +261,68 @@ class CliTest(TestCase):
             content = dag_files[0].read_text(encoding="utf-8")
             self.assertIn("cli-secret", content)
             self.assertNotIn("file-secret", content)
+
+    def test_node_selector_appears_in_generated_dag(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = runner.invoke(
+                cli,
+                [
+                    "wraptile.services.local.testing:service.process_registry",
+                    "--dags-folder",
+                    tmpdir,
+                    "--node-selector",
+                    "pool=airflow-workers-big",
+                ],
+            )
+            self.assertEqual(0, result.exit_code, msg=result.output)
+            content = list(Path(tmpdir).glob("*.py"))[0].read_text(encoding="utf-8")
+            self.assertIn("_node_selector = {'pool': 'airflow-workers-big'}", content)
+            self.assertIn("node_selector=_node_selector", content)
+
+    def test_invalid_node_selector_format_exits_with_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = runner.invoke(
+                cli,
+                [
+                    "wraptile.services.local.testing:service.process_registry",
+                    "--dags-folder",
+                    tmpdir,
+                    "--node-selector",
+                    "no-equals-sign",
+                ],
+            )
+            self.assertEqual(1, result.exit_code)
+            self.assertIn("--node-selector must be key=value", result.output)
+
+    def test_toleration_appears_in_generated_dag(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = runner.invoke(
+                cli,
+                [
+                    "wraptile.services.local.testing:service.process_registry",
+                    "--dags-folder",
+                    tmpdir,
+                    "--toleration",
+                    "airflow/component:Equal:worker:NoSchedule",
+                ],
+            )
+            self.assertEqual(0, result.exit_code, msg=result.output)
+            content = list(Path(tmpdir).glob("*.py"))[0].read_text(encoding="utf-8")
+            self.assertIn("_tolerations = [", content)
+            self.assertIn("key='airflow/component'", content)
+            self.assertIn("tolerations=_tolerations", content)
+
+    def test_invalid_toleration_format_exits_with_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = runner.invoke(
+                cli,
+                [
+                    "wraptile.services.local.testing:service.process_registry",
+                    "--dags-folder",
+                    tmpdir,
+                    "--toleration",
+                    "justkey",
+                ],
+            )
+            self.assertEqual(1, result.exit_code)
+            self.assertIn("--toleration must be key:operator", result.output)
