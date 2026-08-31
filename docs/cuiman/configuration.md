@@ -53,26 +53,45 @@ use_bearer: true
 
 ### Environment Variables
 
-All configuration parameters can be passed as environment variables
-using the uppercase parameter name prefixed by `EOZILLA_`.
+Cuiman reads configuration from environment variables prefixed with
+`EOZILLA_`. Top-level configuration fields use their uppercase field name;
+nested fields use two underscores (`__`) to separate levels. For example,
+`api_url` is configured with `EOZILLA_API_URL`, while the nested
+`auth.auth_type` field is configured with `EOZILLA_AUTH__AUTH_TYPE`.
 
-With
+The following configures a service using a static bearer token:
 
 ```bash
-export EOZILLA_USERNAME="polly"
-export EOZILLA_PASSWORD= "1234"
+export EOZILLA_API_URL="https://anolis.api.org/process-api/v1"
+export EOZILLA_AUTH__AUTH_TYPE="token"
+export EOZILLA_AUTH__ACCESS_TOKEN="ab989e20-d58609a9-8d4c"
 ```
 
-set, you no longer need to pass `username` and `password`:
+The authentication type determines which other nested authentication variables
+are accepted:
 
-```python
-from cuiman import Client
+| Authentication type | Required environment variables | Optional environment variables |
+| --- | --- | --- |
+| `none` | `EOZILLA_AUTH__AUTH_TYPE=none` | |
+| `basic` | `EOZILLA_AUTH__AUTH_TYPE=basic`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD` | |
+| `token` | `EOZILLA_AUTH__AUTH_TYPE=token`, `EOZILLA_AUTH__ACCESS_TOKEN` | `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
+| `login` | `EOZILLA_AUTH__AUTH_TYPE=login`, `EOZILLA_AUTH__LOGIN_URL`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD` | `EOZILLA_AUTH__ACCESS_TOKEN`, `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
+| `oauth2` | `EOZILLA_AUTH__AUTH_TYPE=oauth2`, `EOZILLA_AUTH__TOKEN_URL` | `EOZILLA_AUTH__GRANT_TYPE`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD`, `EOZILLA_AUTH__CLIENT_ID`, `EOZILLA_AUTH__CLIENT_SECRET`, `EOZILLA_AUTH__REFRESH_TOKEN`, `EOZILLA_AUTH__ACCESS_TOKEN`, `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
+| `api-key` | `EOZILLA_AUTH__AUTH_TYPE=api-key`, `EOZILLA_AUTH__API_KEY` | `EOZILLA_AUTH__API_KEY_HEADER` |
 
-client = Client(
-    api_url="https://anolis.api.org/process-api/v1", 
-    auth_type="basic"
-)
-```
+For OAuth 2.0, `grant_type` defaults to `password`. The `password` grant
+requires `USERNAME` and `PASSWORD`; the `client_credentials` grant requires
+`CLIENT_ID` and `CLIENT_SECRET`.
+
+Environment settings override values from the configuration file. Providing
+`EOZILLA_AUTH__AUTH_TYPE` selects a complete authentication configuration, so
+provide the variables required by that type as well. To override only a field
+of the authentication configuration selected in the file, omit
+`EOZILLA_AUTH__AUTH_TYPE`; for example, set only
+`EOZILLA_AUTH__ACCESS_TOKEN` to replace a stored login token.
+
+> Treat credential environment variables as secrets. Use the secret-injection
+> mechanism of your deployment platform and do not commit them to source control.
 
 ### Configuration Object
 
@@ -110,12 +129,12 @@ client = Client(
 Before using the CLI, you should configure it using the `cuiman configure`
 command.
 
-If any `EOZILLA_*` environment variables are set (e.g. `EOZILLA_API_URL`,
-`EOZILLA_CLIENT_ID`, `EOZILLA_USE_BEARER`), they appear as pre-filled defaults
-in the interactive prompts so you can confirm or override them. This is useful
-in managed deployments (e.g. Kubernetes/JupyterHub) where admins inject
-service-level settings via environment variables and users only need to supply
-their own credentials.
+If environment variables are set (e.g. `EOZILLA_API_URL`,
+`EOZILLA_AUTH__AUTH_TYPE`, `EOZILLA_AUTH__CLIENT_ID`), they appear as
+pre-filled defaults in the interactive prompts so you can confirm or override
+them. This is useful in managed deployments (e.g. Kubernetes/JupyterHub) where
+admins inject service-level settings via environment variables and users only
+need to supply their own credentials.
 
 You can override settings anytime from environment variables or by using
 the `--config/-c <file>` option supported by most CLI commands.
