@@ -18,7 +18,11 @@ from cuiman.api.auth import (
     NoAuthConfig,
     TokenAuthConfig,
 )
-from cuiman.api.config import ClientConfig, _update_if_not_none
+from cuiman.api.config import (
+    ClientConfig,
+    _update_config_from_env,
+    _update_if_not_none,
+)
 from cuiman.api.defaults import DEFAULT_API_URL
 
 
@@ -224,6 +228,55 @@ class ClientConfigTest(TestCase):
         self.assertEqual("environment-token", config.auth.access_token)
         self.assertEqual("u", config.auth.username)
 
+    def test_env_auth_type_selects_token_auth_over_file_config(self):
+        os.environ.update(
+            {
+                "EOZILLA_AUTH__AUTH_TYPE": "token",
+                "EOZILLA_AUTH__ACCESS_TOKEN": "abc",
+            }
+        )
+        file_configs = [
+            {"auth_type": "none"},
+            {
+                "api_url": "https://file.example.test/",
+                "auth": {"auth_type": "none"},
+            },
+        ]
+
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            for index, file_config in enumerate(file_configs):
+                with self.subTest(file_config=file_config):
+                    config_path = Path(tmp_dir_name) / f"config-{index}.yaml"
+                    config_path.write_text(yaml.safe_dump(file_config))
+
+                    config = ClientConfig.create(config_path=config_path)
+
+                    self.assertEqual(TokenAuthConfig(access_token="abc"), config.auth)
+
+    def test_env_auth_type_replaces_file_auth_fields(self):
+        os.environ.update(
+            {
+                "EOZILLA_AUTH__AUTH_TYPE": "token",
+                "EOZILLA_AUTH__ACCESS_TOKEN": "environment-token",
+            }
+        )
+        original = ClientConfig(
+            auth=LoginAuthConfig(
+                login_url="https://file.example.test/login",
+                username="u",
+                password="p",
+                access_token="file-token",
+            )
+        )
+
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            config_path = Path(tmp_dir_name) / "config"
+            original.write(config_path)
+
+            config = ClientConfig.create(config_path=config_path)
+
+        self.assertEqual(TokenAuthConfig(access_token="environment-token"), config.auth)
+
     def test_normalize_config_path(self):
         path = Path("i/am/a/path")
         self.assertIs(path, ClientConfig.normalize_config_path(path))
@@ -240,3 +293,23 @@ class ClientConfigTest(TestCase):
         target = {"value": "original"}
         _update_if_not_none(target, {"value": None})
         self.assertEqual({"value": "original"}, target)
+
+    def test_update_config_from_env_replaces_auth_for_explicit_auth_type(self):
+        target = {
+            "auth": {
+                "auth_type": "login",
+                "login_url": "https://file.example.test/login",
+                "username": "u",
+                "password": "p",
+            }
+        }
+
+        _update_config_from_env(
+            target,
+            {"auth": {"auth_type": "token", "access_token": "token"}},
+        )
+
+        self.assertEqual(
+            {"auth": {"auth_type": "token", "access_token": "token"}},
+            target,
+        )

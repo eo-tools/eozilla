@@ -15,7 +15,7 @@ from typing import (
 )
 
 import yaml
-from pydantic import Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings, EnvSettingsSource, SettingsConfigDict
 
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
@@ -114,7 +114,7 @@ class ClientConfig(BaseSettings):
         # be merged with the auth model loaded from defaults or a file before
         # the discriminated union is validated.
         env_config = EnvSettingsSource(cls)()
-        _update_if_not_none(config_dict, env_config)
+        _update_config_from_env(config_dict, env_config)
 
         # 3. from config
         if config is not None:
@@ -137,7 +137,15 @@ class ClientConfig(BaseSettings):
             config_dict = yaml.safe_load(stream)
         if isinstance(config_dict, dict):
             config_dict = _convert_legacy_file_config(config_dict)
-        return cls.new_instance(**config_dict)
+        config_cls = type(ClientConfig.default_config)
+        assert issubclass(config_cls, ClientConfig)
+        # Do not call BaseSettings.__init__: it would merge environment values
+        # into this file-only configuration before ClientConfig.create() can
+        # perform its intentional merge. BaseModel.__init__ still validates
+        # config_dict, but does not load any settings sources.
+        instance = object.__new__(config_cls)
+        BaseModel.__init__(instance, **config_dict)
+        return instance
 
     def write(self, config_path: Optional[str | Path] = None) -> Path:
         config_path = self.normalize_config_path(config_path)
@@ -237,6 +245,25 @@ def _update_if_not_none(target: dict[str, Any], updates: dict[str, Any]):
             _update_if_not_none(target[key], value)
         else:
             target[key] = value
+
+
+###############################################################
+# -- Config file legacy management
+###############################################################
+
+
+def _update_config_from_env(target: dict[str, Any], env_config: dict[str, Any]) -> None:
+    """Merge environment settings, replacing auth when its type is selected.
+
+    An environment ``auth_type`` chooses a new discriminated auth model, so
+    retaining fields from an auth model selected by a configuration file would
+    make them invalid extra inputs.
+    """
+    auth_config = env_config.get("auth")
+    if isinstance(auth_config, dict) and "auth_type" in auth_config:
+        target["auth"] = auth_config
+        env_config = {key: value for key, value in env_config.items() if key != "auth"}
+    _update_if_not_none(target, env_config)
 
 
 _LEGACY_AUTH_KEYS = {
