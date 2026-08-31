@@ -39,10 +39,10 @@
   no longer read the developer's real `~/.eozilla/config`, which could inject a
   logged-in token into the request headers and fail the assertion that an
   unauthenticated client sends none. (#167)
-- Successful dismissal of jobs via a DELETE request to the `/jobs/{jobID}`
-  endpoint returns a `JobInfo` object whose `status` field is always set
-  to "dismissed" as per requirement `/req/dismiss/job-dismiss-success`
-  of the OGC API - Processes - Part 1: Core specification. (#174)
+- The **wraptile** job cancellation operation (`DELETE /jobs/{jobId}`) now returns a job info with 
+  state `"dismissed"`, no matter whether the job was successfully terminated or really already ended 
+  (which may take a while). This behaviour is specified by the OGC Api - Processes - Part 1: Core. 
+  So the Eozilla interpretation of this status is a weaker "cancellation requested". (#174)
 
 ### Other changes
 

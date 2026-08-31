@@ -162,6 +162,10 @@ class LocalService(ServiceBase):
             del self.jobs[job_id]
             self.job_results.pop(job_id, None)
             self.job_uses_processes.pop(job_id, None)
+        # The OGC Api - Processes specifies that the dismiss operation (`DELETE /jobs/{jobId}`)
+        # must return a job info with state `"dismissed"`, no matter whether the job was successfully
+        # terminated or really already ended (which may take a while). So our interpretation of this 
+        # status is a weaker "cancellation requested". 
         job.job_info.status = JobStatus.dismissed
         return job.job_info
 
