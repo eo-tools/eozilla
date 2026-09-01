@@ -65,15 +65,17 @@ $ cuiman configure [OPTIONS]
 **Options**:
 
 * `--api-url TEXT`: The URL of a service complying to the OGC API - Processes.
-* `-a, --auth-type TEXT`: The authorisation method for the API (none|basic|token|login|api-key).
-* `--auth-url TEXT`: The URL of the authorisation service for the API 
+* `-a, --auth-type TEXT`: The authorisation method for the API (none|basic|token|login|oauth2|api-key).
+* `--login-url TEXT`: The proprietary login endpoint URL.
+* `--token-url TEXT`: The OAuth2 token endpoint URL.
+* `--grant-type TEXT`: The OAuth2 grant type (password|client_credentials).
 * `-u, --username TEXT`: Username.
 * `-p, --password TEXT`: Password.
-* `--client-id TEXT`: OAuth2 client ID for login authentication.
-* `--client-secret TEXT`: OAuth2 client secret for login authentication.
-* `-t, --token TEXT`: Access token.
+* `--client-id TEXT`: OAuth2 client ID.
+* `--client-secret TEXT`: OAuth2 client secret.
+* `-t, --access-token TEXT`: Access token.
 * `--use-bearer`: Use bearer token?
-* `--token-header TEXT`: Access token header
+* `--access-token-header TEXT`: Access token header
 * `-c, --config PATH`: Client configuration file.
 * `--help`: Show this message and exit.
 

@@ -6,7 +6,7 @@ from typing import Annotated, Final, Optional
 
 import typer.core
 
-from cuiman.api.auth.config import AUTH_TYPE_NAMES
+from cuiman.api.auth.config import AUTH_TYPE_NAMES, OAUTH2_GRANT_TYPE_NAMES
 from cuiman.cli.output import OutputFormat
 from gavicore.util.cli.group import AliasedGroup
 from gavicore.util.cli.parameters import (
@@ -181,11 +181,25 @@ def new_cli(
                 f"({'|'.join(AUTH_TYPE_NAMES)}).",
             ),
         ] = None,
-        auth_url: Annotated[
+        login_url: Annotated[
             str | None,
             typer.Option(
-                "--auth-url",
-                help="The URL of the authorisation service for the API ",
+                "--login-url",
+                help="The proprietary login endpoint URL.",
+            ),
+        ] = None,
+        token_url: Annotated[
+            str | None,
+            typer.Option(
+                "--token-url",
+                help="The OAuth2 token endpoint URL.",
+            ),
+        ] = None,
+        grant_type: Annotated[
+            str | None,
+            typer.Option(
+                "--grant-type",
+                help=f"The OAuth2 grant type ({'|'.join(OAUTH2_GRANT_TYPE_NAMES)}).",
             ),
         ] = None,
         username: Annotated[
@@ -208,20 +222,20 @@ def new_cli(
             str | None,
             typer.Option(
                 "--client-id",
-                help="OAuth2 client ID for login authentication.",
+                help="OAuth2 client ID.",
             ),
         ] = None,
         client_secret: Annotated[
             str | None,
             typer.Option(
                 "--client-secret",
-                help="OAuth2 client secret for login authentication.",
+                help="OAuth2 client secret.",
             ),
         ] = None,
-        token: Annotated[
+        access_token: Annotated[
             str | None,
             typer.Option(
-                "--token",
+                "--access-token",
                 "-t",
                 help="Access token.",
             ),
@@ -233,10 +247,10 @@ def new_cli(
                 help="Use bearer token?",
             ),
         ] = None,
-        token_header: Annotated[
+        access_token_header: Annotated[
             str | None,
             typer.Option(
-                "--token-header",
+                "--access-token-header",
                 help="Access token header",
             ),
         ] = None,
@@ -254,14 +268,16 @@ def new_cli(
                 config_path=config_file,
                 api_url=api_url,
                 auth_type=auth_type,  # type: ignore[arg-type]
-                auth_url=auth_url,
+                login_url=login_url,
+                token_url=token_url,
+                grant_type=grant_type,
                 client_id=client_id,
                 client_secret=client_secret,
                 username=username,
                 password=password,
-                token=token,
+                access_token=access_token,
                 use_bearer=use_bearer,
-                token_header=token_header,
+                access_token_header=access_token_header,
             )
         except ValueError as exc:
             typer.echo(str(exc), err=True)

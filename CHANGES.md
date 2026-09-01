@@ -1,5 +1,15 @@
 ## Changes in version 0.2.1 (in development)
 
+### Enhancements
+
+- **Cuiman** authentication configuration now uses distinct, nested data models
+  for no authentication, Basic, token, proprietary login, OAuth2, and API-key
+  authentication. OAuth2 grant types are typed, and the configuration and CLI
+  use unambiguous names such as `login_url`, `token_url`, `access_token`, and
+  `access_token_header`. Existing flat file configurations for unambiguous
+  authentication types are converted when read; legacy login configurations
+  using `auth_url` now instruct users to rerun `cuiman configure`. (#176)
+
 ### Fixes
 
 - Fixed `client.show_app()` forcing a redundant interactive OAuth2/PKCE login

@@ -10,11 +10,11 @@ that should get its own `anolis-client`.
 
 The `cuiman` API allows for the following customizations:
 
-1. The `cuiman.ClientConfig` is a 
+1. The `cuiman.api.ClientConfig` is a 
    [pydantic Settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)
    class. It can be used as base class and then configured with a custom 
    `pydantic_settings.SettingsConfigDict` instance.
-2. Some `cuiman.ClientConfig` class attributes in can be overridden     
+2. Some `cuiman.api.ClientConfig` class attributes in can be overridden     
    to initialize custom default values.
 3. Applications can customize the way how job results are opened.
 4. Applications can create their own CLI instance with custom settings.
@@ -29,6 +29,7 @@ In a module `src/anolis_client/api.py`:
 from pathlib import Path
 from pydantic_settings import SettingsConfigDict
 from cuiman.api import AsyncClient, Client, ClientConfig, ClientError
+from cuiman.api.auth import NoAuthConfig
 
 # Custom configuration class
 class AnolisClientConfig(ClientConfig):
@@ -42,11 +43,14 @@ class AnolisClientConfig(ClientConfig):
 ClientConfig.default_path = Path("~").expanduser() / ".anolis-client"
 ClientConfig.default_config = AnolisClientConfig(
     api_url="https://anolis.api.org/process-api/v1",
-    auth_url="https://anolis.api.org/auth/login",
-    auth_type="login",
-    use_bearer=True,
+    auth=NoAuthConfig(),
 )
 ```
+
+Set a complete nested `auth` configuration through a configuration file or
+environment variables. Authentication models require their credentials at
+construction time; for example, a proprietary login uses `auth.login_url`,
+while OAuth 2.0 uses `auth.token_url`.
 
 ## CLI customisation
 

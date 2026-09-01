@@ -6,7 +6,13 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from cuiman.api.config import AuthConfig, ClientConfig
+from cuiman.api.auth import (
+    AuthConfigBase,
+    LoginAuthConfig,
+    OAuth2AuthConfig,
+    TokenAuthConfig,
+)
+from cuiman.api.config import ClientConfig
 
 ServiceProviderType = Literal["test", "dev", "custom", "system"]
 ServiceProviderOption = bool | int | float | str | None
@@ -40,75 +46,34 @@ def create_app_service_provider(client_config: ClientConfig) -> ServiceProvider:
     )
 
 
-_AUTH_TYPE_TO_APPLICABLE_KEYS: dict[str, tuple[str, ...]] = {
-    "none": ("auth_type",),
-    "basic": ("auth_type", "auth_url", "username", "password"),
-    "login": (
-        "auth_type",
-        "auth_url",
-        "username",
-        "password",
-        "token",
-        "use_bearer",
-        "token_header",
-        "refresh_token",
-        "client_id",
-        "client_secret",
-        "grant_type",
-    ),
-    "token": (
-        "auth_type",
-        "auth_url",
-        "token",
-        "use_bearer",
-        "token_header",
-        "refresh_token",
-    ),
-    "api-key": ("auth_type", "auth_url", "api_key", "api_key_header"),
-}
-
-
-def _effective_auth_type(client_config: ClientConfig) -> str:
-    """
-    Resolve the auth type to forward to the app.
-
-    ``"login"`` means the *Python* client performs a username/password login
-    to obtain a token. By the time this is called (e.g. from ``show_app()``),
-    that login has already happened and ``client_config.token`` holds a
-    resolved access token — the app doesn't need to (and can't) repeat that
-    login. Forwarding ``auth_type="login"`` verbatim makes the app treat it
-    like an interactive OAuth2/PKCE login, discarding the already-valid
-    token and forcing a redundant sign-in. Once a token is resolved, forward
-    it as ``"token"`` instead, so the app connects immediately.
-    """
-    auth_type = client_config.auth_type or "none"
-    if auth_type == "login" and client_config.token:
-        return "token"
-    return auth_type
+def _effective_app_auth(auth: AuthConfigBase) -> AuthConfigBase:
+    """Convert an already-resolved login or OAuth2 config to token auth."""
+    if isinstance(auth, (LoginAuthConfig, OAuth2AuthConfig)) and auth.access_token:
+        return TokenAuthConfig(
+            access_token=auth.access_token,
+            use_bearer=auth.use_bearer,
+            access_token_header=auth.access_token_header,
+        )
+    return auth
 
 
 def _config_to_service_options(client_config: ClientConfig) -> dict[str, Any]:
     """
-    Convert a ClientConfig object to a JSON-serializable dict, which includes
-    only keywords applicable to the given ``auth_config.auth_type``.
+    Convert a ClientConfig object to a flat, JSON-serializable app config.
     """
-    auth_keys = set(AuthConfig.model_fields.keys())
-    effective_auth_type = _effective_auth_type(client_config)
-    applicable_auth_keys = _AUTH_TYPE_TO_APPLICABLE_KEYS[effective_auth_type]
-    auth_config_dict = {
-        k: v
-        for k, v in client_config.model_dump(
-            mode="json",
-            exclude_none=True,
-        ).items()
-        if k not in auth_keys or k in applicable_auth_keys
-    }
-    if "auth_type" in auth_config_dict:
-        auth_config_dict["auth_type"] = effective_auth_type
-    # Additional cleanup
-    if "token_header" in auth_config_dict and client_config.use_bearer:
-        del auth_config_dict["token_header"]
-    return {_snake_to_camel(k): v for k, v in auth_config_dict.items()}
+    config_dict = client_config.model_dump(
+        mode="json",
+        exclude_none=True,
+        exclude={"auth"},
+    )
+    auth_dict = _effective_app_auth(client_config.auth).model_dump(
+        mode="json",
+        exclude_none=True,
+    )
+    if auth_dict.get("use_bearer"):
+        auth_dict.pop("access_token_header", None)
+    config_dict.update(auth_dict)
+    return {_snake_to_camel(k): v for k, v in config_dict.items()}
 
 
 def _snake_to_camel(s: str) -> str:

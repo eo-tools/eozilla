@@ -8,119 +8,53 @@ from typing import Any
 import httpx
 from pydantic import BaseModel
 
-from .config import AuthConfig
+from .config import LoginAuthConfig
 
 
-class LoginResult(BaseModel):
-    """Result of a login or token refresh operation."""
+class TokenResult(BaseModel):
+    """Access and optional refresh tokens returned by an authentication service."""
 
     access_token: str
     refresh_token: str | None = None
 
 
-def login(auth_config: AuthConfig) -> Any:
-    """
-    Performs a synchronous login (username+password → token)
-    and returns a token.
-
-    Args:
-        auth_config: authentication configuration.
-
-    Returns:
-        An access token either as JSON or plain text.
-    """
+def login(auth_config: LoginAuthConfig) -> str:
+    """Log in through a proprietary endpoint and return its access token."""
     return login_for_tokens(auth_config).access_token
 
 
-def login_for_tokens(auth_config: AuthConfig) -> LoginResult:
-    """
-    Performs a synchronous login and returns both
-    access token and refresh token (if available).
-
-    Args:
-        auth_config: authentication configuration.
-
-    Returns:
-        A LoginResult with access_token and optional refresh_token.
-    """
+def login_for_tokens(auth_config: LoginAuthConfig) -> TokenResult:
+    """Log in through a proprietary endpoint and parse its token response."""
     url, data = prepare_login(auth_config)
     with httpx.Client() as client:
         response = client.post(url, data=data)
         return process_login_response_for_tokens(response)
 
 
-def refresh_login(auth_config: AuthConfig) -> LoginResult:
-    """
-    Performs a synchronous token refresh using a refresh token.
-
-    Args:
-        auth_config: authentication configuration (must have refresh_token set).
-
-    Returns:
-        A LoginResult with the new access_token and optional new refresh_token.
-    """
-    url, data = prepare_refresh(auth_config)
-    with httpx.Client() as client:
-        response = client.post(url, data=data)
-        return process_login_response_for_tokens(response)
-
-
-def prepare_login(config: AuthConfig) -> tuple[str, dict[str, str | None]]:
-    if not config.auth_url:
-        raise ValueError("Authentication URL must be set.")
+def prepare_login(config: LoginAuthConfig) -> tuple[str, dict[str, str]]:
+    """Build a proprietary username/password login request."""
     if not config.username or not config.password:
         raise ValueError(
             "Username and password must be set for authentication type 'login'."
         )
-    data = _add_client_credentials(
-        config,
-        {
-            "grant_type": config.grant_type,
-            "username": config.username,
-            "password": config.password,
-        },
-    )
-    return config.auth_url, data
+    return str(config.login_url), {
+        "username": config.username,
+        "password": config.password,
+    }
 
 
-def _add_client_credentials(
-    config: AuthConfig, data: dict[str, str | None]
-) -> dict[str, str | None]:
-    if config.client_id:
-        data["client_id"] = config.client_id
-    if config.client_secret:
-        data["client_secret"] = config.client_secret
-    return data
-
-
-def prepare_refresh(config: AuthConfig) -> tuple[str, dict[str, str | None]]:
-    if not config.auth_url:
-        raise ValueError("Authentication URL must be set.")
-    if not config.refresh_token:
-        raise ValueError("Refresh token must be set.")
-    data = _add_client_credentials(
-        config,
-        {
-            "grant_type": "refresh_token",
-            "refresh_token": config.refresh_token,
-        },
-    )
-    return config.auth_url, data
-
-
-def process_login_response(response: httpx.Response) -> Any:
+def process_login_response(response: httpx.Response) -> str:
+    """Parse an access token from a proprietary login response."""
     response.raise_for_status()
-    # noinspection PyBroadException
     try:
-        # Accept JSON ...
         token_data = response.json()
-    except Exception:
-        # ... or plain-text tokens
+    except Exception:  # noqa: BLE001 - proprietary endpoints may return plain text
         token_data = response.text.strip()
     return parse_token(token_data)
 
 
-def process_login_response_for_tokens(response: httpx.Response) -> LoginResult:
+def process_login_response_for_tokens(response: httpx.Response) -> TokenResult:
+    """Parse access and optional refresh tokens from a login response."""
     response.raise_for_status()
     try:
         token_data = response.json()
@@ -130,10 +64,11 @@ def process_login_response_for_tokens(response: httpx.Response) -> LoginResult:
     refresh_token = None
     if isinstance(token_data, dict):
         refresh_token = token_data.get("refresh_token")
-    return LoginResult(access_token=access_token, refresh_token=refresh_token)
+    return TokenResult(access_token=access_token, refresh_token=refresh_token)
 
 
 def parse_token(token_data: Any) -> str:
+    """Extract a token string from common proprietary response shapes."""
     token: Any = None
     if isinstance(token_data, str):
         token = token_data
@@ -154,12 +89,7 @@ def parse_token(token_data: Any) -> str:
 
 
 def _find_token(token_data: dict) -> Any:
-    # TODO: This is a more or less generic hack.
-    #  Either we make the path to the token configurable or we
-    #  allow clients to pass a token-obtaining function to their
-    #  client API configuration.
-
-    for k in (
+    for key in (
         "token",
         "authToken",
         "auth_token",
@@ -168,13 +98,12 @@ def _find_token(token_data: dict) -> Any:
         "apiToken",
         "api_token",
     ):
-        if k in token_data:
-            return token_data[k]
+        if key in token_data:
+            return token_data[key]
 
-    for v in token_data.values():
-        if isinstance(v, dict):
-            token = _find_token(v)
+    for value in token_data.values():
+        if isinstance(value, dict):
+            token = _find_token(value)
             if token is not None:
                 return token
-
     return None

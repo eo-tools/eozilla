@@ -2,8 +2,18 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+# ruff: noqa: S106
+
 import pytest
 
+from cuiman.api.auth import (
+    ApiKeyAuthConfig,
+    BasicAuthConfig,
+    LoginAuthConfig,
+    NoAuthConfig,
+    OAuth2AuthConfig,
+    TokenAuthConfig,
+)
 from cuiman.api.config import ClientConfig
 from cuiman.app.service import (
     ServiceProvider,
@@ -16,8 +26,12 @@ def test_create_app_service_provider():
     provider = create_app_service_provider(
         ClientConfig(
             api_url="https://process.example.test/api",
-            auth_type="login",
-            auth_url="https://auth.example.test/login",
+            auth=LoginAuthConfig(
+                login_url="https://auth.example.test/login",
+                username="user",
+                password="secret",
+                access_token="resolved-token",
+            ),
         )
     )
 
@@ -30,247 +44,107 @@ def test_create_app_service_provider():
     )
     assert provider.options == {
         "apiUrl": "https://process.example.test/api",
-        "authType": "login",
-        "authUrl": "https://auth.example.test/login",
-        "grantType": "password",
+        "authType": "token",
+        "accessToken": "resolved-token",
         "useBearer": True,
     }
 
 
 @pytest.mark.parametrize(
-    ("config_kwargs", "expected_options"),
+    ("auth", "expected_auth_options"),
     [
+        pytest.param(NoAuthConfig(), {"authType": "none"}, id="none"),
         pytest.param(
-            {
-                "api_url": "https://process.example.test/api",
-                "auth_type": None,
-                "auth_url": "https://auth.example.test/auth",
-                "username": "user",
-                "password": "secret",
-                "grant_type": "password",
-                "token": "token-123",
-                "refresh_token": "refresh-123",
-                "use_bearer": False,
-                "token_header": "X-Custom-Token",
-                "api_key": "api-key-123",
-                "api_key_header": "X-Custom-Api-Key",
-            },
-            {
-                "apiUrl": "https://process.example.test/api",
-            },
-            id="auth-type-none-omits-auth-options",
+            BasicAuthConfig(username="user", password="secret"),
+            {"authType": "basic", "username": "user", "password": "secret"},
+            id="basic",
         ),
         pytest.param(
-            {
-                "api_url": "https://process.example.test/api",
-                "auth_type": "none",
-                "auth_url": "https://auth.example.test/auth",
-                "username": "user",
-                "password": "secret",
-                "grant_type": "password",
-                "token": "token-123",
-                "refresh_token": "refresh-123",
-                "use_bearer": False,
-                "token_header": "X-Custom-Token",
-                "api_key": "api-key-123",
-                "api_key_header": "X-Custom-Api-Key",
-            },
-            {
-                "apiUrl": "https://process.example.test/api",
-                "authType": "none",
-            },
-            id="explicit-auth-type-none-keeps-auth-type",
+            TokenAuthConfig(access_token="token"),
+            {"authType": "token", "accessToken": "token", "useBearer": True},
+            id="bearer-token",
         ),
         pytest.param(
+            TokenAuthConfig(
+                access_token="token",
+                use_bearer=False,
+                access_token_header="X-Custom-Token",
+            ),
             {
-                "api_url": "https://process.example.test/api",
-                "auth_type": "basic",
-                "auth_url": "https://auth.example.test/auth",
-                "username": "user",
-                "password": "secret",
-                "token": "token-123",
-                "refresh_token": "refresh-123",
-                "use_bearer": False,
-                "token_header": "X-Custom-Token",
-                "api_key": "api-key-123",
-                "api_key_header": "X-Custom-Api-Key",
-            },
-            {
-                "apiUrl": "https://process.example.test/api",
-                "authType": "basic",
-                "authUrl": "https://auth.example.test/auth",
-                "username": "user",
-                "password": "secret",
-            },
-            id="basic-auth-keeps-basic-fields",
-        ),
-        pytest.param(
-            {
-                "api_url": "https://process.example.test/api",
-                "auth_type": "login",
-                "auth_url": "https://auth.example.test/auth",
-                "username": "user",
-                "password": "secret",
-                "token": "token-123",
-                "refresh_token": "refresh-123",
-                "client_id": "client-id",
-                "client_secret": "client-secret",
-                "grant_type": "client_credentials",
-                "token_header": "X-Custom-Token",
-                "api_key": "api-key-123",
-            },
-            {
-                "apiUrl": "https://process.example.test/api",
                 "authType": "token",
-                "authUrl": "https://auth.example.test/auth",
-                "token": "token-123",
-                "refreshToken": "refresh-123",
+                "accessToken": "token",
+                "useBearer": False,
+                "accessTokenHeader": "X-Custom-Token",
+            },
+            id="custom-header-token",
+        ),
+        pytest.param(
+            LoginAuthConfig(
+                login_url="https://auth.example.test/login",
+                username="user",
+                password="secret",
+            ),
+            {
+                "authType": "login",
+                "loginUrl": "https://auth.example.test/login",
+                "username": "user",
+                "password": "secret",
                 "useBearer": True,
             },
-            id="login-with-resolved-token-forwards-as-token-removes-token-header",
+            id="unresolved-login",
         ),
         pytest.param(
+            OAuth2AuthConfig(
+                token_url="https://auth.example.test/token",
+                username="user",
+                password="secret",
+                client_id="client",
+            ),
             {
-                "api_url": "https://process.example.test/api",
-                "auth_type": "login",
-                "auth_url": "https://auth.example.test/auth",
-                "token": "token-123",
-                "use_bearer": False,
-                "token_header": "X-Custom-Token",
-            },
-            {
-                "apiUrl": "https://process.example.test/api",
-                "authType": "token",
-                "authUrl": "https://auth.example.test/auth",
-                "token": "token-123",
-                "useBearer": False,
-                "tokenHeader": "X-Custom-Token",
-            },
-            id="login-with-resolved-token-and-custom-header-forwards-as-token",
-        ),
-        pytest.param(
-            {
-                "api_url": "https://process.example.test/api",
-                "auth_type": "login",
-                "auth_url": "https://auth.example.test/auth",
-                "username": "user",
-                "password": "secret",
-                "client_id": "client-id",
-                "grant_type": "password",
-            },
-            {
-                "apiUrl": "https://process.example.test/api",
-                "authType": "login",
-                "authUrl": "https://auth.example.test/auth",
+                "authType": "oauth2",
+                "tokenUrl": "https://auth.example.test/token",
                 "grantType": "password",
                 "username": "user",
                 "password": "secret",
-                "clientId": "client-id",
+                "clientId": "client",
                 "useBearer": True,
             },
-            id="login-without-resolved-token-keeps-login",
+            id="unresolved-oauth2",
         ),
         pytest.param(
-            {
-                "api_url": "https://process.example.test/api",
-                "auth_type": "token",
-                "auth_url": "https://auth.example.test/auth",
-                "token": "token-123",
-                "refresh_token": "refresh-123",
-                "token_header": "X-Custom-Token",
-                "username": "user",
-                "password": "secret",
-            },
-            {
-                "apiUrl": "https://process.example.test/api",
-                "authType": "token",
-                "authUrl": "https://auth.example.test/auth",
-                "token": "token-123",
-                "refreshToken": "refresh-123",
-                "useBearer": True,
-            },
-            id="token-bearer-removes-token-header",
-        ),
-        pytest.param(
-            {
-                "api_url": "https://process.example.test/api",
-                "auth_type": "token",
-                "auth_url": "https://auth.example.test/auth",
-                "token": "token-123",
-                "use_bearer": False,
-                "token_header": "X-Custom-Token",
-            },
-            {
-                "apiUrl": "https://process.example.test/api",
-                "authType": "token",
-                "authUrl": "https://auth.example.test/auth",
-                "token": "token-123",
-                "useBearer": False,
-                "tokenHeader": "X-Custom-Token",
-            },
-            id="token-custom-header-keeps-token-header",
-        ),
-        pytest.param(
-            {
-                "api_url": "https://process.example.test/api",
-                "auth_type": "api-key",
-                "auth_url": "https://auth.example.test/auth",
-                "api_key": "api-key-123",
-                "username": "user",
-                "password": "secret",
-                "token": "token-123",
-            },
-            {
-                "apiUrl": "https://process.example.test/api",
-                "authType": "api-key",
-                "authUrl": "https://auth.example.test/auth",
-                "apiKey": "api-key-123",
-                "apiKeyHeader": "X-API-Key",
-            },
-            id="api-key-auth-keeps-default-api-key-header",
+            ApiKeyAuthConfig(api_key="key", api_key_header="X-Key"),
+            {"authType": "api-key", "apiKey": "key", "apiKeyHeader": "X-Key"},
+            id="api-key",
         ),
     ],
 )
-def test_create_app_service_provider_keeps_only_applicable_options(
-    config_kwargs, expected_options
-):
-    provider = create_app_service_provider(ClientConfig(**config_kwargs))
-
-    assert provider.options == expected_options
-
-
-def test_service_provider_models_accept_optional_metadata_and_options():
-    provider = ServiceProvider(
-        id="dev",
-        meta=ServiceProviderMeta(
-            type="dev",
-            title="Development",
-            disabled=False,
-            hidden=True,
-        ),
-        options={
-            "enabled": True,
-            "retries": 2,
-            "timeout": 3.5,
-            "label": "local",
-            "token": None,
-        },
+def test_service_options_for_auth_models(auth, expected_auth_options):
+    provider = create_app_service_provider(
+        ClientConfig(api_url="https://process.example.test/api", auth=auth)
     )
+    assert provider.options == {
+        "apiUrl": "https://process.example.test/api",
+        **expected_auth_options,
+    }
 
-    assert provider.model_dump() == {
-        "id": "dev",
-        "meta": {
-            "type": "dev",
-            "title": "Development",
-            "description": None,
-            "disabled": False,
-            "hidden": True,
-        },
-        "options": {
-            "enabled": True,
-            "retries": 2,
-            "timeout": 3.5,
-            "label": "local",
-            "token": None,
-        },
+
+def test_resolved_oauth2_is_forwarded_as_token_without_credentials():
+    provider = create_app_service_provider(
+        ClientConfig(
+            api_url="https://process.example.test/api",
+            auth=OAuth2AuthConfig(
+                token_url="https://auth.example.test/token",
+                grant_type="client_credentials",
+                client_id="client",
+                client_secret="secret",
+                access_token="resolved-token",
+                refresh_token="refresh",
+            ),
+        )
+    )
+    assert provider.options == {
+        "apiUrl": "https://process.example.test/api",
+        "authType": "token",
+        "accessToken": "resolved-token",
+        "useBearer": True,
     }

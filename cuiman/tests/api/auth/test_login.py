@@ -2,307 +2,125 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+# ruff: noqa: S105, S106
+
 import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cuiman.api.auth import AuthConfig, login
+from cuiman.api.auth import LoginAuthConfig, TokenResult, login
 from cuiman.api.auth.login import (
-    LoginResult,
     login_for_tokens,
     parse_token,
-    prepare_refresh,
+    prepare_login,
     process_login_response,
-    refresh_login,
 )
 
 
-def test_login_json_response():
-    cfg = AuthConfig(
-        auth_type="login",
-        auth_url="https://acme.com/api/auth/login",
-        client_id="my-client",
-        client_secret="my-secret",
+def make_config(**kwargs) -> LoginAuthConfig:
+    return LoginAuthConfig(
+        login_url="https://example.test/login",
         username="u",
         password="p",
+        **kwargs,
     )
 
-    mock_response = MagicMock()
-    mock_response.json.return_value = {"token": "abc123"}
-    mock_response.raise_for_status.return_value = None
 
-    with patch("httpx.Client.post", return_value=mock_response) as mock_post:
-        token = login(cfg)
+def test_prepare_login_uses_proprietary_payload():
+    url, data = prepare_login(make_config())
+    assert url == "https://example.test/login"
+    assert data == {"username": "u", "password": "p"}
+
+
+@pytest.mark.parametrize(("username", "password"), [("", "p"), ("u", "")])
+def test_prepare_login_requires_credentials(username, password):
+    with pytest.raises(ValueError, match="Username and password"):
+        prepare_login(
+            LoginAuthConfig(
+                login_url="https://example.test/login",
+                username=username,
+                password=password,
+            )
+        )
+
+
+def test_login_json_response():
+    response = MagicMock()
+    response.json.return_value = {"token": "abc123"}
+
+    with patch("httpx.Client.post", return_value=response) as post:
+        token = login(make_config())
 
     assert token == "abc123"
-    mock_post.assert_called_once_with(
-        "https://acme.com/api/auth/login",
-        data={
-            "grant_type": "password",
-            "username": "u",
-            "password": "p",
-            "client_id": "my-client",
-            "client_secret": "my-secret",
-        },
+    post.assert_called_once_with(
+        "https://example.test/login",
+        data={"username": "u", "password": "p"},
     )
 
 
 def test_login_plaintext_response():
-    cfg = AuthConfig(
-        auth_type="login",
-        auth_url="https://acme.com/api/auth/login",
-        client_id="my-client",
-        client_secret="my-secret",
-        username="u",
-        password="p",
-    )
+    response = MagicMock()
+    response.json.side_effect = json.JSONDecodeError("not json", "", 0)
+    response.text = "plaintext-token"
 
-    mock_response = MagicMock()
-    mock_response.json.side_effect = json.JSONDecodeError("not json", "", 0)
-    mock_response.text = "plaintext-token"
-    mock_response.raise_for_status.return_value = None
-
-    with patch("httpx.Client.post", return_value=mock_response):
-        token = login(cfg)
-
-    assert token == "plaintext-token"
+    with patch("httpx.Client.post", return_value=response):
+        assert login(make_config()) == "plaintext-token"
 
 
-def test_login_without_client_credentials():
-    cfg = AuthConfig(
-        auth_type="login",
-        auth_url="https://acme.com/api/auth/login",
-        username="u",
-        password="p",
-    )
+def test_login_for_tokens_parses_optional_refresh_token():
+    response = MagicMock()
+    response.json.return_value = {
+        "access_token": "access",
+        "refresh_token": "refresh",
+    }
+    with patch("httpx.Client.post", return_value=response):
+        result = login_for_tokens(make_config())
 
-    mock_response = MagicMock()
-    mock_response.json.return_value = {"token": "abc123"}
-    mock_response.raise_for_status.return_value = None
-
-    with patch("httpx.Client.post", return_value=mock_response) as mock_post:
-        token = login(cfg)
-
-    assert token == "abc123"
-    mock_post.assert_called_once_with(
-        "https://acme.com/api/auth/login",
-        data={
-            "grant_type": "password",
-            "username": "u",
-            "password": "p",
-        },
-    )
+    assert result == TokenResult(access_token="access", refresh_token="refresh")
 
 
-def test_login_missing_auth_url():
-    cfg = AuthConfig(
-        auth_type="login",
-        auth_url=None,
-        username="max",
-        password="1234",
-    )
-
-    with pytest.raises(ValueError, match="Authentication URL must be set."):
-        login(cfg)
+def test_process_login_response():
+    response = MagicMock()
+    response.json.return_value = {"authToken": "abc"}
+    assert process_login_response(response) == "abc"
 
 
-def test_login_missing_user_pass():
-    cfg = AuthConfig(
-        auth_type="login",
-        auth_url="https://acme.com/api/auth/login",
-        username=None,
-        password=None,
-    )
-
-    with pytest.raises(
-        ValueError,
-        match="Username and password must be set for authentication type 'login'.",
-    ):
-        login(cfg)
+def test_process_login_response_plaintext():
+    response = MagicMock()
+    response.json.side_effect = ValueError("not json")
+    response.text = "  abc  "
+    assert process_login_response(response) == "abc"
 
 
-def test_parse_token_data_ok():
+def test_parse_token_common_shapes():
     assert parse_token("a1b2") == "a1b2"
     assert parse_token({"token": "123"}) == "123"
     assert parse_token({"auth_token": "abc"}) == "abc"
     assert parse_token({"data": {"authToken": "xyz"}}) == "xyz"
     assert parse_token({"apiToken": "abc"}) == "abc"
     assert parse_token({"data": {"accessToken": "xyz"}}) == "xyz"
+    assert parse_token(
+        {
+            "metadata": "ignored",
+            "empty": {"value": 42},
+            "data": {"access_token": "later-token"},
+        }
+    ) == "later-token"
 
 
-def test_parse_token_data_fail():
-    with pytest.raises(
-        RuntimeError,
-        match="Login succeeded, but token returned by server has wrong type.",
-    ):
-        parse_token(137)
+@pytest.mark.parametrize("token_data", [137, {"accessToken": True}])
+def test_parse_token_rejects_wrong_type(token_data):
+    with pytest.raises(RuntimeError, match="wrong type"):
+        parse_token(token_data)
 
-    with pytest.raises(
-        RuntimeError,
-        match="Login succeeded, but token returned by server has wrong type.",
-    ):
-        parse_token({"accessToken": True})
 
-    with pytest.raises(
-        RuntimeError, match="Login succeeded, but no token has been returned by server."
-    ):
+def test_parse_token_rejects_missing_token():
+    with pytest.raises(RuntimeError, match="no token"):
         parse_token({})
 
-    with pytest.raises(
-        RuntimeError, match="Login succeeded, but token returned by server is empty."
-    ):
-        parse_token("")
 
-    with pytest.raises(
-        RuntimeError, match="Login succeeded, but token returned by server is empty."
-    ):
-        parse_token({"token": ""})
-
-
-def test_login_for_tokens_with_refresh_token():
-    cfg = AuthConfig(
-        auth_type="login",
-        auth_url="https://acme.com/api/auth/login",
-        client_id="my-client",
-        client_secret="my-secret",
-        username="u",
-        password="p",
-    )
-
-    mock_response = MagicMock()
-    mock_response.json.return_value = {
-        "access_token": "new-access",
-        "refresh_token": "new-refresh",
-    }
-    mock_response.raise_for_status.return_value = None
-
-    with patch("httpx.Client.post", return_value=mock_response):
-        result = login_for_tokens(cfg)
-
-    assert isinstance(result, LoginResult)
-    assert result.access_token == "new-access"
-    assert result.refresh_token == "new-refresh"
-
-
-def test_login_for_tokens_without_refresh_token():
-    cfg = AuthConfig(
-        auth_type="login",
-        auth_url="https://acme.com/api/auth/login",
-        username="u",
-        password="p",
-    )
-
-    mock_response = MagicMock()
-    mock_response.json.return_value = {"access_token": "only-access"}
-    mock_response.raise_for_status.return_value = None
-
-    with patch("httpx.Client.post", return_value=mock_response):
-        result = login_for_tokens(cfg)
-
-    assert result.access_token == "only-access"
-    assert result.refresh_token is None
-
-
-def test_prepare_refresh():
-    cfg = AuthConfig(
-        auth_type="login",
-        auth_url="https://acme.com/token",
-        client_id="my-client",
-        client_secret="my-secret",
-        refresh_token="old-refresh",
-    )
-
-    url, data = prepare_refresh(cfg)
-    assert url == "https://acme.com/token"
-    assert data == {
-        "grant_type": "refresh_token",
-        "refresh_token": "old-refresh",
-        "client_id": "my-client",
-        "client_secret": "my-secret",
-    }
-
-
-def test_prepare_refresh_without_client_credentials():
-    cfg = AuthConfig(
-        auth_type="login",
-        auth_url="https://acme.com/token",
-        refresh_token="old-refresh",
-    )
-
-    url, data = prepare_refresh(cfg)
-    assert data == {
-        "grant_type": "refresh_token",
-        "refresh_token": "old-refresh",
-    }
-
-
-def test_prepare_refresh_missing_refresh_token():
-    cfg = AuthConfig(
-        auth_type="login",
-        auth_url="https://acme.com/token",
-    )
-
-    with pytest.raises(ValueError, match="Refresh token must be set"):
-        prepare_refresh(cfg)
-
-
-def test_prepare_refresh_missing_auth_url():
-    cfg = AuthConfig(
-        auth_type="login",
-        auth_url=None,
-        refresh_token="some-token",
-    )
-    with pytest.raises(ValueError, match="Authentication URL must be set."):
-        prepare_refresh(cfg)
-
-
-def test_process_login_response_json():
-    mock_response = MagicMock()
-    mock_response.json.return_value = {"token": "abc123"}
-    mock_response.raise_for_status.return_value = None
-
-    token = process_login_response(mock_response)
-    assert token == "abc123"
-
-
-def test_process_login_response_plaintext():
-    mock_response = MagicMock()
-    mock_response.json.side_effect = json.JSONDecodeError("not json", "", 0)
-    mock_response.text = "  plain-token  "
-    mock_response.raise_for_status.return_value = None
-
-    token = process_login_response(mock_response)
-    assert token == "plain-token"
-
-
-def test_refresh_login():
-    cfg = AuthConfig(
-        auth_type="login",
-        auth_url="https://acme.com/token",
-        client_id="my-client",
-        client_secret="my-secret",
-        refresh_token="old-refresh",
-    )
-
-    mock_response = MagicMock()
-    mock_response.json.return_value = {
-        "access_token": "refreshed-access",
-        "refresh_token": "rotated-refresh",
-    }
-    mock_response.raise_for_status.return_value = None
-
-    with patch("httpx.Client.post", return_value=mock_response) as mock_post:
-        result = refresh_login(cfg)
-
-    assert result.access_token == "refreshed-access"
-    assert result.refresh_token == "rotated-refresh"
-    mock_post.assert_called_once_with(
-        "https://acme.com/token",
-        data={
-            "grant_type": "refresh_token",
-            "refresh_token": "old-refresh",
-            "client_id": "my-client",
-            "client_secret": "my-secret",
-        },
-    )
+@pytest.mark.parametrize("token_data", ["", {"token": ""}])
+def test_parse_token_rejects_empty_token(token_data):
+    with pytest.raises(RuntimeError, match="empty"):
+        parse_token(token_data)

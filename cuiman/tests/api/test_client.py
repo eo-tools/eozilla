@@ -2,6 +2,8 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+# ruff: noqa: S106
+
 import os
 from pathlib import Path
 from unittest import TestCase
@@ -10,7 +12,7 @@ from unittest.mock import patch
 import pytest
 
 from cuiman import ClientConfig
-from cuiman.api.auth.login import LoginResult
+from cuiman.api.auth import OAuth2AuthConfig, TokenResult
 from cuiman.api.client import Client
 from gavicore.models import (
     ApiError,
@@ -99,7 +101,7 @@ class ClientTest(TestCase):
         self.assertIsNone(kwargs["token_refresher"])
         self.assertTrue(kwargs["debug"])
 
-    def test_default_transport_receives_login_auth_and_refresh_callback(self):
+    def test_default_transport_receives_oauth2_auth_and_refresh_callback(self):
         old_access = "old-access-token"
         old_refresh = "old-refresh-token"
         new_access = "new-access-token"
@@ -113,9 +115,13 @@ class ClientTest(TestCase):
         ):
             client = Client(
                 api_url="https://acme.ogc.org/api",
-                auth_type="login",
-                token=old_access,
-                refresh_token=old_refresh,
+                auth=OAuth2AuthConfig(
+                    token_url="https://identity.acme.org/token",
+                    username="user",
+                    password="password",
+                    access_token=old_access,
+                    refresh_token=old_refresh,
+                ),
             )
 
         _, kwargs = httpx_transport_cls.call_args
@@ -127,21 +133,21 @@ class ClientTest(TestCase):
         self.assertIsNotNone(token_refresher)
 
         with patch(
-            "cuiman.api.auth.login.refresh_login",
-            return_value=LoginResult(
+            "cuiman.api.auth.oauth2.renew_oauth2_tokens",
+            return_value=TokenResult(
                 access_token=new_access,
                 refresh_token=new_refresh,
             ),
-        ) as refresh_login:
+        ) as renew_oauth2_tokens:
             refreshed_headers = token_refresher()
 
-        refresh_login.assert_called_once_with(client.config)
+        renew_oauth2_tokens.assert_called_once_with(client.config.auth)
         self.assertEqual(
             {"Authorization": f"Bearer {new_access}"},
             refreshed_headers,
         )
-        self.assertEqual(new_access, client.config.token)
-        self.assertEqual(new_refresh, client.config.refresh_token)
+        self.assertEqual(new_access, client.config.auth.access_token)
+        self.assertEqual(new_refresh, client.config.auth.refresh_token)
 
     def test_transport_args_for_all_endpoints(self):
         request = ProcessRequest(inputs={"bbox": [10, 20, 30, 40]}, outputs={})

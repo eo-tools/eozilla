@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import (
     Annotated,
     Any,
+    Awaitable,
     Callable,
     ClassVar,
     Optional,
@@ -14,17 +15,17 @@ from typing import (
 )
 
 import yaml
-from pydantic import Field, HttpUrl, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic_settings import BaseSettings, EnvSettingsSource, SettingsConfigDict
 
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 
-from .auth import AuthConfig
+from .auth import AuthConfig, NoAuthConfig
 from .defaults import DEFAULT_API_URL
 from .opener import JobResultOpener, JobResultOpenerRegistry
 
 
-class ClientConfig(AuthConfig, BaseSettings):
+class ClientConfig(BaseSettings):
     """Client configuration.
 
     Args:
@@ -34,6 +35,7 @@ class ClientConfig(AuthConfig, BaseSettings):
 
     model_config = SettingsConfigDict(
         env_prefix="EOZILLA_",
+        env_nested_delimiter="__",
         extra="forbid",
     )
 
@@ -67,6 +69,26 @@ class ClientConfig(AuthConfig, BaseSettings):
     OGC API - Processes, Part 1 - Core.
     """
 
+    auth: AuthConfig = Field(default_factory=NoAuthConfig)
+    """Authentication configuration selected by its ``auth_type`` field."""
+
+    @property
+    def auth_headers(self) -> dict[str, str]:
+        """Return the HTTP authentication headers for this client."""
+        return self.auth.auth_headers
+
+    def _maybe_make_token_refresher(
+        self,
+    ) -> Callable[[], dict[str, str]] | None:
+        """Create a synchronous token renewal callback when supported."""
+        return self.auth.make_token_refresher()
+
+    def _make_async_token_refresher(
+        self,
+    ) -> Callable[[], Awaitable[dict[str, str]]] | None:
+        """Create an asynchronous token renewal callback when supported."""
+        return self.auth.make_async_token_refresher()
+
     def _repr_json_(self):
         return self.model_dump(mode="json", by_alias=True), dict(
             root="Client configuration:"
@@ -88,9 +110,11 @@ class ClientConfig(AuthConfig, BaseSettings):
         if file_config is not None:
             _update_if_not_none(config_dict, file_config.to_dict())
 
-        # 2. from env
-        env_config = cls()
-        _update_if_not_none(config_dict, env_config.to_dict())
+        # 2. from env. Read raw settings so a partial nested auth override can
+        # be merged with the auth model loaded from defaults or a file before
+        # the discriminated union is validated.
+        env_config = EnvSettingsSource(cls)()
+        _update_config_from_env(config_dict, env_config)
 
         # 3. from config
         if config is not None:
@@ -111,7 +135,17 @@ class ClientConfig(AuthConfig, BaseSettings):
         with config_path_.open("rt") as stream:
             # Note, we may switch TOML
             config_dict = yaml.safe_load(stream)
-        return cls.new_instance(**config_dict)
+        if isinstance(config_dict, dict):
+            config_dict = _convert_legacy_file_config(config_dict)
+        config_cls = type(ClientConfig.default_config)
+        assert issubclass(config_cls, ClientConfig)
+        # Do not call BaseSettings.__init__: it would merge environment values
+        # into this file-only configuration before ClientConfig.create() can
+        # perform its intentional merge. BaseModel.__init__ still validates
+        # config_dict, but does not load any settings sources.
+        instance = object.__new__(config_cls)
+        BaseModel.__init__(instance, **config_dict)
+        return instance
 
     def write(self, config_path: Optional[str | Path] = None) -> Path:
         config_path = self.normalize_config_path(config_path)
@@ -140,13 +174,16 @@ class ClientConfig(AuthConfig, BaseSettings):
         return config_cls(**kwargs)
 
     def to_dict(self):
-        return self.model_dump(
+        config_dict = self.model_dump(
             mode="json",
             by_alias=True,
             exclude_none=True,
             exclude_defaults=True,
             exclude_unset=True,
         )
+        if "auth" in config_dict:
+            config_dict["auth"]["auth_type"] = self.auth.auth_type
+        return config_dict
 
     # noinspection PyMethodParameters
     @field_validator("api_url")
@@ -201,4 +238,90 @@ AdvancedInputPredicate: TypeAlias = Callable[
 
 
 def _update_if_not_none(target: dict[str, Any], updates: dict[str, Any]):
-    target.update({k: v for k, v in updates.items() if v is not None})
+    for key, value in updates.items():
+        if value is None:
+            continue
+        if isinstance(value, dict) and isinstance(target.get(key), dict):
+            _update_if_not_none(target[key], value)
+        else:
+            target[key] = value
+
+
+###############################################################
+# -- Config file legacy management
+###############################################################
+
+
+def _update_config_from_env(target: dict[str, Any], env_config: dict[str, Any]) -> None:
+    """Merge environment settings, replacing auth when its type is selected.
+
+    An environment ``auth_type`` chooses a new discriminated auth model, so
+    retaining fields from an auth model selected by a configuration file would
+    make them invalid extra inputs.
+    """
+    auth_config = env_config.get("auth")
+    if isinstance(auth_config, dict) and "auth_type" in auth_config:
+        target["auth"] = auth_config
+        env_config = {key: value for key, value in env_config.items() if key != "auth"}
+    _update_if_not_none(target, env_config)
+
+
+_LEGACY_AUTH_KEYS = {
+    "api_key",
+    "api_key_header",
+    "auth_type",
+    "auth_url",
+    "client_id",
+    "client_secret",
+    "grant_type",
+    "password",
+    "refresh_token",
+    "token",
+    "token_header",
+    "use_bearer",
+    "username",
+}
+
+
+def _convert_legacy_file_config(config: dict[str, Any]) -> dict[str, Any]:
+    """Convert the former flat CLI auth configuration to nested auth data."""
+    if "auth" in config or "auth_type" not in config:
+        return config
+
+    converted = {
+        key: value for key, value in config.items() if key not in _LEGACY_AUTH_KEYS
+    }
+    auth_type = config.get("auth_type") or "none"
+    auth: dict[str, Any] = {"auth_type": auth_type}
+
+    if auth_type == "basic":
+        _copy_legacy_values(auth, config, "username", "password")
+    elif auth_type == "token":
+        _copy_legacy_values(
+            auth,
+            config,
+            ("token", "access_token"),
+            "use_bearer",
+            ("token_header", "access_token_header"),
+        )
+    elif auth_type == "login" and "auth_url" in config:
+        raise ValueError(
+            "Legacy configuration format detected, please run 'cuiman configure'"
+        )
+    elif auth_type == "api-key":
+        _copy_legacy_values(auth, config, "api_key", "api_key_header")
+
+    converted["auth"] = auth
+    return converted
+
+
+def _copy_legacy_values(
+    target: dict[str, Any],
+    source: dict[str, Any],
+    *keys: str | tuple[str, str],
+) -> None:
+    for key in keys:
+        source_key, target_key = key if isinstance(key, tuple) else (key, key)
+        value = source.get(source_key)
+        if value is not None:
+            target[target_key] = value
