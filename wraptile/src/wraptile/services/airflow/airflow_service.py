@@ -228,7 +228,13 @@ class AirflowService(ServiceBase):
             raise ServiceException(
                 e.status, e.reason, exception=e, is_job_problem=True
             ) from e
-        return self.dag_run_to_job_info(dag_run)
+        job_info: JobInfo = self.dag_run_to_job_info(dag_run)
+        # The OGC Api - Processes specifies that the dismiss operation (`DELETE /jobs/{jobId}`)
+        # must return a job info with state `"dismissed"`, no matter whether the job was successfully
+        # terminated or really already ended (which may take a while). So our interpretation of this 
+        # status is a weaker "cancellation requested". 
+        job_info.status = JobStatus.dismissed
+        return job_info
 
     async def get_job_results(self, job_id: str, *args, **kwargs) -> JobResults:
         dag_id = self.get_dag_id_from_job_id(job_id)

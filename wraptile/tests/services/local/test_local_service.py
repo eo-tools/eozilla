@@ -240,11 +240,26 @@ class LocalServiceTest(IsolatedAsyncioTestCase):
         job_info = await self.service.dismiss_job(
             job_id=job_info.jobID, request=self.get_request()
         )
-        self.assertIn(
-            job_info.status,
-            {JobStatus.accepted, JobStatus.running, JobStatus.dismissed},
-        )
+        self.assertEqual(job_info.status, JobStatus.dismissed)
         self.assertTrue(self.service.jobs[job_info.jobID].cancelled)
+
+    async def test_dismiss_running_job_leaves_entry(self):
+        job_info = await self.service.execute_process(
+            process_id="sleep_a_while",
+            process_request=ProcessRequest(inputs={"duration": 0.5}),
+            request=self.get_request(),
+        )
+        job_info = await self.service.dismiss_job(
+            job_id=job_info.jobID, request=self.get_request()
+        )
+        queried_job = await self.service.get_job(
+            job_info.jobID, request=self.get_request()
+        )
+        self.assertIsInstance(queried_job, JobInfo)
+        self.assertEqual(job_info.status, JobStatus.dismissed)
+        self.assertEqual(queried_job.status, JobStatus.dismissed)
+        self.assertEqual("sleep_a_while", queried_job.processID)
+        self.assertEqual(job_info.jobID, queried_job.jobID)
 
     async def test_dismiss_finished_job_removes_cached_state(self):
         job_info = await self.service.execute_process(
