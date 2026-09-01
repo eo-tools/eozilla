@@ -10,11 +10,11 @@ that should get its own `anolis-client`.
 
 The `cuiman` API allows for the following customizations:
 
-1. The `cuiman.ClientConfig` is a 
+1. The `cuiman.api.ClientConfig` is a 
    [pydantic Settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)
    class. It can be used as base class and then configured with a custom 
    `pydantic_settings.SettingsConfigDict` instance.
-2. Some `cuiman.ClientConfig` class attributes in can be overridden     
+2. Some `cuiman.api.ClientConfig` class attributes in can be overridden     
    to initialize custom default values.
 3. Applications can customize the way how job results are opened.
 4. Applications can create their own CLI instance with custom settings.

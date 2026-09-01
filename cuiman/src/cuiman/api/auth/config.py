@@ -15,7 +15,22 @@ AuthType: TypeAlias = Literal[
     "oauth2",
     "api-key",
 ]
-"""Supported authentication mechanisms."""
+"""Authentication mechanism selected by an ``AuthConfig`` discriminator.
+
+The allowed values select the corresponding configuration model and define how
+authentication headers or credentials are obtained:
+
+* ``"none"`` uses no authentication.
+* ``"basic"`` sends the configured username and password in an HTTP Basic
+  ``Authorization`` header.
+* ``"token"`` uses a pre-existing access token, either as a Bearer
+  ``Authorization`` header or in a configured custom header.
+* ``"login"`` obtains an access token from a proprietary username/password
+  login endpoint before using it like token authentication.
+* ``"oauth2"`` obtains and renews access tokens through an OAuth2 token
+  endpoint using either the password or client-credentials grant.
+* ``"api-key"`` sends the configured API key in its configured header.
+"""
 
 OAuth2GrantType: TypeAlias = Literal["password", "client_credentials"]
 """OAuth2 grants supported by Cuiman."""

@@ -9,10 +9,10 @@ precedence.
 In the following list of configuration methods, a setting of a subsequent 
 entry overrides that of a previous one.
 
-1. Default settings hard-coded into the `cuiman.ClientConfig` class.
+1. Default settings hard-coded into the `cuiman.api.ClientConfig` class.
 2. Settings loaded from a given or the default configuration file passed as `config_path`.
 3. Settings loaded from environment variables prefixed with `EOZILLA_`.
-4. Settings from another configuration object of type `cuiman.ClientConfig` passes as `config`.
+4. Settings from another configuration object of type `cuiman.api.ClientConfig` passes as `config`.
 5. Settings from keyword arguments passed directly to the client passed as `config_kwargs`.
 
 This list is implemented in the class method `create()` of the 
