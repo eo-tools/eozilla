@@ -3,10 +3,13 @@
 #  https://opensource.org/license/apache-2-0.
 
 import logging
-from unittest import TestCase
+from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from wraptile.app import load_app_eagerly
+from wraptile.exceptions import ServiceConfigException
 from wraptile.logging import LogMessageFilter
 from wraptile.main import app
 from wraptile.provider import ServiceProvider
@@ -80,6 +83,24 @@ class AppTest(TestCase):
             job_info = response.json()
         response = client.get(f"/jobs/{job_id}/results")
         self.assertEqual(200, response.status_code)
+
+
+class AppLifecyleTest(IsolatedAsyncioTestCase):
+    @patch("wraptile.app.get_service")
+    async def test_lifespan_gets_service(self, patched_get_service):
+        async with load_app_eagerly(app):
+            patched_get_service.assert_called_once()
+
+    @patch(
+        "wraptile.app.get_service",
+        side_effect=ServiceConfigException("Startup failed."),
+    )
+    async def test_get_service_fail_aborts_app(self, patched_get_service):
+        with self.assertRaises(ServiceConfigException):
+            async with load_app_eagerly(app):
+                self.fail("Startup should not complete.")
+
+        patched_get_service.assert_called_once()
 
 
 class LogMessageFilterTest(TestCase):
