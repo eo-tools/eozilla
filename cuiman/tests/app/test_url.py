@@ -2,21 +2,11 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-import base64
-import json
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
 from cuiman.app import url
-from cuiman.app.service import ServiceProvider, ServiceProviderMeta
-
-
-def decode_base64url_json(value: str) -> dict:
-    padding = "=" * (-len(value) % 4)
-    return json.loads(base64.urlsafe_b64decode(value + padding))
-
-
 def test_create_app_url_raises_for_https_and_ws(monkeypatch):
     with pytest.raises(ValueError, match="Cannot use a URL https://app.example.test "):
         url.create_app_url(
@@ -50,25 +40,14 @@ def test_create_app_url_omits_auto_scheme(monkeypatch):
     }
 
 
-def test_get_query_args_encodes_explicit_options(monkeypatch):
+def test_get_query_args_encodes_public_options_and_launch_code(monkeypatch):
     monkeypatch.setattr(url.time, "time", lambda: 9876)
-    provider = ServiceProvider(
-        id="client",
-        meta=ServiceProviderMeta(
-            type="custom",
-            title="Client",
-            description=None,
-            disabled=None,
-            hidden=True,
-        ),
-        options={"apiUrl": "https://api.example.test", "authType": None},
-    )
 
     query_string = url.get_query_args(
         ws_url="ws://localhost/ws",
         compact=True,
         scheme="dark",
-        service=provider,
+        launch_code="opaque-code",
     )
 
     query = parse_qs(urlsplit(query_string).query)
@@ -76,26 +55,8 @@ def test_get_query_args_encodes_explicit_options(monkeypatch):
     assert query["ws"] == ["ws://localhost/ws"]
     assert query["compact"] == ["1"]
     assert query["scheme"] == ["dark"]
-    assert "debug" not in query
-
-    assert decode_base64url_json(query["service"][0]) == {
-        "id": "client",
-        "meta": {
-            "type": "custom",
-            "title": "Client",
-            "hidden": True,
-        },
-        "options": {"apiUrl": "https://api.example.test", "authType": None},
-    }
-
-
-def test_get_query_args_includes_opaque_launch_code(monkeypatch):
-    monkeypatch.setattr(url.time, "time", lambda: 9876)
-
-    query = parse_qs(urlsplit(url.get_query_args(launch_code="opaque-code")).query)
-
     assert query["launch"] == ["opaque-code"]
-    assert "service" not in query
+    assert "debug" not in query
 
 
 def test_get_query_args_returns_empty_string_without_params():

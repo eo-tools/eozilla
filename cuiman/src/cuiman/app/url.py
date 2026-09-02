@@ -4,15 +4,9 @@
 
 from __future__ import annotations
 
-import base64
-import json
 import time
 from typing import Literal
 from urllib.parse import urlencode
-
-from pydantic import BaseModel
-
-from .service import ServiceProvider
 
 
 def create_app_url(
@@ -22,15 +16,13 @@ def create_app_url(
     compact: bool = True,
     debug: bool = False,
     scheme: Literal["dark", "light", "auto"] | None = None,
-    service: ServiceProvider | None = None,
     launch_code: str | None = None,
 ) -> str:
     """Build an Eozilla App URL for a Cuiman server.
 
-    ``service`` is retained for callers that still need the legacy serialized
-    provider format.  Cuiman's secure launch flow uses ``launch_code`` instead:
-    it contains no service configuration or credentials and is exchanged by
-    the browser for an HttpOnly cookie.
+    The secure launch flow uses ``launch_code`` only. It contains no service
+    configuration or credentials and is exchanged by the browser for an
+    HttpOnly cookie.
     """
     if base_url.startswith("https://") and ws_url.startswith("ws://"):
         raise ValueError(
@@ -43,7 +35,6 @@ def create_app_url(
         compact=compact,
         debug=debug,
         scheme=scheme if scheme != "auto" else None,
-        service=service,
         launch_code=launch_code,
     )
     return f"{base_url}{'' if base_url.endswith('/') else '/'}index.html{query}"
@@ -54,7 +45,6 @@ def get_query_args(
     debug: bool = False,
     nocache: bool = True,
     scheme: Literal["dark", "light"] | None = None,
-    service: ServiceProvider | None = None,
     launch_code: str | None = None,
     ws_url: str | None = None,
 ) -> str:
@@ -78,9 +68,6 @@ def get_query_args(
     if nocache:
         params["_t"] = str(int(time.time()))
 
-    if service is not None:
-        params["service"] = _base64url_json(service)
-
     if launch_code:
         params["launch"] = launch_code
 
@@ -88,9 +75,3 @@ def get_query_args(
         params["ws"] = ws_url
 
     return f"?{urlencode(params)}" if params else ""
-
-
-def _base64url_json(value: BaseModel) -> str:
-    data = value.model_dump(mode="json", exclude_none=True)
-    json_bytes = json.dumps(data, separators=(",", ":")).encode("utf-8")
-    return base64.urlsafe_b64encode(json_bytes).decode("ascii").rstrip("=")
