@@ -9,15 +9,16 @@
   `access_token_header`. Existing flat file configurations for unambiguous
   authentication types are converted when read; legacy login configurations
   using `auth_url` now instruct users to rerun `cuiman configure`. (#176)
+- **Cuiman** app launches now keep processing-service credentials on the
+  Cuiman app server. The browser exchanges a short-lived, single-use `launch`
+  code for an HttpOnly session cookie and makes same-origin requests through
+  the app-server proxy. Login and OAuth credentials are resolved server-side;
+  neither authentication headers nor service configuration are put in the app
+  URL or browser storage. This is a breaking protocol change: the legacy
+  `service` query parameter is no longer supported. (#198)
 
 ### Fixes
 
-- Fixed `client.show_app()` forcing a redundant interactive OAuth2/PKCE login
-  in the app GUI even when the Python client had already authenticated
-  (`auth_type="login"` with a resolved token). The client config bridge in
-  `cuiman.app.service` now forwards an already-authenticated `"login"` config
-  to the app as `auth_type="token"`, so the app connects immediately using
-  the existing bearer token instead of discarding it and re-prompting.
 - Added missing ipython dependency for cuiman. (#188)
 
 ### Other changes
