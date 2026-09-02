@@ -25,6 +25,13 @@ def create_app_url(
     service: ServiceProvider | None = None,
     launch_code: str | None = None,
 ) -> str:
+    """Build an Eozilla App URL for a Cuiman server.
+
+    ``service`` is retained for callers that still need the legacy serialized
+    provider format.  Cuiman's secure launch flow uses ``launch_code`` instead:
+    it contains no service configuration or credentials and is exchanged by
+    the browser for an HttpOnly cookie.
+    """
     if base_url.startswith("https://") and ws_url.startswith("ws://"):
         raise ValueError(
             f"Cannot use a URL {base_url} with an insecure WebSocket "
@@ -51,6 +58,12 @@ def get_query_args(
     launch_code: str | None = None,
     ws_url: str | None = None,
 ) -> str:
+    """Serialize public UI bootstrap settings into an app query string.
+
+    ``launch_code`` is intentionally the only Cuiman-launch-specific value in
+    the query.  The proxy URL is a fixed relative route, so it is derived by
+    the SPA after exchange and does not need a second URL parameter.
+    """
     params: dict[str, str] = {}
 
     if compact:
