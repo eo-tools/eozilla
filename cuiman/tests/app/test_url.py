@@ -89,5 +89,14 @@ def test_get_query_args_encodes_explicit_options(monkeypatch):
     }
 
 
+def test_get_query_args_includes_opaque_launch_code(monkeypatch):
+    monkeypatch.setattr(url.time, "time", lambda: 9876)
+
+    query = parse_qs(urlsplit(url.get_query_args(launch_code="opaque-code")).query)
+
+    assert query["launch"] == ["opaque-code"]
+    assert "service" not in query
+
+
 def test_get_query_args_returns_empty_string_without_params():
     assert url.get_query_args(compact=False, nocache=False) == ""

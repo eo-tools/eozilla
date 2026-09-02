@@ -8,7 +8,7 @@ from cuiman.api.config import ClientConfig
 from cuiman.api.ishell import has_ishell
 
 from .display import create_app_display_object
-from .service import create_app_service_provider
+from .launch import LaunchedAppService
 from .url import create_app_url
 
 DIST_ENV_VAR = "EOZILLA_APP_DIST"
@@ -70,8 +70,10 @@ def serve(
     """
     app_dist = _get_app_dist_url_or_dir(os.environ.get(DIST_ENV_VAR))
 
+    app_service = LaunchedAppService(store, config)
+    launch_code = app_service.create_launch_code()
     server = rs.serve(
-        rs.Service(store),
+        app_service,
         ui_dist=app_dist,
         host="127.0.0.1",
         cors_origins=["*"],
@@ -87,7 +89,7 @@ def serve(
         compact=compact,
         debug=debug,
         scheme=scheme,
-        service=create_app_service_provider(config),
+        launch_code=launch_code,
     )
 
     if display == "browser" and not has_ishell:

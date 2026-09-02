@@ -23,6 +23,7 @@ def create_app_url(
     debug: bool = False,
     scheme: Literal["dark", "light", "auto"] | None = None,
     service: ServiceProvider | None = None,
+    launch_code: str | None = None,
 ) -> str:
     if base_url.startswith("https://") and ws_url.startswith("ws://"):
         raise ValueError(
@@ -36,6 +37,7 @@ def create_app_url(
         debug=debug,
         scheme=scheme if scheme != "auto" else None,
         service=service,
+        launch_code=launch_code,
     )
     return f"{base_url}{'' if base_url.endswith('/') else '/'}index.html{query}"
 
@@ -46,6 +48,7 @@ def get_query_args(
     nocache: bool = True,
     scheme: Literal["dark", "light"] | None = None,
     service: ServiceProvider | None = None,
+    launch_code: str | None = None,
     ws_url: str | None = None,
 ) -> str:
     params: dict[str, str] = {}
@@ -64,6 +67,9 @@ def get_query_args(
 
     if service is not None:
         params["service"] = _base64url_json(service)
+
+    if launch_code:
+        params["launch"] = launch_code
 
     if ws_url:
         params["ws"] = ws_url

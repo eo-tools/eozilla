@@ -11,6 +11,7 @@ from IPython import display as ipython_display
 
 from cuiman.api.config import ClientConfig
 from cuiman.app import App
+from cuiman.app.launch import LaunchedAppService
 
 serve_module = importlib.import_module("cuiman.app.serve")
 
@@ -51,13 +52,14 @@ def test_serve_returns_server_without_display(monkeypatch):
     assert server is calls["server"]
     assert calls["served"] == [
         {
-            "service": "service-wrapper",
+            "service": calls["app_service"],
             "ui_dist": "https://app.example.test",
             "host": "127.0.0.1",
             "display": "none",
             "cors_origins": ["*"],
         }
     ]
+    assert isinstance(calls["app_service"], LaunchedAppService)
     assert calls["url"] == []
     assert calls["browser_open"] == []
     assert calls["display"] == []
@@ -78,19 +80,20 @@ def test_serve_opens_browser(monkeypatch):
 
     assert calls["served"] == [
         {
-            "service": "service-wrapper",
+            "service": calls["app_service"],
             "ui_dist": "https://app.example.test",
             "host": "127.0.0.1",
             "display": "none",
             "cors_origins": ["*"],
         }
     ]
+    assert isinstance(calls["app_service"], LaunchedAppService)
     assert calls["url"][0]["base_url"] == "http://127.0.0.1:8765"
     assert calls["url"][0]["ws_url"] == "ws://127.0.0.1:8765/ws"
     assert calls["url"][0]["compact"] is False
     assert calls["url"][0]["debug"] is True
     assert calls["url"][0]["scheme"] == "light"
-    assert calls["url"][0]["service"].options["apiUrl"] == "https://api.example.test/"
+    assert calls["url"][0]["launch_code"]
     assert calls["browser_open"] == ["http://127.0.0.1:8765/index.html"]
     assert calls["display"] == []
 
@@ -282,13 +285,12 @@ def install_serve_fakes(monkeypatch):
     }
 
     monkeypatch.setenv(serve_module.DIST_ENV_VAR, "https://app.example.test")
-    monkeypatch.setattr(serve_module.rs, "Service", lambda store: "service-wrapper")
-
     def fake_serve(service, **kwargs):
+        calls["app_service"] = service
         calls["served"].append({"service": service, **kwargs})
         return calls["server"]
 
-    def fake_create_app_url(base_url, ws_url, *, compact, debug, scheme, service):
+    def fake_create_app_url(base_url, ws_url, *, compact, debug, scheme, launch_code):
         calls["url"].append(
             {
                 "base_url": base_url,
@@ -296,7 +298,7 @@ def install_serve_fakes(monkeypatch):
                 "compact": compact,
                 "debug": debug,
                 "scheme": scheme,
-                "service": service,
+                "launch_code": launch_code,
             }
         )
         return f"{base_url}/index.html"
