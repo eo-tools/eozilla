@@ -94,7 +94,6 @@ def test_serve_opens_browser(monkeypatch):
     ]
     assert isinstance(calls["app_service"], LaunchedAppService)
     assert calls["url"][0]["base_url"] == "http://127.0.0.1:8765"
-    assert calls["url"][0]["ws_url"] == "ws://127.0.0.1:8765/ws"
     assert calls["url"][0]["compact"] is False
     assert calls["url"][0]["debug"] is True
     assert calls["url"][0]["scheme"] == "light"
@@ -297,11 +296,10 @@ def install_serve_fakes(monkeypatch):
         calls["served"].append({"service": service, **kwargs})
         return calls["server"]
 
-    def fake_create_app_url(base_url, ws_url, *, compact, debug, scheme, launch_code):
+    def fake_create_app_url(base_url, *, compact, debug, scheme, launch_code):
         calls["url"].append(
             {
                 "base_url": base_url,
-                "ws_url": ws_url,
                 "compact": compact,
                 "debug": debug,
                 "scheme": scheme,

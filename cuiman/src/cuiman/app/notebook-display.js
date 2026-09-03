@@ -1,8 +1,8 @@
 (async () => {
   "use strict";
 
-  // `proxy` is the browser-visible Jupyter Server Proxy base URL. The app
-  // uses it only for loopback service URLs; external URLs remain unchanged.
+  // `proxy` is retained for standalone UI URLs. Cuiman-launched apps derive
+  // their WebSocket endpoint from the browser-visible app location instead.
   const PROXY_QUERY_PARAM = "proxy";
 
   /**
@@ -116,6 +116,8 @@
   } = config;
 
   let src = new URL(baseSrc, window.location.href);
+  const isCuimanMode =
+    src.searchParams.has("launch") || src.searchParams.has("cuiman");
   let wsUrl = src.searchParams.get("ws");
   let useProxy = false;
 
@@ -141,19 +143,19 @@
       src.search = query;
     }
 
-    if (useProxy) {
+    if (useProxy && !isCuimanMode) {
       wsUrl = proxyWsUrl.toString();
     }
   }
 
-  if (useProxy) {
+  if (useProxy && !isCuimanMode) {
     src.searchParams.set(
       PROXY_QUERY_PARAM,
       getJupyterProxyBaseUrl().toString(),
     );
   }
 
-  if (wsUrl !== null) {
+  if (wsUrl !== null && !isCuimanMode) {
     src.searchParams.set("ws", wsUrl);
   }
 

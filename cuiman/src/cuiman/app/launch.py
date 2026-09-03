@@ -9,16 +9,19 @@ its configured processing service.  A Cuiman launch has a different trust
 boundary: Cuiman already holds the processing-service credentials, so they
 must not cross into the browser URL, JavaScript memory, or browser storage.
 
-The launch protocol deliberately has only two browser-visible values::
+The initial launch URL deliberately has only one Cuiman-specific value::
 
     index.html?launch=<one-shot-code>
         -> POST ./_cuiman/launch
         -> HttpOnly session cookie
+        -> index.html?cuiman=1
         -> requests to ./_cuiman/service/<processing-api-path>
 
 The code is short-lived and consumed once.  The cookie selects an in-memory
-session for the life of the Cuiman process.  That session contains only the
-server-side upstream headers; the proxy adds them when it forwards a request.
+session for the life of the Cuiman process. The replacement marker only
+selects Cuiman mode on reload; it grants no access by itself. The session
+contains only the server-side upstream headers; the proxy adds them when it
+forwards a request.
 """
 
 from __future__ import annotations

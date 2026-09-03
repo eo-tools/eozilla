@@ -62,8 +62,9 @@ def serve(
             ``"auto"`` checks for it from the notebook browser and falls back
             to the normal local URL when unavailable, ``"never"`` disables it,
             and ``"always"`` assumes it is configured on the Jupyter server.
-            When enabled, URLs using loopback hosts in the app's client
-            configuration are routed through the proxy as well.
+            When enabled, the browser-visible app URL retains the proxy path
+            prefix, so the Cuiman app derives same-origin service and
+            RemoteState WebSocket URLs through that prefix.
 
     Returns:
         The running ``remotestate`` server result. Call its ``stop()`` method
@@ -91,7 +92,6 @@ def serve(
 
     app_url = create_app_url(
         server.ui_base_url,
-        server.ws_url,
         compact=compact,
         debug=debug,
         scheme=scheme,

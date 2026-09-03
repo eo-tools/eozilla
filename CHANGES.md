@@ -9,13 +9,18 @@
   `access_token_header`. Existing flat file configurations for unambiguous
   authentication types are converted when read; legacy login configurations
   using `auth_url` now instruct users to rerun `cuiman configure`. (#176)
+
 - **Cuiman** app launches now keep processing-service credentials on the
   Cuiman app server. The browser exchanges a short-lived, single-use `launch`
   code for an HttpOnly session cookie and makes same-origin requests through
-  the app-server proxy. Login and OAuth credentials are resolved server-side;
-  neither authentication headers nor service configuration are put in the app
-  URL or browser storage. This is a breaking protocol change: the legacy
-  `service` query parameter is no longer supported. (#198)
+  the app-server proxy. The initial URL no longer carries timestamp or
+  WebSocket parameters; after the exchange it retains only a non-sensitive
+  `cuiman=1` marker, so reloading preserves Cuiman mode. The WebSocket URL is
+  derived from the browser-visible app URL, including Jupyter Server Proxy
+  path prefixes. Login and OAuth credentials are resolved server-side; neither
+  authentication headers nor service configuration are put in the app URL or
+  browser storage. This is a breaking protocol change: the legacy `service`
+  query parameter is no longer supported. (#198)
 
 ### Fixes
 

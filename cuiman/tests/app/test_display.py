@@ -86,8 +86,9 @@ def test_create_app_display_object_uses_jupyter_proxy():
     assert 'console.debug("[cuiman] display setup"' in display_object.data
     assert 'console.debug("[cuiman] display target"' in display_object.data
     assert 'getJupyterProxyUrl(proxyPort, "ws")' in display_object.data
-    assert "PROXY_QUERY_PARAM" in display_object.data
-    assert 'src.searchParams.set("ws", wsUrl)' in display_object.data
+    assert "const isCuimanMode =" in display_object.data
+    assert "if (useProxy && !isCuimanMode)" in display_object.data
+    assert 'if (wsUrl !== null && !isCuimanMode)' in display_object.data
 
 
 def test_create_app_display_object_uses_proxy_for_local_app():
@@ -119,7 +120,7 @@ def test_create_app_display_object_probes_proxy_in_auto_mode():
     assert _get_display_config(display_object)["autoProxy"] is True
     assert "(async () => {" in display_object.data
     assert "(await isJupyterProxyAvailable(proxyUrl))" in display_object.data
-    assert "if (useProxy)" in display_object.data
+    assert "if (useProxy && proxyApp)" in display_object.data
 
 
 def test_create_app_display_object_opens_browser_with_link_fallback():

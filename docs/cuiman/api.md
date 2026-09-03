@@ -18,6 +18,16 @@ It provides the same interface, but using asynchronous server calls.
 Methods of the [`Client`](#cuiman.api.Client) and `AsyncClient` 
 may raise a [`ClientError`](#cuiman.api.ClientError) if a server call fails. 
 
+## App Launch
+
+`Client.show_app()` starts the Cuiman app server and opens the Eozilla App.
+The initial browser URL contains only a short-lived, single-use `launch` code.
+The app exchanges it for an HttpOnly same-origin session cookie, then replaces
+it with the non-sensitive `cuiman=1` reload marker. It derives its service
+proxy and RemoteState WebSocket URLs from the browser-visible app URL, so the
+same flow works through a Jupyter Server Proxy path prefix without exposing
+the configured service URL or credentials to the browser.
+
 ::: cuiman.api.Client
 
 ::: cuiman.api.ClientError
