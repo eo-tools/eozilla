@@ -23,8 +23,8 @@ from cuiman.api.auth import (
     TokenResult,
 )
 from cuiman.cli.config import (
-    _Context,
     _configure_auth_with_prompt,
+    _Context,
     configure_client_with_prompt,
     get_config,
 )

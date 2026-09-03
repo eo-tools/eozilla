@@ -10,14 +10,24 @@
   authentication types are converted when read; legacy login configurations
   using `auth_url` now instruct users to rerun `cuiman configure`. (#176)
 
+- **Cuiman** app launches now keep processing-service credentials on the
+  Cuiman app server. The browser exchanges a short-lived, single-use `launch`
+  code for an HttpOnly session cookie and makes same-origin requests through
+  the app-server proxy. The initial URL no longer carries timestamp or
+  WebSocket parameters; after the exchange it retains only a non-sensitive
+  `cuiman=1` marker, so reloading preserves Cuiman mode. The WebSocket URL is
+  derived from the browser-visible app URL, including Jupyter Server Proxy
+  path prefixes. Login and OAuth credentials are resolved server-side; neither
+  authentication headers nor service configuration are put in the app URL or
+  browser storage. Cuiman manages sign-out in this mode. This is a breaking
+  protocol change: the legacy `service` query parameter is no longer
+  supported. (#198)
+
 ### Fixes
 
-- Fixed `client.show_app()` forcing a redundant interactive OAuth2/PKCE login
-  in the app GUI even when the Python client had already authenticated
-  (`auth_type="login"` with a resolved token). The client config bridge in
-  `cuiman.app.service` now forwards an already-authenticated `"login"` config
-  to the app as `auth_type="token"`, so the app connects immediately using
-  the existing bearer token instead of discarding it and re-prompting.
+- **Cuiman**'s launched-app proxy now rejects path-traversal segments, so a
+  browser request cannot escape the configured processing API base path.
+
 - Added missing ipython dependency for cuiman. (#188)
 
 ### Other changes

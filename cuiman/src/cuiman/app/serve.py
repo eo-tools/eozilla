@@ -3,12 +3,13 @@ from importlib.resources import files
 from typing import Literal
 
 import remotestate as rs
+from fastapi import FastAPI
 
 from cuiman.api.config import ClientConfig
 from cuiman.api.ishell import has_ishell
 
 from .display import create_app_display_object
-from .service import create_app_service_provider
+from .launch import LaunchedAppService
 from .url import create_app_url
 
 DIST_ENV_VAR = "EOZILLA_APP_DIST"
@@ -61,8 +62,9 @@ def serve(
             ``"auto"`` checks for it from the notebook browser and falls back
             to the normal local URL when unavailable, ``"never"`` disables it,
             and ``"always"`` assumes it is configured on the Jupyter server.
-            When enabled, URLs using loopback hosts in the app's client
-            configuration are routed through the proxy as well.
+            When enabled, the browser-visible app URL retains the proxy path
+            prefix, so the Cuiman app derives same-origin service and
+            RemoteState WebSocket URLs through that prefix.
 
     Returns:
         The running ``remotestate`` server result. Call its ``stop()`` method
@@ -70,8 +72,15 @@ def serve(
     """
     app_dist = _get_app_dist_url_or_dir(os.environ.get(DIST_ENV_VAR))
 
+    app_service = LaunchedAppService(store, config)
+    launch_code = app_service.create_launch_code()
+    # Register these routes before RemoteState mounts the SPA at ``/``. A root
+    # static-files mount would otherwise intercept ``/_cuiman/launch``.
+    app = FastAPI()
+    app_service._init_app(app)
     server = rs.serve(
-        rs.Service(store),
+        app_service,
+        app=app,
         ui_dist=app_dist,
         host="127.0.0.1",
         cors_origins=["*"],
@@ -83,11 +92,10 @@ def serve(
 
     app_url = create_app_url(
         server.ui_base_url,
-        server.ws_url,
         compact=compact,
         debug=debug,
         scheme=scheme,
-        service=create_app_service_provider(config),
+        launch_code=launch_code,
     )
 
     if display == "browser" and not has_ishell:
