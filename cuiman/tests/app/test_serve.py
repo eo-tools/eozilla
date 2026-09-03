@@ -290,6 +290,7 @@ def install_serve_fakes(monkeypatch):
     }
 
     monkeypatch.setenv(serve_module.DIST_ENV_VAR, "https://app.example.test")
+
     def fake_serve(service, **kwargs):
         calls["app"] = kwargs.pop("app")
         calls["app_service"] = service

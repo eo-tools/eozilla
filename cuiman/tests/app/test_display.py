@@ -88,7 +88,7 @@ def test_create_app_display_object_uses_jupyter_proxy():
     assert 'getJupyterProxyUrl(proxyPort, "ws")' in display_object.data
     assert "const isCuimanMode =" in display_object.data
     assert "if (useProxy && !isCuimanMode)" in display_object.data
-    assert 'if (wsUrl !== null && !isCuimanMode)' in display_object.data
+    assert "if (wsUrl !== null && !isCuimanMode)" in display_object.data
 
 
 def test_create_app_display_object_uses_proxy_for_local_app():

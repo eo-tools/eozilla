@@ -172,7 +172,9 @@ class LaunchedAppService(rs.Service[Any]):
             SERVICE_PROXY_ENDPOINT,
             methods=["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         )
-        async def proxy_processing_service(request: Request, path: str = "") -> Response:
+        async def proxy_processing_service(
+            request: Request, path: str = ""
+        ) -> Response:
             """Forward a fixed processing-service path using session credentials."""
             if request.method in _UNSAFE_METHODS:
                 _require_same_origin(request)
@@ -235,7 +237,9 @@ class LaunchedAppService(rs.Service[Any]):
     ) -> Response:
         """Forward once, refreshing OAuth credentials and retrying one 401 response."""
         try:
-            upstream_response = await self._send_upstream(request, path, session.headers)
+            upstream_response = await self._send_upstream(
+                request, path, session.headers
+            )
         except httpx.RequestError as error:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,

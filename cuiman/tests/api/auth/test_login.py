@@ -100,13 +100,16 @@ def test_parse_token_common_shapes():
     assert parse_token({"data": {"authToken": "xyz"}}) == "xyz"
     assert parse_token({"apiToken": "abc"}) == "abc"
     assert parse_token({"data": {"accessToken": "xyz"}}) == "xyz"
-    assert parse_token(
-        {
-            "metadata": "ignored",
-            "empty": {"value": 42},
-            "data": {"access_token": "later-token"},
-        }
-    ) == "later-token"
+    assert (
+        parse_token(
+            {
+                "metadata": "ignored",
+                "empty": {"value": 42},
+                "data": {"access_token": "later-token"},
+            }
+        )
+        == "later-token"
+    )
 
 
 @pytest.mark.parametrize("token_data", [137, {"accessToken": True}])

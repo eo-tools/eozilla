@@ -136,9 +136,7 @@ def test_proxy_uses_server_side_headers_and_requires_same_origin(monkeypatch):
     assert response.json() == {"ok": True}
     assert response.headers["x-upstream"] == "yes"
     assert "set-cookie" not in response.headers
-    assert calls == [
-        ("POST", "processes", {"Authorization": "Bearer secret-token"})
-    ]
+    assert calls == [("POST", "processes", {"Authorization": "Bearer secret-token"})]
 
 
 def test_proxy_allows_a_same_origin_referer(monkeypatch):
@@ -165,7 +163,9 @@ def test_proxy_reports_an_unreachable_upstream_as_bad_gateway(monkeypatch):
     assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
 
     async def send_upstream(request, path, auth_headers):
-        raise httpx.ConnectError("connection refused", request=httpx.Request("GET", "https://example.test"))
+        raise httpx.ConnectError(
+            "connection refused", request=httpx.Request("GET", "https://example.test")
+        )
 
     monkeypatch.setattr(service, "_send_upstream", send_upstream)
 
@@ -264,9 +264,7 @@ def test_launch_resolves_oauth2_credentials_on_the_server(monkeypatch):
         )
     )
 
-    tokens = TokenResult(
-        access_token="resolved-token", refresh_token="refresh-token"
-    )
+    tokens = TokenResult(access_token="resolved-token", refresh_token="refresh-token")
 
     async def obtain_tokens(_auth):
         return tokens
