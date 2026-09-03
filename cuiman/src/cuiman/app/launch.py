@@ -176,6 +176,7 @@ class LaunchedAppService(rs.Service[Any]):
             if request.method in _UNSAFE_METHODS:
                 _require_same_origin(request)
             session = self._get_session(request)
+            _reject_path_traversal(path)
             return await self._proxy_request(request, path, session)
 
     def _consume_launch_code(self, launch_code: str) -> None:
@@ -336,12 +337,22 @@ def _get_request_scheme(request: Request) -> str:
     return request.url.scheme
 
 
+def _reject_path_traversal(path: str) -> None:
+    """Reject browser paths that could escape the configured API base path."""
+    if ".." in path.split("/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Path traversal is not allowed in a Cuiman proxy request.",
+        )
+
+
 def _get_upstream_url(api_url: str | None, path: str) -> str:
     """Append a browser-selected path to Cuiman's fixed processing API base URL.
 
     Parsing and reconstructing the URL keeps the configured origin and base
-    path fixed.  Query strings and fragments in configuration are deliberately
-    not inherited; request query parameters are forwarded separately.
+    path fixed. Path traversal segments are rejected before this function is
+    called. Query strings and fragments in configuration are deliberately not
+    inherited; request query parameters are forwarded separately.
     """
     assert api_url is not None
     parsed_api_url = urlsplit(api_url)

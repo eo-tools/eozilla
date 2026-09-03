@@ -24,6 +24,9 @@
 
 ### Fixes
 
+- **Cuiman**'s launched-app proxy now rejects path-traversal segments, so a
+  browser request cannot escape the configured processing API base path.
+
 - Added missing ipython dependency for cuiman. (#188)
 
 ### Other changes

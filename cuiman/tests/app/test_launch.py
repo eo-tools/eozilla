@@ -147,6 +147,19 @@ def test_proxy_reports_an_unreachable_upstream_as_bad_gateway(monkeypatch):
     }
 
 
+def test_proxy_rejects_a_path_that_escapes_the_configured_api_base():
+    service, client = create_test_client()
+    launch_code = service.create_launch_code()
+    assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
+
+    response = client.get(f"{SERVICE_PROXY_ENDPOINT}/%2E%2E/admin")
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "detail": "Path traversal is not allowed in a Cuiman proxy request."
+    }
+
+
 def test_proxy_forwards_only_safe_browser_headers_to_the_fixed_upstream(monkeypatch):
     service, client = create_test_client()
     launch_code = service.create_launch_code()
