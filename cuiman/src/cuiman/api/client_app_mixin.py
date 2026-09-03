@@ -36,7 +36,7 @@ class ClientAppMixin(ABC):
         proxy: ProxyMode = "auto",
     ) -> "App":
         """
-        Show the Cuiman app for this client.
+        Start the Cuiman app server and open the Eozilla App.
 
         The app connects to this client's API configuration, renders the app GUI,
         and returns an object that provides the serve result and a shared
@@ -69,6 +69,15 @@ class ClientAppMixin(ABC):
 
         - ``app.process_requests.my_process.inputs.threshold = 0.75``
         - ``app.process_requests.my_process = {"inputs": {...}}``
+
+        Launch process details:
+
+        The initial browser URL contains only a short-lived, single-use `launch` code.
+        The app exchanges it for an HttpOnly same-origin session cookie, then replaces
+        it with the non-sensitive `cuiman=1` reload marker. It derives its service
+        proxy and RemoteState WebSocket URLs from the browser-visible app URL, so the
+        same flow works through a Jupyter Server Proxy path prefix without exposing
+        the configured service URL or credentials to the browser.
 
         Args:
             compact: Compact mode. Defaults to True, if ``display`` is "notebook".
