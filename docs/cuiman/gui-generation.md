@@ -22,8 +22,8 @@ The UI generation at its core is not aware of the target UI library
 that is used to render the UI and let users interact with it.
 
 The framework used to generate UIs is implemented in the
-[Eozilla App](https://github.com/eo-tools/eozilla-app) and is documented
-[here](https://github.com/eo-tools/eozilla-app/blob/main/schema-form.md).
+[Eozilla App](../eozilla-app/index.md) and its schema-form behavior is
+[documented here](../eozilla-app/schema-form.md).
 
 ## Customizing the UI
 

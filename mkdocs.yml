@@ -48,6 +48,12 @@ nav:
     - Usage: wraptile/usage.md
     - Customization: wraptile/customization.md
     - CLI Reference: wraptile/cli.md
+  - Eozilla App:
+    - Overview: eozilla-app/index.md
+    - Architecture:
+      - Service Providers: eozilla-app/service-provider.md
+      - Schema Forms: eozilla-app/schema-form.md
+      - Dynamic Expressions: eozilla-app/dynamic-expressions.md
   - Contributing: contributing.md
 
 theme:

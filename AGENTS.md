@@ -12,8 +12,11 @@ development workflow.
 - `gavicore/`
 - `procodile/`
 - `wraptile/`
-- `eozilla-app/` (optional)
+- `eozilla-app/` (a separate Git checkout nested here for browser-client work)
 - `eozilla-airflow/`
+
+Substantial changes in `eozilla-app/` must include updates to the relevant
+pages in `docs/eozilla-app/`.
 
 ## Preferred Commands
 

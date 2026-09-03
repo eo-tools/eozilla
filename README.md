@@ -90,6 +90,29 @@ mamba create --channel conda-forge --name eozilla-test eozilla
 mamba activate eozilla-test
 ```
 
+## Development Workspace
+
+For team development, check out the Eozilla App repository inside the Eozilla
+repository. The two repositories remain independent Git checkouts, but this
+layout lets the app use the local Eozilla development service and build into
+Cuiman:
+
+```text
+eozilla/
+  eozilla-app/
+```
+
+```bash
+git clone https://github.com/eo-tools/eozilla.git
+cd eozilla
+pixi install
+git clone https://github.com/eo-tools/eozilla-app.git eozilla-app
+```
+
+See the [contribution guide](docs/contributing.md#cuiman-gui-changes) for the
+app development and build commands. Substantial app code changes must also
+update the relevant pages under `docs/eozilla-app/`.
+
 ## Acknowledgements
 
 Large parts of the work in the Eozilla project have been made possible by the
