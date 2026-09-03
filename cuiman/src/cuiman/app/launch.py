@@ -244,7 +244,14 @@ class LaunchedAppService(rs.Service[Any]):
         if upstream_response.status_code == status.HTTP_401_UNAUTHORIZED:
             refresher = self._client_config._make_async_token_refresher()
             if refresher is not None:
-                session.headers = await refresher()
+                try:
+                    refreshed_headers = await refresher()
+                except Exception as error:
+                    raise HTTPException(
+                        status_code=status.HTTP_502_BAD_GATEWAY,
+                        detail="Unable to refresh processing-service credentials.",
+                    ) from error
+                session.headers = refreshed_headers
                 try:
                     upstream_response = await self._send_upstream(
                         request, path, session.headers

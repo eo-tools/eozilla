@@ -308,6 +308,40 @@ def test_proxy_refreshes_credentials_once_after_an_upstream_unauthorized_respons
     ]
 
 
+def test_proxy_reports_a_failed_credential_refresh_without_changing_the_session(
+    monkeypatch,
+):
+    service, client = create_test_client()
+    launch_code = service.create_launch_code()
+    assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
+    session = next(iter(service._sessions.values()))
+    original_headers = dict(session.headers)
+    calls: list[dict[str, str]] = []
+
+    async def send_upstream(request, path, auth_headers):
+        calls.append(auth_headers)
+        return httpx.Response(401)
+
+    async def refresh():
+        raise RuntimeError("token endpoint temporarily unavailable")
+
+    monkeypatch.setattr(service, "_send_upstream", send_upstream)
+    monkeypatch.setattr(
+        ClientConfig,
+        "_make_async_token_refresher",
+        lambda _config: refresh,
+    )
+
+    response = client.get(f"{SERVICE_PROXY_ENDPOINT}/processes")
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "detail": "Unable to refresh processing-service credentials."
+    }
+    assert calls == [original_headers]
+    assert session.headers == original_headers
+
+
 def test_proxy_reports_a_failed_refreshed_request_as_bad_gateway(monkeypatch):
     service, client = create_test_client()
     launch_code = service.create_launch_code()
