@@ -3,6 +3,7 @@ from importlib.resources import files
 from typing import Literal
 
 import remotestate as rs
+from fastapi import FastAPI
 
 from cuiman.api.config import ClientConfig
 from cuiman.api.ishell import has_ishell
@@ -72,8 +73,13 @@ def serve(
 
     app_service = LaunchedAppService(store, config)
     launch_code = app_service.create_launch_code()
+    # Register these routes before RemoteState mounts the SPA at ``/``. A root
+    # static-files mount would otherwise intercept ``/_cuiman/launch``.
+    app = FastAPI()
+    app_service._init_app(app)
     server = rs.serve(
         app_service,
+        app=app,
         ui_dist=app_dist,
         host="127.0.0.1",
         cors_origins=["*"],

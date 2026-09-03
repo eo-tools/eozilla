@@ -60,6 +60,11 @@ def test_serve_returns_server_without_display(monkeypatch):
         }
     ]
     assert isinstance(calls["app_service"], LaunchedAppService)
+    assert [route.path for route in calls["app"].routes][-3:] == [
+        "/_cuiman/launch",
+        "/_cuiman/service",
+        "/_cuiman/service/{path:path}",
+    ]
     assert calls["url"] == []
     assert calls["browser_open"] == []
     assert calls["display"] == []
@@ -277,6 +282,7 @@ class FakeServeResult:
 
 def install_serve_fakes(monkeypatch):
     calls = {
+        "app": None,
         "browser_open": [],
         "display": [],
         "served": [],
@@ -286,6 +292,7 @@ def install_serve_fakes(monkeypatch):
 
     monkeypatch.setenv(serve_module.DIST_ENV_VAR, "https://app.example.test")
     def fake_serve(service, **kwargs):
+        calls["app"] = kwargs.pop("app")
         calls["app_service"] = service
         calls["served"].append({"service": service, **kwargs})
         return calls["server"]

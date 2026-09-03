@@ -18,6 +18,8 @@ from cuiman.api.auth import (
 from cuiman.api.config import ClientConfig
 from cuiman.app import App
 from cuiman.app.launch import (
+    INVALID_LAUNCH_DETAIL,
+    INVALID_LAUNCH_STATUS,
     LAUNCH_CODE_TTL_SECONDS,
     LAUNCH_ENDPOINT,
     SERVICE_PROXY_ENDPOINT,
@@ -33,7 +35,9 @@ def test_launch_code_is_single_use_and_creates_cookie_session():
 
     assert response.status_code == 204
     assert "HttpOnly" in response.headers["set-cookie"]
-    assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 401
+    repeated = client.post(LAUNCH_ENDPOINT, json={"launch": launch_code})
+    assert repeated.status_code == INVALID_LAUNCH_STATUS
+    assert repeated.json() == {"detail": INVALID_LAUNCH_DETAIL}
 
 
 def test_launch_session_cookie_is_secure_behind_an_https_proxy():
@@ -52,11 +56,9 @@ def test_launch_session_cookie_is_secure_behind_an_https_proxy():
 def test_launch_rejects_invalid_payloads_and_proxy_requests_without_a_session():
     _, client = create_test_client()
 
-    assert (
-        client.post(LAUNCH_ENDPOINT, content=b"not json").status_code == 401
-    )
-    assert client.post(LAUNCH_ENDPOINT, json={}).status_code == 401
-    assert client.post(LAUNCH_ENDPOINT, json={"launch": ""}).status_code == 401
+    assert client.post(LAUNCH_ENDPOINT, content=b"not json").status_code == 400
+    assert client.post(LAUNCH_ENDPOINT, json={}).status_code == 400
+    assert client.post(LAUNCH_ENDPOINT, json={"launch": ""}).status_code == 400
     assert client.get(SERVICE_PROXY_ENDPOINT).status_code == 401
 
 
@@ -125,6 +127,24 @@ def test_proxy_allows_a_same_origin_referer(monkeypatch):
     )
 
     assert response.status_code == 204
+
+
+def test_proxy_reports_an_unreachable_upstream_as_bad_gateway(monkeypatch):
+    service, client = create_test_client()
+    launch_code = service.create_launch_code()
+    assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
+
+    async def send_upstream(request, path, auth_headers):
+        raise httpx.ConnectError("connection refused", request=httpx.Request("GET", "https://example.test"))
+
+    monkeypatch.setattr(service, "_send_upstream", send_upstream)
+
+    response = client.get(SERVICE_PROXY_ENDPOINT)
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "detail": "Unable to reach the configured processing service."
+    }
 
 
 def test_proxy_forwards_only_safe_browser_headers_to_the_fixed_upstream(monkeypatch):

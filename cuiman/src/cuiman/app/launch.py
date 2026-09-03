@@ -56,6 +56,12 @@ SESSION_COOKIE_NAME = "cuiman_app_session"
 LAUNCH_CODE_TTL_SECONDS = 300
 """Lifetime of an unused browser bootstrap code."""
 
+INVALID_LAUNCH_STATUS = status.HTTP_410_GONE
+"""Response status for an expired or otherwise unusable launch code."""
+
+INVALID_LAUNCH_DETAIL = "The Cuiman app launch has expired or is no longer valid."
+"""Server-authoritative explanation for ``INVALID_LAUNCH_STATUS``."""
+
 _UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 _FORWARDED_REQUEST_HEADERS = ("accept", "content-type")
 _HOP_BY_HOP_RESPONSE_HEADERS = frozenset(
@@ -140,7 +146,7 @@ class LaunchedAppService(rs.Service[Any]):
             try:
                 launch_code = _get_launch_code(await request.json())
             except ValueError as error:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED) from error
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST) from error
             self._consume_launch_code(launch_code)
             headers = await self._resolve_auth_headers()
             session_id = secrets.token_urlsafe(32)
@@ -173,7 +179,10 @@ class LaunchedAppService(rs.Service[Any]):
         """Atomically invalidate an otherwise valid launch code."""
         self._remove_expired_launch_codes()
         if self._launch_codes.pop(launch_code, None) is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+            raise HTTPException(
+                status_code=INVALID_LAUNCH_STATUS,
+                detail=INVALID_LAUNCH_DETAIL,
+            )
 
     def _remove_expired_launch_codes(self) -> None:
         """Discard codes that were never exchanged within the bootstrap window."""
@@ -215,14 +224,26 @@ class LaunchedAppService(rs.Service[Any]):
         session: _AppSession,
     ) -> Response:
         """Forward once, refreshing OAuth credentials and retrying one 401 response."""
-        upstream_response = await self._send_upstream(request, path, session.headers)
+        try:
+            upstream_response = await self._send_upstream(request, path, session.headers)
+        except httpx.RequestError as error:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Unable to reach the configured processing service.",
+            ) from error
         if upstream_response.status_code == status.HTTP_401_UNAUTHORIZED:
             refresher = self._client_config._make_async_token_refresher()
             if refresher is not None:
                 session.headers = await refresher()
-                upstream_response = await self._send_upstream(
-                    request, path, session.headers
-                )
+                try:
+                    upstream_response = await self._send_upstream(
+                        request, path, session.headers
+                    )
+                except httpx.RequestError as error:
+                    raise HTTPException(
+                        status_code=status.HTTP_502_BAD_GATEWAY,
+                        detail="Unable to reach the configured processing service.",
+                    ) from error
         return Response(
             content=upstream_response.content,
             status_code=upstream_response.status_code,
@@ -264,10 +285,16 @@ class LaunchedAppService(rs.Service[Any]):
 def _get_launch_code(value: object) -> str:
     """Validate the minimal JSON payload accepted by the exchange endpoint."""
     if not isinstance(value, dict) or not isinstance(value.get("launch"), str):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Expected a JSON object with a non-empty 'launch' string.",
+        )
     launch_code = value["launch"]
     if not launch_code:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Expected a JSON object with a non-empty 'launch' string.",
+        )
     return launch_code
 
 
