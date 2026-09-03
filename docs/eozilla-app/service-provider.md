@@ -119,6 +119,9 @@ stand-alone Custom Service flow described above.
    same-origin proxy URL and cannot read the session cookie or upstream
    credentials.
 
+The app does not offer a sign-out action in Cuiman-launched mode. The Cuiman
+client owns the launched session and is responsible for ending it.
+
 The relative paths are essential for remote JupyterLab and JupyterHub
 deployments, where Cuiman is reached through `jupyter-server-proxy` under a
 path prefix. The derived WebSocket URL retains that same prefix. The provider
