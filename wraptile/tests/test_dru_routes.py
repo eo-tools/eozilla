@@ -1,7 +1,7 @@
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import AsyncMock
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
@@ -47,12 +47,6 @@ EXPECTED_ROUTES = [
         methods=["GET"],
     ),
 ]
-
-
-# mocked_service.replace_process.return_value
-
-mocked_request = AsyncMock(spec=Request)
-mocked_response = AsyncMock(spec=Response)
 
 
 class DruRoutesTest(IsolatedAsyncioTestCase):
