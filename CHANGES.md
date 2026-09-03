@@ -19,8 +19,9 @@
   derived from the browser-visible app URL, including Jupyter Server Proxy
   path prefixes. Login and OAuth credentials are resolved server-side; neither
   authentication headers nor service configuration are put in the app URL or
-  browser storage. This is a breaking protocol change: the legacy `service`
-  query parameter is no longer supported. (#198)
+  browser storage. Cuiman manages sign-out in this mode. This is a breaking
+  protocol change: the legacy `service` query parameter is no longer
+  supported. (#198)
 
 ### Fixes
 
