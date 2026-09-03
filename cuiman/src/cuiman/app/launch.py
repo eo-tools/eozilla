@@ -145,13 +145,14 @@ class LaunchedAppService(rs.Service[Any]):
 
         @app.post(LAUNCH_ENDPOINT, status_code=status.HTTP_204_NO_CONTENT)
         async def exchange_launch_code(request: Request, response: Response) -> None:
-            """Consume a launch code and establish the browser's app session."""
+            """Resolve authentication, then consume a launch code for a session."""
             try:
                 launch_code = _get_launch_code(await request.json())
             except ValueError as error:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST) from error
-            self._consume_launch_code(launch_code)
+            self._require_valid_launch_code(launch_code)
             headers = await self._resolve_auth_headers()
+            self._consume_launch_code(launch_code)
             session_id = secrets.token_urlsafe(32)
             self._sessions[session_id] = _AppSession(headers=headers)
             response.set_cookie(
@@ -181,8 +182,13 @@ class LaunchedAppService(rs.Service[Any]):
 
     def _consume_launch_code(self, launch_code: str) -> None:
         """Atomically invalidate an otherwise valid launch code."""
+        self._require_valid_launch_code(launch_code)
+        del self._launch_codes[launch_code]
+
+    def _require_valid_launch_code(self, launch_code: str) -> None:
+        """Reject an expired or already consumed launch code without consuming it."""
         self._remove_expired_launch_codes()
-        if self._launch_codes.pop(launch_code, None) is None:
+        if launch_code not in self._launch_codes:
             raise HTTPException(
                 status_code=INVALID_LAUNCH_STATUS,
                 detail=INVALID_LAUNCH_DETAIL,

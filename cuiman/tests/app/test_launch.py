@@ -40,6 +40,36 @@ def test_launch_code_is_single_use_and_creates_cookie_session():
     assert repeated.json() == {"detail": INVALID_LAUNCH_DETAIL}
 
 
+def test_launch_code_can_be_retried_after_auth_resolution_fails(monkeypatch):
+    service, client = create_test_client(
+        auth=LoginAuthConfig(
+            login_url="https://auth.example.test/login",
+            username="user",
+            password="password",
+        ),
+        raise_server_exceptions=False,
+    )
+    attempts = 0
+
+    async def login(_auth):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise httpx.ConnectError(
+                "connection refused",
+                request=httpx.Request("POST", "https://auth.example.test/login"),
+            )
+        return "resolved-token"
+
+    monkeypatch.setattr("cuiman.app.launch.login_async", login)
+    launch_code = service.create_launch_code()
+
+    assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 500
+    assert launch_code in service._launch_codes
+    assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
+    assert attempts == 2
+
+
 def test_launch_session_cookie_is_secure_behind_an_https_proxy():
     service, client = create_test_client()
     launch_code = service.create_launch_code()
@@ -315,7 +345,11 @@ def test_proxy_reports_a_failed_refreshed_request_as_bad_gateway(monkeypatch):
     ]
 
 
-def create_test_client(auth=None) -> tuple[LaunchedAppService, TestClient]:
+def create_test_client(
+    auth=None,
+    *,
+    raise_server_exceptions: bool = True,
+) -> tuple[LaunchedAppService, TestClient]:
     config = ClientConfig(
         api_url="https://process.example.test/api",
         auth=auth or TokenAuthConfig(access_token="token"),
@@ -323,4 +357,4 @@ def create_test_client(auth=None) -> tuple[LaunchedAppService, TestClient]:
     service = LaunchedAppService(App.create_remote_store(), config)
     app = FastAPI()
     service._init_app(app)
-    return service, TestClient(app)
+    return service, TestClient(app, raise_server_exceptions=raise_server_exceptions)
