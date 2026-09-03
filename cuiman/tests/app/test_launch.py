@@ -265,6 +265,43 @@ def test_proxy_refreshes_credentials_once_after_an_upstream_unauthorized_respons
     ]
 
 
+def test_proxy_reports_a_failed_refreshed_request_as_bad_gateway(monkeypatch):
+    service, client = create_test_client()
+    launch_code = service.create_launch_code()
+    assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
+    calls: list[dict[str, str]] = []
+
+    async def send_upstream(request, path, auth_headers):
+        calls.append(auth_headers)
+        if len(calls) == 1:
+            return httpx.Response(401)
+        raise httpx.ConnectError(
+            "connection refused",
+            request=httpx.Request("GET", "https://example.test"),
+        )
+
+    async def refresh():
+        return {"Authorization": "Bearer refreshed-token"}
+
+    monkeypatch.setattr(service, "_send_upstream", send_upstream)
+    monkeypatch.setattr(
+        ClientConfig,
+        "_make_async_token_refresher",
+        lambda _config: refresh,
+    )
+
+    response = client.get(f"{SERVICE_PROXY_ENDPOINT}/processes")
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "detail": "Unable to reach the configured processing service."
+    }
+    assert calls == [
+        {"Authorization": "Bearer token"},
+        {"Authorization": "Bearer refreshed-token"},
+    ]
+
+
 def create_test_client(auth=None) -> tuple[LaunchedAppService, TestClient]:
     config = ClientConfig(
         api_url="https://process.example.test/api",
