@@ -72,7 +72,7 @@ class AuthConfigBase(BaseModel):
         return self.model_dump(
             mode="json",
             by_alias=True,
-            exclude=self.secret_fields,
+            exclude=set(self.secret_fields),
             exclude_none=True,
         )
 

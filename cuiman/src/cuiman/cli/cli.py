@@ -251,7 +251,9 @@ def new_cli(
             typer.echo(str(exc), err=True)
             raise typer.Exit(code=1) from exc
         typer.echo(f"Client configuration written to {config_path}")
-        configured_auth_type = ClientConfig.from_file(config_path).auth.auth_type
+        configured_config = ClientConfig.from_file(config_path)
+        assert configured_config is not None
+        configured_auth_type = configured_config.auth.auth_type
         if (
             configured_auth_type != "none"
             and sys.stdin.isatty()
