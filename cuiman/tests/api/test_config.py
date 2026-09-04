@@ -90,9 +90,15 @@ class ClientConfigTest(TestCase):
             original.write(config_path)
             config = ClientConfig.create(config_path=config_path)
 
-        self.assertEqual(original, config)
+        self.assertEqual(
+            ClientConfig(
+                api_url="https://eozilla.example.test",
+                auth=LoginAuthConfig(login_url="https://eozilla.example.test/login"),
+            ),
+            config,
+        )
 
-    def test_from_file_converts_legacy_flat_auth_configurations(self):
+    def test_from_file_rejects_legacy_flat_auth_configurations(self):
         common = {
             "api_url": "https://eozilla.example.test",
             "api_key_header": "X-API-Key",
@@ -101,10 +107,7 @@ class ClientConfigTest(TestCase):
             "use_bearer": True,
         }
         cases = [
-            (
-                {"auth_type": "none"},
-                NoAuthConfig(),
-            ),
+            ({"auth_type": "none"}, NoAuthConfig()),
             (
                 {
                     "auth_type": "basic",
@@ -144,17 +147,42 @@ class ClientConfigTest(TestCase):
         ]
 
         with tempfile.TemporaryDirectory() as tmp_dir_name:
-            for index, (legacy_auth, expected_auth) in enumerate(cases):
+            for index, (legacy_auth, _) in enumerate(cases):
                 with self.subTest(auth_type=legacy_auth["auth_type"]):
                     config_path = Path(tmp_dir_name) / f"legacy-{index}.yaml"
                     contents = yaml.safe_dump({**common, **legacy_auth})
                     config_path.write_text(contents)
 
-                    config = ClientConfig.from_file(config_path)
-
-                    self.assertIsNotNone(config)
-                    self.assertEqual(expected_auth, config.auth)
+                    with self.assertRaisesRegex(
+                        ValueError,
+                        "Legacy configuration format detected, please run 'cuiman configure'",
+                    ):
+                        ClientConfig.from_file(config_path)
                     self.assertEqual(contents, config_path.read_text())
+
+    def test_from_file_rejects_nested_secret_bearing_auth_configuration(self):
+        config_path = Path(tempfile.mkdtemp()) / "config.yaml"
+        try:
+            config_path.write_text(
+                yaml.safe_dump(
+                    {
+                        "api_url": "https://eozilla.example.test",
+                        "auth": {
+                            "auth_type": "token",
+                            "access_token": "legacy-token",
+                        },
+                    }
+                )
+            )
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "Legacy configuration format detected, please run 'cuiman configure'",
+            ):
+                ClientConfig.from_file(config_path)
+        finally:
+            config_path.unlink(missing_ok=True)
+            config_path.parent.rmdir()
 
     def test_from_file_rejects_legacy_login_auth_configuration(self):
         legacy_config = {
@@ -226,7 +254,7 @@ class ClientConfigTest(TestCase):
 
         self.assertIsInstance(config.auth, LoginAuthConfig)
         self.assertEqual("environment-token", config.auth.access_token)
-        self.assertEqual("u", config.auth.username)
+        self.assertIsNone(config.auth.username)
 
     def test_env_auth_type_selects_token_auth_over_file_config(self):
         os.environ.update(
@@ -236,11 +264,10 @@ class ClientConfigTest(TestCase):
             }
         )
         file_configs = [
-            {"auth_type": "none"},
             {
                 "api_url": "https://file.example.test/",
                 "auth": {"auth_type": "none"},
-            },
+            }
         ]
 
         with tempfile.TemporaryDirectory() as tmp_dir_name:

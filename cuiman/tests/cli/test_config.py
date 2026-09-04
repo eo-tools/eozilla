@@ -132,7 +132,7 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
         self.assertEqual(
             ClientConfig(
                 api_url="http://localhorst:9999",
-                auth=BasicAuthConfig(username="udo", password="987"),
+                auth=BasicAuthConfig(),
             ),
             get_config(None),
         )
@@ -163,9 +163,6 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
                 api_url="http://localhorst:9999",
                 auth=LoginAuthConfig(
                     login_url="http://localhorst:9999/signin",
-                    username="bibo",
-                    password="1234",
-                    access_token="dummy-token",
                     use_bearer=False,
                     access_token_header="X-Custom-Token",
                 ),
@@ -200,12 +197,7 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
         self.assertEqual(
             OAuth2AuthConfig(
                 token_url="https://identity.example.test/token",
-                username="bibo",
-                password="1234",
                 client_id="client",
-                client_secret="secret",
-                access_token="access",
-                refresh_token="refresh",
             ),
             get_config(None).auth,
         )
@@ -234,8 +226,6 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
                 token_url="https://identity.example.test/token",
                 grant_type="client_credentials",
                 client_id="client",
-                client_secret="secret",
-                access_token="access",
             ),
             get_config(None).auth,
         )
@@ -259,9 +249,7 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
 
         configure_client_with_prompt()
 
-        self.assertEqual(
-            TokenAuthConfig(access_token="token-value"), get_config(None).auth
-        )
+        self.assertEqual(TokenAuthConfig(), get_config(None).auth)
 
     @patch("typer.prompt")
     def test_auth_type_api_key(self, prompt: MagicMock):
@@ -274,7 +262,7 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
 
         configure_client_with_prompt()
 
-        self.assertEqual(ApiKeyAuthConfig(api_key="key-value"), get_config(None).auth)
+        self.assertEqual(ApiKeyAuthConfig(), get_config(None).auth)
 
     @patch("typer.prompt")
     def test_prompt_for_pw_reuses_previous_password(self, prompt: MagicMock):
@@ -295,7 +283,7 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
         ]
         config_path = configure_client_with_prompt()
 
-        self.assertEqual("secret123", get_config(None).auth.password)
+        self.assertIsNone(get_config(None).auth.password)
         self.assert_is_default_config_path(config_path)
 
     @patch("typer.confirm")

@@ -73,9 +73,6 @@ class CliTest(TestCase):
                     "auth": {
                         "auth_type": "login",
                         "login_url": "http://localhorst:2357/auth/login",
-                        "username": "bibo",
-                        "password": "1234",
-                        "access_token": "dummy-token",
                         "use_bearer": True,
                         "access_token_header": "X-Auth-Token",
                     },

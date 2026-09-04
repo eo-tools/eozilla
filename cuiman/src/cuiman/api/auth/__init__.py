@@ -12,6 +12,7 @@ from cuiman.api.auth.config import (
     NoAuthConfig,
     OAuth2AuthConfig,
     OAuth2GrantType,
+    SecretFields,
     TokenAuthConfig,
 )
 from cuiman.api.auth.login import TokenResult, login, login_for_tokens
@@ -32,6 +33,7 @@ __all__ = [
     "NoAuthConfig",
     "OAuth2AuthConfig",
     "OAuth2GrantType",
+    "SecretFields",
     "TokenAuthConfig",
     "TokenResult",
     "login",

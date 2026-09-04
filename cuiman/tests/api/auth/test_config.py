@@ -64,6 +64,62 @@ def test_auth_config_rejects_fields_from_another_auth_type():
         )
 
 
+@pytest.mark.parametrize(
+    ("config", "expected"),
+    [
+        (NoAuthConfig(), {"auth_type": "none"}),
+        (BasicAuthConfig(username="u", password="p"), {"auth_type": "basic"}),
+        (
+            TokenAuthConfig(access_token="token"),
+            {
+                "auth_type": "token",
+                "use_bearer": True,
+                "access_token_header": "X-Auth-Token",
+            },
+        ),
+        (
+            LoginAuthConfig(
+                login_url="https://example.test/login",
+                username="u",
+                password="p",
+                access_token="token",
+            ),
+            {
+                "auth_type": "login",
+                "login_url": "https://example.test/login",
+                "use_bearer": True,
+                "access_token_header": "X-Auth-Token",
+            },
+        ),
+        (
+            OAuth2AuthConfig(
+                token_url="https://example.test/token",
+                username="u",
+                password="p",
+                client_id="client",
+                client_secret="secret",
+                access_token="token",
+                refresh_token="refresh",
+            ),
+            {
+                "auth_type": "oauth2",
+                "token_url": "https://example.test/token",
+                "grant_type": "password",
+                "client_id": "client",
+                "use_bearer": True,
+                "access_token_header": "X-Auth-Token",
+            },
+        ),
+        (
+            ApiKeyAuthConfig(api_key="key"),
+            {"auth_type": "api-key", "api_key_header": "X-API-Key"},
+        ),
+    ],
+)
+def test_public_auth_config_excludes_secrets(config, expected):
+    assert config.to_public_dict() == expected
+
+
 def test_no_auth_headers():
     assert NoAuthConfig().auth_headers == {}
 
@@ -114,13 +170,24 @@ def test_api_key_requires_non_empty_value():
         _ = ApiKeyAuthConfig(api_key="").auth_headers
 
 
-def test_oauth2_password_grant_requires_user_credentials():
+def test_oauth2_password_grant_allows_credentials_to_be_resolved_later():
+    config = OAuth2AuthConfig(token_url="https://example.test/token")
+    assert config.username is None
+    assert config.password is None
+
+
+@pytest.mark.parametrize(("username", "password"), [("u", None), (None, "p")])
+def test_oauth2_password_grant_rejects_incomplete_credentials(username, password):
     with pytest.raises(ValidationError, match="Username and password"):
-        OAuth2AuthConfig(token_url="https://example.test/token")
+        OAuth2AuthConfig(
+            token_url="https://example.test/token",
+            username=username,
+            password=password,
+        )
 
 
-def test_oauth2_client_credentials_grant_requires_client_credentials():
-    with pytest.raises(ValidationError, match="Client ID and client secret"):
+def test_oauth2_client_credentials_grant_requires_client_id():
+    with pytest.raises(ValidationError, match="Client ID is required"):
         OAuth2AuthConfig(
             token_url="https://example.test/token",
             grant_type="client_credentials",

@@ -129,14 +129,13 @@ class ClientConfig(BaseSettings):
     def from_file(
         cls, config_path: Optional[str | Path] = None
     ) -> Optional["ClientConfig"]:
-        config_path_: Path = cls.normalize_config_path(config_path)
-        if not config_path_.exists():
+        config_dict = cls.read_file_data(config_path)
+        if config_dict is None:
             return None
-        with config_path_.open("rt") as stream:
-            # Note, we may switch TOML
-            config_dict = yaml.safe_load(stream)
-        if isinstance(config_dict, dict):
-            config_dict = _convert_legacy_file_config(config_dict)
+        if _is_legacy_file_config(config_dict):
+            raise ValueError(
+                "Legacy configuration format detected, please run 'cuiman configure'"
+            )
         config_cls = type(ClientConfig.default_config)
         assert issubclass(config_cls, ClientConfig)
         # Do not call BaseSettings.__init__: it would merge environment values
@@ -151,10 +150,25 @@ class ClientConfig(BaseSettings):
         config_path = self.normalize_config_path(config_path)
         config_path.parent.mkdir(exist_ok=True)
         with config_path.open("wt") as stream:
-            yaml.dump(
-                self.model_dump(mode="json", by_alias=True, exclude_none=True), stream
-            )
+            yaml.dump(self.to_file_dict(), stream)
         return config_path
+
+    @classmethod
+    def read_file_data(
+        cls, config_path: Optional[str | Path] = None
+    ) -> dict[str, Any] | None:
+        """Read an unvalidated configuration mapping from a file, if it exists."""
+        config_path_ = cls.normalize_config_path(config_path)
+        if not config_path_.exists():
+            return None
+        with config_path_.open("rt") as stream:
+            # Note, we may switch TOML.
+            config_dict = yaml.safe_load(stream)
+        if config_dict is None:
+            return None
+        if not isinstance(config_dict, dict):
+            raise ValueError("Configuration file must contain a mapping.")
+        return config_dict
 
     @classmethod
     def normalize_config_path(cls, config_path) -> Path:
@@ -183,6 +197,17 @@ class ClientConfig(BaseSettings):
         )
         if "auth" in config_dict:
             config_dict["auth"]["auth_type"] = self.auth.auth_type
+        return config_dict
+
+    def to_file_dict(self) -> dict[str, Any]:
+        """Return a configuration mapping that omits authentication secrets."""
+        config_dict = self.model_dump(
+            mode="json",
+            by_alias=True,
+            exclude={"auth"},
+            exclude_none=True,
+        )
+        config_dict["auth"] = self.auth.to_public_dict()
         return config_dict
 
     # noinspection PyMethodParameters
@@ -266,62 +291,22 @@ def _update_config_from_env(target: dict[str, Any], env_config: dict[str, Any]) 
     _update_if_not_none(target, env_config)
 
 
-_LEGACY_AUTH_KEYS = {
+_SECRET_AUTH_FIELDS = {
+    "access_token",
     "api_key",
-    "api_key_header",
-    "auth_type",
-    "auth_url",
-    "client_id",
     "client_secret",
-    "grant_type",
     "password",
     "refresh_token",
     "token",
-    "token_header",
-    "use_bearer",
     "username",
 }
 
 
-def _convert_legacy_file_config(config: dict[str, Any]) -> dict[str, Any]:
-    """Convert the former flat CLI auth configuration to nested auth data."""
-    if "auth" in config or "auth_type" not in config:
-        return config
-
-    converted = {
-        key: value for key, value in config.items() if key not in _LEGACY_AUTH_KEYS
-    }
-    auth_type = config.get("auth_type") or "none"
-    auth: dict[str, Any] = {"auth_type": auth_type}
-
-    if auth_type == "basic":
-        _copy_legacy_values(auth, config, "username", "password")
-    elif auth_type == "token":
-        _copy_legacy_values(
-            auth,
-            config,
-            ("token", "access_token"),
-            "use_bearer",
-            ("token_header", "access_token_header"),
-        )
-    elif auth_type == "login" and "auth_url" in config:
-        raise ValueError(
-            "Legacy configuration format detected, please run 'cuiman configure'"
-        )
-    elif auth_type == "api-key":
-        _copy_legacy_values(auth, config, "api_key", "api_key_header")
-
-    converted["auth"] = auth
-    return converted
-
-
-def _copy_legacy_values(
-    target: dict[str, Any],
-    source: dict[str, Any],
-    *keys: str | tuple[str, str],
-) -> None:
-    for key in keys:
-        source_key, target_key = key if isinstance(key, tuple) else (key, key)
-        value = source.get(source_key)
-        if value is not None:
-            target[target_key] = value
+def _is_legacy_file_config(config: dict[str, Any]) -> bool:
+    """Return whether a configuration uses a former secret-bearing file format."""
+    if "auth_type" in config:
+        return True
+    auth_config = config.get("auth")
+    return isinstance(auth_config, dict) and bool(
+        _SECRET_AUTH_FIELDS.intersection(auth_config)
+    )

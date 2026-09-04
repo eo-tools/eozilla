@@ -3,7 +3,15 @@
 #  https://opensource.org/license/apache-2-0.
 
 import base64
-from typing import Annotated, Awaitable, Callable, Literal, TypeAlias, get_args
+from typing import (
+    Annotated,
+    Awaitable,
+    Callable,
+    ClassVar,
+    Literal,
+    TypeAlias,
+    get_args,
+)
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
@@ -35,6 +43,9 @@ authentication headers or credentials are obtained:
 OAuth2GrantType: TypeAlias = Literal["password", "client_credentials"]
 """OAuth2 grants supported by Cuiman."""
 
+SecretFields: TypeAlias = frozenset[str]
+"""Names of authentication fields that must not be persisted."""
+
 AUTH_TYPE_NAMES: tuple[str, ...] = get_args(AuthType)
 """Names of the supported authentication mechanisms."""
 
@@ -47,7 +58,19 @@ class AuthConfigBase(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    secret_fields: ClassVar[SecretFields] = frozenset()
+    """Fields that must not be persisted in a client configuration file."""
+
     auth_type: AuthType
+
+    def to_public_dict(self) -> dict[str, object]:
+        """Return the configuration values that are safe to persist."""
+        return self.model_dump(
+            mode="json",
+            by_alias=True,
+            exclude=self.secret_fields,
+            exclude_none=True,
+        )
 
     @property
     def auth_headers(self) -> dict[str, str]:
@@ -74,9 +97,11 @@ class NoAuthConfig(AuthConfigBase):
 class BasicAuthConfig(AuthConfigBase):
     """HTTP Basic authentication configuration."""
 
+    secret_fields: ClassVar[SecretFields] = frozenset({"username", "password"})
+
     auth_type: Literal["basic"] = "basic"
-    username: str
-    password: str
+    username: str | None = None
+    password: str | None = None
 
     @property
     def auth_headers(self) -> dict[str, str]:
@@ -105,21 +130,30 @@ class _AccessTokenAuthConfig(AuthConfigBase):
 class TokenAuthConfig(_AccessTokenAuthConfig):
     """Static access-token authentication configuration."""
 
+    secret_fields: ClassVar[SecretFields] = frozenset({"access_token"})
+
     auth_type: Literal["token"] = "token"
-    access_token: str
 
 
 class LoginAuthConfig(_AccessTokenAuthConfig):
     """Configuration for a proprietary username/password login endpoint."""
 
+    secret_fields: ClassVar[SecretFields] = frozenset(
+        {"username", "password", "access_token"}
+    )
+
     auth_type: Literal["login"] = "login"
     login_url: HttpUrl
-    username: str
-    password: str
+    username: str | None = None
+    password: str | None = None
 
 
 class OAuth2AuthConfig(_AccessTokenAuthConfig):
     """OAuth2 token endpoint configuration."""
+
+    secret_fields: ClassVar[SecretFields] = frozenset(
+        {"username", "password", "client_secret", "refresh_token", "access_token"}
+    )
 
     auth_type: Literal["oauth2"] = "oauth2"
     token_url: HttpUrl
@@ -132,17 +166,18 @@ class OAuth2AuthConfig(_AccessTokenAuthConfig):
 
     @model_validator(mode="after")
     def validate_grant_credentials(self) -> "OAuth2AuthConfig":
-        """Validate the credentials required by the selected grant."""
-        if self.grant_type == "password" and not (self.username and self.password):
+        """Validate public OAuth2 configuration and supplied credential pairs."""
+        if (self.username is None) != (self.password is None):
             raise ValueError(
-                "Username and password are required for the OAuth2 password grant."
+                "Username and password must be configured together when either is set."
             )
-        if self.grant_type == "client_credentials" and not (
-            self.client_id and self.client_secret
-        ):
+        if self.client_secret is not None and self.client_id is None:
             raise ValueError(
-                "Client ID and client secret are required for the OAuth2 "
-                "client credentials grant."
+                "Client ID must be configured when a client secret is set."
+            )
+        if self.grant_type == "client_credentials" and not self.client_id:
+            raise ValueError(
+                "Client ID is required for the OAuth2 client credentials grant."
             )
         return self
 
@@ -180,8 +215,10 @@ class OAuth2AuthConfig(_AccessTokenAuthConfig):
 class ApiKeyAuthConfig(AuthConfigBase):
     """API-key authentication configuration."""
 
+    secret_fields: ClassVar[SecretFields] = frozenset({"api_key"})
+
     auth_type: Literal["api-key"] = "api-key"
-    api_key: str
+    api_key: str | None = None
     api_key_header: str = "X-API-Key"
 
     @property
