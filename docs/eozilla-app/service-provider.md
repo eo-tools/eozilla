@@ -321,7 +321,7 @@ When adding a new provider:
   through options.
 - `DevServiceProvider` connects to `http://localhost:8008` with an anonymous
   user. Its `signIn()` and `signOut()` are no-ops.
-- `TestServiceProvider` creates an in-memory test service for local development
+- `TestingServiceProvider` creates an in-memory test service for local development
   and tests.
 
 These providers demonstrate the minimum contract. A real redirect-based
