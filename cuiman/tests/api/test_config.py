@@ -8,15 +8,19 @@ import os
 import tempfile
 from pathlib import Path
 from unittest import TestCase
+from unittest.mock import patch
 
 import yaml
+from pydantic_settings import SettingsConfigDict
 
 from cuiman.api.auth import (
     ApiKeyAuthConfig,
     BasicAuthConfig,
     LoginAuthConfig,
     NoAuthConfig,
+    OAuth2AuthConfig,
     TokenAuthConfig,
+    TokenResult,
 )
 from cuiman.api.config import (
     ClientConfig,
@@ -55,6 +59,75 @@ class ClientConfigTest(TestCase):
         self.assertEqual(DEFAULT_API_URL, config.api_url)
         self.assertEqual(NoAuthConfig(), config.auth)
 
+    def test_read_file_data_handles_empty_and_non_mapping_files(self):
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            config_path = Path(tmp_dir_name) / "config"
+            config_path.write_text("")
+            self.assertIsNone(ClientConfig.read_file_data(config_path))
+
+            config_path.write_text("- not-a-mapping\n")
+            with self.assertRaisesRegex(
+                ValueError, "Configuration file must contain a mapping."
+            ):
+                ClientConfig.read_file_data(config_path)
+
+    def test_branded_default_config_controls_type_defaults_and_environment(self):
+        class BrandedClientConfig(ClientConfig):
+            model_config = SettingsConfigDict(
+                env_prefix="BRANDED_",
+                env_nested_delimiter="__",
+                extra="forbid",
+            )
+
+            service_name: str = "branded"
+
+        branded_default = BrandedClientConfig(
+            api_url="https://default.example.test/processes",
+            auth=TokenAuthConfig(use_bearer=False, access_token_header="X-Branded"),
+        )
+        with patch.dict(
+            os.environ,
+            {"BRANDED_API_URL": "https://environment.example.test/processes"},
+        ):
+            with patch.object(ClientConfig, "default_config", branded_default):
+                with tempfile.TemporaryDirectory() as tmp_dir_name:
+                    config = ClientConfig.create(
+                        config_path=Path(tmp_dir_name) / "missing-config"
+                    )
+
+        self.assertIsInstance(config, BrandedClientConfig)
+        self.assertEqual("https://environment.example.test/processes", config.api_url)
+        self.assertEqual(
+            TokenAuthConfig(use_bearer=False, access_token_header="X-Branded"),
+            config.auth,
+        )
+        self.assertEqual("branded", config.service_name)
+
+    def test_branded_default_config_loads_files_as_branded_type(self):
+        class BrandedClientConfig(ClientConfig):
+            service_name: str = "branded"
+
+        branded_default = BrandedClientConfig(
+            api_url="https://default.example.test/processes",
+            auth=TokenAuthConfig(),
+        )
+        with patch.object(ClientConfig, "default_config", branded_default):
+            with tempfile.TemporaryDirectory() as tmp_dir_name:
+                config_path = Path(tmp_dir_name) / "config"
+                config_path.write_text(
+                    yaml.safe_dump(
+                        {
+                            "api_url": "https://configured.example.test/processes",
+                            "auth": {"auth_type": "none"},
+                            "service_name": "configured",
+                        }
+                    )
+                )
+                config = ClientConfig.from_file(config_path)
+
+        self.assertIsInstance(config, BrandedClientConfig)
+        self.assertEqual("configured", config.service_name)
+
     def test_create_from_env(self):
         os.environ.update(
             {
@@ -75,7 +148,25 @@ class ClientConfigTest(TestCase):
         self.assertEqual("poppi", config.auth.password)
         self.assertEqual("0f8915a4", config.auth.access_token)
 
-    def test_create_from_file(self):
+    def test_new_instance_kwargs_override_settings_sources(self):
+        os.environ.update(
+            {
+                "EOZILLA_API_URL": "https://environment.example.test",
+                "EOZILLA_AUTH__AUTH_TYPE": "token",
+                "EOZILLA_AUTH__ACCESS_TOKEN": "environment-token",
+            }
+        )
+
+        config = ClientConfig.new_instance(
+            api_url="https://explicit.example.test",
+            auth={"auth_type": "none"},
+        )
+
+        self.assertEqual("https://explicit.example.test/", config.api_url)
+        self.assertEqual(NoAuthConfig(), config.auth)
+
+    @patch("cuiman.api.config.load_auth_secrets", return_value={})
+    def test_create_from_file(self, _load_auth_secrets):
         original = ClientConfig(
             api_url="https://eozilla.example.test",
             auth=LoginAuthConfig(
@@ -90,9 +181,114 @@ class ClientConfigTest(TestCase):
             original.write(config_path)
             config = ClientConfig.create(config_path=config_path)
 
-        self.assertEqual(original, config)
+        self.assertEqual(
+            ClientConfig(
+                api_url="https://eozilla.example.test",
+                auth=LoginAuthConfig(login_url="https://eozilla.example.test/login"),
+            ),
+            config,
+        )
 
-    def test_from_file_converts_legacy_flat_auth_configurations(self):
+    @patch("cuiman.api.config.load_auth_secrets")
+    def test_create_loads_auth_secrets_from_keyring(self, load_auth_secrets):
+        original = ClientConfig(
+            api_url="https://eozilla.example.test",
+            auth=LoginAuthConfig(login_url="https://eozilla.example.test/login"),
+        )
+        load_auth_secrets.return_value = {
+            "username": "u",
+            "password": "p",
+            "access_token": "token",
+        }
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            config_path = Path(tmp_dir_name) / "config"
+            original.write(config_path)
+            config = ClientConfig.create(config_path=config_path)
+
+        self.assertIsInstance(config.auth, LoginAuthConfig)
+        self.assertEqual("u", config.auth.username)
+        self.assertEqual("p", config.auth.password)
+        self.assertEqual("token", config.auth.access_token)
+        load_auth_secrets.assert_called_once_with(
+            config_path,
+            "https://eozilla.example.test/",
+            "login",
+        )
+
+    @patch("cuiman.api.config.load_auth_secrets")
+    def test_environment_secret_overrides_do_not_require_keyring(
+        self, load_auth_secrets
+    ):
+        original = ClientConfig(
+            api_url="https://eozilla.example.test",
+            auth=TokenAuthConfig(),
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            config_path = Path(tmp_dir_name) / "config"
+            original.write(config_path)
+            os.environ["EOZILLA_AUTH__ACCESS_TOKEN"] = "environment-token"
+            config = ClientConfig.create(config_path=config_path)
+
+        self.assertEqual("environment-token", config.auth.access_token)
+        load_auth_secrets.assert_not_called()
+
+    @patch("cuiman.api.config.load_auth_secrets")
+    def test_environment_secret_overrides_keyring_value(self, load_auth_secrets):
+        original = ClientConfig(
+            api_url="https://eozilla.example.test",
+            auth=LoginAuthConfig(login_url="https://eozilla.example.test/login"),
+        )
+        load_auth_secrets.return_value = {
+            "username": "u",
+            "password": "keyring-password",
+            "access_token": "token",
+        }
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            config_path = Path(tmp_dir_name) / "config"
+            original.write(config_path)
+            os.environ["EOZILLA_AUTH__PASSWORD"] = "environment-password"
+            config = ClientConfig.create(config_path=config_path)
+
+        self.assertEqual("environment-password", config.auth.password)
+
+    @patch("cuiman.api.auth.oauth2.renew_oauth2_tokens")
+    @patch("cuiman.api.config.save_auth_secrets")
+    @patch("cuiman.api.config.load_auth_secrets")
+    def test_keyring_loaded_oauth2_config_persists_refreshed_tokens(
+        self, load_auth_secrets, save_auth_secrets, renew_oauth2_tokens
+    ):
+        load_auth_secrets.return_value = {
+            "username": "u",
+            "password": "p",
+            "access_token": "old-access",
+            "refresh_token": "old-refresh",
+        }
+        renew_oauth2_tokens.return_value = TokenResult(
+            access_token="new-access", refresh_token="new-refresh"
+        )
+        original = ClientConfig(
+            api_url="https://eozilla.example.test",
+            auth=OAuth2AuthConfig(token_url="https://identity.example.test/token"),
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            config_path = Path(tmp_dir_name) / "config"
+            original.write(config_path)
+            config = ClientConfig.create(config_path=config_path)
+            config.auth.make_token_refresher()()
+
+        save_auth_secrets.assert_called_once_with(
+            config_path,
+            "https://eozilla.example.test/",
+            "oauth2",
+            {
+                "username": "u",
+                "password": "p",
+                "access_token": "new-access",
+                "refresh_token": "new-refresh",
+            },
+        )
+
+    def test_from_file_rejects_legacy_flat_auth_configurations(self):
         common = {
             "api_url": "https://eozilla.example.test",
             "api_key_header": "X-API-Key",
@@ -101,10 +297,7 @@ class ClientConfigTest(TestCase):
             "use_bearer": True,
         }
         cases = [
-            (
-                {"auth_type": "none"},
-                NoAuthConfig(),
-            ),
+            ({"auth_type": "none"}, NoAuthConfig()),
             (
                 {
                     "auth_type": "basic",
@@ -144,17 +337,42 @@ class ClientConfigTest(TestCase):
         ]
 
         with tempfile.TemporaryDirectory() as tmp_dir_name:
-            for index, (legacy_auth, expected_auth) in enumerate(cases):
+            for index, (legacy_auth, _) in enumerate(cases):
                 with self.subTest(auth_type=legacy_auth["auth_type"]):
                     config_path = Path(tmp_dir_name) / f"legacy-{index}.yaml"
                     contents = yaml.safe_dump({**common, **legacy_auth})
                     config_path.write_text(contents)
 
-                    config = ClientConfig.from_file(config_path)
-
-                    self.assertIsNotNone(config)
-                    self.assertEqual(expected_auth, config.auth)
+                    with self.assertRaisesRegex(
+                        ValueError,
+                        "Legacy configuration format detected, please run 'cuiman configure'",
+                    ):
+                        ClientConfig.from_file(config_path)
                     self.assertEqual(contents, config_path.read_text())
+
+    def test_from_file_rejects_nested_secret_bearing_auth_configuration(self):
+        config_path = Path(tempfile.mkdtemp()) / "config.yaml"
+        try:
+            config_path.write_text(
+                yaml.safe_dump(
+                    {
+                        "api_url": "https://eozilla.example.test",
+                        "auth": {
+                            "auth_type": "token",
+                            "access_token": "legacy-token",
+                        },
+                    }
+                )
+            )
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "Legacy configuration format detected, please run 'cuiman configure'",
+            ):
+                ClientConfig.from_file(config_path)
+        finally:
+            config_path.unlink(missing_ok=True)
+            config_path.parent.rmdir()
 
     def test_from_file_rejects_legacy_login_auth_configuration(self):
         legacy_config = {
@@ -226,7 +444,7 @@ class ClientConfigTest(TestCase):
 
         self.assertIsInstance(config.auth, LoginAuthConfig)
         self.assertEqual("environment-token", config.auth.access_token)
-        self.assertEqual("u", config.auth.username)
+        self.assertIsNone(config.auth.username)
 
     def test_env_auth_type_selects_token_auth_over_file_config(self):
         os.environ.update(
@@ -236,11 +454,10 @@ class ClientConfigTest(TestCase):
             }
         )
         file_configs = [
-            {"auth_type": "none"},
             {
                 "api_url": "https://file.example.test/",
                 "auth": {"auth_type": "none"},
-            },
+            }
         ]
 
         with tempfile.TemporaryDirectory() as tmp_dir_name:

@@ -20,7 +20,8 @@ from pydantic_settings import BaseSettings, EnvSettingsSource, SettingsConfigDic
 
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 
-from .auth import AuthConfig, NoAuthConfig
+from .auth import AuthConfig, AuthConfigBase, NoAuthConfig
+from .auth.secret_store import load_auth_secrets, save_auth_secrets
 from .defaults import DEFAULT_API_URL
 from .opener import JobResultOpener, JobResultOpenerRegistry
 
@@ -102,59 +103,111 @@ class ClientConfig(BaseSettings):
         config_path: Optional[Path | str] = None,
         **config_kwargs,
     ) -> "ClientConfig":
-        # 0. from defaults
-        config_dict = cls.default_config.to_dict()
+        # 0. Identify the application-selected configuration type. Applications
+        #    brand Cuiman by assigning a derived ``default_config`` instance;
+        #    its type owns settings metadata such as the environment prefix.
+        config_cls = cls._configured_type()
 
-        # 1. from file
+        # 1. Load the public, file-backed configuration without resolving
+        #    environment variables or operating-system credentials yet.
         file_config = cls.from_file(config_path=config_path)
-        if file_config is not None:
-            _update_if_not_none(config_dict, file_config.to_dict())
 
-        # 2. from env. Read raw settings so a partial nested auth override can
-        # be merged with the auth model loaded from defaults or a file before
-        # the discriminated union is validated.
-        env_config = EnvSettingsSource(cls)()
-        _update_config_from_env(config_dict, env_config)
+        # 2. Read raw environment settings. This allows a partial nested auth
+        #    override to be merged before the discriminated union is validated.
+        # Do not use ``cls`` here: CLI and generated clients call this method
+        # on ClientConfig, while application settings belong to config_cls.
+        env_config = EnvSettingsSource(config_cls)()
 
-        # 3. from config
-        if config is not None:
-            _update_if_not_none(config_dict, config.to_dict())
+        def merge_config_sources(
+            auth_secrets: dict[str, str] | None = None,
+        ) -> dict[str, Any]:
+            # 3. Start with the application's API and authentication defaults.
+            config_dict = cls.default_config.to_dict()
+            # 4. Apply public values persisted in the configuration file.
+            if file_config is not None:
+                _update_if_not_none(config_dict, file_config.to_dict())
+            # 5. Apply credentials read from the OS keyring, if available.
+            if auth_secrets:
+                _update_if_not_none(config_dict, {"auth": auth_secrets})
+            # 6. Let environment variables override file and keyring values.
+            _update_config_from_env(config_dict, env_config)
+            # 7. Apply a complete configuration instance supplied by the caller.
+            if config is not None:
+                _update_if_not_none(config_dict, config.to_dict())
+            # 8. Apply individual caller-supplied keyword arguments last.
+            _update_if_not_none(config_dict, config_kwargs)
+            return config_dict
 
-        # 4. from kwargs
-        _update_if_not_none(config_dict, config_kwargs)
+        # 9. Build the effective configuration from all non-keyring sources
+        #    without re-resolving Pydantic Settings sources.
+        config_dict = merge_config_sources()
+        resolved_config = cls.new_instance(**config_dict)
+        if file_config is None or _has_auth_credentials(resolved_config):
+            return resolved_config
 
-        return cls.new_instance(**config_dict)
+        # 10. A public file configuration without usable credentials may have
+        #     matching secrets in the operating-system keyring.
+        auth_secrets = load_auth_secrets(
+            cls.normalize_config_path(config_path),
+            resolved_config.api_url or "",
+            resolved_config.auth.auth_type,
+        )
+        auth_secrets = {
+            name: value
+            for name, value in auth_secrets.items()
+            if name in resolved_config.auth.secret_fields
+        }
+        if not auth_secrets:
+            return resolved_config
+
+        # 11. Rebuild with the keyring credentials and persist later token
+        #     refreshes back to the same keyring entry.
+        resolved_config = cls.new_instance(**merge_config_sources(auth_secrets))
+        _set_auth_secret_persistor(
+            resolved_config,
+            cls.normalize_config_path(config_path),
+        )
+        return resolved_config
 
     @classmethod
     def from_file(
         cls, config_path: Optional[str | Path] = None
     ) -> Optional["ClientConfig"]:
-        config_path_: Path = cls.normalize_config_path(config_path)
-        if not config_path_.exists():
+        config_dict = cls.read_file_data(config_path)
+        if config_dict is None:
             return None
-        with config_path_.open("rt") as stream:
-            # Note, we may switch TOML
-            config_dict = yaml.safe_load(stream)
-        if isinstance(config_dict, dict):
-            config_dict = _convert_legacy_file_config(config_dict)
-        config_cls = type(ClientConfig.default_config)
-        assert issubclass(config_cls, ClientConfig)
-        # Do not call BaseSettings.__init__: it would merge environment values
-        # into this file-only configuration before ClientConfig.create() can
-        # perform its intentional merge. BaseModel.__init__ still validates
-        # config_dict, but does not load any settings sources.
-        instance = object.__new__(config_cls)
-        BaseModel.__init__(instance, **config_dict)
-        return instance
+        if _is_legacy_file_config(config_dict):
+            raise ValueError(
+                "Legacy configuration format detected, please run 'cuiman configure'"
+            )
+        config_cls = cls._configured_type()
+        # Validate the file-only snapshot without loading any Settings sources;
+        # ClientConfig.create() applies those sources in its numbered sequence.
+        return cls._new_model_instance(config_cls, **config_dict)
 
     def write(self, config_path: Optional[str | Path] = None) -> Path:
         config_path = self.normalize_config_path(config_path)
         config_path.parent.mkdir(exist_ok=True)
         with config_path.open("wt") as stream:
-            yaml.dump(
-                self.model_dump(mode="json", by_alias=True, exclude_none=True), stream
-            )
+            yaml.dump(self.to_file_dict(), stream)
         return config_path
+
+    @classmethod
+    def read_file_data(
+        cls, config_path: Optional[str | Path] = None
+    ) -> dict[str, Any] | None:
+        """Read an unvalidated configuration mapping from a file, if it exists."""
+        config_path_ = cls.normalize_config_path(config_path)
+        if not config_path_.exists():
+            return None
+        with config_path_.open("rt") as stream:
+            # Note, we may switch TOML.
+            config_dict = yaml.safe_load(stream)
+        if config_dict is None:
+            return None
+        if not isinstance(config_dict, dict):
+            raise ValueError("Configuration file must contain a mapping.")
+        return config_dict
 
     @classmethod
     def normalize_config_path(cls, config_path) -> Path:
@@ -169,9 +222,27 @@ class ClientConfig(BaseSettings):
         cls,
         **kwargs: Any,
     ) -> "ClientConfig":
-        config_cls = type(ClientConfig.default_config)
+        # This is the final configuration construction step. Do not invoke
+        # BaseSettings.__init__ here: nested environment settings would be
+        # merged again and could conflict with the authentication type already
+        # selected by the explicit configuration-resolution steps above.
+        return cls._new_model_instance(cls._configured_type(), **kwargs)
+
+    @staticmethod
+    def _new_model_instance(
+        config_cls: type["ClientConfig"], **kwargs: Any
+    ) -> "ClientConfig":
+        """Validate explicit values without loading any Settings sources."""
+        instance = object.__new__(config_cls)
+        BaseModel.__init__(instance, **kwargs)
+        return instance
+
+    @classmethod
+    def _configured_type(cls) -> type["ClientConfig"]:
+        """Return the concrete configuration type selected by the application."""
+        config_cls = type(cls.default_config)
         assert issubclass(config_cls, ClientConfig)
-        return config_cls(**kwargs)
+        return config_cls
 
     def to_dict(self):
         config_dict = self.model_dump(
@@ -183,6 +254,17 @@ class ClientConfig(BaseSettings):
         )
         if "auth" in config_dict:
             config_dict["auth"]["auth_type"] = self.auth.auth_type
+        return config_dict
+
+    def to_file_dict(self) -> dict[str, Any]:
+        """Return a configuration mapping that omits authentication secrets."""
+        config_dict = self.model_dump(
+            mode="json",
+            by_alias=True,
+            exclude={"auth"},
+            exclude_none=True,
+        )
+        config_dict["auth"] = self.auth.to_public_dict()
         return config_dict
 
     # noinspection PyMethodParameters
@@ -247,6 +329,29 @@ def _update_if_not_none(target: dict[str, Any], updates: dict[str, Any]):
             target[key] = value
 
 
+def _has_auth_credentials(config: ClientConfig) -> bool:
+    """Return whether an authentication config can create request headers."""
+    try:
+        _ = config.auth_headers
+    except ValueError:
+        return False
+    return True
+
+
+def _set_auth_secret_persistor(config: ClientConfig, config_path: Path) -> None:
+    """Persist updated token values to the keyring associated with a config file."""
+
+    def persist(auth: AuthConfigBase) -> None:
+        save_auth_secrets(
+            config_path,
+            config.api_url or "",
+            auth.auth_type,
+            auth.to_secret_dict(),
+        )
+
+    config.auth.set_secret_persistor(persist)
+
+
 ###############################################################
 # -- Config file legacy management
 ###############################################################
@@ -266,62 +371,22 @@ def _update_config_from_env(target: dict[str, Any], env_config: dict[str, Any]) 
     _update_if_not_none(target, env_config)
 
 
-_LEGACY_AUTH_KEYS = {
+_SECRET_AUTH_FIELDS = {
+    "access_token",
     "api_key",
-    "api_key_header",
-    "auth_type",
-    "auth_url",
-    "client_id",
     "client_secret",
-    "grant_type",
     "password",
     "refresh_token",
     "token",
-    "token_header",
-    "use_bearer",
     "username",
 }
 
 
-def _convert_legacy_file_config(config: dict[str, Any]) -> dict[str, Any]:
-    """Convert the former flat CLI auth configuration to nested auth data."""
-    if "auth" in config or "auth_type" not in config:
-        return config
-
-    converted = {
-        key: value for key, value in config.items() if key not in _LEGACY_AUTH_KEYS
-    }
-    auth_type = config.get("auth_type") or "none"
-    auth: dict[str, Any] = {"auth_type": auth_type}
-
-    if auth_type == "basic":
-        _copy_legacy_values(auth, config, "username", "password")
-    elif auth_type == "token":
-        _copy_legacy_values(
-            auth,
-            config,
-            ("token", "access_token"),
-            "use_bearer",
-            ("token_header", "access_token_header"),
-        )
-    elif auth_type == "login" and "auth_url" in config:
-        raise ValueError(
-            "Legacy configuration format detected, please run 'cuiman configure'"
-        )
-    elif auth_type == "api-key":
-        _copy_legacy_values(auth, config, "api_key", "api_key_header")
-
-    converted["auth"] = auth
-    return converted
-
-
-def _copy_legacy_values(
-    target: dict[str, Any],
-    source: dict[str, Any],
-    *keys: str | tuple[str, str],
-) -> None:
-    for key in keys:
-        source_key, target_key = key if isinstance(key, tuple) else (key, key)
-        value = source.get(source_key)
-        if value is not None:
-            target[target_key] = value
+def _is_legacy_file_config(config: dict[str, Any]) -> bool:
+    """Return whether a configuration uses a former secret-bearing file format."""
+    if "auth_type" in config:
+        return True
+    auth_config = config.get("auth")
+    return isinstance(auth_config, dict) and bool(
+        _SECRET_AUTH_FIELDS.intersection(auth_config)
+    )

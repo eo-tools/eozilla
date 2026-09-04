@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import re
 from pathlib import Path
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
@@ -10,14 +11,20 @@ import remotestate as rs
 import typer.testing
 import yaml
 
-from cuiman import Client, __version__
-from cuiman.api.auth import TokenResult
+from cuiman import Client, ClientConfig, __version__
 
 # noinspection PyProtectedMember
-from cuiman.cli.cli import _wait_until_interrupted, cli, new_cli
+from cuiman.cli.cli import (
+    _offer_login_after_config,
+    _wait_until_interrupted,
+    cli,
+    new_cli,
+)
 from gavicore.util.testing import use_temp_dir
 
 from ..helpers import MockTransport
+
+ANSI_ESCAPE_PATTERN = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
 def invoke_cli(*args: str) -> typer.testing.Result:
@@ -39,12 +46,7 @@ class CliTest(TestCase):
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual(__version__ + "\n", result.output)
 
-    @patch("cuiman.cli.config.login_for_tokens")
-    def test_configure(self, mock_login):
-        mock_login.return_value = TokenResult(
-            access_token="dummy-token",  # noqa: S106
-            refresh_token="dummy-refresh",  # noqa: S106
-        )
+    def test_configure(self):
         config_path = Path("config.cfg")
         result = invoke_cli(
             "configure",
@@ -56,13 +58,8 @@ class CliTest(TestCase):
             "login",
             "--login-url",
             "http://localhorst:2357/auth/login",
-            "--username",
-            "bibo",
-            "--password",
-            "1234",
             "--use-bearer",
         )
-        mock_login.assert_called_once()
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertTrue(config_path.exists())
         with open(config_path) as f:
@@ -73,9 +70,6 @@ class CliTest(TestCase):
                     "auth": {
                         "auth_type": "login",
                         "login_url": "http://localhorst:2357/auth/login",
-                        "username": "bibo",
-                        "password": "1234",
-                        "access_token": "dummy-token",
                         "use_bearer": True,
                         "access_token_header": "X-Auth-Token",
                     },
@@ -94,13 +88,115 @@ class CliTest(TestCase):
             "http://localhost:2357",
             "--auth-type",
             "torken",  # INVALID
-            "--access-token",
-            "x-lkdkadf878akj134lk1lk5lk432lkk",
         )
         self.assertEqual(1, result.exit_code, msg=self.get_result_msg(result))
         self.assertTrue("Invalid authentication type: torken" in result.stderr)
         if config_path.exists():
             config_path.unlink()
+
+    def test_configure_rejects_secret_options(self):
+        result = invoke_cli(
+            "configure",
+            "--api-url",
+            "http://localhost:2357",
+            "--auth-type",
+            "token",
+            "--access-token",
+            "token",
+        )
+
+        self.assertEqual(2, result.exit_code, msg=self.get_result_msg(result))
+        error_message = ANSI_ESCAPE_PATTERN.sub("", result.stderr)
+        self.assertIn("No such option: --access-token", error_message)
+
+    @patch("cuiman.cli.cli.typer.confirm")
+    @patch("cuiman.cli.cli.sys.stdin.isatty", return_value=True)
+    def test_configure_with_none_auth_does_not_offer_login(
+        self, _isatty: MagicMock, confirm: MagicMock
+    ):
+        with use_temp_dir():
+            result = invoke_cli(
+                "configure",
+                "--api-url",
+                "http://localhost:2357",
+                "--auth-type",
+                "none",
+            )
+
+        self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+        confirm.assert_not_called()
+
+    @patch("cuiman.cli.config.login_client_with_prompt")
+    @patch("cuiman.cli.cli.typer.confirm", return_value=True)
+    @patch("cuiman.cli.cli.sys.stdin.isatty", return_value=True)
+    def test_configure_offers_login_for_authenticated_service(
+        self,
+        _isatty: MagicMock,
+        _confirm: MagicMock,
+        login_client_with_prompt: MagicMock,
+    ):
+        with use_temp_dir():
+            config_path = Path("config")
+            ClientConfig(
+                api_url="http://localhost:2357", auth={"auth_type": "token"}
+            ).write(config_path)
+
+            _offer_login_after_config(config_path)
+
+        login_client_with_prompt.assert_called_once_with(config_path)
+
+    @patch(
+        "cuiman.cli.config.login_client_with_prompt",
+        side_effect=ValueError("bad login"),
+    )
+    @patch("cuiman.cli.cli.typer.confirm", return_value=True)
+    @patch("cuiman.cli.cli.sys.stdin.isatty", return_value=True)
+    def test_configure_stops_when_offered_login_fails(
+        self,
+        _isatty: MagicMock,
+        _confirm: MagicMock,
+        _login_client_with_prompt: MagicMock,
+    ):
+        with use_temp_dir():
+            config_path = Path("config")
+            ClientConfig(
+                api_url="http://localhost:2357", auth={"auth_type": "token"}
+            ).write(config_path)
+
+            with self.assertRaises(typer.Exit) as exit_error:
+                _offer_login_after_config(config_path)
+
+        self.assertEqual(1, exit_error.exception.exit_code)
+
+    @patch("cuiman.cli.config.login_client_with_prompt")
+    def test_login(self, login_client_with_prompt: MagicMock):
+        result = invoke_cli("login", "--config", "client-config.yaml")
+
+        self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+        login_client_with_prompt.assert_called_once_with("client-config.yaml")
+
+    @patch(
+        "cuiman.cli.config.login_client_with_prompt", side_effect=ValueError("bad login")
+    )
+    def test_login_with_configuration_error(self, _login_client_with_prompt: MagicMock):
+        result = invoke_cli("login")
+
+        self.assertEqual(1, result.exit_code, msg=self.get_result_msg(result))
+        self.assertEqual("bad login\n", result.stderr)
+
+    @patch("cuiman.cli.config.logout_client")
+    def test_logout(self, logout_client: MagicMock):
+        result = invoke_cli("logout", "--config", "client-config.yaml")
+
+        self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+        logout_client.assert_called_once_with("client-config.yaml")
+
+    @patch("cuiman.cli.config.logout_client", side_effect=ValueError("bad logout"))
+    def test_logout_with_configuration_error(self, _logout_client: MagicMock):
+        result = invoke_cli("logout")
+
+        self.assertEqual(1, result.exit_code, msg=self.get_result_msg(result))
+        self.assertEqual("bad logout\n", result.stderr)
 
     @patch("cuiman.cli.config.configure_client_with_prompt")
     def test_configure_with_configuration_error(self, mock_configure):

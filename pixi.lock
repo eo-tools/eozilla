@@ -16507,6 +16507,7 @@ packages:
   - typer>=0.26.0,<1
   - uri-template
   - httpx
+  - keyring
   - gavicore>=0.2.1.dev1
   requires_python: '>=3.10'
 - pypi: ./eozilla

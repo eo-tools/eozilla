@@ -2,13 +2,20 @@
 
 ### Enhancements
 
+- **Cuiman** now keeps CLI authentication credentials in the operating-system
+  keyring instead of its configuration file. `cuiman configure` stores only
+  public service and authentication metadata; the new `cuiman login` and
+  `cuiman logout` commands manage credentials for Basic, token, API-key,
+  proprietary-login, and OAuth2 password-grant authentication. OAuth2 refresh
+  tokens loaded from the keyring are persisted there after refresh. Existing
+  secret-bearing configuration files are detected and can be safely rewritten.
+  OIDC authorization-code login is not part of this change. (#205)
+
 - **Cuiman** authentication configuration now uses distinct, nested data models
   for no authentication, Basic, token, proprietary login, OAuth2, and API-key
   authentication. OAuth2 grant types are typed, and the configuration and CLI
   use unambiguous names such as `login_url`, `token_url`, `access_token`, and
-  `access_token_header`. Existing flat file configurations for unambiguous
-  authentication types are converted when read; legacy login configurations
-  using `auth_url` now instruct users to rerun `cuiman configure`. (#176)
+  `access_token_header`. (#176)
 
 - **Cuiman** app launches now keep processing-service credentials on the
   Cuiman app server. The browser exchanges a short-lived, single-use `launch`
