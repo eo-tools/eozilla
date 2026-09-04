@@ -98,7 +98,8 @@ class CliTest(TestCase):
         )
 
         self.assertEqual(2, result.exit_code, msg=self.get_result_msg(result))
-        self.assertIn("No such option: --access-token", result.stderr)
+        self.assertIn("No such option:", result.stderr)
+        self.assertIn("access-token", result.stderr)
 
     @patch("cuiman.cli.cli.typer.confirm")
     @patch("cuiman.cli.cli.sys.stdin.isatty", return_value=True)

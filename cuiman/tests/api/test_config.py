@@ -153,7 +153,8 @@ class ClientConfigTest(TestCase):
         self.assertEqual("https://explicit.example.test/", config.api_url)
         self.assertEqual(NoAuthConfig(), config.auth)
 
-    def test_create_from_file(self):
+    @patch("cuiman.api.config.load_auth_secrets", return_value={})
+    def test_create_from_file(self, _load_auth_secrets):
         original = ClientConfig(
             api_url="https://eozilla.example.test",
             auth=LoginAuthConfig(
