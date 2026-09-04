@@ -58,3 +58,9 @@ should have docstrings according to the
 
 A more complete contribution guide can be found in
 [Contributing to the project](docs/contributing.md).
+
+For team development involving the browser client, use the standard workspace
+layout with the separate Eozilla App repository checked out at
+`eozilla/eozilla-app/`. This lets the app run against the local Eozilla
+development service and build into Cuiman. Substantial changes to app code
+must be accompanied by updates to the relevant `docs/eozilla-app/` pages.

@@ -111,8 +111,16 @@ pixi run sync-versions
 
 The cuiman package bundles the [Eozilla App](https://github.com/eo-tools/eozilla-app)
 to use it as the client GUI.
-Eozilla App is a single page web application (SPA) build with React and TypeScript.
-To change its code, it is best to check it out into the eozilla root project folder.
+Eozilla App is a single page web application (SPA) built with React and TypeScript.
+For team development, check out its separate Git repository inside the Eozilla
+repository at `eozilla/eozilla-app/`. The repositories remain independent, but
+this standard workspace layout lets the app run against the local Eozilla
+development service and build into Cuiman:
+
+```text
+eozilla/
+  eozilla-app/
+```
 
 Clone Eozilla (if not already done):
 
@@ -122,10 +130,10 @@ cd ./eozilla
 pixi install
 ```
 
-then clone and install Eozilla App:
+Then, from the Eozilla repository root, clone and install Eozilla App:
 
 ```commandline
-git clone https://github.com/eo-tools/eozilla-app.git
+git clone https://github.com/eo-tools/eozilla-app.git eozilla-app
 cd ./eozilla-app
 npm install
 ```
@@ -152,6 +160,10 @@ Eozilla Cuiman package:
 ```commandline
 npm run eozilla:build
 ```
+
+Substantial Eozilla App code changes must be reflected in the relevant pages
+under `docs/eozilla-app/`. Keep the overview, service-provider, schema-form,
+and dynamic-expression documentation accurate when changes affect those areas.
 
 
 ### Code generation
