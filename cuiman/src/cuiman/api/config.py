@@ -138,7 +138,8 @@ class ClientConfig(BaseSettings):
             _update_if_not_none(config_dict, config_kwargs)
             return config_dict
 
-        # 9. Build the effective configuration from all non-keyring sources.
+        # 9. Build the effective configuration from all non-keyring sources
+        #    without re-resolving Pydantic Settings sources.
         config_dict = merge_config_sources()
         resolved_config = cls.new_instance(**config_dict)
         if file_config is None or _has_auth_credentials(resolved_config):
@@ -180,13 +181,9 @@ class ClientConfig(BaseSettings):
                 "Legacy configuration format detected, please run 'cuiman configure'"
             )
         config_cls = cls._configured_type()
-        # Do not call BaseSettings.__init__: it would merge environment values
-        # into this file-only configuration before ClientConfig.create() can
-        # perform its intentional merge. BaseModel.__init__ still validates
-        # config_dict, but does not load any settings sources.
-        instance = object.__new__(config_cls)
-        BaseModel.__init__(instance, **config_dict)
-        return instance
+        # Validate the file-only snapshot without loading any Settings sources;
+        # ClientConfig.create() applies those sources in its numbered sequence.
+        return cls._new_model_instance(config_cls, **config_dict)
 
     def write(self, config_path: Optional[str | Path] = None) -> Path:
         config_path = self.normalize_config_path(config_path)
@@ -225,7 +222,20 @@ class ClientConfig(BaseSettings):
         cls,
         **kwargs: Any,
     ) -> "ClientConfig":
-        return cls._configured_type()(**kwargs)
+        # This is the final configuration construction step. Do not invoke
+        # BaseSettings.__init__ here: nested environment settings would be
+        # merged again and could conflict with the authentication type already
+        # selected by the explicit configuration-resolution steps above.
+        return cls._new_model_instance(cls._configured_type(), **kwargs)
+
+    @staticmethod
+    def _new_model_instance(
+        config_cls: type["ClientConfig"], **kwargs: Any
+    ) -> "ClientConfig":
+        """Validate explicit values without loading any Settings sources."""
+        instance = object.__new__(config_cls)
+        BaseModel.__init__(instance, **kwargs)
+        return instance
 
     @classmethod
     def _configured_type(cls) -> type["ClientConfig"]:

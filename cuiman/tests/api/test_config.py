@@ -136,6 +136,23 @@ class ClientConfigTest(TestCase):
         self.assertEqual("poppi", config.auth.password)
         self.assertEqual("0f8915a4", config.auth.access_token)
 
+    def test_new_instance_kwargs_override_settings_sources(self):
+        os.environ.update(
+            {
+                "EOZILLA_API_URL": "https://environment.example.test",
+                "EOZILLA_AUTH__AUTH_TYPE": "token",
+                "EOZILLA_AUTH__ACCESS_TOKEN": "environment-token",
+            }
+        )
+
+        config = ClientConfig.new_instance(
+            api_url="https://explicit.example.test",
+            auth={"auth_type": "none"},
+        )
+
+        self.assertEqual("https://explicit.example.test/", config.api_url)
+        self.assertEqual(NoAuthConfig(), config.auth)
+
     def test_create_from_file(self):
         original = ClientConfig(
             api_url="https://eozilla.example.test",
