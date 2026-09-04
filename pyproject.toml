@@ -177,21 +177,14 @@ test-eozilla = "pytest eozilla/tests"
 test-gavicore = "pytest gavicore/tests"
 test-procodile = "pytest procodile/tests"
 test-wraptile = "pytest wraptile/tests"
-cov-report-html = { cmd = "coverage html -d .cov-report && coverage report", depends-on = ["cov-modules"] }
-cov-report-xml = { cmd = "coverage xml -o coverage.xml && coverage report", depends-on = ["cov-modules"] }
+cov-report-html = "coverage html -d .cov-report && coverage report"
+cov-report-xml = "coverage xml -o coverage.xml && coverage report"
 cov-appligator = "pytest --cov appligator/src/appligator --cov-report= --cov-append appligator/tests"
 cov-cuiman = "pytest --cov cuiman/src/cuiman --cov-report= --cov-append cuiman/tests"
 cov-eozilla = "pytest --cov eozilla/src/eozilla --cov-report= --cov-append eozilla/tests"
 cov-gavicore = "pytest --cov gavicore/src/gavicore --cov-report= --cov-append gavicore/tests"
 cov-procodile = "pytest --cov procodile/src/procodile --cov-report= --cov-append procodile/tests"
 cov-wraptile = "pytest --cov wraptile/src/wraptile --cov-report= --cov-append wraptile/tests"
-cov-ci-start = "coverage erase"
-cov-ci-appligator = { cmd = "pytest --cov appligator/src/appligator --cov-report= --cov-append appligator/tests", depends-on = ["cov-ci-start"] }
-cov-ci-cuiman = { cmd = "pytest --cov cuiman/src/cuiman --cov-report= --cov-append cuiman/tests", depends-on = ["cov-ci-appligator"] }
-cov-ci-eozilla = { cmd = "pytest --cov eozilla/src/eozilla --cov-report= --cov-append eozilla/tests", depends-on = ["cov-ci-cuiman"] }
-cov-ci-gavicore = { cmd = "pytest --cov gavicore/src/gavicore --cov-report= --cov-append gavicore/tests", depends-on = ["cov-ci-eozilla"] }
-cov-ci-wraptile = { cmd = "pytest --cov wraptile/src/wraptile --cov-report= --cov-append wraptile/tests", depends-on = ["cov-ci-gavicore"] }
-cov-ci-procodile = { cmd = "pytest --cov procodile/src/procodile --cov-report= --cov-append procodile/tests", depends-on = ["cov-ci-wraptile"] }
 format = "python tools/format.py"
 check-appligator = "ruff check appligator/src"
 check-cuiman = "ruff check cuiman/src"
@@ -224,13 +217,20 @@ depends-on = [
 # pixi run coverage / coverage-ci
 
 [tool.pixi.tasks.coverage]
-depends-on = ["cov-report-html"]
+depends-on = ["cov-modules", "cov-report-html"]
 
 [tool.pixi.tasks.coverage-ci]
-depends-on = ["cov-report-xml"]
+depends-on = ["cov-modules", "cov-report-xml"]
 
 [tool.pixi.tasks.cov-modules]
-depends-on = ["cov-ci-procodile"]
+depends-on = [
+    "cov-appligator",
+    "cov-cuiman",
+    "cov-eozilla",
+    "cov-gavicore",
+    "cov-wraptile",
+    "cov-procodile",
+]
 
 # pixi run check
 
