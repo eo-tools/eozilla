@@ -21,6 +21,7 @@ AuthType: TypeAlias = Literal[
     "token",
     "login",
     "oauth2",
+    "oidc",
     "api-key",
 ]
 """Authentication mechanism selected by an ``AuthConfig`` discriminator.
@@ -37,6 +38,8 @@ authentication headers or credentials are obtained:
   login endpoint before using it like token authentication.
 * ``"oauth2"`` obtains and renews access tokens through an OAuth2 token
   endpoint using either the password or client-credentials grant.
+* ``"oidc"`` obtains and renews access tokens through OpenID Connect
+  Authorization Code with PKCE.
 * ``"api-key"`` sends the configured API key in its configured header.
 """
 
@@ -238,6 +241,56 @@ class OAuth2AuthConfig(_AccessTokenAuthConfig):
         return refresh
 
 
+class OidcAuthConfig(_AccessTokenAuthConfig):
+    """OpenID Connect public-client configuration."""
+
+    secret_fields: ClassVar[SecretFields] = frozenset({"access_token", "refresh_token"})
+
+    auth_type: Literal["oidc"] = "oidc"
+    issuer_url: HttpUrl
+    client_id: str = Field(min_length=1)
+    scopes: tuple[str, ...] = ()
+    refresh_token: str | None = None
+
+    @model_validator(mode="after")
+    def include_openid_scope(self) -> "OidcAuthConfig":
+        """Add the required OpenID Connect scope and remove duplicates."""
+        self.scopes = tuple(dict.fromkeys(("openid", *self.scopes)))
+        return self
+
+    def make_token_refresher(self) -> Callable[[], dict[str, str]]:
+        """Create a synchronous OpenID Connect token renewal callback."""
+
+        def refresh() -> dict[str, str]:
+            from .oidc import renew_oidc_tokens
+
+            result = renew_oidc_tokens(self)
+            self.access_token = result.access_token
+            if result.refresh_token:
+                self.refresh_token = result.refresh_token
+            self.persist_secrets()
+            return self.auth_headers
+
+        return refresh
+
+    def make_async_token_refresher(
+        self,
+    ) -> Callable[[], Awaitable[dict[str, str]]]:
+        """Create an asynchronous OpenID Connect token renewal callback."""
+
+        async def refresh() -> dict[str, str]:
+            from .oidc_async import renew_oidc_tokens_async
+
+            result = await renew_oidc_tokens_async(self)
+            self.access_token = result.access_token
+            if result.refresh_token:
+                self.refresh_token = result.refresh_token
+            self.persist_secrets()
+            return self.auth_headers
+
+        return refresh
+
+
 class ApiKeyAuthConfig(AuthConfigBase):
     """API-key authentication configuration."""
 
@@ -261,6 +314,7 @@ AuthConfig: TypeAlias = Annotated[
     | TokenAuthConfig
     | LoginAuthConfig
     | OAuth2AuthConfig
+    | OidcAuthConfig
     | ApiKeyAuthConfig,
     Field(discriminator="auth_type"),
 ]

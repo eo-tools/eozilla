@@ -176,7 +176,8 @@ class CliTest(TestCase):
         login_client_with_prompt.assert_called_once_with("client-config.yaml")
 
     @patch(
-        "cuiman.cli.config.login_client_with_prompt", side_effect=ValueError("bad login")
+        "cuiman.cli.config.login_client_with_prompt",
+        side_effect=ValueError("bad login"),
     )
     def test_login_with_configuration_error(self, _login_client_with_prompt: MagicMock):
         result = invoke_cli("login")

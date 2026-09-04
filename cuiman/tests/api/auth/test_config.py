@@ -17,6 +17,7 @@ from cuiman.api.auth import (
     LoginAuthConfig,
     NoAuthConfig,
     OAuth2AuthConfig,
+    OidcAuthConfig,
     TokenAuthConfig,
     TokenResult,
 )
@@ -48,6 +49,14 @@ from cuiman.api.auth import (
                 "password": "p",
             },
             OAuth2AuthConfig,
+        ),
+        (
+            {
+                "auth_type": "oidc",
+                "issuer_url": "https://identity.example.test",
+                "client_id": "client",
+            },
+            OidcAuthConfig,
         ),
         ({"auth_type": "api-key", "api_key": "k"}, ApiKeyAuthConfig),
     ],
@@ -106,6 +115,23 @@ def test_auth_config_rejects_fields_from_another_auth_type():
                 "token_url": "https://example.test/token",
                 "grant_type": "password",
                 "client_id": "client",
+                "use_bearer": True,
+                "access_token_header": "X-Auth-Token",
+            },
+        ),
+        (
+            OidcAuthConfig(
+                issuer_url="https://identity.example.test",
+                client_id="client",
+                scopes=("profile", "openid", "email", "profile"),
+                access_token="token",
+                refresh_token="refresh",
+            ),
+            {
+                "auth_type": "oidc",
+                "issuer_url": "https://identity.example.test/",
+                "client_id": "client",
+                "scopes": ["openid", "profile", "email"],
                 "use_bearer": True,
                 "access_token_header": "X-Auth-Token",
             },
@@ -222,6 +248,14 @@ def test_oauth2_client_secret_requires_client_id():
         )
 
 
+def test_oidc_requires_a_client_id():
+    with pytest.raises(ValidationError, match="at least 1 character"):
+        OidcAuthConfig(
+            issuer_url="https://identity.example.test",
+            client_id="",
+        )
+
+
 def test_non_oauth_configs_have_no_refreshers():
     config = NoAuthConfig()
     assert config.make_token_refresher() is None
@@ -266,6 +300,24 @@ def test_oauth2_refresher_preserves_unrotated_refresh_token(mock_renew: MagicMoc
     config.make_token_refresher()()
 
     assert config.refresh_token == "old-refresh"
+
+
+@patch("cuiman.api.auth.oidc.renew_oidc_tokens")
+def test_oidc_refresher_updates_tokens(mock_renew: MagicMock):
+    mock_renew.return_value = TokenResult(
+        access_token="new-access", refresh_token="new-refresh"
+    )
+    config = OidcAuthConfig(
+        issuer_url="https://identity.example.test",
+        client_id="client",
+        refresh_token="old-refresh",
+    )
+    persistor = MagicMock()
+    config.set_secret_persistor(persistor)
+
+    assert config.make_token_refresher()() == {"Authorization": "Bearer new-access"}
+    assert config.refresh_token == "new-refresh"
+    persistor.assert_called_once_with(config)
 
 
 @pytest.mark.asyncio
@@ -317,3 +369,24 @@ async def test_client_credentials_refresher_ignores_refresh_token(
 
     assert config.access_token == "new-access"
     assert config.refresh_token is None
+
+
+@pytest.mark.asyncio
+@patch(
+    "cuiman.api.auth.oidc_async.renew_oidc_tokens_async",
+    new_callable=AsyncMock,
+)
+async def test_oidc_async_refresher_preserves_unrotated_refresh_token(
+    mock_renew: AsyncMock,
+):
+    mock_renew.return_value = TokenResult(access_token="new-access")
+    config = OidcAuthConfig(
+        issuer_url="https://identity.example.test",
+        client_id="client",
+        refresh_token="old-refresh",
+    )
+
+    await config.make_async_token_refresher()()
+
+    assert config.access_token == "new-access"
+    assert config.refresh_token == "old-refresh"

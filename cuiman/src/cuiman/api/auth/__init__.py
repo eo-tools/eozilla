@@ -12,6 +12,7 @@ from cuiman.api.auth.config import (
     NoAuthConfig,
     OAuth2AuthConfig,
     OAuth2GrantType,
+    OidcAuthConfig,
     SecretFields,
     TokenAuthConfig,
 )
@@ -22,6 +23,16 @@ from cuiman.api.auth.oauth2_async import (
     obtain_oauth2_tokens_async,
     renew_oauth2_tokens_async,
 )
+from cuiman.api.auth.oidc import (
+    LoopbackCallbackServer,
+    OidcDiscovery,
+    build_authorization_url,
+    discover_oidc_provider,
+    exchange_oidc_code,
+    generate_pkce_verifier,
+    renew_oidc_tokens,
+)
+from cuiman.api.auth.oidc_async import renew_oidc_tokens_async
 
 __all__ = [
     "ApiKeyAuthConfig",
@@ -31,6 +42,7 @@ __all__ = [
     "BasicAuthConfig",
     "LoginAuthConfig",
     "NoAuthConfig",
+    "OidcAuthConfig",
     "OAuth2AuthConfig",
     "OAuth2GrantType",
     "SecretFields",
@@ -44,4 +56,12 @@ __all__ = [
     "obtain_oauth2_tokens_async",
     "renew_oauth2_tokens",
     "renew_oauth2_tokens_async",
+    "LoopbackCallbackServer",
+    "OidcDiscovery",
+    "build_authorization_url",
+    "discover_oidc_provider",
+    "exchange_oidc_code",
+    "generate_pkce_verifier",
+    "renew_oidc_tokens",
+    "renew_oidc_tokens_async",
 ]
