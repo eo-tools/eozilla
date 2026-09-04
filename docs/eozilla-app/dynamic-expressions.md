@@ -14,7 +14,7 @@ process-input object. The first use case is conditional visibility and
 enablement in schema-generated forms:
 
 ```yaml
-x-ui-visible: "advanced"
+x-ui-visible: "auth_type !== 'anonymous'"
 x-ui-hidden: "auth_type === 'anonymous'"
 x-ui-enabled: "auth_type === 'login'"
 x-ui-disabled: "auth_type !== 'login'"
