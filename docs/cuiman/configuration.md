@@ -11,9 +11,11 @@ entry overrides that of a previous one.
 
 1. Default settings hard-coded into the `cuiman.api.ClientConfig` class.
 2. Settings loaded from a given or the default configuration file passed as `config_path`.
-3. Settings loaded from environment variables prefixed with `EOZILLA_`.
-4. Settings from another configuration object of type `cuiman.api.ClientConfig` passes as `config`.
-5. Settings from keyword arguments passed directly to the client passed as `config_kwargs`.
+3. Credentials stored in the operating-system keyring for that configuration
+   file and API URL.
+4. Settings loaded from environment variables prefixed with `EOZILLA_`.
+5. Settings from another configuration object of type `cuiman.api.ClientConfig` passed as `config`.
+6. Settings from keyword arguments passed directly to the client as `config_kwargs`.
 
 This list is implemented in the class method `create()` of the 
 `cuiman.api.ClientConfig` class. 
@@ -38,7 +40,6 @@ JSON:
     "api_url": "https://anolis.api.org/process-api/v1",
     "auth": {
         "auth_type": "token",
-        "access_token": "ab989e20-d58609a9-8d4c",
         "use_bearer": true
     }
 }
@@ -50,9 +51,24 @@ YAML:
 api_url: "https://anolis.api.org/process-api/v1"
 auth:
   auth_type: token
-  access_token: ab989e20-d58609a9-8d4c
   use_bearer: true
 ```
+
+Configuration files contain only public connection and authentication metadata.
+Credentials are never written to them. Files in the older format that contain
+credentials are detected as legacy configuration; run `cuiman configure` to
+rewrite their public values safely.
+
+### Credential Storage
+
+The `cuiman` CLI stores passwords, access tokens, refresh tokens, client
+secrets, and API keys in the operating-system keyring. The keyring entry is
+scoped to the canonical configuration-file path and the API URL, so profiles
+for different services or files do not share credentials.
+
+Environment variables and direct Python configuration remain available for
+automated deployments. They take precedence over keyring values and should be
+provided through the deployment platform's secret-injection mechanism.
 
 ### Environment Variables
 
@@ -133,15 +149,22 @@ client = Client(
 
 ### Using the CLI
 
-Before using the CLI, you should configure it using the `cuiman configure`
-command.
+Before using the CLI, configure the public service settings and then log in:
 
-If environment variables are set (e.g. `EOZILLA_API_URL`,
-`EOZILLA_AUTH__AUTH_TYPE`, `EOZILLA_AUTH__CLIENT_ID`), they appear as
-pre-filled defaults in the interactive prompts so you can confirm or override
-them. This is useful in managed deployments (e.g. Kubernetes/JupyterHub) where
-admins inject service-level settings via environment variables and users only
-need to supply their own credentials.
+```console
+$ cuiman configure
+$ cuiman login
+```
+
+`configure` asks only for public connection and authentication metadata and
+writes it to the configuration file. `login` asks for credentials only when
+the selected authentication type requires them and stores them in the OS
+keyring. `logout` removes the matching keyring entry. For authentication type
+`none`, `configure` does not offer login.
+
+When a configured authenticated service is used without available credentials,
+the CLI reports `Please log in first using 'cuiman login'.` instead of showing
+an implementation traceback.
 
 You can override settings anytime from environment variables or by using
 the `--config/-c <file>` option supported by most CLI commands.
@@ -237,7 +260,7 @@ config = ClientConfig(
         "login_url": "https://identity.example.org/login",
         "username": "...",
         "password": "...",
-        "access_token": "...",  # populated by `cuiman configure`
+        "access_token": "...",  # obtained by `cuiman login`
         "use_bearer": True,
     },
 )
@@ -249,8 +272,8 @@ The `oauth2` type obtains a token from a standards-based OAuth 2.0 token
 endpoint. It supports the `password` grant (the default) and the
 `client_credentials` grant. If a password-grant response includes a refresh
 token, Cuiman refreshes the access token once after an HTTP 401. The refreshed
-token is kept by the active client and is not written back to the configuration
-file.
+token is persisted to the OS keyring when the credentials were loaded from it;
+it is never written to the configuration file.
 
 ```python
 config = ClientConfig(
@@ -263,12 +286,17 @@ config = ClientConfig(
         "password": "...",
         "client_id": "...",  # optional for password grant
         "client_secret": "...",  # optional for password grant
-        "access_token": "...",  # populated by `cuiman configure`
-        "refresh_token": "...",  # populated when the server returns one
+        "access_token": "...",  # obtained by `cuiman login`
+        "refresh_token": "...",  # returned by the token endpoint when available
         "use_bearer": True,
     },
 )
 ```
+
+`cuiman login` supports the OAuth2 `password` grant. The
+`client_credentials` grant has no interactive login step; provide its
+credentials through environment variables or direct Python configuration.
+OIDC authorization-code login is not included in this release.
 
 ### Auth type `api-key`
 
