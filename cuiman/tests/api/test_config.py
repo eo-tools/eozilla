@@ -8,6 +8,7 @@ import os
 import tempfile
 from pathlib import Path
 from unittest import TestCase
+from unittest.mock import patch
 
 import yaml
 
@@ -97,6 +98,73 @@ class ClientConfigTest(TestCase):
             ),
             config,
         )
+
+    @patch("cuiman.api.config.load_auth_secrets")
+    def test_create_loads_auth_secrets_from_keyring(self, load_auth_secrets):
+        original = ClientConfig(
+            api_url="https://eozilla.example.test",
+            auth=LoginAuthConfig(login_url="https://eozilla.example.test/login"),
+        )
+        load_auth_secrets.return_value = {
+            "username": "u",
+            "password": "p",
+            "access_token": "token",
+        }
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            config_path = Path(tmp_dir_name) / "config"
+            original.write(config_path)
+            config = ClientConfig.create(config_path=config_path)
+
+        self.assertEqual(
+            LoginAuthConfig(
+                login_url="https://eozilla.example.test/login",
+                username="u",
+                password="p",
+                access_token="token",
+            ),
+            config.auth,
+        )
+        load_auth_secrets.assert_called_once_with(
+            config_path,
+            "https://eozilla.example.test/",
+            "login",
+        )
+
+    @patch("cuiman.api.config.load_auth_secrets")
+    def test_environment_secret_overrides_do_not_require_keyring(
+        self, load_auth_secrets
+    ):
+        original = ClientConfig(
+            api_url="https://eozilla.example.test",
+            auth=TokenAuthConfig(),
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            config_path = Path(tmp_dir_name) / "config"
+            original.write(config_path)
+            os.environ["EOZILLA_AUTH__ACCESS_TOKEN"] = "environment-token"
+            config = ClientConfig.create(config_path=config_path)
+
+        self.assertEqual("environment-token", config.auth.access_token)
+        load_auth_secrets.assert_not_called()
+
+    @patch("cuiman.api.config.load_auth_secrets")
+    def test_environment_secret_overrides_keyring_value(self, load_auth_secrets):
+        original = ClientConfig(
+            api_url="https://eozilla.example.test",
+            auth=LoginAuthConfig(login_url="https://eozilla.example.test/login"),
+        )
+        load_auth_secrets.return_value = {
+            "username": "u",
+            "password": "keyring-password",
+            "access_token": "token",
+        }
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            config_path = Path(tmp_dir_name) / "config"
+            original.write(config_path)
+            os.environ["EOZILLA_AUTH__PASSWORD"] = "environment-password"
+            config = ClientConfig.create(config_path=config_path)
+
+        self.assertEqual("environment-password", config.auth.password)
 
     def test_from_file_rejects_legacy_flat_auth_configurations(self):
         common = {

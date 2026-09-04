@@ -21,6 +21,7 @@ from pydantic_settings import BaseSettings, EnvSettingsSource, SettingsConfigDic
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 
 from .auth import AuthConfig, NoAuthConfig
+from .auth.secret_store import load_auth_secrets
 from .defaults import DEFAULT_API_URL
 from .opener import JobResultOpener, JobResultOpenerRegistry
 
@@ -102,28 +103,45 @@ class ClientConfig(BaseSettings):
         config_path: Optional[Path | str] = None,
         **config_kwargs,
     ) -> "ClientConfig":
-        # 0. from defaults
-        config_dict = cls.default_config.to_dict()
-
         # 1. from file
         file_config = cls.from_file(config_path=config_path)
-        if file_config is not None:
-            _update_if_not_none(config_dict, file_config.to_dict())
-
         # 2. from env. Read raw settings so a partial nested auth override can
         # be merged with the auth model loaded from defaults or a file before
         # the discriminated union is validated.
         env_config = EnvSettingsSource(cls)()
-        _update_config_from_env(config_dict, env_config)
 
-        # 3. from config
-        if config is not None:
-            _update_if_not_none(config_dict, config.to_dict())
+        def merge_config_sources(
+            auth_secrets: dict[str, str] | None = None,
+        ) -> dict[str, Any]:
+            config_dict = cls.default_config.to_dict()
+            if file_config is not None:
+                _update_if_not_none(config_dict, file_config.to_dict())
+            if auth_secrets:
+                _update_if_not_none(config_dict, {"auth": auth_secrets})
+            _update_config_from_env(config_dict, env_config)
+            if config is not None:
+                _update_if_not_none(config_dict, config.to_dict())
+            _update_if_not_none(config_dict, config_kwargs)
+            return config_dict
 
-        # 4. from kwargs
-        _update_if_not_none(config_dict, config_kwargs)
+        config_dict = merge_config_sources()
+        resolved_config = cls.new_instance(**config_dict)
+        if file_config is None or _has_auth_credentials(resolved_config):
+            return resolved_config
 
-        return cls.new_instance(**config_dict)
+        auth_secrets = load_auth_secrets(
+            cls.normalize_config_path(config_path),
+            resolved_config.api_url or "",
+            resolved_config.auth.auth_type,
+        )
+        auth_secrets = {
+            name: value
+            for name, value in auth_secrets.items()
+            if name in resolved_config.auth.secret_fields
+        }
+        if not auth_secrets:
+            return resolved_config
+        return cls.new_instance(**merge_config_sources(auth_secrets))
 
     @classmethod
     def from_file(
@@ -270,6 +288,15 @@ def _update_if_not_none(target: dict[str, Any], updates: dict[str, Any]):
             _update_if_not_none(target[key], value)
         else:
             target[key] = value
+
+
+def _has_auth_credentials(config: ClientConfig) -> bool:
+    """Return whether an authentication config can create request headers."""
+    try:
+        _ = config.auth_headers
+    except ValueError:
+        return False
+    return True
 
 
 ###############################################################
