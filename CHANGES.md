@@ -32,6 +32,9 @@
 
 ### Fixes
 
+- Coverage collection now runs package test suites in a defined sequence before
+  reports are generated, ensuring Codecov receives the complete combined result.
+
 - **Cuiman**'s launched-app proxy now rejects path-traversal segments, so a
   browser request cannot escape the configured processing API base path.
 
