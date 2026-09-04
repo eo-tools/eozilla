@@ -145,12 +145,44 @@ class CliTest(TestCase):
 
         login_client_with_prompt.assert_called_once_with(config_path)
 
+    @patch(
+        "cuiman.cli.config.login_client_with_prompt",
+        side_effect=ValueError("bad login"),
+    )
+    @patch("cuiman.cli.cli.typer.confirm", return_value=True)
+    @patch("cuiman.cli.cli.sys.stdin.isatty", return_value=True)
+    def test_configure_stops_when_offered_login_fails(
+        self,
+        _isatty: MagicMock,
+        _confirm: MagicMock,
+        _login_client_with_prompt: MagicMock,
+    ):
+        with use_temp_dir():
+            config_path = Path("config")
+            ClientConfig(
+                api_url="http://localhost:2357", auth={"auth_type": "token"}
+            ).write(config_path)
+
+            with self.assertRaises(typer.Exit) as exit_error:
+                _offer_login_after_config(config_path)
+
+        self.assertEqual(1, exit_error.exception.exit_code)
+
     @patch("cuiman.cli.config.login_client_with_prompt")
     def test_login(self, login_client_with_prompt: MagicMock):
         result = invoke_cli("login", "--config", "client-config.yaml")
 
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         login_client_with_prompt.assert_called_once_with("client-config.yaml")
+
+    @patch(
+        "cuiman.cli.config.login_client_with_prompt", side_effect=ValueError("bad login")
+    )
+    def test_login_with_configuration_error(self, _login_client_with_prompt: MagicMock):
+        result = invoke_cli("login")
+
+        self.assertEqual(1, result.exit_code, msg=self.get_result_msg(result))
+        self.assertEqual("bad login\n", result.stderr)
 
     @patch("cuiman.cli.config.logout_client")
     def test_logout(self, logout_client: MagicMock):

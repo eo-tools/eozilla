@@ -50,6 +50,14 @@ def test_load_auth_secrets_reads_matching_record(mock_get_password, tmp_path: Pa
     )
 
 
+@patch("cuiman.api.auth.secret_store.keyring.get_password", return_value=None)
+def test_load_auth_secrets_handles_missing_record(_mock_get_password, tmp_path: Path):
+    assert (
+        load_auth_secrets(tmp_path / "config", "https://api.example.test/", "login")
+        == {}
+    )
+
+
 @patch("cuiman.api.auth.secret_store.keyring.get_password")
 def test_load_auth_secrets_ignores_record_for_another_auth_type(
     mock_get_password, tmp_path: Path

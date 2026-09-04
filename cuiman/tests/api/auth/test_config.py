@@ -214,6 +214,14 @@ def test_oauth2_client_credentials_grant_requires_client_id():
         )
 
 
+def test_oauth2_client_secret_requires_client_id():
+    with pytest.raises(ValidationError, match="Client ID must be configured"):
+        OAuth2AuthConfig(
+            token_url="https://example.test/token",
+            client_secret="secret",
+        )
+
+
 def test_non_oauth_configs_have_no_refreshers():
     config = NoAuthConfig()
     assert config.make_token_refresher() is None

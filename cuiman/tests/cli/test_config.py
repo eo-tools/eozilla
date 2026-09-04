@@ -25,7 +25,11 @@ from cuiman.api.auth import (
 )
 from cuiman.cli.config import (
     _Context,
+    _get_login_config,
+    _get_previous_public_config,
+    _get_public_legacy_config,
     _prompt_for_auth_type,
+    _prompt_for_oauth2_grant_type,
     configure_client_with_prompt,
     get_config,
     login_client_with_prompt,
@@ -79,6 +83,21 @@ class GetConfigTest(ConfigTestMixin, unittest.TestCase):
             "Legacy configuration format detected, please run 'cuiman configure'",
         ):
             get_config(None)
+
+    def test_get_login_config_requires_existing_named_file(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "Configuration file fantasia.cfg not found or empty.",
+        ):
+            _get_login_config("fantasia.cfg")
+
+    @patch("cuiman.cli.config.ClientConfig.from_file", side_effect=ValueError("bad"))
+    @patch("cuiman.cli.config.ClientConfig.read_file_data", return_value={})
+    def test_get_previous_public_config_reraises_unexpected_error(
+        self, _read_file_data: MagicMock, _from_file: MagicMock
+    ):
+        with self.assertRaisesRegex(ValueError, "bad"):
+            _get_previous_public_config("config")
 
     @patch("cuiman.api.config.load_auth_secrets")
     def test_get_config_resolves_keyring_credentials(self, load_auth_secrets):
@@ -361,10 +380,47 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
             ClientConfig.from_file(config_path).auth,
         )
 
+    def test_get_public_legacy_config_rewrites_nested_oauth2_configuration(self):
+        public_config = _get_public_legacy_config(
+            {
+                "api_url": "https://eozilla.example.test",
+                "auth": {
+                    "auth_type": "oauth2",
+                    "auth_url": "https://identity.example.test/token",
+                    "grant_type": "password",
+                    "client_id": "client",
+                    "client_secret": "secret",
+                },
+            }
+        )
+
+        self.assertEqual(
+            {
+                "api_url": "https://eozilla.example.test",
+                "auth": {
+                    "auth_type": "oauth2",
+                    "token_url": "https://identity.example.test/token",
+                    "grant_type": "password",
+                    "client_id": "client",
+                },
+            },
+            public_config,
+        )
+
     def test_auth_type_invalid(self):
         with pytest.raises(ValueError, match="Invalid authentication type: torken"):
             configure_client_with_prompt(
                 api_url="http://localhost:9090", auth_type="torken"
+            )
+
+    def test_oauth2_grant_type_invalid(self):
+        with pytest.raises(ValueError, match="Invalid OAuth2 grant type: unknown"):
+            _prompt_for_oauth2_grant_type(
+                _Context(
+                    cli_params={"grant_type": "unknown"},
+                    prev_params={},
+                    curr_params={},
+                )
             )
 
     def test_auth_type_prompt_uses_valid_previous_value_or_oauth2_default(self):

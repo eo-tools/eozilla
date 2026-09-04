@@ -59,6 +59,18 @@ class ClientConfigTest(TestCase):
         self.assertEqual(DEFAULT_API_URL, config.api_url)
         self.assertEqual(NoAuthConfig(), config.auth)
 
+    def test_read_file_data_handles_empty_and_non_mapping_files(self):
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            config_path = Path(tmp_dir_name) / "config"
+            config_path.write_text("")
+            self.assertIsNone(ClientConfig.read_file_data(config_path))
+
+            config_path.write_text("- not-a-mapping\n")
+            with self.assertRaisesRegex(
+                ValueError, "Configuration file must contain a mapping."
+            ):
+                ClientConfig.read_file_data(config_path)
+
     def test_branded_default_config_controls_type_defaults_and_environment(self):
         class BrandedClientConfig(ClientConfig):
             model_config = SettingsConfigDict(
