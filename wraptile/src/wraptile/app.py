@@ -4,6 +4,7 @@
 
 import logging
 import time
+from contextlib import asynccontextmanager
 from typing import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
@@ -11,8 +12,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .exceptions import ServiceException
+from .provider import get_service
 
-app = FastAPI()
+
+@asynccontextmanager
+async def load_app_eagerly(app: FastAPI):
+    get_service()  # startup ...
+    yield  # running ...
+    # shutdown ...
+
+
+app = FastAPI(lifespan=load_app_eagerly)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=False,  # we disallow Cookie-Auth (FastAPI default)

@@ -12,6 +12,7 @@ import fastapi
 import yaml
 from starlette.routing import Route
 
+from gavicore.dru_service import DruService
 from gavicore.models import (
     Capabilities,
     ConformanceDeclaration,
@@ -92,6 +93,16 @@ class ServiceBase(Service, ABC):
                 name="service",
                 example="path.to.module:service",
             )
+
+            if issubclass(service.__class__, DruService):
+                from wraptile.app import app as app_module
+                from wraptile.dru_routes import dru_router
+
+                app_module.include_router(dru_router)
+
+                logging.getLogger("uvicorn").info(
+                    "Loaded additional routes to support Deploy, Redeploy, Undeploy"
+                )
         except (ValueError, TypeError) as e:
             raise ServiceConfigException(f"{e}") from e
         logger = logging.getLogger("uvicorn")
