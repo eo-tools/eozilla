@@ -144,6 +144,21 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
             get_config(None),
         )
 
+    def test_configure_reuses_existing_public_configuration(self):
+        ClientConfig(
+            api_url="https://previous.example.test",
+            auth=NoAuthConfig(),
+        ).write(ClientConfig.default_path)
+
+        configure_client_with_prompt(
+            api_url="https://configured.example.test", auth_type="none"
+        )
+
+        self.assertEqual(
+            "https://configured.example.test/",
+            ClientConfig.from_file(ClientConfig.default_path).api_url,
+        )
+
     @patch("typer.prompt", return_value="https://configured.example.test/processes")
     def test_configure_uses_branded_default_config_type_and_values(
         self, prompt: MagicMock
@@ -296,6 +311,56 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
             yaml.safe_load(config_path.read_text()),
         )
 
+    def test_configure_rewrites_legacy_login_configuration(self):
+        config_path = ClientConfig.default_path
+        config_path.write_text(
+            yaml.safe_dump(
+                {
+                    "api_url": "https://eozilla.example.test",
+                    "auth_type": "login",
+                    "auth_url": "https://identity.example.test/login",
+                    "username": "legacy-user",
+                    "password": "legacy-password",
+                }
+            )
+        )
+
+        configure_client_with_prompt(
+            api_url="https://eozilla.example.test",
+            auth_type="login",
+            login_url="https://identity.example.test/login",
+            use_bearer=True,
+        )
+
+        self.assertEqual(
+            LoginAuthConfig(login_url="https://identity.example.test/login"),
+            ClientConfig.from_file(config_path).auth,
+        )
+
+    def test_configure_rewrites_legacy_api_key_configuration(self):
+        config_path = ClientConfig.default_path
+        config_path.write_text(
+            yaml.safe_dump(
+                {
+                    "api_url": "https://eozilla.example.test",
+                    "auth_type": "api-key",
+                    "api_key": "legacy-key",
+                    "api_key_header": "X-Legacy-Key",
+                }
+            )
+        )
+
+        configure_client_with_prompt(
+            api_url="https://eozilla.example.test",
+            auth_type="api-key",
+            api_key_header="X-Legacy-Key",
+        )
+
+        self.assertEqual(
+            ApiKeyAuthConfig(api_key_header="X-Legacy-Key"),
+            ClientConfig.from_file(config_path).auth,
+        )
+
     def test_auth_type_invalid(self):
         with pytest.raises(ValueError, match="Invalid authentication type: torken"):
             configure_client_with_prompt(
@@ -328,6 +393,10 @@ class LoginAndLogoutTest(ConfigTestMixin, unittest.TestCase):
             config_path
         )
         return config_path
+
+    def test_login_without_configuration_explains_how_to_continue(self):
+        with pytest.raises(ValueError, match="has not yet been configured"):
+            login_client_with_prompt()
 
     @patch("cuiman.cli.config.save_auth_secrets")
     @patch("typer.prompt", side_effect=["alice", "password"])

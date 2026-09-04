@@ -3,6 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 import sys
+from pathlib import Path
 from typing import Annotated, Final, Optional
 
 import typer.core
@@ -251,21 +252,7 @@ def new_cli(
             typer.echo(str(exc), err=True)
             raise typer.Exit(code=1) from exc
         typer.echo(f"Client configuration written to {config_path}")
-        configured_config = ClientConfig.from_file(config_path)
-        assert configured_config is not None
-        configured_auth_type = configured_config.auth.auth_type
-        if (
-            configured_auth_type != "none"
-            and sys.stdin.isatty()
-            and typer.confirm("Log in now?", default=False)
-        ):
-            from .config import login_client_with_prompt
-
-            try:
-                login_client_with_prompt(config_path)
-            except (SecretStoreError, ValueError) as exc:
-                typer.echo(str(exc), err=True)
-                raise typer.Exit(code=1) from exc
+        _offer_login_after_config(config_path)
 
     @t.command()
     def login(
@@ -531,6 +518,24 @@ def new_cli(
             _wait_until_interrupted()
 
     return t
+
+
+def _offer_login_after_config(config_path: Path) -> None:
+    """Offer interactive login when the new configuration requires it."""
+    configured_config = ClientConfig.from_file(config_path)
+    assert configured_config is not None
+    if (
+        configured_config.auth.auth_type != "none"
+        and sys.stdin.isatty()
+        and typer.confirm("Log in now?", default=False)
+    ):
+        from .config import login_client_with_prompt
+
+        try:
+            login_client_with_prompt(config_path)
+        except (SecretStoreError, ValueError) as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=1) from exc
 
 
 def _wait_until_interrupted() -> None:

@@ -73,6 +73,18 @@ def test_load_auth_secrets_rejects_invalid_record(mock_get_password, tmp_path: P
 
 
 @patch("cuiman.api.auth.secret_store.keyring.get_password")
+def test_load_auth_secrets_rejects_non_string_secret_value(
+    mock_get_password, tmp_path: Path
+):
+    mock_get_password.return_value = json.dumps(
+        {"auth_type": "token", "secrets": {"access_token": 1}}
+    )
+
+    with pytest.raises(SecretStoreError, match="Stored Cuiman credentials are invalid"):
+        load_auth_secrets(tmp_path / "config", "https://api.example.test/", "token")
+
+
+@patch("cuiman.api.auth.secret_store.keyring.get_password")
 def test_load_auth_secrets_reports_unavailable_keyring(
     mock_get_password, tmp_path: Path
 ):
@@ -100,6 +112,16 @@ def test_save_auth_secrets_writes_typed_record(mock_set_password, tmp_path: Path
         "auth_type": "login",
         "secrets": {"username": "u", "password": "p"},
     }
+
+
+def test_save_auth_secrets_rejects_non_string_secret_value(tmp_path: Path):
+    with pytest.raises(ValueError, match="Authentication secrets must have string"):
+        save_auth_secrets(
+            tmp_path / "config",
+            "https://api.example.test/",
+            "token",
+            {"access_token": 1},  # type: ignore[dict-item]
+        )
 
 
 @patch("cuiman.api.auth.secret_store.keyring.set_password")

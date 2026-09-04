@@ -11,10 +11,15 @@ import remotestate as rs
 import typer.testing
 import yaml
 
-from cuiman import Client, __version__
+from cuiman import Client, ClientConfig, __version__
 
 # noinspection PyProtectedMember
-from cuiman.cli.cli import _wait_until_interrupted, cli, new_cli
+from cuiman.cli.cli import (
+    _offer_login_after_config,
+    _wait_until_interrupted,
+    cli,
+    new_cli,
+)
 from gavicore.util.testing import use_temp_dir
 
 from ..helpers import MockTransport
@@ -122,6 +127,25 @@ class CliTest(TestCase):
         confirm.assert_not_called()
 
     @patch("cuiman.cli.config.login_client_with_prompt")
+    @patch("cuiman.cli.cli.typer.confirm", return_value=True)
+    @patch("cuiman.cli.cli.sys.stdin.isatty", return_value=True)
+    def test_configure_offers_login_for_authenticated_service(
+        self,
+        _isatty: MagicMock,
+        _confirm: MagicMock,
+        login_client_with_prompt: MagicMock,
+    ):
+        with use_temp_dir():
+            config_path = Path("config")
+            ClientConfig(
+                api_url="http://localhost:2357", auth={"auth_type": "token"}
+            ).write(config_path)
+
+            _offer_login_after_config(config_path)
+
+        login_client_with_prompt.assert_called_once_with(config_path)
+
+    @patch("cuiman.cli.config.login_client_with_prompt")
     def test_login(self, login_client_with_prompt: MagicMock):
         result = invoke_cli("login", "--config", "client-config.yaml")
 
@@ -134,6 +158,13 @@ class CliTest(TestCase):
 
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         logout_client.assert_called_once_with("client-config.yaml")
+
+    @patch("cuiman.cli.config.logout_client", side_effect=ValueError("bad logout"))
+    def test_logout_with_configuration_error(self, _logout_client: MagicMock):
+        result = invoke_cli("logout")
+
+        self.assertEqual(1, result.exit_code, msg=self.get_result_msg(result))
+        self.assertEqual("bad logout\n", result.stderr)
 
     @patch("cuiman.cli.config.configure_client_with_prompt")
     def test_configure_with_configuration_error(self, mock_configure):
