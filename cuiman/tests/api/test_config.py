@@ -11,6 +11,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 import yaml
+from pydantic_settings import SettingsConfigDict
 
 from cuiman.api.auth import (
     ApiKeyAuthConfig,
@@ -57,6 +58,63 @@ class ClientConfigTest(TestCase):
             )
         self.assertEqual(DEFAULT_API_URL, config.api_url)
         self.assertEqual(NoAuthConfig(), config.auth)
+
+    def test_branded_default_config_controls_type_defaults_and_environment(self):
+        class BrandedClientConfig(ClientConfig):
+            model_config = SettingsConfigDict(
+                env_prefix="BRANDED_",
+                env_nested_delimiter="__",
+                extra="forbid",
+            )
+
+            service_name: str = "branded"
+
+        branded_default = BrandedClientConfig(
+            api_url="https://default.example.test/processes",
+            auth=TokenAuthConfig(use_bearer=False, access_token_header="X-Branded"),
+        )
+        with patch.dict(
+            os.environ,
+            {"BRANDED_API_URL": "https://environment.example.test/processes"},
+        ):
+            with patch.object(ClientConfig, "default_config", branded_default):
+                with tempfile.TemporaryDirectory() as tmp_dir_name:
+                    config = ClientConfig.create(
+                        config_path=Path(tmp_dir_name) / "missing-config"
+                    )
+
+        self.assertIsInstance(config, BrandedClientConfig)
+        self.assertEqual("https://environment.example.test/processes", config.api_url)
+        self.assertEqual(
+            TokenAuthConfig(use_bearer=False, access_token_header="X-Branded"),
+            config.auth,
+        )
+        self.assertEqual("branded", config.service_name)
+
+    def test_branded_default_config_loads_files_as_branded_type(self):
+        class BrandedClientConfig(ClientConfig):
+            service_name: str = "branded"
+
+        branded_default = BrandedClientConfig(
+            api_url="https://default.example.test/processes",
+            auth=TokenAuthConfig(),
+        )
+        with patch.object(ClientConfig, "default_config", branded_default):
+            with tempfile.TemporaryDirectory() as tmp_dir_name:
+                config_path = Path(tmp_dir_name) / "config"
+                config_path.write_text(
+                    yaml.safe_dump(
+                        {
+                            "api_url": "https://configured.example.test/processes",
+                            "auth": {"auth_type": "none"},
+                            "service_name": "configured",
+                        }
+                    )
+                )
+                config = ClientConfig.from_file(config_path)
+
+        self.assertIsInstance(config, BrandedClientConfig)
+        self.assertEqual("configured", config.service_name)
 
     def test_create_from_env(self):
         os.environ.update(

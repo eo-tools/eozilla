@@ -144,6 +144,28 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
             get_config(None),
         )
 
+    @patch("typer.prompt", return_value="https://configured.example.test/processes")
+    def test_configure_uses_branded_default_config_type_and_values(
+        self, prompt: MagicMock
+    ):
+        class BrandedClientConfig(ClientConfig):
+            service_name: str = "branded"
+
+        branded_default = BrandedClientConfig(
+            api_url="https://default.example.test/processes",
+            auth=NoAuthConfig(),
+        )
+        with patch.object(ClientConfig, "default_config", branded_default):
+            config_path = configure_client_with_prompt(auth_type="none")
+            config = ClientConfig.from_file(config_path)
+
+        self.assertIsInstance(config, BrandedClientConfig)
+        self.assertEqual("branded", config.service_name)
+        self.assertEqual(
+            "https://default.example.test/processes",
+            prompt.call_args.kwargs["default"],
+        )
+
     @patch("typer.prompt")
     def test_basic_auth_configuration_never_prompts_for_credentials(
         self, prompt: MagicMock

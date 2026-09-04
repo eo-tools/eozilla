@@ -103,32 +103,49 @@ class ClientConfig(BaseSettings):
         config_path: Optional[Path | str] = None,
         **config_kwargs,
     ) -> "ClientConfig":
-        # 1. from file
+        # 0. Identify the application-selected configuration type. Applications
+        #    brand Cuiman by assigning a derived ``default_config`` instance;
+        #    its type owns settings metadata such as the environment prefix.
+        config_cls = cls._configured_type()
+
+        # 1. Load the public, file-backed configuration without resolving
+        #    environment variables or operating-system credentials yet.
         file_config = cls.from_file(config_path=config_path)
-        # 2. from env. Read raw settings so a partial nested auth override can
-        # be merged with the auth model loaded from defaults or a file before
-        # the discriminated union is validated.
-        env_config = EnvSettingsSource(cls)()
+
+        # 2. Read raw environment settings. This allows a partial nested auth
+        #    override to be merged before the discriminated union is validated.
+        # Do not use ``cls`` here: CLI and generated clients call this method
+        # on ClientConfig, while application settings belong to config_cls.
+        env_config = EnvSettingsSource(config_cls)()
 
         def merge_config_sources(
             auth_secrets: dict[str, str] | None = None,
         ) -> dict[str, Any]:
+            # 3. Start with the application's API and authentication defaults.
             config_dict = cls.default_config.to_dict()
+            # 4. Apply public values persisted in the configuration file.
             if file_config is not None:
                 _update_if_not_none(config_dict, file_config.to_dict())
+            # 5. Apply credentials read from the OS keyring, if available.
             if auth_secrets:
                 _update_if_not_none(config_dict, {"auth": auth_secrets})
+            # 6. Let environment variables override file and keyring values.
             _update_config_from_env(config_dict, env_config)
+            # 7. Apply a complete configuration instance supplied by the caller.
             if config is not None:
                 _update_if_not_none(config_dict, config.to_dict())
+            # 8. Apply individual caller-supplied keyword arguments last.
             _update_if_not_none(config_dict, config_kwargs)
             return config_dict
 
+        # 9. Build the effective configuration from all non-keyring sources.
         config_dict = merge_config_sources()
         resolved_config = cls.new_instance(**config_dict)
         if file_config is None or _has_auth_credentials(resolved_config):
             return resolved_config
 
+        # 10. A public file configuration without usable credentials may have
+        #     matching secrets in the operating-system keyring.
         auth_secrets = load_auth_secrets(
             cls.normalize_config_path(config_path),
             resolved_config.api_url or "",
@@ -141,6 +158,9 @@ class ClientConfig(BaseSettings):
         }
         if not auth_secrets:
             return resolved_config
+
+        # 11. Rebuild with the keyring credentials and persist later token
+        #     refreshes back to the same keyring entry.
         resolved_config = cls.new_instance(**merge_config_sources(auth_secrets))
         _set_auth_secret_persistor(
             resolved_config,
@@ -159,8 +179,7 @@ class ClientConfig(BaseSettings):
             raise ValueError(
                 "Legacy configuration format detected, please run 'cuiman configure'"
             )
-        config_cls = type(ClientConfig.default_config)
-        assert issubclass(config_cls, ClientConfig)
+        config_cls = cls._configured_type()
         # Do not call BaseSettings.__init__: it would merge environment values
         # into this file-only configuration before ClientConfig.create() can
         # perform its intentional merge. BaseModel.__init__ still validates
@@ -206,9 +225,14 @@ class ClientConfig(BaseSettings):
         cls,
         **kwargs: Any,
     ) -> "ClientConfig":
-        config_cls = type(ClientConfig.default_config)
+        return cls._configured_type()(**kwargs)
+
+    @classmethod
+    def _configured_type(cls) -> type["ClientConfig"]:
+        """Return the concrete configuration type selected by the application."""
+        config_cls = type(cls.default_config)
         assert issubclass(config_cls, ClientConfig)
-        return config_cls(**kwargs)
+        return config_cls
 
     def to_dict(self):
         config_dict = self.model_dump(
