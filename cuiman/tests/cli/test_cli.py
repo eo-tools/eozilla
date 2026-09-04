@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import re
 from pathlib import Path
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
@@ -17,6 +18,8 @@ from cuiman.cli.cli import _wait_until_interrupted, cli, new_cli
 from gavicore.util.testing import use_temp_dir
 
 from ..helpers import MockTransport
+
+ANSI_ESCAPE_PATTERN = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
 def invoke_cli(*args: str) -> typer.testing.Result:
@@ -98,8 +101,8 @@ class CliTest(TestCase):
         )
 
         self.assertEqual(2, result.exit_code, msg=self.get_result_msg(result))
-        self.assertIn("No such option:", result.stderr)
-        self.assertIn("access-token", result.stderr)
+        error_message = ANSI_ESCAPE_PATTERN.sub("", result.stderr)
+        self.assertIn("No such option: --access-token", error_message)
 
     @patch("cuiman.cli.cli.typer.confirm")
     @patch("cuiman.cli.cli.sys.stdin.isatty", return_value=True)
