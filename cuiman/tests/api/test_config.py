@@ -17,7 +17,9 @@ from cuiman.api.auth import (
     BasicAuthConfig,
     LoginAuthConfig,
     NoAuthConfig,
+    OAuth2AuthConfig,
     TokenAuthConfig,
+    TokenResult,
 )
 from cuiman.api.config import (
     ClientConfig,
@@ -115,15 +117,10 @@ class ClientConfigTest(TestCase):
             original.write(config_path)
             config = ClientConfig.create(config_path=config_path)
 
-        self.assertEqual(
-            LoginAuthConfig(
-                login_url="https://eozilla.example.test/login",
-                username="u",
-                password="p",
-                access_token="token",
-            ),
-            config.auth,
-        )
+        self.assertIsInstance(config.auth, LoginAuthConfig)
+        self.assertEqual("u", config.auth.username)
+        self.assertEqual("p", config.auth.password)
+        self.assertEqual("token", config.auth.access_token)
         load_auth_secrets.assert_called_once_with(
             config_path,
             "https://eozilla.example.test/",
@@ -165,6 +162,43 @@ class ClientConfigTest(TestCase):
             config = ClientConfig.create(config_path=config_path)
 
         self.assertEqual("environment-password", config.auth.password)
+
+    @patch("cuiman.api.auth.oauth2.renew_oauth2_tokens")
+    @patch("cuiman.api.config.save_auth_secrets")
+    @patch("cuiman.api.config.load_auth_secrets")
+    def test_keyring_loaded_oauth2_config_persists_refreshed_tokens(
+        self, load_auth_secrets, save_auth_secrets, renew_oauth2_tokens
+    ):
+        load_auth_secrets.return_value = {
+            "username": "u",
+            "password": "p",
+            "access_token": "old-access",
+            "refresh_token": "old-refresh",
+        }
+        renew_oauth2_tokens.return_value = TokenResult(
+            access_token="new-access", refresh_token="new-refresh"
+        )
+        original = ClientConfig(
+            api_url="https://eozilla.example.test",
+            auth=OAuth2AuthConfig(token_url="https://identity.example.test/token"),
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            config_path = Path(tmp_dir_name) / "config"
+            original.write(config_path)
+            config = ClientConfig.create(config_path=config_path)
+            config.auth.make_token_refresher()()
+
+        save_auth_secrets.assert_called_once_with(
+            config_path,
+            "https://eozilla.example.test/",
+            "oauth2",
+            {
+                "username": "u",
+                "password": "p",
+                "access_token": "new-access",
+                "refresh_token": "new-refresh",
+            },
+        )
 
     def test_from_file_rejects_legacy_flat_auth_configurations(self):
         common = {

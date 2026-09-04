@@ -20,8 +20,8 @@ from pydantic_settings import BaseSettings, EnvSettingsSource, SettingsConfigDic
 
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 
-from .auth import AuthConfig, NoAuthConfig
-from .auth.secret_store import load_auth_secrets
+from .auth import AuthConfig, AuthConfigBase, NoAuthConfig
+from .auth.secret_store import load_auth_secrets, save_auth_secrets
 from .defaults import DEFAULT_API_URL
 from .opener import JobResultOpener, JobResultOpenerRegistry
 
@@ -141,7 +141,12 @@ class ClientConfig(BaseSettings):
         }
         if not auth_secrets:
             return resolved_config
-        return cls.new_instance(**merge_config_sources(auth_secrets))
+        resolved_config = cls.new_instance(**merge_config_sources(auth_secrets))
+        _set_auth_secret_persistor(
+            resolved_config,
+            cls.normalize_config_path(config_path),
+        )
+        return resolved_config
 
     @classmethod
     def from_file(
@@ -297,6 +302,20 @@ def _has_auth_credentials(config: ClientConfig) -> bool:
     except ValueError:
         return False
     return True
+
+
+def _set_auth_secret_persistor(config: ClientConfig, config_path: Path) -> None:
+    """Persist updated token values to the keyring associated with a config file."""
+
+    def persist(auth: AuthConfigBase) -> None:
+        save_auth_secrets(
+            config_path,
+            config.api_url or "",
+            auth.auth_type,
+            auth.to_secret_dict(),
+        )
+
+    config.auth.set_secret_persistor(persist)
 
 
 ###############################################################

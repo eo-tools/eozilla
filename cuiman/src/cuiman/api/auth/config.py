@@ -13,7 +13,7 @@ from typing import (
     get_args,
 )
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, PrivateAttr, model_validator
 
 AuthType: TypeAlias = Literal[
     "none",
@@ -63,6 +63,10 @@ class AuthConfigBase(BaseModel):
 
     auth_type: AuthType
 
+    _secret_persistor: Callable[["AuthConfigBase"], None] | None = PrivateAttr(
+        default=None
+    )
+
     def to_public_dict(self) -> dict[str, object]:
         """Return the configuration values that are safe to persist."""
         return self.model_dump(
@@ -71,6 +75,26 @@ class AuthConfigBase(BaseModel):
             exclude=self.secret_fields,
             exclude_none=True,
         )
+
+    def to_secret_dict(self) -> dict[str, str]:
+        """Return the configured secret values for operating-system storage."""
+        values = self.model_dump(exclude_none=True)
+        return {
+            name: value
+            for name, value in values.items()
+            if name in self.secret_fields and isinstance(value, str)
+        }
+
+    def set_secret_persistor(
+        self, persistor: Callable[["AuthConfigBase"], None]
+    ) -> None:
+        """Set the callback used to persist refreshed authentication secrets."""
+        self._secret_persistor = persistor
+
+    def persist_secrets(self) -> None:
+        """Persist the current secrets when the configuration has a persistor."""
+        if self._secret_persistor is not None:
+            self._secret_persistor(self)
 
     @property
     def auth_headers(self) -> dict[str, str]:
@@ -191,6 +215,7 @@ class OAuth2AuthConfig(_AccessTokenAuthConfig):
             self.access_token = result.access_token
             if self.grant_type == "password" and result.refresh_token:
                 self.refresh_token = result.refresh_token
+            self.persist_secrets()
             return self.auth_headers
 
         return refresh
@@ -207,6 +232,7 @@ class OAuth2AuthConfig(_AccessTokenAuthConfig):
             self.access_token = result.access_token
             if self.grant_type == "password" and result.refresh_token:
                 self.refresh_token = result.refresh_token
+            self.persist_secrets()
             return self.auth_headers
 
         return refresh

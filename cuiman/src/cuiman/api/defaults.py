@@ -12,7 +12,7 @@ DEFAULT_USER_PATH: Final = Path("~").expanduser() / ".eozilla"
 DEFAULT_CONFIG_PATH: Final = DEFAULT_USER_PATH / "config"
 
 DEFAULT_API_URL: Final = "http://127.0.0.1:8008/"
-DEFAULT_AUTH_TYPE: Final = "none"
+DEFAULT_AUTH_TYPE: Final = "oauth2"
 
 DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL = 0.5  # 1/2 second
 DEFAULT_OPEN_JOB_RESULT_TIMEOUT = 1800.0  # 30 minutes

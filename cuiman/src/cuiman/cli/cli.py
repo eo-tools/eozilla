@@ -2,11 +2,14 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import sys
 from typing import Annotated, Final, Optional
 
 import typer.core
 
 from cuiman.api.auth.config import AUTH_TYPE_NAMES, OAUTH2_GRANT_TYPE_NAMES
+from cuiman.api.auth.secret_store import SecretStoreError
+from cuiman.api.config import ClientConfig
 from cuiman.cli.output import OutputFormat
 from gavicore.util.cli.group import AliasedGroup
 from gavicore.util.cli.parameters import (
@@ -144,7 +147,7 @@ def new_cli(
 
             try:
                 config = get_config(config_path)
-            except ValueError as exc:
+            except (SecretStoreError, ValueError) as exc:
                 typer.echo(str(exc), err=True)
                 raise typer.Exit(code=1) from exc
             # "pragma: no cover" is here because coverage reports
@@ -202,42 +205,11 @@ def new_cli(
                 help=f"The OAuth2 grant type ({'|'.join(OAUTH2_GRANT_TYPE_NAMES)}).",
             ),
         ] = None,
-        username: Annotated[
-            str | None,
-            typer.Option(
-                "--username",
-                "-u",
-                help="Username.",
-            ),
-        ] = None,
-        password: Annotated[
-            str | None,
-            typer.Option(
-                "--password",
-                "-p",
-                help="Password.",
-            ),
-        ] = None,
         client_id: Annotated[
             str | None,
             typer.Option(
                 "--client-id",
                 help="OAuth2 client ID.",
-            ),
-        ] = None,
-        client_secret: Annotated[
-            str | None,
-            typer.Option(
-                "--client-secret",
-                help="OAuth2 client secret.",
-            ),
-        ] = None,
-        access_token: Annotated[
-            str | None,
-            typer.Option(
-                "--access-token",
-                "-t",
-                help="Access token.",
             ),
         ] = None,
         use_bearer: Annotated[
@@ -272,10 +244,6 @@ def new_cli(
                 token_url=token_url,
                 grant_type=grant_type,
                 client_id=client_id,
-                client_secret=client_secret,
-                username=username,
-                password=password,
-                access_token=access_token,
                 use_bearer=use_bearer,
                 access_token_header=access_token_header,
             )
@@ -283,6 +251,45 @@ def new_cli(
             typer.echo(str(exc), err=True)
             raise typer.Exit(code=1) from exc
         typer.echo(f"Client configuration written to {config_path}")
+        configured_auth_type = ClientConfig.from_file(config_path).auth.auth_type
+        if (
+            configured_auth_type != "none"
+            and sys.stdin.isatty()
+            and typer.confirm("Log in now?", default=False)
+        ):
+            from .config import login_client_with_prompt
+
+            try:
+                login_client_with_prompt(config_path)
+            except (SecretStoreError, ValueError) as exc:
+                typer.echo(str(exc), err=True)
+                raise typer.Exit(code=1) from exc
+
+    @t.command()
+    def login(
+        config_file: Annotated[str | None, CONFIG_OPTION] = None,
+    ):
+        """Log in and store the required credentials in the OS keyring."""
+        from .config import login_client_with_prompt
+
+        try:
+            login_client_with_prompt(config_file)
+        except (SecretStoreError, ValueError) as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=1) from exc
+
+    @t.command()
+    def logout(
+        config_file: Annotated[str | None, CONFIG_OPTION] = None,
+    ):
+        """Remove the locally stored credentials for this configuration."""
+        from .config import logout_client
+
+        try:
+            logout_client(config_file)
+        except (SecretStoreError, ValueError) as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=1) from exc
 
     @t.command()
     def generate_client(

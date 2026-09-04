@@ -120,6 +120,26 @@ def test_public_auth_config_excludes_secrets(config, expected):
     assert config.to_public_dict() == expected
 
 
+def test_secret_auth_config_excludes_public_values():
+    config = OAuth2AuthConfig(
+        token_url="https://example.test/token",
+        username="u",
+        password="p",
+        client_id="client",
+        client_secret="secret",
+        access_token="token",
+        refresh_token="refresh",
+    )
+
+    assert config.to_secret_dict() == {
+        "username": "u",
+        "password": "p",
+        "client_secret": "secret",
+        "access_token": "token",
+        "refresh_token": "refresh",
+    }
+
+
 def test_no_auth_headers():
     assert NoAuthConfig().auth_headers == {}
 
@@ -214,12 +234,15 @@ def test_oauth2_refresher_updates_tokens(mock_renew: MagicMock):
         use_bearer=False,
         access_token_header="X-Token",
     )
+    persistor = MagicMock()
+    config.set_secret_persistor(persistor)
     refresher = config.make_token_refresher()
 
     assert refresher() == {"X-Token": "new-access"}
     mock_renew.assert_called_once_with(config)
     assert config.access_token == "new-access"
     assert config.refresh_token == "new-refresh"
+    persistor.assert_called_once_with(config)
 
 
 @patch("cuiman.api.auth.oauth2.renew_oauth2_tokens")
@@ -253,11 +276,14 @@ async def test_oauth2_async_refresher_updates_tokens(mock_renew: AsyncMock):
         access_token="old-access",
         refresh_token="old-refresh",
     )
+    persistor = MagicMock()
+    config.set_secret_persistor(persistor)
 
     headers = await config.make_async_token_refresher()()
 
     assert headers == {"Authorization": "Bearer new-access"}
     assert config.refresh_token == "new-refresh"
+    persistor.assert_called_once_with(config)
 
 
 @pytest.mark.asyncio
