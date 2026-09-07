@@ -2,6 +2,13 @@
 
 ### Enhancements
 
+- **Cuiman** clients now prepare authentication and create their transport on
+  the first API call. `Client.login()` and `AsyncClient.login()` allow explicit
+  login, including credential prompts and OIDC browser authentication; automatic
+  login uses only available credentials and never prompts. App launch shares the
+  same authentication preparation. The proprietary `login()` / `login_async()`
+  helpers now return `TokenResult`, replacing the `*_for_tokens()` helpers.
+
 - **Cuiman** now keeps CLI authentication credentials in the operating-system
   keyring instead of its configuration file. `cuiman configure` stores only
   public service and authentication metadata; the new `cuiman login` and

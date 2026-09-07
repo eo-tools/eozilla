@@ -18,12 +18,7 @@ class TokenResult(BaseModel):
     refresh_token: str | None = None
 
 
-def login(auth_config: LoginAuthConfig) -> str:
-    """Log in through a proprietary endpoint and return its access token."""
-    return login_for_tokens(auth_config).access_token
-
-
-def login_for_tokens(auth_config: LoginAuthConfig) -> TokenResult:
+def login(auth_config: LoginAuthConfig) -> TokenResult:
     """Log in through a proprietary endpoint and parse its token response."""
     url, data = prepare_login(auth_config)
     with httpx.Client() as client:

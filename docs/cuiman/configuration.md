@@ -170,6 +170,16 @@ an implementation traceback.
 You can override settings anytime from environment variables or by using
 the `--config/-c <file>` option supported by most CLI commands.
 
+For Python clients, `client.login()` (or `await client.login()` for `AsyncClient`)
+is optional when credentials are already available. The first API call performs
+non-interactive authentication when necessary. Explicit login also permits
+credential prompts or browser OIDC authentication; ordinary API calls never
+initiate interaction. See [Client API](./api.md#client-api).
+
+OAuth2 client credentials supplied through environment variables or Python
+configuration can obtain their initial access token automatically. They do not
+require a pre-existing access token or an interactive CLI login.
+
 ## Basic Settings
 
 The most important configuration setting is `api_url` which provides the 
@@ -294,8 +304,14 @@ config = ClientConfig(
 )
 ```
 
-`cuiman login` supports the OAuth2 `password` grant. The
-`client_credentials` grant has no interactive login step; provide its
+`cuiman login` and explicit Python client login prompt only for username and
+password when using the OAuth2 `password` grant. A configured `client_id` does
+not cause a client-secret prompt. If the provider requires a client secret,
+supply it through `EOZILLA_AUTH__CLIENT_SECRET`, direct Python configuration,
+or an existing keyring entry. Login preserves and sends that secret; otherwise
+the token request omits `client_secret`.
+
+The `client_credentials` grant has no interactive login step; provide its
 credentials through environment variables or direct Python configuration.
 
 ### Auth type `oidc`

@@ -59,9 +59,9 @@ def test_launch_code_can_be_retried_after_auth_resolution_fails(monkeypatch):
                 "connection refused",
                 request=httpx.Request("POST", "https://auth.example.test/login"),
             )
-        return "resolved-token"
+        return TokenResult(access_token="resolved-token")
 
-    monkeypatch.setattr("cuiman.app.launch.login_async", login)
+    monkeypatch.setattr("cuiman.api.auth.session.login_async", login)
     launch_code = service.create_launch_code()
 
     assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 500
@@ -245,9 +245,9 @@ def test_launch_resolves_login_credentials_on_the_server(monkeypatch):
     )
 
     async def login(_auth):
-        return "resolved-token"
+        return TokenResult(access_token="resolved-token")
 
-    monkeypatch.setattr("cuiman.app.launch.login_async", login)
+    monkeypatch.setattr("cuiman.api.auth.session.login_async", login)
     launch_code = service.create_launch_code()
     assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
 
@@ -269,7 +269,9 @@ def test_launch_resolves_oauth2_credentials_on_the_server(monkeypatch):
     async def obtain_tokens(_auth):
         return tokens
 
-    monkeypatch.setattr("cuiman.app.launch.obtain_oauth2_tokens_async", obtain_tokens)
+    monkeypatch.setattr(
+        "cuiman.api.auth.session.obtain_oauth2_tokens_async", obtain_tokens
+    )
     launch_code = service.create_launch_code()
 
     assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204

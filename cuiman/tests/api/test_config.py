@@ -185,8 +185,8 @@ class ClientConfigTest(TestCase):
             ClientConfig(
                 api_url="https://eozilla.example.test",
                 auth=LoginAuthConfig(login_url="https://eozilla.example.test/login"),
-            ),
-            config,
+            ).model_dump(),
+            config.model_dump(),
         )
 
     @patch("cuiman.api.config.load_auth_secrets")

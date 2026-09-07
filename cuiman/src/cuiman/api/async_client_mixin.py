@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
 from gavicore.util.request import ExecutionRequest
 
+from .auth.session import resolve_auth_headers_async
 from .config import ClientConfig
 from .defaults import (
     DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
@@ -18,6 +19,8 @@ from .defaults import (
 from .exceptions import ClientError, ClientWarning
 from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
+from .transport import AsyncTransport
+from .transport.httpx import HttpxTransport
 
 if TYPE_CHECKING:
     pass
@@ -33,6 +36,41 @@ class AsyncClientMixin(ABC):
     """
     Extra methods for the API client (asynchronous mode).
     """
+
+    _transport: AsyncTransport | None
+    _debug: bool
+    _login_lock: asyncio.Lock | None = None
+
+    async def login(
+        self, *, interactive: bool = True, no_browser: bool = False
+    ) -> None:
+        """Prepare authentication, sharing login across concurrent calls.
+
+        Explicit login may prompt for credentials or open an OIDC browser.
+        API methods disable interaction and raise ``LoginRequiredError`` when
+        credentials must be supplied. Cancelled or failed login can be retried.
+        """
+        if self._login_lock is None:
+            self._login_lock = asyncio.Lock()
+        async with self._login_lock:
+            await resolve_auth_headers_async(
+                self.config.auth, interactive=interactive, no_browser=no_browser
+            )
+
+    async def _get_transport(self) -> AsyncTransport:
+        if self._transport is None:
+            await self.login(interactive=False)
+            # Another first request may have created it while we awaited login.
+            if self._transport is None:
+                assert self.config.api_url is not None
+                self._transport = HttpxTransport(
+                    api_url=f"{self.config.api_url.rstrip('/')}/",
+                    headers=self.config.auth_headers,
+                    return_type_map=self.config.return_type_map,
+                    async_token_refresher=self.config._make_async_token_refresher(),
+                    debug=self._debug,
+                )
+        return self._transport
 
     @property
     @abstractmethod

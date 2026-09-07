@@ -83,7 +83,7 @@ class ClientTest(TestCase):
             patch.object(
                 ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
             ),
-            patch("cuiman.api.client.HttpxTransport") as httpx_transport_cls,
+            patch("cuiman.api.client_mixin.HttpxTransport") as httpx_transport_cls,
         ):
             transport = httpx_transport_cls.return_value
 
@@ -91,6 +91,8 @@ class ClientTest(TestCase):
                 api_url="https://acme.ogc.org/api",
                 _debug=True,
             )
+            httpx_transport_cls.assert_not_called()
+            client._get_transport()
 
         self.assertIs(client._transport, transport)
         httpx_transport_cls.assert_called_once()
@@ -111,7 +113,7 @@ class ClientTest(TestCase):
             patch.object(
                 ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
             ),
-            patch("cuiman.api.client.HttpxTransport") as httpx_transport_cls,
+            patch("cuiman.api.client_mixin.HttpxTransport") as httpx_transport_cls,
         ):
             client = Client(
                 api_url="https://acme.ogc.org/api",
@@ -123,6 +125,7 @@ class ClientTest(TestCase):
                     refresh_token=old_refresh,
                 ),
             )
+            client._get_transport()
 
         _, kwargs = httpx_transport_cls.call_args
         self.assertEqual(
@@ -283,7 +286,7 @@ class ClientTest(TestCase):
                 )
 
     def test_custom_transport_is_used_without_creating_httpx_transport(self):
-        with patch("cuiman.api.client.HttpxTransport") as httpx_transport_cls:
+        with patch("cuiman.api.client_mixin.HttpxTransport") as httpx_transport_cls:
             client = Client(
                 api_url="https://acme.ogc.org/api",
                 _transport=self.transport,

@@ -22,6 +22,7 @@ from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 
 from .auth import AuthConfig, AuthConfigBase, NoAuthConfig
 from .auth.secret_store import load_auth_secrets, save_auth_secrets
+from .auth.session import can_login
 from .defaults import DEFAULT_API_URL
 from .opener import JobResultOpener, JobResultOpenerRegistry
 
@@ -142,6 +143,15 @@ class ClientConfig(BaseSettings):
         #    without re-resolving Pydantic Settings sources.
         config_dict = merge_config_sources()
         resolved_config = cls.new_instance(**config_dict)
+        if (
+            config is not None
+            and resolved_config.api_url == config.api_url
+            and resolved_config.auth.model_dump() == config.auth.model_dump()
+        ):
+            # Preserve the credential source when wrapping a resolved config,
+            # as CLI and generated service clients do. Never carry the hook
+            # across an endpoint or authentication override.
+            resolved_config.auth = config.auth.model_copy()
         if file_config is None or _has_auth_credentials(resolved_config):
             return resolved_config
 
@@ -158,6 +168,9 @@ class ClientConfig(BaseSettings):
             if name in resolved_config.auth.secret_fields
         }
         if not auth_secrets:
+            _set_auth_secret_persistor(
+                resolved_config, cls.normalize_config_path(config_path)
+            )
             return resolved_config
 
         # 11. Rebuild with the keyring credentials and persist later token
@@ -330,12 +343,8 @@ def _update_if_not_none(target: dict[str, Any], updates: dict[str, Any]):
 
 
 def _has_auth_credentials(config: ClientConfig) -> bool:
-    """Return whether an authentication config can create request headers."""
-    try:
-        _ = config.auth_headers
-    except ValueError:
-        return False
-    return True
+    """Return whether supplied credentials permit non-interactive login."""
+    return can_login(config.auth)
 
 
 def _set_auth_secret_persistor(config: ClientConfig, config_path: Path) -> None:

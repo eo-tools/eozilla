@@ -4,9 +4,6 @@
 
 """CLI helpers for public configuration and OS-backed authentication secrets."""
 
-import os
-import secrets
-import webbrowser
 from pathlib import Path
 from typing import Any, cast
 
@@ -14,21 +11,10 @@ import typer
 from pydantic import BaseModel
 
 from cuiman.api.auth import (
-    ApiKeyAuthConfig,
     AuthConfigBase,
-    BasicAuthConfig,
-    LoginAuthConfig,
     NoAuthConfig,
     OAuth2AuthConfig,
     OidcAuthConfig,
-    TokenAuthConfig,
-    LoopbackCallbackServer,
-    build_authorization_url,
-    discover_oidc_provider,
-    exchange_oidc_code,
-    generate_pkce_verifier,
-    login_for_tokens,
-    obtain_oauth2_tokens,
     revoke_oidc_tokens,
 )
 from cuiman.api.auth.config import (
@@ -36,16 +22,14 @@ from cuiman.api.auth.config import (
     OAUTH2_GRANT_TYPE_NAMES,
     OAuth2GrantType,
 )
-from cuiman.api.auth.oidc import parse_callback_parameters
+from cuiman.api.auth.interactive import prompt_auth
 from cuiman.api.auth.secret_store import (
     delete_auth_secrets,
     save_auth_secrets,
 )
+from cuiman.api.auth.session import can_login, resolve_auth_headers
 from cuiman.api.config import ClientConfig
 from cuiman.api.defaults import DEFAULT_API_URL, DEFAULT_AUTH_TYPE
-
-OIDC_LOGIN_TIMEOUT = 300.0
-"""Seconds to wait for an OpenID Connect authorization callback."""
 
 
 def get_config(config_path: Path | str | None) -> ClientConfig:
@@ -104,43 +88,17 @@ def login_client_with_prompt(
     """Prompt for credentials, authenticate when needed, and save them securely."""
     config = _get_login_config(config_path)
     auth = config.auth
-    auth_values = auth.model_dump()
-
     if isinstance(auth, NoAuthConfig):
         typer.echo("The configured service does not require login.")
         return
-    if isinstance(auth, BasicAuthConfig):
-        auth_values.update(_prompt_for_username_password(auth.username))
-    elif isinstance(auth, TokenAuthConfig):
-        auth_values["access_token"] = _prompt_for_secret("API access token")
-    elif isinstance(auth, ApiKeyAuthConfig):
-        auth_values["api_key"] = _prompt_for_secret("API access key")
-    elif isinstance(auth, LoginAuthConfig):
-        auth_values.update(_prompt_for_username_password(auth.username))
-        login_auth = LoginAuthConfig(**auth_values)
-        result = login_for_tokens(login_auth)
-        auth_values["access_token"] = result.access_token
-    elif isinstance(auth, OAuth2AuthConfig):
-        if auth.grant_type == "client_credentials":
-            raise ValueError(
-                "OAuth2 client_credentials does not support 'cuiman login'. "
-                "Provide credentials through environment variables or Python configuration."
-            )
-        auth_values.update(_prompt_for_username_password(auth.username))
-        if auth.client_id:
-            auth_values["client_secret"] = _prompt_for_secret("OAuth2 client secret")
-        oauth2_auth = OAuth2AuthConfig(**auth_values)
-        result = obtain_oauth2_tokens(oauth2_auth)
-        auth_values["access_token"] = result.access_token
-        if result.refresh_token:
-            auth_values["refresh_token"] = result.refresh_token
-    elif isinstance(auth, OidcAuthConfig):
-        oidc_auth = _login_oidc(auth, no_browser=no_browser)
-        auth_values = oidc_auth.model_dump()
-    else:  # pragma: no cover - AuthConfig is a closed discriminated union.
-        raise ValueError(f"Unsupported authentication type: {auth.auth_type}")
-
-    _save_login_auth(config_path, config, type(auth)(**auth_values))
+    if isinstance(auth, OAuth2AuthConfig) and auth.grant_type == "client_credentials":
+        raise ValueError(
+            "OAuth2 client_credentials does not support 'cuiman login'. "
+            "Provide credentials through environment variables or Python configuration."
+        )
+    candidate = prompt_auth(auth, no_browser=no_browser)
+    resolve_auth_headers(candidate)
+    _save_login_auth(config_path, config, candidate)
     typer.echo("Login completed.")
 
 
@@ -193,43 +151,6 @@ def _current_auth_params(ctx: _Context) -> dict[str, Any]:
     return {key: value for key, value in ctx.curr_params.items() if key != "api_url"}
 
 
-def _login_oidc(auth: OidcAuthConfig, *, no_browser: bool) -> OidcAuthConfig:
-    """Complete an OIDC Authorization Code login through a loopback callback."""
-    discovery = discover_oidc_provider(auth)
-    verifier = generate_pkce_verifier()
-    state = secrets.token_urlsafe(32)
-    with LoopbackCallbackServer() as callback_server:
-        authorization_url = build_authorization_url(
-            discovery,
-            auth,
-            callback_server.redirect_uri,
-            state,
-            verifier,
-        )
-        if no_browser:
-            typer.echo(f"Open this URL to log in:\n{authorization_url}")
-        elif not webbrowser.open(authorization_url):
-            raise ValueError(
-                "Could not open a browser for OIDC login. "
-                "Use 'cuiman login --no-browser' to print the authorization URL."
-            )
-        parameters = callback_server.wait_for_callback(OIDC_LOGIN_TIMEOUT)
-        code = parse_callback_parameters(parameters, state)
-        result = exchange_oidc_code(
-            discovery,
-            auth,
-            code,
-            verifier,
-            callback_server.redirect_uri,
-        )
-    return auth.model_copy(
-        update={
-            "access_token": result.access_token,
-            "refresh_token": result.refresh_token,
-        }
-    )
-
-
 def _get_previous_public_config(config_path: Path | str | None) -> dict[str, Any]:
     config_data = ClientConfig.read_file_data(config_path)
     if config_data is None:
@@ -251,7 +172,7 @@ def _get_previous_public_config(config_path: Path | str | None) -> dict[str, Any
 
 def _ensure_cli_credentials(config: ClientConfig) -> None:
     """Explain when public configuration exists but login credentials do not."""
-    if isinstance(config.auth, NoAuthConfig):
+    if can_login(config.auth):
         return
     try:
         _ = config.auth_headers
@@ -329,23 +250,7 @@ def _get_login_config(config_path: Path | str | None) -> ClientConfig:
                 "please use the 'configure' command to set it up."
             )
         raise ValueError(f"Configuration file {config_path} not found or empty.")
-    return ClientConfig.create(config=file_config)
-
-
-def _prompt_for_username_password(previous_username: str | None) -> dict[str, str]:
-    username = typer.prompt(
-        "Username",
-        type=str,
-        default=previous_username
-        or os.environ.get("USER")
-        or os.environ.get("USERNAME")
-        or "",
-    )
-    return {"username": username, "password": _prompt_for_secret("Password")}
-
-
-def _prompt_for_secret(text: str) -> str:
-    return typer.prompt(text, type=str, hide_input=True)
+    return ClientConfig.create(config_path=config_path)
 
 
 def _save_login_auth(

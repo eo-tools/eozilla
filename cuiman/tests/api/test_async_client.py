@@ -78,7 +78,7 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
         result = await self.client.get_capabilities()
         self.assertIsInstance(result, Capabilities)
 
-    def test_default_transport_is_created_from_config(self):
+    async def test_default_transport_is_created_from_config(self):
         return_type_map = {JobInfo: dict}
         with (
             patch.object(ClientConfig, "return_type_map", return_type_map),
@@ -88,7 +88,9 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
             patch.object(
                 ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
             ),
-            patch("cuiman.api.async_client.HttpxTransport") as httpx_transport_cls,
+            patch(
+                "cuiman.api.async_client_mixin.HttpxTransport"
+            ) as httpx_transport_cls,
         ):
             transport = httpx_transport_cls.return_value
 
@@ -96,6 +98,8 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
                 api_url="https://acme.ogc.org/api",
                 _debug=True,
             )
+            httpx_transport_cls.assert_not_called()
+            await client._get_transport()
 
         self.assertIs(client._transport, transport)
         httpx_transport_cls.assert_called_once()
@@ -116,7 +120,9 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
             patch.object(
                 ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
             ),
-            patch("cuiman.api.async_client.HttpxTransport") as httpx_transport_cls,
+            patch(
+                "cuiman.api.async_client_mixin.HttpxTransport"
+            ) as httpx_transport_cls,
         ):
             client = AsyncClient(
                 api_url="https://acme.ogc.org/api",
@@ -128,6 +134,7 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
                     refresh_token=old_refresh,
                 ),
             )
+            await client._get_transport()
 
         _, kwargs = httpx_transport_cls.call_args
         self.assertEqual(
@@ -289,7 +296,9 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
                 )
 
     def test_custom_transport_is_used_without_creating_httpx_transport(self):
-        with patch("cuiman.api.async_client.HttpxTransport") as httpx_transport_cls:
+        with patch(
+            "cuiman.api.async_client_mixin.HttpxTransport"
+        ) as httpx_transport_cls:
             client = AsyncClient(
                 api_url="https://acme.ogc.org/api",
                 _transport=self.transport,

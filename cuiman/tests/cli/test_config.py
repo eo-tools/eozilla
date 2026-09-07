@@ -515,7 +515,7 @@ class LoginAndLogoutTest(ConfigTestMixin, unittest.TestCase):
         self.assertEqual({"api_key": "api-key"}, save_auth_secrets.call_args.args[3])
 
     @patch("cuiman.cli.config.save_auth_secrets")
-    @patch("cuiman.cli.config.login_for_tokens")
+    @patch("cuiman.api.auth.session.login")
     @patch("typer.prompt", side_effect=["alice", "password"])
     def test_login_proprietary_stores_credentials_and_token(
         self,
@@ -536,8 +536,8 @@ class LoginAndLogoutTest(ConfigTestMixin, unittest.TestCase):
         )
 
     @patch("cuiman.cli.config.save_auth_secrets")
-    @patch("cuiman.cli.config.obtain_oauth2_tokens")
-    @patch("typer.prompt", side_effect=["alice", "password", "client-secret"])
+    @patch("cuiman.api.auth.session.obtain_oauth2_tokens")
+    @patch("typer.prompt", side_effect=["alice", "password"])
     def test_login_oauth2_stores_credentials_and_tokens(
         self,
         _prompt: MagicMock,
@@ -559,12 +559,14 @@ class LoginAndLogoutTest(ConfigTestMixin, unittest.TestCase):
             {
                 "username": "alice",
                 "password": "password",
-                "client_secret": "client-secret",
                 "access_token": "access",
                 "refresh_token": "refresh",
             },
             save_auth_secrets.call_args.args[3],
         )
+
+        self.assertEqual(2, _prompt.call_count)
+        self.assertIsNone(obtain_oauth2_tokens.call_args.args[0].client_secret)
 
     @patch("cuiman.cli.config.save_auth_secrets")
     def test_login_rejects_oauth2_client_credentials(
@@ -584,14 +586,19 @@ class LoginAndLogoutTest(ConfigTestMixin, unittest.TestCase):
         save_auth_secrets.assert_not_called()
 
     @patch("cuiman.cli.config.save_auth_secrets")
-    @patch("cuiman.cli.config.webbrowser.open", return_value=True)
-    @patch("cuiman.cli.config.exchange_oidc_code")
-    @patch("cuiman.cli.config.parse_callback_parameters", return_value="code")
-    @patch("cuiman.cli.config.build_authorization_url", return_value="https://login")
-    @patch("cuiman.cli.config.generate_pkce_verifier", return_value="verifier")
-    @patch("cuiman.cli.config.secrets.token_urlsafe", return_value="state")
-    @patch("cuiman.cli.config.discover_oidc_provider")
-    @patch("cuiman.cli.config.LoopbackCallbackServer")
+    @patch("cuiman.api.auth.interactive.webbrowser.open", return_value=True)
+    @patch("cuiman.api.auth.interactive.exchange_oidc_code")
+    @patch("cuiman.api.auth.interactive.parse_callback_parameters", return_value="code")
+    @patch(
+        "cuiman.api.auth.interactive.build_authorization_url",
+        return_value="https://login",
+    )
+    @patch(
+        "cuiman.api.auth.interactive.generate_pkce_verifier", return_value="verifier"
+    )
+    @patch("cuiman.api.auth.interactive.secrets.token_urlsafe", return_value="state")
+    @patch("cuiman.api.auth.interactive.discover_oidc_provider")
+    @patch("cuiman.api.auth.interactive.LoopbackCallbackServer")
     def test_login_oidc_opens_browser_and_stores_tokens(
         self,
         loopback_server: MagicMock,
@@ -638,14 +645,19 @@ class LoginAndLogoutTest(ConfigTestMixin, unittest.TestCase):
         )
 
     @patch("cuiman.cli.config.save_auth_secrets")
-    @patch("cuiman.cli.config.webbrowser.open")
-    @patch("cuiman.cli.config.exchange_oidc_code")
-    @patch("cuiman.cli.config.parse_callback_parameters", return_value="code")
-    @patch("cuiman.cli.config.build_authorization_url", return_value="https://login")
-    @patch("cuiman.cli.config.generate_pkce_verifier", return_value="verifier")
-    @patch("cuiman.cli.config.secrets.token_urlsafe", return_value="state")
-    @patch("cuiman.cli.config.discover_oidc_provider")
-    @patch("cuiman.cli.config.LoopbackCallbackServer")
+    @patch("cuiman.api.auth.interactive.webbrowser.open")
+    @patch("cuiman.api.auth.interactive.exchange_oidc_code")
+    @patch("cuiman.api.auth.interactive.parse_callback_parameters", return_value="code")
+    @patch(
+        "cuiman.api.auth.interactive.build_authorization_url",
+        return_value="https://login",
+    )
+    @patch(
+        "cuiman.api.auth.interactive.generate_pkce_verifier", return_value="verifier"
+    )
+    @patch("cuiman.api.auth.interactive.secrets.token_urlsafe", return_value="state")
+    @patch("cuiman.api.auth.interactive.discover_oidc_provider")
+    @patch("cuiman.api.auth.interactive.LoopbackCallbackServer")
     @patch("typer.echo")
     def test_login_oidc_without_browser_prints_url_and_stores_tokens(
         self,
@@ -681,8 +693,8 @@ class LoginAndLogoutTest(ConfigTestMixin, unittest.TestCase):
         )
 
     @patch("cuiman.cli.config.save_auth_secrets")
-    @patch("cuiman.cli.config.webbrowser.open", return_value=False)
-    @patch("cuiman.cli.config.discover_oidc_provider")
+    @patch("cuiman.api.auth.interactive.webbrowser.open", return_value=False)
+    @patch("cuiman.api.auth.interactive.discover_oidc_provider")
     def test_login_oidc_explains_when_the_browser_cannot_open(
         self,
         _discover: MagicMock,
