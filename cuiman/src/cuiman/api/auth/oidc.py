@@ -12,7 +12,7 @@ import threading
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
-from urllib.parse import parse_qs, urlencode, urlparse, urlsplit, urlunsplit
+from urllib.parse import parse_qs, urlencode, urlparse
 
 import httpx
 
@@ -26,7 +26,11 @@ CALLBACK_PATH = "/callback"
 
 @dataclass(frozen=True)
 class OidcDiscovery:
-    """Authorization-server endpoints obtained through OIDC discovery."""
+    """Validated authorization-server endpoints obtained through OIDC discovery.
+
+    The authorization and token endpoints are required. The revocation endpoint
+    is optional because OIDC providers are not required to publish one.
+    """
 
     issuer: str
     authorization_endpoint: str
@@ -35,30 +39,53 @@ class OidcDiscovery:
 
 
 def discovery_url(issuer_url: str) -> str:
-    """Return the OpenID Connect discovery URL for an issuer."""
-    issuer = urlsplit(issuer_url)
-    path = issuer.path.rstrip("/")
-    return urlunsplit(
-        (
-            issuer.scheme,
-            issuer.netloc,
-            f"/.well-known/openid-configuration{path}",
-            "",
-            "",
-        )
-    )
+    """Return an issuer's OpenID Connect discovery metadata URL.
+
+    Args:
+        issuer_url: The issuer identifier, including any realm or tenant path,
+            rather than an authorization or token endpoint.
+    """
+    return f"{issuer_url.rstrip('/')}/.well-known/openid-configuration"
 
 
 def discover_oidc_provider(auth_config: OidcAuthConfig) -> OidcDiscovery:
-    """Discover and validate the configured OpenID Connect provider."""
+    """Fetch and validate the configured OpenID Connect provider's metadata.
+
+    Raises:
+        ValueError: If discovery cannot be fetched or does not describe the
+            configured issuer and required HTTPS endpoints.
+    """
     issuer_url, metadata_url = prepare_oidc_discovery(auth_config)
-    with httpx.Client() as client:
-        response = client.get(metadata_url)
-    return parse_oidc_discovery(response, issuer_url)
+    try:
+        with httpx.Client() as client:
+            response = client.get(metadata_url)
+        return parse_oidc_discovery(response, issuer_url)
+    except httpx.HTTPStatusError as exc:
+        detail = f"HTTP {exc.response.status_code} {exc.response.reason_phrase}"
+        raise _discovery_error(issuer_url, metadata_url, detail) from exc
+    except httpx.HTTPError as exc:
+        detail = str(exc) or type(exc).__name__
+        raise _discovery_error(issuer_url, metadata_url, detail) from exc
+    except (RuntimeError, ValueError) as exc:
+        detail = str(exc)
+        raise _discovery_error(issuer_url, metadata_url, detail) from exc
+
+
+def _discovery_error(issuer_url: str, metadata_url: str, detail: str) -> ValueError:
+    """Create a concise, user-facing OIDC discovery error."""
+    return ValueError(
+        "OIDC discovery failed for issuer "
+        f"'{issuer_url}' at '{metadata_url}': {detail}. "
+        "Check that the issuer URL is correct and serves OIDC discovery metadata."
+    )
 
 
 def parse_oidc_discovery(response: httpx.Response, issuer_url: str) -> OidcDiscovery:
-    """Validate OpenID Connect discovery metadata from a provider response."""
+    """Validate OpenID Connect discovery metadata from a provider response.
+
+    The returned issuer must equal ``issuer_url`` and the authorization and
+    token endpoints must use HTTPS.
+    """
     response.raise_for_status()
     metadata: Any = response.json()
     if not isinstance(metadata, dict):
@@ -103,7 +130,12 @@ def build_authorization_url(
     state: str,
     verifier: str,
 ) -> str:
-    """Build an OIDC Authorization Code request using PKCE."""
+    """Build an OIDC Authorization Code request using S256 PKCE and state.
+
+    ``redirect_uri`` must match the URI used in :func:`exchange_oidc_code`.
+    ``state`` is caller-provided because the caller must retain it until the
+    browser returns to the callback.
+    """
     parameters = {
         "response_type": "code",
         "client_id": auth_config.client_id,
@@ -117,7 +149,11 @@ def build_authorization_url(
 
 
 def parse_callback_parameters(parameters: dict[str, list[str]], state: str) -> str:
-    """Validate an authorization callback and return its authorization code."""
+    """Validate an authorization callback and return its single code value.
+
+    Provider errors, duplicate parameters, a missing code, and a mismatched
+    state are rejected before an authorization code can be exchanged.
+    """
     error = _single_callback_value(parameters, "error")
     if error is not None:
         description = _single_callback_value(parameters, "error_description")
@@ -143,7 +179,11 @@ def exchange_oidc_code(
     verifier: str,
     redirect_uri: str,
 ) -> TokenResult:
-    """Exchange an authorization code for access and refresh tokens."""
+    """Exchange an authorization code for access and optional refresh tokens.
+
+    This completes the Authorization Code flow. The client ID, redirect URI,
+    and PKCE verifier must be the values used to create the authorization URL.
+    """
     data = {
         "grant_type": "authorization_code",
         "code": code,
@@ -157,12 +197,42 @@ def exchange_oidc_code(
 
 
 def renew_oidc_tokens(auth_config: OidcAuthConfig) -> TokenResult:
-    """Refresh an OIDC access token using its stored refresh token."""
+    """Refresh an OIDC access token using its stored refresh token.
+
+    Callers that loaded credentials from the CLI keyring should persist any
+    rotated refresh token returned by the provider.
+    """
     data = prepare_oidc_refresh_request(auth_config)
     discovery = discover_oidc_provider(auth_config)
     with httpx.Client() as client:
         response = client.post(discovery.token_endpoint, data=data)
     return process_oauth2_token_response(response)
+
+
+def revoke_oidc_tokens(auth_config: OidcAuthConfig) -> bool:
+    """Revoke a stored OIDC token when the provider publishes an endpoint.
+
+    A refresh token is preferred; otherwise the access token is used. Returns
+    ``False`` without making a revocation request when neither token is present
+    or the provider does not advertise a revocation endpoint.
+    """
+    token = auth_config.refresh_token or auth_config.access_token
+    if not token:
+        return False
+    discovery = discover_oidc_provider(auth_config)
+    if discovery.revocation_endpoint is None:
+        return False
+    data = {
+        "token": token,
+        "token_type_hint": (
+            "refresh_token" if auth_config.refresh_token else "access_token"
+        ),
+        "client_id": auth_config.client_id,
+    }
+    with httpx.Client() as client:
+        response = client.post(discovery.revocation_endpoint, data=data)
+    response.raise_for_status()
+    return True
 
 
 def prepare_oidc_refresh_request(
@@ -179,7 +249,12 @@ def prepare_oidc_refresh_request(
 
 
 class LoopbackCallbackServer:
-    """Receive one OIDC authorization response through a local loopback URI."""
+    """Receive one OIDC authorization response through a local loopback URI.
+
+    The server binds only to ``127.0.0.1`` on an ephemeral port and handles one
+    request at ``/callback`` by default. Register the resulting redirect URI
+    pattern with the OIDC client before starting an authorization flow.
+    """
 
     def __init__(self, callback_path: str = CALLBACK_PATH) -> None:
         """Create an unstarted callback server bound to an ephemeral port."""
@@ -191,15 +266,15 @@ class LoopbackCallbackServer:
 
     @property
     def redirect_uri(self) -> str:
-        """Return the redirect URI registered in the authorization request."""
+        """Return this server's ephemeral loopback redirect URI."""
         return f"http://127.0.0.1:{self._server.server_port}{self._callback_path}"
 
     def start(self) -> None:
-        """Start receiving callbacks in a background thread."""
+        """Start receiving the single callback in a background thread."""
         self._thread.start()
 
     def wait_for_callback(self, timeout: float) -> dict[str, list[str]]:
-        """Wait for callback query parameters or raise on timeout."""
+        """Wait for callback query parameters or raise ``TimeoutError``."""
         try:
             return self._parameters.get(timeout=timeout)
         except queue.Empty as exc:

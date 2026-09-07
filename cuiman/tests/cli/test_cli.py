@@ -94,6 +94,43 @@ class CliTest(TestCase):
         if config_path.exists():
             config_path.unlink()
 
+    def test_configure_oidc_with_public_options(self):
+        with use_temp_dir():
+            config_path = Path("oidc-config.yaml")
+            result = invoke_cli(
+                "configure",
+                "--config",
+                str(config_path),
+                "--api-url",
+                "https://processes.example.test",
+                "--auth-type",
+                "oidc",
+                "--issuer-url",
+                "https://identity.example.test/tenant",
+                "--client-id",
+                "client",
+                "--scope",
+                "profile",
+                "--scope",
+                "email",
+            )
+
+            self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+            self.assertEqual(
+                {
+                    "api_url": "https://processes.example.test/",
+                    "auth": {
+                        "auth_type": "oidc",
+                        "issuer_url": "https://identity.example.test/tenant",
+                        "client_id": "client",
+                        "scopes": ["openid", "profile", "email"],
+                        "use_bearer": True,
+                        "access_token_header": "X-Auth-Token",
+                    },
+                },
+                yaml.safe_load(config_path.read_text()),
+            )
+
     def test_configure_rejects_secret_options(self):
         result = invoke_cli(
             "configure",
@@ -173,7 +210,18 @@ class CliTest(TestCase):
         result = invoke_cli("login", "--config", "client-config.yaml")
 
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
-        login_client_with_prompt.assert_called_once_with("client-config.yaml")
+        login_client_with_prompt.assert_called_once_with(
+            "client-config.yaml", no_browser=False
+        )
+
+    @patch("cuiman.cli.config.login_client_with_prompt")
+    def test_login_without_opening_a_browser(self, login_client_with_prompt: MagicMock):
+        result = invoke_cli("login", "--config", "client-config.yaml", "--no-browser")
+
+        self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+        login_client_with_prompt.assert_called_once_with(
+            "client-config.yaml", no_browser=True
+        )
 
     @patch(
         "cuiman.cli.config.login_client_with_prompt",
@@ -184,6 +232,16 @@ class CliTest(TestCase):
 
         self.assertEqual(1, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual("bad login\n", result.stderr)
+
+    @patch(
+        "cuiman.cli.config.login_client_with_prompt",
+        side_effect=TimeoutError("OIDC login timed out"),
+    )
+    def test_login_with_oidc_timeout(self, _login_client_with_prompt: MagicMock):
+        result = invoke_cli("login")
+
+        self.assertEqual(1, result.exit_code, msg=self.get_result_msg(result))
+        self.assertEqual("OIDC login timed out\n", result.stderr)
 
     @patch("cuiman.cli.config.logout_client")
     def test_logout(self, logout_client: MagicMock):

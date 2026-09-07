@@ -242,7 +242,13 @@ class OAuth2AuthConfig(_AccessTokenAuthConfig):
 
 
 class OidcAuthConfig(_AccessTokenAuthConfig):
-    """OpenID Connect public-client configuration."""
+    """OpenID Connect Authorization Code with PKCE configuration.
+
+    ``issuer_url``, ``client_id``, and ``scopes`` are public configuration
+    values. ``access_token`` and ``refresh_token`` are credentials and are
+    stored in the operating-system keyring by the CLI. The ``openid`` scope is
+    included automatically; list only additional provider or API scopes.
+    """
 
     secret_fields: ClassVar[SecretFields] = frozenset({"access_token", "refresh_token"})
 
@@ -254,7 +260,7 @@ class OidcAuthConfig(_AccessTokenAuthConfig):
 
     @model_validator(mode="after")
     def include_openid_scope(self) -> "OidcAuthConfig":
-        """Add the required OpenID Connect scope and remove duplicates."""
+        """Add the required OpenID Connect scope and remove duplicate scopes."""
         self.scopes = tuple(dict.fromkeys(("openid", *self.scopes)))
         return self
 

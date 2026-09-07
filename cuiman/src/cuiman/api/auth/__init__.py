@@ -31,6 +31,7 @@ from cuiman.api.auth.oidc import (
     exchange_oidc_code,
     generate_pkce_verifier,
     renew_oidc_tokens,
+    revoke_oidc_tokens,
 )
 from cuiman.api.auth.oidc_async import renew_oidc_tokens_async
 
@@ -63,5 +64,6 @@ __all__ = [
     "exchange_oidc_code",
     "generate_pkce_verifier",
     "renew_oidc_tokens",
+    "revoke_oidc_tokens",
     "renew_oidc_tokens_async",
 ]

@@ -5,6 +5,8 @@
 """CLI helpers for public configuration and OS-backed authentication secrets."""
 
 import os
+import secrets
+import webbrowser
 from pathlib import Path
 from typing import Any, cast
 
@@ -18,21 +20,32 @@ from cuiman.api.auth import (
     LoginAuthConfig,
     NoAuthConfig,
     OAuth2AuthConfig,
+    OidcAuthConfig,
     TokenAuthConfig,
+    LoopbackCallbackServer,
+    build_authorization_url,
+    discover_oidc_provider,
+    exchange_oidc_code,
+    generate_pkce_verifier,
     login_for_tokens,
     obtain_oauth2_tokens,
+    revoke_oidc_tokens,
 )
 from cuiman.api.auth.config import (
     AUTH_TYPE_NAMES,
     OAUTH2_GRANT_TYPE_NAMES,
     OAuth2GrantType,
 )
+from cuiman.api.auth.oidc import parse_callback_parameters
 from cuiman.api.auth.secret_store import (
     delete_auth_secrets,
     save_auth_secrets,
 )
 from cuiman.api.config import ClientConfig
 from cuiman.api.defaults import DEFAULT_API_URL, DEFAULT_AUTH_TYPE
+
+OIDC_LOGIN_TIMEOUT = 300.0
+"""Seconds to wait for an OpenID Connect authorization callback."""
 
 
 def get_config(config_path: Path | str | None) -> ClientConfig:
@@ -60,7 +73,7 @@ class _Context(BaseModel):
 
 def configure_client_with_prompt(
     config_path: Path | str | None = None,
-    **cli_params: str | bool | None,
+    **cli_params: Any,
 ) -> Path:
     """Prompt for public configuration values and write them to a file."""
     previous = _get_previous_public_config(config_path)
@@ -83,7 +96,11 @@ def configure_client_with_prompt(
     return config.write(config_path=config_path)
 
 
-def login_client_with_prompt(config_path: Path | str | None = None) -> None:
+def login_client_with_prompt(
+    config_path: Path | str | None = None,
+    *,
+    no_browser: bool = False,
+) -> None:
     """Prompt for credentials, authenticate when needed, and save them securely."""
     config = _get_login_config(config_path)
     auth = config.auth
@@ -117,6 +134,9 @@ def login_client_with_prompt(config_path: Path | str | None = None) -> None:
         auth_values["access_token"] = result.access_token
         if result.refresh_token:
             auth_values["refresh_token"] = result.refresh_token
+    elif isinstance(auth, OidcAuthConfig):
+        oidc_auth = _login_oidc(auth, no_browser=no_browser)
+        auth_values = oidc_auth.model_dump()
     else:  # pragma: no cover - AuthConfig is a closed discriminated union.
         raise ValueError(f"Unsupported authentication type: {auth.auth_type}")
 
@@ -127,9 +147,15 @@ def login_client_with_prompt(config_path: Path | str | None = None) -> None:
 def logout_client(config_path: Path | str | None = None) -> None:
     """Remove locally stored credentials for the configured service."""
     config = _get_login_config(config_path)
-    delete_auth_secrets(
-        ClientConfig.normalize_config_path(config_path), config.api_url or ""
-    )
+    try:
+        if isinstance(config.auth, OidcAuthConfig):
+            resolved = ClientConfig.create(config_path=config_path)
+            if isinstance(resolved.auth, OidcAuthConfig):
+                revoke_oidc_tokens(resolved.auth)
+    finally:
+        delete_auth_secrets(
+            ClientConfig.normalize_config_path(config_path), config.api_url or ""
+        )
     typer.echo("Logged out.")
 
 
@@ -142,6 +168,10 @@ def _configure_public_auth_with_prompt(ctx: _Context, auth_type: str) -> None:
         _prompt_for_oauth2_grant_type(ctx)
         _prompt_for_str(ctx, "client_id", "OAuth2 client ID", "")
         _configure_token_type_with_prompt(ctx)
+    elif auth_type == "oidc":
+        _prompt_for_str(ctx, "issuer_url", "OIDC issuer URL", "")
+        _prompt_for_str(ctx, "client_id", "OIDC client ID", "")
+        _prompt_for_scopes(ctx)
     elif auth_type == "token":
         _configure_token_type_with_prompt(ctx)
     elif auth_type == "api-key":
@@ -161,6 +191,43 @@ def _configure_token_type_with_prompt(ctx: _Context) -> None:
 
 def _current_auth_params(ctx: _Context) -> dict[str, Any]:
     return {key: value for key, value in ctx.curr_params.items() if key != "api_url"}
+
+
+def _login_oidc(auth: OidcAuthConfig, *, no_browser: bool) -> OidcAuthConfig:
+    """Complete an OIDC Authorization Code login through a loopback callback."""
+    discovery = discover_oidc_provider(auth)
+    verifier = generate_pkce_verifier()
+    state = secrets.token_urlsafe(32)
+    with LoopbackCallbackServer() as callback_server:
+        authorization_url = build_authorization_url(
+            discovery,
+            auth,
+            callback_server.redirect_uri,
+            state,
+            verifier,
+        )
+        if no_browser:
+            typer.echo(f"Open this URL to log in:\n{authorization_url}")
+        elif not webbrowser.open(authorization_url):
+            raise ValueError(
+                "Could not open a browser for OIDC login. "
+                "Use 'cuiman login --no-browser' to print the authorization URL."
+            )
+        parameters = callback_server.wait_for_callback(OIDC_LOGIN_TIMEOUT)
+        code = parse_callback_parameters(parameters, state)
+        result = exchange_oidc_code(
+            discovery,
+            auth,
+            code,
+            verifier,
+            callback_server.redirect_uri,
+        )
+    return auth.model_copy(
+        update={
+            "access_token": result.access_token,
+            "refresh_token": result.refresh_token,
+        }
+    )
 
 
 def _get_previous_public_config(config_path: Path | str | None) -> dict[str, Any]:
@@ -335,6 +402,22 @@ def _prompt_for_oauth2_grant_type(ctx: _Context) -> OAuth2GrantType:
             f"Expected one of: {', '.join(OAUTH2_GRANT_TYPE_NAMES)}."
         )
     return cast(OAuth2GrantType, grant_type)
+
+
+def _prompt_for_scopes(ctx: _Context) -> None:
+    """Collect optional OIDC resource scopes without persisting secret values."""
+    scopes = ctx.cli_params.get("scopes")
+    if scopes is None:
+        previous_scopes = ctx.prev_params.get("scopes", [])
+        default = (
+            " ".join(previous_scopes)
+            if isinstance(previous_scopes, (list, tuple))
+            else ""
+        )
+        scopes = (
+            typer.prompt("OIDC scopes (space-separated)", default=default) or ""
+        ).split()
+    ctx.curr_params["scopes"] = scopes
 
 
 def _prompt_for_str(ctx: _Context, key: str, text: str, default: str) -> str:

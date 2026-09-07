@@ -210,7 +210,21 @@ def new_cli(
             str | None,
             typer.Option(
                 "--client-id",
-                help="OAuth2 client ID.",
+                help="OAuth2 or OIDC client ID.",
+            ),
+        ] = None,
+        issuer_url: Annotated[
+            str | None,
+            typer.Option(
+                "--issuer-url",
+                help="The OpenID Connect issuer URL.",
+            ),
+        ] = None,
+        scopes: Annotated[
+            list[str] | None,
+            typer.Option(
+                "--scope",
+                help="An OpenID Connect resource scope; repeat for multiple scopes.",
             ),
         ] = None,
         use_bearer: Annotated[
@@ -245,6 +259,8 @@ def new_cli(
                 token_url=token_url,
                 grant_type=grant_type,
                 client_id=client_id,
+                issuer_url=issuer_url,
+                scopes=scopes,
                 use_bearer=use_bearer,
                 access_token_header=access_token_header,
             )
@@ -257,13 +273,20 @@ def new_cli(
     @t.command()
     def login(
         config_file: Annotated[str | None, CONFIG_OPTION] = None,
+        no_browser: Annotated[
+            bool,
+            typer.Option(
+                "--no-browser",
+                help="Print the OIDC authorization URL instead of opening a browser.",
+            ),
+        ] = False,
     ):
         """Log in and store the required credentials in the OS keyring."""
         from .config import login_client_with_prompt
 
         try:
-            login_client_with_prompt(config_file)
-        except (SecretStoreError, ValueError) as exc:
+            login_client_with_prompt(config_file, no_browser=no_browser)
+        except (SecretStoreError, RuntimeError, TimeoutError, ValueError) as exc:
             typer.echo(str(exc), err=True)
             raise typer.Exit(code=1) from exc
 
@@ -276,7 +299,7 @@ def new_cli(
 
         try:
             logout_client(config_file)
-        except (SecretStoreError, ValueError) as exc:
+        except (SecretStoreError, RuntimeError, ValueError) as exc:
             typer.echo(str(exc), err=True)
             raise typer.Exit(code=1) from exc
 

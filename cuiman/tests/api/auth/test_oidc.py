@@ -26,6 +26,7 @@ from cuiman.api.auth.oidc import (
     prepare_oidc_discovery,
     prepare_oidc_refresh_request,
     renew_oidc_tokens,
+    revoke_oidc_tokens,
 )
 
 
@@ -61,7 +62,7 @@ def test_discovery_url():
         "https://identity.example.test/.well-known/openid-configuration"
     )
     assert discovery_url("https://identity.example.test/tenant") == (
-        "https://identity.example.test/.well-known/openid-configuration/tenant"
+        "https://identity.example.test/tenant/.well-known/openid-configuration"
     )
 
 
@@ -70,6 +71,55 @@ def test_prepare_oidc_discovery():
         "https://identity.example.test/",
         "https://identity.example.test/.well-known/openid-configuration",
     )
+
+
+@pytest.mark.parametrize(
+    ("error", "message"),
+    [
+        (
+            httpx.HTTPStatusError(
+                "not found",
+                request=httpx.Request("GET", "https://identity.example.test"),
+                response=httpx.Response(
+                    404,
+                    request=httpx.Request("GET", "https://identity.example.test"),
+                ),
+            ),
+            "HTTP 404 Not Found",
+        ),
+        (httpx.ConnectError("connection refused"), "connection refused"),
+    ],
+)
+def test_discover_oidc_provider_explains_http_failures(error, message):
+    with patch("httpx.Client.get", side_effect=error):
+        with pytest.raises(ValueError, match=message) as exception:
+            discover_oidc_provider(make_auth())
+
+    assert "OIDC discovery failed for issuer" in str(exception.value)
+    assert "openid-configuration" in str(exception.value)
+
+
+def test_discover_oidc_provider_explains_invalid_metadata():
+    with patch(
+        "httpx.Client.get",
+        return_value=response({"issuer": "https://identity.example.test/"}),
+    ):
+        with pytest.raises(
+            ValueError, match="must contain an HTTPS authorization_endpoint"
+        ):
+            discover_oidc_provider(make_auth())
+
+
+def test_discover_oidc_provider_allows_an_omitted_revocation_endpoint():
+    metadata = {
+        "issuer": "https://identity.example.test/",
+        "authorization_endpoint": "https://identity.example.test/authorize",
+        "token_endpoint": "https://identity.example.test/token",
+    }
+    with patch("httpx.Client.get", return_value=response(metadata)):
+        provider = discover_oidc_provider(make_auth())
+
+    assert provider.revocation_endpoint is None
 
 
 def test_discover_oidc_provider_requests_and_validates_metadata():
@@ -261,6 +311,64 @@ def test_renew_oidc_tokens_discovers_provider_and_posts_refresh_token():
 def test_renew_oidc_tokens_requires_a_refresh_token():
     with pytest.raises(ValueError, match="refresh token"):
         renew_oidc_tokens(make_auth(refresh_token=None))
+
+
+def test_revoke_oidc_tokens_posts_the_refresh_token():
+    response = MagicMock()
+    with (
+        patch("cuiman.api.auth.oidc.discover_oidc_provider", return_value=discovery()),
+        patch("httpx.Client.post", return_value=response) as post,
+    ):
+        assert revoke_oidc_tokens(make_auth())
+
+    post.assert_called_once_with(
+        "https://identity.example.test/revoke",
+        data={
+            "token": "refresh",
+            "token_type_hint": "refresh_token",
+            "client_id": "client",
+        },
+    )
+    response.raise_for_status.assert_called_once_with()
+
+
+def test_revoke_oidc_tokens_uses_an_access_token_when_refresh_is_unavailable():
+    auth = make_auth(refresh_token=None, access_token="access")
+    with (
+        patch("cuiman.api.auth.oidc.discover_oidc_provider", return_value=discovery()),
+        patch("httpx.Client.post") as post,
+    ):
+        revoke_oidc_tokens(auth)
+
+    assert post.call_args.kwargs["data"]["token_type_hint"] == "access_token"
+
+
+@pytest.mark.parametrize(
+    ("auth", "provider"),
+    [
+        (make_auth(refresh_token=None, access_token=None), discovery()),
+        (
+            make_auth(),
+            OidcDiscovery(
+                issuer="https://identity.example.test/",
+                authorization_endpoint="https://identity.example.test/authorize",
+                token_endpoint="https://identity.example.test/token",
+            ),
+        ),
+    ],
+)
+def test_revoke_oidc_tokens_returns_false_when_revocation_is_not_possible(
+    auth, provider
+):
+    with patch(
+        "cuiman.api.auth.oidc.discover_oidc_provider", return_value=provider
+    ) as discover:
+        assert not revoke_oidc_tokens(auth)
+
+    if auth.access_token or auth.refresh_token:
+        discover.assert_called_once_with(auth)
+    else:
+        discover.assert_not_called()
 
 
 def test_prepare_oidc_refresh_request_requires_a_refresh_token():

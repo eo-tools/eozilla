@@ -390,3 +390,28 @@ async def test_oidc_async_refresher_preserves_unrotated_refresh_token(
 
     assert config.access_token == "new-access"
     assert config.refresh_token == "old-refresh"
+
+
+@pytest.mark.asyncio
+@patch(
+    "cuiman.api.auth.oidc_async.renew_oidc_tokens_async",
+    new_callable=AsyncMock,
+)
+async def test_oidc_async_refresher_updates_rotated_refresh_token(
+    mock_renew: AsyncMock,
+):
+    mock_renew.return_value = TokenResult(
+        access_token="new-access", refresh_token="new-refresh"
+    )
+    config = OidcAuthConfig(
+        issuer_url="https://identity.example.test",
+        client_id="client",
+        refresh_token="old-refresh",
+    )
+    persistor = MagicMock()
+    config.set_secret_persistor(persistor)
+
+    await config.make_async_token_refresher()()
+
+    assert config.refresh_token == "new-refresh"
+    persistor.assert_called_once_with(config)
