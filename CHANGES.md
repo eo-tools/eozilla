@@ -6,10 +6,12 @@
   keyring instead of its configuration file. `cuiman configure` stores only
   public service and authentication metadata; the new `cuiman login` and
   `cuiman logout` commands manage credentials for Basic, token, API-key,
-  proprietary-login, and OAuth2 password-grant authentication. OAuth2 refresh
-  tokens loaded from the keyring are persisted there after refresh. Existing
-  secret-bearing configuration files are detected and can be safely rewritten.
-  OIDC authorization-code login is not part of this change. (#205)
+  proprietary-login, OAuth2 password-grant, and OIDC authorization-code
+  authentication. OIDC login uses provider discovery, Authorization Code with
+  PKCE, and a temporary loopback callback server; it supports browser and
+  `--no-browser` login. OAuth2 and OIDC refresh tokens loaded from the keyring
+  are persisted there after refresh. Existing secret-bearing configuration
+  files are detected and can be safely rewritten. (#205)
 
 - **Cuiman** authentication configuration now uses distinct, nested data models
   for no authentication, Basic, token, proprietary login, OAuth2, and API-key

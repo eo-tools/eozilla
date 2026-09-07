@@ -96,6 +96,7 @@ are accepted:
 | `token` | `EOZILLA_AUTH__AUTH_TYPE=token`, `EOZILLA_AUTH__ACCESS_TOKEN` | `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
 | `login` | `EOZILLA_AUTH__AUTH_TYPE=login`, `EOZILLA_AUTH__LOGIN_URL`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD` | `EOZILLA_AUTH__ACCESS_TOKEN`, `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
 | `oauth2` | `EOZILLA_AUTH__AUTH_TYPE=oauth2`, `EOZILLA_AUTH__TOKEN_URL` | `EOZILLA_AUTH__GRANT_TYPE`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD`, `EOZILLA_AUTH__CLIENT_ID`, `EOZILLA_AUTH__CLIENT_SECRET`, `EOZILLA_AUTH__REFRESH_TOKEN`, `EOZILLA_AUTH__ACCESS_TOKEN`, `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
+| `oidc` | `EOZILLA_AUTH__AUTH_TYPE=oidc`, `EOZILLA_AUTH__ISSUER_URL`, `EOZILLA_AUTH__CLIENT_ID` | `EOZILLA_AUTH__SCOPES`, `EOZILLA_AUTH__REFRESH_TOKEN`, `EOZILLA_AUTH__ACCESS_TOKEN` |
 | `api-key` | `EOZILLA_AUTH__AUTH_TYPE=api-key`, `EOZILLA_AUTH__API_KEY` | `EOZILLA_AUTH__API_KEY_HEADER` |
 
 For OAuth 2.0, `grant_type` defaults to `password`. The `password` grant
@@ -296,7 +297,76 @@ config = ClientConfig(
 `cuiman login` supports the OAuth2 `password` grant. The
 `client_credentials` grant has no interactive login step; provide its
 credentials through environment variables or direct Python configuration.
-OIDC authorization-code login is not included in this release.
+
+### Auth type `oidc`
+
+The `oidc` type signs a user in through an OpenID Connect provider. Configure
+the provider's **issuer URL** (not its token endpoint) and a public client ID.
+For example, a Keycloak realm issuer is commonly
+`https://identity.example.org/realms/example`; Cuiman obtains its endpoints
+from `<issuer>/.well-known/openid-configuration`.
+
+```yaml
+api_url: "https://anolis.api.org/process-api/v1"
+auth:
+  auth_type: oidc
+  issuer_url: "https://identity.example.org/realms/example"
+  client_id: "cuiman"
+  scopes:
+    - profile
+    - email
+```
+
+`openid` is always requested, even when it is omitted from `scopes`. Add only
+provider- or service-specific scopes that are required, such as `profile`,
+`email`, or `offline_access`. The configuration file contains these public
+values only; access and refresh tokens are stored in the operating-system
+keyring after login.
+
+```python
+config = ClientConfig(
+    api_url="https://anolis.api.org/process-api/v1",
+    auth={
+        "auth_type": "oidc",
+        "issuer_url": "https://identity.example.org/realms/example",
+        "client_id": "cuiman",
+        "scopes": ["profile", "email"],
+    },
+)
+```
+
+#### Logging in with OIDC
+
+Run `cuiman login` after configuring OIDC. Cuiman discovers the provider,
+opens its authorization page, and starts a temporary HTTP server bound only to
+`127.0.0.1` on an ephemeral port. The provider redirects the browser to
+`http://127.0.0.1:<port>/callback`; Cuiman validates the response state and
+exchanges the authorization code using PKCE.
+
+Register that loopback callback pattern with the OIDC client. For example,
+Keycloak clients can allow Cuiman's callback with:
+
+```text
+http://127.0.0.1/*
+```
+
+Do not register a broad internet-facing wildcard redirect URI. The loopback
+address restricts the callback to the local computer, and the port is chosen
+for each login so concurrent or stale login attempts do not claim a fixed
+port.
+
+If Cuiman cannot open a browser, or the browser must be opened manually, use:
+
+```console
+$ cuiman login --no-browser
+```
+
+This prints the authorization URL while Cuiman continues to wait for the
+local callback. Open the URL in a browser on the same machine. `cuiman logout`
+attempts token revocation when the provider advertises a revocation endpoint,
+then always removes the locally stored credentials. When an OIDC access token
+is rejected and a refresh token is available, Cuiman refreshes it and persists
+any replacement token in the keyring.
 
 ### Auth type `api-key`
 

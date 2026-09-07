@@ -35,6 +35,16 @@ may raise a [`ClientError`](#cuiman.api.ClientError) if a server call fails.
     The Client Auth Configuration API is not stable and may change without 
     notice. Do not yet rely on it.
 
+### OpenID Connect
+
+`OidcAuthConfig` describes a public OIDC client: its issuer URL, client ID,
+and optional scopes. `openid` is always included. Use `cuiman login` for the
+interactive Authorization Code with PKCE flow; the resulting access and refresh
+tokens are secrets and belong in the operating-system keyring, not a
+configuration file. The public helpers below expose provider discovery, PKCE,
+code exchange, token refresh, revocation, and the loopback callback server for
+applications that need to implement the same flow themselves.
+
 ::: cuiman.api.auth
 
 
