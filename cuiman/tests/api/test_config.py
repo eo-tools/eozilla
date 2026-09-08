@@ -10,21 +10,24 @@ from pathlib import Path
 from unittest import TestCase
 from unittest.mock import patch
 
+import pytest
 import yaml
 from pydantic_settings import SettingsConfigDict
 
+from cuiman import AsyncClient, Client
 from cuiman.api.auth import (
     ApiKeyAuthConfig,
     BasicAuthConfig,
     LoginAuthConfig,
     NoAuthConfig,
     OAuth2AuthConfig,
+    OidcAuthConfig,
     TokenAuthConfig,
     TokenResult,
 )
 from cuiman.api.config import (
     ClientConfig,
-    _update_config_from_env,
+    _update_config,
     _update_if_not_none,
 )
 from cuiman.api.defaults import DEFAULT_API_URL
@@ -511,7 +514,7 @@ class ClientConfigTest(TestCase):
         _update_if_not_none(target, {"value": None})
         self.assertEqual({"value": "original"}, target)
 
-    def test_update_config_from_env_replaces_auth_for_explicit_auth_type(self):
+    def test_update_config_replaces_auth_for_explicit_auth_type(self):
         target = {
             "auth": {
                 "auth_type": "login",
@@ -521,7 +524,7 @@ class ClientConfigTest(TestCase):
             }
         }
 
-        _update_config_from_env(
+        _update_config(
             target,
             {"auth": {"auth_type": "token", "access_token": "token"}},
         )
@@ -530,3 +533,116 @@ class ClientConfigTest(TestCase):
             {"auth": {"auth_type": "token", "access_token": "token"}},
             target,
         )
+
+
+@pytest.fixture
+def saved_login_config():
+    path = ClientConfig.default_path
+    ClientConfig.new_instance(
+        api_url="http://localhost:8080/process/",
+        auth={
+            "auth_type": "login",
+            "login_url": "http://localhost:8080/auth/login",
+            "use_bearer": False,
+            "access_token_header": "X-Saved-Token",
+        },
+    ).write(path)
+    return path
+
+
+@pytest.mark.parametrize("client_type", [Client, AsyncClient])
+@pytest.mark.parametrize("source", ["kwargs", "auth_model", "config"])
+def test_explicit_oidc_replaces_saved_login_auth(
+    saved_login_config, client_type, source
+):
+    auth = {
+        "auth_type": "oidc",
+        "issuer_url": "https://identity.example.test/realms/eozilla-auth",
+        "client_id": "cuiman",
+        "use_bearer": True,
+    }
+    values = {"api_url": "https://processing.example.test/", "auth": auth}
+    if source == "auth_model":
+        values["auth"] = OidcAuthConfig(**auth)
+    elif source == "config":
+        values = {"config": ClientConfig.new_instance(**values)}
+
+    with patch("cuiman.api.config.load_auth_secrets", return_value={}):
+        client = client_type(**values)
+
+    assert client.config.api_url == "https://processing.example.test/"
+    assert client.config.auth.model_dump() == OidcAuthConfig(**auth).model_dump()
+    assert client._transport is None
+    assert ClientConfig.from_file(saved_login_config).auth.auth_type == "login"
+
+
+@pytest.mark.parametrize("source", ["kwargs", "config", "environment"])
+def test_selected_auth_keeps_keyring_credentials_on_resolution(
+    saved_login_config, monkeypatch, source
+):
+    auth = {
+        "auth_type": "oidc",
+        "issuer_url": "https://identity.example.test/realms/eozilla-auth",
+        "client_id": "cuiman",
+    }
+    values = {"auth": auth}
+    if source == "config":
+        values = {"config": ClientConfig.new_instance(**values)}
+    elif source == "environment":
+        for name, value in auth.items():
+            monkeypatch.setenv(f"EOZILLA_AUTH__{name.upper()}", value)
+        values = {}
+    secrets = {"access_token": "stored-access", "refresh_token": "stored-refresh"}
+
+    with patch("cuiman.api.config.load_auth_secrets", return_value=secrets) as load:
+        config = ClientConfig.create(**values)
+
+    assert config.auth.model_dump() == OidcAuthConfig(**auth, **secrets).model_dump()
+    load.assert_called_once_with(
+        saved_login_config, "http://localhost:8080/process/", "oidc"
+    )
+
+
+def test_explicit_auth_type_resets_fields_even_when_type_is_unchanged(
+    saved_login_config,
+):
+    with patch("cuiman.api.config.load_auth_secrets", return_value={}):
+        config = ClientConfig.create(
+            auth={"auth_type": "login", "login_url": "https://new.example.test/login"}
+        )
+
+    assert (
+        config.auth.model_dump()
+        == LoginAuthConfig(login_url="https://new.example.test/login").model_dump()
+    )
+
+
+def test_file_auth_replaces_application_default_auth(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        ClientConfig,
+        "default_config",
+        ClientConfig.new_instance(
+            auth=LoginAuthConfig(login_url="https://default.example.test/login")
+        ),
+    )
+    path = tmp_path / "profile.yaml"
+    path.write_text("auth:\n  auth_type: none\n")
+
+    assert ClientConfig.create(config_path=path).auth == NoAuthConfig()
+
+
+@pytest.mark.parametrize("source", ["kwargs", "config"])
+def test_explicit_auth_replaces_environment_credentials(
+    saved_login_config, monkeypatch, source
+):
+    monkeypatch.setenv("EOZILLA_AUTH__AUTH_TYPE", "login")
+    monkeypatch.setenv("EOZILLA_AUTH__LOGIN_URL", "https://env.example.test/login")
+    monkeypatch.setenv("EOZILLA_AUTH__ACCESS_TOKEN", "environment-token")
+    values = {"auth": {"auth_type": "none"}}
+    if source == "config":
+        values = {"config": ClientConfig.new_instance(**values)}
+
+    config = ClientConfig.create(**values)
+
+    assert config.auth == NoAuthConfig()
+    assert config.auth_headers == {}

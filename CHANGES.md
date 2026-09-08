@@ -41,6 +41,11 @@
 
 ### Fixes
 
+- **Cuiman** now replaces previous authentication settings when a configuration
+  source explicitly selects `auth_type`. Python client overrides no longer
+  inherit incompatible fields such as a saved `login_url` when selecting OIDC.
+  Matching keyring tokens are retained after resolving a complete auth override.
+
 - **Cuiman** now shares token acquisition, renewal, and credential updates in
   its authentication session helpers. Failed credential persistence during
   renewal leaves the in-memory session unchanged, matching initial login.

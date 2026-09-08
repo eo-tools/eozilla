@@ -119,29 +119,18 @@ class ClientConfig(BaseSettings):
         # on ClientConfig, while application settings belong to config_cls.
         env_config = EnvSettingsSource(config_cls)()
 
-        def merge_config_sources(
-            auth_secrets: dict[str, str] | None = None,
-        ) -> dict[str, Any]:
-            # 3. Start with the application's API and authentication defaults.
-            config_dict = cls.default_config.to_dict()
-            # 4. Apply public values persisted in the configuration file.
-            if file_config is not None:
-                _update_if_not_none(config_dict, file_config.to_dict())
-            # 5. Apply credentials read from the OS keyring, if available.
-            if auth_secrets:
-                _update_if_not_none(config_dict, {"auth": auth_secrets})
-            # 6. Let environment variables override file and keyring values.
-            _update_config_from_env(config_dict, env_config)
-            # 7. Apply a complete configuration instance supplied by the caller.
-            if config is not None:
-                _update_if_not_none(config_dict, config.to_dict())
-            # 8. Apply individual caller-supplied keyword arguments last.
-            _update_if_not_none(config_dict, config_kwargs)
-            return config_dict
+        # 3. Resolve settings in precedence order. Selecting an auth type starts
+        #    a new auth configuration; overrides without a type update fields.
+        config_dict = cls.default_config.to_dict()
+        if file_config is not None:
+            _update_config(config_dict, file_config.to_dict())
+        _update_config(config_dict, env_config)
+        if config is not None:
+            _update_config(config_dict, config.to_dict())
+        _update_config(config_dict, config_kwargs)
 
-        # 9. Build the effective configuration from all non-keyring sources
+        # 4. Build the effective configuration from all non-keyring sources
         #    without re-resolving Pydantic Settings sources.
-        config_dict = merge_config_sources()
         resolved_config = cls.new_instance(**config_dict)
         if (
             config is not None
@@ -155,7 +144,7 @@ class ClientConfig(BaseSettings):
         if file_config is None or _has_auth_credentials(resolved_config):
             return resolved_config
 
-        # 10. A public file configuration without usable credentials may have
+        # 5. A public file configuration without usable credentials may have
         #     matching secrets in the operating-system keyring.
         auth_secrets = load_auth_secrets(
             cls.normalize_config_path(config_path),
@@ -173,9 +162,15 @@ class ClientConfig(BaseSettings):
             )
             return resolved_config
 
-        # 11. Rebuild with the keyring credentials and persist later token
-        #     refreshes back to the same keyring entry.
-        resolved_config = cls.new_instance(**merge_config_sources(auth_secrets))
+        # 6. Fill missing credentials in the selected auth configuration.
+        #    Explicit values take precedence. Do not replay source overrides:
+        #    a complete auth selection would discard the loaded credentials.
+        config_dict = resolved_config.to_dict()
+        config_dict["auth"] = {
+            **auth_secrets,
+            **resolved_config.auth.model_dump(mode="json", exclude_none=True),
+        }
+        resolved_config = cls.new_instance(**config_dict)
         _set_auth_secret_persistor(
             resolved_config,
             cls.normalize_config_path(config_path),
@@ -265,8 +260,9 @@ class ClientConfig(BaseSettings):
             exclude_defaults=True,
             exclude_unset=True,
         )
-        if "auth" in config_dict:
-            config_dict["auth"]["auth_type"] = self.auth.auth_type
+        if "auth" in self.model_fields_set:
+            # Explicitly selecting default/no authentication is still an override.
+            config_dict.setdefault("auth", {})["auth_type"] = self.auth.auth_type
         return config_dict
 
     def to_file_dict(self) -> dict[str, Any]:
@@ -342,6 +338,15 @@ def _update_if_not_none(target: dict[str, Any], updates: dict[str, Any]):
             target[key] = value
 
 
+def _update_config(target: dict[str, Any], updates: dict[str, Any]) -> None:
+    """Merge settings, replacing auth whenever its discriminator is supplied."""
+    auth_config = updates.get("auth")
+    if isinstance(auth_config, dict) and "auth_type" in auth_config:
+        target["auth"] = dict(auth_config)
+        updates = {key: value for key, value in updates.items() if key != "auth"}
+    _update_if_not_none(target, updates)
+
+
 def _has_auth_credentials(config: ClientConfig) -> bool:
     """Return whether supplied credentials permit non-interactive login."""
     return can_login(config.auth)
@@ -364,20 +369,6 @@ def _set_auth_secret_persistor(config: ClientConfig, config_path: Path) -> None:
 ###############################################################
 # -- Config file legacy management
 ###############################################################
-
-
-def _update_config_from_env(target: dict[str, Any], env_config: dict[str, Any]) -> None:
-    """Merge environment settings, replacing auth when its type is selected.
-
-    An environment ``auth_type`` chooses a new discriminated auth model, so
-    retaining fields from an auth model selected by a configuration file would
-    make them invalid extra inputs.
-    """
-    auth_config = env_config.get("auth")
-    if isinstance(auth_config, dict) and "auth_type" in auth_config:
-        target["auth"] = auth_config
-        env_config = {key: value for key, value in env_config.items() if key != "auth"}
-    _update_if_not_none(target, env_config)
 
 
 _SECRET_AUTH_FIELDS = {

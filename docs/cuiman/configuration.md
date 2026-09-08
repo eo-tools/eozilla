@@ -20,6 +20,16 @@ entry overrides that of a previous one.
 This list is implemented in the class method `create()` of the 
 `cuiman.api.ClientConfig` class. 
 
+An `auth` override that includes `auth_type` replaces the previous authentication
+configuration entirely, even when the type is unchanged. For example,
+`Client(auth={"auth_type": "oidc", "issuer_url": "https://identity.example.org/realm",
+"client_id": "cuiman"})` does not inherit a saved `login_url` or custom token
+header settings. This rule applies to configuration files, environment
+variables, configuration objects, and client keyword arguments. An override
+without `auth_type`, such as `auth={"access_token": "..."}`, updates fields in
+the selected authentication configuration. Matching keyring credentials fill
+missing secrets without overwriting explicitly supplied values.
+
 Note that applications using `cuiman` under the hood may customize the 
 configuration, see [Cuiman Customization](./customization.md). 
 
