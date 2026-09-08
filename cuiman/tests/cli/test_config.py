@@ -463,6 +463,14 @@ class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
 
 
 class LoginAndLogoutTest(ConfigTestMixin, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        # Login/logout resolve credentials before interacting or deleting them.
+        # These tests start with public configuration and an empty secret store.
+        load_secrets = patch("cuiman.api.config.load_auth_secrets", return_value={})
+        self.addCleanup(load_secrets.stop)
+        load_secrets.start()
+
     def write_config(self, auth) -> Path:
         with tempfile.NamedTemporaryFile(delete=False) as stream:
             config_path = Path(stream.name)
