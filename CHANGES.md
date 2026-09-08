@@ -41,6 +41,11 @@
 
 ### Fixes
 
+- **Cuiman** now shares token acquisition, renewal, and credential updates in
+  its authentication session helpers. Failed credential persistence during
+  renewal leaves the in-memory session unchanged, matching initial login.
+  Client-credentials grants consistently ignore returned refresh tokens.
+
 - **Cuiman**'s launched-app proxy now rejects path-traversal segments, so a
   browser request cannot escape the configured processing API base path.
 

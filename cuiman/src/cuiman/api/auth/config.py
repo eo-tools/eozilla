@@ -105,14 +105,18 @@ class AuthConfigBase(BaseModel):
         return {}
 
     def make_token_refresher(self) -> Callable[[], dict[str, str]] | None:
-        """Create a synchronous token refresh callback when supported."""
-        return None
+        """Delegate synchronous token renewal to the shared auth lifecycle."""
+        from .session import make_token_refresher
+
+        return make_token_refresher(self)
 
     def make_async_token_refresher(
         self,
     ) -> Callable[[], Awaitable[dict[str, str]]] | None:
-        """Create an asynchronous token refresh callback when supported."""
-        return None
+        """Delegate asynchronous token renewal to the shared auth lifecycle."""
+        from .session import make_async_token_refresher
+
+        return make_async_token_refresher(self)
 
 
 class NoAuthConfig(AuthConfigBase):
@@ -208,38 +212,6 @@ class OAuth2AuthConfig(_AccessTokenAuthConfig):
             )
         return self
 
-    def make_token_refresher(self) -> Callable[[], dict[str, str]]:
-        """Create a synchronous OAuth2 token renewal callback."""
-
-        def refresh() -> dict[str, str]:
-            from .oauth2 import renew_oauth2_tokens
-
-            result = renew_oauth2_tokens(self)
-            self.access_token = result.access_token
-            if self.grant_type == "password" and result.refresh_token:
-                self.refresh_token = result.refresh_token
-            self.persist_secrets()
-            return self.auth_headers
-
-        return refresh
-
-    def make_async_token_refresher(
-        self,
-    ) -> Callable[[], Awaitable[dict[str, str]]]:
-        """Create an asynchronous OAuth2 token renewal callback."""
-
-        async def refresh() -> dict[str, str]:
-            from .oauth2_async import renew_oauth2_tokens_async
-
-            result = await renew_oauth2_tokens_async(self)
-            self.access_token = result.access_token
-            if self.grant_type == "password" and result.refresh_token:
-                self.refresh_token = result.refresh_token
-            self.persist_secrets()
-            return self.auth_headers
-
-        return refresh
-
 
 class OidcAuthConfig(_AccessTokenAuthConfig):
     """OpenID Connect Authorization Code with PKCE configuration.
@@ -263,38 +235,6 @@ class OidcAuthConfig(_AccessTokenAuthConfig):
         """Add the required OpenID Connect scope and remove duplicate scopes."""
         self.scopes = tuple(dict.fromkeys(("openid", *self.scopes)))
         return self
-
-    def make_token_refresher(self) -> Callable[[], dict[str, str]]:
-        """Create a synchronous OpenID Connect token renewal callback."""
-
-        def refresh() -> dict[str, str]:
-            from .oidc import renew_oidc_tokens
-
-            result = renew_oidc_tokens(self)
-            self.access_token = result.access_token
-            if result.refresh_token:
-                self.refresh_token = result.refresh_token
-            self.persist_secrets()
-            return self.auth_headers
-
-        return refresh
-
-    def make_async_token_refresher(
-        self,
-    ) -> Callable[[], Awaitable[dict[str, str]]]:
-        """Create an asynchronous OpenID Connect token renewal callback."""
-
-        async def refresh() -> dict[str, str]:
-            from .oidc_async import renew_oidc_tokens_async
-
-            result = await renew_oidc_tokens_async(self)
-            self.access_token = result.access_token
-            if result.refresh_token:
-                self.refresh_token = result.refresh_token
-            self.persist_secrets()
-            return self.auth_headers
-
-        return refresh
 
 
 class ApiKeyAuthConfig(AuthConfigBase):

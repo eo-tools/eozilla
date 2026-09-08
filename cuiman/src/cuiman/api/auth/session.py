@@ -2,15 +2,32 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-"""Shared preparation of authentication for clients, app launches, and the CLI."""
+"""Authentication lifecycle shared by clients, app launches, and the CLI.
 
-from .config import AuthConfigBase, LoginAuthConfig, OAuth2AuthConfig, OidcAuthConfig
-from .login import TokenResult, login
+This module selects acquisition and renewal operations and commits credentials.
+Protocol helpers return token values; configuration and transport delegate here
+without performing token updates themselves.
+"""
+
+from functools import partial
+from typing import Awaitable, Callable
+
+from .config import (
+    AuthConfigBase,
+    LoginAuthConfig,
+    OAuth2AuthConfig,
+    OidcAuthConfig,
+)
+from .login import login
 from .login_async import login_async
 from .oauth2 import obtain_oauth2_tokens, renew_oauth2_tokens
-from .oauth2_async import obtain_oauth2_tokens_async, renew_oauth2_tokens_async
+from .oauth2_async import (
+    obtain_oauth2_tokens_async,
+    renew_oauth2_tokens_async,
+)
 from .oidc import renew_oidc_tokens
 from .oidc_async import renew_oidc_tokens_async
+from .tokens import TokenResult
 
 
 class LoginRequiredError(ValueError):
@@ -50,17 +67,82 @@ def _require_login() -> None:
 
 def _apply_tokens(auth: AuthConfigBase, tokens: TokenResult) -> None:
     values = {"access_token": tokens.access_token}
-    if "refresh_token" in auth.secret_fields and tokens.refresh_token is not None:
+    if tokens.refresh_token and (
+        isinstance(auth, OidcAuthConfig)
+        or (isinstance(auth, OAuth2AuthConfig) and auth.grant_type == "password")
+    ):
         values["refresh_token"] = tokens.refresh_token
     _commit_secrets(auth, values)
 
 
 def _commit_secrets(auth: AuthConfigBase, values: dict[str, str]) -> None:
-    # Save first: a failed secret-store write must leave login retryable.
+    # Save first: failed persistence must not publish a partially updated session.
     candidate = auth.model_copy(update=values)
     candidate.persist_secrets()
     for name, value in values.items():
         setattr(auth, name, value)
+
+
+def _obtain_tokens(
+    auth: LoginAuthConfig | OAuth2AuthConfig | OidcAuthConfig,
+) -> TokenResult:
+    if isinstance(auth, LoginAuthConfig):
+        return login(auth)
+    if isinstance(auth, OAuth2AuthConfig):
+        return (
+            renew_oauth2_tokens(auth)
+            if auth.grant_type == "password" and auth.refresh_token
+            else obtain_oauth2_tokens(auth)
+        )
+    return renew_oidc_tokens(auth)
+
+
+async def _obtain_tokens_async(
+    auth: LoginAuthConfig | OAuth2AuthConfig | OidcAuthConfig,
+) -> TokenResult:
+    if isinstance(auth, LoginAuthConfig):
+        return await login_async(auth)
+    if isinstance(auth, OAuth2AuthConfig):
+        return (
+            await renew_oauth2_tokens_async(auth)
+            if auth.grant_type == "password" and auth.refresh_token
+            else await obtain_oauth2_tokens_async(auth)
+        )
+    return await renew_oidc_tokens_async(auth)
+
+
+def make_token_refresher(
+    auth: AuthConfigBase,
+) -> Callable[[], dict[str, str]] | None:
+    """Bind non-interactive renewal for OAuth2 and OIDC configurations.
+
+    Static tokens and proprietary login retain their existing no-renewal policy.
+    Both initial acquisition and renewal use the same token commit operation.
+    """
+    if isinstance(auth, (OAuth2AuthConfig, OidcAuthConfig)):
+        return partial(_refresh_auth_headers, auth)
+    return None
+
+
+def make_async_token_refresher(
+    auth: AuthConfigBase,
+) -> Callable[[], Awaitable[dict[str, str]]] | None:
+    """Bind asynchronous non-interactive renewal when supported."""
+    if isinstance(auth, (OAuth2AuthConfig, OidcAuthConfig)):
+        return partial(_refresh_auth_headers_async, auth)
+    return None
+
+
+def _refresh_auth_headers(auth: OAuth2AuthConfig | OidcAuthConfig) -> dict[str, str]:
+    _apply_tokens(auth, _obtain_tokens(auth))
+    return dict(auth.auth_headers)
+
+
+async def _refresh_auth_headers_async(
+    auth: OAuth2AuthConfig | OidcAuthConfig,
+) -> dict[str, str]:
+    _apply_tokens(auth, await _obtain_tokens_async(auth))
+    return dict(auth.auth_headers)
 
 
 def resolve_auth_headers(
@@ -77,17 +159,8 @@ def resolve_auth_headers(
         candidate = prompt_auth(auth, no_browser=no_browser)
         resolve_auth_headers(candidate)
         _commit_secrets(auth, candidate.to_secret_dict())
-    elif isinstance(auth, LoginAuthConfig):
-        _apply_tokens(auth, login(auth))
-    elif isinstance(auth, OAuth2AuthConfig):
-        tokens = (
-            renew_oauth2_tokens(auth)
-            if auth.grant_type == "password" and auth.refresh_token
-            else obtain_oauth2_tokens(auth)
-        )
-        _apply_tokens(auth, tokens)
-    elif isinstance(auth, OidcAuthConfig):
-        _apply_tokens(auth, renew_oidc_tokens(auth))
+    elif isinstance(auth, (LoginAuthConfig, OAuth2AuthConfig, OidcAuthConfig)):
+        _apply_tokens(auth, _obtain_tokens(auth))
     return dict(auth.auth_headers)
 
 
@@ -105,15 +178,6 @@ async def resolve_auth_headers_async(
         candidate = await prompt_auth_async(auth, no_browser=no_browser)
         await resolve_auth_headers_async(candidate)
         _commit_secrets(auth, candidate.to_secret_dict())
-    elif isinstance(auth, LoginAuthConfig):
-        _apply_tokens(auth, await login_async(auth))
-    elif isinstance(auth, OAuth2AuthConfig):
-        tokens = (
-            await renew_oauth2_tokens_async(auth)
-            if auth.grant_type == "password" and auth.refresh_token
-            else await obtain_oauth2_tokens_async(auth)
-        )
-        _apply_tokens(auth, tokens)
-    elif isinstance(auth, OidcAuthConfig):
-        _apply_tokens(auth, await renew_oidc_tokens_async(auth))
+    elif isinstance(auth, (LoginAuthConfig, OAuth2AuthConfig, OidcAuthConfig)):
+        _apply_tokens(auth, await _obtain_tokens_async(auth))
     return dict(auth.auth_headers)

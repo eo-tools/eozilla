@@ -185,6 +185,28 @@ OAuth2 client credentials supplied through environment variables or Python
 configuration can obtain their initial access token automatically. They do not
 require a pre-existing access token or an interactive CLI login.
 
+### Remote notebooks
+
+A deployment can provide the processing API URL and an access token through
+`EOZILLA_API_URL`, `EOZILLA_AUTH__AUTH_TYPE=token`, and
+`EOZILLA_AUTH__ACCESS_TOKEN`. Python clients use these credentials without
+prompting or consulting the OS keyring. The token must be accepted by the
+processing API; a login session for JupyterLab alone does not supply it.
+
+An injected access token has no automatic renewal mechanism. If the API rejects
+it, Cuiman reports the API error without starting interactive login. The
+deployment or user must provide fresh credentials. Environment variables are
+read when the client configuration is created; an existing client does not
+automatically receive later changes from the deployment.
+
+OAuth2 and OIDC configurations can instead use explicitly supplied renewal
+credentials. Cuiman keeps renewed tokens in memory unless the configuration
+has a credential persistor, such as one attached when loading CLI keyring
+credentials. Renewal never opens a browser or prompts for credentials.
+
+For the internal responsibilities and the boundary for a future auth library,
+see [Authentication lifecycle](./authentication.md).
+
 ## Basic Settings
 
 The most important configuration setting is `api_url` which provides the 

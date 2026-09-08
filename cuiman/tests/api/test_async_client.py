@@ -145,7 +145,7 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
         self.assertIsNotNone(async_token_refresher)
 
         with patch(
-            "cuiman.api.auth.oauth2_async.renew_oauth2_tokens_async",
+            "cuiman.api.auth.session.renew_oauth2_tokens_async",
             new_callable=AsyncMock,
             return_value=TokenResult(
                 access_token=new_access,

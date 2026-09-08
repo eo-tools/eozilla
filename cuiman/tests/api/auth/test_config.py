@@ -262,7 +262,7 @@ def test_non_oauth_configs_have_no_refreshers():
     assert config.make_async_token_refresher() is None
 
 
-@patch("cuiman.api.auth.oauth2.renew_oauth2_tokens")
+@patch("cuiman.api.auth.session.renew_oauth2_tokens")
 def test_oauth2_refresher_updates_tokens(mock_renew: MagicMock):
     mock_renew.return_value = TokenResult(
         access_token="new-access", refresh_token="new-refresh"
@@ -287,7 +287,7 @@ def test_oauth2_refresher_updates_tokens(mock_renew: MagicMock):
     persistor.assert_called_once_with(config)
 
 
-@patch("cuiman.api.auth.oauth2.renew_oauth2_tokens")
+@patch("cuiman.api.auth.session.renew_oauth2_tokens")
 def test_oauth2_refresher_preserves_unrotated_refresh_token(mock_renew: MagicMock):
     mock_renew.return_value = TokenResult(access_token="new-access")
     config = OAuth2AuthConfig(
@@ -302,7 +302,7 @@ def test_oauth2_refresher_preserves_unrotated_refresh_token(mock_renew: MagicMoc
     assert config.refresh_token == "old-refresh"
 
 
-@patch("cuiman.api.auth.oidc.renew_oidc_tokens")
+@patch("cuiman.api.auth.session.renew_oidc_tokens")
 def test_oidc_refresher_updates_tokens(mock_renew: MagicMock):
     mock_renew.return_value = TokenResult(
         access_token="new-access", refresh_token="new-refresh"
@@ -322,7 +322,7 @@ def test_oidc_refresher_updates_tokens(mock_renew: MagicMock):
 
 @pytest.mark.asyncio
 @patch(
-    "cuiman.api.auth.oauth2_async.renew_oauth2_tokens_async",
+    "cuiman.api.auth.session.renew_oauth2_tokens_async",
     new_callable=AsyncMock,
 )
 async def test_oauth2_async_refresher_updates_tokens(mock_renew: AsyncMock):
@@ -348,7 +348,7 @@ async def test_oauth2_async_refresher_updates_tokens(mock_renew: AsyncMock):
 
 @pytest.mark.asyncio
 @patch(
-    "cuiman.api.auth.oauth2_async.renew_oauth2_tokens_async",
+    "cuiman.api.auth.session.obtain_oauth2_tokens_async",
     new_callable=AsyncMock,
 )
 async def test_client_credentials_refresher_ignores_refresh_token(
@@ -373,7 +373,7 @@ async def test_client_credentials_refresher_ignores_refresh_token(
 
 @pytest.mark.asyncio
 @patch(
-    "cuiman.api.auth.oidc_async.renew_oidc_tokens_async",
+    "cuiman.api.auth.session.renew_oidc_tokens_async",
     new_callable=AsyncMock,
 )
 async def test_oidc_async_refresher_preserves_unrotated_refresh_token(
@@ -394,7 +394,7 @@ async def test_oidc_async_refresher_preserves_unrotated_refresh_token(
 
 @pytest.mark.asyncio
 @patch(
-    "cuiman.api.auth.oidc_async.renew_oidc_tokens_async",
+    "cuiman.api.auth.session.renew_oidc_tokens_async",
     new_callable=AsyncMock,
 )
 async def test_oidc_async_refresher_updates_rotated_refresh_token(

@@ -16,7 +16,7 @@ from cuiman.api.auth.config import (
     SecretFields,
     TokenAuthConfig,
 )
-from cuiman.api.auth.login import TokenResult, login
+from cuiman.api.auth.login import login
 from cuiman.api.auth.login_async import login_async
 from cuiman.api.auth.oauth2 import obtain_oauth2_tokens, renew_oauth2_tokens
 from cuiman.api.auth.oauth2_async import (
@@ -35,6 +35,7 @@ from cuiman.api.auth.oidc import (
 )
 from cuiman.api.auth.oidc_async import renew_oidc_tokens_async
 from cuiman.api.auth.session import LoginRequiredError
+from cuiman.api.auth.tokens import TokenResult
 
 __all__ = [
     "LoginRequiredError",

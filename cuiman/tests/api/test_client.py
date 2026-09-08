@@ -136,7 +136,7 @@ class ClientTest(TestCase):
         self.assertIsNotNone(token_refresher)
 
         with patch(
-            "cuiman.api.auth.oauth2.renew_oauth2_tokens",
+            "cuiman.api.auth.session.renew_oauth2_tokens",
             return_value=TokenResult(
                 access_token=new_access,
                 refresh_token=new_refresh,

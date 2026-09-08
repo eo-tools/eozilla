@@ -6,16 +6,9 @@ import json
 from typing import Any
 
 import httpx
-from pydantic import BaseModel
 
 from .config import LoginAuthConfig
-
-
-class TokenResult(BaseModel):
-    """Access and optional refresh tokens returned by an authentication service."""
-
-    access_token: str
-    refresh_token: str | None = None
+from .tokens import TokenResult
 
 
 def login(auth_config: LoginAuthConfig) -> TokenResult:

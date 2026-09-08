@@ -7,13 +7,13 @@
 import httpx
 
 from .config import OidcAuthConfig
-from .login import TokenResult
 from .oauth2 import process_oauth2_token_response
 from .oidc import (
     parse_oidc_discovery,
     prepare_oidc_discovery,
     prepare_oidc_refresh_request,
 )
+from .tokens import TokenResult
 
 
 async def renew_oidc_tokens_async(auth_config: OidcAuthConfig) -> TokenResult:

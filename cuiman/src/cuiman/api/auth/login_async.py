@@ -5,7 +5,8 @@
 import httpx
 
 from .config import LoginAuthConfig
-from .login import TokenResult, prepare_login, process_login_response_for_tokens
+from .login import prepare_login, process_login_response_for_tokens
+from .tokens import TokenResult
 
 
 async def login_async(auth_config: LoginAuthConfig) -> TokenResult:

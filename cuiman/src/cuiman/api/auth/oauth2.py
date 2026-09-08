@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 
 from .config import OAuth2AuthConfig
-from .login import TokenResult
+from .tokens import TokenResult
 
 
 def obtain_oauth2_tokens(auth_config: OAuth2AuthConfig) -> TokenResult:

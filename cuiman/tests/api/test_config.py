@@ -251,7 +251,7 @@ class ClientConfigTest(TestCase):
 
         self.assertEqual("environment-password", config.auth.password)
 
-    @patch("cuiman.api.auth.oauth2.renew_oauth2_tokens")
+    @patch("cuiman.api.auth.session.renew_oauth2_tokens")
     @patch("cuiman.api.config.save_auth_secrets")
     @patch("cuiman.api.config.load_auth_secrets")
     def test_keyring_loaded_oauth2_config_persists_refreshed_tokens(

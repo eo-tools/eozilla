@@ -17,8 +17,8 @@ from urllib.parse import parse_qs, urlencode, urlparse
 import httpx
 
 from .config import OidcAuthConfig
-from .login import TokenResult
 from .oauth2 import process_oauth2_token_response
+from .tokens import TokenResult
 
 CALLBACK_PATH = "/callback"
 """The path handled by the temporary OIDC loopback callback server."""

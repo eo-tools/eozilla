@@ -17,6 +17,7 @@ from cuiman.api.auth import LoginRequiredError, TokenResult
 from cuiman.api.auth.interactive import _wait_for_callback
 from cuiman.api.auth.secret_store import SecretStoreError
 from cuiman.api.auth.session import can_login
+from cuiman.api.exceptions import ClientError
 from cuiman.cli.config import get_config
 
 
@@ -266,6 +267,93 @@ async def test_failed_persistence_is_retryable(client_type, requests):
     await invoke(client.get_conformance)
     assert save.call_count == 2
     await invoke(client.close)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("client_type", [Client, AsyncClient])
+async def test_injected_token_401_does_not_prompt_refresh_or_use_keyring(
+    client_type, monkeypatch
+):
+    monkeypatch.setenv("EOZILLA_API_URL", "https://api.example.test")
+    monkeypatch.setenv("EOZILLA_AUTH__AUTH_TYPE", "token")
+    monkeypatch.setenv("EOZILLA_AUTH__ACCESS_TOKEN", "injected-access")
+    response = httpx.Response(
+        401,
+        json={"type": "about:blank", "title": "Unauthorized", "status": 401},
+        request=httpx.Request("GET", "https://api.example.test/conformance"),
+    )
+    request = (
+        AsyncMock(return_value=response)
+        if client_type is AsyncClient
+        else Mock(return_value=response)
+    )
+    target = (
+        "httpx.AsyncClient.request"
+        if client_type is AsyncClient
+        else "httpx.Client.request"
+    )
+    with (
+        patch(target, request),
+        patch("cuiman.api.config.load_auth_secrets") as load,
+        patch("cuiman.api.config.save_auth_secrets") as save,
+        patch("cuiman.api.auth.interactive.prompt_auth") as prompt,
+        patch("cuiman.api.auth.interactive.prompt_auth_async") as prompt_async,
+    ):
+        client = client_type()
+        try:
+            with pytest.raises(ClientError):
+                await invoke(client.get_conformance)
+            request.assert_called_once()
+            assert request.call_args.kwargs["headers"] == {
+                "Authorization": "Bearer injected-access"
+            }
+            assert client.config.auth.access_token == "injected-access"
+            load.assert_not_called()
+            save.assert_not_called()
+            prompt.assert_not_called()
+            prompt_async.assert_not_called()
+        finally:
+            await invoke(client.close)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("client_type", [Client, AsyncClient])
+async def test_refresh_persistence_failure_does_not_retry_with_unsaved_tokens(
+    client_type, requests
+):
+    config = ClientConfig.new_instance(
+        api_url="https://api.example.test",
+        auth={**AUTH_CASES[7], "access_token": "old-access"},
+    )
+    save = Mock(side_effect=SecretStoreError("unavailable"))
+    config.auth.set_secret_persistor(save)
+    client = client_type(config=config)
+    try:
+        await invoke(client.get_conformance)
+        transport = client._transport
+        previous_headers = dict(transport.headers)
+        response = httpx.Response(
+            401,
+            json={"type": "about:blank", "title": "Unauthorized", "status": 401},
+            request=httpx.Request("GET", "https://api.example.test/conformance"),
+        )
+        asynchronous = client_type is AsyncClient
+        request = (
+            AsyncMock(return_value=response)
+            if asynchronous
+            else Mock(return_value=response)
+        )
+        http_client = transport.async_httpx if asynchronous else transport.sync_httpx
+        with patch.object(http_client, "request", request):
+            with pytest.raises(SecretStoreError, match="unavailable"):
+                await invoke(client.get_conformance)
+        request.assert_called_once()
+        save.assert_called_once()
+        assert transport.headers == previous_headers
+        assert client.config.auth.access_token == "old-access"
+        assert client.config.auth.refresh_token == "old-refresh"
+    finally:
+        await invoke(client.close)
 
 
 def test_cli_accepts_client_credentials_and_does_not_consult_keyring(
