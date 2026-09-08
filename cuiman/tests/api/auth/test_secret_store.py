@@ -245,6 +245,48 @@ def test_failed_token_update_keeps_previous_session(
     assert load_auth_secrets(path, url, "oidc") == {"access_token": "old" * 2000}
 
 
+def test_failed_cleanup_preserves_write_error_and_previous_session(
+    tmp_path, credential_store, monkeypatch
+):
+    path, url = tmp_path / "config", "https://api.example.test/"
+    old_secrets = {"access_token": "old" * 2000}
+    save_auth_secrets(path, url, "oidc", old_secrets)
+    previous = dict(credential_store)
+    write_error = NativeCredentialError("manifest write failed")
+    new_parts = {}
+    cleanup_attempts = []
+
+    def failing_write(service, account, value):
+        if service == KEYRING_SERVICE_NAME:
+            raise write_error
+        new_parts[service, account] = value
+        credential_store[service, account] = value
+
+    def failing_cleanup(service, account):
+        key = service, account
+        cleanup_attempts.append(key)
+        assert key not in previous
+        if len(cleanup_attempts) == 1:
+            raise NativeCredentialError("cleanup failed")
+        del credential_store[key]
+
+    monkeypatch.setattr(
+        "cuiman.api.auth.secret_store.keyring.set_password", failing_write
+    )
+    monkeypatch.setattr(
+        "cuiman.api.auth.secret_store.keyring.delete_password", failing_cleanup
+    )
+    with pytest.raises(SecretStoreError) as caught:
+        save_auth_secrets(path, url, "oidc", {"access_token": "new" * 2000})
+
+    assert caught.value.__cause__ is write_error
+    assert len(new_parts) > 1
+    assert cleanup_attempts == list(new_parts)
+    orphan = cleanup_attempts[0]
+    assert credential_store == {**previous, orphan: new_parts[orphan]}
+    assert load_auth_secrets(path, url, "oidc") == old_secrets
+
+
 def test_chunked_credentials_are_scoped_to_the_profile(tmp_path, credential_store):
     first, second = tmp_path / "first", tmp_path / "second"
     url = "https://api.example.test/"
