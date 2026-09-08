@@ -8,6 +8,7 @@ import asyncio
 import inspect
 from unittest.mock import AsyncMock, Mock
 
+import httpx
 import pytest
 
 from cuiman.api.auth import (
@@ -180,3 +181,138 @@ async def test_failed_or_cancelled_renewal_does_not_publish_or_persist_tokens(
 def test_non_renewable_auth_has_no_renewal_callback(auth):
     assert session.make_token_refresher(auth) is None
     assert session.make_async_token_refresher(auth) is None
+
+
+def token_error(status=400, body=None):
+    response = httpx.Response(
+        status,
+        content=body if body is not None else '{"error":"invalid_grant"}',
+        request=httpx.Request("POST", "https://identity.example.test/token"),
+    )
+    return httpx.HTTPStatusError(
+        "Token request failed", request=response.request, response=response
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("initial", [False, True])
+@pytest.mark.parametrize("refresh_token", [None, "new-refresh"])
+async def test_rejected_refresh_reacquires_and_saves_fresh_credentials(
+    monkeypatch, asynchronous, initial, refresh_token
+):
+    auth = make_auth("password", initial)
+    auth.username, auth.password = "user", "password"
+    previous = auth.to_secret_dict()
+    renew = mock_protocol(
+        monkeypatch, "password", asynchronous, side_effect=token_error()
+    )
+    acquire = mock_protocol(
+        monkeypatch,
+        "client_credentials",
+        asynchronous,
+        return_value=TokenResult(
+            access_token="fresh-access", refresh_token=refresh_token
+        ),
+    )
+    saved = []
+
+    def persist(candidate):
+        assert auth.to_secret_dict() == previous
+        saved.append(candidate.to_secret_dict())
+
+    auth.set_secret_persistor(persist)
+    headers = await authenticate(auth, initial, asynchronous)
+    assert headers == {"Authorization": "Bearer fresh-access"}
+    assert auth.refresh_token == refresh_token
+    assert saved == [auth.to_secret_dict()]
+    assert renew.call_count == acquire.call_count == 1
+    assert acquire.call_args.args[0].password == "password"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("kind", ["password", "oidc"])
+async def test_rejected_refresh_without_credentials_requires_explicit_login(
+    monkeypatch, asynchronous, kind
+):
+    auth = make_auth(kind, False)
+    previous = auth.to_secret_dict()
+    error = token_error()
+    mock_protocol(monkeypatch, kind, asynchronous, side_effect=error)
+    with pytest.raises(
+        session.LoginRequiredError, match=r"login\(force=True\)"
+    ) as caught:
+        await authenticate(auth, False, asynchronous)
+    assert caught.value.__cause__ is error
+    assert auth.to_secret_dict() == previous
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize(
+    "status,body",
+    [
+        (503, '{"error":"invalid_grant"}'),
+        (400, "not JSON"),
+        (400, "[]"),
+        (400, '{"error":"invalid_client"}'),
+    ],
+)
+async def test_other_refresh_errors_do_not_trigger_fresh_login(
+    monkeypatch, asynchronous, status, body
+):
+    auth = make_auth("password", False)
+    auth.username, auth.password = "user", "password"
+    previous = auth.to_secret_dict()
+    error = token_error(status, body)
+    mock_protocol(monkeypatch, "password", asynchronous, side_effect=error)
+    acquire = mock_protocol(monkeypatch, "client_credentials", asynchronous)
+    with pytest.raises(httpx.HTTPStatusError) as caught:
+        await authenticate(auth, False, asynchronous)
+    assert caught.value is error
+    assert auth.to_secret_dict() == previous
+    acquire.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("failure", ["grant", "storage", "cancel"])
+@pytest.mark.parametrize("force", [False, True])
+async def test_fresh_login_failure_preserves_live_and_saved_credentials(
+    monkeypatch, asynchronous, failure, force
+):
+    auth = make_auth("password", False)
+    auth.username, auth.password = "user", "password"
+    previous = auth.to_secret_dict()
+    mock_protocol(monkeypatch, "password", asynchronous, side_effect=token_error())
+    error = {
+        "grant": token_error(),
+        "storage": SecretStoreError("unavailable"),
+        "cancel": asyncio.CancelledError(),
+    }[failure]
+    acquire = mock_protocol(
+        monkeypatch,
+        "client_credentials",
+        asynchronous,
+        return_value=TokenResult(access_token="fresh-access"),
+        side_effect=None if failure == "storage" else error,
+    )
+    persist = Mock(side_effect=error if failure == "storage" else None)
+    auth.set_secret_persistor(persist)
+    with pytest.raises(type(error)) as caught:
+        if force:
+            resolve = (
+                session.resolve_auth_headers_async
+                if asynchronous
+                else session.resolve_auth_headers
+            )
+            result = resolve(auth, force=True)
+            if asynchronous:
+                await result
+        else:
+            await authenticate(auth, False, asynchronous)
+    assert caught.value is error
+    assert acquire.call_count == 1
+    assert persist.call_count == (1 if failure == "storage" else 0)
+    assert auth.to_secret_dict() == previous

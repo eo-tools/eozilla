@@ -28,19 +28,33 @@ rules:
 
 - OAuth2 password grants use an existing refresh token when available;
   otherwise they obtain tokens using the supplied credentials.
+- If a refresh request returns HTTP 400 with OAuth2 `invalid_grant`, password
+  grants can recover with one fresh login using available username/password
+  credentials. OIDC and password grants without those credentials raise
+  `LoginRequiredError` with instructions for explicit fresh login. Other
+  errors propagate without recovery, and API calls never start interaction.
 - Client-credentials grants obtain a new access token using client credentials
   and ignore any refresh token returned by the provider.
 - OIDC renewal uses the configured issuer and refresh token.
-- A missing or empty refresh token in a result preserves the previous refresh
-  token for password grants and OIDC.
+- A missing or empty refresh token in a successful renewal preserves the
+  previous refresh token for password grants and OIDC. Fresh login, including
+  recovery and `login(force=True)`, starts without tokens and therefore cannot
+  retain a rejected or deliberately bypassed refresh token.
 - Credentials are first saved through the optional persistence hook using a
   candidate configuration. Only a successful save publishes those values to
-  the live configuration. Protocol failures and cancelled requests do not
+  the live configuration. Unrecovered protocol failures and cancelled requests do not
   publish token updates.
 
 A persistence failure leaves local credentials unchanged. It cannot undo token
 rotation already performed by a remote provider; interactive login may be
 needed if that provider no longer accepts the previous refresh token.
+
+`login(force=True)` acquires fresh authentication on a temporary configuration
+without access or refresh tokens. It respects `interactive` and `no_browser`,
+then commits all resulting secrets through the shared persistence operation.
+The client mixin updates an existing HTTPX transport only after login succeeds.
+These recovery and interaction policies remain Cuiman responsibilities when
+the underlying protocol helpers are replaced by Authlib.
 
 The current implementation retains its existing 401-triggered renewal and
 single retry. It does not yet track token expiry or coordinate concurrent

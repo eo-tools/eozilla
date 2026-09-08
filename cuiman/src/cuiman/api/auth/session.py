@@ -10,7 +10,9 @@ without performing token updates themselves.
 """
 
 from functools import partial
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Mapping
+
+import httpx
 
 from .config import (
     AuthConfigBase,
@@ -75,12 +77,52 @@ def _apply_tokens(auth: AuthConfigBase, tokens: TokenResult) -> None:
     _commit_secrets(auth, values)
 
 
-def _commit_secrets(auth: AuthConfigBase, values: dict[str, str]) -> None:
+def _commit_secrets(auth: AuthConfigBase, values: Mapping[str, str | None]) -> None:
     # Save first: failed persistence must not publish a partially updated session.
     candidate = auth.model_copy(update=values)
     candidate.persist_secrets()
     for name, value in values.items():
         setattr(auth, name, value)
+
+
+def _without_tokens(auth: AuthConfigBase) -> AuthConfigBase:
+    # A fresh candidate has no persistence hook and cannot alter live secrets.
+    values = auth.model_dump()
+    for name in ("access_token", "refresh_token"):
+        if name in values:
+            values[name] = None
+    return type(auth)(**values)
+
+
+def _commit_auth(auth: AuthConfigBase, candidate: AuthConfigBase) -> None:
+    # Include missing secrets so a fresh login cannot retain an old token.
+    _commit_secrets(
+        auth, {name: getattr(candidate, name) for name in auth.secret_fields}
+    )
+
+
+def _recover_refresh(
+    auth: AuthConfigBase, error: httpx.HTTPStatusError
+) -> AuthConfigBase:
+    is_refresh = (
+        isinstance(auth, OidcAuthConfig)
+        or isinstance(auth, OAuth2AuthConfig)
+        and auth.grant_type == "password"
+    ) and bool(getattr(auth, "refresh_token", None))
+    if not is_refresh or error.response.status_code != 400:
+        raise error
+    try:
+        detail = error.response.json()
+    except ValueError:
+        raise error from None
+    if not isinstance(detail, dict) or detail.get("error") != "invalid_grant":
+        raise error
+    if isinstance(auth, OAuth2AuthConfig) and auth.username and auth.password:
+        return _without_tokens(auth)
+    raise LoginRequiredError(
+        "The refresh token is no longer valid. Call client.login(force=True) "
+        "(await it for AsyncClient), or use 'cuiman login', to sign in again."
+    ) from error
 
 
 def _obtain_tokens(
@@ -133,22 +175,51 @@ def make_async_token_refresher(
     return None
 
 
-def _refresh_auth_headers(auth: OAuth2AuthConfig | OidcAuthConfig) -> dict[str, str]:
-    _apply_tokens(auth, _obtain_tokens(auth))
+def _refresh_auth_headers(
+    auth: LoginAuthConfig | OAuth2AuthConfig | OidcAuthConfig,
+) -> dict[str, str]:
+    try:
+        tokens = _obtain_tokens(auth)
+    except httpx.HTTPStatusError as error:
+        candidate = _recover_refresh(auth, error)
+        resolve_auth_headers(candidate)
+        _commit_auth(auth, candidate)
+    else:
+        _apply_tokens(auth, tokens)
     return dict(auth.auth_headers)
 
 
 async def _refresh_auth_headers_async(
-    auth: OAuth2AuthConfig | OidcAuthConfig,
+    auth: LoginAuthConfig | OAuth2AuthConfig | OidcAuthConfig,
 ) -> dict[str, str]:
-    _apply_tokens(auth, await _obtain_tokens_async(auth))
+    try:
+        tokens = await _obtain_tokens_async(auth)
+    except httpx.HTTPStatusError as error:
+        candidate = _recover_refresh(auth, error)
+        await resolve_auth_headers_async(candidate)
+        _commit_auth(auth, candidate)
+    else:
+        _apply_tokens(auth, tokens)
     return dict(auth.auth_headers)
 
 
 def resolve_auth_headers(
-    auth: AuthConfigBase, *, interactive: bool = False, no_browser: bool = False
+    auth: AuthConfigBase,
+    *,
+    interactive: bool = False,
+    no_browser: bool = False,
+    force: bool = False,
 ) -> dict[str, str]:
-    """Prepare authentication, prompting only when explicitly allowed."""
+    """Prepare authentication, optionally bypassing existing tokens.
+
+    Forced login uses available credentials or, when allowed, interaction.
+    Existing secrets remain unchanged until new authentication is saved.
+    """
+    if force:
+        candidate = _without_tokens(auth)
+        resolve_auth_headers(candidate, interactive=interactive, no_browser=no_browser)
+        _commit_auth(auth, candidate)
+        return dict(auth.auth_headers)
     if has_auth_headers(auth):
         return dict(auth.auth_headers)
     if not can_login(auth):
@@ -160,14 +231,25 @@ def resolve_auth_headers(
         resolve_auth_headers(candidate)
         _commit_secrets(auth, candidate.to_secret_dict())
     elif isinstance(auth, (LoginAuthConfig, OAuth2AuthConfig, OidcAuthConfig)):
-        _apply_tokens(auth, _obtain_tokens(auth))
+        return _refresh_auth_headers(auth)
     return dict(auth.auth_headers)
 
 
 async def resolve_auth_headers_async(
-    auth: AuthConfigBase, *, interactive: bool = False, no_browser: bool = False
+    auth: AuthConfigBase,
+    *,
+    interactive: bool = False,
+    no_browser: bool = False,
+    force: bool = False,
 ) -> dict[str, str]:
-    """Prepare authentication without blocking asynchronous API requests."""
+    """Prepare authentication asynchronously, optionally bypassing tokens."""
+    if force:
+        candidate = _without_tokens(auth)
+        await resolve_auth_headers_async(
+            candidate, interactive=interactive, no_browser=no_browser
+        )
+        _commit_auth(auth, candidate)
+        return dict(auth.auth_headers)
     if has_auth_headers(auth):
         return dict(auth.auth_headers)
     if not can_login(auth):
@@ -179,5 +261,5 @@ async def resolve_auth_headers_async(
         await resolve_auth_headers_async(candidate)
         _commit_secrets(auth, candidate.to_secret_dict())
     elif isinstance(auth, (LoginAuthConfig, OAuth2AuthConfig, OidcAuthConfig)):
-        _apply_tokens(auth, await _obtain_tokens_async(auth))
+        return await _refresh_auth_headers_async(auth)
     return dict(auth.auth_headers)

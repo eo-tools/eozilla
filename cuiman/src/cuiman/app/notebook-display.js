@@ -155,6 +155,23 @@
     );
   }
 
+  // A local notebook commonly uses localhost while the app server binds to
+  // 127.0.0.1. These are different cookie sites: a cross-site iframe cannot
+  // use the app's SameSite=Lax session cookie. Keep direct local launches on
+  // the notebook's hostname; remote notebooks must use the Jupyter proxy.
+  const notebookUrl = new URL(window.location.href);
+  const localHosts = new Set(["localhost", "127.0.0.1"]);
+  if (
+    isCuimanMode &&
+    !useProxy &&
+    src.protocol === "http:" &&
+    notebookUrl.protocol === "http:" &&
+    localHosts.has(src.hostname) &&
+    localHosts.has(notebookUrl.hostname)
+  ) {
+    src.hostname = notebookUrl.hostname;
+  }
+
   if (wsUrl !== null && !isCuimanMode) {
     src.searchParams.set("ws", wsUrl);
   }

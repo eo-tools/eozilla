@@ -6,6 +6,7 @@ import json
 import re
 from importlib import resources
 
+import pytest
 from IPython.display import HTML
 
 from cuiman.app.display import create_app_display_object
@@ -60,6 +61,18 @@ def test_create_app_display_object_returns_auto_scheme_html():
         "autoProxy": False,
         "openInBrowser": False,
     }
+
+
+@pytest.mark.parametrize("query", ["launch=opaque-code", "cuiman=1"])
+def test_cuiman_launch_uses_script_even_without_proxy_or_auto_scheme(query):
+    display_object = create_app_display_object(
+        f"http://127.0.0.1:8765/index.html?{query}",
+        auto_scheme=False,
+        width="100%",
+        height=600,
+    )
+
+    assert _get_display_config(display_object)["baseSrc"].endswith(query)
 
 
 def test_create_app_display_object_uses_jupyter_proxy():

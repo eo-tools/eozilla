@@ -26,6 +26,127 @@ async def invoke(method, **kwargs):
     return await result if inspect.isawaitable(result) else result
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("client_type", [Client, AsyncClient])
+@pytest.mark.parametrize(
+    "force,reject_retry", [(False, False), (False, True), (True, False)]
+)
+async def test_recovery_and_forced_login_update_existing_transport(
+    client_type, force, reject_retry
+):
+    client = client_type(
+        api_url="https://api.example.test",
+        auth={
+            "auth_type": "oauth2",
+            "token_url": "https://identity.example.test/token",
+            "client_id": "client",
+            "username": "user",
+            "password": "password",
+            "access_token": "old-access",
+            "refresh_token": "inactive-refresh",
+        },
+    )
+    calls = []
+    saved = []
+    client.config.auth.set_secret_persistor(
+        lambda auth: saved.append(auth.to_secret_dict())
+    )
+
+    def request(method, url, **kwargs):
+        if method.upper() == "POST":
+            grant = kwargs["data"]["grant_type"]
+            calls.append(grant)
+            if grant == "refresh_token":
+                status, body = (
+                    400,
+                    {
+                        "error": "invalid_grant",
+                        "error_description": "Token is not active",
+                    },
+                )
+            else:
+                assert grant == "password"
+                assert kwargs["data"]["password"] == "password"
+                status, body = 200, {"access_token": "fresh-access"}
+        else:
+            header = kwargs["headers"]["Authorization"]
+            calls.append(header)
+            status = (
+                200 if header == "Bearer fresh-access" and not reject_retry else 401
+            )
+            body = {"conformsTo": []}
+        return httpx.Response(status, json=body, request=httpx.Request(method, url))
+
+    with (
+        patch("httpx.Client.request", side_effect=request),
+        patch("httpx.AsyncClient.request", new=AsyncMock(side_effect=request)),
+    ):
+        transport = await invoke(client._get_transport)
+        try:
+            if force:
+                await invoke(client.login, force=True, interactive=False)
+            if reject_retry:
+                with pytest.raises(ClientError):
+                    await invoke(client.get_conformance)
+            else:
+                await invoke(client.get_conformance)
+            assert client._transport is transport
+            assert calls == (
+                ["password", "Bearer fresh-access"]
+                if force
+                else [
+                    "Bearer old-access",
+                    "refresh_token",
+                    "password",
+                    "Bearer fresh-access",
+                ]
+            )
+            assert client.config.auth.refresh_token is None
+            assert transport.headers == {"Authorization": "Bearer fresh-access"}
+            assert saved == [client.config.auth.to_secret_dict()]
+        finally:
+            await invoke(client.close)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("client_type", [Client, AsyncClient])
+@pytest.mark.parametrize("interactive", [False, True])
+async def test_forced_oidc_login_requires_permitted_interaction(
+    client_type, interactive
+):
+    client = client_type(
+        api_url="https://api.example.test",
+        auth={
+            "auth_type": "oidc",
+            "issuer_url": "https://identity.example.test/realm",
+            "client_id": "client",
+            "access_token": "old-access",
+            "refresh_token": "old-refresh",
+        },
+    )
+    auth = client.config.auth
+    previous = auth.to_secret_dict()
+    candidate = type(auth)(**{**auth.to_public_dict(), "access_token": "fresh-access"})
+    prompt_name = "prompt_auth_async" if client_type is AsyncClient else "prompt_auth"
+    prompt = (
+        AsyncMock(return_value=candidate)
+        if client_type is AsyncClient
+        else Mock(return_value=candidate)
+    )
+    with patch(f"cuiman.api.auth.interactive.{prompt_name}", prompt):
+        if interactive:
+            await invoke(client.login, force=True, no_browser=True)
+            assert prompt.call_count == 1
+            assert prompt.call_args.kwargs == {"no_browser": True}
+            assert auth.access_token == "fresh-access"
+            assert auth.refresh_token is None
+        else:
+            with pytest.raises(LoginRequiredError):
+                await invoke(client.login, force=True, interactive=False)
+            prompt.assert_not_called()
+            assert auth.to_secret_dict() == previous
+
+
 @pytest.fixture
 def requests():
     calls = []

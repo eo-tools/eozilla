@@ -42,20 +42,29 @@ class AsyncClientMixin(ABC):
     _login_lock: asyncio.Lock | None = None
 
     async def login(
-        self, *, interactive: bool = True, no_browser: bool = False
+        self, *, interactive: bool = True, no_browser: bool = False, force: bool = False
     ) -> None:
         """Prepare authentication, sharing login across concurrent calls.
 
         Explicit login may prompt for credentials or open an OIDC browser.
         API methods disable interaction and raise ``LoginRequiredError`` when
         credentials must be supplied. Cancelled or failed login can be retried.
+        Use ``force=True`` to bypass existing tokens and authenticate afresh.
+        A successful login also updates an existing HTTPX transport.
         """
         if self._login_lock is None:
             self._login_lock = asyncio.Lock()
         async with self._login_lock:
-            await resolve_auth_headers_async(
-                self.config.auth, interactive=interactive, no_browser=no_browser
+            headers = await resolve_auth_headers_async(
+                self.config.auth,
+                interactive=interactive,
+                no_browser=no_browser,
+                force=force,
             )
+            if self._transport is not None and isinstance(
+                self._transport, HttpxTransport
+            ):
+                self._transport.headers = headers
 
     async def _get_transport(self) -> AsyncTransport:
         if self._transport is None:

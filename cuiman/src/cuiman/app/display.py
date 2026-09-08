@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 from importlib import resources
+from urllib.parse import parse_qs, urlsplit
 
 from IPython.display import HTML, DisplayObject
 
@@ -28,7 +29,9 @@ def create_app_display_object(
     open_in_browser: bool = False,
 ) -> DisplayObject:
     """Create the notebook display object for the Cuiman app."""
-    if auto_scheme or proxy_port is not None or open_in_browser:
+    query = parse_qs(urlsplit(app_url).query, keep_blank_values=True)
+    cuiman_mode = "launch" in query or "cuiman" in query
+    if auto_scheme or proxy_port is not None or open_in_browser or cuiman_mode:
         return _get_iframe_script_html(
             app_url,
             auto_scheme=auto_scheme,

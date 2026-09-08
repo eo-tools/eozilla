@@ -40,16 +40,25 @@ class ClientMixin(ABC):
     _transport: Transport | None
     _debug: bool
 
-    def login(self, *, interactive: bool = True, no_browser: bool = False) -> None:
+    def login(
+        self, *, interactive: bool = True, no_browser: bool = False, force: bool = False
+    ) -> None:
         """Prepare authentication, reusing existing credentials when possible.
 
         Explicit login may prompt for credentials or open an OIDC browser.
         API methods call this with ``interactive=False`` and raise a
         ``LoginRequiredError`` when user interaction is needed.
+        Use ``force=True`` to bypass existing tokens and authenticate afresh.
+        A successful login also updates an existing HTTPX transport.
         """
-        resolve_auth_headers(
-            self.config.auth, interactive=interactive, no_browser=no_browser
+        headers = resolve_auth_headers(
+            self.config.auth,
+            interactive=interactive,
+            no_browser=no_browser,
+            force=force,
         )
+        if self._transport is not None and isinstance(self._transport, HttpxTransport):
+            self._transport.headers = headers
 
     def _get_transport(self) -> Transport:
         if self._transport is None:

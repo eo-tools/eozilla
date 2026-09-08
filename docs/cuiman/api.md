@@ -42,13 +42,36 @@ await async_client.close()
 Repeated `login()` calls reuse available authentication. Use
 `login(interactive=False)` to prohibit interaction, or `login(no_browser=True)`
 to print the OIDC authorization URL instead of opening it. Ordinary API calls
-never prompt or open a browser: they raise `cuiman.api.auth.LoginRequiredError`
-before sending a process API request if interaction is required. Concurrent
+never prompt or open a browser. If initial authentication requires interaction,
+they raise `cuiman.api.auth.LoginRequiredError` before sending a process API
+request. Concurrent
 first calls on one `AsyncClient` share login. Failed or cancelled initial login
 can be retried, and closing an unused client does not initiate login.
 
-OAuth2/OIDC token refresh after HTTP 401 continues to work automatically. Login
-and refreshed credentials are persisted when the client has a file-backed
+OAuth2/OIDC token refresh after HTTP 401 works automatically. If a refresh
+request returns `invalid_grant`, an OAuth2 password-grant client with available
+username/password credentials attempts one fresh login before retrying the API
+request once. Without those credentials, or for OIDC, Cuiman raises
+`LoginRequiredError` directing you to sign in again. Other refresh errors are
+propagated without attempting a fresh login.
+
+Use `force=True` to bypass existing access and refresh tokens explicitly:
+
+```python
+client.login(force=True)
+await async_client.login(force=True)
+```
+
+This uses available credentials or permits prompts/OIDC browser login. Combine
+it with `interactive=False` to prohibit interaction, or `no_browser=True` to
+print the OIDC authorization URL. A successful login updates the existing
+HTTPX transport, so subsequent requests use the new token without recreating
+the client. If fresh login provides no refresh token, the previous one is
+discarded. Failed or cancelled login leaves existing credentials unchanged.
+For Basic authentication and API keys, `force` continues to use available
+credentials; a static access token must be supplied again.
+
+Login and refreshed credentials are persisted when the client has a file-backed
 keyring credential source; direct Python/environment credentials remain runtime
 overrides. The `auth_headers` property itself does not perform network I/O.
 
