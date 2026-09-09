@@ -83,7 +83,9 @@ class ClientTest(TestCase):
             patch.object(
                 ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
             ),
-            patch("cuiman.api.client_mixin.Httpx2Transport") as httpx2_transport_cls,
+            patch(
+                "cuiman.api.client_mixin_base.Httpx2Transport"
+            ) as httpx2_transport_cls,
         ):
             transport = httpx2_transport_cls.return_value
 
@@ -113,7 +115,9 @@ class ClientTest(TestCase):
             patch.object(
                 ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
             ),
-            patch("cuiman.api.client_mixin.Httpx2Transport") as httpx2_transport_cls,
+            patch(
+                "cuiman.api.client_mixin_base.Httpx2Transport"
+            ) as httpx2_transport_cls,
         ):
             client = Client(
                 api_url="https://acme.ogc.org/api",
@@ -286,7 +290,9 @@ class ClientTest(TestCase):
                 )
 
     def test_custom_transport_is_used_without_creating_httpx2_transport(self):
-        with patch("cuiman.api.client_mixin.Httpx2Transport") as httpx2_transport_cls:
+        with patch(
+            "cuiman.api.client_mixin_base.Httpx2Transport"
+        ) as httpx2_transport_cls:
             client = Client(
                 api_url="https://acme.ogc.org/api",
                 _transport=self.transport,

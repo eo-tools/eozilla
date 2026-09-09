@@ -4,10 +4,9 @@
 
 import asyncio
 import warnings
-from abc import ABC, abstractmethod
-from copy import deepcopy
+from abc import abstractmethod
 from functools import partial
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 
@@ -16,8 +15,8 @@ from gavicore.util.request import ExecutionRequest
 
 from .auth import client_credentials
 from .auth.config import OAuth2AuthConfig
-from .auth.session import LoginRequiredError, resolve_auth_headers_async
-from .config import ClientConfig
+from .auth.session import resolve_auth_headers_async
+from .client_mixin_base import ClientMixinBase
 from .defaults import (
     DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
@@ -28,36 +27,22 @@ from .opener.opener import open_job_result
 from .transport import AsyncTransport
 from .transport.httpx2 import Httpx2Transport
 
-if TYPE_CHECKING:
-    pass
-
-
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with ClientMixin!
 # -----------------------------------------------------
 
 
 # noinspection PyShadowingBuiltins
-class AsyncClientMixin(ABC):
+class AsyncClientMixin(ClientMixinBase[AsyncOAuth2Client]):
     """
     Extra methods for the API client (asynchronous mode).
     """
 
     _transport: AsyncTransport | None
-    _debug: bool
 
     def _init_client_runtime(self) -> None:
+        super()._init_client_runtime()
         self._login_lock: asyncio.Lock | None = None
-        self._oauth_client: AsyncOAuth2Client | None = None
-
-    @property
-    def token(self) -> dict[str, Any] | None:
-        """Return a snapshot of the live client-credentials token without logging in."""
-        return (
-            deepcopy(dict(self._oauth_client.token))
-            if self._oauth_client and self._oauth_client.token
-            else None
-        )
 
     async def close(self) -> None:
         """Close the transport and auth runtime, including an explicit login alone."""
@@ -75,12 +60,7 @@ class AsyncClientMixin(ABC):
         assert isinstance(auth, OAuth2AuthConfig)
         if self._oauth_client is None:
             self._oauth_client = client_credentials.create_async_client(auth)
-        if force or not self._oauth_client.token:
-            if not auth.client_id or not auth.client_secret:
-                raise LoginRequiredError(
-                    "Client credentials require client_id and client_secret. "
-                    "Provide them through environment variables or Python configuration before client.login()."
-                )
+        if client_credentials.needs_token(auth, self._oauth_client, force=force):
             await self._oauth_client.fetch_token()
         client_credentials.save_token(auth, self._oauth_client.token)
         return {}
@@ -122,39 +102,14 @@ class AsyncClientMixin(ABC):
                 await self.login(interactive=False)
             # Another first request may have created it while we awaited login.
             if self._transport is None:
-                assert self.config.api_url is not None
-                if self._oauth_client is not None:
-                    auth = self.config.auth
-                    assert isinstance(auth, OAuth2AuthConfig)
-
-                    self._transport = Httpx2Transport(
-                        api_url=f"{self.config.api_url.rstrip('/')}/",
-                        async_httpx2=self._oauth_client,
-                        return_type_map=self.config.return_type_map,
-                        async_token_refresher=partial(
-                            self._login_client_credentials, force=True
-                        ),
-                        debug=self._debug,
-                        auth_header=(
-                            "Authorization"
-                            if auth.use_bearer
-                            else auth.access_token_header
-                        ),
-                    )
-                    return self._transport
-                self._transport = Httpx2Transport(
-                    api_url=f"{self.config.api_url.rstrip('/')}/",
-                    headers=self.config.auth_headers,
-                    return_type_map=self.config.return_type_map,
-                    async_token_refresher=self.config._make_async_token_refresher(),
-                    debug=self._debug,
+                self._transport = self._create_transport(
+                    async_token_refresher=(
+                        partial(self._login_client_credentials, force=True)
+                        if self._oauth_client is not None
+                        else self.config._make_async_token_refresher()
+                    ),
                 )
         return self._transport
-
-    @property
-    @abstractmethod
-    def config(self) -> ClientConfig:
-        """Will be overridden by the actual client class."""
 
     @abstractmethod
     async def get_process(self, process_id: str, **kwargs: Any) -> ProcessDescription:

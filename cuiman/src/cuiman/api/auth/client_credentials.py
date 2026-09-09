@@ -18,12 +18,30 @@ from authlib.integrations.httpx_client import AsyncOAuth2Client, OAuth2Client
 from ..exceptions import ClientWarning
 from .config import OAuth2AuthConfig
 from .secret_store import SecretStoreError
+from .session import LoginRequiredError
 
 _Client = TypeVar("_Client", OAuth2Client, AsyncOAuth2Client)
 
 
 class CredentialStorageWarning(ClientWarning):
     """Credentials remain active, but their persistence could not be confirmed."""
+
+
+def needs_token(
+    auth: OAuth2AuthConfig,
+    client: OAuth2Client | AsyncOAuth2Client,
+    *,
+    force: bool = False,
+) -> bool:
+    """Decide whether login needs a grant and require credentials if it does."""
+    if not force and client.token:
+        return False
+    if not auth.client_id or not auth.client_secret:
+        raise LoginRequiredError(
+            "Client credentials require client_id and client_secret. "
+            "Provide them through environment variables or Python configuration before client.login()."
+        )
+    return True
 
 
 def save_token(auth: OAuth2AuthConfig, token: dict[str, Any]) -> None:

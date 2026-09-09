@@ -89,7 +89,7 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
                 ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
             ),
             patch(
-                "cuiman.api.async_client_mixin.Httpx2Transport"
+                "cuiman.api.client_mixin_base.Httpx2Transport"
             ) as httpx2_transport_cls,
         ):
             transport = httpx2_transport_cls.return_value
@@ -121,7 +121,7 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
                 ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
             ),
             patch(
-                "cuiman.api.async_client_mixin.Httpx2Transport"
+                "cuiman.api.client_mixin_base.Httpx2Transport"
             ) as httpx2_transport_cls,
         ):
             client = AsyncClient(
@@ -297,7 +297,7 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
 
     def test_custom_transport_is_used_without_creating_httpx2_transport(self):
         with patch(
-            "cuiman.api.async_client_mixin.Httpx2Transport"
+            "cuiman.api.client_mixin_base.Httpx2Transport"
         ) as httpx2_transport_cls:
             client = AsyncClient(
                 api_url="https://acme.ogc.org/api",

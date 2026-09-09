@@ -4,10 +4,9 @@
 
 import time
 import warnings
-from abc import ABC, abstractmethod
-from copy import deepcopy
+from abc import abstractmethod
 from functools import partial
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from authlib.integrations.httpx_client import OAuth2Client
 
@@ -17,8 +16,8 @@ from gavicore.util.runsync import run_sync
 
 from .auth import client_credentials
 from .auth.config import OAuth2AuthConfig
-from .auth.session import LoginRequiredError, resolve_auth_headers
-from .config import ClientConfig
+from .auth.session import resolve_auth_headers
+from .client_mixin_base import ClientMixinBase
 from .defaults import (
     DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
@@ -29,38 +28,18 @@ from .opener.opener import open_job_result
 from .transport import Transport
 from .transport.httpx2 import Httpx2Transport
 
-if TYPE_CHECKING:
-    pass
-
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with AsyncClientMixin!
 # -----------------------------------------------------
 
 
 # noinspection PyShadowingBuiltins
-class ClientMixin(ABC):
+class ClientMixin(ClientMixinBase[OAuth2Client]):
     """
     Extra methods for the API client (synchronous mode).
     """
 
     _transport: Transport | None
-    _debug: bool
-
-    def _init_client_runtime(self) -> None:
-        self._oauth_client: OAuth2Client | None = None
-
-    @property
-    def token(self) -> dict[str, Any] | None:
-        """Return an independent snapshot of the live client-credentials token.
-
-        Reading this property never starts authentication. Other authentication
-        mechanisms currently retain their configuration-based token interface.
-        """
-        return (
-            deepcopy(dict(self._oauth_client.token))
-            if self._oauth_client and self._oauth_client.token
-            else None
-        )
 
     def close(self) -> None:
         """Close the transport and authentication runtime, including login-only use."""
@@ -78,12 +57,7 @@ class ClientMixin(ABC):
         assert isinstance(auth, OAuth2AuthConfig)
         if self._oauth_client is None:
             self._oauth_client = client_credentials.create_client(auth)
-        if force or not self._oauth_client.token:
-            if not auth.client_id or not auth.client_secret:
-                raise LoginRequiredError(
-                    "Client credentials require client_id and client_secret. "
-                    "Provide them through environment variables or Python configuration before client.login()."
-                )
+        if client_credentials.needs_token(auth, self._oauth_client, force=force):
             self._oauth_client.fetch_token()
         client_credentials.save_token(auth, self._oauth_client.token)
         return {}
@@ -118,35 +92,14 @@ class ClientMixin(ABC):
         if self._transport is None:
             if self._oauth_client is None or not self._oauth_client.token:
                 self.login(interactive=False)
-            assert self.config.api_url is not None
-            if self._oauth_client is not None:
-                auth = self.config.auth
-                assert isinstance(auth, OAuth2AuthConfig)
-
-                self._transport = Httpx2Transport(
-                    api_url=f"{self.config.api_url.rstrip('/')}/",
-                    sync_httpx2=self._oauth_client,
-                    return_type_map=self.config.return_type_map,
-                    token_refresher=partial(self._login_client_credentials, force=True),
-                    debug=self._debug,
-                    auth_header=(
-                        "Authorization" if auth.use_bearer else auth.access_token_header
-                    ),
-                )
-                return self._transport
-            self._transport = Httpx2Transport(
-                api_url=f"{self.config.api_url.rstrip('/')}/",
-                headers=self.config.auth_headers,
-                return_type_map=self.config.return_type_map,
-                token_refresher=self.config._maybe_make_token_refresher(),
-                debug=self._debug,
+            self._transport = self._create_transport(
+                token_refresher=(
+                    partial(self._login_client_credentials, force=True)
+                    if self._oauth_client is not None
+                    else self.config._maybe_make_token_refresher()
+                ),
             )
         return self._transport
-
-    @property
-    @abstractmethod
-    def config(self) -> ClientConfig:
-        """Will be overridden by the actual client class."""
 
     @abstractmethod
     def get_process(self, process_id: str, **kwargs: Any) -> ProcessDescription:
