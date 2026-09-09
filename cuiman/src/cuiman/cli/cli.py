@@ -4,7 +4,7 @@
 
 import sys
 from pathlib import Path
-from typing import Annotated, Final, Optional
+from typing import Annotated, Final, Literal, Optional
 
 import typer.core
 
@@ -75,6 +75,33 @@ FORMAT_OPTION = typer.Option(
 
 JOB_ID_ARGUMENT = typer.Argument(
     help="Job identifier.",
+)
+
+CONTENT_PATH_OPTION = typer.Option(
+    ...,
+    "--path",
+    "-p",
+    help="Local path to EOAP to submit.",
+    exists=True,
+    file_okay=True,
+    dir_okay=False,
+    readable=True,
+    resolve_path=True,
+)
+
+ENCODING_LITERALS = Literal[
+    "application/cwl", "application/cwl+json", "application/cwl+yaml"
+]
+
+ENCODING_OPTION = typer.Option(
+    ..., "--encoding", help="Encoding of EOAP to submit.", show_choices=True
+)
+
+WORKFLOW_ENTRYPOINT_OPTION = typer.Option(
+    ...,
+    "--workflow-entrypoint",
+    "-w",
+    help="Point to the workflow identifier for deploying a CWL containing multiple workflow definitions.",
 )
 
 
@@ -526,6 +553,77 @@ def new_cli(
         with use_client(ctx, config_file) as client:
             job_results = client.get_job_results(job_id)
         output(get_renderer(output_format).render_job_results(job_results))
+
+    @t.command()
+    def deploy_process(
+        ctx: typer.Context,
+        content_path: Annotated[Path, CONTENT_PATH_OPTION],
+        encoding: Annotated[ENCODING_LITERALS, ENCODING_OPTION],
+        w: Annotated[Optional[str], WORKFLOW_ENTRYPOINT_OPTION] = None,
+        config_file: Annotated[Optional[str], CONFIG_OPTION] = None,
+        output_format: Annotated[OutputFormat, FORMAT_OPTION] = DEFAULT_OUTPUT_FORMAT,
+    ):
+        """Deploy a new process encoded as an EOAP."""
+        from .client import use_client
+        from .output import get_renderer, output
+
+        with open(content_path, "rb") as f:
+            content = f.read()
+
+        with use_client(ctx, config_file) as client:
+            process_summary = client.deploy_process(content, encoding, w)
+        output(get_renderer(output_format).render_process_summary(process_summary))
+
+    @t.command()
+    def replace_process(
+        ctx: typer.Context,
+        process_id: Annotated[str, PROCESS_ID_ARGUMENT],
+        content_path: Annotated[Path, CONTENT_PATH_OPTION],
+        encoding: Annotated[ENCODING_LITERALS, ENCODING_OPTION],
+        w: Annotated[Optional[str], WORKFLOW_ENTRYPOINT_OPTION] = None,
+        config_file: Annotated[Optional[str], CONFIG_OPTION] = None,
+        output_format: Annotated[OutputFormat, FORMAT_OPTION] = DEFAULT_OUTPUT_FORMAT,
+    ):
+        """Replace an existing mutable process encoded as an EOAP."""
+        from .client import use_client
+        from .output import get_renderer, output
+
+        with open(content_path, "rb") as f:
+            content = f.read()
+
+        with use_client(ctx, config_file) as client:
+            process_summary = client.replace_process(process_id, content, encoding, w)
+        output(get_renderer(output_format).render_process_summary(process_summary))
+
+    @t.command()
+    def undeploy_process(
+        ctx: typer.Context,
+        process_id: Annotated[str, PROCESS_ID_ARGUMENT],
+        config_file: Annotated[Optional[str], CONFIG_OPTION] = None,
+        output_format: Annotated[OutputFormat, FORMAT_OPTION] = DEFAULT_OUTPUT_FORMAT,
+    ):
+        """Delete an existing mutable process."""
+        from .client import use_client
+
+        with use_client(ctx, config_file) as client:
+            client.undeploy_process(process_id)
+
+    @t.command()
+    def get_formal_description(
+        ctx: typer.Context,
+        ṕrocess_id: Annotated[str, PROCESS_ID_ARGUMENT],
+        config_file: Annotated[Optional[str], CONFIG_OPTION] = None,
+        output_format: Annotated[OutputFormat, FORMAT_OPTION] = DEFAULT_OUTPUT_FORMAT,
+    ):
+        """Get the formal description of a mutable process."""
+        from .client import use_client
+        from .output import get_renderer, output
+
+        with use_client(ctx, config_file) as client:
+            formal_description = client.get_formal_description(ṕrocess_id)
+        output(
+            get_renderer(output_format).render_application_package(formal_description)
+        )
 
     @t.command()
     def show_app(

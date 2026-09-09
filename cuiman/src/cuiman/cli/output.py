@@ -9,12 +9,14 @@ from typing import Any, Callable, Literal
 import pydantic
 import typer
 
+from gavicore.dru_models import OgcApplicationPackage
 from gavicore.models import (
     JobInfo,
     JobList,
     JobResults,
     ProcessDescription,
     ProcessList,
+    ProcessSummary,
 )
 from gavicore.util.request import ExecutionRequest
 
@@ -68,6 +70,16 @@ class OutputRenderer(ABC):
     @abstractmethod
     def render_job_results(self, job_results: JobResults) -> str:
         """Render a job results."""
+
+    @abstractmethod
+    def render_process_summary(self, process_summary: ProcessSummary | None) -> str:
+        """Render a process summary."""
+
+    @abstractmethod
+    def render_application_package(
+        self, application_package: OgcApplicationPackage
+    ) -> str:
+        """Render a formal description of a process."""
 
     def _render_base_model(
         self,
@@ -148,6 +160,16 @@ class SimpleOutputRenderer(OutputRenderer):
     def render_job_results(self, job_results: JobResults) -> str:
         return self._render_base_model(job_results)
 
+    def render_process_summary(self, process_summary: ProcessSummary | None) -> str:
+        if not process_summary:
+            return ""
+        return self._render_base_model(process_summary)
+
+    def render_application_package(
+        self, application_package: OgcApplicationPackage
+    ) -> str:
+        return self._render_base_model(application_package)
+
 
 class StructuredOutputRenderer(OutputRenderer):
     def __init__(self, format_name: Literal["json", "yaml"], verbose: bool):
@@ -175,6 +197,16 @@ class StructuredOutputRenderer(OutputRenderer):
 
     def render_job_results(self, job_results: JobResults) -> str:
         return self._render_base_model(job_results, self.format_name)
+
+    def render_process_summary(self, process_summary: ProcessSummary | None) -> str:
+        if not process_summary:
+            return ""
+        return self._render_base_model(process_summary, self.format_name)
+
+    def render_application_package(
+        self, application_package: OgcApplicationPackage
+    ) -> str:
+        return self._render_base_model(application_package, self.format_name)
 
 
 class YamlOutputRenderer(StructuredOutputRenderer):

@@ -3,8 +3,9 @@
 #   timestamp: 2026-09-07T13:42:14.088321
 
 
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
+from gavicore.dru_models import OgcApplicationPackage
 from gavicore.models import (
     ApiError,
     Capabilities,
@@ -15,6 +16,7 @@ from gavicore.models import (
     ProcessDescription,
     ProcessList,
     ProcessRequest,
+    ProcessSummary,
 )
 
 from .client_app_mixin import ClientAppMixin
@@ -386,6 +388,117 @@ class Client(ClientAppMixin, ClientMixin):
                 extra_kwargs=kwargs,
             )
         )
+
+    def deploy_process(
+        self,
+        content: bytes,
+        encoding: Literal[
+            "application/cwl", "application/cwl+json", "application/cwl+yaml"
+        ],
+        w: str | None = None,
+        **kwargs: Any,
+    ) -> Optional[ProcessSummary]:
+
+        kwargs["content"] = content
+
+        try:
+            self._transport.headers["Content-Type"] = encoding  # type: ignore[attr-defined]
+            return self._transport.call(
+                TransportArgs(
+                    path="/processes",
+                    method="post",
+                    path_params={"w": w},
+                    return_types={"201": ProcessSummary, "202": None},
+                    error_types={
+                        "403": ApiError,
+                        "405": ApiError,
+                        "409": ApiError,
+                        "415": ApiError,
+                        "501": ApiError,
+                    },
+                    extra_kwargs=kwargs,
+                )
+            )
+        finally:
+            del self._transport.headers["Content-Type"]  # type: ignore[attr-defined]
+
+    def replace_process(
+        self,
+        process_id: str,
+        content: bytes,
+        encoding: Literal[
+            "application/cwl", "application/cwl+json", "application/cwl+yaml"
+        ],
+        w: str | None = None,
+        **kwargs: Any,
+    ) -> Optional[ProcessSummary]:
+        kwargs["content"] = content
+
+        try:
+            self._transport.headers["Content-Type"] = encoding  # type: ignore[attr-defined]
+            return self._transport.call(
+                TransportArgs(
+                    path="/processes/{processId}",
+                    method="put",
+                    path_params={"processId": process_id, "w": w},
+                    return_types={
+                        "200": ProcessSummary,
+                        "201": ProcessSummary,
+                        "202": ProcessSummary,
+                        "204": None,
+                    },
+                    error_types={
+                        "403": ApiError,
+                        "405": ApiError,
+                        "409": ApiError,
+                        "415": ApiError,
+                        "501": ApiError,
+                    },
+                    extra_kwargs=kwargs,
+                )
+            )
+        finally:
+            del self._transport.headers["Content-Type"]  # type: ignore[attr-defined]
+
+    def undeploy_process(self, process_id: str, **kwargs: Any) -> None:
+        return self._transport.call(
+            TransportArgs(
+                path="/processes/{processId}",
+                method="delete",
+                path_params={"processId": process_id},
+                return_types={"204": None},
+                error_types={
+                    "403": ApiError,
+                    "404": ApiError,
+                    "405": ApiError,
+                    "501": ApiError,
+                },
+                extra_kwargs=kwargs,
+            )
+        )
+
+    def get_formal_description(
+        self, process_id: str, **kwargs: Any
+    ) -> OgcApplicationPackage:
+        try:
+            self._transport.headers["Accept"] = "application/ogcapppkg+json"
+            return self._transport.call(
+                TransportArgs(
+                    path="/processes/{processId}/package",
+                    method="get",
+                    path_params={"processId": process_id},
+                    return_types={"200": OgcApplicationPackage},
+                    error_types={
+                        "403": ApiError,
+                        "404": ApiError,
+                        "405": ApiError,
+                        "501": ApiError,
+                    },
+                    extra_kwargs=kwargs,
+                )
+            )
+        finally:
+            del self._transport.headers["Accept"]
 
     def close(self):
         """Close this client."""

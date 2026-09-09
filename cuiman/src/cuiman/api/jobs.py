@@ -7,8 +7,9 @@ import inspect
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Final, Protocol
+from typing import Any, Final, Literal, Optional, Protocol
 
+from gavicore.dru_models import OgcApplicationPackage
 from gavicore.models import (
     ApiError,
     JobInfo,
@@ -16,6 +17,7 @@ from gavicore.models import (
     JobStatus,
     ProcessDescription,
     ProcessRequest,
+    ProcessSummary,
 )
 from gavicore.util.runsync import run_sync
 
@@ -112,6 +114,29 @@ class _ClientLike(Protocol):
 
     def get_process(self, process_id: str) -> ProcessDescription: ...
 
+    def deploy_process(
+        self,
+        content: bytes,
+        encoding: Literal[
+            "application/cwl", "application/cwl+json", "application/cwl+yaml"
+        ],
+        w: str | None = None,
+    ) -> Optional[ProcessSummary]: ...
+
+    def replace_process(
+        self,
+        process_id: str,
+        content: bytes,
+        encoding: Literal[
+            "application/cwl", "application/cwl+json", "application/cwl+yaml"
+        ],
+        w: str | None = None,
+    ) -> Optional[ProcessSummary]: ...
+
+    def undeploy_process(self, process_id: str) -> None: ...
+
+    def get_formal_description(self, process_id: str) -> OgcApplicationPackage: ...
+
 
 class _AsyncClientLike(Protocol):
     @property
@@ -128,6 +153,31 @@ class _AsyncClientLike(Protocol):
     async def get_job_results(self, job_id: str) -> JobResults: ...
 
     async def get_process(self, process_id: str) -> ProcessDescription: ...
+
+    async def deploy_process(
+        self,
+        content: bytes,
+        encoding: Literal[
+            "application/cwl", "application/cwl+json", "application/cwl+yaml"
+        ],
+        w: str | None = None,
+    ) -> Optional[ProcessSummary]: ...
+
+    async def replace_process(
+        self,
+        process_id: str,
+        content: bytes,
+        encoding: Literal[
+            "application/cwl", "application/cwl+json", "application/cwl+yaml"
+        ],
+        w: str | None = None,
+    ) -> Optional[ProcessSummary]: ...
+
+    async def undeploy_process(self, process_id: str) -> None: ...
+
+    async def get_formal_description(
+        self, process_id: str
+    ) -> OgcApplicationPackage: ...
 
 
 def execute_and_open_result(

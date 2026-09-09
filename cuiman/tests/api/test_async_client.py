@@ -6,6 +6,7 @@
 
 import os
 from pathlib import Path
+from types import NoneType
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import AsyncMock, patch
 
@@ -14,6 +15,7 @@ import pytest
 from cuiman import ClientConfig
 from cuiman.api.async_client import AsyncClient
 from cuiman.api.auth import OAuth2AuthConfig, TokenResult
+from gavicore.dru_models import OgcApplicationPackage
 from gavicore.models import (
     ApiError,
     Capabilities,
@@ -24,6 +26,7 @@ from gavicore.models import (
     ProcessDescription,
     ProcessList,
     ProcessRequest,
+    ProcessSummary,
 )
 from gavicore.util.request import ExecutionRequest
 
@@ -267,6 +270,71 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
                     "return_types": {"200": JobResults},
                     "error_types": {"404": ApiError, "500": ApiError},
                     "extra_kwargs": {"timeout": 50},
+                },
+            ),
+            (
+                lambda: self.client.deploy_process(b"hello, world", "application/cwl"),
+                ProcessSummary,
+                {
+                    "path": "/processes",
+                    "method": "post",
+                    "path_params": {"w": None},
+                    "return_types": {"201": ProcessSummary, "202": None},
+                    "error_types": {
+                        "403": ApiError,
+                        "405": ApiError,
+                        "409": ApiError,
+                        "415": ApiError,
+                        "501": ApiError,
+                    },
+                    "extra_kwargs": {"content": b"hello, world"},
+                },
+            ),
+            (
+                lambda: self.client.replace_process(
+                    "process-1", b"hola mundo", "application/clw"
+                ),
+                ProcessSummary,
+                {
+                    "path": "/processes/{processId}",
+                    "method": "put",
+                    "path_params": {"processId": "process-1", "w": None},
+                    "return_types": {
+                        "200": ProcessSummary,
+                        "201": ProcessSummary,
+                        "202": ProcessSummary,
+                        "204": None,
+                    },
+                    "error_types": {
+                        "403": ApiError,
+                        "405": ApiError,
+                        "409": ApiError,
+                        "415": ApiError,
+                        "501": ApiError,
+                    },
+                    "extra_kwargs": {"content": b"hola mundo"},
+                },
+            ),
+            (
+                lambda: self.client.undeploy_process("process-1"),
+                NoneType,
+                {
+                    "path": "/processes/{processId}",
+                    "method": "delete",
+                    "path_params": {"processId": "process-1"},
+                    "return_types": {"204": None},
+                    "error_types": {"403": ApiError, "404": ApiError, "405": ApiError, "501": ApiError},
+                },
+            ),
+            (
+                lambda: self.client.get_formal_description("process-1"),
+                OgcApplicationPackage,
+                {
+                    "path": "/processes/{processId}/package",
+                    "method": "get",
+                    "path_params": {"processId": "process-1"},
+                    "return_types": {"200": OgcApplicationPackage},
+                    "error_types": {"403": ApiError, "404": ApiError, "405": ApiError, "501": ApiError},
                 },
             ),
         ]

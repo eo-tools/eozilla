@@ -4,6 +4,7 @@
 
 import re
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -338,6 +339,37 @@ class CliTest(TestCase):
         result = invoke_cli("get-job-results", "job_4")
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertEqual("null\n...\n\n", result.output)
+
+    def test_deploy_process(self):
+        with NamedTemporaryFile("rt", suffix=".cwl") as f:
+            result = invoke_cli(
+                "deploy-process", "-p", f.name, "--encoding", "application/cwl+yaml"
+            )
+            self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+        self.assertEqual("id: ID-1\nversion: ''\n\n", result.output)
+
+    def test_replace_process(self):
+        with NamedTemporaryFile("rt", suffix=".cwl") as f:
+            result = invoke_cli(
+                "replace-process",
+                "-p",
+                f.name,
+                "--encoding",
+                "application/cwl+yaml",
+                "ID-1",
+            )
+            self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+        self.assertEqual("id: ID-1\nversion: ''\n\n", result.output)
+
+    def test_undeploy_process(self):
+        result = invoke_cli("undeploy-process", "ID-1")
+        self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+        self.assertEqual("", result.output)
+
+    def test_get_formal_description(self):
+        result = invoke_cli("get-formal-description", "ID-1")
+        self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+        self.assertEqual("executionUnit:\n  href: ''\n\n", result.output)
 
     @patch("cuiman.cli.cli._wait_until_interrupted")
     @patch("cuiman.app.serve")

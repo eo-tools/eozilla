@@ -94,9 +94,20 @@ class HttpxTransport(Transport, AsyncTransport):
     # noinspection PyMethodMayBeStatic
     def _process_response(self, args: TransportArgs, response: httpx.Response) -> Any:
         try:
-            # Note, actually we should only do `response.json()` if JSON is expected,
-            # use args.return_types for this decision.
-            response_json = response.json()
+            # Unknown API errors are handled as if they were documented with
+            # an associated model
+            status_key: str = str(response.status_code)
+            if (
+                not (
+                    status_key in args.return_types.keys()
+                    or status_key in args.error_types.keys()
+                )
+                or args.return_types.get(status_key)
+                or args.error_types.get(status_key)
+            ):
+                response_json = response.json()
+            else:
+                response_json = None
         except (ValueError, TypeError) as e:
             message = "Expected JSON response from API"
             raise ClientError(

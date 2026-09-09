@@ -5,7 +5,7 @@
 import inspect
 from enum import Enum
 from types import NoneType
-from typing import Any
+from typing import Any, Union, get_args, get_origin
 
 import pydantic
 from pydantic import BaseModel
@@ -22,6 +22,7 @@ class MockTransport(AsyncTransport, Transport):  # pragma: no cover
         self.async_calls: list[TransportArgs] = []
         self.closed = False
         self.id_counter = 0
+        self.headers: dict = {}
 
     def new_id(self):
         self.id_counter += 1
@@ -86,6 +87,8 @@ class MockTransport(AsyncTransport, Transport):  # pragma: no cover
                 for k, v in fields.items()
             }
             return t(**kwargs)
+        if get_origin(t) is Union:
+            return self.new_default_value(get_args(t)[0])
         return t()
 
 
