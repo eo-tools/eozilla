@@ -32,7 +32,7 @@ proposal, before modifying production code.
 
 ## Verified starting point
 
-- Repository: `C:\Users\norma\Projects\eozilla`
+- Repository: `C:\Users\Norman\Projects\eozilla`
 - Branch: `forman/209-use_authlib`
 - HEAD at handover: `ebab47941224dfc698a7e9f8b2e4ad513aa22918`
 - The working tree contains the **HTTPX2-only checkpoint**. No commits were
