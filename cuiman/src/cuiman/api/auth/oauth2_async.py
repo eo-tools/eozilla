@@ -5,12 +5,12 @@
 import httpx
 
 from .config import OAuth2AuthConfig
-from .login import TokenResult
 from .oauth2 import (
     prepare_oauth2_renewal_request,
     prepare_oauth2_token_request,
     process_oauth2_token_response,
 )
+from .tokens import TokenResult
 
 
 async def obtain_oauth2_tokens_async(

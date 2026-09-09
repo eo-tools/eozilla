@@ -38,7 +38,12 @@ target from `pyproject.toml`, for example:
 
 - Follow the repository's Black-style formatting.
 - Keep imports grouped in standard-library, third-party, then first-party order.
-- Prefer absolute first-party imports.
+- Prefer package-relative imports between implementation modules within the same
+  package to make their locality explicit. Use absolute imports across package
+  boundaries and when consuming a package's public API.
+- Preserve deferred function-local imports when needed to avoid circular
+  dependencies or import-time side effects. Do not rewrite import style as
+  unrelated cleanup.
 - Use `typing.TYPE_CHECKING` when it helps avoid circular imports.
 - Add docstrings to public API classes, functions, constants, and type aliases.
 
@@ -54,4 +59,3 @@ target from `pyproject.toml`, for example:
 - Do not use destructive git commands unless explicitly requested.
 - Avoid overwriting user changes outside the current task scope.
 - Prefer existing project tooling over ad hoc scripts.
-

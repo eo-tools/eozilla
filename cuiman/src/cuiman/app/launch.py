@@ -36,12 +36,7 @@ import httpx
 import remotestate as rs
 from fastapi import FastAPI, HTTPException, Request, Response, status
 
-from cuiman.api.auth import (
-    LoginAuthConfig,
-    OAuth2AuthConfig,
-    login_async,
-    obtain_oauth2_tokens_async,
-)
+from cuiman.api.auth.session import resolve_auth_headers_async
 from cuiman.api.config import ClientConfig
 
 LAUNCH_QUERY_PARAM = "launch"
@@ -206,20 +201,12 @@ class LaunchedAppService(rs.Service[Any]):
     async def _resolve_auth_headers(self) -> dict[str, str]:
         """Resolve configured credentials without ever serializing them to the app.
 
-        Login and OAuth configurations may start without an access token.  The
-        first browser exchange triggers that resolution on Cuiman, then stores
-        only the resulting request headers in the server session.  Static
-        basic, token, API-key, and no-auth configurations already expose their
-        headers through ``ClientConfig.auth_headers``.
+        The first browser exchange uses the same non-interactive preparation
+        as Python API calls. It can exchange configured credentials or refresh
+        an OAuth2/OIDC token, and stores only the resulting request headers in
+        the server session. Interactive login must happen explicitly.
         """
-        auth = self._client_config.auth
-        if isinstance(auth, LoginAuthConfig) and not auth.access_token:
-            auth.access_token = await login_async(auth)
-        elif isinstance(auth, OAuth2AuthConfig) and not auth.access_token:
-            tokens = await obtain_oauth2_tokens_async(auth)
-            auth.access_token = tokens.access_token
-            auth.refresh_token = tokens.refresh_token
-        return dict(self._client_config.auth_headers)
+        return await resolve_auth_headers_async(self._client_config.auth)
 
     def _get_session(self, request: Request) -> _AppSession:
         """Look up the server-only session selected by the HttpOnly cookie."""

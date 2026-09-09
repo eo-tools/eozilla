@@ -128,6 +128,11 @@ path prefix. The derived WebSocket URL retains that same prefix. The provider
 selection is kept only for the current browser session, so a previous
 stand-alone selection is not overwritten.
 
+For local JupyterLab without a server proxy, Cuiman uses the notebook's local
+hostname for the embedded app (`localhost` or `127.0.0.1`). Mixing these two
+hostnames makes the iframe cross-site and blocks its `SameSite=Lax` session
+cookie, causing a successful launch exchange to be followed by HTTP 401.
+
 This mode requires the Cuiman app server. A permanently deployed stand-alone
 SPA continues to use its normal Custom Service configuration and browser-based
 authentication flow.

@@ -18,6 +18,7 @@ nav:
   - Cuiman:
     - Overview: cuiman/index.md
     - Configuration: cuiman/configuration.md
+    - Authentication: cuiman/authentication.md
     - Customization: cuiman/customization.md
     - GUI-Generation: cuiman/gui-generation.md
     - Usage:

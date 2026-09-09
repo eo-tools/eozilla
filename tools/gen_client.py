@@ -36,7 +36,6 @@ from .client_app_mixin import ClientAppMixin
 from .config import ClientConfig
 from .ishell import has_ishell as _  # noqa F401
 from .transport import {{ uc_async }}Transport, TransportArgs
-from .transport.httpx import HttpxTransport
 
 
 class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
@@ -69,17 +68,8 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
         )
         if not self._config.api_url:
             raise ValueError("Required setting 'api_url' not configured")
-        self._transport = (
-            HttpxTransport(
-                api_url=f"{self._config.api_url.rstrip('/')}/",
-                headers=self._config.auth_headers,
-                return_type_map=self._config.return_type_map,
-                {{ refresher_kwarg }}
-                debug=_debug,
-            )
-            if _transport is None
-            else _transport
-        )
+        self._transport = _transport
+        self._debug = _debug
 
     @property
     def config(self) -> ClientConfig:
@@ -105,10 +95,6 @@ def main():
     sync_code = sync_code.replace("{{ client_methods }}", client_methods)
     sync_code = sync_code.replace("{{ uc_async }}", "")
     sync_code = sync_code.replace("{{ hr_async }}", "synchronous")
-    sync_code = sync_code.replace(
-        "{{ refresher_kwarg }}",
-        "token_refresher=self._config._maybe_make_token_refresher(),",
-    )
 
     write_file(
         GENERATOR_NAME,
@@ -125,10 +111,6 @@ def main():
     async_code = async_code.replace("{{ client_methods }}", client_methods)
     async_code = async_code.replace("{{ uc_async }}", "Async")
     async_code = async_code.replace("{{ hr_async }}", "asynchronous")
-    async_code = async_code.replace(
-        "{{ refresher_kwarg }}",
-        "async_token_refresher=self._config._make_async_token_refresher(),",
-    )
 
     write_file(
         GENERATOR_NAME,
@@ -236,9 +218,10 @@ def generate_function_code(
         f"def {camel_to_snake(method.operationId)}({param_list})"
         f" -> {return_type_union}:\n"
         f"{function_doc}"
+        f"{C_TAB}{C_TAB}transport = {'await ' if is_async else ''}self._get_transport()\n"
         f"{C_TAB}{C_TAB}return "
         f"{'await ' if is_async else ''}"
-        f"self._transport.{'async_' if is_async else ''}call("
+        f"transport.{'async_' if is_async else ''}call("
         f"TransportArgs({transport_args_list})"
         f")\n"
     )
@@ -300,7 +283,7 @@ def generate_function_doc(method: OAMethod) -> str:
     ):
         lines.append("")
         lines.append("Returns:")
-        for resp_code, (resp_type, desc_lines) in resp_types.items():
+        for _resp_code, (resp_type, desc_lines) in resp_types.items():
             if desc_lines:
                 lines.append(f"{D_TAB}{resp_type}: {desc_lines[0]}")
                 for desc_line in desc_lines[1:]:
@@ -317,7 +300,7 @@ def generate_function_doc(method: OAMethod) -> str:
         lines.append(f"{D_TAB}{D_TAB}with a status code != `2xx`.")
         if resp_types:
             lines.append("")
-            for resp_code, (resp_type, desc_lines) in resp_types.items():
+            for resp_code, (_resp_type, desc_lines) in resp_types.items():
                 if desc_lines:
                     lines.append(f"{D_TAB}{D_TAB}- `{resp_code}`: {desc_lines[0]}")
                     for desc_line in desc_lines[1:]:

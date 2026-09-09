@@ -2,13 +2,29 @@
 
 ### Enhancements
 
+- **Cuiman** clients now prepare authentication and create their transport on
+  the first API call. `Client.login()` and `AsyncClient.login()` allow explicit
+  login, including credential prompts and OIDC browser authentication; automatic
+  login uses only available credentials and never prompts. App launch shares the
+  same authentication preparation. The proprietary `login()` / `login_async()`
+  helpers now return `TokenResult`, replacing the `*_for_tokens()` helpers.
+
+- **Cuiman** now keeps CLI authentication credentials in the operating-system
+  keyring instead of its configuration file. `cuiman configure` stores only
+  public service and authentication metadata; the new `cuiman login` and
+  `cuiman logout` commands manage credentials for Basic, token, API-key,
+  proprietary-login, OAuth2 password-grant, and OIDC authorization-code
+  authentication. OIDC login uses provider discovery, Authorization Code with
+  PKCE, and a temporary loopback callback server; it supports browser and
+  `--no-browser` login. OAuth2 and OIDC refresh tokens loaded from the keyring
+  are persisted there after refresh. Existing secret-bearing configuration
+  files are detected and can be safely rewritten. (#205)
+
 - **Cuiman** authentication configuration now uses distinct, nested data models
   for no authentication, Basic, token, proprietary login, OAuth2, and API-key
   authentication. OAuth2 grant types are typed, and the configuration and CLI
   use unambiguous names such as `login_url`, `token_url`, `access_token`, and
-  `access_token_header`. Existing flat file configurations for unambiguous
-  authentication types are converted when read; legacy login configurations
-  using `auth_url` now instruct users to rerun `cuiman configure`. (#176)
+  `access_token_header`. (#176)
 
 - **Cuiman** app launches now keep processing-service credentials on the
   Cuiman app server. The browser exchanges a short-lived, single-use `launch`
@@ -24,6 +40,16 @@
   supported. (#198)
 
 ### Fixes
+
+- **Cuiman** now replaces previous authentication settings when a configuration
+  source explicitly selects `auth_type`. Python client overrides no longer
+  inherit incompatible fields such as a saved `login_url` when selecting OIDC.
+  Matching keyring tokens are retained after resolving a complete auth override.
+
+- **Cuiman** now shares token acquisition, renewal, and credential updates in
+  its authentication session helpers. Failed credential persistence during
+  renewal leaves the in-memory session unchanged, matching initial login.
+  Client-credentials grants consistently ignore returned refresh tokens.
 
 - **Cuiman**'s launched-app proxy now rejects path-traversal segments, so a
   browser request cannot escape the configured processing API base path.

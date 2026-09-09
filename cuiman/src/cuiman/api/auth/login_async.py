@@ -5,15 +5,11 @@
 import httpx
 
 from .config import LoginAuthConfig
-from .login import TokenResult, prepare_login, process_login_response_for_tokens
+from .login import prepare_login, process_login_response_for_tokens
+from .tokens import TokenResult
 
 
-async def login_async(auth_config: LoginAuthConfig) -> str:
-    """Asynchronously log in and return a proprietary access token."""
-    return (await login_async_for_tokens(auth_config)).access_token
-
-
-async def login_async_for_tokens(auth_config: LoginAuthConfig) -> TokenResult:
+async def login_async(auth_config: LoginAuthConfig) -> TokenResult:
     """Asynchronously log in and parse the token response."""
     url, data = prepare_login(auth_config)
     async with httpx.AsyncClient() as client:

@@ -11,6 +11,7 @@ from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
 from gavicore.util.request import ExecutionRequest
 from gavicore.util.runsync import run_sync
 
+from .auth.session import resolve_auth_headers
 from .config import ClientConfig
 from .defaults import (
     DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
@@ -19,6 +20,8 @@ from .defaults import (
 from .exceptions import ClientError, ClientWarning
 from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
+from .transport import Transport
+from .transport.httpx import HttpxTransport
 
 if TYPE_CHECKING:
     pass
@@ -33,6 +36,42 @@ class ClientMixin(ABC):
     """
     Extra methods for the API client (synchronous mode).
     """
+
+    _transport: Transport | None
+    _debug: bool
+
+    def login(
+        self, *, interactive: bool = True, no_browser: bool = False, force: bool = False
+    ) -> None:
+        """Prepare authentication, reusing existing credentials when possible.
+
+        Explicit login may prompt for credentials or open an OIDC browser.
+        API methods call this with ``interactive=False`` and raise a
+        ``LoginRequiredError`` when user interaction is needed.
+        Use ``force=True`` to bypass existing tokens and authenticate afresh.
+        A successful login also updates an existing HTTPX transport.
+        """
+        headers = resolve_auth_headers(
+            self.config.auth,
+            interactive=interactive,
+            no_browser=no_browser,
+            force=force,
+        )
+        if self._transport is not None and isinstance(self._transport, HttpxTransport):
+            self._transport.headers = headers
+
+    def _get_transport(self) -> Transport:
+        if self._transport is None:
+            self.login(interactive=False)
+            assert self.config.api_url is not None
+            self._transport = HttpxTransport(
+                api_url=f"{self.config.api_url.rstrip('/')}/",
+                headers=self.config.auth_headers,
+                return_type_map=self.config.return_type_map,
+                token_refresher=self.config._maybe_make_token_refresher(),
+                debug=self._debug,
+            )
+        return self._transport
 
     @property
     @abstractmethod

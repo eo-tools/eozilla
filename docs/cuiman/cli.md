@@ -40,6 +40,8 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 **Commands**:
 
 * `configure`: Configure the client tool.
+* `login`: Log in and store the required credentials...
+* `logout`: Remove the locally stored credentials for...
 * `generate-client`: Generate the Python code for...
 * `list-processes`: List available processes.
 * `get-process`: Get process details.
@@ -65,17 +67,46 @@ $ cuiman configure [OPTIONS]
 **Options**:
 
 * `--api-url TEXT`: The URL of a service complying to the OGC API - Processes.
-* `-a, --auth-type TEXT`: The authorisation method for the API (none|basic|token|login|oauth2|api-key).
+* `-a, --auth-type TEXT`: The authorisation method for the API (none|basic|token|login|oauth2|oidc|api-key).
 * `--login-url TEXT`: The proprietary login endpoint URL.
 * `--token-url TEXT`: The OAuth2 token endpoint URL.
 * `--grant-type TEXT`: The OAuth2 grant type (password|client_credentials).
-* `-u, --username TEXT`: Username.
-* `-p, --password TEXT`: Password.
-* `--client-id TEXT`: OAuth2 client ID.
-* `--client-secret TEXT`: OAuth2 client secret.
-* `-t, --access-token TEXT`: Access token.
+* `--client-id TEXT`: OAuth2 or OIDC client ID.
+* `--issuer-url TEXT`: The OpenID Connect issuer URL.
+* `--scope TEXT`: An OpenID Connect resource scope; repeat for multiple scopes.
 * `--use-bearer`: Use bearer token?
 * `--access-token-header TEXT`: Access token header
+* `-c, --config PATH`: Client configuration file.
+* `--help`: Show this message and exit.
+
+## `cuiman login`
+
+Log in and store the required credentials in the OS keyring.
+
+**Usage**:
+
+```console
+$ cuiman login [OPTIONS]
+```
+
+**Options**:
+
+* `-c, --config PATH`: Client configuration file.
+* `--no-browser`: Print the OIDC authorization URL instead of opening a browser.
+* `--help`: Show this message and exit.
+
+## `cuiman logout`
+
+Remove the locally stored credentials for this configuration.
+
+**Usage**:
+
+```console
+$ cuiman logout [OPTIONS]
+```
+
+**Options**:
+
 * `-c, --config PATH`: Client configuration file.
 * `--help`: Show this message and exit.
 

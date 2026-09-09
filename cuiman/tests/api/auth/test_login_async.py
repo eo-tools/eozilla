@@ -10,7 +10,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cuiman.api.auth import LoginAuthConfig, TokenResult, login_async
-from cuiman.api.auth.login_async import login_async_for_tokens
 
 
 def make_config() -> LoginAuthConfig:
@@ -27,7 +26,7 @@ async def test_login_async_json():
     response.json.return_value = {"token": "abc123"}
 
     with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=response)):
-        assert await login_async(make_config()) == "abc123"
+        assert await login_async(make_config()) == TokenResult(access_token="abc123")
 
 
 @pytest.mark.asyncio
@@ -37,11 +36,13 @@ async def test_login_async_plaintext():
     response.text = "plaintext-token"
 
     with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=response)):
-        assert await login_async(make_config()) == "plaintext-token"
+        assert await login_async(make_config()) == TokenResult(
+            access_token="plaintext-token"
+        )
 
 
 @pytest.mark.asyncio
-async def test_login_async_for_tokens():
+async def test_login_async():
     response = MagicMock()
     response.json.return_value = {
         "access_token": "access",
@@ -49,6 +50,6 @@ async def test_login_async_for_tokens():
     }
 
     with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=response)):
-        result = await login_async_for_tokens(make_config())
+        result = await login_async(make_config())
 
     assert result == TokenResult(access_token="access", refresh_token="refresh")

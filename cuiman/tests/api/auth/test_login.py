@@ -11,7 +11,6 @@ import pytest
 
 from cuiman.api.auth import LoginAuthConfig, TokenResult, login
 from cuiman.api.auth.login import (
-    login_for_tokens,
     parse_token,
     prepare_login,
     process_login_response,
@@ -52,7 +51,7 @@ def test_login_json_response():
     with patch("httpx.Client.post", return_value=response) as post:
         token = login(make_config())
 
-    assert token == "abc123"
+    assert token == TokenResult(access_token="abc123")
     post.assert_called_once_with(
         "https://example.test/login",
         data={"username": "u", "password": "p"},
@@ -65,7 +64,7 @@ def test_login_plaintext_response():
     response.text = "plaintext-token"
 
     with patch("httpx.Client.post", return_value=response):
-        assert login(make_config()) == "plaintext-token"
+        assert login(make_config()) == TokenResult(access_token="plaintext-token")
 
 
 def test_login_for_tokens_parses_optional_refresh_token():
@@ -75,7 +74,7 @@ def test_login_for_tokens_parses_optional_refresh_token():
         "refresh_token": "refresh",
     }
     with patch("httpx.Client.post", return_value=response):
-        result = login_for_tokens(make_config())
+        result = login(make_config())
 
     assert result == TokenResult(access_token="access", refresh_token="refresh")
 

@@ -6,24 +6,12 @@ import json
 from typing import Any
 
 import httpx
-from pydantic import BaseModel
 
 from .config import LoginAuthConfig
+from .tokens import TokenResult
 
 
-class TokenResult(BaseModel):
-    """Access and optional refresh tokens returned by an authentication service."""
-
-    access_token: str
-    refresh_token: str | None = None
-
-
-def login(auth_config: LoginAuthConfig) -> str:
-    """Log in through a proprietary endpoint and return its access token."""
-    return login_for_tokens(auth_config).access_token
-
-
-def login_for_tokens(auth_config: LoginAuthConfig) -> TokenResult:
+def login(auth_config: LoginAuthConfig) -> TokenResult:
     """Log in through a proprietary endpoint and parse its token response."""
     url, data = prepare_login(auth_config)
     with httpx.Client() as client:

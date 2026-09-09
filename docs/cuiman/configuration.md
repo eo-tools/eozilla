@@ -11,12 +11,24 @@ entry overrides that of a previous one.
 
 1. Default settings hard-coded into the `cuiman.api.ClientConfig` class.
 2. Settings loaded from a given or the default configuration file passed as `config_path`.
-3. Settings loaded from environment variables prefixed with `EOZILLA_`.
-4. Settings from another configuration object of type `cuiman.api.ClientConfig` passes as `config`.
-5. Settings from keyword arguments passed directly to the client passed as `config_kwargs`.
+3. Credentials stored in the operating-system keyring for that configuration
+   file and API URL.
+4. Settings loaded from environment variables prefixed with `EOZILLA_`.
+5. Settings from another configuration object of type `cuiman.api.ClientConfig` passed as `config`.
+6. Settings from keyword arguments passed directly to the client as `config_kwargs`.
 
 This list is implemented in the class method `create()` of the 
 `cuiman.api.ClientConfig` class. 
+
+An `auth` override that includes `auth_type` replaces the previous authentication
+configuration entirely, even when the type is unchanged. For example,
+`Client(auth={"auth_type": "oidc", "issuer_url": "https://identity.example.org/realm",
+"client_id": "cuiman"})` does not inherit a saved `login_url` or custom token
+header settings. This rule applies to configuration files, environment
+variables, configuration objects, and client keyword arguments. An override
+without `auth_type`, such as `auth={"access_token": "..."}`, updates fields in
+the selected authentication configuration. Matching keyring credentials fill
+missing secrets without overwriting explicitly supplied values.
 
 Note that applications using `cuiman` under the hood may customize the 
 configuration, see [Cuiman Customization](./customization.md). 
@@ -38,7 +50,6 @@ JSON:
     "api_url": "https://anolis.api.org/process-api/v1",
     "auth": {
         "auth_type": "token",
-        "access_token": "ab989e20-d58609a9-8d4c",
         "use_bearer": true
     }
 }
@@ -50,9 +61,29 @@ YAML:
 api_url: "https://anolis.api.org/process-api/v1"
 auth:
   auth_type: token
-  access_token: ab989e20-d58609a9-8d4c
   use_bearer: true
 ```
+
+Configuration files contain only public connection and authentication metadata.
+Credentials are never written to them. Files in the older format that contain
+credentials are detected as legacy configuration; run `cuiman configure` to
+rewrite their public values safely.
+
+### Credential Storage
+
+The `cuiman` CLI stores passwords, access tokens, refresh tokens, client
+secrets, and API keys in the operating-system keyring. The keyring entry is
+scoped to the canonical configuration-file path and the API URL, so profiles
+for different services or files do not share credentials.
+
+Large token bundles are split across OS-keyring entries to respect Windows
+Credential Manager's per-entry size limit. Cuiman reassembles them when loading
+credentials and removes their parts on logout. Tokens remain in the OS keyring;
+there is no plaintext-file fallback.
+
+Environment variables and direct Python configuration remain available for
+automated deployments. They take precedence over keyring values and should be
+provided through the deployment platform's secret-injection mechanism.
 
 ### Environment Variables
 
@@ -80,6 +111,7 @@ are accepted:
 | `token` | `EOZILLA_AUTH__AUTH_TYPE=token`, `EOZILLA_AUTH__ACCESS_TOKEN` | `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
 | `login` | `EOZILLA_AUTH__AUTH_TYPE=login`, `EOZILLA_AUTH__LOGIN_URL`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD` | `EOZILLA_AUTH__ACCESS_TOKEN`, `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
 | `oauth2` | `EOZILLA_AUTH__AUTH_TYPE=oauth2`, `EOZILLA_AUTH__TOKEN_URL` | `EOZILLA_AUTH__GRANT_TYPE`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD`, `EOZILLA_AUTH__CLIENT_ID`, `EOZILLA_AUTH__CLIENT_SECRET`, `EOZILLA_AUTH__REFRESH_TOKEN`, `EOZILLA_AUTH__ACCESS_TOKEN`, `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
+| `oidc` | `EOZILLA_AUTH__AUTH_TYPE=oidc`, `EOZILLA_AUTH__ISSUER_URL`, `EOZILLA_AUTH__CLIENT_ID` | `EOZILLA_AUTH__SCOPES`, `EOZILLA_AUTH__REFRESH_TOKEN`, `EOZILLA_AUTH__ACCESS_TOKEN` |
 | `api-key` | `EOZILLA_AUTH__AUTH_TYPE=api-key`, `EOZILLA_AUTH__API_KEY` | `EOZILLA_AUTH__API_KEY_HEADER` |
 
 For OAuth 2.0, `grant_type` defaults to `password`. The `password` grant
@@ -133,18 +165,57 @@ client = Client(
 
 ### Using the CLI
 
-Before using the CLI, you should configure it using the `cuiman configure`
-command.
+Before using the CLI, configure the public service settings and then log in:
 
-If environment variables are set (e.g. `EOZILLA_API_URL`,
-`EOZILLA_AUTH__AUTH_TYPE`, `EOZILLA_AUTH__CLIENT_ID`), they appear as
-pre-filled defaults in the interactive prompts so you can confirm or override
-them. This is useful in managed deployments (e.g. Kubernetes/JupyterHub) where
-admins inject service-level settings via environment variables and users only
-need to supply their own credentials.
+```console
+$ cuiman configure
+$ cuiman login
+```
+
+`configure` asks only for public connection and authentication metadata and
+writes it to the configuration file. `login` asks for credentials only when
+the selected authentication type requires them and stores them in the OS
+keyring. `logout` removes the matching keyring entry. For authentication type
+`none`, `configure` does not offer login.
+
+When a configured authenticated service is used without available credentials,
+the CLI reports `Please log in first using 'cuiman login'.` instead of showing
+an implementation traceback.
 
 You can override settings anytime from environment variables or by using
 the `--config/-c <file>` option supported by most CLI commands.
+
+For Python clients, `client.login()` (or `await client.login()` for `AsyncClient`)
+is optional when credentials are already available. The first API call performs
+non-interactive authentication when necessary. Explicit login also permits
+credential prompts or browser OIDC authentication; ordinary API calls never
+initiate interaction. See [Client API](./api.md#client-api).
+
+OAuth2 client credentials supplied through environment variables or Python
+configuration can obtain their initial access token automatically. They do not
+require a pre-existing access token or an interactive CLI login.
+
+### Remote notebooks
+
+A deployment can provide the processing API URL and an access token through
+`EOZILLA_API_URL`, `EOZILLA_AUTH__AUTH_TYPE=token`, and
+`EOZILLA_AUTH__ACCESS_TOKEN`. Python clients use these credentials without
+prompting or consulting the OS keyring. The token must be accepted by the
+processing API; a login session for JupyterLab alone does not supply it.
+
+An injected access token has no automatic renewal mechanism. If the API rejects
+it, Cuiman reports the API error without starting interactive login. The
+deployment or user must provide fresh credentials. Environment variables are
+read when the client configuration is created; an existing client does not
+automatically receive later changes from the deployment.
+
+OAuth2 and OIDC configurations can instead use explicitly supplied renewal
+credentials. Cuiman keeps renewed tokens in memory unless the configuration
+has a credential persistor, such as one attached when loading CLI keyring
+credentials. Renewal never opens a browser or prompts for credentials.
+
+For the internal responsibilities and the boundary for a future auth library,
+see [Authentication lifecycle](./authentication.md).
 
 ## Basic Settings
 
@@ -237,7 +308,7 @@ config = ClientConfig(
         "login_url": "https://identity.example.org/login",
         "username": "...",
         "password": "...",
-        "access_token": "...",  # populated by `cuiman configure`
+        "access_token": "...",  # obtained by `cuiman login`
         "use_bearer": True,
     },
 )
@@ -249,8 +320,8 @@ The `oauth2` type obtains a token from a standards-based OAuth 2.0 token
 endpoint. It supports the `password` grant (the default) and the
 `client_credentials` grant. If a password-grant response includes a refresh
 token, Cuiman refreshes the access token once after an HTTP 401. The refreshed
-token is kept by the active client and is not written back to the configuration
-file.
+token is persisted to the OS keyring when the credentials were loaded from it;
+it is never written to the configuration file.
 
 ```python
 config = ClientConfig(
@@ -263,12 +334,92 @@ config = ClientConfig(
         "password": "...",
         "client_id": "...",  # optional for password grant
         "client_secret": "...",  # optional for password grant
-        "access_token": "...",  # populated by `cuiman configure`
-        "refresh_token": "...",  # populated when the server returns one
+        "access_token": "...",  # obtained by `cuiman login`
+        "refresh_token": "...",  # returned by the token endpoint when available
         "use_bearer": True,
     },
 )
 ```
+
+`cuiman login` and explicit Python client login prompt only for username and
+password when using the OAuth2 `password` grant. A configured `client_id` does
+not cause a client-secret prompt. If the provider requires a client secret,
+supply it through `EOZILLA_AUTH__CLIENT_SECRET`, direct Python configuration,
+or an existing keyring entry. Login preserves and sends that secret; otherwise
+the token request omits `client_secret`.
+
+The `client_credentials` grant has no interactive login step; provide its
+credentials through environment variables or direct Python configuration.
+
+### Auth type `oidc`
+
+The `oidc` type signs a user in through an OpenID Connect provider. Configure
+the provider's **issuer URL** (not its token endpoint) and a public client ID.
+For example, a Keycloak realm issuer is commonly
+`https://identity.example.org/realms/example`; Cuiman obtains its endpoints
+from `<issuer>/.well-known/openid-configuration`.
+
+```yaml
+api_url: "https://anolis.api.org/process-api/v1"
+auth:
+  auth_type: oidc
+  issuer_url: "https://identity.example.org/realms/example"
+  client_id: "cuiman"
+  scopes:
+    - profile
+    - email
+```
+
+`openid` is always requested, even when it is omitted from `scopes`. Add only
+provider- or service-specific scopes that are required, such as `profile`,
+`email`, or `offline_access`. The configuration file contains these public
+values only; access and refresh tokens are stored in the operating-system
+keyring after login.
+
+```python
+config = ClientConfig(
+    api_url="https://anolis.api.org/process-api/v1",
+    auth={
+        "auth_type": "oidc",
+        "issuer_url": "https://identity.example.org/realms/example",
+        "client_id": "cuiman",
+        "scopes": ["profile", "email"],
+    },
+)
+```
+
+#### Logging in with OIDC
+
+Run `cuiman login` after configuring OIDC. Cuiman discovers the provider,
+opens its authorization page, and starts a temporary HTTP server bound only to
+`127.0.0.1` on an ephemeral port. The provider redirects the browser to
+`http://127.0.0.1:<port>/callback`; Cuiman validates the response state and
+exchanges the authorization code using PKCE.
+
+Register that loopback callback pattern with the OIDC client. For example,
+Keycloak clients can allow Cuiman's callback with:
+
+```text
+http://127.0.0.1/*
+```
+
+Do not register a broad internet-facing wildcard redirect URI. The loopback
+address restricts the callback to the local computer, and the port is chosen
+for each login so concurrent or stale login attempts do not claim a fixed
+port.
+
+If Cuiman cannot open a browser, or the browser must be opened manually, use:
+
+```console
+$ cuiman login --no-browser
+```
+
+This prints the authorization URL while Cuiman continues to wait for the
+local callback. Open the URL in a browser on the same machine. `cuiman logout`
+attempts token revocation when the provider advertises a revocation endpoint,
+then always removes the locally stored credentials. When an OIDC access token
+is rejected and a refresh token is available, Cuiman refreshes it and persists
+any replacement token in the keyring.
 
 ### Auth type `api-key`
 
