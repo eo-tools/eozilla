@@ -7,6 +7,8 @@ from unittest import TestCase
 
 import pytest
 
+from gavicore.dru_models import OgcApplicationPackage
+from gavicore.dru_service import DruService
 from gavicore.models import (
     JobInfo,
     JobList,
@@ -14,6 +16,7 @@ from gavicore.models import (
     ProcessDescription,
     ProcessList,
     ProcessRequest,
+    ProcessSummary,
 )
 from gavicore.util.testing import set_env_cm
 from wraptile.constants import ENV_VAR_SERVICE
@@ -56,6 +59,65 @@ class MyService(ServiceBase):
 
 
 service = MyService()
+
+
+class MyDruService(ServiceBase, DruService):
+    def __init__(self):
+        super().__init__("Test Service")
+        self.threads: Optional[bool] = None
+        self.workers: Optional[int] = None
+
+    def configure(self, threads: Optional[bool] = None, workers: Optional[int] = None):
+        self.threads = threads
+        self.workers = workers
+
+    async def get_processes(self, *args, **kwargs) -> ProcessList:
+        raise NotImplementedError
+
+    async def get_process(self, process_id: str, *args, **kwargs) -> ProcessDescription:
+        raise NotImplementedError
+
+    async def execute_process(
+        self, process_id: str, process_request: ProcessRequest, *args, **kwargs
+    ) -> JobInfo:
+        raise NotImplementedError
+
+    async def get_jobs(self, *args, **kwargs) -> JobList:
+        raise NotImplementedError
+
+    async def get_job(self, job_id: str, *args, **kwargs) -> JobInfo:
+        raise NotImplementedError
+
+    async def dismiss_job(self, job_id: str, *args, **kwargs) -> JobInfo:
+        raise NotImplementedError
+
+    async def get_job_results(self, job_id: str, *args, **kwargs) -> JobResults:
+        raise NotImplementedError
+
+    async def deploy_process(
+        self, w: str | None = None, *args, **kwargs
+    ) -> Optional[ProcessSummary]:
+        raise NotImplementedError
+
+    async def replace_process(
+        self,
+        process_id: str,
+        w: str | None = None,
+        *args,
+        **kwargs,
+    ) -> Optional[ProcessSummary]:
+        raise NotImplementedError
+
+    async def undeploy_process(self, process_id: str, *args, **kwargs) -> None:
+        raise NotImplementedError
+
+    async def get_formal_description(
+        self, process_id: str, *args, **kwargs
+    ) -> OgcApplicationPackage:
+        raise NotImplementedError
+
+
+dru_service = MyDruService()
 
 
 class ServiceBaseTest(TestCase):
@@ -137,6 +199,14 @@ class ServiceBaseTest(TestCase):
             r"Service options must have the form '--key\[=value\]', "
             r"but got '12' as key, which is not an identifier\.",
         )
+
+    def test_load_injects_dru_routes(self):
+        service_spec = "tests.services.base.test_service_base:dru_service"
+        with set_env_cm(**{ENV_VAR_SERVICE: service_spec}):
+            s = ServiceBase.load()
+        self.assertIsInstance(s, MyDruService)
+        self.assertTrue(issubclass(s.__class__, ServiceBase))
+        self.assertTrue(issubclass(s.__class__, DruService))
 
     # noinspection PyMethodMayBeStatic
     def assert_fails_with_config_exception(self, value: str | None, match: str):

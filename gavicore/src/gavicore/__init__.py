@@ -7,22 +7,29 @@ from importlib.metadata import version
 
 from pydantic import BaseModel
 
-from . import models, service
+from . import dru_models, dru_service, models, service
 
 __version__ = version("gavicore")
 
 __all__ = [
     "__version__",
+    "dru_models",
+    "dru_service",
     "models",
     "service",
 ]
 
 
 def _patch_models():
-    for name, obj in inspect.getmembers(models, inspect.isclass):
+    for name, obj in inspect.getmembers(models, inspect.isclass) + inspect.getmembers(
+        dru_models, inspect.isclass
+    ):
         if (
             not name.startswith("_")
-            and obj.__module__ == models.__name__
+            and (
+                obj.__module__ == models.__name__
+                or obj.__module__ == dru_models.__name__
+            )
             and issubclass(obj, BaseModel)
         ):
             # Make model object render nicely in Jupyter notebooks
