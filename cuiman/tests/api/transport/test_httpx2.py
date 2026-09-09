@@ -6,13 +6,13 @@ from typing import Any, Callable
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import AsyncMock, MagicMock
 
-import httpx
+import httpx2
 import pytest
 
 from cuiman.api.exceptions import ClientError
 from cuiman.api.transport import TransportArgs, TransportError
 from cuiman.api.transport.args import CLIENT_ERROR_URI
-from cuiman.api.transport.httpx import HttpxTransport
+from cuiman.api.transport.httpx2 import Httpx2Transport
 from gavicore.models import ApiError, ConformanceDeclaration
 
 
@@ -30,28 +30,28 @@ def make_mocked_transport(
     response.json.side_effect = json_side_effect
     response.raise_for_status.side_effect = raise_for_status_side_effect
 
-    sync_httpx = MagicMock()
-    sync_httpx.request.return_value = response
+    sync_httpx2 = MagicMock()
+    sync_httpx2.request.return_value = response
 
-    async_httpx = MagicMock()
-    async_httpx.request = AsyncMock(return_value=response)
+    async_httpx2 = MagicMock()
+    async_httpx2.request = AsyncMock(return_value=response)
 
-    transport = HttpxTransport(
+    transport = Httpx2Transport(
         api_url="https://api.example.com",
         headers={"Authorization": "Bearer: wt8799aafe"},
     )
-    transport.sync_httpx = sync_httpx
-    transport.async_httpx = async_httpx
+    transport.sync_httpx2 = sync_httpx2
+    transport.async_httpx2 = async_httpx2
     return transport
 
 
-class HttpxSyncTransportTest(TestCase):
+class Httpx2SyncTransportTest(TestCase):
     def test_sync_call_initializes_correctly(self):
-        transport = HttpxTransport(api_url="https://api.example.com")
-        self.assertIsNone(transport.sync_httpx)
+        transport = Httpx2Transport(api_url="https://api.example.com")
+        self.assertIsNone(transport.sync_httpx2)
         with pytest.raises(TransportError):
             transport.call(TransportArgs("/"))
-        self.assertIsInstance(transport.sync_httpx, httpx.Client)
+        self.assertIsInstance(transport.sync_httpx2, httpx2.Client)
 
     def test_call_success_200(self):
         transport = make_mocked_transport(
@@ -67,7 +67,7 @@ class HttpxSyncTransportTest(TestCase):
             )
         )
         # noinspection PyUnresolvedReferences
-        transport.sync_httpx.request.assert_called_once_with(
+        transport.sync_httpx2.request.assert_called_once_with(
             "GET",
             "https://api.example.com/conformance",
             params={},
@@ -90,7 +90,7 @@ class HttpxSyncTransportTest(TestCase):
             )
         )
         # noinspection PyUnresolvedReferences
-        transport.sync_httpx.request.assert_called_once_with(
+        transport.sync_httpx2.request.assert_called_once_with(
             "GET",
             "https://api.example.com/conformance",
             params={},
@@ -110,7 +110,7 @@ class HttpxSyncTransportTest(TestCase):
             )
         )
         # noinspection PyUnresolvedReferences
-        transport.sync_httpx.request.assert_called_once_with(
+        transport.sync_httpx2.request.assert_called_once_with(
             "GET",
             "https://api.example.com/conformance",
             params={},
@@ -122,7 +122,7 @@ class HttpxSyncTransportTest(TestCase):
     # noinspection PyMethodMayBeStatic
     def test_call_raise_for_status_fail(self):
         def panic():
-            raise httpx.HTTPError("Panic!")
+            raise httpx2.HTTPError("Panic!")
 
         transport = make_mocked_transport(
             401,
@@ -172,22 +172,22 @@ class HttpxSyncTransportTest(TestCase):
         )
 
     def test_close_is_noop(self):
-        sync_httpx = MagicMock()
+        sync_httpx2 = MagicMock()
 
-        transport = HttpxTransport(api_url="https://api.example.com")
-        transport.sync_httpx = sync_httpx
+        transport = Httpx2Transport(api_url="https://api.example.com")
+        transport.sync_httpx2 = sync_httpx2
 
         transport.close()
-        self.assertIsNone(transport.sync_httpx)
+        self.assertIsNone(transport.sync_httpx2)
 
 
-class HttpxAsyncTransportTest(IsolatedAsyncioTestCase):
+class Httpx2AsyncTransportTest(IsolatedAsyncioTestCase):
     async def test_async_call_initializes_correctly(self):
-        transport = HttpxTransport(api_url="https://api.example.com")
-        self.assertIsNone(transport.async_httpx)
+        transport = Httpx2Transport(api_url="https://api.example.com")
+        self.assertIsNone(transport.async_httpx2)
         with pytest.raises(TransportError):
             await transport.async_call(TransportArgs("/"))
-        self.assertIsInstance(transport.async_httpx, httpx.AsyncClient)
+        self.assertIsInstance(transport.async_httpx2, httpx2.AsyncClient)
 
     async def test_async_call_success(self):
         transport = make_mocked_transport(
@@ -203,7 +203,7 @@ class HttpxAsyncTransportTest(IsolatedAsyncioTestCase):
             )
         )
         # noinspection PyUnresolvedReferences
-        transport.async_httpx.request.assert_called_once_with(
+        transport.async_httpx2.request.assert_called_once_with(
             "GET",
             "https://api.example.com/conformance",
             params={},
@@ -213,17 +213,17 @@ class HttpxAsyncTransportTest(IsolatedAsyncioTestCase):
         self.assertIsInstance(result, ConformanceDeclaration)
 
     async def test_async_close(self):
-        async_httpx = MagicMock()
+        async_httpx2 = MagicMock()
 
-        transport = HttpxTransport(api_url="https://api.example.com")
-        transport.async_httpx = async_httpx
-        transport.async_httpx.aclose = AsyncMock(return_value=None)
+        transport = Httpx2Transport(api_url="https://api.example.com")
+        transport.async_httpx2 = async_httpx2
+        transport.async_httpx2.aclose = AsyncMock(return_value=None)
 
         await transport.async_close()
-        self.assertIsNone(transport.async_httpx)
+        self.assertIsNone(transport.async_httpx2)
 
 
-class HttpxSyncTokenRefreshTest(TestCase):
+class Httpx2SyncTokenRefreshTest(TestCase):
     def test_401_triggers_token_refresh_and_retry(self):
         """On 401, the sync refresher is called and the request is retried."""
         response_401 = MagicMock()
@@ -235,18 +235,18 @@ class HttpxSyncTokenRefreshTest(TestCase):
         response_200.json.return_value = {"conformsTo": ["Hello"]}
         response_200.raise_for_status.return_value = None
 
-        sync_httpx = MagicMock()
-        sync_httpx.request.side_effect = [response_401, response_200]
+        sync_httpx2 = MagicMock()
+        sync_httpx2.request.side_effect = [response_401, response_200]
 
         new_headers = {"Authorization": "Bearer new-token"}
         refresher = MagicMock(return_value=new_headers)
 
-        transport = HttpxTransport(
+        transport = Httpx2Transport(
             api_url="https://api.example.com",
             headers={"Authorization": "Bearer old-token"},
             token_refresher=refresher,
         )
-        transport.sync_httpx = sync_httpx
+        transport.sync_httpx2 = sync_httpx2
 
         result = transport.call(
             TransportArgs(
@@ -257,7 +257,7 @@ class HttpxSyncTokenRefreshTest(TestCase):
         )
 
         refresher.assert_called_once()
-        self.assertEqual(2, sync_httpx.request.call_count)
+        self.assertEqual(2, sync_httpx2.request.call_count)
         self.assertEqual(new_headers, transport.headers)
         self.assertIsInstance(result, ConformanceDeclaration)
 
@@ -265,7 +265,7 @@ class HttpxSyncTokenRefreshTest(TestCase):
         """Without a refresher, 401 is raised as a ClientError."""
 
         def panic():
-            raise httpx.HTTPError("Unauthorized")
+            raise httpx2.HTTPError("Unauthorized")
 
         transport = make_mocked_transport(
             401,
@@ -288,20 +288,20 @@ class HttpxSyncTokenRefreshTest(TestCase):
         response_401.status_code = 401
         response_401.json.return_value = {"type": "error", "detail": "Unauthorized"}
 
-        sync_httpx = MagicMock()
-        sync_httpx.request.side_effect = [
+        sync_httpx2 = MagicMock()
+        sync_httpx2.request.side_effect = [
             response_401,
-            httpx.HTTPError("Connection lost"),
+            httpx2.HTTPError("Connection lost"),
         ]
 
         refresher = MagicMock(return_value={"Authorization": "Bearer new-token"})
 
-        transport = HttpxTransport(
+        transport = Httpx2Transport(
             api_url="https://api.example.com",
             headers={"Authorization": "Bearer old-token"},
             token_refresher=refresher,
         )
-        transport.sync_httpx = sync_httpx
+        transport.sync_httpx2 = sync_httpx2
 
         with pytest.raises(TransportError, match="Connection lost"):
             transport.call(
@@ -313,13 +313,13 @@ class HttpxSyncTokenRefreshTest(TestCase):
             )
 
         refresher.assert_called_once()
-        self.assertEqual(2, sync_httpx.request.call_count)
+        self.assertEqual(2, sync_httpx2.request.call_count)
 
     def test_non_401_error_does_not_trigger_refresh(self):
         """Non-401 errors should not trigger token refresh."""
 
         def panic():
-            raise httpx.HTTPError("Forbidden")
+            raise httpx2.HTTPError("Forbidden")
 
         refresher = MagicMock()
         transport = make_mocked_transport(
@@ -341,7 +341,7 @@ class HttpxSyncTokenRefreshTest(TestCase):
         refresher.assert_not_called()
 
 
-class HttpxAsyncTokenRefreshTest(IsolatedAsyncioTestCase):
+class Httpx2AsyncTokenRefreshTest(IsolatedAsyncioTestCase):
     async def test_401_triggers_async_token_refresh_and_retry(self):
         """On 401, the async refresher is called and the request is retried."""
         response_401 = MagicMock()
@@ -353,18 +353,18 @@ class HttpxAsyncTokenRefreshTest(IsolatedAsyncioTestCase):
         response_200.json.return_value = {"conformsTo": ["Hello"]}
         response_200.raise_for_status.return_value = None
 
-        async_httpx = MagicMock()
-        async_httpx.request = AsyncMock(side_effect=[response_401, response_200])
+        async_httpx2 = MagicMock()
+        async_httpx2.request = AsyncMock(side_effect=[response_401, response_200])
 
         new_headers = {"Authorization": "Bearer new-token"}
         refresher = AsyncMock(return_value=new_headers)
 
-        transport = HttpxTransport(
+        transport = Httpx2Transport(
             api_url="https://api.example.com",
             headers={"Authorization": "Bearer old-token"},
             async_token_refresher=refresher,
         )
-        transport.async_httpx = async_httpx
+        transport.async_httpx2 = async_httpx2
 
         result = await transport.async_call(
             TransportArgs(
@@ -375,7 +375,7 @@ class HttpxAsyncTokenRefreshTest(IsolatedAsyncioTestCase):
         )
 
         refresher.assert_called_once()
-        self.assertEqual(2, async_httpx.request.call_count)
+        self.assertEqual(2, async_httpx2.request.call_count)
         self.assertEqual(new_headers, transport.headers)
         self.assertIsInstance(result, ConformanceDeclaration)
 
@@ -385,19 +385,19 @@ class HttpxAsyncTokenRefreshTest(IsolatedAsyncioTestCase):
         response_401.status_code = 401
         response_401.json.return_value = {"type": "error", "detail": "Unauthorized"}
 
-        async_httpx = MagicMock()
-        async_httpx.request = AsyncMock(
-            side_effect=[response_401, httpx.HTTPError("Connection lost")]
+        async_httpx2 = MagicMock()
+        async_httpx2.request = AsyncMock(
+            side_effect=[response_401, httpx2.HTTPError("Connection lost")]
         )
 
         refresher = AsyncMock(return_value={"Authorization": "Bearer new-token"})
 
-        transport = HttpxTransport(
+        transport = Httpx2Transport(
             api_url="https://api.example.com",
             headers={"Authorization": "Bearer old-token"},
             async_token_refresher=refresher,
         )
-        transport.async_httpx = async_httpx
+        transport.async_httpx2 = async_httpx2
 
         with pytest.raises(TransportError, match="Connection lost"):
             await transport.async_call(
@@ -409,4 +409,4 @@ class HttpxAsyncTokenRefreshTest(IsolatedAsyncioTestCase):
             )
 
         refresher.assert_called_once()
-        self.assertEqual(2, async_httpx.request.call_count)
+        self.assertEqual(2, async_httpx2.request.call_count)

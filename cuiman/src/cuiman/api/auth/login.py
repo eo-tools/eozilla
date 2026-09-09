@@ -5,7 +5,7 @@
 import json
 from typing import Any
 
-import httpx
+import httpx2
 
 from .config import LoginAuthConfig
 from .tokens import TokenResult
@@ -14,7 +14,7 @@ from .tokens import TokenResult
 def login(auth_config: LoginAuthConfig) -> TokenResult:
     """Log in through a proprietary endpoint and parse its token response."""
     url, data = prepare_login(auth_config)
-    with httpx.Client() as client:
+    with httpx2.Client() as client:
         response = client.post(url, data=data)
         return process_login_response_for_tokens(response)
 
@@ -31,7 +31,7 @@ def prepare_login(config: LoginAuthConfig) -> tuple[str, dict[str, str]]:
     }
 
 
-def process_login_response(response: httpx.Response) -> str:
+def process_login_response(response: httpx2.Response) -> str:
     """Parse an access token from a proprietary login response."""
     response.raise_for_status()
     try:
@@ -41,7 +41,7 @@ def process_login_response(response: httpx.Response) -> str:
     return parse_token(token_data)
 
 
-def process_login_response_for_tokens(response: httpx.Response) -> TokenResult:
+def process_login_response_for_tokens(response: httpx2.Response) -> TokenResult:
     """Parse access and optional refresh tokens from a login response."""
     response.raise_for_status()
     try:

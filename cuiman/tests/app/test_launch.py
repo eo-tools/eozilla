@@ -4,7 +4,7 @@
 
 # ruff: noqa: S106
 
-import httpx
+import httpx2
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -55,9 +55,9 @@ def test_launch_code_can_be_retried_after_auth_resolution_fails(monkeypatch):
         nonlocal attempts
         attempts += 1
         if attempts == 1:
-            raise httpx.ConnectError(
+            raise httpx2.ConnectError(
                 "connection refused",
-                request=httpx.Request("POST", "https://auth.example.test/login"),
+                request=httpx2.Request("POST", "https://auth.example.test/login"),
             )
         return TokenResult(access_token="resolved-token")
 
@@ -119,7 +119,7 @@ def test_proxy_uses_server_side_headers_and_requires_same_origin(monkeypatch):
 
     async def send_upstream(request, path, auth_headers):
         calls.append((request.method, path, auth_headers))
-        return httpx.Response(
+        return httpx2.Response(
             200,
             json={"ok": True},
             headers={"Set-Cookie": "must-not-reach-browser", "X-Upstream": "yes"},
@@ -145,7 +145,7 @@ def test_proxy_allows_a_same_origin_referer(monkeypatch):
     assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
 
     async def send_upstream(request, path, auth_headers):
-        return httpx.Response(204)
+        return httpx2.Response(204)
 
     monkeypatch.setattr(service, "_send_upstream", send_upstream)
 
@@ -163,8 +163,8 @@ def test_proxy_reports_an_unreachable_upstream_as_bad_gateway(monkeypatch):
     assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
 
     async def send_upstream(request, path, auth_headers):
-        raise httpx.ConnectError(
-            "connection refused", request=httpx.Request("GET", "https://example.test")
+        raise httpx2.ConnectError(
+            "connection refused", request=httpx2.Request("GET", "https://example.test")
         )
 
     monkeypatch.setattr(service, "_send_upstream", send_upstream)
@@ -208,9 +208,9 @@ def test_proxy_forwards_only_safe_browser_headers_to_the_fixed_upstream(monkeypa
 
         async def request(self, method, url, **kwargs):
             received.update(method=method, url=url, **kwargs)
-            return httpx.Response(200, content=b"proxied")
+            return httpx2.Response(200, content=b"proxied")
 
-    monkeypatch.setattr("cuiman.app.launch.httpx.AsyncClient", StubAsyncClient)
+    monkeypatch.setattr("cuiman.app.launch.httpx2.AsyncClient", StubAsyncClient)
 
     response = client.get(
         f"{SERVICE_PROXY_ENDPOINT}/jobs/a%20job?tag=one&tag=two",
@@ -289,7 +289,7 @@ def test_proxy_refreshes_credentials_once_after_an_upstream_unauthorized_respons
 
     async def send_upstream(request, path, auth_headers):
         calls.append(auth_headers)
-        return httpx.Response(401 if len(calls) == 1 else 200)
+        return httpx2.Response(401 if len(calls) == 1 else 200)
 
     async def refresh():
         return {"Authorization": "Bearer refreshed-token"}
@@ -320,7 +320,7 @@ def test_proxy_reports_a_failed_credential_refresh_without_changing_the_session(
 
     async def send_upstream(request, path, auth_headers):
         calls.append(auth_headers)
-        return httpx.Response(401)
+        return httpx2.Response(401)
 
     async def refresh():
         raise RuntimeError("token endpoint temporarily unavailable")
@@ -351,10 +351,10 @@ def test_proxy_reports_a_failed_refreshed_request_as_bad_gateway(monkeypatch):
     async def send_upstream(request, path, auth_headers):
         calls.append(auth_headers)
         if len(calls) == 1:
-            return httpx.Response(401)
-        raise httpx.ConnectError(
+            return httpx2.Response(401)
+        raise httpx2.ConnectError(
             "connection refused",
-            request=httpx.Request("GET", "https://example.test"),
+            request=httpx2.Request("GET", "https://example.test"),
         )
 
     async def refresh():

@@ -29,7 +29,7 @@ def make_config(**kwargs) -> OAuth2AuthConfig:
 async def test_obtain_oauth2_tokens_async():
     response = MagicMock()
     response.json.return_value = {"access_token": "access"}
-    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=response)):
+    with patch("httpx2.AsyncClient.post", new=AsyncMock(return_value=response)):
         result = await obtain_oauth2_tokens_async(make_config())
     assert result == TokenResult(access_token="access")
 
@@ -38,6 +38,6 @@ async def test_obtain_oauth2_tokens_async():
 async def test_renew_oauth2_tokens_async():
     response = MagicMock()
     response.json.return_value = {"access_token": "renewed"}
-    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=response)):
+    with patch("httpx2.AsyncClient.post", new=AsyncMock(return_value=response)):
         result = await renew_oauth2_tokens_async(make_config())
     assert result == TokenResult(access_token="renewed")

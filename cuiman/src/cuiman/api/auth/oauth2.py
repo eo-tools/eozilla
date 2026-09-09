@@ -4,7 +4,7 @@
 
 from typing import Any
 
-import httpx
+import httpx2
 
 from .config import OAuth2AuthConfig
 from .tokens import TokenResult
@@ -13,7 +13,7 @@ from .tokens import TokenResult
 def obtain_oauth2_tokens(auth_config: OAuth2AuthConfig) -> TokenResult:
     """Obtain OAuth2 tokens using the configured grant."""
     url, data = prepare_oauth2_token_request(auth_config)
-    with httpx.Client() as client:
+    with httpx2.Client() as client:
         response = client.post(url, data=data)
         return process_oauth2_token_response(response)
 
@@ -21,7 +21,7 @@ def obtain_oauth2_tokens(auth_config: OAuth2AuthConfig) -> TokenResult:
 def renew_oauth2_tokens(auth_config: OAuth2AuthConfig) -> TokenResult:
     """Refresh or reacquire OAuth2 tokens according to the configured grant."""
     url, data = prepare_oauth2_renewal_request(auth_config)
-    with httpx.Client() as client:
+    with httpx2.Client() as client:
         response = client.post(url, data=data)
         return process_oauth2_token_response(response)
 
@@ -60,7 +60,7 @@ def _add_client_credentials(config: OAuth2AuthConfig, data: dict[str, str]) -> N
         data["client_secret"] = config.client_secret
 
 
-def process_oauth2_token_response(response: httpx.Response) -> TokenResult:
+def process_oauth2_token_response(response: httpx2.Response) -> TokenResult:
     """Parse a standards-based OAuth2 token response."""
     response.raise_for_status()
     token_data: Any = response.json()

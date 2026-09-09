@@ -9,7 +9,7 @@ import inspect
 import threading
 from unittest.mock import AsyncMock, Mock, patch
 
-import httpx
+import httpx2
 import pytest
 
 from cuiman import AsyncClient, Client, ClientConfig
@@ -75,11 +75,11 @@ async def test_recovery_and_forced_login_update_existing_transport(
                 200 if header == "Bearer fresh-access" and not reject_retry else 401
             )
             body = {"conformsTo": []}
-        return httpx.Response(status, json=body, request=httpx.Request(method, url))
+        return httpx2.Response(status, json=body, request=httpx2.Request(method, url))
 
     with (
-        patch("httpx.Client.request", side_effect=request),
-        patch("httpx.AsyncClient.request", new=AsyncMock(side_effect=request)),
+        patch("httpx2.Client.request", side_effect=request),
+        patch("httpx2.AsyncClient.request", new=AsyncMock(side_effect=request)),
     ):
         transport = await invoke(client._get_transport)
         try:
@@ -163,11 +163,11 @@ def requests():
             body = {"access_token": "access", "refresh_token": "refresh"}
         else:
             body = {"conformsTo": []}
-        return httpx.Response(200, json=body, request=httpx.Request(method, url))
+        return httpx2.Response(200, json=body, request=httpx2.Request(method, url))
 
     with (
-        patch("httpx.Client.request", side_effect=request),
-        patch("httpx.AsyncClient.request", new=AsyncMock(side_effect=request)),
+        patch("httpx2.Client.request", side_effect=request),
+        patch("httpx2.AsyncClient.request", new=AsyncMock(side_effect=request)),
     ):
         yield calls
 
@@ -398,10 +398,10 @@ async def test_injected_token_401_does_not_prompt_refresh_or_use_keyring(
     monkeypatch.setenv("EOZILLA_API_URL", "https://api.example.test")
     monkeypatch.setenv("EOZILLA_AUTH__AUTH_TYPE", "token")
     monkeypatch.setenv("EOZILLA_AUTH__ACCESS_TOKEN", "injected-access")
-    response = httpx.Response(
+    response = httpx2.Response(
         401,
         json={"type": "about:blank", "title": "Unauthorized", "status": 401},
-        request=httpx.Request("GET", "https://api.example.test/conformance"),
+        request=httpx2.Request("GET", "https://api.example.test/conformance"),
     )
     request = (
         AsyncMock(return_value=response)
@@ -409,9 +409,9 @@ async def test_injected_token_401_does_not_prompt_refresh_or_use_keyring(
         else Mock(return_value=response)
     )
     target = (
-        "httpx.AsyncClient.request"
+        "httpx2.AsyncClient.request"
         if client_type is AsyncClient
-        else "httpx.Client.request"
+        else "httpx2.Client.request"
     )
     with (
         patch(target, request),
@@ -453,10 +453,10 @@ async def test_refresh_persistence_failure_does_not_retry_with_unsaved_tokens(
         await invoke(client.get_conformance)
         transport = client._transport
         previous_headers = dict(transport.headers)
-        response = httpx.Response(
+        response = httpx2.Response(
             401,
             json={"type": "about:blank", "title": "Unauthorized", "status": 401},
-            request=httpx.Request("GET", "https://api.example.test/conformance"),
+            request=httpx2.Request("GET", "https://api.example.test/conformance"),
         )
         asynchronous = client_type is AsyncClient
         request = (
@@ -464,7 +464,7 @@ async def test_refresh_persistence_failure_does_not_retry_with_unsaved_tokens(
             if asynchronous
             else Mock(return_value=response)
         )
-        http_client = transport.async_httpx if asynchronous else transport.sync_httpx
+        http_client = transport.async_httpx2 if asynchronous else transport.sync_httpx2
         with patch.object(http_client, "request", request):
             with pytest.raises(SecretStoreError, match="unavailable"):
                 await invoke(client.get_conformance)

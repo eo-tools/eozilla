@@ -12,7 +12,7 @@ without performing token updates themselves.
 from functools import partial
 from typing import Awaitable, Callable, Mapping
 
-import httpx
+import httpx2
 
 from .config import (
     AuthConfigBase,
@@ -102,7 +102,7 @@ def _commit_auth(auth: AuthConfigBase, candidate: AuthConfigBase) -> None:
 
 
 def _recover_refresh(
-    auth: AuthConfigBase, error: httpx.HTTPStatusError
+    auth: AuthConfigBase, error: httpx2.HTTPStatusError
 ) -> AuthConfigBase:
     is_refresh = (
         isinstance(auth, OidcAuthConfig)
@@ -180,7 +180,7 @@ def _refresh_auth_headers(
 ) -> dict[str, str]:
     try:
         tokens = _obtain_tokens(auth)
-    except httpx.HTTPStatusError as error:
+    except httpx2.HTTPStatusError as error:
         candidate = _recover_refresh(auth, error)
         resolve_auth_headers(candidate)
         _commit_auth(auth, candidate)
@@ -194,7 +194,7 @@ async def _refresh_auth_headers_async(
 ) -> dict[str, str]:
     try:
         tokens = await _obtain_tokens_async(auth)
-    except httpx.HTTPStatusError as error:
+    except httpx2.HTTPStatusError as error:
         candidate = _recover_refresh(auth, error)
         await resolve_auth_headers_async(candidate)
         _commit_auth(auth, candidate)

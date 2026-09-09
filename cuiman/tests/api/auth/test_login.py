@@ -48,7 +48,7 @@ def test_login_json_response():
     response = MagicMock()
     response.json.return_value = {"token": "abc123"}
 
-    with patch("httpx.Client.post", return_value=response) as post:
+    with patch("httpx2.Client.post", return_value=response) as post:
         token = login(make_config())
 
     assert token == TokenResult(access_token="abc123")
@@ -63,7 +63,7 @@ def test_login_plaintext_response():
     response.json.side_effect = json.JSONDecodeError("not json", "", 0)
     response.text = "plaintext-token"
 
-    with patch("httpx.Client.post", return_value=response):
+    with patch("httpx2.Client.post", return_value=response):
         assert login(make_config()) == TokenResult(access_token="plaintext-token")
 
 
@@ -73,7 +73,7 @@ def test_login_for_tokens_parses_optional_refresh_token():
         "access_token": "access",
         "refresh_token": "refresh",
     }
-    with patch("httpx.Client.post", return_value=response):
+    with patch("httpx2.Client.post", return_value=response):
         result = login(make_config())
 
     assert result == TokenResult(access_token="access", refresh_token="refresh")

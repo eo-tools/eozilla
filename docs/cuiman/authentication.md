@@ -1,7 +1,7 @@
 # Authentication lifecycle
 
 Cuiman uses one authentication lifecycle for the Python clients, CLI, and
-launched-app proxy. The implementation currently uses HTTPX and the existing
+launched-app proxy. The implementation currently uses HTTPX2 and the existing
 protocol helpers. Authlib adoption is deferred to a separate change.
 
 ## Responsibilities
@@ -52,7 +52,7 @@ needed if that provider no longer accepts the previous refresh token.
 `login(force=True)` acquires fresh authentication on a temporary configuration
 without access or refresh tokens. It respects `interactive` and `no_browser`,
 then commits all resulting secrets through the shared persistence operation.
-The client mixin updates an existing HTTPX transport only after login succeeds.
+The client mixin updates an existing HTTPX2 transport only after login succeeds.
 These recovery and interaction policies remain Cuiman responsibilities when
 the underlying protocol helpers are replaced by Authlib.
 

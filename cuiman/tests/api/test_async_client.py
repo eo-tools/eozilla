@@ -89,21 +89,21 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
                 ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
             ),
             patch(
-                "cuiman.api.async_client_mixin.HttpxTransport"
-            ) as httpx_transport_cls,
+                "cuiman.api.async_client_mixin.Httpx2Transport"
+            ) as httpx2_transport_cls,
         ):
-            transport = httpx_transport_cls.return_value
+            transport = httpx2_transport_cls.return_value
 
             client = AsyncClient(
                 api_url="https://acme.ogc.org/api",
                 _debug=True,
             )
-            httpx_transport_cls.assert_not_called()
+            httpx2_transport_cls.assert_not_called()
             await client._get_transport()
 
         self.assertIs(client._transport, transport)
-        httpx_transport_cls.assert_called_once()
-        _, kwargs = httpx_transport_cls.call_args
+        httpx2_transport_cls.assert_called_once()
+        _, kwargs = httpx2_transport_cls.call_args
         self.assertEqual("https://acme.ogc.org/api/", kwargs["api_url"])
         self.assertEqual({}, kwargs["headers"])
         self.assertIs(return_type_map, kwargs["return_type_map"])
@@ -121,8 +121,8 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
                 ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
             ),
             patch(
-                "cuiman.api.async_client_mixin.HttpxTransport"
-            ) as httpx_transport_cls,
+                "cuiman.api.async_client_mixin.Httpx2Transport"
+            ) as httpx2_transport_cls,
         ):
             client = AsyncClient(
                 api_url="https://acme.ogc.org/api",
@@ -136,7 +136,7 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
             )
             await client._get_transport()
 
-        _, kwargs = httpx_transport_cls.call_args
+        _, kwargs = httpx2_transport_cls.call_args
         self.assertEqual(
             {"Authorization": f"Bearer {old_access}"},
             kwargs["headers"],
@@ -295,17 +295,17 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
                     args.error_types,
                 )
 
-    def test_custom_transport_is_used_without_creating_httpx_transport(self):
+    def test_custom_transport_is_used_without_creating_httpx2_transport(self):
         with patch(
-            "cuiman.api.async_client_mixin.HttpxTransport"
-        ) as httpx_transport_cls:
+            "cuiman.api.async_client_mixin.Httpx2Transport"
+        ) as httpx2_transport_cls:
             client = AsyncClient(
                 api_url="https://acme.ogc.org/api",
                 _transport=self.transport,
             )
 
         self.assertIs(client._transport, self.transport)
-        httpx_transport_cls.assert_not_called()
+        httpx2_transport_cls.assert_not_called()
 
     async def test_close_without_transport_is_noop(self):
         self.client._transport = None

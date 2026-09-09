@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote, urlsplit, urlunsplit
 
-import httpx
+import httpx2
 import remotestate as rs
 from fastapi import FastAPI, HTTPException, Request, Response, status
 
@@ -227,7 +227,7 @@ class LaunchedAppService(rs.Service[Any]):
             upstream_response = await self._send_upstream(
                 request, path, session.headers
             )
-        except httpx.RequestError as error:
+        except httpx2.RequestError as error:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail="Unable to reach the configured processing service.",
@@ -247,7 +247,7 @@ class LaunchedAppService(rs.Service[Any]):
                     upstream_response = await self._send_upstream(
                         request, path, session.headers
                     )
-                except httpx.RequestError as error:
+                except httpx2.RequestError as error:
                     raise HTTPException(
                         status_code=status.HTTP_502_BAD_GATEWAY,
                         detail="Unable to reach the configured processing service.",
@@ -267,7 +267,7 @@ class LaunchedAppService(rs.Service[Any]):
         request: Request,
         path: str,
         auth_headers: dict[str, str],
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """Send a request to the fixed upstream API without trusting client auth.
 
         The browser may choose a processing API path, method, body, and query
@@ -280,7 +280,7 @@ class LaunchedAppService(rs.Service[Any]):
             if name in request.headers
         }
         headers.update(auth_headers)
-        async with httpx.AsyncClient(follow_redirects=False) as client:
+        async with httpx2.AsyncClient(follow_redirects=False) as client:
             return await client.request(
                 request.method,
                 _get_upstream_url(self._client_config.api_url, path),

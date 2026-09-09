@@ -4,7 +4,7 @@
 
 """Asynchronous OpenID Connect token-renewal helpers."""
 
-import httpx
+import httpx2
 
 from .config import OidcAuthConfig
 from .oauth2 import process_oauth2_token_response
@@ -20,7 +20,7 @@ async def renew_oidc_tokens_async(auth_config: OidcAuthConfig) -> TokenResult:
     """Refresh an OIDC access token using its stored refresh token."""
     data = prepare_oidc_refresh_request(auth_config)
     issuer_url, metadata_url = prepare_oidc_discovery(auth_config)
-    async with httpx.AsyncClient() as client:
+    async with httpx2.AsyncClient() as client:
         discovery_response = await client.get(metadata_url)
         discovery = parse_oidc_discovery(discovery_response, issuer_url)
         response = await client.post(discovery.token_endpoint, data=data)

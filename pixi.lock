@@ -16506,7 +16506,7 @@ packages:
   - remotestate>=0.3.4,<1
   - typer>=0.26.0,<1
   - uri-template
-  - httpx
+  - httpx2
   - keyring
   - gavicore>=0.2.1.dev1
   requires_python: '>=3.10'

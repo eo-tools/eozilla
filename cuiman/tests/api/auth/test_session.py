@@ -8,7 +8,7 @@ import asyncio
 import inspect
 from unittest.mock import AsyncMock, Mock
 
-import httpx
+import httpx2
 import pytest
 
 from cuiman.api.auth import (
@@ -184,12 +184,12 @@ def test_non_renewable_auth_has_no_renewal_callback(auth):
 
 
 def token_error(status=400, body=None):
-    response = httpx.Response(
+    response = httpx2.Response(
         status,
         content=body if body is not None else '{"error":"invalid_grant"}',
-        request=httpx.Request("POST", "https://identity.example.test/token"),
+        request=httpx2.Request("POST", "https://identity.example.test/token"),
     )
-    return httpx.HTTPStatusError(
+    return httpx2.HTTPStatusError(
         "Token request failed", request=response.request, response=response
     )
 
@@ -268,7 +268,7 @@ async def test_other_refresh_errors_do_not_trigger_fresh_login(
     error = token_error(status, body)
     mock_protocol(monkeypatch, "password", asynchronous, side_effect=error)
     acquire = mock_protocol(monkeypatch, "client_credentials", asynchronous)
-    with pytest.raises(httpx.HTTPStatusError) as caught:
+    with pytest.raises(httpx2.HTTPStatusError) as caught:
         await authenticate(auth, False, asynchronous)
     assert caught.value is error
     assert auth.to_secret_dict() == previous

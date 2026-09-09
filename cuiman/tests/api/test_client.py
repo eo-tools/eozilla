@@ -83,20 +83,20 @@ class ClientTest(TestCase):
             patch.object(
                 ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
             ),
-            patch("cuiman.api.client_mixin.HttpxTransport") as httpx_transport_cls,
+            patch("cuiman.api.client_mixin.Httpx2Transport") as httpx2_transport_cls,
         ):
-            transport = httpx_transport_cls.return_value
+            transport = httpx2_transport_cls.return_value
 
             client = Client(
                 api_url="https://acme.ogc.org/api",
                 _debug=True,
             )
-            httpx_transport_cls.assert_not_called()
+            httpx2_transport_cls.assert_not_called()
             client._get_transport()
 
         self.assertIs(client._transport, transport)
-        httpx_transport_cls.assert_called_once()
-        _, kwargs = httpx_transport_cls.call_args
+        httpx2_transport_cls.assert_called_once()
+        _, kwargs = httpx2_transport_cls.call_args
         self.assertEqual("https://acme.ogc.org/api/", kwargs["api_url"])
         self.assertEqual({}, kwargs["headers"])
         self.assertIs(return_type_map, kwargs["return_type_map"])
@@ -113,7 +113,7 @@ class ClientTest(TestCase):
             patch.object(
                 ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
             ),
-            patch("cuiman.api.client_mixin.HttpxTransport") as httpx_transport_cls,
+            patch("cuiman.api.client_mixin.Httpx2Transport") as httpx2_transport_cls,
         ):
             client = Client(
                 api_url="https://acme.ogc.org/api",
@@ -127,7 +127,7 @@ class ClientTest(TestCase):
             )
             client._get_transport()
 
-        _, kwargs = httpx_transport_cls.call_args
+        _, kwargs = httpx2_transport_cls.call_args
         self.assertEqual(
             {"Authorization": f"Bearer {old_access}"},
             kwargs["headers"],
@@ -285,15 +285,15 @@ class ClientTest(TestCase):
                     args.error_types,
                 )
 
-    def test_custom_transport_is_used_without_creating_httpx_transport(self):
-        with patch("cuiman.api.client_mixin.HttpxTransport") as httpx_transport_cls:
+    def test_custom_transport_is_used_without_creating_httpx2_transport(self):
+        with patch("cuiman.api.client_mixin.Httpx2Transport") as httpx2_transport_cls:
             client = Client(
                 api_url="https://acme.ogc.org/api",
                 _transport=self.transport,
             )
 
         self.assertIs(client._transport, self.transport)
-        httpx_transport_cls.assert_not_called()
+        httpx2_transport_cls.assert_not_called()
 
     def test_close_without_transport_is_noop(self):
         self.client._transport = None

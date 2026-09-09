@@ -2,7 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-import httpx
+import httpx2
 
 from .config import OAuth2AuthConfig
 from .oauth2 import (
@@ -18,7 +18,7 @@ async def obtain_oauth2_tokens_async(
 ) -> TokenResult:
     """Asynchronously obtain OAuth2 tokens using the configured grant."""
     url, data = prepare_oauth2_token_request(auth_config)
-    async with httpx.AsyncClient() as client:
+    async with httpx2.AsyncClient() as client:
         response = await client.post(url, data=data)
         return process_oauth2_token_response(response)
 
@@ -28,6 +28,6 @@ async def renew_oauth2_tokens_async(
 ) -> TokenResult:
     """Asynchronously refresh or reacquire OAuth2 tokens."""
     url, data = prepare_oauth2_renewal_request(auth_config)
-    async with httpx.AsyncClient() as client:
+    async with httpx2.AsyncClient() as client:
         response = await client.post(url, data=data)
         return process_oauth2_token_response(response)

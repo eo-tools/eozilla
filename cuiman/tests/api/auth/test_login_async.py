@@ -25,7 +25,7 @@ async def test_login_async_json():
     response = MagicMock()
     response.json.return_value = {"token": "abc123"}
 
-    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=response)):
+    with patch("httpx2.AsyncClient.post", new=AsyncMock(return_value=response)):
         assert await login_async(make_config()) == TokenResult(access_token="abc123")
 
 
@@ -35,7 +35,7 @@ async def test_login_async_plaintext():
     response.json.side_effect = json.JSONDecodeError("not json", "", 0)
     response.text = "plaintext-token"
 
-    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=response)):
+    with patch("httpx2.AsyncClient.post", new=AsyncMock(return_value=response)):
         assert await login_async(make_config()) == TokenResult(
             access_token="plaintext-token"
         )
@@ -49,7 +49,7 @@ async def test_login_async():
         "refresh_token": "refresh",
     }
 
-    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=response)):
+    with patch("httpx2.AsyncClient.post", new=AsyncMock(return_value=response)):
         result = await login_async(make_config())
 
     assert result == TokenResult(access_token="access", refresh_token="refresh")

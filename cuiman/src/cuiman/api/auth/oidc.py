@@ -14,7 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse
 
-import httpx
+import httpx2
 
 from .config import OidcAuthConfig
 from .oauth2 import process_oauth2_token_response
@@ -57,13 +57,13 @@ def discover_oidc_provider(auth_config: OidcAuthConfig) -> OidcDiscovery:
     """
     issuer_url, metadata_url = prepare_oidc_discovery(auth_config)
     try:
-        with httpx.Client() as client:
+        with httpx2.Client() as client:
             response = client.get(metadata_url)
         return parse_oidc_discovery(response, issuer_url)
-    except httpx.HTTPStatusError as exc:
+    except httpx2.HTTPStatusError as exc:
         detail = f"HTTP {exc.response.status_code} {exc.response.reason_phrase}"
         raise _discovery_error(issuer_url, metadata_url, detail) from exc
-    except httpx.HTTPError as exc:
+    except httpx2.HTTPError as exc:
         detail = str(exc) or type(exc).__name__
         raise _discovery_error(issuer_url, metadata_url, detail) from exc
     except (RuntimeError, ValueError) as exc:
@@ -80,7 +80,7 @@ def _discovery_error(issuer_url: str, metadata_url: str, detail: str) -> ValueEr
     )
 
 
-def parse_oidc_discovery(response: httpx.Response, issuer_url: str) -> OidcDiscovery:
+def parse_oidc_discovery(response: httpx2.Response, issuer_url: str) -> OidcDiscovery:
     """Validate OpenID Connect discovery metadata from a provider response.
 
     The returned issuer must equal ``issuer_url`` and the authorization and
@@ -191,7 +191,7 @@ def exchange_oidc_code(
         "client_id": auth_config.client_id,
         "code_verifier": verifier,
     }
-    with httpx.Client() as client:
+    with httpx2.Client() as client:
         response = client.post(discovery.token_endpoint, data=data)
     return process_oauth2_token_response(response)
 
@@ -204,7 +204,7 @@ def renew_oidc_tokens(auth_config: OidcAuthConfig) -> TokenResult:
     """
     data = prepare_oidc_refresh_request(auth_config)
     discovery = discover_oidc_provider(auth_config)
-    with httpx.Client() as client:
+    with httpx2.Client() as client:
         response = client.post(discovery.token_endpoint, data=data)
     return process_oauth2_token_response(response)
 
@@ -229,7 +229,7 @@ def revoke_oidc_tokens(auth_config: OidcAuthConfig) -> bool:
         ),
         "client_id": auth_config.client_id,
     }
-    with httpx.Client() as client:
+    with httpx2.Client() as client:
         response = client.post(discovery.revocation_endpoint, data=data)
     response.raise_for_status()
     return True

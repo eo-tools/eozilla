@@ -20,7 +20,7 @@ from .exceptions import ClientError, ClientWarning
 from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
 from .transport import AsyncTransport
-from .transport.httpx import HttpxTransport
+from .transport.httpx2 import Httpx2Transport
 
 if TYPE_CHECKING:
     pass
@@ -50,7 +50,7 @@ class AsyncClientMixin(ABC):
         API methods disable interaction and raise ``LoginRequiredError`` when
         credentials must be supplied. Cancelled or failed login can be retried.
         Use ``force=True`` to bypass existing tokens and authenticate afresh.
-        A successful login also updates an existing HTTPX transport.
+        A successful login also updates an existing HTTPX2 transport.
         """
         if self._login_lock is None:
             self._login_lock = asyncio.Lock()
@@ -62,7 +62,7 @@ class AsyncClientMixin(ABC):
                 force=force,
             )
             if self._transport is not None and isinstance(
-                self._transport, HttpxTransport
+                self._transport, Httpx2Transport
             ):
                 self._transport.headers = headers
 
@@ -72,7 +72,7 @@ class AsyncClientMixin(ABC):
             # Another first request may have created it while we awaited login.
             if self._transport is None:
                 assert self.config.api_url is not None
-                self._transport = HttpxTransport(
+                self._transport = Httpx2Transport(
                     api_url=f"{self.config.api_url.rstrip('/')}/",
                     headers=self.config.auth_headers,
                     return_type_map=self.config.return_type_map,

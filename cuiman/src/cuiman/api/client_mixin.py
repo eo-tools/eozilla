@@ -21,7 +21,7 @@ from .exceptions import ClientError, ClientWarning
 from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
 from .transport import Transport
-from .transport.httpx import HttpxTransport
+from .transport.httpx2 import Httpx2Transport
 
 if TYPE_CHECKING:
     pass
@@ -49,7 +49,7 @@ class ClientMixin(ABC):
         API methods call this with ``interactive=False`` and raise a
         ``LoginRequiredError`` when user interaction is needed.
         Use ``force=True`` to bypass existing tokens and authenticate afresh.
-        A successful login also updates an existing HTTPX transport.
+        A successful login also updates an existing HTTPX2 transport.
         """
         headers = resolve_auth_headers(
             self.config.auth,
@@ -57,14 +57,14 @@ class ClientMixin(ABC):
             no_browser=no_browser,
             force=force,
         )
-        if self._transport is not None and isinstance(self._transport, HttpxTransport):
+        if self._transport is not None and isinstance(self._transport, Httpx2Transport):
             self._transport.headers = headers
 
     def _get_transport(self) -> Transport:
         if self._transport is None:
             self.login(interactive=False)
             assert self.config.api_url is not None
-            self._transport = HttpxTransport(
+            self._transport = Httpx2Transport(
                 api_url=f"{self.config.api_url.rstrip('/')}/",
                 headers=self.config.auth_headers,
                 return_type_map=self.config.return_type_map,

@@ -105,7 +105,7 @@ def test_obtain_oauth2_tokens():
         "access_token": "access",
         "refresh_token": "refresh",
     }
-    with patch("httpx.Client.post", return_value=response) as post:
+    with patch("httpx2.Client.post", return_value=response) as post:
         result = obtain_oauth2_tokens(password_config())
 
     assert result == TokenResult(access_token="access", refresh_token="refresh")
@@ -115,7 +115,7 @@ def test_obtain_oauth2_tokens():
 def test_renew_oauth2_tokens():
     response = MagicMock()
     response.json.return_value = {"access_token": "renewed"}
-    with patch("httpx.Client.post", return_value=response):
+    with patch("httpx2.Client.post", return_value=response):
         result = renew_oauth2_tokens(client_config())
     assert result == TokenResult(access_token="renewed")
 

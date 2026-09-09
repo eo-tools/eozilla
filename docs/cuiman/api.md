@@ -65,7 +65,7 @@ await async_client.login(force=True)
 This uses available credentials or permits prompts/OIDC browser login. Combine
 it with `interactive=False` to prohibit interaction, or `no_browser=True` to
 print the OIDC authorization URL. A successful login updates the existing
-HTTPX transport, so subsequent requests use the new token without recreating
+HTTPX2 transport, so subsequent requests use the new token without recreating
 the client. If fresh login provides no refresh token, the previous one is
 discarded. Failed or cancelled login leaves existing credentials unchanged.
 For Basic authentication and API keys, `force` continues to use available

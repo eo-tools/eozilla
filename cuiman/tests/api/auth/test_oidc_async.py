@@ -34,9 +34,9 @@ async def test_renew_oidc_tokens_async_discovers_and_refreshes():
     token_response = MagicMock()
     token_response.json.return_value = {"access_token": "access"}
     with (
-        patch("httpx.AsyncClient.get", new=AsyncMock(return_value=discovery_response)),
+        patch("httpx2.AsyncClient.get", new=AsyncMock(return_value=discovery_response)),
         patch(
-            "httpx.AsyncClient.post", new=AsyncMock(return_value=token_response)
+            "httpx2.AsyncClient.post", new=AsyncMock(return_value=token_response)
         ) as post,
     ):
         result = await renew_oidc_tokens_async(make_auth())

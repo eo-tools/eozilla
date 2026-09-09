@@ -7,7 +7,7 @@
 from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qs, urlparse
 
-import httpx
+import httpx2
 import pytest
 
 from cuiman.api.auth import OidcAuthConfig, TokenResult
@@ -77,21 +77,21 @@ def test_prepare_oidc_discovery():
     ("error", "message"),
     [
         (
-            httpx.HTTPStatusError(
+            httpx2.HTTPStatusError(
                 "not found",
-                request=httpx.Request("GET", "https://identity.example.test"),
-                response=httpx.Response(
+                request=httpx2.Request("GET", "https://identity.example.test"),
+                response=httpx2.Response(
                     404,
-                    request=httpx.Request("GET", "https://identity.example.test"),
+                    request=httpx2.Request("GET", "https://identity.example.test"),
                 ),
             ),
             "HTTP 404 Not Found",
         ),
-        (httpx.ConnectError("connection refused"), "connection refused"),
+        (httpx2.ConnectError("connection refused"), "connection refused"),
     ],
 )
 def test_discover_oidc_provider_explains_http_failures(error, message):
-    with patch("httpx.Client.get", side_effect=error):
+    with patch("httpx2.Client.get", side_effect=error):
         with pytest.raises(ValueError, match=message) as exception:
             discover_oidc_provider(make_auth())
 
@@ -101,7 +101,7 @@ def test_discover_oidc_provider_explains_http_failures(error, message):
 
 def test_discover_oidc_provider_explains_invalid_metadata():
     with patch(
-        "httpx.Client.get",
+        "httpx2.Client.get",
         return_value=response({"issuer": "https://identity.example.test/"}),
     ):
         with pytest.raises(
@@ -116,7 +116,7 @@ def test_discover_oidc_provider_allows_an_omitted_revocation_endpoint():
         "authorization_endpoint": "https://identity.example.test/authorize",
         "token_endpoint": "https://identity.example.test/token",
     }
-    with patch("httpx.Client.get", return_value=response(metadata)):
+    with patch("httpx2.Client.get", return_value=response(metadata)):
         provider = discover_oidc_provider(make_auth())
 
     assert provider.revocation_endpoint is None
@@ -129,7 +129,7 @@ def test_discover_oidc_provider_requests_and_validates_metadata():
         "token_endpoint": "https://identity.example.test/token",
         "revocation_endpoint": "https://identity.example.test/revoke",
     }
-    with patch("httpx.Client.get", return_value=response(metadata)) as get:
+    with patch("httpx2.Client.get", return_value=response(metadata)) as get:
         result = discover_oidc_provider(make_auth())
 
     assert result == discovery()
@@ -241,9 +241,9 @@ def test_loopback_callback_server_receives_one_callback():
     with LoopbackCallbackServer() as callback_server:
         assert urlparse(callback_server.redirect_uri).hostname == "127.0.0.1"
         assert urlparse(callback_server.redirect_uri).path == CALLBACK_PATH
-        not_found = httpx.get(callback_server.redirect_uri.removesuffix(CALLBACK_PATH))
-        accepted = httpx.get(f"{callback_server.redirect_uri}?code=code&state=state")
-        repeated = httpx.get(f"{callback_server.redirect_uri}?code=other&state=state")
+        not_found = httpx2.get(callback_server.redirect_uri.removesuffix(CALLBACK_PATH))
+        accepted = httpx2.get(f"{callback_server.redirect_uri}?code=code&state=state")
+        repeated = httpx2.get(f"{callback_server.redirect_uri}?code=other&state=state")
         parameters = callback_server.wait_for_callback(timeout=1)
 
     assert not_found.status_code == 404
@@ -267,7 +267,7 @@ def test_loopback_callback_server_joins_a_running_thread():
 
 def test_exchange_oidc_code_posts_authorization_code_credentials():
     token_response = response({"access_token": "access", "refresh_token": "refresh"})
-    with patch("httpx.Client.post", return_value=token_response) as post:
+    with patch("httpx2.Client.post", return_value=token_response) as post:
         result = exchange_oidc_code(
             discovery(),
             make_auth(),
@@ -293,7 +293,7 @@ def test_renew_oidc_tokens_discovers_provider_and_posts_refresh_token():
     token_response = response({"access_token": "access"})
     with (
         patch("cuiman.api.auth.oidc.discover_oidc_provider", return_value=discovery()),
-        patch("httpx.Client.post", return_value=token_response) as post,
+        patch("httpx2.Client.post", return_value=token_response) as post,
     ):
         result = renew_oidc_tokens(make_auth())
 
@@ -317,7 +317,7 @@ def test_revoke_oidc_tokens_posts_the_refresh_token():
     response = MagicMock()
     with (
         patch("cuiman.api.auth.oidc.discover_oidc_provider", return_value=discovery()),
-        patch("httpx.Client.post", return_value=response) as post,
+        patch("httpx2.Client.post", return_value=response) as post,
     ):
         assert revoke_oidc_tokens(make_auth())
 
@@ -336,7 +336,7 @@ def test_revoke_oidc_tokens_uses_an_access_token_when_refresh_is_unavailable():
     auth = make_auth(refresh_token=None, access_token="access")
     with (
         patch("cuiman.api.auth.oidc.discover_oidc_provider", return_value=discovery()),
-        patch("httpx.Client.post") as post,
+        patch("httpx2.Client.post") as post,
     ):
         revoke_oidc_tokens(auth)
 
