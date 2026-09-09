@@ -104,12 +104,11 @@ def login_client_with_prompt(
 
 def logout_client(config_path: Path | str | None = None) -> None:
     """Remove locally stored credentials for the configured service."""
-    config = _get_login_config(config_path)
+    config = _get_login_config(config_path, resolve_secrets=False)
     try:
+        config = ClientConfig.create(config_path=config_path)
         if isinstance(config.auth, OidcAuthConfig):
-            resolved = ClientConfig.create(config_path=config_path)
-            if isinstance(resolved.auth, OidcAuthConfig):
-                revoke_oidc_tokens(resolved.auth)
+            revoke_oidc_tokens(config.auth)
     finally:
         delete_auth_secrets(
             ClientConfig.normalize_config_path(config_path), config.api_url or ""
@@ -241,7 +240,9 @@ def _copy_if_present(
             return
 
 
-def _get_login_config(config_path: Path | str | None) -> ClientConfig:
+def _get_login_config(
+    config_path: Path | str | None, *, resolve_secrets: bool = True
+) -> ClientConfig:
     file_config = ClientConfig.from_file(config_path)
     if file_config is None:
         if config_path is None:
@@ -250,7 +251,7 @@ def _get_login_config(config_path: Path | str | None) -> ClientConfig:
                 "please use the 'configure' command to set it up."
             )
         raise ValueError(f"Configuration file {config_path} not found or empty.")
-    return ClientConfig.create(config_path=config_path)
+    return ClientConfig.create(config_path=config_path, resolve_secrets=resolve_secrets)
 
 
 def _save_login_auth(

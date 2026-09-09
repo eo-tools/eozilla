@@ -24,6 +24,7 @@ from cuiman.api.auth import (
     TokenAuthConfig,
     TokenResult,
 )
+from cuiman.api.auth.secret_store import SecretStoreError
 from cuiman.cli.config import (
     _Context,
     _get_login_config,
@@ -740,6 +741,39 @@ class LoginAndLogoutTest(ConfigTestMixin, unittest.TestCase):
         delete_auth_secrets.assert_called_once_with(
             config_path, "https://eozilla.example.test/"
         )
+
+    @patch("cuiman.cli.config.delete_auth_secrets")
+    @patch(
+        "cuiman.api.config.load_auth_secrets",
+        side_effect=SecretStoreError("Stored Cuiman credentials are invalid."),
+    )
+    def test_logout_deletes_credentials_when_loading_secrets_fails(
+        self, load_auth_secrets: MagicMock, delete_auth_secrets: MagicMock
+    ):
+        for auth in (
+            TokenAuthConfig(),
+            OidcAuthConfig(
+                issuer_url="https://identity.example.test", client_id="client"
+            ),
+        ):
+            for api_url in (
+                "https://eozilla.example.test/",
+                "https://override.example.test/",
+            ):
+                with self.subTest(auth_type=auth.auth_type, api_url=api_url):
+                    load_auth_secrets.reset_mock()
+                    delete_auth_secrets.reset_mock()
+                    config_path = self.write_config(auth)
+                    with patch.dict(os.environ, EOZILLA_API_URL=api_url):
+                        with pytest.raises(
+                            SecretStoreError, match="credentials are invalid"
+                        ):
+                            logout_client(config_path)
+
+                    load_auth_secrets.assert_called_once_with(
+                        config_path, api_url, auth.auth_type
+                    )
+                    delete_auth_secrets.assert_called_once_with(config_path, api_url)
 
     @patch("cuiman.cli.config.delete_auth_secrets")
     @patch("cuiman.cli.config.revoke_oidc_tokens")
