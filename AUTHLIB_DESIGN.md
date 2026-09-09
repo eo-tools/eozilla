@@ -12,8 +12,16 @@ This is based on the current checkout at `a93323c1`, the authentication source a
 tests, and Authlib's versioned **1.8.0** source. The checkout has advanced since
 the handover. Authlib is not installed in the current default environment and is
 not a declared project dependency. Research findings and primary-source links are
-in [AUTHLIB_RESEARCH.md](AUTHLIB_RESEARCH.md). This is source analysis, not a
-successful interoperability or executable integration test.
+in [AUTHLIB_RESEARCH.md](AUTHLIB_RESEARCH.md). The original proposal was based on
+source analysis; subsequent executable evidence is recorded below.
+
+The first isolated executable proof has since been completed against Authlib
+1.8.0 / HTTPX2 2.5.0: [results and reproduction](tools/authlib_proof/README.md).
+Ten sync/async scenarios validate the sequential lifecycle and persistence policy.
+Direct Authlib clients and callback wiring were sufficient for that scope;
+subclasses should be introduced only when a remaining policy actually needs them.
+Production integration, concurrency, cancellation, and proxy behavior remain
+unverified. The next production step still requires review of these results.
 
 ## 1. Use the HTTP clients
 
@@ -349,7 +357,7 @@ but avoids breaking public imports without review.
 
 ## 9. Move forward through reviewed steps
 
-**Next proposed step only:** build an isolated executable proof against exactly
+**First step (completed; awaiting review):** build an isolated executable proof against exactly
 Authlib 1.8.0 and HTTPX2, using mock token/resource endpoints and fake persistence.
 Leave production Cuiman unchanged. Show a sync and async persistent client making
 two API requests across expiry and rotation, then demonstrate a persistence
