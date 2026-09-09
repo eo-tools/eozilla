@@ -219,6 +219,24 @@ class ClientConfigTest(TestCase):
         )
 
     @patch("cuiman.api.config.load_auth_secrets")
+    def test_create_can_skip_keyring_and_preserve_environment_overrides(
+        self, load_auth_secrets
+    ):
+        original = ClientConfig(
+            api_url="https://eozilla.example.test", auth=TokenAuthConfig()
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            config_path = Path(tmp_dir_name) / "config"
+            original.write(config_path)
+            os.environ["EOZILLA_API_URL"] = "https://override.example.test"
+            config = ClientConfig.create(config_path=config_path, resolve_secrets=False)
+
+        self.assertEqual("https://override.example.test/", config.api_url)
+        self.assertIsInstance(config.auth, TokenAuthConfig)
+        self.assertIsNone(config.auth.access_token)
+        load_auth_secrets.assert_not_called()
+
+    @patch("cuiman.api.config.load_auth_secrets")
     def test_environment_secret_overrides_do_not_require_keyring(
         self, load_auth_secrets
     ):

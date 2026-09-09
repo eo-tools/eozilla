@@ -102,8 +102,14 @@ class ClientConfig(BaseSettings):
         *,
         config: Optional["ClientConfig"] = None,
         config_path: Optional[Path | str] = None,
+        resolve_secrets: bool = True,
         **config_kwargs,
     ) -> "ClientConfig":
+        """Resolve client settings, optionally skipping stored keyring secrets.
+
+        Set ``resolve_secrets=False`` to resolve the effective service and auth
+        configuration without requiring readable keyring credentials.
+        """
         # 0. Identify the application-selected configuration type. Applications
         #    brand Cuiman by assigning a derived ``default_config`` instance;
         #    its type owns settings metadata such as the environment prefix.
@@ -141,7 +147,11 @@ class ClientConfig(BaseSettings):
             # as CLI and generated service clients do. Never carry the hook
             # across an endpoint or authentication override.
             resolved_config.auth = config.auth.model_copy()
-        if file_config is None or _has_auth_credentials(resolved_config):
+        if (
+            not resolve_secrets
+            or file_config is None
+            or _has_auth_credentials(resolved_config)
+        ):
             return resolved_config
 
         # 5. A public file configuration without usable credentials may have
