@@ -92,9 +92,7 @@ class ClientConfig(BaseSettings):
         return self.auth.make_async_token_refresher()
 
     def _repr_json_(self):
-        return self.to_file_dict(), dict(
-            root="Client configuration:"
-        )
+        return self.to_file_dict(), dict(root="Client configuration:")
 
     @classmethod
     def create(
