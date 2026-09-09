@@ -239,7 +239,12 @@ async def test_first_use_authenticates_once(client_type, explicit, auth, request
             assert token_calls[0][2]["data"]["grant_type"] == "refresh_token"
         for _, url, kwargs in requests:
             if "api.example.test" in url:
-                assert kwargs.get("headers", {}) == client.config.auth_headers
+                if auth.get("grant_type") == "client_credentials":
+                    assert kwargs["auth"] is client._oauth_client.token_auth
+                    assert client.token["access_token"] == "access"
+                    assert client.config.auth.access_token is None
+                else:
+                    assert kwargs.get("headers", {}) == client.config.auth_headers
     finally:
         await invoke(client.close)
 

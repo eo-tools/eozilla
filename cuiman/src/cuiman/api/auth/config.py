@@ -3,8 +3,10 @@
 #  https://opensource.org/license/apache-2-0.
 
 import base64
+import json
 from typing import (
     Annotated,
+    Any,
     Awaitable,
     Callable,
     ClassVar,
@@ -13,7 +15,15 @@ from typing import (
     get_args,
 )
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, PrivateAttr, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    Json,
+    PrivateAttr,
+    model_validator,
+)
 
 AuthType: TypeAlias = Literal[
     "none",
@@ -183,7 +193,14 @@ class OAuth2AuthConfig(_AccessTokenAuthConfig):
     """OAuth2 token endpoint configuration."""
 
     secret_fields: ClassVar[SecretFields] = frozenset(
-        {"username", "password", "client_secret", "refresh_token", "access_token"}
+        {
+            "username",
+            "password",
+            "client_secret",
+            "refresh_token",
+            "access_token",
+            "oauth_token",
+        }
     )
 
     auth_type: Literal["oauth2"] = "oauth2"
@@ -194,10 +211,35 @@ class OAuth2AuthConfig(_AccessTokenAuthConfig):
     client_id: str | None = None
     client_secret: str | None = None
     refresh_token: str | None = None
+    oauth_token: Json[dict[str, Any]] | dict[str, Any] | None = Field(
+        default=None, repr=False
+    )
+    """Secret bootstrap snapshot for client credentials, including absolute expiry.
+
+    The running Authlib client owns subsequent token updates. An explicit
+    ``access_token`` overrides this snapshot, discarding its expiry metadata.
+    """
+
+    def to_secret_dict(self) -> dict[str, str]:
+        """Serialize a complete OAuth snapshot into the string-valued keyring record."""
+        values = super().to_secret_dict()
+        if self.oauth_token is not None:
+            values["oauth_token"] = json.dumps(self.oauth_token)
+        return values
 
     @model_validator(mode="after")
     def validate_grant_credentials(self) -> "OAuth2AuthConfig":
         """Validate public OAuth2 configuration and supplied credential pairs."""
+        if self.access_token is not None:
+            self.oauth_token = None
+        if self.oauth_token is not None:
+            if self.grant_type != "client_credentials":
+                raise ValueError(
+                    "oauth_token snapshots currently require client_credentials."
+                )
+            access_token = self.oauth_token.get("access_token")
+            if not isinstance(access_token, str) or not access_token:
+                raise ValueError("oauth_token requires a non-empty access_token.")
         if (self.username is None) != (self.password is None):
             raise ValueError(
                 "Username and password must be configured together when either is set."

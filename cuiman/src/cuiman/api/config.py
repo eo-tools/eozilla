@@ -92,7 +92,7 @@ class ClientConfig(BaseSettings):
         return self.auth.make_async_token_refresher()
 
     def _repr_json_(self):
-        return self.model_dump(mode="json", by_alias=True), dict(
+        return self.to_file_dict(), dict(
             root="Client configuration:"
         )
 
@@ -382,6 +382,7 @@ def _set_auth_secret_persistor(config: ClientConfig, config_path: Path) -> None:
 
 
 _SECRET_AUTH_FIELDS = {
+    "oauth_token",
     "access_token",
     "api_key",
     "client_secret",

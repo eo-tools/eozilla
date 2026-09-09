@@ -53,7 +53,7 @@ def can_login(auth: AuthConfigBase) -> bool:
         return bool(auth.username and auth.password)
     if isinstance(auth, OAuth2AuthConfig):
         if auth.grant_type == "client_credentials":
-            return bool(auth.client_id and auth.client_secret)
+            return bool(auth.oauth_token or (auth.client_id and auth.client_secret))
         return bool(auth.refresh_token or (auth.username and auth.password))
     if isinstance(auth, OidcAuthConfig):
         return bool(auth.refresh_token)

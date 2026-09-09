@@ -48,6 +48,7 @@ dependencies = [
   "typer >=0.26.0,<1",
   "uri-template",
   "httpx2",
+  "authlib >=1.8,<1.9",
   "keyring",
   # local dependency
   "gavicore >=0.2.1.dev1",

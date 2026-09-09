@@ -5,13 +5,19 @@
 import time
 import warnings
 from abc import ABC, abstractmethod
+from copy import deepcopy
+from functools import partial
 from typing import TYPE_CHECKING, Any
+
+from authlib.integrations.httpx_client import OAuth2Client
 
 from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
 from gavicore.util.request import ExecutionRequest
 from gavicore.util.runsync import run_sync
 
-from .auth.session import resolve_auth_headers
+from .auth import client_credentials
+from .auth.config import OAuth2AuthConfig
+from .auth.session import LoginRequiredError, resolve_auth_headers
 from .config import ClientConfig
 from .defaults import (
     DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
@@ -40,6 +46,48 @@ class ClientMixin(ABC):
     _transport: Transport | None
     _debug: bool
 
+    def _init_client_runtime(self) -> None:
+        self._oauth_client: OAuth2Client | None = None
+
+    @property
+    def token(self) -> dict[str, Any] | None:
+        """Return an independent snapshot of the live client-credentials token.
+
+        Reading this property never starts authentication. Other authentication
+        mechanisms currently retain their configuration-based token interface.
+        """
+        return (
+            deepcopy(dict(self._oauth_client.token))
+            if self._oauth_client and self._oauth_client.token
+            else None
+        )
+
+    def close(self) -> None:
+        """Close the transport and authentication runtime, including login-only use."""
+        transport, self._transport = self._transport, None
+        oauth_client, self._oauth_client = self._oauth_client, None
+        try:
+            if transport is not None:
+                transport.close()
+        finally:
+            if oauth_client is not None:
+                oauth_client.close()
+
+    def _login_client_credentials(self, *, force: bool = False) -> dict[str, str]:
+        auth = self.config.auth
+        assert isinstance(auth, OAuth2AuthConfig)
+        if self._oauth_client is None:
+            self._oauth_client = client_credentials.create_client(auth)
+        if force or not self._oauth_client.token:
+            if not auth.client_id or not auth.client_secret:
+                raise LoginRequiredError(
+                    "Client credentials require client_id and client_secret. "
+                    "Provide them through environment variables or Python configuration before client.login()."
+                )
+            self._oauth_client.fetch_token()
+        client_credentials.save_token(auth, self._oauth_client.token)
+        return {}
+
     def login(
         self, *, interactive: bool = True, no_browser: bool = False, force: bool = False
     ) -> None:
@@ -51,6 +99,12 @@ class ClientMixin(ABC):
         Use ``force=True`` to bypass existing tokens and authenticate afresh.
         A successful login also updates an existing HTTPX2 transport.
         """
+        if (
+            isinstance(self.config.auth, OAuth2AuthConfig)
+            and self.config.auth.grant_type == "client_credentials"
+        ):
+            self._login_client_credentials(force=force)
+            return
         headers = resolve_auth_headers(
             self.config.auth,
             interactive=interactive,
@@ -62,8 +116,24 @@ class ClientMixin(ABC):
 
     def _get_transport(self) -> Transport:
         if self._transport is None:
-            self.login(interactive=False)
+            if self._oauth_client is None or not self._oauth_client.token:
+                self.login(interactive=False)
             assert self.config.api_url is not None
+            if self._oauth_client is not None:
+                auth = self.config.auth
+                assert isinstance(auth, OAuth2AuthConfig)
+
+                self._transport = Httpx2Transport(
+                    api_url=f"{self.config.api_url.rstrip('/')}/",
+                    sync_httpx2=self._oauth_client,
+                    return_type_map=self.config.return_type_map,
+                    token_refresher=partial(self._login_client_credentials, force=True),
+                    debug=self._debug,
+                    auth_header=(
+                        "Authorization" if auth.use_bearer else auth.access_token_header
+                    ),
+                )
+                return self._transport
             self._transport = Httpx2Transport(
                 api_url=f"{self.config.api_url.rstrip('/')}/",
                 headers=self.config.auth_headers,

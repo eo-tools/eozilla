@@ -1,10 +1,68 @@
 # Authentication lifecycle
 
-Cuiman uses one authentication lifecycle for the Python clients, CLI, and
-launched-app proxy. The implementation currently uses HTTPX2 and the existing
-protocol helpers. Authlib adoption is deferred to a separate change.
+Cuiman's Python clients use persistent Authlib HTTPX2 clients for OAuth2
+`client_credentials`. Password grants, OIDC, the CLI, and the launched-app proxy
+currently retain the shared session helpers while Authlib integration proceeds
+in separately reviewed steps. Ordinary API calls never prompt or open a browser.
+
+## Client credentials in Python clients
+
+For `Client` and `AsyncClient`, Authlib owns the live token and sends authenticated
+API requests through the same HTTP client used to obtain it. It tracks expiry and
+automatically obtains a new client-credentials token before an expired token is
+used. Provider-supplied refresh tokens are ignored for this grant. Requests still
+retry at most once after HTTP 401 by obtaining another client-credentials token.
+Without expiry metadata, an injected access token can be used until rejected.
+
+`client.login()` prepares this client without making an API request;
+`client.login(force=True)` obtains a fresh token. Use `await` for asynchronous
+login, API calls, and `close()`. Close the client even if only login was called,
+or login failed. Generated `Client`/`AsyncClient` classes delegate runtime
+initialization and closing to their handwritten mixins; their source is
+`tools/gen_client.py`.
+
+Read `client.token` for an independent snapshot of the live token, including
+`expires_at`. It returns `None` before initialization and never initiates login.
+The token is a credential: do not save it in notebook output or logs. For this
+grant, `client.config.auth.access_token` and `oauth_token` are **initial values**,
+not a live token interface. Use `client.token` instead of config token/header
+properties after login. Other authentication mechanisms have not yet changed
+their token interface.
+
+Custom token headers remain supported. Explicit per-request `auth` or an override
+of the configured token header bypasses Authlib signing and the 401 renewal
+callback for that request.
+
+When a persistence hook is configured, Cuiman saves a complete token snapshot,
+including its absolute expiry, under the string-valued keyring field
+`oauth_token`. Existing access-token-only records still load. An explicitly
+supplied `access_token` discards the snapshot's expiry and other metadata.
+Public configuration files and notebook configuration representations omit all
+credentials. Python/environment credentials retain their runtime-only precedence;
+they do not automatically enable keyring storage. `cuiman login` continues to
+reject the client-credentials grant: supply client credentials through Python
+or environment variables.
+
+Authlib installs new tokens before persistence. If the configured store raises
+`SecretStoreError`, Cuiman emits `CredentialStorageWarning` and the API request
+can continue using the new token. Once storage recovers, `client.login()` can
+retry saving the current token without obtaining another one. Unexpected
+persistence errors propagate. Stopping the process before a successful save
+may require authentication again. The current keyring callback is synchronous,
+including in async clients, so a slow keyring can block the event loop during a
+save; worker-backed persistence and cancellation handling remain a later step.
+
+Authlib coordinates automatic async expiry renewal. This step does not add
+coordination across explicit login, 401 recovery, threads, or separate clients.
+The launched-app proxy still uses its legacy authentication path and does not
+borrow the Python client's Authlib session yet.
 
 ## Responsibilities
+
+The table below describes the remaining session-based authentication paths.
+For Python client credentials, `auth.client_credentials` constructs Authlib
+clients and adapts provider responses and persistence; token lifecycle decisions
+remain with Authlib.
 
 | Component | Responsibility |
 | --- | --- |
@@ -23,8 +81,7 @@ No provider registry or additional backend abstraction is needed at this stage.
 
 ## Token updates
 
-Initial acquisition and renewal use the same protocol selection and commit
-rules:
+The remaining session-based paths use these protocol selection and commit rules:
 
 - OAuth2 password grants use an existing refresh token when available;
   otherwise they obtain tokens using the supplied credentials.
@@ -62,20 +119,20 @@ renewals. Initial asynchronous login remains coordinated by the client mixin.
 Static access tokens have no renewal callback and never cause automatic
 interaction. See [Remote notebooks](./configuration.md#remote-notebooks).
 
-## Future Authlib integration
+## Remaining Authlib integration
 
-A separate implementation change can replace OAuth/OIDC protocol helpers and
-connect Authlib's token lifecycle at the session boundary. Configuration,
+Subsequent changes can replace the remaining OAuth/OIDC protocol helpers and
+connect the launched-app proxy to its owner's Authlib client. Configuration,
 interaction policy, and keyring persistence remain Cuiman responsibilities.
 That change should verify:
 
 - HTTPX2 compatibility for synchronous and asynchronous clients;
 - browser authorization with PKCE and remote CLI device authorization;
 - expiry metadata, refresh coordination, and the existing 401 retry policy;
-- preservation of refresh-token rotation and persistence-failure behaviour;
+- refresh-token rotation and the reviewed persistence-failure behaviour;
 - Keycloak interoperability and injected-token notebook use.
 
 The intended benefit is deletion of custom protocol and lifecycle code. Avoid
 retaining a second independent token manager alongside the library. Device
-authorization, automatic expiry handling, and notebook token-provider callbacks
-are not introduced by this preparation.
+authorization and notebook token-provider callbacks remain deferred. Automatic
+expiry handling is currently available for Python client credentials.

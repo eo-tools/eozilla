@@ -2,6 +2,13 @@
 
 ### Enhancements
 
+- **Cuiman** Python clients now use persistent Authlib HTTPX2 clients for OAuth2
+  client credentials, including automatic expiry-based token reacquisition.
+  `client.token` exposes a live token snapshot; configuration token fields remain
+  initialization values. Complete token metadata can be persisted, and storage
+  outages warn without discarding working authentication. Other authentication
+  flows and the app proxy retain their existing lifecycle in this first step.
+
 - **Cuiman** clients now prepare authentication and create their transport on
   the first API call. `Client.login()` and `AsyncClient.login()` allow explicit
   login, including credential prompts and OIDC browser authentication; automatic
