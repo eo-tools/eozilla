@@ -214,7 +214,7 @@ class OAuth2AuthConfig(_AccessTokenAuthConfig):
     oauth_token: Json[dict[str, Any]] | dict[str, Any] | None = Field(
         default=None, repr=False
     )
-    """Secret bootstrap snapshot for client credentials, including absolute expiry.
+    """Secret bootstrap OAuth2 snapshot, including absolute expiry.
 
     The running Authlib client owns subsequent token updates. An explicit
     ``access_token`` overrides this snapshot, discarding its expiry metadata.
@@ -233,13 +233,18 @@ class OAuth2AuthConfig(_AccessTokenAuthConfig):
         if self.access_token is not None:
             self.oauth_token = None
         if self.oauth_token is not None:
-            if self.grant_type != "client_credentials":
-                raise ValueError(
-                    "oauth_token snapshots currently require client_credentials."
-                )
             access_token = self.oauth_token.get("access_token")
             if not isinstance(access_token, str) or not access_token:
                 raise ValueError("oauth_token requires a non-empty access_token.")
+            refresh_token = self.oauth_token.get("refresh_token")
+            if (
+                self.grant_type == "password"
+                and refresh_token is not None
+                and not isinstance(refresh_token, str)
+            ):
+                raise ValueError(
+                    "oauth_token refresh_token must be a string when present."
+                )
         if (self.username is None) != (self.password is None):
             raise ValueError(
                 "Username and password must be configured together when either is set."

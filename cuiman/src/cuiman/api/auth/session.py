@@ -54,7 +54,9 @@ def can_login(auth: AuthConfigBase) -> bool:
     if isinstance(auth, OAuth2AuthConfig):
         if auth.grant_type == "client_credentials":
             return bool(auth.oauth_token or (auth.client_id and auth.client_secret))
-        return bool(auth.refresh_token or (auth.username and auth.password))
+        return bool(
+            auth.oauth_token or auth.refresh_token or (auth.username and auth.password)
+        )
     if isinstance(auth, OidcAuthConfig):
         return bool(auth.refresh_token)
     return False
@@ -88,7 +90,7 @@ def _commit_secrets(auth: AuthConfigBase, values: Mapping[str, str | None]) -> N
 def _without_tokens(auth: AuthConfigBase) -> AuthConfigBase:
     # A fresh candidate has no persistence hook and cannot alter live secrets.
     values = auth.model_dump()
-    for name in ("access_token", "refresh_token"):
+    for name in ("access_token", "refresh_token", "oauth_token"):
         if name in values:
             values[name] = None
     return type(auth)(**values)
@@ -178,6 +180,7 @@ def make_async_token_refresher(
 def _refresh_auth_headers(
     auth: LoginAuthConfig | OAuth2AuthConfig | OidcAuthConfig,
 ) -> dict[str, str]:
+    _restore_oauth_snapshot(auth)
     try:
         tokens = _obtain_tokens(auth)
     except httpx2.HTTPStatusError as error:
@@ -192,6 +195,7 @@ def _refresh_auth_headers(
 async def _refresh_auth_headers_async(
     auth: LoginAuthConfig | OAuth2AuthConfig | OidcAuthConfig,
 ) -> dict[str, str]:
+    _restore_oauth_snapshot(auth)
     try:
         tokens = await _obtain_tokens_async(auth)
     except httpx2.HTTPStatusError as error:
@@ -201,6 +205,16 @@ async def _refresh_auth_headers_async(
     else:
         _apply_tokens(auth, tokens)
     return dict(auth.auth_headers)
+
+
+def _restore_oauth_snapshot(auth: AuthConfigBase) -> None:
+    # CLI/proxy callers still own their legacy configuration-based session.
+    # Consume a saved bootstrap snapshot once, so later legacy saves cannot
+    # retain stale metadata. Never consult the Python owner's live runtime.
+    if isinstance(auth, OAuth2AuthConfig) and auth.oauth_token is not None:
+        auth.access_token = auth.oauth_token["access_token"]
+        auth.refresh_token = auth.oauth_token.get("refresh_token")
+        auth.oauth_token = None
 
 
 def resolve_auth_headers(
@@ -220,6 +234,7 @@ def resolve_auth_headers(
         resolve_auth_headers(candidate, interactive=interactive, no_browser=no_browser)
         _commit_auth(auth, candidate)
         return dict(auth.auth_headers)
+    _restore_oauth_snapshot(auth)
     if has_auth_headers(auth):
         return dict(auth.auth_headers)
     if not can_login(auth):
@@ -250,6 +265,7 @@ async def resolve_auth_headers_async(
         )
         _commit_auth(auth, candidate)
         return dict(auth.auth_headers)
+    _restore_oauth_snapshot(auth)
     if has_auth_headers(auth):
         return dict(auth.auth_headers)
     if not can_login(auth):

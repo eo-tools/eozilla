@@ -1,38 +1,76 @@
 # Handover: Authlib integration for Cuiman
 
-Updated: 2026-09-09. Status: first production client-credentials slice and shared
-mixin refactor completed, reviewed by the user, and committed.
+Updated: 2026-09-10. Status: client credentials and the shared mixin refactor are
+committed. The authorized password-grant production slice is implemented in the
+working tree and awaits user review.
 
 ## Resume here
 
 The objective is to use Authlib's intended persistent OAuth client lifecycle to
 reduce Cuiman's custom protocol and token-management code. The migration is
-partially complete: password grants, OIDC, and the launched-app proxy still use
-the older implementation.
+partially complete: OIDC, CLI login, and the launched-app proxy still use the
+older implementation.
 
-The user requires **small steps with review between them**. The latest request
-was only to update this handover for continuation on another computer. On resume,
-check the checkout, read the implementation pointers below, and propose one
-bounded next step. Complete only the step the user authorizes, report its evidence
-and limitations, and pause for review. Research, design, and the isolated proof
-are already complete; approval of the objective does not authorize all later work.
+The user requires **small steps with review between them**. On this machine the
+user authorized the bounded password-grant slice, including sync/async login,
+refresh, fallback, one-401 recovery, snapshots, tests, and documentation. Review
+that working-tree change before starting another migration step. Research,
+design, and the isolated proof are already complete; approval of the objective
+does not authorize all later work.
+
+## Password-grant slice awaiting review
+
+- `api/auth/client_credentials.py` has become
+  [oauth2_client.py](cuiman/src/cuiman/api/auth/oauth2_client.py). Factories,
+  persistence, response validation, and custom headers are shared by both grants.
+  Two small password subclasses delegate protocol, expiry, rotation, and signing
+  to Authlib while adding explicit login and password fallback.
+- Password login accepts access-token or refresh-only bootstrap credentials.
+  Missing credentials can prompt only during explicit login. Failed fresh login
+  keeps the previous live token and does not publish prompted credentials.
+- Automatic refresh retains omitted/empty/null refresh tokens. Forced login and
+  fallback fetch replace the complete token. Only HTTP 400 `invalid_grant` from
+  refresh permits password fallback; other errors do not. Missing refresh tokens
+  permit password reacquisition at known expiry or after a resource 401.
+- Password grants now use `client.token` and full keyring snapshots with absolute
+  expiry, plus the existing warning-and-continue policy for expected save failures.
+- Legacy sessions consume saved bootstrap snapshots once into their own token
+  fields and discard stale snapshot metadata. CLI login and proxy ownership
+  remain legacy; no old public helper has been removed. The mixins no longer use
+  legacy header/session renewal for either OAuth2 grant.
+- Failed initial refresh can be retried by the next API call even when the
+  runtime still contains only a refresh token. No generator changes were needed.
+- Regression evidence is
+  [test_password_client.py](cuiman/tests/api/auth/test_password_client.py), using
+  actual generated clients, real Authlib behavior, mock HTTP, a fake clock, and
+  fake persistence. Existing login/transport assertions were updated for runtime
+  ownership; legacy OIDC/session persistence tests remain.
+- Baseline: 660 Cuiman tests, 29 subtests, 100% statement coverage. After this
+  slice: **744 Cuiman tests, 29 subtests, 100% statement coverage**, with the same
+  four warnings, on Python 3.14.6 / Authlib 1.8.0 / HTTPX2 2.5.0.
+- `pixi run tests` passed across the workspace: 1,235 passed and four skipped.
+  `pixi run checks` passed, including mypy over 118 source files. The docs build
+  passed with notebook HTML, link, cross-reference, and theme warnings.
+  `git diff --check` passed. No real provider or keyring was used in tests.
+- Cancellation before an initial password response is tested. Broader transition
+  coordination, cancellation during persistence, proxy sharing, and real provider
+  verification remain deferred. Async password reacquisition without a refresh
+  token is established for sequential use only.
 
 ## Repository checkpoint
 
 - Branch: `forman/209-use_authlib`.
-- HEAD before this edit: `560e1c4a9045ba5e0d345c991049bf9002a6a407`
-  (`pixi run format`; only reformats `ClientConfig._repr_json_`).
-- Local upstream tracking ref also points to `560e1c4a`; no network fetch was
-  performed for this handover.
+- HEAD on resume: `6dd44f4` (the previous handover update).
+- No network fetch, commit, or push was performed for this slice.
 - Relevant preceding commits:
   - `a125536e`: shared ClientMixin / AsyncClientMixin refactor.
   - `e771089e`: production Authlib client-credentials integration.
   - `84267657`: isolated lifecycle proof and persistence policy.
   - `2030a1ec`: design output.
-- Before this edit, tracked files were clean. The only untracked path was
+- Before this slice, tracked files were clean. The only untracked path was
   `eozilla-app/`, a separate nested Git checkout. Preserve it.
-- This handover edit still needs to be committed and pushed to transfer it.
-  Recheck Git state on resume; this describes the writing checkpoint.
+- The password slice, tests, documentation, and this handover are uncommitted.
+  Recheck Git state on resume.
 
 The original workspace was `C:\Users\Norman\Projects\eozilla`. Resolve paths
 below relative to the checkout on the other computer. Follow [AGENTS.md](AGENTS.md)
@@ -73,7 +111,7 @@ unrelated dependencies is outside this migration.
 
 ### Client credentials and persistence
 
-[api/auth/client_credentials.py](cuiman/src/cuiman/api/auth/client_credentials.py)
+[api/auth/oauth2_client.py](cuiman/src/cuiman/api/auth/oauth2_client.py)
 constructs persistent `OAuth2Client` / `AsyncOAuth2Client` instances, configured
 with client-secret POST authentication, the token endpoint, and grant metadata.
 Authlib handles expiry, reacquisition, token normalization, and request signing.
@@ -95,7 +133,7 @@ token without another grant. Ordinary API calls never prompt or open a browser.
   not a live token interface. Explicit access-token overrides discard stored
   OAuth metadata.
 - `OAuth2AuthConfig.oauth_token` accepts a mapping or JSON object string, currently
-  only for client credentials. Keyring stores the full snapshot as an
+  for password and client-credentials grants. Keyring stores the full snapshot as an
   `oauth_token` JSON string in its existing string-valued record. Absolute
   `expires_at` survives restore; the old duration is not restarted.
 - Legacy access-only inputs remain usable and rely on resource-401 recovery when
@@ -169,7 +207,7 @@ Remaining limits:
 - The app proxy still uses the legacy config/header path. It does not borrow the
   Python owner's Authlib runtime. Shared ownership across threads/event loops
   and shutdown needs a separately reviewed step.
-- Password/OIDC and public one-shot OAuth helpers still use their existing
+- OIDC and public one-shot OAuth helpers still use their existing
   protocol/session code and persistence behavior. Do not apply client-credentials
   claims to those paths. CLI client-credentials login remains unsupported.
 - Arbitrary non-rewindable request bodies and broader concurrency/cancellation
@@ -177,24 +215,21 @@ Remaining limits:
 
 ## Next review step
 
-Recommend a bounded **password-grant production slice** next: reuse the persistent
-Authlib pattern for initial login and automatic refresh, preserving password
-fallback from a rejected refresh token and behavior when refresh tokens are
-absent. First inspect current password tests and decide which legacy operations
-can actually be removed while public helpers and the proxy still use them.
-Bring meaningful compatibility choices to review before implementation.
+Review the password-grant working-tree slice and its compatibility boundaries.
+After review, agree on one next step, such as transition coordination and
+cancellation tests, before starting further implementation.
 
 Keep transition coordination/cancellation, OIDC (including ID-token validation
 compatibility), shared proxy ownership, and public helper deprecations as later
 review checkpoints. Device authorization and notebook token-provider callbacks
-remain deferred. The user has not yet authorized the next production slice.
+remain deferred. No subsequent production slice is authorized yet.
 
 ## Reading and reproduction
 
 Start with [authentication.md](docs/cuiman/authentication.md) for current
 client-credentials versus legacy behavior. For storage/loading changes, inspect
-`api/auth/config.py`, `api/auth/secret_store.py`, and `api/config.py`; for the next
-password slice, inspect `api/auth/session.py`, `oauth2.py`, and `oauth2_async.py`.
+`api/auth/config.py`, `api/auth/secret_store.py`, and `api/config.py`; for the
+remaining legacy paths, inspect `api/auth/session.py`, `oauth2.py`, and `oauth2_async.py`.
 These implementation paths are under `cuiman/src/cuiman/`.
 
 [AUTHLIB_DESIGN.md](AUTHLIB_DESIGN.md) and

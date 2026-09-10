@@ -18,7 +18,7 @@ from pydantic import ValidationError
 
 from cuiman import AsyncClient, Client, ClientConfig
 from cuiman.api.auth import OAuth2AuthConfig
-from cuiman.api.auth import client_credentials as cc
+from cuiman.api.auth import oauth2_client as cc
 from cuiman.api.auth.interactive import prompt_auth
 from cuiman.api.auth.secret_store import SecretStoreError
 from cuiman.api.exceptions import ClientError
@@ -370,11 +370,11 @@ def test_invalid_snapshot_is_rejected(snapshot):
         )
 
 
-def test_password_snapshot_is_not_silently_used_by_legacy_lifecycle():
-    with pytest.raises(ValidationError, match="client_credentials"):
+def test_invalid_snapshot_refresh_token_is_rejected():
+    with pytest.raises(ValidationError, match="refresh_token must be a string"):
         OAuth2AuthConfig(
             token_url="https://identity.example.test/token",
-            oauth_token={"access_token": "token"},
+            oauth_token={"access_token": "token", "refresh_token": 42},
         )
 
 

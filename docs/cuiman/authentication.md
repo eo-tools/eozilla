@@ -1,18 +1,36 @@
 # Authentication lifecycle
 
 Cuiman's Python clients use persistent Authlib HTTPX2 clients for OAuth2
-`client_credentials`. Password grants, OIDC, the CLI, and the launched-app proxy
+`client_credentials` and password grants. OIDC, CLI login, and the launched-app proxy
 currently retain the shared session helpers while Authlib integration proceeds
 in separately reviewed steps. Ordinary API calls never prompt or open a browser.
 
-## Client credentials in Python clients
+## OAuth2 in Python clients
 
 For `Client` and `AsyncClient`, Authlib owns the live token and sends authenticated
 API requests through the same HTTP client used to obtain it. It tracks expiry and
 automatically obtains a new client-credentials token before an expired token is
-used. Provider-supplied refresh tokens are ignored for this grant. Requests still
+used. Provider-supplied refresh tokens are ignored for client credentials. Requests still
 retry at most once after HTTP 401 by obtaining another client-credentials token.
 Without expiry metadata, an injected access token can be used until rejected.
+
+Password grants use the same persistent lifecycle. Initial login can use an
+existing access token, refresh-only credentials, or a username and password.
+Authlib refreshes tokens before known expiry, retaining a refresh token when the
+provider omits it or returns an empty/null value. A fresh password grant,
+including `login(force=True)`, replaces the whole token and never inherits the
+old refresh token. Password grants can omit the client ID; configured client
+credentials are sent in the request body.
+
+After a resource 401, password authentication refreshes and replays at most once.
+An HTTP 400 `invalid_grant` response to refresh permits one fresh password grant
+using available credentials. When there is no refresh token, known expiry or a
+resource 401 also permits password reacquisition. Missing credentials raise
+`LoginRequiredError`; ordinary requests never prompt. Other provider, network,
+or storage errors do not trigger password fallback. Explicit login may prompt
+for a username and password, and a failed grant leaves the previous live token
+available. As with client credentials, token responses use Authlib's typed OAuth
+errors; HTTP failures during API requests retain Cuiman's transport error mapping.
 
 `client.login()` prepares this client without making an API request;
 `client.login(force=True)` obtains a fresh token. Use `await` for asynchronous
@@ -24,9 +42,10 @@ initialization and closing to their handwritten mixins; their source is
 Read `client.token` for an independent snapshot of the live token, including
 `expires_at`. It returns `None` before initialization and never initiates login.
 The token is a credential: do not save it in notebook output or logs. For this
-grant, `client.config.auth.access_token` and `oauth_token` are **initial values**,
+OAuth2 lifecycle, `client.config.auth.access_token`, `refresh_token`, and
+`oauth_token` are **initial values**,
 not a live token interface. Use `client.token` instead of config token/header
-properties after login. Other authentication mechanisms have not yet changed
+properties after login. OIDC and other authentication mechanisms have not yet changed
 their token interface.
 
 Custom token headers remain supported. Explicit per-request `auth` or an override
@@ -35,7 +54,7 @@ callback for that request.
 
 When a persistence hook is configured, Cuiman saves a complete token snapshot,
 including its absolute expiry, under the string-valued keyring field
-`oauth_token`. Existing access-token-only records still load. An explicitly
+`oauth_token`. Existing access/refresh-token records still load. An explicitly
 supplied `access_token` discards the snapshot's expiry and other metadata.
 Public configuration files and notebook configuration representations omit all
 credentials. Python/environment credentials retain their runtime-only precedence;
@@ -52,17 +71,20 @@ may require authentication again. The current keyring callback is synchronous,
 including in async clients, so a slow keyring can block the event loop during a
 save; worker-backed persistence and cancellation handling remain a later step.
 
-Authlib coordinates automatic async expiry renewal. This step does not add
-coordination across explicit login, 401 recovery, threads, or separate clients.
+Authlib coordinates automatic async refresh when a refresh token is present.
+Password reacquisition without a refresh token is verified for sequential use.
+This step does not add coordination across explicit login, 401 recovery, threads,
+or separate clients, or comprehensive cancellation handling.
 The launched-app proxy still uses its legacy authentication path and does not
 borrow the Python client's Authlib session yet.
 
 ## Responsibilities
 
 The table below describes the remaining session-based authentication paths.
-For Python client credentials, `auth.client_credentials` constructs Authlib
-clients and adapts provider responses and persistence; token lifecycle decisions
-remain with Authlib.
+For Python OAuth2, `auth.oauth2_client` constructs Authlib clients and adapts
+provider responses and persistence. Its password subclasses add explicit login
+and narrow fallback policy; Authlib handles protocol requests, token parsing,
+expiry decisions, refresh rotation, and signing.
 
 | Component | Responsibility |
 | --- | --- |
@@ -78,6 +100,14 @@ remain with Authlib.
 The public configuration methods that create renewal callbacks remain available
 as delegates. Callers can also use the session callback factories directly.
 No provider registry or additional backend abstraction is needed at this stage.
+
+When a legacy session receives a saved `oauth_token` snapshot, it consumes that
+snapshot once into its own access/refresh fields. Later legacy saves omit the old
+snapshot so they cannot leave stale expiry or refresh metadata beside new tokens.
+These sessions do not read or share a Python client's live Authlib token. Avoid
+using configuration renewal callbacks to renew an active Python OAuth2 client;
+use the client's API methods or explicit login. CLI login still requires durable
+storage and reports save failures as errors.
 
 ## Token updates
 
@@ -135,4 +165,4 @@ That change should verify:
 The intended benefit is deletion of custom protocol and lifecycle code. Avoid
 retaining a second independent token manager alongside the library. Device
 authorization and notebook token-provider callbacks remain deferred. Automatic
-expiry handling is currently available for Python client credentials.
+expiry handling is available for Python OAuth2 password and client-credentials grants.

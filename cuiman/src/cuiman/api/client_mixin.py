@@ -5,7 +5,6 @@
 import time
 import warnings
 from abc import abstractmethod
-from functools import partial
 from typing import Any
 
 from authlib.integrations.httpx_client import OAuth2Client
@@ -14,7 +13,7 @@ from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
 from gavicore.util.request import ExecutionRequest
 from gavicore.util.runsync import run_sync
 
-from .auth import client_credentials
+from .auth import oauth2_client
 from .auth.config import OAuth2AuthConfig
 from .auth.session import resolve_auth_headers
 from .client_mixin_base import ClientMixinBase
@@ -52,15 +51,25 @@ class ClientMixin(ClientMixinBase[OAuth2Client]):
             if oauth_client is not None:
                 oauth_client.close()
 
-    def _login_client_credentials(self, *, force: bool = False) -> dict[str, str]:
+    def _login_oauth2(
+        self, *, force: bool = False, interactive: bool = False
+    ) -> dict[str, str]:
         auth = self.config.auth
         assert isinstance(auth, OAuth2AuthConfig)
         if self._oauth_client is None:
-            self._oauth_client = client_credentials.create_client(auth)
-        if client_credentials.needs_token(auth, self._oauth_client, force=force):
+            self._oauth_client = oauth2_client.create_client(auth)
+        if isinstance(self._oauth_client, oauth2_client.PasswordOAuth2Client):
+            self._oauth_client.login(force=force, interactive=interactive)
+            return {}
+        if oauth2_client.needs_token(auth, self._oauth_client, force=force):
             self._oauth_client.fetch_token()
-        client_credentials.save_token(auth, self._oauth_client.token)
+        oauth2_client.save_token(auth, self._oauth_client.token)
         return {}
+
+    def _renew_oauth2(self) -> dict[str, str]:
+        if isinstance(self._oauth_client, oauth2_client.PasswordOAuth2Client):
+            return self._oauth_client.renew()
+        return self._login_oauth2(force=True)
 
     def login(
         self, *, interactive: bool = True, no_browser: bool = False, force: bool = False
@@ -73,11 +82,8 @@ class ClientMixin(ClientMixinBase[OAuth2Client]):
         Use ``force=True`` to bypass existing tokens and authenticate afresh.
         A successful login also updates an existing HTTPX2 transport.
         """
-        if (
-            isinstance(self.config.auth, OAuth2AuthConfig)
-            and self.config.auth.grant_type == "client_credentials"
-        ):
-            self._login_client_credentials(force=force)
+        if isinstance(self.config.auth, OAuth2AuthConfig):
+            self._login_oauth2(force=force, interactive=interactive)
             return
         headers = resolve_auth_headers(
             self.config.auth,
@@ -90,11 +96,13 @@ class ClientMixin(ClientMixinBase[OAuth2Client]):
 
     def _get_transport(self) -> Transport:
         if self._transport is None:
-            if self._oauth_client is None or not self._oauth_client.token:
+            if self._oauth_client is None or not (self._oauth_client.token or {}).get(
+                "access_token"
+            ):
                 self.login(interactive=False)
             self._transport = self._create_transport(
                 token_refresher=(
-                    partial(self._login_client_credentials, force=True)
+                    self._renew_oauth2
                     if self._oauth_client is not None
                     else self.config._maybe_make_token_refresher()
                 ),

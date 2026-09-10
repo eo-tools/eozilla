@@ -12,7 +12,7 @@ from unittest.mock import patch
 import pytest
 
 from cuiman import ClientConfig
-from cuiman.api.auth import OAuth2AuthConfig, TokenResult
+from cuiman.api.auth import OAuth2AuthConfig
 from cuiman.api.client import Client
 from gavicore.models import (
     ApiError,
@@ -105,11 +105,9 @@ class ClientTest(TestCase):
         self.assertIsNone(kwargs["token_refresher"])
         self.assertTrue(kwargs["debug"])
 
-    def test_default_transport_receives_oauth2_auth_and_refresh_callback(self):
+    def test_default_transport_borrows_oauth2_client_and_recovery_callback(self):
         old_access = "old-access-token"
         old_refresh = "old-refresh-token"
-        new_access = "new-access-token"
-        new_refresh = "new-refresh-token"
 
         with (
             patch.object(
@@ -132,29 +130,13 @@ class ClientTest(TestCase):
             client._get_transport()
 
         _, kwargs = httpx2_transport_cls.call_args
-        self.assertEqual(
-            {"Authorization": f"Bearer {old_access}"},
-            kwargs["headers"],
-        )
-        token_refresher = kwargs["token_refresher"]
-        self.assertIsNotNone(token_refresher)
-
-        with patch(
-            "cuiman.api.auth.session.renew_oauth2_tokens",
-            return_value=TokenResult(
-                access_token=new_access,
-                refresh_token=new_refresh,
-            ),
-        ) as renew_oauth2_tokens:
-            refreshed_headers = token_refresher()
-
-        renew_oauth2_tokens.assert_called_once_with(client.config.auth)
-        self.assertEqual(
-            {"Authorization": f"Bearer {new_access}"},
-            refreshed_headers,
-        )
-        self.assertEqual(new_access, client.config.auth.access_token)
-        self.assertEqual(new_refresh, client.config.auth.refresh_token)
+        self.assertIsNone(kwargs["headers"])
+        self.assertIs(client._oauth_client, kwargs["sync_httpx2"])
+        self.assertEqual("Authorization", kwargs["auth_header"])
+        self.assertEqual(client._renew_oauth2, kwargs["token_refresher"])
+        self.assertEqual(old_access, client.token["access_token"])
+        self.assertEqual(old_refresh, client.token["refresh_token"])
+        client.close()
 
     def test_transport_args_for_all_endpoints(self):
         request = ProcessRequest(inputs={"bbox": [10, 20, 30, 40]}, outputs={})

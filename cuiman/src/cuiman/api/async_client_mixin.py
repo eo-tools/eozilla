@@ -5,7 +5,6 @@
 import asyncio
 import warnings
 from abc import abstractmethod
-from functools import partial
 from typing import Any
 
 from authlib.integrations.httpx_client import AsyncOAuth2Client
@@ -13,7 +12,7 @@ from authlib.integrations.httpx_client import AsyncOAuth2Client
 from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
 from gavicore.util.request import ExecutionRequest
 
-from .auth import client_credentials
+from .auth import oauth2_client
 from .auth.config import OAuth2AuthConfig
 from .auth.session import resolve_auth_headers_async
 from .client_mixin_base import ClientMixinBase
@@ -55,15 +54,25 @@ class AsyncClientMixin(ClientMixinBase[AsyncOAuth2Client]):
             if oauth_client is not None:
                 await oauth_client.aclose()
 
-    async def _login_client_credentials(self, *, force: bool = False) -> dict[str, str]:
+    async def _login_oauth2(
+        self, *, force: bool = False, interactive: bool = False
+    ) -> dict[str, str]:
         auth = self.config.auth
         assert isinstance(auth, OAuth2AuthConfig)
         if self._oauth_client is None:
-            self._oauth_client = client_credentials.create_async_client(auth)
-        if client_credentials.needs_token(auth, self._oauth_client, force=force):
+            self._oauth_client = oauth2_client.create_async_client(auth)
+        if isinstance(self._oauth_client, oauth2_client.AsyncPasswordOAuth2Client):
+            await self._oauth_client.login(force=force, interactive=interactive)
+            return {}
+        if oauth2_client.needs_token(auth, self._oauth_client, force=force):
             await self._oauth_client.fetch_token()
-        client_credentials.save_token(auth, self._oauth_client.token)
+        oauth2_client.save_token(auth, self._oauth_client.token)
         return {}
+
+    async def _renew_oauth2(self) -> dict[str, str]:
+        if isinstance(self._oauth_client, oauth2_client.AsyncPasswordOAuth2Client):
+            return await self._oauth_client.renew()
+        return await self._login_oauth2(force=True)
 
     async def login(
         self, *, interactive: bool = True, no_browser: bool = False, force: bool = False
@@ -79,11 +88,8 @@ class AsyncClientMixin(ClientMixinBase[AsyncOAuth2Client]):
         if self._login_lock is None:
             self._login_lock = asyncio.Lock()
         async with self._login_lock:
-            if (
-                isinstance(self.config.auth, OAuth2AuthConfig)
-                and self.config.auth.grant_type == "client_credentials"
-            ):
-                await self._login_client_credentials(force=force)
+            if isinstance(self.config.auth, OAuth2AuthConfig):
+                await self._login_oauth2(force=force, interactive=interactive)
                 return
             headers = await resolve_auth_headers_async(
                 self.config.auth,
@@ -98,13 +104,15 @@ class AsyncClientMixin(ClientMixinBase[AsyncOAuth2Client]):
 
     async def _get_transport(self) -> AsyncTransport:
         if self._transport is None:
-            if self._oauth_client is None or not self._oauth_client.token:
+            if self._oauth_client is None or not (self._oauth_client.token or {}).get(
+                "access_token"
+            ):
                 await self.login(interactive=False)
             # Another first request may have created it while we awaited login.
             if self._transport is None:
                 self._transport = self._create_transport(
                     async_token_refresher=(
-                        partial(self._login_client_credentials, force=True)
+                        self._renew_oauth2
                         if self._oauth_client is not None
                         else self.config._make_async_token_refresher()
                     ),

@@ -32,7 +32,7 @@ class ClientMixinBase(ABC, Generic[_OAuthClient]):
 
     @property
     def token(self) -> dict[str, Any] | None:
-        """Return an independent snapshot of the live client-credentials token.
+        """Return an independent snapshot of the live OAuth2 token.
 
         Reading this property never starts authentication. Other authentication
         mechanisms currently retain their configuration-based token interface.

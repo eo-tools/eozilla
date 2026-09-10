@@ -13,7 +13,7 @@ import pytest
 
 from cuiman import ClientConfig
 from cuiman.api.async_client import AsyncClient
-from cuiman.api.auth import OAuth2AuthConfig, TokenResult
+from cuiman.api.auth import OAuth2AuthConfig
 from gavicore.models import (
     ApiError,
     Capabilities,
@@ -110,11 +110,9 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
         self.assertIsNone(kwargs["async_token_refresher"])
         self.assertTrue(kwargs["debug"])
 
-    async def test_default_transport_receives_oauth2_auth_and_refresh_callback(self):
+    async def test_default_transport_borrows_oauth2_client_and_recovery_callback(self):
         old_access = "old-access-token"
         old_refresh = "old-refresh-token"
-        new_access = "new-access-token"
-        new_refresh = "new-refresh-token"
 
         with (
             patch.object(
@@ -137,30 +135,14 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
             await client._get_transport()
 
         _, kwargs = httpx2_transport_cls.call_args
-        self.assertEqual(
-            {"Authorization": f"Bearer {old_access}"},
-            kwargs["headers"],
-        )
-        async_token_refresher = kwargs["async_token_refresher"]
-        self.assertIsNotNone(async_token_refresher)
-
-        with patch(
-            "cuiman.api.auth.session.renew_oauth2_tokens_async",
-            new_callable=AsyncMock,
-            return_value=TokenResult(
-                access_token=new_access,
-                refresh_token=new_refresh,
-            ),
-        ) as renew_oauth2_tokens_async:
-            refreshed_headers = await async_token_refresher()
-
-        renew_oauth2_tokens_async.assert_awaited_once_with(client.config.auth)
-        self.assertEqual(
-            {"Authorization": f"Bearer {new_access}"},
-            refreshed_headers,
-        )
-        self.assertEqual(new_access, client.config.auth.access_token)
-        self.assertEqual(new_refresh, client.config.auth.refresh_token)
+        self.assertIsNone(kwargs["headers"])
+        self.assertIs(client._oauth_client, kwargs["async_httpx2"])
+        self.assertEqual("Authorization", kwargs["auth_header"])
+        self.assertEqual(client._renew_oauth2, kwargs["async_token_refresher"])
+        self.assertEqual(old_access, client.token["access_token"])
+        self.assertEqual(old_refresh, client.token["refresh_token"])
+        client._transport.async_close = AsyncMock()
+        await client.close()
 
     async def test_transport_args_for_all_endpoints(self):
         request = ProcessRequest(inputs={"bbox": [10, 20, 30, 40]}, outputs={})

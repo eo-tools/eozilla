@@ -6,6 +6,7 @@
 
 import asyncio
 import inspect
+import json
 import threading
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -24,88 +25,6 @@ from cuiman.cli.config import get_config
 async def invoke(method, **kwargs):
     result = method(**kwargs)
     return await result if inspect.isawaitable(result) else result
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("client_type", [Client, AsyncClient])
-@pytest.mark.parametrize(
-    "force,reject_retry", [(False, False), (False, True), (True, False)]
-)
-async def test_recovery_and_forced_login_update_existing_transport(
-    client_type, force, reject_retry
-):
-    client = client_type(
-        api_url="https://api.example.test",
-        auth={
-            "auth_type": "oauth2",
-            "token_url": "https://identity.example.test/token",
-            "client_id": "client",
-            "username": "user",
-            "password": "password",
-            "access_token": "old-access",
-            "refresh_token": "inactive-refresh",
-        },
-    )
-    calls = []
-    saved = []
-    client.config.auth.set_secret_persistor(
-        lambda auth: saved.append(auth.to_secret_dict())
-    )
-
-    def request(method, url, **kwargs):
-        if method.upper() == "POST":
-            grant = kwargs["data"]["grant_type"]
-            calls.append(grant)
-            if grant == "refresh_token":
-                status, body = (
-                    400,
-                    {
-                        "error": "invalid_grant",
-                        "error_description": "Token is not active",
-                    },
-                )
-            else:
-                assert grant == "password"
-                assert kwargs["data"]["password"] == "password"
-                status, body = 200, {"access_token": "fresh-access"}
-        else:
-            header = kwargs["headers"]["Authorization"]
-            calls.append(header)
-            status = (
-                200 if header == "Bearer fresh-access" and not reject_retry else 401
-            )
-            body = {"conformsTo": []}
-        return httpx2.Response(status, json=body, request=httpx2.Request(method, url))
-
-    with (
-        patch("httpx2.Client.request", side_effect=request),
-        patch("httpx2.AsyncClient.request", new=AsyncMock(side_effect=request)),
-    ):
-        transport = await invoke(client._get_transport)
-        try:
-            if force:
-                await invoke(client.login, force=True, interactive=False)
-            if reject_retry:
-                with pytest.raises(ClientError):
-                    await invoke(client.get_conformance)
-            else:
-                await invoke(client.get_conformance)
-            assert client._transport is transport
-            assert calls == (
-                ["password", "Bearer fresh-access"]
-                if force
-                else [
-                    "Bearer old-access",
-                    "refresh_token",
-                    "password",
-                    "Bearer fresh-access",
-                ]
-            )
-            assert client.config.auth.refresh_token is None
-            assert transport.headers == {"Authorization": "Bearer fresh-access"}
-            assert saved == [client.config.auth.to_secret_dict()]
-        finally:
-            await invoke(client.close)
 
 
 @pytest.mark.asyncio
@@ -239,7 +158,7 @@ async def test_first_use_authenticates_once(client_type, explicit, auth, request
             assert token_calls[0][2]["data"]["grant_type"] == "refresh_token"
         for _, url, kwargs in requests:
             if "api.example.test" in url:
-                if auth.get("grant_type") == "client_credentials":
+                if auth["auth_type"] == "oauth2":
                     assert kwargs["auth"] is client._oauth_client.token_auth
                     assert client.token["access_token"] == "access"
                     assert client.config.auth.access_token is None
@@ -319,15 +238,13 @@ async def test_new_file_login_and_refresh_persist_to_same_keyring(
         await invoke(client.login)
         assert save.call_count == 1
         await invoke(client.get_conformance)
-        refresher = (
-            client.config._make_async_token_refresher()
-            if client_type is AsyncClient
-            else client.config._maybe_make_token_refresher()
-        )
-        await invoke(refresher)
+        await invoke(client._oauth_client.renew)
         assert save.call_count == 2
         assert save.call_args.args[:3] == (path, "https://api.example.test/", "oauth2")
-        assert save.call_args.args[3]["refresh_token"] == "refresh"
+        assert (
+            json.loads(save.call_args.args[3]["oauth_token"])["refresh_token"]
+            == "refresh"
+        )
         assert "password" not in ClientConfig.read_file_data(path)["auth"]
         await invoke(client.close)
 
@@ -444,12 +361,12 @@ async def test_injected_token_401_does_not_prompt_refresh_or_use_keyring(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("client_type", [Client, AsyncClient])
-async def test_refresh_persistence_failure_does_not_retry_with_unsaved_tokens(
+async def test_legacy_oidc_persistence_failure_does_not_retry_with_unsaved_tokens(
     client_type, requests
 ):
     config = ClientConfig.new_instance(
         api_url="https://api.example.test",
-        auth={**AUTH_CASES[7], "access_token": "old-access"},
+        auth={**AUTH_CASES[8], "access_token": "old-access"},
     )
     save = Mock(side_effect=SecretStoreError("unavailable"))
     config.auth.set_secret_persistor(save)
@@ -611,34 +528,3 @@ async def test_missing_client_secret_requires_configuration(client_type, request
     prompt.assert_not_called()
     assert requests == []
     assert client._transport is None
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("client_type", [Client, AsyncClient])
-@pytest.mark.parametrize("client_secret", [None, "configured-secret"])
-async def test_password_login_only_prompts_for_user_credentials(
-    client_type, client_secret, requests
-):
-    client = client_type(
-        api_url="https://api.example.test",
-        auth=dict(
-            auth_type="oauth2",
-            token_url="https://identity.example.test/token",
-            grant_type="password",
-            client_id="client",
-            client_secret=client_secret,
-        ),
-    )
-    with patch("typer.prompt", side_effect=["alice", "password"]) as prompt:
-        await invoke(client.login)
-    assert [call.args[0] for call in prompt.call_args_list] == ["Username", "Password"]
-    data = next(call[2]["data"] for call in requests if call[0] == "POST")
-    assert data["client_id"] == "client"
-    assert data["username"] == "alice"
-    assert data["password"] == "password"
-    if client_secret is None:
-        assert "client_secret" not in data
-    else:
-        assert data["client_secret"] == client_secret
-    assert client.config.auth.client_secret == client_secret
-    await invoke(client.close)
