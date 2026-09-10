@@ -187,6 +187,7 @@ def test_cli_no_input_can_force_fresh_grant_using_supplied_credentials(
     auth_provider, monkeypatch
 ):
     from typer.testing import CliRunner
+
     from cuiman.cli.cli import cli
 
     ClientConfig(
@@ -210,6 +211,7 @@ def test_cli_no_input_can_force_fresh_grant_using_supplied_credentials(
 
 def test_cli_no_input_reports_missing_credentials_without_prompting(monkeypatch):
     from typer.testing import CliRunner
+
     from cuiman.cli.cli import cli
 
     ClientConfig(api_url="https://processing.test", auth={"auth_type": "token"}).write()
@@ -228,6 +230,7 @@ def test_cli_auth_error_does_not_echo_provider_response(
     command, auth_provider, monkeypatch
 ):
     from typer.testing import CliRunner
+
     from cuiman.cli.cli import cli
 
     ClientConfig(
@@ -258,6 +261,7 @@ def test_cli_logout_reports_revocation_failure_and_still_removes_local_credentia
     auth_provider, monkeypatch
 ):
     from typer.testing import CliRunner
+
     from cuiman.cli.cli import cli
 
     ClientConfig(
@@ -284,6 +288,7 @@ def test_cli_logout_reports_revocation_failure_and_still_removes_local_credentia
 
 def test_cli_configure_exposes_api_key_header_and_rejects_irrelevant_options(tmp_path):
     from typer.testing import CliRunner
+
     from cuiman.cli.cli import cli
 
     path = tmp_path / "named"

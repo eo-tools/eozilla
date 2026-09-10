@@ -330,6 +330,7 @@ async def test_two_browsers_overlap_api_refresh_on_one_owner(
 ):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
+
     from cuiman.app import App
     from cuiman.app.launch import (
         LAUNCH_ENDPOINT,
@@ -435,6 +436,7 @@ async def test_standalone_app_shutdown_waits_for_its_active_refresh(
     controlled_provider, auth_provider, monkeypatch
 ):
     import importlib
+
     from cuiman.app import App
     from cuiman.app.launch import LAUNCH_ENDPOINT, SERVICE_PROXY_ENDPOINT
 

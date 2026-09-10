@@ -123,8 +123,9 @@ def test_partial_credentials_prompt_only_for_missing_values(force, monkeypatch):
 
 
 def test_config_validation_errors_do_not_echo_secret_inputs():
-    from cuiman import ClientConfig
     from pydantic import ValidationError
+
+    from cuiman import ClientConfig
 
     for make in (
         BasicAuthConfig,
