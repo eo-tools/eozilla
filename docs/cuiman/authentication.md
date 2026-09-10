@@ -3,6 +3,10 @@
 Python clients, CLI login/logout, and the launched app share one authentication
 lifecycle. Each Cuiman client owns one persistent HTTP client. OAuth2 and OIDC use
 Authlib's `OAuth2Client` or `AsyncOAuth2Client` directly; other mechanisms use HTTPX2.
+Supported mechanisms are no authentication, Basic, static tokens, API keys,
+proprietary login, OAuth2 password/client-credentials grants, and OIDC authorization
+code. See [configuration](configuration.md) for provider settings and the
+[CLI reference](cli.md) for command options.
 
 ## Login and requests
 
@@ -72,6 +76,10 @@ API URL. A configuration loaded from a named file retains that profile when
 passed to `Client(config=config)` or `AsyncClient(config=config)`, including for
 explicit saving and logout. There is no plaintext-file fallback.
 
+Sharing a configuration profile does not share a running client or coordinate
+refresh-token rotation between independent clients or processes. Use the same
+client for related Python and app requests that need one live session.
+
 An existing keyring source receives optional token updates. If that save fails,
 Cuiman warns with `CredentialStorageWarning` and keeps the live token usable.
 `client.login(save=True)` explicitly saves credentials to the client's profile;
@@ -90,8 +98,16 @@ Create a new client after close or logout.
 
 OIDC uses Authlib's authorization URL, S256 PKCE, callback-state validation,
 code exchange, and refresh. Cuiman provides the temporary loopback listener and
-requires an exact discovery issuer match and HTTPS provider endpoints. Authlib
-and joserfc validate ID-token signatures, issuer, audience, nonce, and timestamps.
+requires an exact discovery issuer match, including trailing slashes, and HTTPS
+provider endpoints without embedded credentials or fragments. Register a native
+client redirect URI pattern for `http://127.0.0.1:<port>/callback` with your
+provider; Cuiman chooses a temporary port. Repeated security parameters in the
+callback are rejected before the authorization response reaches Authlib.
+
+Authlib and joserfc validate ID-token signatures, issuer, audience, nonce, and
+timestamps. Cuiman accepts asymmetric signatures only and fetches the provider's
+JWKS for each ID-token validation, including refresh, to support signing-key
+rotation. Raw Authlib HTTP clients do not validate ID tokens automatically.
 Initial login requires an ID token; refresh may omit it. An invalid ID token
 invalidates the new live token before it can be saved or used for a request.
 
@@ -146,10 +162,57 @@ a custom-header configuration. `configure` asks one header question and rejects
 options that do not apply to the selected authentication type. API-key headers
 can be supplied with `configure --api-key-header`.
 
-Incompatible old configuration files are recreated from defaults by `configure`;
-there is no legacy settings translator. Supply the provider settings again and
-log in. Current public profiles retain their settings as prompt defaults.
+Incompatible old configuration files are rejected when loaded. `configure` can
+recreate them from defaults without translating old settings or copying secrets.
+Supply the provider settings again and log in. Failed or cancelled configuration
+leaves the existing file untouched. Current public profiles retain their settings
+as prompt defaults; selecting another authentication type discards unrelated
+provider defaults.
 
 The old one-shot OAuth/OIDC helpers, `TokenResult`, configuration renewal
 factories, password subclasses, and transport renewal callbacks are removed.
 Use the shared client lifecycle instead of assembling a separate login engine.
+
+## Implementation boundaries
+
+Cuiman follows Authlib's
+[HTTP client programming model](https://docs.authlib.org/en/stable/oauth2/client/http/httpx.html):
+one persistent client performs both token exchanges and processing requests.
+The web-framework session registry is unnecessary for this outbound client and
+would introduce another ownership model. Authlib owns OAuth request encoding,
+token parsing, expiry, refresh rotation, signing, PKCE/code exchange, and
+revocation. Cuiman supplies initial grant preparation, prompts and the loopback
+listener, discovery trust checks, library-based ID-token validation, keyring
+storage, and app-proxy security.
+
+`ClientMixinBase` shares credential selection, client setup, grant preparation,
+validation policy, and persistence. The sync and async mixins perform native I/O
+and manage locking, cancellation, closure, and app dispatch. The processing
+transport converts requests and responses; it does not manage OAuth recovery.
+There are no Cuiman OAuth subclasses or separate live token managers.
+
+The following integration details were verified against Authlib 1.8.0 and should
+be retained when updating the dependency:
+
+- Set `grant_type` and `token_endpoint` metadata on the persistent client, using
+  OIDC discovery for its endpoints, so native expiry handling can refresh or
+  reacquire tokens. Use `request` for protected calls; inherited `send` bypasses
+  that expiry handling.
+- Explicit `fetch_token` does not call `update_token`, so Cuiman saves the initial
+  result explicitly. Automatic refresh uses the callback; the async client needs
+  an async callback.
+- Authlib installs a new token before calling the storage callback. Optional
+  storage failure keeps that live token and warns; persistence is not a
+  save-before-publication transaction. Rolling back local state cannot undo a
+  provider's refresh-token rotation.
+- Use Authlib's token parsing and refresh-token retention behavior. A returned
+  refresh token can take precedence over reacquiring a client-credentials grant.
+  Add provider-specific adaptations only for a demonstrated requirement.
+
+These details follow the pinned
+[OAuth token lifecycle](https://github.com/authlib/authlib/blob/v1.8.0/authlib/oauth2/client.py)
+and [HTTPX integration](https://github.com/authlib/authlib/blob/v1.8.0/authlib/integrations/httpx_client/oauth2_client.py).
+Regression tests exercise actual Authlib clients with mock HTTP responses and
+fake keyring backends, including rotation, ownership, cancellation, and profile
+isolation. They do not establish live-provider or OS-keyring interoperability.
+Device authorization is not implemented.
