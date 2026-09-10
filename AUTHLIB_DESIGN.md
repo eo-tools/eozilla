@@ -1,6 +1,6 @@
 # Authlib integration for Cuiman: clean replacement
 
-Updated: 2026-09-10. Status: slice 1 implemented for review; supersedes the incremental,
+Updated: 2026-09-10. Status: slices 1 and 2 implemented; slice 2 ready for review; supersedes the incremental,
 compatibility-preserving migration proposed here previously.
 
 Implementation sequence: [three-slice plan](AUTHLIB_PLAN.md).
@@ -94,7 +94,10 @@ Use Authlib's supported token endpoint authentication methods, configured from
 the provider settings. Prefer standard OAuth bearer signing. Retain a custom
 OAuth token-header setting or a no-client-ID adapter only if an actual supported
 processing provider requires it; these are not reasons to retain a token manager.
-Static tokens and API keys can keep their purpose-specific custom headers.
+Static tokens and API keys keep their purpose-specific custom headers. Static
+`token` and proprietary `login` use one optional `access_token_header`: omitted
+means Bearer signing; a header name means a raw token. The redundant `use_bearer`
+field and CLI switch are removed.
 
 Retain a provider-specific compliance hook only when an actual supported provider
 requires it. The client-credentials refresh-token discard can remain as a small,
@@ -119,8 +122,11 @@ is introduced to remove the remaining I/O syntax differences.
   and renewal-callback factories. The runtime has one authoritative Authlib token
   mapping. Configuration does not own a live OAuth session.
 - `login()` prepares the client's own HTTP runtime. `login(force=True)` performs a
-  fresh grant. Explicit interaction is controlled here. Ordinary processing and
-  proxy requests never prompt or open a browser.
+  fresh sign-in, prompting for replacement credentials when interaction is allowed.
+  With `interactive=False`, it uses supplied credentials for a fresh grant.
+  Default login reuses credentials and prompts only for missing values. CLI
+  `--force`, `--no-input`, and `--no-browser` use the same controls. Ordinary
+  processing and proxy requests never prompt or open a browser.
 - `client.token` returns an independent snapshot of the runtime's OAuth token.
   There is no live token interface on `client.config.auth`.
 - `close()` closes the owned HTTP runtime. Login without a processing API call has
@@ -165,6 +171,9 @@ proxy access; they are not an OAuth token lifecycle to move into Authlib.
 **Storage.** Keep the existing OS-keyring implementation and configuration-profile
 selection. Save the complete Authlib token mapping at a small storage callback.
 Keep configuration input and serialization consistent with the simplified models.
+Successful explicit saving attaches that profile as the destination for subsequent
+optional refresh updates, including when initial credentials came from Python or
+the environment.
 Persist one complete token snapshot without live-token reconciliation or dual
 token managers. Expected optional save failures
 warn while the live token remains usable. Explicit CLI saving must report failure.

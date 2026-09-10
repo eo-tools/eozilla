@@ -23,9 +23,27 @@ finally:
 ```
 
 `login(interactive=False)` prohibits interaction. `login(no_browser=True)` prints
-the OIDC authorization URL. `login(force=True)` obtains a fresh token, using
-configured credentials where possible. For static credentials, an interactive
-forced login prompts for replacement values.
+the OIDC authorization URL. By default, login reuses available credentials and
+prompts only for missing values. `login(force=True)` starts a fresh sign-in and
+prompts for replacement credentials, or opens OIDC authorization again.
+`login(force=True, interactive=False)` uses configured credentials for a fresh
+grant without prompting; OIDC still requires interactive authorization.
+
+The CLI uses these same controls:
+
+```console
+cuiman configure
+cuiman login                 # Reuse saved credentials or collect missing values.
+cuiman login --force         # Sign in again, allowing credential prompts.
+cuiman login --no-browser    # Print an OIDC authorization URL when login is needed.
+cuiman login --no-input      # For scripts: never prompt or open a browser.
+cuiman logout
+```
+
+`--force --no-input` performs a fresh grant with supplied credentials. Missing
+credentials fail with an actionable error. Authentication failures in the CLI
+do not print raw provider token responses. Ordinary Python callers still receive
+the native library errors.
 
 Authlib handles grant requests, request signing, expiry, and refresh rotation.
 Known expiry triggers refresh before a protected request; client credentials
@@ -57,7 +75,8 @@ explicit saving and logout. There is no plaintext-file fallback.
 An existing keyring source receives optional token updates. If that save fails,
 Cuiman warns with `CredentialStorageWarning` and keeps the live token usable.
 `client.login(save=True)` explicitly saves credentials to the client's profile;
-a failed save raises `SecretStoreError`. CLI login uses this same operation and
+a failed save raises `SecretStoreError`. A successful explicit save also enables
+subsequent refresh updates to that profile. CLI login uses this same operation and
 does not report success when saving fails. Environment/Python credentials can
 therefore be explicitly saved without first loading them from the keyring.
 
@@ -98,6 +117,18 @@ OAuth2/OIDC no longer accept separate `access_token` or `refresh_token` fields,
 fields from existing OAuth configuration, then sign in again to replace old
 keyring records. Static `token` and proprietary `login` retain their access-token
 and custom-header settings; API keys retain their configured header.
+
+Static `token` and proprietary `login` also remove `use_bearer` and the CLI
+`--use-bearer` switch. Omit `access_token_header` for Bearer signing, or supply a
+custom header name for a raw token. Remove the old default `X-Auth-Token` field
+when converting a Bearer configuration; keep the intended header when converting
+a custom-header configuration. `configure` asks one header question and rejects
+options that do not apply to the selected authentication type. API-key headers
+can be supplied with `configure --api-key-header`.
+
+Incompatible old configuration files are recreated from defaults by `configure`;
+there is no legacy settings translator. Supply the provider settings again and
+log in. Current public profiles retain their settings as prompt defaults.
 
 The old one-shot OAuth/OIDC helpers, `TokenResult`, configuration renewal
 factories, password subclasses, and transport renewal callbacks are removed.

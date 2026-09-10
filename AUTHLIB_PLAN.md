@@ -1,6 +1,6 @@
 # Authlib replacement: implementation plan
 
-Date: 2026-09-10. Status: approved plan; slice 1 implemented and ready for review.
+Date: 2026-09-10. Status: approved plan; slices 1 and 2 implemented; slice 2 ready for review.
 Design: [AUTHLIB_DESIGN.md](AUTHLIB_DESIGN.md).
 
 ## Objectives
@@ -22,7 +22,7 @@ they are not additional slices. No new research/proof phase is needed.
 
 Implemented, including the shared sync/async policy refactor requested during
 implementation. Review evidence: [HANDOVER_AUTHLIB.md](HANDOVER_AUTHLIB.md).
-Slices 2 and 3 have not started.
+Slice 1 was committed as `436188f`. Slice 2 is implemented below; slice 3 has not started.
 
 **Outcome:** Python clients, CLI authentication, and the app proxy all use one
 Authlib-based lifecycle. There is no remaining legacy OAuth engine.
@@ -64,6 +64,11 @@ This is deliberately the largest slice. An implementation that leaves CLI or app
 using the old OAuth lifecycle has not completed it.
 
 ## 2. Simplify configuration and sign-in workflows
+
+Implemented: one public-configuration prompt flow and profile loader; removal of
+the legacy translator and bearer switch; saved-login reuse with explicit force
+and no-input controls; safe CLI error reporting; ongoing refresh persistence
+after explicit saving. See [HANDOVER_AUTHLIB.md](HANDOVER_AUTHLIB.md) for evidence.
 
 **Outcome:** users configure a provider once and use the same credentials and
 authentication concepts from Python, CLI, and the app.

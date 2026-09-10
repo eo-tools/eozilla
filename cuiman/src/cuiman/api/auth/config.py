@@ -69,7 +69,7 @@ OAUTH2_GRANT_TYPE_NAMES: tuple[str, ...] = get_args(OAuth2GrantType)
 class AuthConfigBase(BaseModel):
     """Base class for authentication configuration models."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
 
     secret_fields: ClassVar[SecretFields] = frozenset()
     """Fields that must not be persisted in a client configuration file."""
@@ -142,16 +142,16 @@ class BasicAuthConfig(AuthConfigBase):
 
 class _AccessTokenAuthConfig(AuthConfigBase):
     access_token: str | None = None
-    use_bearer: bool = True
-    access_token_header: str = "X-Auth-Token"  # noqa: S105
+    access_token_header: str | None = Field(default=None, min_length=1)
+    """Custom header for the raw token; omitted means standard Bearer signing."""
 
     @property
     def auth_headers(self) -> dict[str, str]:
         if not self.access_token:
             raise ValueError("Missing access token.")
-        if self.use_bearer:
-            return {"Authorization": f"Bearer {self.access_token}"}
-        return {self.access_token_header: self.access_token}
+        if self.access_token_header:
+            return {self.access_token_header: self.access_token}
+        return {"Authorization": f"Bearer {self.access_token}"}
 
 
 class TokenAuthConfig(_AccessTokenAuthConfig):

@@ -33,7 +33,7 @@ from .auth.oidc import (
     validate_id_token,
 )
 from .auth.secret_store import delete_auth_secrets
-from .config import ClientConfig
+from .config import ClientConfig, _set_auth_secret_persistor
 from .transport.httpx2 import Httpx2Transport
 
 _HttpClient = TypeVar("_HttpClient", httpx2.Client, httpx2.AsyncClient)
@@ -101,14 +101,12 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
             if self._ready and not force:
                 return auth
             candidate = auth
-        if not has_credentials(candidate) or (
-            force and interactive and not isinstance(auth, OAuthTokenConfig)
-        ):
+        if not has_credentials(candidate) or (force and interactive):
             if not interactive:
                 raise LoginRequiredError(
                     "Authentication requires login. Call client.login() (await it for AsyncClient), or use 'cuiman login'."
                 )
-            return auth.model_copy(update=prompt_auth(auth).model_dump())
+            return auth.model_copy(update=prompt_auth(auth, force=force).model_dump())
         return auth
 
     def _configure_http_client(
@@ -218,6 +216,8 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
             config_path=self._config_path if required else None,
             api_url=self.config.api_url or "",
         )
+        if required:
+            _set_auth_secret_persistor(self.config, self._config_path)
 
     def _forget_credentials(self) -> None:
         try:

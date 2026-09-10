@@ -38,6 +38,7 @@ class ClientConfig(BaseSettings):
         env_prefix="EOZILLA_",
         env_nested_delimiter="__",
         extra="forbid",
+        hide_input_in_errors=True,
     )
 
     default_config: ClassVar["ClientConfig"]
@@ -138,7 +139,7 @@ class ClientConfig(BaseSettings):
         if (
             not resolve_secrets
             or file_config is None
-            or _has_auth_credentials(resolved_config)
+            or has_credentials(resolved_config.auth)
         ):
             return resolved_config
 
@@ -345,11 +346,6 @@ def _update_config(target: dict[str, Any], updates: dict[str, Any]) -> None:
         target["auth"] = dict(auth_config)
         updates = {key: value for key, value in updates.items() if key != "auth"}
     _update_if_not_none(target, updates)
-
-
-def _has_auth_credentials(config: ClientConfig) -> bool:
-    """Return whether supplied credentials permit non-interactive login."""
-    return has_credentials(config.auth)
 
 
 def _set_auth_secret_persistor(config: ClientConfig, config_path: Path) -> None:

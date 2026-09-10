@@ -28,19 +28,36 @@ OIDC_LOGIN_TIMEOUT = 300.0
 """Seconds to wait for an authorization callback."""
 
 
-def prompt_auth(auth: AuthConfigBase) -> AuthConfigBase:
-    """Collect credentials without modifying or persisting the input model."""
-    values = auth.to_public_dict()
+def prompt_auth(auth: AuthConfigBase, *, force: bool = False) -> AuthConfigBase:
+    """Collect missing credentials, or replacements, without publishing them."""
+    values = auth.model_dump()
+    fields: tuple[tuple[str, str], ...]
     if isinstance(auth, OAuth2AuthConfig) and auth.grant_type == "client_credentials":
-        values["client_secret"] = _prompt_for_secret("Client secret")
+        fields = (("client_secret", "Client secret"),)
     elif isinstance(auth, (BasicAuthConfig, LoginAuthConfig, OAuth2AuthConfig)):
-        values.update(_prompt_for_username_password(auth.username))
-        if isinstance(auth, OAuth2AuthConfig):
-            values["client_secret"] = auth.client_secret
+        fields = (("username", "Username"), ("password", "Password"))
     elif isinstance(auth, TokenAuthConfig):
-        values["access_token"] = _prompt_for_secret("API access token")
+        fields = (("access_token", "API access token"),)
     elif isinstance(auth, ApiKeyAuthConfig):
-        values["api_key"] = _prompt_for_secret("API access key")
+        fields = (("api_key", "API access key"),)
+    else:
+        fields = ()
+    for name, label in fields:
+        if force or not values.get(name):
+            username = name == "username"
+            values[name] = typer.prompt(
+                label,
+                type=str,
+                hide_input=not username,
+                default=(
+                    values.get(name)
+                    or os.environ.get("USER")
+                    or os.environ.get("USERNAME")
+                    or ""
+                )
+                if username
+                else None,
+            )
     return type(auth)(**values)
 
 
@@ -82,19 +99,3 @@ def _wait_for_callback(
         except TimeoutError:
             pass
     raise asyncio.CancelledError()
-
-
-def _prompt_for_username_password(previous_username: str | None) -> dict[str, str]:
-    username = typer.prompt(
-        "Username",
-        type=str,
-        default=previous_username
-        or os.environ.get("USER")
-        or os.environ.get("USERNAME")
-        or "",
-    )
-    return {"username": username, "password": _prompt_for_secret("Password")}
-
-
-def _prompt_for_secret(text: str) -> str:
-    return typer.prompt(text, type=str, hide_input=True)

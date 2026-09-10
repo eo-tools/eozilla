@@ -21,6 +21,8 @@ from gavicore.util.cli.parameters import (
     REQUEST_SUBSCRIBER_OPTION,
 )
 
+from .client import handle_auth_errors
+
 DEFAULT_NAME = "cuiman"
 
 DEFAULT_SUMMARY = """The `{name}` tool is a shell client for any web services 
@@ -227,18 +229,17 @@ def new_cli(
                 help="An OpenID Connect resource scope; repeat for multiple scopes.",
             ),
         ] = None,
-        use_bearer: Annotated[
-            bool | None,
-            typer.Option(
-                "--use-bearer",
-                help="Use bearer token?",
-            ),
-        ] = None,
         access_token_header: Annotated[
             str | None,
             typer.Option(
                 "--access-token-header",
-                help="Access token header",
+                help="Custom header for static/proprietary tokens; empty means Bearer.",
+            ),
+        ] = None,
+        api_key_header: Annotated[
+            str | None,
+            typer.Option(
+                "--api-key-header", help="Header used for API-key authentication."
             ),
         ] = None,
         config_file: Annotated[str | None, CONFIG_OPTION] = None,
@@ -246,23 +247,19 @@ def new_cli(
         """Configure the client tool."""
         from .config import configure_client_with_prompt
 
-        if auth_type is not None and auth_type not in AUTH_TYPE_NAMES:
-            typer.echo(f"Invalid authentication type: {auth_type}", err=True)
-            raise typer.Exit(code=1)
-
         try:
             config_path = configure_client_with_prompt(
                 config_path=config_file,
                 api_url=api_url,
-                auth_type=auth_type,  # type: ignore[arg-type]
+                auth_type=auth_type,
                 login_url=login_url,
                 token_url=token_url,
                 grant_type=grant_type,
                 client_id=client_id,
                 issuer_url=issuer_url,
                 scopes=scopes,
-                use_bearer=use_bearer,
                 access_token_header=access_token_header,
+                api_key_header=api_key_header,
             )
         except ValueError as exc:
             typer.echo(str(exc), err=True)
@@ -280,15 +277,28 @@ def new_cli(
                 help="Print the OIDC authorization URL instead of opening a browser.",
             ),
         ] = False,
+        force: Annotated[
+            bool,
+            typer.Option("--force", help="Sign in again, allowing credential prompts."),
+        ] = False,
+        no_input: Annotated[
+            bool,
+            typer.Option(
+                "--no-input",
+                help="Never prompt or open a browser; use supplied credentials.",
+            ),
+        ] = False,
     ):
-        """Log in and store the required credentials in the OS keyring."""
+        """Reuse or obtain credentials and save them in the OS keyring."""
         from .config import login_client_with_prompt
 
-        try:
-            login_client_with_prompt(config_file, no_browser=no_browser)
-        except (SecretStoreError, RuntimeError, TimeoutError, ValueError) as exc:
-            typer.echo(str(exc), err=True)
-            raise typer.Exit(code=1) from exc
+        with handle_auth_errors():
+            login_client_with_prompt(
+                config_file,
+                no_browser=no_browser,
+                force=force,
+                interactive=not no_input,
+            )
 
     @t.command()
     def logout(
@@ -297,11 +307,8 @@ def new_cli(
         """Remove the locally stored credentials for this configuration."""
         from .config import logout_client
 
-        try:
+        with handle_auth_errors():
             logout_client(config_file)
-        except (SecretStoreError, RuntimeError, ValueError) as exc:
-            typer.echo(str(exc), err=True)
-            raise typer.Exit(code=1) from exc
 
     @t.command()
     def generate_client(
@@ -554,11 +561,8 @@ def _offer_login_after_config(config_path: Path) -> None:
     ):
         from .config import login_client_with_prompt
 
-        try:
+        with handle_auth_errors():
             login_client_with_prompt(config_path)
-        except (SecretStoreError, ValueError) as exc:
-            typer.echo(str(exc), err=True)
-            raise typer.Exit(code=1) from exc
 
 
 def _wait_until_interrupted() -> None:

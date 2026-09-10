@@ -51,11 +51,13 @@ can be retried, and closing an unused client does not initiate login.
 Authlib refreshes tokens before known expiry and reacquires client-credentials
 tokens when needed. A processing-service 401 is returned without automatic
 renewal or replay. Rejected refresh propagates the library error. Use
-`login(force=True)` to obtain a fresh token explicitly.
+`login(force=True)` to sign in again and allow credential prompts, or
+`login(force=True, interactive=False)` for a fresh grant with supplied credentials.
 
 `client.token` returns a copy of the live OAuth2/OIDC token. The configuration's
 `oauth_token` field is only a bootstrap snapshot. Use `login(save=True)` to require
-durable storage in the profile's OS-keyring entry. Optional refresh-save failures
+durable storage in the profile's OS-keyring entry and enable subsequent refresh
+updates to that profile. Optional refresh-save failures
 warn while keeping the live token usable. `logout()` revokes OIDC tokens when
 supported, removes local credentials, and closes the client; await it for
 `AsyncClient`. A closed client cannot be reused.

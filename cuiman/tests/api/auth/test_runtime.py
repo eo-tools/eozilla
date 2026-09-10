@@ -155,7 +155,11 @@ async def test_expired_password_token_without_refresh_requires_explicit_login(
             "Bearer static",
         ),
         (
-            {"auth_type": "token", "access_token": "static", "use_bearer": False},
+            {
+                "auth_type": "token",
+                "access_token": "static",
+                "access_token_header": "X-Auth-Token",
+            },
             "X-Auth-Token",
             "static",
         ),
@@ -477,7 +481,7 @@ async def test_cancelled_credential_prompt_cannot_publish_late_credentials(monke
 
     started, release, stopped = threading.Event(), threading.Event(), threading.Event()
 
-    def prompt(auth):
+    def prompt(auth, **kwargs):
         started.set()
         assert release.wait(3)
         stopped.set()
@@ -540,4 +544,42 @@ async def test_oidc_refresh_validation_after_restart(kind, mode, auth_provider):
         await invoke(client.get_conformance)
         assert client.token["_cuiman_nonce"] == auth_provider.nonce
         assert client.token["refresh_token"] == snapshot["refresh_token"]
+    await invoke(client.close)
+
+
+@pytest.mark.asyncio
+async def test_explicit_save_enables_subsequent_refresh_persistence(
+    kind, auth_provider, monkeypatch, tmp_path
+):
+    saved = Mock()
+    monkeypatch.setattr("cuiman.api.auth.oauth2_client.save_auth_secrets", saved)
+    monkeypatch.setattr("cuiman.api.config.save_auth_secrets", saved)
+    path = tmp_path / "named"
+    client = kind(
+        config_path=str(path), api_url="https://processing.test", auth=oauth()
+    )
+    await invoke(client.login, interactive=False, save=True)
+    auth_provider.now += 601
+    await invoke(client.get_conformance)
+    assert saved.call_count == 2
+    assert all(
+        call.args[:3] == (path, "https://processing.test/", "oauth2")
+        for call in saved.call_args_list
+    )
+    assert json.loads(saved.call_args.args[3]["oauth_token"]) == client.token
+    await invoke(client.close)
+
+
+@pytest.mark.asyncio
+async def test_interactive_forced_oauth_login_replaces_credentials(
+    kind, auth_provider, monkeypatch
+):
+    client = kind(api_url="https://processing.test", auth=oauth())
+    await invoke(client.login, interactive=False)
+    monkeypatch.setattr(
+        "typer.prompt", Mock(side_effect=["replacement", "new-password"])
+    )
+    await invoke(client.login, force=True)
+    assert auth_provider.grants[-1]["username"] == ["replacement"]
+    assert auth_provider.grants[-1]["password"] == ["new-password"]
     await invoke(client.close)

@@ -50,7 +50,6 @@ def test_access_token_headers():
     }
     assert TokenAuthConfig(
         access_token="abc",
-        use_bearer=False,
         access_token_header="X-Token",
     ).auth_headers == {"X-Token": "abc"}
 

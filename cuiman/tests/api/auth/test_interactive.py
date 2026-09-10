@@ -105,3 +105,40 @@ def test_callback_wait_cancellation_retry_and_timeout(monkeypatch):
     )
     with pytest.raises(TimeoutError):
         _wait_for_callback(server, event)
+
+
+@pytest.mark.parametrize("force", [False, True])
+def test_partial_credentials_prompt_only_for_missing_values(force, monkeypatch):
+    auth = BasicAuthConfig(username="existing")
+    prompt = Mock(side_effect=["replacement", "password"] if force else ["password"])
+    monkeypatch.setattr("typer.prompt", prompt)
+    candidate = prompt_auth(auth, force=force)
+    assert candidate.username == ("replacement" if force else "existing")
+    assert candidate.password == "password"
+    assert auth.password is None
+    assert [call.args[0] for call in prompt.call_args_list] == (
+        ["Username", "Password"] if force else ["Password"]
+    )
+    assert prompt.call_args.kwargs["default"] is None
+
+
+def test_config_validation_errors_do_not_echo_secret_inputs():
+    from cuiman import ClientConfig
+    from pydantic import ValidationError
+
+    for make in (
+        BasicAuthConfig,
+        lambda **kwargs: ClientConfig(auth={"auth_type": "basic", **kwargs}),
+    ):
+        with pytest.raises(ValidationError) as error:
+            make(username="user", password={"secret": "DO-NOT-ECHO"})
+        assert "DO-NOT-ECHO" not in str(error.value)
+
+
+def test_static_tokens_reject_removed_bearer_switch():
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        TokenAuthConfig(use_bearer=True)
+    with pytest.raises(ValidationError):
+        TokenAuthConfig(access_token_header="")

@@ -49,8 +49,7 @@ JSON:
 {
     "api_url": "https://anolis.api.org/process-api/v1",
     "auth": {
-        "auth_type": "token",
-        "use_bearer": true
+        "auth_type": "token"
     }
 }
 ```
@@ -61,13 +60,13 @@ YAML:
 api_url: "https://anolis.api.org/process-api/v1"
 auth:
   auth_type: token
-  use_bearer: true
 ```
 
 Configuration files contain only public connection and authentication metadata.
 Credentials are never written to them. Files in the older format that contain
-credentials are detected as legacy configuration; run `cuiman configure` to
-rewrite their public values safely.
+credentials are rejected. Run `cuiman configure` to recreate incompatible
+configuration from defaults, then log in. Old fields are not translated or
+reused, and configuration files never receive credentials.
 
 ### Credential Storage
 
@@ -276,10 +275,13 @@ config = ClientConfig(
     auth={
         "auth_type": "token",
         "access_token": "...",
-        "use_bearer": True,  # default
     },
 )
 ```
+
+Omit `access_token_header` (or set it to `None`) for Bearer signing. Set it to a
+header name to send the raw token in that header; there is no separate bearer
+switch. This setting also applies to proprietary `login` authentication.
 
 With custom header:
 
@@ -289,8 +291,7 @@ config = ClientConfig(
     auth={
         "auth_type": "token",
         "access_token": "...",
-        "use_bearer": False,
-        "access_token_header": "X-Auth-Token",  # Default
+        "access_token_header": "X-Auth-Token",
     },
 )
 ```
@@ -310,7 +311,6 @@ config = ClientConfig(
         "username": "...",
         "password": "...",
         "access_token": "...",  # obtained by `cuiman login`
-        "use_bearer": True,
     },
 )
 ```

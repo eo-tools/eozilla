@@ -84,7 +84,7 @@ class ClientConfigTest(TestCase):
 
         branded_default = BrandedClientConfig(
             api_url="https://default.example.test/processes",
-            auth=TokenAuthConfig(use_bearer=False, access_token_header="X-Branded"),
+            auth=TokenAuthConfig(access_token_header="X-Branded"),
         )
         with patch.dict(
             os.environ,
@@ -99,7 +99,7 @@ class ClientConfigTest(TestCase):
         self.assertIsInstance(config, BrandedClientConfig)
         self.assertEqual("https://environment.example.test/processes", config.api_url)
         self.assertEqual(
-            TokenAuthConfig(use_bearer=False, access_token_header="X-Branded"),
+            TokenAuthConfig(access_token_header="X-Branded"),
             config.auth,
         )
         self.assertEqual("branded", config.service_name)
@@ -301,7 +301,6 @@ class ClientConfigTest(TestCase):
                 },
                 TokenAuthConfig(
                     access_token="legacy-token",
-                    use_bearer=False,
                     access_token_header="X-Legacy-Token",
                 ),
             ),
@@ -522,7 +521,6 @@ def saved_login_config():
         auth={
             "auth_type": "login",
             "login_url": "http://localhost:8080/auth/login",
-            "use_bearer": False,
             "access_token_header": "X-Saved-Token",
         },
     ).write(path)

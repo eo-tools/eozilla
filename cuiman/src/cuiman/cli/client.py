@@ -2,16 +2,39 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from contextlib import contextmanager
 from types import TracebackType
-from typing import Callable, Literal, Optional, TypeAlias
+from typing import Callable, Iterator, Literal, Optional, TypeAlias
 
+import httpx2
 import typer
+from authlib.common.errors import AuthlibBaseError
+from joserfc.errors import JoseError
 
+from cuiman.api.auth import LoginRequiredError
+from cuiman.api.auth.secret_store import SecretStoreError
 from cuiman.api.client import Client
 from cuiman.api.exceptions import ClientError
 from cuiman.api.transport import TransportError
 
 GetClient: TypeAlias = Callable[[str | None], Client]
+
+
+@contextmanager
+def handle_auth_errors() -> Iterator[None]:
+    """Report actionable CLI failures without echoing provider token responses."""
+    try:
+        yield
+    except (AuthlibBaseError, JoseError, httpx2.HTTPError) as exc:
+        typer.echo(
+            "Authentication failed. Check provider settings and credentials; "
+            "use 'cuiman login --force' to sign in again.",
+            err=True,
+        )
+        raise typer.Exit(code=1) from exc
+    except (SecretStoreError, RuntimeError, TimeoutError, ValueError) as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from exc
 
 
 def use_client(ctx: typer.Context, config_file: str | None) -> "UseClient":
@@ -65,5 +88,11 @@ class UseClient:
             typer.echo(f"Transport error: {exc_value}")
             if not show_traceback:
                 raise typer.Exit(code=3)
+        elif (
+            isinstance(exc_value, (AuthlibBaseError, JoseError, LoginRequiredError))
+            and not show_traceback
+        ):
+            with handle_auth_errors():
+                raise exc_value
 
         return False  # propagate exception

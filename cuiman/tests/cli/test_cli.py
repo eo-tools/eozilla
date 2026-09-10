@@ -58,7 +58,8 @@ class CliTest(TestCase):
             "login",
             "--login-url",
             "http://localhorst:2357/auth/login",
-            "--use-bearer",
+            "--access-token-header",
+            "",
         )
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         self.assertTrue(config_path.exists())
@@ -70,8 +71,6 @@ class CliTest(TestCase):
                     "auth": {
                         "auth_type": "login",
                         "login_url": "http://localhorst:2357/auth/login",
-                        "use_bearer": True,
-                        "access_token_header": "X-Auth-Token",
                     },
                 },
                 config,
@@ -209,7 +208,7 @@ class CliTest(TestCase):
 
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         login_client_with_prompt.assert_called_once_with(
-            "client-config.yaml", no_browser=False
+            "client-config.yaml", no_browser=False, force=False, interactive=True
         )
 
     @patch("cuiman.cli.config.login_client_with_prompt")
@@ -218,7 +217,7 @@ class CliTest(TestCase):
 
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         login_client_with_prompt.assert_called_once_with(
-            "client-config.yaml", no_browser=True
+            "client-config.yaml", no_browser=True, force=False, interactive=True
         )
 
     @patch(
