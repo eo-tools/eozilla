@@ -77,7 +77,6 @@ async def deploy_process(
         "403": {"model": ApiError},
         "404": {"model": ApiError},
         "415": {"model": ApiError},
-        # NOTE: use 501 for parts of the standard that are not implemented (yet)
         "501": {"model": ApiError},
     },
     response_model_exclude_none=True,
