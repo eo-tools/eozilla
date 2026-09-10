@@ -10,6 +10,10 @@ policy. Source links use the version tag and actual source-file line numbers;
 browser extraction line numbers differ from GitHub line numbers. Several public
 source files required a direct read because the browser cache could not fetch them.
 
+The compatibility policies proposed in this historical research are superseded
+by [AUTHLIB_DESIGN.md](AUTHLIB_DESIGN.md). Current implementation and verification
+status are recorded in [HANDOVER_AUTHLIB.md](HANDOVER_AUTHLIB.md).
+
 ## Integration fit
 
 Authlib exposes synchronous `OAuth2Client` and asynchronous `AsyncOAuth2Client`

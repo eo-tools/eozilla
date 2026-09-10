@@ -218,7 +218,7 @@ def generate_function_code(
         f"def {camel_to_snake(method.operationId)}({param_list})"
         f" -> {return_type_union}:\n"
         f"{function_doc}"
-        f"{C_TAB}{C_TAB}transport = {'await ' if is_async else ''}self._get_transport()\n"
+        f"{C_TAB}{C_TAB}transport = self._get_transport()\n"
         f"{C_TAB}{C_TAB}return "
         f"{'await ' if is_async else ''}"
         f"transport.{'async_' if is_async else ''}call("

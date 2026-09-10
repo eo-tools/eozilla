@@ -9,11 +9,9 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from cuiman import Client
 from cuiman.api.auth import (
-    LoginAuthConfig,
-    OAuth2AuthConfig,
     TokenAuthConfig,
-    TokenResult,
 )
 from cuiman.api.config import ClientConfig
 from cuiman.app import App
@@ -38,36 +36,6 @@ def test_launch_code_is_single_use_and_creates_cookie_session():
     repeated = client.post(LAUNCH_ENDPOINT, json={"launch": launch_code})
     assert repeated.status_code == INVALID_LAUNCH_STATUS
     assert repeated.json() == {"detail": INVALID_LAUNCH_DETAIL}
-
-
-def test_launch_code_can_be_retried_after_auth_resolution_fails(monkeypatch):
-    service, client = create_test_client(
-        auth=LoginAuthConfig(
-            login_url="https://auth.example.test/login",
-            username="user",
-            password="password",
-        ),
-        raise_server_exceptions=False,
-    )
-    attempts = 0
-
-    async def login(_auth):
-        nonlocal attempts
-        attempts += 1
-        if attempts == 1:
-            raise httpx2.ConnectError(
-                "connection refused",
-                request=httpx2.Request("POST", "https://auth.example.test/login"),
-            )
-        return TokenResult(access_token="resolved-token")
-
-    monkeypatch.setattr("cuiman.api.auth.session.login_async", login)
-    launch_code = service.create_launch_code()
-
-    assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 500
-    assert launch_code in service._launch_codes
-    assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
-    assert attempts == 2
 
 
 def test_launch_session_cookie_is_secure_behind_an_https_proxy():
@@ -105,7 +73,12 @@ def test_launch_code_expiry_and_missing_api_url_are_rejected(monkeypatch):
 
     assert launch_code not in service._launch_codes
     with pytest.raises(ValueError, match="api_url"):
-        LaunchedAppService(App.create_remote_store(), ClientConfig(api_url=None))
+        LaunchedAppService(
+            App.create_remote_store(),
+            ClientConfig(api_url=None),
+            prepare=None,
+            request=None,
+        )
 
 
 def test_proxy_uses_server_side_headers_and_requires_same_origin(monkeypatch):
@@ -117,8 +90,8 @@ def test_proxy_uses_server_side_headers_and_requires_same_origin(monkeypatch):
 
     calls: list[tuple[str, str, dict[str, str]]] = []
 
-    async def send_upstream(request, path, auth_headers):
-        calls.append((request.method, path, auth_headers))
+    async def send_upstream(request, path):
+        calls.append((request.method, path))
         return httpx2.Response(
             200,
             json={"ok": True},
@@ -136,7 +109,7 @@ def test_proxy_uses_server_side_headers_and_requires_same_origin(monkeypatch):
     assert response.json() == {"ok": True}
     assert response.headers["x-upstream"] == "yes"
     assert "set-cookie" not in response.headers
-    assert calls == [("POST", "processes", {"Authorization": "Bearer secret-token"})]
+    assert calls == [("POST", "processes")]
 
 
 def test_proxy_allows_a_same_origin_referer(monkeypatch):
@@ -144,7 +117,7 @@ def test_proxy_allows_a_same_origin_referer(monkeypatch):
     launch_code = service.create_launch_code()
     assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
 
-    async def send_upstream(request, path, auth_headers):
+    async def send_upstream(request, path):
         return httpx2.Response(204)
 
     monkeypatch.setattr(service, "_send_upstream", send_upstream)
@@ -162,7 +135,7 @@ def test_proxy_reports_an_unreachable_upstream_as_bad_gateway(monkeypatch):
     launch_code = service.create_launch_code()
     assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
 
-    async def send_upstream(request, path, auth_headers):
+    async def send_upstream(request, path):
         raise httpx2.ConnectError(
             "connection refused", request=httpx2.Request("GET", "https://example.test")
         )
@@ -173,7 +146,7 @@ def test_proxy_reports_an_unreachable_upstream_as_bad_gateway(monkeypatch):
 
     assert response.status_code == 502
     assert response.json() == {
-        "detail": "Unable to reach the configured processing service."
+        "detail": "Unable to reach or authenticate with the processing service."
     }
 
 
@@ -196,21 +169,11 @@ def test_proxy_forwards_only_safe_browser_headers_to_the_fixed_upstream(monkeypa
     assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
     received: dict[str, object] = {}
 
-    class StubAsyncClient:
-        def __init__(self, *, follow_redirects):
-            assert follow_redirects is False
+    async def request(method, url, **kwargs):
+        received.update(method=method, url=url, **kwargs)
+        return httpx2.Response(200, content=b"proxied")
 
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, exc_type, exc, traceback):
-            return None
-
-        async def request(self, method, url, **kwargs):
-            received.update(method=method, url=url, **kwargs)
-            return httpx2.Response(200, content=b"proxied")
-
-    monkeypatch.setattr("cuiman.app.launch.httpx2.AsyncClient", StubAsyncClient)
+    monkeypatch.setattr(service, "_request", request)
 
     response = client.get(
         f"{SERVICE_PROXY_ENDPOINT}/jobs/a%20job?tag=one&tag=two",
@@ -227,156 +190,12 @@ def test_proxy_forwards_only_safe_browser_headers_to_the_fixed_upstream(monkeypa
         "url": "https://process.example.test/api/jobs/a%20job",
         "params": [("tag", "one"), ("tag", "two")],
         "content": b"",
+        "follow_redirects": False,
         "headers": {
             "accept": "application/json",
             "content-type": "application/json",
-            "Authorization": "Bearer token",
         },
     }
-
-
-def test_launch_resolves_login_credentials_on_the_server(monkeypatch):
-    service, client = create_test_client(
-        auth=LoginAuthConfig(
-            login_url="https://auth.example.test/login",
-            username="user",
-            password="password",
-        )
-    )
-
-    async def login(_auth):
-        return TokenResult(access_token="resolved-token")
-
-    monkeypatch.setattr("cuiman.api.auth.session.login_async", login)
-    launch_code = service.create_launch_code()
-    assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
-
-    session = next(iter(service._sessions.values()))
-    assert session.headers == {"Authorization": "Bearer resolved-token"}
-
-
-def test_launch_resolves_oauth2_credentials_on_the_server(monkeypatch):
-    service, client = create_test_client(
-        auth=OAuth2AuthConfig(
-            token_url="https://auth.example.test/token",
-            username="user",
-            password="password",
-        )
-    )
-
-    tokens = TokenResult(access_token="resolved-token", refresh_token="refresh-token")
-
-    async def obtain_tokens(_auth):
-        return tokens
-
-    monkeypatch.setattr(
-        "cuiman.api.auth.session.obtain_oauth2_tokens_async", obtain_tokens
-    )
-    launch_code = service.create_launch_code()
-
-    assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
-    assert service._client_config.auth.access_token == tokens.access_token
-    assert service._client_config.auth.refresh_token == tokens.refresh_token
-
-
-def test_proxy_refreshes_credentials_once_after_an_upstream_unauthorized_response(
-    monkeypatch,
-):
-    service, client = create_test_client()
-    launch_code = service.create_launch_code()
-    assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
-    calls: list[dict[str, str]] = []
-
-    async def send_upstream(request, path, auth_headers):
-        calls.append(auth_headers)
-        return httpx2.Response(401 if len(calls) == 1 else 200)
-
-    async def refresh():
-        return {"Authorization": "Bearer refreshed-token"}
-
-    monkeypatch.setattr(service, "_send_upstream", send_upstream)
-    monkeypatch.setattr(
-        ClientConfig,
-        "_make_async_token_refresher",
-        lambda _config: refresh,
-    )
-
-    assert client.get(f"{SERVICE_PROXY_ENDPOINT}/processes").status_code == 200
-    assert calls == [
-        {"Authorization": "Bearer token"},
-        {"Authorization": "Bearer refreshed-token"},
-    ]
-
-
-def test_proxy_reports_a_failed_credential_refresh_without_changing_the_session(
-    monkeypatch,
-):
-    service, client = create_test_client()
-    launch_code = service.create_launch_code()
-    assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
-    session = next(iter(service._sessions.values()))
-    original_headers = dict(session.headers)
-    calls: list[dict[str, str]] = []
-
-    async def send_upstream(request, path, auth_headers):
-        calls.append(auth_headers)
-        return httpx2.Response(401)
-
-    async def refresh():
-        raise RuntimeError("token endpoint temporarily unavailable")
-
-    monkeypatch.setattr(service, "_send_upstream", send_upstream)
-    monkeypatch.setattr(
-        ClientConfig,
-        "_make_async_token_refresher",
-        lambda _config: refresh,
-    )
-
-    response = client.get(f"{SERVICE_PROXY_ENDPOINT}/processes")
-
-    assert response.status_code == 502
-    assert response.json() == {
-        "detail": "Unable to refresh processing-service credentials."
-    }
-    assert calls == [original_headers]
-    assert session.headers == original_headers
-
-
-def test_proxy_reports_a_failed_refreshed_request_as_bad_gateway(monkeypatch):
-    service, client = create_test_client()
-    launch_code = service.create_launch_code()
-    assert client.post(LAUNCH_ENDPOINT, json={"launch": launch_code}).status_code == 204
-    calls: list[dict[str, str]] = []
-
-    async def send_upstream(request, path, auth_headers):
-        calls.append(auth_headers)
-        if len(calls) == 1:
-            return httpx2.Response(401)
-        raise httpx2.ConnectError(
-            "connection refused",
-            request=httpx2.Request("GET", "https://example.test"),
-        )
-
-    async def refresh():
-        return {"Authorization": "Bearer refreshed-token"}
-
-    monkeypatch.setattr(service, "_send_upstream", send_upstream)
-    monkeypatch.setattr(
-        ClientConfig,
-        "_make_async_token_refresher",
-        lambda _config: refresh,
-    )
-
-    response = client.get(f"{SERVICE_PROXY_ENDPOINT}/processes")
-
-    assert response.status_code == 502
-    assert response.json() == {
-        "detail": "Unable to reach the configured processing service."
-    }
-    assert calls == [
-        {"Authorization": "Bearer token"},
-        {"Authorization": "Bearer refreshed-token"},
-    ]
 
 
 def create_test_client(
@@ -388,7 +207,10 @@ def create_test_client(
         api_url="https://process.example.test/api",
         auth=auth or TokenAuthConfig(access_token="token"),
     )
-    service = LaunchedAppService(App.create_remote_store(), config)
+    owner = Client(config=config)
+    service = LaunchedAppService(
+        App.create_remote_store(), config, **owner._app_callbacks()
+    )
     app = FastAPI()
     service._init_app(app)
     return service, TestClient(app, raise_server_exceptions=raise_server_exceptions)

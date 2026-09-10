@@ -33,6 +33,7 @@ def test_show_app_uses_notebook_display_and_explicit_compact(monkeypatch):
     assert len(calls) == 1
     assert calls[0][0][0] == client.config
     assert calls[0][1] == {
+        "client": client,
         "compact": False,
         "debug": True,
         "scheme": "dark",
@@ -65,6 +66,7 @@ def test_show_app_uses_browser_display_when_no_shell(monkeypatch):
     assert len(calls) == 1
     assert calls[0][0][0] == client.config
     assert calls[0][1] == {
+        "client": client,
         "compact": False,
         "debug": False,
         "scheme": "auto",

@@ -1,395 +1,229 @@
-# Authlib integration for Cuiman: proposed design
+# Authlib integration for Cuiman: clean replacement
 
-Date: 2026-09-09. Status: proposal for review; no implementation authorized by this document.
+Updated: 2026-09-10. Status: slice 1 implemented for review; supersedes the incremental,
+compatibility-preserving migration proposed here previously.
 
-**Recommendation:** make a persistent Authlib HTTPX2 OAuth client the object that
-holds the live OAuth token and sends authenticated API requests. Replace Cuiman's
-existing OAuth session manager with a small amount of application policy attached
-to that client. Keep configuration, local interaction, and secret storage as
-application responsibilities.
+Implementation sequence: [three-slice plan](AUTHLIB_PLAN.md).
 
-This is based on the current checkout at `a93323c1`, the authentication source and
-tests, and Authlib's versioned **1.8.0** source. The checkout has advanced since
-the handover. Authlib is not installed in the current default environment and is
-not a declared project dependency. Research findings and primary-source links are
-in [AUTHLIB_RESEARCH.md](AUTHLIB_RESEARCH.md). The original proposal was based on
-source analysis; subsequent executable evidence is recorded below.
+## Objective and constraints
 
-The first isolated executable proof has since been completed against Authlib
-1.8.0 / HTTPX2 2.5.0: [results and reproduction](tools/authlib_proof/README.md).
-Ten sync/async scenarios validate the sequential lifecycle and persistence policy.
-Direct Authlib clients and callback wiring were sufficient for that scope;
-subclasses should be introduced only when a remaining policy actually needs them.
-Production integration, concurrency, cancellation, and proxy behavior remain
-unverified. The next production step still requires review of these results.
+Cuiman is a processing-system client. Authlib should own its OAuth protocol and
+live token lifecycle. Reduce Cuiman's production authentication implementation
+and make authentication easier to configure and use. Backward compatibility is
+not required. The user's question about preserving `config.py`, the Client
+interface, and the CLI was a request to explain the plan, not a preservation
+constraint. Useful deletions and interface changes are explicitly welcome.
 
-## 1. Use the HTTP clients
+The current recommendation is to retain the configuration module's role, the
+processing-oriented Client interface, and the familiar CLI workflows (`configure`,
+`login`, `logout`). These are useful concepts. Their existing fields, helper
+methods, signatures, and options are not frozen. Simplify them where doing so
+removes redundancy or user effort; explain the benefit and resulting behaviour.
+Avoid gratuitous renaming and avoid removing a useful capability merely to save
+a few implementation lines.
 
-Use `authlib.integrations.httpx_client.OAuth2Client` for `Client` and
-`AsyncOAuth2Client` for `AsyncClient`. Despite the import path, version 1.8.0 uses
-HTTPX2 when available. These clients combine HTTP connection management and OAuth
-handling, and are intended to send protected resource requests themselves.
-[HTTP client documentation](https://docs.authlib.org/en/stable/oauth2/client/http/httpx.html)
+Keep review checkpoints, but choose implementation steps by complete
+responsibility, not by grants that leave another implementation behind. Review
+the coherent replacement and its user-visible changes together; do not invent a
+separate permission requirement for every field deletion. The password slice at
+`41181d3` is an intermediate implementation to replace.
 
-Do not use the Starlette/FastAPI OAuth registry for the launched-app proxy. That
-integration fits a web application whose login redirect and authorization
-callback belong to browser requests and web sessions. Cuiman's browser instead
-receives an opaque launch capability and uses credentials held by its Python
-owner. Preserve that boundary. The web integration would become relevant if
-Cuiman later offered independent browser-user login.
-[Starlette integration](https://docs.authlib.org/en/stable/oauth2/client/web/starlette.html)
+Preserve useful sign-in capabilities: client credentials, password grants where
+needed by a processing service, and browser-based authorization code with PKCE.
+Basic, static tokens, API keys, and proprietary login remain separate non-OAuth
+mechanisms. Removing a compatibility interface does not require removing these
+capabilities or weakening browser-proxy security.
 
-Use ordinary HTTPX2 clients for Basic, API keys, static access tokens, proprietary
-login, and unauthenticated access. Selecting among the existing authentication
-types needs a straightforward factory, not a provider registry.
+## Authlib is the runtime
 
-## 2. Ownership before and after
+Use persistent `authlib.integrations.httpx_client.OAuth2Client` and
+`AsyncOAuth2Client`, with the pinned Authlib 1.8.0 / HTTPX2 integration. Construct
+one HTTP client per Cuiman client and use it for token requests and processing API
+requests. Use ordinary HTTPX2 clients for non-OAuth authentication.
 
-| Responsibility | Current owner | Proposed owner |
-| --- | --- | --- |
-| Live OAuth access/refresh token | Mutable Pydantic auth configuration | Persistent Authlib client's `token` |
-| Expiry normalization and decision | Not implemented | Authlib token model and `ensure_active_token` |
-| OAuth form encoding, token endpoint authentication, response/error parsing | Cuiman OAuth/OIDC helpers | Authlib |
-| Refresh and client-credentials reacquisition | Cuiman session dispatch and helper requests | Authlib, with grant metadata configured once |
-| Protected request authentication | Copied header dictionaries | Authlib request signing |
-| Explicit login, prompts, browser permission | Cuiman session/interactive helpers | Cuiman client login and interactive helpers |
-| Password fallback and one resource-401 replay | Session plus transport/proxy callbacks | One small policy implementation at the OAuth client |
-| Keyring profile and durable snapshot | Config hook and secret store | Storage callback bound when constructing the OAuth client |
-| API model conversion and API error mapping | `Httpx2Transport` | `Httpx2Transport`, unchanged in purpose |
-| Browser authorization to use the proxy | Launch code and HttpOnly cookie | Existing launch code and cookie |
-| Proxy upstream credentials | Per-browser header snapshots | Reference to the Python owner's authenticated requester |
+Start with direct Authlib clients. No Cuiman OAuth subclasses, replacement token
+model, expiry calculation, token manager, or grant-recovery state machine.
 
-Implement the OAuth policy as two thin subclasses of Authlib's sync/async HTTP
-clients, with shared pure policy helpers where useful. Put these in the existing
-authentication area and remove the displaced OAuth responsibilities from
-`session.py`. Avoid a second wrapper holding its own token, expiry clock, or
-refresh state.
+Authlib owns:
 
-The subclasses may add explicit preparation/login, the resource-401 policy,
-coordination of application-triggered transitions, and persistence integration.
-They must delegate protocol operations and expiry decisions to Authlib. They must
-not reproduce its `_fetch_token`, `_refresh_token`, or token parser implementations.
-If preserving a contract requires doing that, return to review.
+- OAuth request encoding and token endpoint authentication;
+- authorization URL construction, PKCE challenge construction, and callback-state
+  validation during authorization-code exchange;
+- token response parsing and OAuth error types;
+- live access/refresh token state and absolute expiry;
+- automatic refresh and client-credentials reacquisition;
+- refresh-token rotation and protected-request signing;
+- token revocation protocol operations.
 
-`Httpx2Transport` receives the persistent HTTP client instead of OAuth headers
-and refresher callbacks. It constructs API requests and processes responses.
-Client login must create this runtime even if no API method has been called;
-client close must therefore close it even when transport creation never occurred.
+Cuiman supplies configuration, the initial explicit grant, local interaction,
+credential storage callbacks, and processing-specific response conversion.
+Explicit `fetch_token` requires an explicit save afterward; automatic token
+updates use Authlib's `update_token` callback.
 
-### Generated clients and handwritten lifecycle code
+Use `request` as the common HTTP entry point. Do not maintain copied OAuth headers
+or send protected API requests through an independent HTTP session.
 
-`Client` and `AsyncClient` are generated by
-[`tools/gen_client.py`](tools/gen_client.py). Change their generator whenever
-their generated structure must change, then regenerate both files with
-`pixi run gen-client`. Do not hand-edit generated clients as the source of a fix.
+Sources: [HTTPX integration](https://docs.authlib.org/en/stable/oauth2/client/http/httpx.html),
+[HTTP client programming model](https://docs.authlib.org/en/stable/oauth2/client/http/index.html),
+[pinned token lifecycle source](https://github.com/authlib/authlib/blob/v1.8.0/authlib/oauth2/client.py).
 
-Keep login, lazy authenticated-client creation, the proposed token snapshot
-property, and lifecycle behavior in the handwritten `ClientMixin` and
-`AsyncClientMixin`. Keep app borrowing in `ClientAppMixin` and the app service.
-The generated API methods already call the mixins' `_get_transport()` methods;
-that is the existing seam for routing requests through Authlib without changing
-every generated endpoint.
+## Adopt library behaviour
 
-The generator currently emits both constructors and `close()` methods. In
-particular, generated `close()` only closes `_transport`, and overrides any
-same-named mixin method. Recommend moving `close()` ownership to the appropriate
-mixin and removing its generation, so the handwritten lifecycle closes both the
-authenticated runtime and any transport without double-closing shared resources.
-If explicit per-instance runtime initialization is needed, make the constructor
-template invoke a small mixin initialization method. Never put mutable runtime
-state on the mixin class or OAuth lifecycle logic in the generator template.
+The replacement proposes the following library behaviour. Include these changes
+in the design review and user documentation:
 
-For a production step touching these seams, change the generator and handwritten
-code together, regenerate both clients, and review the generated diff. Check
-regeneration consistency allowing for generated timestamps, and exercise cleanup
-through the actual generated client classes, including login without an API
-request and injected transports. No generator execution or production change is
-part of this design step.
+- A resource 401 is returned as a processing API error. Delete automatic renewal
+  and replay from the transport and proxy. Known token expiry is handled by Authlib
+  before the request, without replaying a processing operation.
+- A rejected refresh propagates the library/provider error. The caller can perform
+  explicit fresh login. Delete automatic refresh-to-password fallback.
+- Password authentication without a refresh token can require explicit login after
+  expiry. Delete the special automatic password-reacquisition path.
+- Accept Authlib's refresh-token retention and response parsing behaviour. Remove
+  adapters that reinterpret empty/null refresh tokens or preserve old exception
+  shapes solely for compatibility.
 
-## 3. One token representation, with explicit compatibility boundaries
+Simplify OAuth2/OIDC configuration to one complete `oauth_token` mapping and
+provider settings. Remove their separate `access_token` and `refresh_token`
+inputs: users should not have to understand precedence among three overlapping
+token representations. Static-token authentication retains its `access_token`.
+Do not introduce aliases, dual-format writes, or a compatibility bridge merely
+to preserve the deleted OAuth fields.
 
-The authoritative live value is Authlib's token mapping, including access token,
-refresh token when applicable, token type, scope, and absolute expiry. Pass it
-through the OAuth path without converting it to `TokenResult` and back.
+Use Authlib's supported token endpoint authentication methods, configured from
+the provider settings. Prefer standard OAuth bearer signing. Retain a custom
+OAuth token-header setting or a no-client-ID adapter only if an actual supported
+processing provider requires it; these are not reasons to retain a token manager.
+Static tokens and API keys can keep their purpose-specific custom headers.
 
-Configuration remains input and serialization data. Existing `access_token` and
-`refresh_token` inputs remain usable to bootstrap OAuth sessions; `auth_type=token`
-continues to mean an externally supplied static token with no automatic renewal.
-Expose a read-only snapshot of the current OAuth mapping on the client, proposed
-as `client.token`. Reading a snapshot must not initiate login or refresh.
+Retain a provider-specific compliance hook only when an actual supported provider
+requires it. The client-credentials refresh-token discard can remain as a small,
+explicit grant-policy hook if needed to ensure Authlib reacquires that grant.
+Do not grow a generic provider registry for hypothetical deviations.
 
-**Proposed compatibility change:** OAuth token fields in `client.config.auth`
-become bootstrap values, rather than a live token interface. OAuth header/refresher
-methods on configuration should be deprecated. Do not continually reconcile a
-mutable configuration token with the Authlib token. Existing configuration-driven
-code must be given a documented migration to the client runtime before removal.
+## Small Cuiman interface
 
-Persist a complete OAuth snapshot, including **absolute `expires_at`**, at a
-storage boundary. Keep keyring identity based on canonical configuration path and
-API URL, and reuse the existing chunk storage. A concrete compatible storage
-approach is an `oauth_token` JSON string inside the existing string-valued secrets
-record, alongside applicable username/password/client-secret values. The loader
-accepts old access/refresh-only records and normalizes them once. A secret-only
-bootstrap mapping can carry this resolved value into the client factory; no live
-runtime objects belong in Pydantic models.
+The user-facing authentication operations are client construction, `login`,
+`token`, `logout`, and `close`. Existing processing operations remain the main interface.
+Sync/async variants differ in I/O syntax, with shared configuration and policy.
 
-Do not recalculate a fresh expiry from a saved `expires_in` at every startup. Old
-records without expiry remain usable and rely on the one-401 recovery policy.
-Explicit Python/environment token overrides must discard incompatible stored
-expiry and refresh metadata; preserve current runtime-only credential precedence.
-Public config files and representations must continue to omit credentials.
+`ClientMixinBase` implements credential selection, HTTP client construction,
+grant preparation, discovery acceptance, ID-token validation policy, persistence,
+and request options once. The sync/async mixins execute native I/O and handle
+their locks, cancellation, closure, and app dispatch. They do not contain separate
+implementations of these decisions. No custom coroutine runner or OAuth subclass
+is introduced to remove the remaining I/O syntax differences.
 
-Authlib supplies expiry normalization; these are storage and compatibility
-decisions around it.
-[Authlib token model](https://github.com/authlib/authlib/blob/v1.8.0/authlib/oauth2/rfc6749/wrappers.py)
+- Authentication configuration contains bootstrap credentials and provider
+  settings. Remove redundant OAuth token fields, OAuth header-generation methods,
+  and renewal-callback factories. The runtime has one authoritative Authlib token
+  mapping. Configuration does not own a live OAuth session.
+- `login()` prepares the client's own HTTP runtime. `login(force=True)` performs a
+  fresh grant. Explicit interaction is controlled here. Ordinary processing and
+  proxy requests never prompt or open a browser.
+- `client.token` returns an independent snapshot of the runtime's OAuth token.
+  There is no live token interface on `client.config.auth`.
+- `close()` closes the owned HTTP runtime. Login without a processing API call has
+  the same lifetime. A closed runtime is not silently recreated for a proxy call.
+- The HTTP transport converts processing models to requests and responses to
+  processing models/errors. It contains no grant selection or token recovery.
 
-## 4. Ordinary request and refresh
+Change generated structure in `tools/gen_client.py` and regenerate both clients
+when needed. Keep useful processing operations and familiar client workflows;
+simplify authentication-specific arguments or methods when justified. Keep
+authentication implementation out of generated endpoint methods.
 
-```mermaid
-sequenceDiagram
-    participant Caller as Python API or app proxy
-    participant OAuth as Persistent Authlib client
-    participant Provider as Authorization server
-    participant Store as Keyring callback
-    participant API as Processing API
-    Caller->>OAuth: request(method, URL, body)
-    OAuth->>OAuth: ensure_active_token()
-    opt Token is expired
-        OAuth->>Provider: refresh token (or client credentials)
-        Provider-->>OAuth: new token mapping
-        OAuth->>OAuth: install token
-        OAuth->>Store: update_token(snapshot)
-        Store-->>OAuth: saved, or storage failure reported
-    end
-    OAuth->>API: request signed with active token
-    API-->>Caller: response
-```
+## One implementation for all callers
 
-Initial acquisition is explicit Cuiman preparation: reuse a usable token, use an
-available refresh token, or call `fetch_token` with the configured grant. Missing
-credentials produce `LoginRequiredError` unless the caller explicitly permitted
-interaction. Authlib resource requests do not fetch an initial token from nothing.
+Python processing calls and proxy requests use their owner's authenticated
+request method. The proxy retains an authorization capability to use that owner;
+it does not retain credentials or token/header snapshots per browser session.
 
-For forced login, bypass reuse and call the selected fresh grant on the same
-runtime. A fresh fetch replaces the token response as a whole, so it must not
-inherit the old refresh token. Do not erase a working token before the network
-operation merely to force acquisition. Failed acquisition can retain it; a
-successful acquisition followed by failed persistence follows the policy below.
+For a synchronous Python owner, proxy work runs through a worker using that same
+client. Serialize access where needed to prevent concurrent transitions on the
+sync Authlib runtime. For an asynchronous owner, submit proxy requests to its
+running owner loop. The loop must outlive the launched app. Use standard asyncio
+or AnyIO primitives; do not build a background event-loop service or a registry
+of independently synchronized token managers.
 
-Known expiry uses Authlib automatically. A resource 401 retains Cuiman's maximum
-one renewal/replay policy. If another request already replaced the token used by
-the rejected request, replay once using the current token; otherwise renew or
-reacquire through Authlib. Track the token actually signed on that request, not
-a snapshot taken before waiting for a request slot. Token endpoint errors must
-never enter this resource-response replay path. Do not replay non-rewindable
-request bodies; current JSON API requests and buffered proxy bodies are replayable.
+A standalone app server owns a client for its lifespan. A launched app borrows
+its Python client's requester. Stopping the app does not close a borrowed client;
+closing the owner makes further proxy work fail without exposing credentials.
+Make these ownership rules explicit and test them at the request/close interface.
 
-Keep recovery from an HTTP 400 refresh response with OAuth `invalid_grant` to one
-fresh password grant when credentials are available. Preserve the HTTP-status
-distinction at the token-response boundary: an `invalid_grant` body on a 503 must
-not trigger recovery. Also preserve reacquisition when a password grant has no refresh
-token. OIDC without a usable refresh token requires explicit login. Other OAuth
-errors propagate without a password fallback, interaction, or retry loop.
+CLI login constructs the same Cuiman client, performs explicit login, saves its
+result, and closes it. It does not execute a separate OAuth protocol implementation.
+CLI logout delegates token revocation to Authlib where supported and removes local
+credentials. Ordinary CLI processing commands already use the Python client.
 
-Use Authlib's `request`/`stream` entry points; inherited low-level `send` is not
-an equivalent expiry-aware entry point.
+Preserve the existing launch capability, HttpOnly cookie, origin checks, fixed
+upstream host/path validation, and browser-header filtering. Those protect local
+proxy access; they are not an OAuth token lifecycle to move into Authlib.
 
-These application policies are not provided wholesale by Authlib. Its source
-does supply request-time expiry/refresh and typed OAuth errors.
-[HTTP integration source](https://github.com/authlib/authlib/blob/v1.8.0/authlib/integrations/httpx_client/oauth2_client.py)
+## Local concerns that remain
 
-## 5. Persistence supports recovery across runs
+**Storage.** Keep the existing OS-keyring implementation and configuration-profile
+selection. Save the complete Authlib token mapping at a small storage callback.
+Keep configuration input and serialization consistent with the simplified models.
+Persist one complete token snapshot without live-token reconciliation or dual
+token managers. Expected optional save failures
+warn while the live token remains usable. Explicit CLI saving must report failure.
+Do not implement save-before-publication transactions, rollback, or retry queues.
 
-The user clarified that preserving Cuiman's existing save-before-publication
-guarantee is not a requirement. Design persistence around Authlib's lifecycle;
-do not add transaction machinery to retain that historical behavior.
+**Interaction.** Keep credential prompts and loopback callback server lifecycle.
+The callback passes an authorization-response URL to Authlib rather than parsing
+OAuth code/state/errors and constructing token requests itself. Reject ambiguous
+repeated security parameters before passing the response to Authlib. Cancellation
+must release the local listener; it cannot undo a remote token exchange.
 
-**Recommend Authlib's memory-first ordering.** Its token parser installs the
-token before the refresh update callback. Explicit `fetch_token` does not call
-that callback, so Cuiman calls the same save operation after initial/forced
-acquisition. An async client needs an async callback: the inspected source awaits
-it, despite the documentation's broader claim about synchronous callbacks.
-[Core source](https://github.com/authlib/authlib/blob/v1.8.0/authlib/oauth2/client.py),
-[async update ordering](https://github.com/authlib/authlib/blob/v1.8.0/authlib/integrations/httpx_client/oauth2_client.py)
+**OIDC.** Retain issuer and HTTPS endpoint checks for discovered metadata. Use the
+persistent client's metadata rather than a parallel discovery/session object.
+Use Authlib and joserfc for ID-token signature and claims validation, including
+issuer, audience, nonce, and time; raw Authlib HTTP clients do not perform that
+validation automatically. Do not copy the web framework's entire session registry
+or treat unvalidated ID-token claims as identity. A new authorization-code OIDC
+login requires a valid ID token; refresh can omit one.
 
-The following failure policy is recommended for review; the clarification does
-not by itself settle every persistence behavior:
+**Non-OAuth.** Basic authentication uses HTTPX2's implementation. Static/API-key
+headers remain small configuration adapters. Proprietary login stays isolated
+from OAuth, returning the token it needs without an OAuth-shaped `TokenResult`
+wrapper or shared OAuth session machinery.
 
-- A provider success makes the new token authoritative in memory.
-- During ordinary API use, the persistence callback catches an expected storage
-  failure, reports a credential-storage warning, and returns normally. Authlib
-  can send/replay the request using the new token. Report this through Python's
-  warning machinery, including for server-side proxy use; do not expose secrets
-  in browser responses. Unexpected programming errors still propagate.
-- Python client login prepares live authentication and follows the same policy
-  when optional persistence is configured. In contrast, `cuiman login` explicitly
-  promises saved credentials: it must report a failed save as a command failure,
-  without claiming authentication itself failed or rolling back the live token.
-- The warning explains that credentials are active but saving could not be
-  confirmed, so restarting may require login. API request success and durable
-  credential storage are distinct outcomes.
-- Attempt saving on each subsequent token update. Explicit Python `login()` can
-  retry saving an existing token without another provider exchange. Start without
-  a background retry queue, duplicate token state, or a new persistence state
-  machine. A process ending before a successful save can lose its latest token.
+## Concrete deletion list
 
-Cancellation before a response is received can leave the provider changed but
-the client unaware. After token installation, cancellation must not restore the
-previous refresh token. For an asynchronous save, keep ownership of the save
-operation until it completes, even if its caller is cancelled; test cancellation
-during the worker-backed keyring operation before choosing the exact shielding
-implementation. Browser-wait cancellation still stops the temporary callback
-server. Cancellation cannot promise rollback of a remote token rotation.
-
-The existing store publishes a new chunk manifest before removing old chunks;
-cleanup errors can therefore occur after the new record is already committed.
-An exception alone does not prove that the durable record stayed unchanged.
-[Current storage implementation](cuiman/src/cuiman/api/auth/secret_store.py)
-
-This replaces the earlier proposal to abort an ordinary API request on storage
-failure. Keeping a working authenticated session usable is the default; durable
-storage is required when the user explicitly requests it. Update the historical
-failure tests to exercise the reviewed policy when implementation is approved,
-rather than treating those tests as an architectural constraint.
-
-## 6. Lifetimes, concurrency, and the launched app
-
-One Python client owns one persistent OAuth client. Sync and async clients are
-separate ownership domains, not two clients kept synchronized through a mutable
-configuration. Do not add global registries or keyring-based locking between
-independent clients/processes. Simultaneously reusing the same rotating refresh
-token in independently created clients remains outside the guarantee.
-
-Authlib's async lock covers automatic expiry checks, not arbitrary explicit
-fetch/refresh or cross-client work; sync has no equivalent renewal lock.
-Consequently, use **one application transition gate per runtime**, outside
-configuration, to coordinate explicit login, 401 renewal, and the call into
-`super().ensure_active_token(...)`. Pass the current token after entering that
-gate. Let Authlib make the expiry decision. Inner fetch/refresh and persistence
-callbacks do not reacquire the gate. Normal resource network requests remain
-concurrent outside it. This needs focused race tests; it is not a claim that the
-library alone solves all concurrency.
-[Authlib HTTP client implementation](https://github.com/authlib/authlib/blob/v1.8.0/authlib/integrations/httpx_client/oauth2_client.py)
-
-The app currently starts its server on another thread and event loop. Therefore
-`show_app()` must pass a reference to its owner's requester, not merely its
-configuration. Each browser cookie authorizes use of that requester and holds no
-token/header copy.
-
-- For a synchronous Python owner, the async proxy runs its synchronous request
-  through a worker thread. The sync transition gate also covers Python calls.
-- For an async owner, submit proxy work to that owner's running loop and await the
-  result from the server loop. Never use an `AsyncOAuth2Client` directly from both
-  loops. The owner loop must remain running for the app to work.
-- A standalone `serve(config, ...)` owns its own async requester for its FastAPI
-  lifespan and closes it on shutdown. It cannot coordinate with unrelated clients
-  constructed from the same config.
-- A launched app borrows its parent's requester. Stopping that app does not close
-  the parent client. Closing the parent prevents new proxy work and closes its
-  runtime after outstanding work is handled. Client close must release a runtime
-  created only by login, including one whose persistence failed.
-
-**Async app compatibility constraint:** launching through an `AsyncClient` requires
-binding it to a running owner loop, and that loop must outlive proxy use. Support
-the notebook case explicitly. A client used inside a finished `asyncio.run()`
-cannot leave a functioning app backed by its closed loop. A universal background
-event-loop service would avoid that constraint at a substantially larger cost;
-it is not the proposed default. Prototype the borrowing/shutdown boundary before
-implementing app integration.
-
-## 7. Small adapters and remaining OIDC work
-
-| Requirement | Proposed treatment |
+| Current implementation | Replacement |
 | --- | --- |
-| Existing body-based client credentials | Set `token_endpoint_auth_method="client_secret_post"` explicitly; do not inherit Authlib's Basic default |
-| Password grant without client ID | Small supported callable client-auth method that adds no client credentials; Authlib's `none` encoder otherwise adds `client_id` |
-| Client-credentials response includes refresh token | Remove it at the response compliance boundary; configure `grant_type` and `token_endpoint` so Authlib reacquires |
-| Empty/null refresh token in successful renewal | Normalize to omission so Authlib preserves the previous token; fresh fetch never merges the old one |
-| Custom API token header | A `protected_request` compliance hook moves the signed bearer value to the configured header; keep normal Authlib expiry handling |
-| Missing token type in existing inputs | Authlib supports a bearer default; retain that compatibility |
-| Malformed successful response | Preserve a narrow response-shape check where Authlib is permissive; leave OAuth error parsing to Authlib and avoid a second token model |
-| Raw per-request auth/header overrides | Document precedence explicitly; explicit external credentials must bypass this client's renewal/replay, and browser auth headers remain untrusted |
+| `api/auth/session.py`, including resolve/renew/commit/rollback and snapshot restore | Initial preparation on the owned HTTP runtime; Authlib handles subsequent OAuth lifecycle |
+| `api/auth/oauth2.py` and `oauth2_async.py` | Authlib fetch/refresh methods |
+| Password subclasses in `api/auth/oauth2_client.py` | Direct Authlib clients and explicit login |
+| OAuth `TokenResult` conversion and one-shot public OAuth exports | Authlib token mapping; remove those public helpers |
+| Handwritten OIDC authorization, PKCE challenge, code-exchange, refresh and revocation protocol helpers; `oidc_async.py` | Authlib methods, retaining local callback/discovery trust checks |
+| Config OAuth header generation and renewal-callback factories | Bootstrap settings; Authlib request signing |
+| Transport renewal callbacks, OAuth header snapshots, override detection, 401 replay | Authenticated HTTP request and processing-response conversion |
+| Proxy `_AppSession.headers`, header resolution, refresh/replay, per-request HTTP client creation | Borrowed requester; a set of authorized browser sessions |
+| Separate CLI OAuth acquisition and token publication | Same client login plus explicit durable save |
+| Separate OAuth access/refresh inputs, precedence rules, and snapshot/config reconciliation | One complete OAuth token mapping |
 
-Authlib provides the extension points for these adapters.
-[Token authentication source](https://github.com/authlib/authlib/blob/v1.8.0/authlib/oauth2/auth.py),
-[client extension API](https://docs.authlib.org/en/stable/oauth2/client/http/index.html)
+Remove tests that exist only to freeze deleted helper graphs or compatibility
+semantics. Replace them with HTTP-boundary tests using actual Authlib clients.
+Retain meaningful processing, keyring, configuration isolation, callback, and
+proxy security tests.
 
-For browser login, retain loopback server lifecycle, prompt/browser controls,
-duplicate callback-parameter rejection, cancellation, and exact discovery-issuer
-and HTTPS endpoint checks. Cache validated metadata for the runtime. Give Authlib
-authorization URL construction, S256 challenge computation, code exchange,
-refresh, and revocation. Keep the verifier, expected state, and redirect URI for
-that one explicit login attempt. Send discovery requests without access tokens.
+## Completion and evidence
 
-Raw Authlib HTTP clients do not automatically perform the web integration's
-OIDC ID-token validation. The existing Cuiman flow checks discovery and callback
-state but does not validate ID tokens either. The OIDC milestone should explicitly
-review completing that validation with Authlib's OIDC claims support and joserfc,
-including signature, issuer, audience, nonce, and time checks. Requiring a valid
-ID token for code-flow OIDC sign-in would reject some currently tolerated
-responses; do not silently introduce that change. Never expose identity claims
-from an unvalidated ID token. Refresh responses can legitimately omit an ID token.
-[Authlib OIDC orchestration](https://github.com/authlib/authlib/blob/v1.8.0/authlib/integrations/base_client/async_openid.py)
+The next implementation must move every OAuth consumer off the old lifecycle and
+remove the replaced implementation in the same reviewed change. A temporary
+working-tree migration is fine; do not declare a grant-by-grant partial replacement
+a successful simplification while the legacy token manager remains.
 
-## 8. What disappears
+Show net production changes against the committed pre-password checkpoint, with
+tests and documentation counted separately. Require an actual reduction and fewer
+independent lifecycle paths; a smaller file that hides equivalent machinery in
+more wrappers is not success. Do not sacrifice issuer/state checks, credential
+isolation, or processing functionality merely to improve a line count.
 
-Remove OAuth internals from `session.py`: `_obtain_tokens*`, `_apply_tokens`,
-`_refresh_auth_headers*`, OAuth header callback factories, and the token commit
-machinery once the persistence contract is agreed. Preserve any small functions
-still needed for non-OAuth credentials, with explicit names and responsibilities.
-
-Remove custom OAuth request preparation and token response conversion from
-`oauth2.py` and `oauth2_async.py`. Remove the corresponding OIDC code-exchange,
-refresh, revocation form builders and async protocol duplication. Retain the
-OIDC-specific discovery and local callback code described above.
-
-Remove OAuth header updates from both client mixins and transport creation.
-Remove transport/proxy refresher callbacks and `_AppSession.headers`. Remove
-per-proxy-request HTTP client construction.
-
-`TokenResult` and several OAuth helper functions are publicly exported today.
-Retain `TokenResult` for proprietary login and existing consumers; stop using it
-on the internal OAuth path. Deprecate exported one-shot OAuth helpers separately
-before removing them. If compatibility wrappers remain for a transition period,
-they are explicit standalone operations with deterministic close, never the
-internal mechanism for Cuiman API requests. This limits immediate deletion counts
-but avoids breaking public imports without review.
-
-## 9. Move forward through reviewed steps
-
-**First step (completed; awaiting review):** build an isolated executable proof against exactly
-Authlib 1.8.0 and HTTPX2, using mock token/resource endpoints and fake persistence.
-Leave production Cuiman unchanged. Show a sync and async persistent client making
-two API requests across expiry and rotation, then demonstrate a persistence
-failure during ordinary API use and during an explicit save operation. Verify
-the callback ordering, complete token/expiry preservation, continued API use with
-a storage warning, and an error for an unsuccessful explicit save. Show the small
-amount of Cuiman policy needed, and pause
-for review. Dependency/environment changes for that proof belong to that next
-agreed step, not this research step.
-
-Subsequent steps, each separately reviewed:
-
-1. Replace one OAuth client-credentials path end to end, including persistence
-   metadata and close. Update the generator's lifecycle seam and regenerate both
-   clients if needed. Delete the replaced code in the same step.
-2. Add password compatibility, 401 replay, and transition coordination with race
-   and cancellation tests. Review the actual size of the remaining policy.
-3. Move OIDC browser login, refresh, and revocation onto the persistent client;
-   settle ID-token validation compatibility explicitly.
-4. Prototype and then integrate the app's shared requester across threads/loops,
-   including multiple browser sessions, shutdown, and cancelled proxy requests.
-5. Finish public API deprecations and documentation, and run broader validation.
-
-Before each production change, inspect relevant Cuiman coverage. Use meaningful
-behavior tests at mock HTTP/keyring boundaries rather than mocks of the old helper
-graph. Check grants, rotation, absent expiry, storage failures, no automatic
-interaction, custom headers, isolation, explicit force, close, and the shared
-proxy. Use the Pixi workflow: `pixi run test-cuiman`, relevant coverage, then
-`pixi run tests`, `pixi run checks`, and `pixi run build-docs` for final integration.
-Real Keycloak verification remains separate evidence, requiring an available
-test provider; none has been assumed or used.
-
-Device authorization and notebook token-provider callbacks remain candidates for
-later work, not requirements of this migration. Static injected-token notebooks
-remain supported.
+Validate standard Authlib behaviour with mock token/resource endpoints, sync/async
+clients, fake expiry, keyring callbacks, explicit login, and proxy ownership.
+Use the Pixi checks, Cuiman coverage, workspace tests, and docs build. State any
+remaining provider and concurrency limits. No real provider interoperability is
+assumed from mock tests. Device authorization remains outside this replacement.

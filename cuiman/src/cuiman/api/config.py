@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import (
     Annotated,
     Any,
-    Awaitable,
     Callable,
     ClassVar,
     Optional,
@@ -15,14 +14,14 @@ from typing import (
 )
 
 import yaml
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, PrivateAttr, field_validator
 from pydantic_settings import BaseSettings, EnvSettingsSource, SettingsConfigDict
 
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 
 from .auth import AuthConfig, AuthConfigBase, NoAuthConfig
+from .auth.config import has_credentials
 from .auth.secret_store import load_auth_secrets, save_auth_secrets
-from .auth.session import can_login
 from .defaults import DEFAULT_API_URL
 from .opener import JobResultOpener, JobResultOpenerRegistry
 
@@ -74,22 +73,7 @@ class ClientConfig(BaseSettings):
     auth: AuthConfig = Field(default_factory=NoAuthConfig)
     """Authentication configuration selected by its ``auth_type`` field."""
 
-    @property
-    def auth_headers(self) -> dict[str, str]:
-        """Return the HTTP authentication headers for this client."""
-        return self.auth.auth_headers
-
-    def _maybe_make_token_refresher(
-        self,
-    ) -> Callable[[], dict[str, str]] | None:
-        """Create a synchronous token renewal callback when supported."""
-        return self.auth.make_token_refresher()
-
-    def _make_async_token_refresher(
-        self,
-    ) -> Callable[[], Awaitable[dict[str, str]]] | None:
-        """Create an asynchronous token renewal callback when supported."""
-        return self.auth.make_async_token_refresher()
+    _source_path: Path | None = PrivateAttr(default=None)
 
     def _repr_json_(self):
         return self.to_file_dict(), dict(root="Client configuration:")
@@ -112,6 +96,9 @@ class ClientConfig(BaseSettings):
         #    brand Cuiman by assigning a derived ``default_config`` instance;
         #    its type owns settings metadata such as the environment prefix.
         config_cls = cls._configured_type()
+
+        if config_path is None and config is not None:
+            config_path = config._source_path
 
         # 1. Load the public, file-backed configuration without resolving
         #    environment variables or operating-system credentials yet.
@@ -136,8 +123,11 @@ class ClientConfig(BaseSettings):
         # 4. Build the effective configuration from all non-keyring sources
         #    without re-resolving Pydantic Settings sources.
         resolved_config = cls.new_instance(**config_dict)
+        resolved_config._source_path = cls.normalize_config_path(config_path)
         if (
             config is not None
+            and resolved_config._source_path
+            == cls.normalize_config_path(config._source_path)
             and resolved_config.api_url == config.api_url
             and resolved_config.auth.model_dump() == config.auth.model_dump()
         ):
@@ -199,7 +189,9 @@ class ClientConfig(BaseSettings):
         config_cls = cls._configured_type()
         # Validate the file-only snapshot without loading any Settings sources;
         # ClientConfig.create() applies those sources in its numbered sequence.
-        return cls._new_model_instance(config_cls, **config_dict)
+        config = cls._new_model_instance(config_cls, **config_dict)
+        config._source_path = cls.normalize_config_path(config_path)
+        return config
 
     def write(self, config_path: Optional[str | Path] = None) -> Path:
         config_path = self.normalize_config_path(config_path)
@@ -357,11 +349,12 @@ def _update_config(target: dict[str, Any], updates: dict[str, Any]) -> None:
 
 def _has_auth_credentials(config: ClientConfig) -> bool:
     """Return whether supplied credentials permit non-interactive login."""
-    return can_login(config.auth)
+    return has_credentials(config.auth)
 
 
 def _set_auth_secret_persistor(config: ClientConfig, config_path: Path) -> None:
     """Persist updated token values to the keyring associated with a config file."""
+    config._source_path = config_path
 
     def persist(auth: AuthConfigBase) -> None:
         save_auth_secrets(

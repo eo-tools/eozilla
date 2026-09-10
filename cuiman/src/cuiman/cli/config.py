@@ -11,23 +11,16 @@ import typer
 from pydantic import BaseModel
 
 from cuiman.api.auth import (
-    AuthConfigBase,
     NoAuthConfig,
-    OAuth2AuthConfig,
-    OidcAuthConfig,
-    revoke_oidc_tokens,
 )
 from cuiman.api.auth.config import (
     AUTH_TYPE_NAMES,
     OAUTH2_GRANT_TYPE_NAMES,
     OAuth2GrantType,
+    has_credentials,
 )
-from cuiman.api.auth.interactive import prompt_auth
-from cuiman.api.auth.secret_store import (
-    delete_auth_secrets,
-    save_auth_secrets,
-)
-from cuiman.api.auth.session import can_login, resolve_auth_headers
+from cuiman.api.auth.secret_store import SecretStoreError
+from cuiman.api.client import Client
 from cuiman.api.config import ClientConfig
 from cuiman.api.defaults import DEFAULT_API_URL, DEFAULT_AUTH_TYPE
 
@@ -91,28 +84,28 @@ def login_client_with_prompt(
     if isinstance(auth, NoAuthConfig):
         typer.echo("The configured service does not require login.")
         return
-    if isinstance(auth, OAuth2AuthConfig) and auth.grant_type == "client_credentials":
-        raise ValueError(
-            "OAuth2 client_credentials does not support 'cuiman login'. "
-            "Provide credentials through environment variables or Python configuration."
-        )
-    candidate = prompt_auth(auth, no_browser=no_browser)
-    resolve_auth_headers(candidate)
-    _save_login_auth(config_path, config, candidate)
+    client = Client(
+        config=config, config_path=str(config_path) if config_path else None
+    )
+    try:
+        client.login(force=True, no_browser=no_browser, save=True)
+    finally:
+        client.close()
     typer.echo("Login completed.")
 
 
 def logout_client(config_path: Path | str | None = None) -> None:
     """Remove locally stored credentials for the configured service."""
-    config = _get_login_config(config_path, resolve_secrets=False)
     try:
-        config = ClientConfig.create(config_path=config_path)
-        if isinstance(config.auth, OidcAuthConfig):
-            revoke_oidc_tokens(config.auth)
-    finally:
-        delete_auth_secrets(
-            ClientConfig.normalize_config_path(config_path), config.api_url or ""
-        )
+        config = _get_login_config(config_path)
+    except SecretStoreError:
+        config = _get_login_config(config_path, resolve_secrets=False)
+    client = Client(
+        config=config,
+        config_path=str(config_path) if config_path else None,
+        resolve_secrets=False,
+    )
+    client.logout()
     typer.echo("Logged out.")
 
 
@@ -124,7 +117,6 @@ def _configure_public_auth_with_prompt(ctx: _Context, auth_type: str) -> None:
         _prompt_for_str(ctx, "token_url", "OAuth2 token URL", "")
         _prompt_for_oauth2_grant_type(ctx)
         _prompt_for_str(ctx, "client_id", "OAuth2 client ID", "")
-        _configure_token_type_with_prompt(ctx)
     elif auth_type == "oidc":
         _prompt_for_str(ctx, "issuer_url", "OIDC issuer URL", "")
         _prompt_for_str(ctx, "client_id", "OIDC client ID", "")
@@ -170,21 +162,8 @@ def _get_previous_public_config(config_path: Path | str | None) -> dict[str, Any
 
 
 def _ensure_cli_credentials(config: ClientConfig) -> None:
-    """Explain when public configuration exists but login credentials do not."""
-    if can_login(config.auth):
-        return
-    try:
-        _ = config.auth_headers
-    except ValueError as exc:
-        if (
-            isinstance(config.auth, OAuth2AuthConfig)
-            and config.auth.grant_type == "client_credentials"
-        ):
-            raise ValueError(
-                "OAuth2 client_credentials credentials are not configured. "
-                "Provide them through environment variables or Python configuration."
-            ) from exc
-        raise ValueError("Please log in first using 'cuiman login'.") from exc
+    if not has_credentials(config.auth):
+        raise ValueError("Please use 'cuiman login' to provide credentials.")
 
 
 def _get_public_legacy_config(config_data: dict[str, Any]) -> dict[str, Any]:
@@ -252,19 +231,6 @@ def _get_login_config(
             )
         raise ValueError(f"Configuration file {config_path} not found or empty.")
     return ClientConfig.create(config_path=config_path, resolve_secrets=resolve_secrets)
-
-
-def _save_login_auth(
-    config_path: Path | str | None,
-    config: ClientConfig,
-    auth: AuthConfigBase,
-) -> None:
-    save_auth_secrets(
-        ClientConfig.normalize_config_path(config_path),
-        config.api_url or "",
-        auth.auth_type,
-        auth.to_secret_dict(),
-    )
 
 
 def _prompt_for_auth_type(ctx: _Context) -> str:

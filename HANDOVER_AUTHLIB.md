@@ -1,258 +1,124 @@
-# Handover: Authlib integration for Cuiman
+# Handover: Authlib replacement for Cuiman
 
-Updated: 2026-09-10. Status: client credentials and the shared mixin refactor are
-committed. The authorized password-grant production slice is implemented in the
-working tree and awaits user review.
+Updated: 2026-09-10. Slice 1 is implemented and ready for review. Stop at this
+checkpoint; slices 2 and 3 in [AUTHLIB_PLAN.md](AUTHLIB_PLAN.md) have not started.
+The working tree contains the implementation; it has not been committed here.
 
-## Resume here
+## Direction and current structure
 
-The objective is to use Authlib's intended persistent OAuth client lifecycle to
-reduce Cuiman's custom protocol and token-management code. The migration is
-partially complete: OIDC, CLI login, and the launched-app proxy still use the
-older implementation.
+The user wants less authentication code to maintain, easier use, and the same
+authentication interface across Python, CLI, and the app. Backward compatibility
+is not required. The rejected password implementation at `41181d3` has been
+replaced following [AUTHLIB_DESIGN.md](AUTHLIB_DESIGN.md). `6dd44f4` is the earlier
+comparison point, before that password slice.
 
-The user requires **small steps with review between them**. On this machine the
-user authorized the bounded password-grant slice, including sync/async login,
-refresh, fallback, one-401 recovery, snapshots, tests, and documentation. Review
-that working-tree change before starting another migration step. Research,
-design, and the isolated proof are already complete; approval of the objective
-does not authorize all later work.
+Each Cuiman client owns a direct persistent Authlib `OAuth2Client` or
+`AsyncOAuth2Client` for OAuth2/OIDC, or an HTTPX2 client for other authentication.
+Authlib owns grants, expiry, refresh, signing, PKCE, code exchange, and revocation.
+OIDC signature and claims checks use joserfc and Authlib. Cuiman retains local
+interaction, discovery trust checks, OS-keyring storage, and app proxy security.
 
-## Password-grant slice awaiting review
+The user identified excessive duplication between the two client mixins during
+implementation. Their common decisions now live in `client_mixin_base.py`:
+credential selection, HTTP client setup, initial request preparation, discovery
+acceptance, token validation policy, persistence, and transport/request options.
+The mode-specific mixins execute sync/async I/O and handle locks, cancellation,
+closure, and app dispatch. No OAuth subclasses, custom coroutine runner, or
+replacement token manager were introduced to hide those I/O differences.
 
-- `api/auth/client_credentials.py` has become
-  [oauth2_client.py](cuiman/src/cuiman/api/auth/oauth2_client.py). Factories,
-  persistence, response validation, and custom headers are shared by both grants.
-  Two small password subclasses delegate protocol, expiry, rotation, and signing
-  to Authlib while adding explicit login and password fallback.
-- Password login accepts access-token or refresh-only bootstrap credentials.
-  Missing credentials can prompt only during explicit login. Failed fresh login
-  keeps the previous live token and does not publish prompted credentials.
-- Automatic refresh retains omitted/empty/null refresh tokens. Forced login and
-  fallback fetch replace the complete token. Only HTTP 400 `invalid_grant` from
-  refresh permits password fallback; other errors do not. Missing refresh tokens
-  permit password reacquisition at known expiry or after a resource 401.
-- Password grants now use `client.token` and full keyring snapshots with absolute
-  expiry, plus the existing warning-and-continue policy for expected save failures.
-- Legacy sessions consume saved bootstrap snapshots once into their own token
-  fields and discard stale snapshot metadata. CLI login and proxy ownership
-  remain legacy; no old public helper has been removed. The mixins no longer use
-  legacy header/session renewal for either OAuth2 grant.
-- Failed initial refresh can be retried by the next API call even when the
-  runtime still contains only a refresh token. No generator changes were needed.
-- Regression evidence is
-  [test_password_client.py](cuiman/tests/api/auth/test_password_client.py), using
-  actual generated clients, real Authlib behavior, mock HTTP, a fake clock, and
-  fake persistence. Existing login/transport assertions were updated for runtime
-  ownership; legacy OIDC/session persistence tests remain.
-- Baseline: 660 Cuiman tests, 29 subtests, 100% statement coverage. After this
-  slice: **744 Cuiman tests, 29 subtests, 100% statement coverage**, with the same
-  four warnings, on Python 3.14.6 / Authlib 1.8.0 / HTTPX2 2.5.0.
-- `pixi run tests` passed across the workspace: 1,235 passed and four skipped.
-  `pixi run checks` passed, including mypy over 118 source files. The docs build
-  passed with notebook HTML, link, cross-reference, and theme warnings.
-  `git diff --check` passed. No real provider or keyring was used in tests.
-- Cancellation before an initial password response is tested. Broader transition
-  coordination, cancellation during persistence, proxy sharing, and real provider
-  verification remain deferred. Async password reacquisition without a refresh
-  token is established for sequential use only.
+Processing transport calls the owner's requester. CLI login/logout call the
+client lifecycle. A launched app borrows that requester; its browser sessions
+contain opaque identifiers instead of upstream token snapshots. A standalone
+app owns an AsyncClient and closes it through the server lifespan.
 
-## Repository checkpoint
+## User-visible changes
 
-- Branch: `forman/209-use_authlib`.
-- HEAD on resume: `6dd44f4` (the previous handover update).
-- No network fetch, commit, or push was performed for this slice.
-- Relevant preceding commits:
-  - `a125536e`: shared ClientMixin / AsyncClientMixin refactor.
-  - `e771089e`: production Authlib client-credentials integration.
-  - `84267657`: isolated lifecycle proof and persistence policy.
-  - `2030a1ec`: design output.
-- Before this slice, tracked files were clean. The only untracked path was
-  `eozilla-app/`, a separate nested Git checkout. Preserve it.
-- The password slice, tests, documentation, and this handover are uncommitted.
-  Recheck Git state on resume.
+- Shared `login(interactive=True, no_browser=False, force=False, save=False)`,
+  `token`, `logout()`, and `close()` operations; await the operations for AsyncClient.
+  Ordinary processing and proxy requests never prompt or launch a browser.
+- OAuth2 and OIDC accept one complete `oauth_token` bootstrap mapping. Separate
+  OAuth access/refresh fields and custom bearer/header settings are removed.
+  Both require a client ID. Static tokens and proprietary login retain their
+  purpose-specific token/header fields. CLI client-credentials login is supported.
+- Authlib refreshes known-expired tokens. Rejected refresh propagates the library
+  error; processing-service 401 responses are not replayed. Fresh login is explicit.
+- The runtime owns live OAuth tokens; `client.token` returns a copy. Configuration
+  is not a live token view. OIDC snapshots retain `_cuiman_nonce` so refreshed
+  ID-token nonces can be checked after restarting the client.
+- Optional keyring updates warn on storage failure without invalidating live
+  credentials. Explicit `login(save=True)` requires successful saving. CLI uses it.
+  Loaded configurations retain their source profile when wrapped in a client,
+  so explicit saving, refresh persistence, and logout target the same profile.
+- Logout attempts OIDC revocation when advertised, then removes local secrets and
+  closes, including when revocation fails. Closed clients cannot be reused.
+- An asynchronous app owner must remain on its original running event loop.
+  App shutdown does not close a borrowed client.
 
-The original workspace was `C:\Users\Norman\Projects\eozilla`. Resolve paths
-below relative to the checkout on the other computer. Follow [AGENTS.md](AGENTS.md)
-and the Pixi workflow. Local keyring credentials and environment overrides do not
-travel with Git; tests use fake credentials. Keyring profiles are scoped to
-canonical config path and API URL. Do not read or copy notebook secrets as part
-of resuming this task.
+User documentation: [authentication](docs/cuiman/authentication.md),
+[configuration](docs/cuiman/configuration.md), and [API](docs/cuiman/api.md).
+Existing OAuth configurations need obsolete fields removed and another login;
+there is no compatibility alias layer.
 
-## Decisions already settled
+## Deletions
 
-- A persistent Authlib HTTPX2 client owns the live OAuth token and signs resource
-  requests. Configuration supplies bootstrap credentials and storage settings.
-- The user explicitly does **not** require the old save-before-publication
-  guarantee. Successful authentication remains usable when optional saving fails.
-- Expected storage failures warn during ordinary requests and Python login;
-  they do not roll back the live token or require another provider exchange.
-  Explicit operations promising durable storage must still report save failure.
-  Production CLI client-credentials login has not been added.
-- Direct Authlib clients and callbacks suffice for the completed slice.
-  Subclasses are a possible later tool, not a requirement.
-- Runtime state stays outside Pydantic configuration. Avoid another token model,
-  expiry algorithm, or parallel token manager around Authlib.
-- `Client` and `AsyncClient` are generated by
-  [tools/gen_client.py](tools/gen_client.py). Structural changes belong in the
-  generator followed by regeneration, never manual edits to generated source.
+Removed `auth/session.py`, `oauth2.py`, `oauth2_async.py`, `oidc_async.py`,
+`login_async.py`, and `tokens.py`; removed password subclasses, one-shot OAuth
+exports, configuration renewal factories, token reconciliation, resource-401
+recovery, transport/proxy renewal callbacks, per-browser token headers, and
+per-proxy-request HTTP client construction. Proprietary response parsing remains
+small and separate. Replaced tests of the deleted helper graph with tests through
+actual Authlib clients and mock HTTP; retained processing, keyring, callback, and
+proxy security coverage.
 
-An earlier attempt was rejected because it put temporary Authlib clients under
-Cuiman's existing token manager and added lifecycle machinery. The accepted
-direction replaces ownership, with code deletion as old paths are migrated.
-The partial migration still retains legacy code needed by other callers.
+## Verification
 
-## Implemented state
+- `pixi run tests`: 959 passed, 4 skipped across all six workspace packages.
+  Package counts: Appligator 161, Cuiman 468, Eozilla 1, Gavicore 70,
+  Procodile 153, Wraptile 106 passed and 4 skipped.
+- Cuiman production statement coverage: 100%, 2,738 statements. The dedicated
+  coverage run also reports 25 passing subtests. Existing Typer/opener warnings
+  remain; the workspace run also reports existing Procodile warnings.
+- `pixi run checks`: passed, including mypy for 112 source files.
+- `pixi run build-docs`: passed, with existing notebook HTML, link, and
+  cross-reference warnings.
+- Client regeneration is reproducible except for generated timestamps.
+  The generator now shares the synchronous lazy transport setup; resource I/O
+  remains sync/async. Generated files were regenerated, not edited independently.
+- `git diff --check HEAD`: passed.
 
-The default Pixi environment pins Authlib **1.8.0**; Cuiman declares
-`authlib >=1.8,<1.9`. Tested HTTPX2 version: **2.5.0**. Root dependency changes and
-the generated lockfile are committed. HTTPX remains transitively; removing
-unrelated dependencies is outside this migration.
+Tests exercise initial grants, expiry and rotation, native errors/no replay,
+OIDC signed ID tokens and rejection, callback state/duplicate parameters,
+optional and required saving, source profiles, CLI flows, shared API/app refresh,
+multiple browser sessions, cancellation, owner loops, and lifespan closure.
+No real provider login or OS-keyring interoperability was performed; fake HTTP
+and storage provide behavioral evidence, not real-provider verification.
 
-### Client credentials and persistence
+## Code size
 
-[api/auth/oauth2_client.py](cuiman/src/cuiman/api/auth/oauth2_client.py)
-constructs persistent `OAuth2Client` / `AsyncOAuth2Client` instances, configured
-with client-secret POST authentication, the token endpoint, and grant metadata.
-Authlib handles expiry, reacquisition, token normalization, and request signing.
+The production comparison includes **all Python files under `cuiman/src` plus
+`tools/gen_client.py`**, including configuration, CLI, proxy, and generated clients.
+It therefore includes additions outside the auth directory. The same counting
+method is used for both committed baselines and the working tree.
 
-Cuiman supplies small response/header adapters: preserve typed OAuth errors,
-reject invalid token responses, discard refresh tokens returned for client
-credentials, and support the configured custom access-token header. The shared
-`needs_token()` helper checks credentials for initial/forced acquisition; it does
-not calculate expiry.
+| Scope / measure | `6dd44f4` | `41181d3` | Working tree |
+| --- | ---: | ---: | ---: |
+| Production physical lines | 7,863 | 8,082 | 7,344 |
+| Production nonblank, non-comment lines | 6,282 | 6,462 | 5,900 |
+| Cuiman test Python physical lines | 9,911 | 10,419 | 7,762 |
+| Cuiman user-documentation Markdown lines | 1,434 | 1,464 | 1,378 |
 
-Initial and forced login fetch on the same runtime. Explicit `fetch_token` does
-not invoke Authlib's update callback, so login saves afterward. Automatic expiry
-reacquisition uses the callback. Python `login()` can retry saving an existing
-token without another grant. Ordinary API calls never prompt or open a browser.
+Production reduction: **738 physical lines** against the password checkpoint,
+and **519** against the earlier checkpoint. Excluding blanks/comment-only lines,
+the reductions are 562 and 382. Tests and documentation are counted separately;
+root planning/handover documents are outside these implementation totals.
 
-- `client.token` returns a deep-copied live snapshot without initiating login.
-  For authentication paths not migrated yet, it returns `None`.
-- Client-credentials `client.config.auth` token fields remain bootstrap inputs,
-  not a live token interface. Explicit access-token overrides discard stored
-  OAuth metadata.
-- `OAuth2AuthConfig.oauth_token` accepts a mapping or JSON object string, currently
-  for password and client-credentials grants. Keyring stores the full snapshot as an
-  `oauth_token` JSON string in its existing string-valued record. Absolute
-  `expires_at` survives restore; the old duration is not restarted.
-- Legacy access-only inputs remain usable and rely on resource-401 recovery when
-  expiry is unknown. Public config files and notebook representations omit
-  secrets, including the snapshot.
-- `save_token()` persists a copied candidate config through the existing hook.
-  It catches `SecretStoreError` and emits `CredentialStorageWarning`; unexpected
-  errors propagate. There is no token rollback or background save queue.
+## Remaining work after review
 
-### Shared mixins, transport, and close
-
-[ClientMixinBase](cuiman/src/cuiman/api/client_mixin_base.py) centralizes runtime
-initialization, token snapshots, the abstract config property, and common
-transport construction. It is generic over the sync/async Authlib client type.
-
-[ClientMixin](cuiman/src/cuiman/api/client_mixin.py) and
-[AsyncClientMixin](cuiman/src/cuiman/api/async_client_mixin.py) retain explicit I/O,
-login, and close methods. The async mixin initializes its login lock and rechecks
-transport creation after awaiting login. This refactor required no generator
-changes because the existing mixin hooks remain intact.
-
-The earlier production change updated the generator to call
-`_init_client_runtime()` and moved `close()` into the handwritten mixins. Both
-clients were regenerated. Close releases the OAuth runtime even after login
-alone, is idempotent, and closes it if an injected transport's close raises.
-
-[Httpx2Transport](cuiman/src/cuiman/api/transport/httpx2.py) borrows the persistent
-Authlib client; the Python client owns closing it. Model conversion and API error
-mapping stay in the transport. The existing maximum one resource-401 renewal and
-replay remains, using forced acquisition on the same runtime. Explicit request
-auth/header overrides bypass managed authentication and its recovery.
-
-## Evidence and limits
-
-Production validation on Windows, using Python **3.14.6**:
-
-- After the mixin refactor: **660 Cuiman tests passed**, 29 subtests, four existing
-  warnings; **100% statement coverage across Cuiman**, including the new base.
-- After the refactor: `pixi run checks` passed, including mypy over 118 source
-  files. `git diff --check` passed.
-- Before the refactor, the production slice also passed `pixi run tests` across
-  the workspace and `pixi run build-docs`. The docs build emitted link,
-  cross-reference, and notebook HTML warnings. These broader commands were not
-  repeated after the refactor.
-- Generator reproducibility was checked during the production slice: both files
-  matched on a second run after ignoring generated timestamps.
-- The subsequent `560e1c4a` commit only reformatted `_repr_json_`; tests were not
-  rerun specifically for that formatting commit or this handover edit.
-- No real provider/Keycloak interoperability or real keyring outage test was run.
-
-Primary regression evidence is
-[test_client_credentials.py](cuiman/tests/api/auth/test_client_credentials.py):
-actual generated clients, real Authlib protocol/signing behavior, HTTPX2
-`MockTransport`, a fake clock, and mocked persistence. It covers sync/async,
-initial and forced login, expiry, saved metadata, warning/retry behavior,
-malformed responses, custom headers, overrides, one-401 recovery, and close.
-Existing login, transport, configuration, app, and CLI tests remain relevant.
-
-The separate [proof](tools/authlib_proof/README.md) passed ten sequential sync/async
-scenarios using Authlib 1.8.0, HTTPX2 2.5.0, and Python 3.12. It includes password
-refresh rotation, but is a disposable experiment, not production integration.
-
-Remaining limits:
-
-- Keyring saving is synchronous even in async callbacks; a slow save can block
-  the event loop. Worker-backed persistence and cancellation ownership/shielding
-  are deferred.
-- Authlib coordinates automatic async expiry renewal; Cuiman retains its initial
-  async login lock. Broader coordination between explicit login, 401 recovery,
-  expiry, threads, and independent clients is not implemented or proven.
-- The app proxy still uses the legacy config/header path. It does not borrow the
-  Python owner's Authlib runtime. Shared ownership across threads/event loops
-  and shutdown needs a separately reviewed step.
-- OIDC and public one-shot OAuth helpers still use their existing
-  protocol/session code and persistence behavior. Do not apply client-credentials
-  claims to those paths. CLI client-credentials login remains unsupported.
-- Arbitrary non-rewindable request bodies and broader concurrency/cancellation
-  behavior are not established by the sequential JSON request tests.
-
-## Next review step
-
-Review the password-grant working-tree slice and its compatibility boundaries.
-After review, agree on one next step, such as transition coordination and
-cancellation tests, before starting further implementation.
-
-Keep transition coordination/cancellation, OIDC (including ID-token validation
-compatibility), shared proxy ownership, and public helper deprecations as later
-review checkpoints. Device authorization and notebook token-provider callbacks
-remain deferred. No subsequent production slice is authorized yet.
-
-## Reading and reproduction
-
-Start with [authentication.md](docs/cuiman/authentication.md) for current
-client-credentials versus legacy behavior. For storage/loading changes, inspect
-`api/auth/config.py`, `api/auth/secret_store.py`, and `api/config.py`; for the
-remaining legacy paths, inspect `api/auth/session.py`, `oauth2.py`, and `oauth2_async.py`.
-These implementation paths are under `cuiman/src/cuiman/`.
-
-[AUTHLIB_DESIGN.md](AUTHLIB_DESIGN.md) and
-[AUTHLIB_RESEARCH.md](AUTHLIB_RESEARCH.md) retain design rationale and versioned
-primary-source references. They are historical documents: statements that
-Authlib is not installed or production integration has not started are stale.
-This handover and current source take precedence for implementation status.
-Proposed subclasses and transition gates in the design are not completed code.
-
-From the checkout root, restore the locked environment with `pixi install`.
-To reproduce the production coverage result:
-
-```console
-pixi run pytest cuiman/tests --cov=cuiman/src/cuiman --cov-report=term-missing -q
-pixi run checks
-```
-
-Use `pixi run test-cuiman` for an ordinary package run. Run broader workspace
-tests/docs as appropriate to the next change. The proof has its own manifest and
-reproduction commands in its README.
-
-On the original machine, sandboxed Pixi calls sometimes could not read packages
-linked to its external cache; approved elevated execution succeeded. Treat those
-as environment access failures, not evidence of missing dependencies or failing
-tests. For generator runs on Windows, `$env:PYTHONUTF8='1'` avoids console encoding
-errors from Unicode checkmarks. There is no background work to resume.
+Slice 2 consolidates configuration/sign-in workflows and removes remaining
+redundant CLI options and prompt orchestration. Slice 3 completes broader
+concurrency, cancellation, rotation, and configure-to-app end-to-end verification.
+Both current client modes serialize requests on one owner; any relaxation needs
+behavioral tests, rather than another lifecycle framework. Keep the existing
+three slices and review checkpoints. Do not reopen the old compatibility design
+or add another research/proof phase. The nested `eozilla-app/` checkout was not
+modified by this slice.

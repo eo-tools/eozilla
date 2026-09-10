@@ -2,20 +2,24 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import asyncio
+import threading
 import time
 import warnings
 from abc import abstractmethod
 from typing import Any
 
+import httpx2
+from authlib.integrations.base_client.errors import InvalidTokenError
 from authlib.integrations.httpx_client import OAuth2Client
 
 from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
 from gavicore.util.request import ExecutionRequest
 from gavicore.util.runsync import run_sync
 
-from .auth import oauth2_client
-from .auth.config import OAuth2AuthConfig
-from .auth.session import resolve_auth_headers
+from .auth.config import OidcAuthConfig
+from .auth.interactive import authorize
+from .auth.oidc import LoopbackCallbackServer
 from .client_mixin_base import ClientMixinBase
 from .defaults import (
     DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
@@ -25,7 +29,6 @@ from .exceptions import ClientError, ClientWarning
 from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
 from .transport import Transport
-from .transport.httpx2 import Httpx2Transport
 
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with AsyncClientMixin!
@@ -33,81 +36,130 @@ from .transport.httpx2 import Httpx2Transport
 
 
 # noinspection PyShadowingBuiltins
-class ClientMixin(ClientMixinBase[OAuth2Client]):
+class ClientMixin(ClientMixinBase[httpx2.Client]):
     """
     Extra methods for the API client (synchronous mode).
     """
 
     _transport: Transport | None
 
+    def _init_client_runtime(self) -> None:
+        super()._init_client_runtime()
+        self._runtime_lock = threading.RLock()
+
     def close(self) -> None:
-        """Close the transport and authentication runtime, including login-only use."""
-        transport, self._transport = self._transport, None
-        oauth_client, self._oauth_client = self._oauth_client, None
-        try:
-            if transport is not None:
-                transport.close()
-        finally:
-            if oauth_client is not None:
-                oauth_client.close()
-
-    def _login_oauth2(
-        self, *, force: bool = False, interactive: bool = False
-    ) -> dict[str, str]:
-        auth = self.config.auth
-        assert isinstance(auth, OAuth2AuthConfig)
-        if self._oauth_client is None:
-            self._oauth_client = oauth2_client.create_client(auth)
-        if isinstance(self._oauth_client, oauth2_client.PasswordOAuth2Client):
-            self._oauth_client.login(force=force, interactive=interactive)
-            return {}
-        if oauth2_client.needs_token(auth, self._oauth_client, force=force):
-            self._oauth_client.fetch_token()
-        oauth2_client.save_token(auth, self._oauth_client.token)
-        return {}
-
-    def _renew_oauth2(self) -> dict[str, str]:
-        if isinstance(self._oauth_client, oauth2_client.PasswordOAuth2Client):
-            return self._oauth_client.renew()
-        return self._login_oauth2(force=True)
+        """Close owned connections. A closed client cannot be used again."""
+        with self._runtime_lock:
+            self._closed = True
+            transport, self._transport = self._transport, None
+            try:
+                if transport is not None:
+                    transport.close()
+            finally:
+                if self._http_client is not None:
+                    self._http_client.close()
+                self._http_client = None
 
     def login(
-        self, *, interactive: bool = True, no_browser: bool = False, force: bool = False
+        self,
+        *,
+        interactive: bool = True,
+        no_browser: bool = False,
+        force: bool = False,
+        save: bool = False,
     ) -> None:
-        """Prepare authentication, reusing existing credentials when possible.
+        """Prepare authentication using the client's persistent HTTP session.
 
-        Explicit login may prompt for credentials or open an OIDC browser.
-        API methods call this with ``interactive=False`` and raise a
-        ``LoginRequiredError`` when user interaction is needed.
-        Use ``force=True`` to bypass existing tokens and authenticate afresh.
-        A successful login also updates an existing HTTPX2 transport.
+        Use force to acquire a fresh token. Requests never prompt or open a
+        browser. With save=True, failure to save credentials raises an error.
         """
-        if isinstance(self.config.auth, OAuth2AuthConfig):
-            self._login_oauth2(force=force, interactive=interactive)
-            return
-        headers = resolve_auth_headers(
-            self.config.auth,
-            interactive=interactive,
-            no_browser=no_browser,
-            force=force,
-        )
-        if self._transport is not None and isinstance(self._transport, Httpx2Transport):
-            self._transport.headers = headers
-
-    def _get_transport(self) -> Transport:
-        if self._transport is None:
-            if self._oauth_client is None or not (self._oauth_client.token or {}).get(
-                "access_token"
-            ):
-                self.login(interactive=False)
-            self._transport = self._create_transport(
-                token_refresher=(
-                    self._renew_oauth2
-                    if self._oauth_client is not None
-                    else self.config._maybe_make_token_refresher()
-                ),
+        with self._runtime_lock:
+            self._login(
+                interactive=interactive, no_browser=no_browser, force=force, save=save
             )
-        return self._transport
+
+    def _login(
+        self,
+        *,
+        interactive: bool = False,
+        no_browser: bool = False,
+        force: bool = False,
+        save: bool = False,
+    ) -> None:
+        self._require_open()
+        auth = self._credentials(interactive=interactive, force=force)
+        self._configure_http_client(auth, self._updated_token)
+        self._discover()
+        client = self._http_client
+        response = None
+        if isinstance(client, OAuth2Client) and client.token and not force:
+            if not client.ensure_active_token(client.token):
+                raise InvalidTokenError()
+        elif isinstance(auth, OidcAuthConfig):
+            assert isinstance(client, OAuth2Client)
+            with LoopbackCallbackServer() as server:
+                url, state, verifier = self._authorization(client, server)
+                code = authorize(server, url, state, no_browser=no_browser)
+                response = client.fetch_token(code=code, code_verifier=verifier)
+                self._validate_oidc_token(required=True)
+        elif request := self._login_request(force=force):
+            response = request()
+        self._accept_login(response, force=force, save=save)
+
+    def _discover(self) -> None:
+        if url := self._discovery_url:
+            assert self._http_client is not None
+            self._accept_discovery(self._http_client.request("GET", url, auth=None))
+
+    def _validate_oidc_token(self, *, required: bool = False) -> None:
+        with self._oidc_validation(required=required) as url:
+            if url:
+                assert self._http_client is not None
+                response = self._http_client.request("GET", url, auth=None)
+                self._validate_id_token(response, required=required)
+
+    def _updated_token(self, _token: dict[str, Any], **_previous: Any) -> None:
+        self._validate_oidc_token()
+        self._save_credentials()
+
+    def logout(self) -> None:
+        """Revoke an OIDC token when supported, remove local secrets, and close."""
+        self._require_open()
+        try:
+            with self._runtime_lock:
+                self._require_open()
+                if self._can_revoke:
+                    self._configure_http_client(self.config.auth, self._updated_token)
+                    self._discover()
+                    if options := self._revocation():
+                        assert isinstance(self._http_client, OAuth2Client)
+                        response = self._http_client.revoke_token(**options)
+                        response.raise_for_status()
+        finally:
+            self._closed = True
+            try:
+                self._forget_credentials()
+            finally:
+                self.close()
+
+    def _request(self, method: str, url: str, **kwargs: Any) -> httpx2.Response:
+        with self._runtime_lock:
+            self._login()
+            assert self._http_client is not None
+            return self._http_client.request(
+                method, url, **self._request_options(kwargs)
+            )
+
+    def _app_callbacks(self) -> dict[str, Any]:
+        self._require_open()
+
+        async def prepare() -> None:
+            await asyncio.to_thread(self.login, interactive=False)
+
+        async def request(method: str, url: str, **kwargs: Any) -> httpx2.Response:
+            return await asyncio.to_thread(self._request, method, url, **kwargs)
+
+        return dict(prepare=prepare, request=request)
 
     @abstractmethod
     def get_process(self, process_id: str, **kwargs: Any) -> ProcessDescription:

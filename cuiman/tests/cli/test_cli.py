@@ -124,8 +124,6 @@ class CliTest(TestCase):
                         "issuer_url": "https://identity.example.test/tenant",
                         "client_id": "client",
                         "scopes": ["openid", "profile", "email"],
-                        "use_bearer": True,
-                        "access_token_header": "X-Auth-Token",
                     },
                 },
                 yaml.safe_load(config_path.read_text()),

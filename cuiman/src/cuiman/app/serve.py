@@ -1,6 +1,7 @@
 import os
+from contextlib import asynccontextmanager
 from importlib.resources import files
-from typing import Literal
+from typing import Any, Literal
 
 import remotestate as rs
 from fastapi import FastAPI
@@ -29,6 +30,7 @@ def serve(
     config: ClientConfig,
     store: rs.Store,
     *,
+    client: Any = None,
     compact: bool = True,
     debug: bool = False,
     scheme: SchemeMode = "auto",
@@ -45,7 +47,8 @@ def serve(
     JupyterLab and JupyterHub deployments without exposing the server port.
 
     Args:
-        config: Client configuration made available to the app service.
+        config: Processing-service configuration.
+        client: Optional owning Python client whose live session the app borrows.
         store: Remote state store shared by the Python client and web app.
         compact: Whether the app uses its compact layout.
         debug: Whether to enable app debug mode.
@@ -72,11 +75,33 @@ def serve(
     """
     app_dist = _get_app_dist_url_or_dir(os.environ.get(DIST_ENV_VAR))
 
-    app_service = LaunchedAppService(store, config)
+    owns_client = client is None
+    if owns_client:
+        from cuiman.api.async_client import AsyncClient
+
+        client = AsyncClient(config=config)
+        callbacks = dict(prepare=client.login, request=client._request)
+
+        async def prepare() -> None:
+            await client.login(interactive=False)
+
+        callbacks["prepare"] = prepare
+    else:
+        callbacks = client._app_callbacks()
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        try:
+            yield
+        finally:
+            if owns_client:
+                await client.close()
+
+    app_service = LaunchedAppService(store, config, **callbacks)
     launch_code = app_service.create_launch_code()
     # Register these routes before RemoteState mounts the SPA at ``/``. A root
     # static-files mount would otherwise intercept ``/_cuiman/launch``.
-    app = FastAPI()
+    app = FastAPI(lifespan=lifespan)
     app_service._init_app(app)
     server = rs.serve(
         app_service,

@@ -26,7 +26,7 @@ configuration entirely, even when the type is unchanged. For example,
 "client_id": "cuiman"})` does not inherit a saved `login_url` or custom token
 header settings. This rule applies to configuration files, environment
 variables, configuration objects, and client keyword arguments. An override
-without `auth_type`, such as `auth={"access_token": "..."}`, updates fields in
+without `auth_type`, such as `auth={"oauth_token": saved_token}`, updates fields in
 the selected authentication configuration. Matching keyring credentials fill
 missing secrets without overwriting explicitly supplied values.
 
@@ -110,13 +110,14 @@ are accepted:
 | `basic` | `EOZILLA_AUTH__AUTH_TYPE=basic`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD` | |
 | `token` | `EOZILLA_AUTH__AUTH_TYPE=token`, `EOZILLA_AUTH__ACCESS_TOKEN` | `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
 | `login` | `EOZILLA_AUTH__AUTH_TYPE=login`, `EOZILLA_AUTH__LOGIN_URL`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD` | `EOZILLA_AUTH__ACCESS_TOKEN`, `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
-| `oauth2` | `EOZILLA_AUTH__AUTH_TYPE=oauth2`, `EOZILLA_AUTH__TOKEN_URL` | `EOZILLA_AUTH__GRANT_TYPE`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD`, `EOZILLA_AUTH__CLIENT_ID`, `EOZILLA_AUTH__CLIENT_SECRET`, `EOZILLA_AUTH__REFRESH_TOKEN`, `EOZILLA_AUTH__ACCESS_TOKEN`, `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
-| `oidc` | `EOZILLA_AUTH__AUTH_TYPE=oidc`, `EOZILLA_AUTH__ISSUER_URL`, `EOZILLA_AUTH__CLIENT_ID` | `EOZILLA_AUTH__SCOPES`, `EOZILLA_AUTH__REFRESH_TOKEN`, `EOZILLA_AUTH__ACCESS_TOKEN` |
+| `oauth2` | `EOZILLA_AUTH__AUTH_TYPE=oauth2`, `EOZILLA_AUTH__TOKEN_URL`, `EOZILLA_AUTH__CLIENT_ID` | `EOZILLA_AUTH__GRANT_TYPE`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD`, `EOZILLA_AUTH__CLIENT_SECRET`, `EOZILLA_AUTH__OAUTH_TOKEN` |
+| `oidc` | `EOZILLA_AUTH__AUTH_TYPE=oidc`, `EOZILLA_AUTH__ISSUER_URL`, `EOZILLA_AUTH__CLIENT_ID` | `EOZILLA_AUTH__SCOPES`, `EOZILLA_AUTH__OAUTH_TOKEN` |
 | `api-key` | `EOZILLA_AUTH__AUTH_TYPE=api-key`, `EOZILLA_AUTH__API_KEY` | `EOZILLA_AUTH__API_KEY_HEADER` |
 
 For OAuth 2.0, `grant_type` defaults to `password`. The `password` grant
 requires `USERNAME` and `PASSWORD`; the `client_credentials` grant requires
-`CLIENT_ID` and `CLIENT_SECRET`.
+`CLIENT_ID` and `CLIENT_SECRET`. Alternatively, provide a complete token snapshot
+as JSON in `EOZILLA_AUTH__OAUTH_TOKEN`.
 
 Environment settings override values from the configuration file. Providing
 `EOZILLA_AUTH__AUTH_TYPE` selects a complete authentication configuration, so
@@ -179,7 +180,7 @@ keyring. `logout` removes the matching keyring entry. For authentication type
 `none`, `configure` does not offer login.
 
 When a configured authenticated service is used without available credentials,
-the CLI reports `Please log in first using 'cuiman login'.` instead of showing
+the CLI reports `Please use 'cuiman login' to provide credentials.` instead of showing
 an implementation traceback.
 
 You can override settings anytime from environment variables or by using
@@ -214,7 +215,7 @@ credentials. Cuiman keeps renewed tokens in memory unless the configuration
 has a credential persistor, such as one attached when loading CLI keyring
 credentials. Renewal never opens a browser or prompts for credentials.
 
-For the internal responsibilities and the boundary for a future auth library,
+For the shared Authlib implementation and app ownership rules,
 see [Authentication lifecycle](./authentication.md).
 
 ## Basic Settings
@@ -316,40 +317,34 @@ config = ClientConfig(
 
 ### Auth type `oauth2`
 
-The `oauth2` type obtains a token from a standards-based OAuth 2.0 token
-endpoint. It supports the `password` grant (the default) and the
-`client_credentials` grant. If a password-grant response includes a refresh
-token, Cuiman refreshes the access token once after an HTTP 401. The refreshed
-token is persisted to the OS keyring when the credentials were loaded from it;
-it is never written to the configuration file.
+The `oauth2` type uses an Authlib client for the `password` grant (the default)
+or `client_credentials`. Both require the provider's client ID. Authlib handles
+expiry and refresh before protected requests; a resource 401 is not replayed.
 
 ```python
 config = ClientConfig(
-    api_url="...",
+    api_url="https://processing.example.org",
     auth={
         "auth_type": "oauth2",
         "token_url": "https://identity.example.org/realms/example/protocol/openid-connect/token",
         "grant_type": "password",
+        "client_id": "cuiman",
         "username": "...",
         "password": "...",
-        "client_id": "...",  # optional for password grant
-        "client_secret": "...",  # optional for password grant
-        "access_token": "...",  # obtained by `cuiman login`
-        "refresh_token": "...",  # returned by the token endpoint when available
-        "use_bearer": True,
     },
 )
 ```
 
-`cuiman login` and explicit Python client login prompt only for username and
-password when using the OAuth2 `password` grant. A configured `client_id` does
-not cause a client-secret prompt. If the provider requires a client secret,
-supply it through `EOZILLA_AUTH__CLIENT_SECRET`, direct Python configuration,
-or an existing keyring entry. Login preserves and sends that secret; otherwise
-the token request omits `client_secret`.
+If the password-grant client requires a client secret, supply `client_secret`
+through Python configuration, environment variables, or the keyring. Login
+prompts for username/password when needed. Client-credentials login prompts for
+a missing client secret. Both grants support `cuiman login` and save a complete
+`oauth_token` snapshot in the keyring. OAuth signing always uses a bearer header.
 
-The `client_credentials` grant has no interactive login step; provide its
-credentials through environment variables or direct Python configuration.
+To bootstrap from an existing token in Python, provide
+`auth={"oauth_token": saved_token}` for the configured OAuth type. Preserve the
+complete mapping, including `expires_at` and any refresh token. Read subsequent
+token updates through `client.token`, not through the configuration snapshot.
 
 ### Auth type `oidc`
 

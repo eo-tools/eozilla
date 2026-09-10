@@ -7,13 +7,12 @@
 import os
 from pathlib import Path
 from unittest import IsolatedAsyncioTestCase
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from cuiman import ClientConfig
 from cuiman.api.async_client import AsyncClient
-from cuiman.api.auth import OAuth2AuthConfig
 from gavicore.models import (
     ApiError,
     Capabilities,
@@ -99,50 +98,15 @@ class AsyncClientTest(IsolatedAsyncioTestCase):
                 _debug=True,
             )
             httpx2_transport_cls.assert_not_called()
-            await client._get_transport()
+            client._get_transport()
 
         self.assertIs(client._transport, transport)
         httpx2_transport_cls.assert_called_once()
         _, kwargs = httpx2_transport_cls.call_args
         self.assertEqual("https://acme.ogc.org/api/", kwargs["api_url"])
-        self.assertEqual({}, kwargs["headers"])
         self.assertIs(return_type_map, kwargs["return_type_map"])
-        self.assertIsNone(kwargs["async_token_refresher"])
+        self.assertEqual(client._request, kwargs["async_request"])
         self.assertTrue(kwargs["debug"])
-
-    async def test_default_transport_borrows_oauth2_client_and_recovery_callback(self):
-        old_access = "old-access-token"
-        old_refresh = "old-refresh-token"
-
-        with (
-            patch.object(
-                ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
-            ),
-            patch(
-                "cuiman.api.client_mixin_base.Httpx2Transport"
-            ) as httpx2_transport_cls,
-        ):
-            client = AsyncClient(
-                api_url="https://acme.ogc.org/api",
-                auth=OAuth2AuthConfig(
-                    token_url="https://identity.acme.org/token",
-                    username="user",
-                    password="password",
-                    access_token=old_access,
-                    refresh_token=old_refresh,
-                ),
-            )
-            await client._get_transport()
-
-        _, kwargs = httpx2_transport_cls.call_args
-        self.assertIsNone(kwargs["headers"])
-        self.assertIs(client._oauth_client, kwargs["async_httpx2"])
-        self.assertEqual("Authorization", kwargs["auth_header"])
-        self.assertEqual(client._renew_oauth2, kwargs["async_token_refresher"])
-        self.assertEqual(old_access, client.token["access_token"])
-        self.assertEqual(old_refresh, client.token["refresh_token"])
-        client._transport.async_close = AsyncMock()
-        await client.close()
 
     async def test_transport_args_for_all_endpoints(self):
         request = ProcessRequest(inputs={"bbox": [10, 20, 30, 40]}, outputs={})

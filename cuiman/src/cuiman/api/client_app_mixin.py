@@ -107,6 +107,7 @@ class ClientAppMixin(ABC):
         serve_result = serve(
             self.config,
             remote_store,
+            client=self,
             compact=compact_,
             debug=debug,
             scheme=scheme,

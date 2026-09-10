@@ -1,17 +1,18 @@
-#  Copyright (c) 2026 by the Eozilla team and contributors
-#  Permissions are hereby granted under the terms of the Apache 2.0 License:
-#  https://opensource.org/license/apache-2-0.
+# Copyright (c) 2026 by the Eozilla team and contributors
+# Permissions are hereby granted under the terms of the Apache 2.0 License:
+# https://opensource.org/license/apache-2-0.
 
-"""Explicit credential prompts and browser login shared by Python and the CLI."""
+"""Explicit credential prompts and browser interaction, without HTTP clients."""
 
 import asyncio
 import os
-import secrets
 import threading
 import time
 import webbrowser
+from urllib.parse import urlencode
 
 import typer
+from authlib.oauth2.rfc6749.parameters import parse_authorization_code_response
 
 from .config import (
     ApiKeyAuthConfig,
@@ -19,39 +20,22 @@ from .config import (
     BasicAuthConfig,
     LoginAuthConfig,
     OAuth2AuthConfig,
-    OidcAuthConfig,
     TokenAuthConfig,
 )
-from .oidc import (
-    LoopbackCallbackServer,
-    build_authorization_url,
-    discover_oidc_provider,
-    exchange_oidc_code,
-    generate_pkce_verifier,
-    parse_callback_parameters,
-)
+from .oidc import LoopbackCallbackServer
 
 OIDC_LOGIN_TIMEOUT = 300.0
-"""Seconds to wait for an OpenID Connect authorization callback."""
+"""Seconds to wait for an authorization callback."""
 
 
-def prompt_auth(auth: AuthConfigBase, *, no_browser: bool = False) -> AuthConfigBase:
-    """Collect credentials without modifying or persisting the original config."""
-    # Construct a fresh model so temporary interaction cannot persist credentials.
+def prompt_auth(auth: AuthConfigBase) -> AuthConfigBase:
+    """Collect credentials without modifying or persisting the input model."""
     values = auth.to_public_dict()
-    if isinstance(auth, OidcAuthConfig):
-        return _login_oidc(OidcAuthConfig(**values), no_browser=no_browser)
-    if isinstance(auth, (BasicAuthConfig, LoginAuthConfig, OAuth2AuthConfig)):
-        if (
-            isinstance(auth, OAuth2AuthConfig)
-            and auth.grant_type == "client_credentials"
-        ):
-            raise ValueError(
-                "Provide OAuth2 client_credentials through environment variables "
-                "or Python configuration."
-            )
+    if isinstance(auth, OAuth2AuthConfig) and auth.grant_type == "client_credentials":
+        values["client_secret"] = _prompt_for_secret("Client secret")
+    elif isinstance(auth, (BasicAuthConfig, LoginAuthConfig, OAuth2AuthConfig)):
         values.update(_prompt_for_username_password(auth.username))
-        if isinstance(auth, OAuth2AuthConfig) and auth.client_secret is not None:
+        if isinstance(auth, OAuth2AuthConfig):
             values["client_secret"] = auth.client_secret
     elif isinstance(auth, TokenAuthConfig):
         values["access_token"] = _prompt_for_secret("API access token")
@@ -60,65 +44,27 @@ def prompt_auth(auth: AuthConfigBase, *, no_browser: bool = False) -> AuthConfig
     return type(auth)(**values)
 
 
-async def prompt_auth_async(
-    auth: AuthConfigBase, *, no_browser: bool = False
-) -> AuthConfigBase:
-    """Run explicit interaction off the event loop, cancelling browser waits."""
-    if not isinstance(auth, OidcAuthConfig):
-        return await asyncio.to_thread(prompt_auth, auth, no_browser=no_browser)
-    cancelled = threading.Event()
-    try:
-        return await asyncio.to_thread(
-            _login_oidc,
-            OidcAuthConfig(**auth.to_public_dict()),
-            no_browser=no_browser,
-            cancelled=cancelled,
-        )
-    except asyncio.CancelledError:
-        cancelled.set()
-        raise
-
-
-def _login_oidc(
-    auth: OidcAuthConfig,
+def authorize(
+    server: LoopbackCallbackServer,
+    url: str,
+    state: str,
     *,
     no_browser: bool,
     cancelled: threading.Event | None = None,
-) -> OidcAuthConfig:
-    """Complete an OIDC Authorization Code login through a loopback callback."""
-    discovery = discover_oidc_provider(auth)
-    verifier = generate_pkce_verifier()
-    state = secrets.token_urlsafe(32)
-    with LoopbackCallbackServer() as callback_server:
-        authorization_url = build_authorization_url(
-            discovery,
-            auth,
-            callback_server.redirect_uri,
-            state,
-            verifier,
+) -> str:
+    """Receive a browser callback and let Authlib validate its state and code."""
+    if no_browser:
+        typer.echo(f"Open this URL to log in:\n{url}")
+    elif not webbrowser.open(url):
+        raise ValueError(
+            "Could not open a browser. Use login(no_browser=True) to print the URL."
         )
-        if no_browser:
-            typer.echo(f"Open this URL to log in:\n{authorization_url}")
-        elif not webbrowser.open(authorization_url):
-            raise ValueError(
-                "Could not open a browser for OIDC login. "
-                "Use 'cuiman login --no-browser' to print the authorization URL."
-            )
-        parameters = _wait_for_callback(callback_server, cancelled)
-        code = parse_callback_parameters(parameters, state)
-        result = exchange_oidc_code(
-            discovery,
-            auth,
-            code,
-            verifier,
-            callback_server.redirect_uri,
-        )
-    return auth.model_copy(
-        update={
-            "access_token": result.access_token,
-            "refresh_token": result.refresh_token,
-        }
-    )
+    parameters = _wait_for_callback(server, cancelled)
+    for name in ("state", "code", "error", "error_description"):
+        if len(parameters.get(name, [])) > 1:
+            raise ValueError(f"OIDC callback contains multiple {name} values.")
+    response_url = server.redirect_uri + "?" + urlencode(parameters, doseq=True)
+    return parse_authorization_code_response(response_url, state=state)["code"]
 
 
 def _wait_for_callback(
