@@ -54,7 +54,7 @@ class CwlDescription(BaseModel):
 
     # NOTE: field must follow CWL schema, which cannot easily
     #       be converted to Pydantic model.
-    value: dict | None = None
+    value: dict[str, Any] | None = None
     """JSON-encoded CWL document."""
 
 
