@@ -60,7 +60,10 @@ durable storage in the profile's OS-keyring entry and enable subsequent refresh
 updates to that profile. Optional refresh-save failures
 warn while keeping the live token usable. `logout()` revokes OIDC tokens when
 supported, removes local credentials, and closes the client; await it for
-`AsyncClient`. A closed client cannot be reused.
+`AsyncClient`. A closed client cannot be reused. Close waits for active requests;
+logout keeps revocation and local cleanup under the same owner lock. See
+[concurrent calls and cancellation](authentication.md#concurrent-calls-and-cancellation)
+for cancellation behavior.
 
 The launched app borrows this same client's requester. See
 [Authentication](authentication.md) for storage, error behavior, and event-loop

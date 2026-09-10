@@ -57,15 +57,19 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
         """Close owned connections. A closed client cannot be used again."""
         self._bind_loop()
         async with self._runtime_lock:
-            self._closed = True
-            transport, self._transport = self._transport, None
-            try:
-                if transport is not None:
-                    await transport.async_close()
-            finally:
-                if self._http_client is not None:
-                    await self._http_client.aclose()
-                self._http_client = None
+            await self._close()
+
+    async def _close(self) -> None:
+        """Close connections while the caller holds the owner lock."""
+        self._closed = True
+        transport, self._transport = self._transport, None
+        try:
+            if transport is not None:
+                await transport.async_close()
+        finally:
+            if self._http_client is not None:
+                await self._http_client.aclose()
+            self._http_client = None
 
     async def login(
         self,
@@ -150,10 +154,9 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
     async def logout(self) -> None:
         """Revoke an OIDC token when supported, remove local secrets, and close."""
         self._bind_loop()
-        self._require_open()
-        try:
-            async with self._runtime_lock:
-                self._require_open()
+        async with self._runtime_lock:
+            self._require_open()
+            try:
                 if self._can_revoke:
                     self._configure_http_client(self.config.auth, self._updated_token)
                     await self._discover()
@@ -161,12 +164,12 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
                         assert isinstance(self._http_client, AsyncOAuth2Client)
                         response = await self._http_client.revoke_token(**options)
                         response.raise_for_status()
-        finally:
-            self._closed = True
-            try:
-                self._forget_credentials()
             finally:
-                await self.close()
+                self._closed = True
+                try:
+                    self._forget_credentials()
+                finally:
+                    await self._close()
 
     async def _request(self, method: str, url: str, **kwargs: Any) -> httpx2.Response:
         self._bind_loop()

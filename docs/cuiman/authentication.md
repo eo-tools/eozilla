@@ -110,6 +110,26 @@ borrowed client. Standalone `cuiman.app.serve(config, store)` owns an asynchrono
 client and closes it with the server lifespan. Closing an owner makes further
 app requests fail; the proxy does not create a replacement session.
 
+## Concurrent calls and cancellation
+
+Calls on one owner are serialized. Overlapping API and browser requests share
+one token refresh and its rotated credentials. `close()` waits for an active
+request before closing connections; standalone app shutdown closes its owner
+through the same operation.
+
+Cancelling an async login, close, or logout while it waits for the owner lock
+leaves the active request and credentials unchanged. Once logout starts,
+revocation failure or cancellation still removes local credentials and closes
+the owner before queued requests can run. Cancelling OIDC validation discards
+the unverified token before a processing request or credential save can use it.
+
+Cancelling an asynchronous app request propagates to its owner's HTTP operation.
+A synchronous request already running in a worker thread can finish after its
+caller stops waiting; closing that owner waits for the worker. Cancellation does
+not undo a request already received by a provider. If a token response is lost
+and later refresh fails, use explicit fresh login; Cuiman does not replay the
+processing request or fall back to a password grant.
+
 ## Configuration cut
 
 OAuth2/OIDC no longer accept separate `access_token` or `refresh_token` fields,

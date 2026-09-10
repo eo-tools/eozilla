@@ -1,6 +1,6 @@
 # Authlib integration for Cuiman: clean replacement
 
-Updated: 2026-09-10. Status: slices 1 and 2 implemented; slice 2 ready for review; supersedes the incremental,
+Updated: 2026-09-10. Status: all three slices implemented; supersedes the incremental,
 compatibility-preserving migration proposed here previously.
 
 Implementation sequence: [three-slice plan](AUTHLIB_PLAN.md).
@@ -220,10 +220,13 @@ proxy security tests.
 
 ## Completion and evidence
 
-The next implementation must move every OAuth consumer off the old lifecycle and
-remove the replaced implementation in the same reviewed change. A temporary
-working-tree migration is fine; do not declare a grant-by-grant partial replacement
-a successful simplification while the legacy token manager remains.
+All OAuth consumers now use the owned Authlib lifecycle. The replaced engine,
+helper graph, and standalone proof were removed. The final ownership tests found
+and fixed one cancellation bug: logout cleanup must run inside the acquired owner
+lock, so a cancelled waiter cannot clear the active request's credentials. Close
+waits for active requests, and logout completes local cleanup even if provider
+revocation fails or is cancelled after logout has started. Both modes retain
+serialization on one owner. Final evidence is in [HANDOVER_AUTHLIB.md](HANDOVER_AUTHLIB.md).
 
 Show net production changes against the committed pre-password checkpoint, with
 tests and documentation counted separately. Require an actual reduction and fewer

@@ -80,12 +80,11 @@ def serve(
         from cuiman.api.async_client import AsyncClient
 
         client = AsyncClient(config=config)
-        callbacks = dict(prepare=client.login, request=client._request)
 
         async def prepare() -> None:
             await client.login(interactive=False)
 
-        callbacks["prepare"] = prepare
+        callbacks = dict(prepare=prepare, request=client._request)
     else:
         callbacks = client._app_callbacks()
 

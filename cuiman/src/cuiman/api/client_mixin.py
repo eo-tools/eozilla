@@ -124,10 +124,9 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
 
     def logout(self) -> None:
         """Revoke an OIDC token when supported, remove local secrets, and close."""
-        self._require_open()
-        try:
-            with self._runtime_lock:
-                self._require_open()
+        with self._runtime_lock:
+            self._require_open()
+            try:
                 if self._can_revoke:
                     self._configure_http_client(self.config.auth, self._updated_token)
                     self._discover()
@@ -135,12 +134,12 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
                         assert isinstance(self._http_client, OAuth2Client)
                         response = self._http_client.revoke_token(**options)
                         response.raise_for_status()
-        finally:
-            self._closed = True
-            try:
-                self._forget_credentials()
             finally:
-                self.close()
+                self._closed = True
+                try:
+                    self._forget_credentials()
+                finally:
+                    self.close()
 
     def _request(self, method: str, url: str, **kwargs: Any) -> httpx2.Response:
         with self._runtime_lock:

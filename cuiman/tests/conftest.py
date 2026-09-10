@@ -71,7 +71,9 @@ def auth_provider(monkeypatch):
             return httpx2.Response(200, json=state.metadata)
         if request.url.path == "/keys":
             assert "authorization" not in request.headers
-            return httpx2.Response(200, json={"keys": [key.as_dict(private=False)]})
+            return httpx2.Response(
+                200, json={"keys": [state.key.as_dict(private=False)]}
+            )
         if request.url.path == "/revoke":
             return httpx2.Response(state.revoke_status)
         if request.url.path == "/login":
@@ -102,11 +104,13 @@ def auth_provider(monkeypatch):
                     nonce=state.nonce,
                 )
                 claims.update(state.claims)
-                body["id_token"] = jwt.encode({"alg": "RS256"}, claims, key)
+                body["id_token"] = jwt.encode({"alg": "RS256"}, claims, state.key)
             return httpx2.Response(200, json=body)
         return httpx2.Response(
             state.statuses.pop(0) if state.statuses else 200, json={"conformsTo": []}
         )
+
+    state.handle_request = handle
 
     for cls in (httpx2.Client, httpx2.AsyncClient):
         original = cls.__init__

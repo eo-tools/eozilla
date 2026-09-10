@@ -1,6 +1,6 @@
 # Authlib replacement: implementation plan
 
-Date: 2026-09-10. Status: approved plan; slices 1 and 2 implemented; slice 2 ready for review.
+Date: 2026-09-10. Status: all three slices implemented; final verification recorded in HANDOVER_AUTHLIB.md.
 Design: [AUTHLIB_DESIGN.md](AUTHLIB_DESIGN.md).
 
 ## Objectives
@@ -22,7 +22,7 @@ they are not additional slices. No new research/proof phase is needed.
 
 Implemented, including the shared sync/async policy refactor requested during
 implementation. Review evidence: [HANDOVER_AUTHLIB.md](HANDOVER_AUTHLIB.md).
-Slice 1 was committed as `436188f`. Slice 2 is implemented below; slice 3 has not started.
+Slice 1 was committed as `436188f`, and slice 2 as `f1d8cc8`. All three slices are implemented.
 
 **Outcome:** Python clients, CLI authentication, and the app proxy all use one
 Authlib-based lifecycle. There is no remaining legacy OAuth engine.
@@ -99,6 +99,12 @@ Run relevant tests and checks; update user examples alongside the changes.
 
 ## 3. Verify shared-session behaviour and complete the cut
 
+Implemented: deterministic overlap/cancellation tests, configure-to-app-to-logout
+coverage for all OAuth/OIDC flows in both modes, provider signing-key rotation,
+and shutdown during refresh. Fixed logout cleanup escaping the owner lock and
+retired the superseded standalone proof. Final results and limits are recorded
+in [HANDOVER_AUTHLIB.md](HANDOVER_AUTHLIB.md).
+
 **Outcome:** one authenticated session works predictably across processing calls
 and the app, and the code reduction is demonstrated rather than assumed.
 
@@ -119,7 +125,7 @@ and the app, and the code reduction is demonstrated rather than assumed.
 
 **Acceptance:** one shared auth implementation across CLI/API/app; one live OAuth
 token authority per owner; simpler user configuration; and an actual net reduction
-in production auth-related code. Show results against both `41181d3` (current
+in production auth-related code. Show results against both `41181d3` (rejected
 password slice) and `6dd44f4` (before that slice), using the same counting method.
 Include auth code in config, client mixins, CLI, and proxy, wherever it resides.
 Count tests and documentation separately. Moving code to wrappers or deleting
