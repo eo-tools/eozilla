@@ -4,6 +4,7 @@ import asyncio
 import importlib
 from unittest.mock import Mock
 
+import httpx2
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -15,6 +16,73 @@ from cuiman.app.launch import (
     SERVICE_PROXY_ENDPOINT,
     LaunchedAppService,
 )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", [Client, AsyncClient])
+@pytest.mark.parametrize("base_path", ["", "/process", "/process/"])
+@pytest.mark.parametrize("proxy_suffix", ["", "/"])
+async def test_proxy_landing_page_matches_python_client(
+    kind, base_path, proxy_suffix, monkeypatch
+):
+    landing_path = base_path.rstrip("/") + "/"
+    paths = []
+
+    def processing(request):
+        paths.append(request.url.path)
+        assert request.headers["X-Auth-Token"] == "test-token"
+        if request.url.path == landing_path:
+            return httpx2.Response(200, json={"links": []})
+        return httpx2.Response(404, json={"detail": "Not Found"})
+
+    http_client = httpx2.AsyncClient if kind is AsyncClient else httpx2.Client
+    initialize = http_client.__init__
+
+    def mock_http(self, *args, **kwargs):
+        kwargs.setdefault("transport", httpx2.MockTransport(processing))
+        initialize(self, *args, **kwargs)
+
+    monkeypatch.setattr(http_client, "__init__", mock_http)
+    owner = kind(
+        api_url=f"https://processing.test{base_path}",
+        auth={
+            "auth_type": "token",
+            "access_token": "test-token",
+            "access_token_header": "X-Auth-Token",
+        },
+    )
+    try:
+        if kind is AsyncClient:
+            await owner.get_capabilities()
+        else:
+            owner.get_capabilities()
+
+        service = LaunchedAppService(
+            App.create_remote_store(), owner.config, **owner._app_callbacks()
+        )
+        app = FastAPI()
+        service._init_app(app)
+
+        def browse():
+            with TestClient(app) as browser:
+                assert (
+                    browser.post(
+                        LAUNCH_ENDPOINT,
+                        json={"launch": service.create_launch_code()},
+                    ).status_code
+                    == 204
+                )
+                response = browser.get(SERVICE_PROXY_ENDPOINT + proxy_suffix)
+                assert response.status_code == 200
+                assert response.json() == {"links": []}
+
+        await asyncio.to_thread(browse)
+        assert paths == [landing_path, landing_path]
+    finally:
+        if kind is AsyncClient:
+            await owner.close()
+        else:
+            owner.close()
 
 
 @pytest.mark.asyncio

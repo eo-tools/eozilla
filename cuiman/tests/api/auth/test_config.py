@@ -27,6 +27,26 @@ def test_auth_config_rejects_fields_from_another_auth_type():
         )
 
 
+@pytest.mark.parametrize("suffix", ["", "/"])
+@pytest.mark.parametrize(
+    ("auth_type", "field", "settings"),
+    [
+        ("login", "login_url", {}),
+        ("oauth2", "token_url", {"client_id": "client"}),
+        ("oidc", "issuer_url", {"client_id": "client"}),
+    ],
+)
+def test_auth_endpoint_paths_preserve_trailing_slashes(
+    auth_type, field, settings, suffix
+):
+    url = f"https://identity.example.test/auth{suffix}"
+    auth = TypeAdapter(AuthConfig).validate_python(
+        {"auth_type": auth_type, field: url, **settings}
+    )
+    assert str(getattr(auth, field)) == url
+    assert auth.to_public_dict()[field] == url
+
+
 def test_no_auth_headers():
     assert NoAuthConfig().auth_headers == {}
 

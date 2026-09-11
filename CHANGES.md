@@ -53,6 +53,10 @@
 - **Cuiman**'s launched-app proxy now rejects path-traversal segments, so a
   browser request cannot escape the configured processing API base path.
 
+- **Cuiman**'s app proxy now retains the API root's trailing slash, matching
+  Python client requests. This fixes app connection failures with HTTP 404 when
+  a processing service distinguishes paths such as `/process` and `/process/`.
+
 - Added missing ipython dependency for cuiman. (#188)
 
 ### Other changes

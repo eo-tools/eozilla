@@ -323,13 +323,14 @@ def _get_upstream_url(api_url: str | None, path: str) -> str:
     Parsing and reconstructing the URL keeps the configured origin and base
     path fixed. Path traversal segments are rejected before this function is
     called. Query strings and fragments in configuration are deliberately not
-    inherited; request query parameters are forwarded separately.
+    inherited; request query parameters are forwarded separately. An empty
+    path retains the trailing slash, matching the Python client's landing page.
     """
     assert api_url is not None
     parsed_api_url = urlsplit(api_url)
     encoded_path = quote(path, safe="/")
     base_path = parsed_api_url.path.rstrip("/")
-    upstream_path = f"{base_path}/{encoded_path}" if encoded_path else base_path or "/"
+    upstream_path = f"{base_path}/{encoded_path}"
     return urlunsplit(
         (
             parsed_api_url.scheme,

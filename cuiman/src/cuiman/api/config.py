@@ -68,7 +68,9 @@ class ClientConfig(BaseSettings):
     api_url: Annotated[Optional[str], Field(title="Process API URL")] = None
     """
     The URL of the server that provides a web API compliant with
-    OGC API - Processes, Part 1 - Core.
+    OGC API - Processes, Part 1 - Core. This is a base URL: Python and app
+    requests append endpoint paths with a slash separator. The landing page
+    uses the base path followed by a trailing slash.
     """
 
     auth: AuthConfig = Field(default_factory=NoAuthConfig)

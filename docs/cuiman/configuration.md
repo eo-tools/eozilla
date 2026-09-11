@@ -63,6 +63,24 @@ matching profile/API URL/auth-type keyring entry can fill missing secrets.
 Explicitly supplied credentials take precedence. This applies after both
 replacement and merging.
 
+### URL paths and trailing slashes
+
+Cuiman distinguishes a processing-service **base URL** from an exact
+authentication **endpoint URL** or OIDC **issuer identifier**:
+
+| Setting | Path handling |
+| --- | --- |
+| `api_url` | Python and app requests append paths beneath this base. Both `/process` and `/process/` use `/process/` for the landing page and `/process/processes` for the process list. |
+| `auth.login_url`, `auth.token_url` | Use the provider's exact endpoint path. `/auth/login` and `/auth/login/` remain distinct; Cuiman does not add or remove their trailing slash. |
+| `auth.issuer_url` | Preserve the issuer's trailing slash, including an empty path, because discovery requires an exact issuer match. |
+
+Use the endpoint spelling required by your provider. There is no general rule
+that `/endpoint` and `/endpoint/` identify the same resource; Cuiman does not
+retry authentication at an alternate spelling. HTTP URL validation can normalize
+the host and add `/` to a bare host in `api_url`, `login_url`, and `token_url`;
+this does not make non-empty paths interchangeable. The OIDC issuer explicitly
+preserves an empty path.
+
 ### Configuration Files
 
 ```python

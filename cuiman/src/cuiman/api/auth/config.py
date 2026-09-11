@@ -171,6 +171,7 @@ class LoginAuthConfig(_AccessTokenAuthConfig):
 
     auth_type: Literal["login"] = "login"
     login_url: HttpUrl
+    """Exact login endpoint; a non-empty path's trailing slash is preserved."""
     username: str | None = None
     password: str | None = None
 
@@ -201,6 +202,7 @@ class OAuth2AuthConfig(OAuthTokenConfig):
     }
     auth_type: Literal["oauth2"] = "oauth2"
     token_url: HttpUrl
+    """Exact token endpoint; a non-empty path's trailing slash is preserved."""
     grant_type: OAuth2GrantType = "password"
     client_id: str = Field(min_length=1)
     client_secret: str | None = None
@@ -213,6 +215,7 @@ class OidcAuthConfig(OAuthTokenConfig):
 
     auth_type: Literal["oidc"] = "oidc"
     issuer_url: Annotated[HttpUrl, UrlConstraints(preserve_empty_path=True)]
+    """Issuer identifier, preserving trailing slashes for exact discovery matching."""
     client_id: str = Field(min_length=1)
     scopes: tuple[str, ...] = ()
 
