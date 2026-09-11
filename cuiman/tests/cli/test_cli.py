@@ -36,6 +36,51 @@ def invoke_cli(*args: str) -> typer.testing.Result:
 
 
 class CliTest(TestCase):
+    @patch("cuiman.cli.config.typer.prompt")
+    def test_configure_without_terminal_fails_before_prompting(self, prompt):
+        with use_temp_dir():
+            path = Path("config.yaml")
+            result = invoke_cli("configure", "--config", str(path))
+            self.assertEqual(1, result.exit_code)
+            self.assertIn("requires a terminal", result.output)
+            self.assertFalse(path.exists())
+        prompt.assert_not_called()
+
+    @patch("cuiman.cli.config.typer.prompt")
+    def test_configure_without_terminal_accepts_complete_options(self, prompt):
+        with use_temp_dir():
+            path = Path("config.yaml")
+            result = invoke_cli(
+                "configure",
+                "--config",
+                str(path),
+                "--api-url",
+                "https://processing.test",
+                "--auth-type",
+                "none",
+            )
+            self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+            self.assertEqual(
+                "https://processing.test/", yaml.safe_load(path.read_text())["api_url"]
+            )
+        prompt.assert_not_called()
+
+    @patch("cuiman.cli.cli.sys")
+    @patch(
+        "cuiman.cli.config.typer.prompt",
+        side_effect=["https://processing.test", "none"],
+    )
+    def test_configure_with_terminal_prompts(self, prompt, cli_sys):
+        cli_sys.stdin.isatty.return_value = True
+        with use_temp_dir():
+            path = Path("config.yaml")
+            result = invoke_cli("configure", "--config", str(path))
+            self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
+            self.assertEqual(
+                "https://processing.test/", yaml.safe_load(path.read_text())["api_url"]
+            )
+        self.assertEqual(2, prompt.call_count)
+
     def test_help(self):
         result = invoke_cli("--help")
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))

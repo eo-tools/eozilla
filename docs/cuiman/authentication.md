@@ -70,7 +70,7 @@ refresh behavior. The running Authlib client owns subsequent updates;
 For OIDC, the snapshot also retains `_cuiman_nonce` to validate a nonce returned
 with refreshed ID tokens after restarting the client.
 
-Configuration files contain public settings only. Passwords and complete tokens
+Cuiman writes public settings only to configuration files. Passwords and complete tokens
 are saved in the OS keyring, scoped to configuration-file path and processing
 API URL. A configuration loaded from a named file retains that profile when
 passed to `Client(config=config)` or `AsyncClient(config=config)`, including for
@@ -162,7 +162,10 @@ a custom-header configuration. `configure` asks one header question and rejects
 options that do not apply to the selected authentication type. API-key headers
 can be supplied with `configure --api-key-header`.
 
-Incompatible old configuration files are rejected when loaded. `configure` can
+Files that cannot be parsed or validated against the configured model are
+rejected with "Deprecated or illegal configuration file, please run the
+'configure' command." Valid files are accepted without legacy-field detection.
+`configure` can
 recreate them from defaults without translating old settings or copying secrets.
 Supply the provider settings again and log in. Failed or cancelled configuration
 leaves the existing file untouched. Current public profiles retain their settings

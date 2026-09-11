@@ -47,14 +47,21 @@ def get_config(
 
 def configure_client_with_prompt(
     config_path: Path | str | None = None,
+    *,
+    interactive: bool = True,
     **cli_params: Any,
 ) -> Path:
-    """Collect public provider settings; credentials are collected by login."""
+    """Collect public provider settings; credentials are collected by login.
+
+    Call directly in a notebook to use its Python input prompts. With
+    ``interactive=False``, all prompted settings must be supplied as arguments;
+    missing settings raise ``ValueError`` before writing the configuration.
+    """
     try:
         previous = ClientConfig.from_file(config_path)
     except ValueError:
         typer.echo(
-            "Existing configuration is incompatible; configuring from defaults.",
+            "Deprecated or illegal configuration file; configuring from defaults.",
             err=True,
         )
         previous = None
@@ -66,6 +73,13 @@ def configure_client_with_prompt(
     def ask(name: str, label: str, default: Any = "") -> Any:
         value = supplied.get(name)
         if value is None:
+            if not interactive:
+                option = "scope" if name == "scopes" else name.replace("_", "-")
+                raise ValueError(
+                    "Interactive configuration requires a terminal. Use a shell or "
+                    "JupyterLab terminal, or supply all configuration options. "
+                    f"Missing option: --{option}"
+                )
             value = typer.prompt(label, default=defaults.get(name) or default)
         values[name] = value
         return value

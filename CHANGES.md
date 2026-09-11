@@ -39,6 +39,17 @@
 
 ### Fixes
 
+- **Cuiman** detects deprecated or illegal configuration files through parsing
+  and model validation, including customized client schemas. Invalid files now
+  produce one actionable `configure` message without exposing their contents.
+  Removed legacy-field heuristics; files that validate are accepted, while writes
+  continue to omit credentials.
+
+- **Cuiman** configuration now fails with an actionable message when a prompt
+  needs a terminal, avoiding hangs in notebook commands such as `!cuiman configure`.
+  Fully specified commands still work without a terminal; notebook users can
+  also invoke the configuration prompts directly through Python.
+
 - **Cuiman** now replaces previous authentication settings when a configuration
   source explicitly selects `auth_type`. Python client overrides no longer
   inherit incompatible fields such as a saved `login_url` when selecting OIDC.

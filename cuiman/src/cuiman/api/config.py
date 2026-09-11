@@ -199,17 +199,24 @@ class ClientConfig(BaseSettings):
     def from_file(
         cls, config_path: Optional[str | Path] = None
     ) -> Optional["ClientConfig"]:
-        config_dict = cls.read_file_data(config_path)
-        if config_dict is None:
-            return None
-        if _is_legacy_file_config(config_dict):
+        """Load a file using the application's configured schema.
+
+        Missing or empty files return ``None``. Parsing or validation errors
+        raise ``ValueError`` with instructions to run ``configure``, without
+        exposing file contents. Files that validate are accepted regardless
+        of their age or field names. Loading does not rewrite the file, and
+        filesystem access errors propagate unchanged.
+        """
+        try:
+            config_dict = cls.read_file_data(config_path)
+            if config_dict is None:
+                return None
+            # Validate only the file; create() resolves the other settings sources.
+            config = cls._new_model_instance(cls._configured_type(), **config_dict)
+        except (ValueError, TypeError, yaml.YAMLError):
             raise ValueError(
-                "Legacy configuration format detected, please run 'cuiman configure'"
-            )
-        config_cls = cls._configured_type()
-        # Validate the file-only snapshot without loading any Settings sources;
-        # ClientConfig.create() applies those sources in its numbered sequence.
-        config = cls._new_model_instance(config_cls, **config_dict)
+                "Deprecated or illegal configuration file, please run the 'configure' command."
+            ) from None
         config._source_path = cls.normalize_config_path(config_path)
         return config
 
@@ -380,30 +387,3 @@ def _set_auth_secret_persistor(config: ClientConfig, config_path: Path) -> None:
         )
 
     config.auth.set_secret_persistor(persist)
-
-
-###############################################################
-# -- Config file legacy management
-###############################################################
-
-
-_SECRET_AUTH_FIELDS = {
-    "oauth_token",
-    "access_token",
-    "api_key",
-    "client_secret",
-    "password",
-    "refresh_token",
-    "token",
-    "username",
-}
-
-
-def _is_legacy_file_config(config: dict[str, Any]) -> bool:
-    """Return whether a configuration uses a former secret-bearing file format."""
-    if "auth_type" in config:
-        return True
-    auth_config = config.get("auth")
-    return isinstance(auth_config, dict) and bool(
-        _SECRET_AUTH_FIELDS.intersection(auth_config)
-    )

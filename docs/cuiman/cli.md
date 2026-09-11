@@ -58,6 +58,9 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 
 Configure the client tool.
 
+Prompts require an interactive terminal. In notebook shell commands or
+other noninteractive environments, supply all configuration options.
+
 **Usage**:
 
 ```console

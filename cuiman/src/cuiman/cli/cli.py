@@ -244,12 +244,17 @@ def new_cli(
         ] = None,
         config_file: Annotated[str | None, CONFIG_OPTION] = None,
     ):
-        """Configure the client tool."""
+        """Configure the client tool.
+
+        Prompts require an interactive terminal. In notebook shell commands or
+        other noninteractive environments, supply all configuration options.
+        """
         from .config import configure_client_with_prompt
 
         try:
             config_path = configure_client_with_prompt(
                 config_path=config_file,
+                interactive=sys.stdin.isatty(),
                 api_url=api_url,
                 auth_type=auth_type,
                 login_url=login_url,

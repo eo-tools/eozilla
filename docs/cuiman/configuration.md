@@ -110,11 +110,53 @@ auth:
   auth_type: token
 ```
 
-Configuration files contain only public connection and authentication metadata.
-Credentials are never written to them. Files in the older format that contain
-credentials are rejected. Run `cuiman configure` to recreate incompatible
-configuration from defaults, then log in. Old fields are not translated or
-reused, and configuration files never receive credentials.
+Cuiman writes only public connection and authentication metadata to configuration
+files; credentials are omitted. Existing files are loaded using the current
+configuration model, including a customized client's schema. A file is considered
+deprecated or illegal if parsing or validation fails, rather than by checking
+for particular legacy field names. The error is:
+
+```text
+Deprecated or illegal configuration file, please run the 'configure' command.
+```
+
+Run `cuiman configure` (or your customized client's `configure` command) to
+recreate an invalid file from defaults, then log in. No old-format translation
+is performed. Files that validate are accepted, including supported credential
+fields already present in a file; reading never rewrites them. Subsequent writes
+omit credentials. Missing or empty files remain unconfigured; filesystem access
+errors are reported separately.
+
+### Configuring from a Jupyter notebook
+
+Notebook shell commands such as `!cuiman configure` cannot reliably forward
+answers to interactive CLI prompts. On Windows, the subprocess's input is a pipe
+that stays open without receiving notebook input. When standard input is not a
+terminal, Cuiman exits with an error if an option needs prompting, instead of
+waiting indefinitely. Run `cuiman configure` in a shell or JupyterLab terminal
+for the usual interactive workflow.
+
+To use interactive prompts inside a notebook, call the existing Python helper
+in the kernel:
+
+```python
+from cuiman.cli.config import configure_client_with_prompt
+
+config_path = configure_client_with_prompt()
+```
+
+This collects public settings and uses the kernel's current `ClientConfig`
+customization. Credentials are still obtained separately through client login.
+
+Alternatively, provide every prompted setting explicitly to the shell command:
+
+```python
+!cuiman configure --api-url https://processing.example.org/process/ --auth-type none
+```
+
+For token or proprietary-login authentication, also provide
+`--access-token-header` (an empty value selects Bearer signing). Other auth types
+have their own provider options; consult `cuiman configure --help`.
 
 ### Credential Storage
 

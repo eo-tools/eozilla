@@ -4,10 +4,12 @@ import os
 from unittest.mock import Mock
 
 import pytest
+from typer.testing import CliRunner
 import yaml
 
 from cuiman import ClientConfig
 from cuiman.api.auth import TokenAuthConfig
+from cuiman.cli.cli import new_cli
 from cuiman.cli.config import configure_client_with_prompt, get_config
 
 
@@ -162,13 +164,17 @@ def test_switching_auth_type_does_not_reuse_other_provider_settings(monkeypatch)
         {"auth_type": "token", "token": "OLD-SECRET"},
         {"auth": {"auth_type": "token", "use_bearer": True}},
         {"auth": {"auth_type": "oauth2", "access_token": "OLD-SECRET"}},
+        "auth: [OLD-SECRET\n",
+        "- OLD-SECRET\n",
     ],
 )
 def test_incompatible_configuration_is_recreated_without_translation(
     old, monkeypatch, capsys
 ):
     ClientConfig.default_path.write_text(
-        yaml.safe_dump({"api_url": "https://old.test", **old})
+        old
+        if isinstance(old, str)
+        else yaml.safe_dump({"api_url": "https://old.test", **old})
     )
     configure_client_with_prompt(
         api_url="https://new.test", auth_type="token", access_token_header=""
@@ -179,6 +185,20 @@ def test_incompatible_configuration_is_recreated_without_translation(
         "auth": {"auth_type": "token"},
     }
     assert "OLD-SECRET" not in ClientConfig.default_path.read_text()
+
+
+@pytest.mark.parametrize("command", ["list-processes", "login", "logout"])
+@pytest.mark.parametrize("contents", ["auth: [OLD-SECRET\n", "auth_type: unknown\n"])
+def test_invalid_file_has_actionable_error_in_custom_cli(command, contents):
+    path = ClientConfig.default_path
+    path.write_text(contents, encoding="utf-8")
+    result = CliRunner().invoke(new_cli(name="sen4cap-client"), [command])
+    assert result.exit_code == 1
+    assert result.stderr.strip() == (
+        "Deprecated or illegal configuration file, please run the 'configure' command."
+    )
+    assert "OLD-SECRET" not in result.output
+    assert path.read_text(encoding="utf-8") == contents
 
 
 @pytest.mark.parametrize(
