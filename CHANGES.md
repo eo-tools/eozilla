@@ -39,6 +39,9 @@
 
 ### Fixes
 
+- **Cuiman** notebook errors now remain visible as structured API errors without
+  crashing and disabling IPython's custom exception handler.
+
 - **Cuiman** detects deprecated or illegal configuration files through parsing
   and model validation, including customized client schemas. Invalid files now
   produce one actionable `configure` message without exposing their contents.
