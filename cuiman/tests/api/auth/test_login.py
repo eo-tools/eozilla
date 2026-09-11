@@ -4,12 +4,11 @@
 
 # ruff: noqa: S105, S106
 
-import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
-from cuiman.api.auth import LoginAuthConfig, TokenResult, login
+from cuiman.api.auth import LoginAuthConfig
 from cuiman.api.auth.login import (
     parse_token,
     prepare_login,
@@ -42,41 +41,6 @@ def test_prepare_login_requires_credentials(username, password):
                 password=password,
             )
         )
-
-
-def test_login_json_response():
-    response = MagicMock()
-    response.json.return_value = {"token": "abc123"}
-
-    with patch("httpx.Client.post", return_value=response) as post:
-        token = login(make_config())
-
-    assert token == TokenResult(access_token="abc123")
-    post.assert_called_once_with(
-        "https://example.test/login",
-        data={"username": "u", "password": "p"},
-    )
-
-
-def test_login_plaintext_response():
-    response = MagicMock()
-    response.json.side_effect = json.JSONDecodeError("not json", "", 0)
-    response.text = "plaintext-token"
-
-    with patch("httpx.Client.post", return_value=response):
-        assert login(make_config()) == TokenResult(access_token="plaintext-token")
-
-
-def test_login_for_tokens_parses_optional_refresh_token():
-    response = MagicMock()
-    response.json.return_value = {
-        "access_token": "access",
-        "refresh_token": "refresh",
-    }
-    with patch("httpx.Client.post", return_value=response):
-        result = login(make_config())
-
-    assert result == TokenResult(access_token="access", refresh_token="refresh")
 
 
 def test_process_login_response():

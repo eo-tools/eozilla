@@ -2,21 +2,11 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-import json
 from typing import Any
 
-import httpx
+import httpx2
 
 from .config import LoginAuthConfig
-from .tokens import TokenResult
-
-
-def login(auth_config: LoginAuthConfig) -> TokenResult:
-    """Log in through a proprietary endpoint and parse its token response."""
-    url, data = prepare_login(auth_config)
-    with httpx.Client() as client:
-        response = client.post(url, data=data)
-        return process_login_response_for_tokens(response)
 
 
 def prepare_login(config: LoginAuthConfig) -> tuple[str, dict[str, str]]:
@@ -31,7 +21,7 @@ def prepare_login(config: LoginAuthConfig) -> tuple[str, dict[str, str]]:
     }
 
 
-def process_login_response(response: httpx.Response) -> str:
+def process_login_response(response: httpx2.Response) -> str:
     """Parse an access token from a proprietary login response."""
     response.raise_for_status()
     try:
@@ -39,20 +29,6 @@ def process_login_response(response: httpx.Response) -> str:
     except Exception:  # noqa: BLE001 - proprietary endpoints may return plain text
         token_data = response.text.strip()
     return parse_token(token_data)
-
-
-def process_login_response_for_tokens(response: httpx.Response) -> TokenResult:
-    """Parse access and optional refresh tokens from a login response."""
-    response.raise_for_status()
-    try:
-        token_data = response.json()
-    except json.JSONDecodeError:
-        token_data = response.text.strip()
-    access_token = parse_token(token_data)
-    refresh_token = None
-    if isinstance(token_data, dict):
-        refresh_token = token_data.get("refresh_token")
-    return TokenResult(access_token=access_token, refresh_token=refresh_token)
 
 
 def parse_token(token_data: Any) -> str:

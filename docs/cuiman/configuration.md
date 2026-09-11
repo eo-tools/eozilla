@@ -20,18 +20,66 @@ entry overrides that of a previous one.
 This list is implemented in the class method `create()` of the 
 `cuiman.api.ClientConfig` class. 
 
-An `auth` override that includes `auth_type` replaces the previous authentication
-configuration entirely, even when the type is unchanged. For example,
-`Client(auth={"auth_type": "oidc", "issuer_url": "https://identity.example.org/realm",
-"client_id": "cuiman"})` does not inherit a saved `login_url` or custom token
-header settings. This rule applies to configuration files, environment
-variables, configuration objects, and client keyword arguments. An override
-without `auth_type`, such as `auth={"access_token": "..."}`, updates fields in
-the selected authentication configuration. Matching keyring credentials fill
-missing secrets without overwriting explicitly supplied values.
-
 Note that applications using `cuiman` under the hood may customize the 
 configuration, see [Cuiman Customization](./customization.md). 
+
+### Replacing or merging authentication
+
+For both `Client(auth=auth)` and `AsyncClient(auth=auth)`, the supplied value
+determines whether existing authentication settings are replaced or merged:
+
+| Supplied `auth` value | Behavior |
+| --- | --- |
+| Dictionary containing `auth_type` | Replaces previous auth settings, even when the type is unchanged. |
+| Auth model, such as `OAuth2AuthConfig(...)` | Replaces previous auth settings; the model already selects its auth type. |
+| Dictionary without `auth_type` | Merges into the selected auth configuration, preserving unspecified fields. |
+
+For example:
+
+```python
+from cuiman import Client
+from cuiman.api.auth import TokenAuthConfig
+
+# Replace previous auth settings; an old custom header is not inherited.
+client = Client(auth={"auth_type": "token", "access_token": token})
+
+# An auth model also replaces previous settings.
+client = Client(auth=TokenAuthConfig(access_token=token))
+
+# Merge into existing OAuth settings, retaining the provider configuration.
+client = Client(auth={"oauth_token": saved_token})
+```
+
+Partial dictionaries merge recursively, including fields within `oauth_token`;
+`None` values in partial overrides are ignored. To discard previous auth fields,
+supply `auth_type` together with the complete desired provider settings and
+credentials. An explicit auth selection also replaces prior settings from files,
+environment variables, and `config`; keyword settings take precedence over
+`config`. These overrides affect the new client and do not rewrite its file.
+
+**Replacement does not disable keyring lookup.** If a public configuration file
+exists and the selected authentication still lacks usable credentials, the
+matching profile/API URL/auth-type keyring entry can fill missing secrets.
+Explicitly supplied credentials take precedence. This applies after both
+replacement and merging.
+
+### URL paths and trailing slashes
+
+Cuiman distinguishes a processing-service **base URL** from an exact
+authentication **endpoint URL** or OIDC **issuer identifier**:
+
+| Setting | Path handling |
+| --- | --- |
+| `api_url` | Python and app requests append paths beneath this base. Both `/process` and `/process/` use `/process/` for the landing page and `/process/processes` for the process list. |
+| `auth.login_url`, `auth.token_url` | Use the provider's exact endpoint path. `/auth/login` and `/auth/login/` remain distinct; Cuiman does not add or remove their trailing slash. |
+| `auth.issuer_url` | Preserve the issuer's trailing slash, including an empty path, because discovery requires an exact issuer match. |
+
+Use the endpoint spelling required by your provider. There is no general rule
+that `/endpoint` and `/endpoint/` identify the same resource; Cuiman does not
+retry authentication at an alternate spelling. HTTP URL validation can normalize
+the host and add `/` to a bare host in `api_url`, `login_url`, and `token_url`;
+this does not make non-empty paths interchangeable. The OIDC issuer explicitly
+preserves an empty path.
 
 ### Configuration Files
 
@@ -49,8 +97,7 @@ JSON:
 {
     "api_url": "https://anolis.api.org/process-api/v1",
     "auth": {
-        "auth_type": "token",
-        "use_bearer": true
+        "auth_type": "token"
     }
 }
 ```
@@ -61,13 +108,55 @@ YAML:
 api_url: "https://anolis.api.org/process-api/v1"
 auth:
   auth_type: token
-  use_bearer: true
 ```
 
-Configuration files contain only public connection and authentication metadata.
-Credentials are never written to them. Files in the older format that contain
-credentials are detected as legacy configuration; run `cuiman configure` to
-rewrite their public values safely.
+Cuiman writes only public connection and authentication metadata to configuration
+files; credentials are omitted. Existing files are loaded using the current
+configuration model, including a customized client's schema. A file is considered
+deprecated or illegal if parsing or validation fails, rather than by checking
+for particular legacy field names. The error is:
+
+```text
+Deprecated or illegal configuration file, please run the 'configure' command.
+```
+
+Run `cuiman configure` (or your customized client's `configure` command) to
+recreate an invalid file from defaults, then log in. No old-format translation
+is performed. Files that validate are accepted, including supported credential
+fields already present in a file; reading never rewrites them. Subsequent writes
+omit credentials. Missing or empty files remain unconfigured; filesystem access
+errors are reported separately.
+
+### Configuring from a Jupyter notebook
+
+Notebook shell commands such as `!cuiman configure` cannot reliably forward
+answers to interactive CLI prompts. On Windows, the subprocess's input is a pipe
+that stays open without receiving notebook input. When standard input is not a
+terminal, Cuiman exits with an error if an option needs prompting, instead of
+waiting indefinitely. Run `cuiman configure` in a shell or JupyterLab terminal
+for the usual interactive workflow.
+
+To use interactive prompts inside a notebook, call the existing Python helper
+in the kernel:
+
+```python
+from cuiman.cli.config import configure_client_with_prompt
+
+config_path = configure_client_with_prompt()
+```
+
+This collects public settings and uses the kernel's current `ClientConfig`
+customization. Credentials are still obtained separately through client login.
+
+Alternatively, provide every prompted setting explicitly to the shell command:
+
+```python
+!cuiman configure --api-url https://processing.example.org/process/ --auth-type none
+```
+
+For token or proprietary-login authentication, also provide
+`--access-token-header` (an empty value selects Bearer signing). Other auth types
+have their own provider options; consult `cuiman configure --help`.
 
 ### Credential Storage
 
@@ -110,13 +199,14 @@ are accepted:
 | `basic` | `EOZILLA_AUTH__AUTH_TYPE=basic`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD` | |
 | `token` | `EOZILLA_AUTH__AUTH_TYPE=token`, `EOZILLA_AUTH__ACCESS_TOKEN` | `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
 | `login` | `EOZILLA_AUTH__AUTH_TYPE=login`, `EOZILLA_AUTH__LOGIN_URL`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD` | `EOZILLA_AUTH__ACCESS_TOKEN`, `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
-| `oauth2` | `EOZILLA_AUTH__AUTH_TYPE=oauth2`, `EOZILLA_AUTH__TOKEN_URL` | `EOZILLA_AUTH__GRANT_TYPE`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD`, `EOZILLA_AUTH__CLIENT_ID`, `EOZILLA_AUTH__CLIENT_SECRET`, `EOZILLA_AUTH__REFRESH_TOKEN`, `EOZILLA_AUTH__ACCESS_TOKEN`, `EOZILLA_AUTH__USE_BEARER`, `EOZILLA_AUTH__ACCESS_TOKEN_HEADER` |
-| `oidc` | `EOZILLA_AUTH__AUTH_TYPE=oidc`, `EOZILLA_AUTH__ISSUER_URL`, `EOZILLA_AUTH__CLIENT_ID` | `EOZILLA_AUTH__SCOPES`, `EOZILLA_AUTH__REFRESH_TOKEN`, `EOZILLA_AUTH__ACCESS_TOKEN` |
+| `oauth2` | `EOZILLA_AUTH__AUTH_TYPE=oauth2`, `EOZILLA_AUTH__TOKEN_URL`, `EOZILLA_AUTH__CLIENT_ID` | `EOZILLA_AUTH__GRANT_TYPE`, `EOZILLA_AUTH__USERNAME`, `EOZILLA_AUTH__PASSWORD`, `EOZILLA_AUTH__CLIENT_SECRET`, `EOZILLA_AUTH__OAUTH_TOKEN` |
+| `oidc` | `EOZILLA_AUTH__AUTH_TYPE=oidc`, `EOZILLA_AUTH__ISSUER_URL`, `EOZILLA_AUTH__CLIENT_ID` | `EOZILLA_AUTH__SCOPES`, `EOZILLA_AUTH__OAUTH_TOKEN` |
 | `api-key` | `EOZILLA_AUTH__AUTH_TYPE=api-key`, `EOZILLA_AUTH__API_KEY` | `EOZILLA_AUTH__API_KEY_HEADER` |
 
 For OAuth 2.0, `grant_type` defaults to `password`. The `password` grant
 requires `USERNAME` and `PASSWORD`; the `client_credentials` grant requires
-`CLIENT_ID` and `CLIENT_SECRET`.
+`CLIENT_ID` and `CLIENT_SECRET`. Alternatively, provide a complete token snapshot
+as JSON in `EOZILLA_AUTH__OAUTH_TOKEN`.
 
 Environment settings override values from the configuration file. Providing
 `EOZILLA_AUTH__AUTH_TYPE` selects a complete authentication configuration, so
@@ -179,7 +269,7 @@ keyring. `logout` removes the matching keyring entry. For authentication type
 `none`, `configure` does not offer login.
 
 When a configured authenticated service is used without available credentials,
-the CLI reports `Please log in first using 'cuiman login'.` instead of showing
+the CLI reports `Please use 'cuiman login' to provide credentials.` instead of showing
 an implementation traceback.
 
 You can override settings anytime from environment variables or by using
@@ -214,7 +304,7 @@ credentials. Cuiman keeps renewed tokens in memory unless the configuration
 has a credential persistor, such as one attached when loading CLI keyring
 credentials. Renewal never opens a browser or prompts for credentials.
 
-For the internal responsibilities and the boundary for a future auth library,
+For the shared Authlib implementation and app ownership rules,
 see [Authentication lifecycle](./authentication.md).
 
 ## Basic Settings
@@ -275,10 +365,13 @@ config = ClientConfig(
     auth={
         "auth_type": "token",
         "access_token": "...",
-        "use_bearer": True,  # default
     },
 )
 ```
+
+Omit `access_token_header` (or set it to `None`) for Bearer signing. Set it to a
+header name to send the raw token in that header; there is no separate bearer
+switch. This setting also applies to proprietary `login` authentication.
 
 With custom header:
 
@@ -288,8 +381,7 @@ config = ClientConfig(
     auth={
         "auth_type": "token",
         "access_token": "...",
-        "use_bearer": False,
-        "access_token_header": "X-Auth-Token",  # Default
+        "access_token_header": "X-Auth-Token",
     },
 )
 ```
@@ -309,47 +401,40 @@ config = ClientConfig(
         "username": "...",
         "password": "...",
         "access_token": "...",  # obtained by `cuiman login`
-        "use_bearer": True,
     },
 )
 ```
 
 ### Auth type `oauth2`
 
-The `oauth2` type obtains a token from a standards-based OAuth 2.0 token
-endpoint. It supports the `password` grant (the default) and the
-`client_credentials` grant. If a password-grant response includes a refresh
-token, Cuiman refreshes the access token once after an HTTP 401. The refreshed
-token is persisted to the OS keyring when the credentials were loaded from it;
-it is never written to the configuration file.
+The `oauth2` type uses an Authlib client for the `password` grant (the default)
+or `client_credentials`. Both require the provider's client ID. Authlib handles
+expiry and refresh before protected requests; a resource 401 is not replayed.
 
 ```python
 config = ClientConfig(
-    api_url="...",
+    api_url="https://processing.example.org",
     auth={
         "auth_type": "oauth2",
         "token_url": "https://identity.example.org/realms/example/protocol/openid-connect/token",
         "grant_type": "password",
+        "client_id": "cuiman",
         "username": "...",
         "password": "...",
-        "client_id": "...",  # optional for password grant
-        "client_secret": "...",  # optional for password grant
-        "access_token": "...",  # obtained by `cuiman login`
-        "refresh_token": "...",  # returned by the token endpoint when available
-        "use_bearer": True,
     },
 )
 ```
 
-`cuiman login` and explicit Python client login prompt only for username and
-password when using the OAuth2 `password` grant. A configured `client_id` does
-not cause a client-secret prompt. If the provider requires a client secret,
-supply it through `EOZILLA_AUTH__CLIENT_SECRET`, direct Python configuration,
-or an existing keyring entry. Login preserves and sends that secret; otherwise
-the token request omits `client_secret`.
+If the password-grant client requires a client secret, supply `client_secret`
+through Python configuration, environment variables, or the keyring. Login
+prompts for username/password when needed. Client-credentials login prompts for
+a missing client secret. Both grants support `cuiman login` and save a complete
+`oauth_token` snapshot in the keyring. OAuth signing always uses a bearer header.
 
-The `client_credentials` grant has no interactive login step; provide its
-credentials through environment variables or direct Python configuration.
+To bootstrap from an existing token in Python, provide
+`auth={"oauth_token": saved_token}` for the configured OAuth type. Preserve the
+complete mapping, including `expires_at` and any refresh token. Read subsequent
+token updates through `client.token`, not through the configuration snapshot.
 
 ### Auth type `oidc`
 

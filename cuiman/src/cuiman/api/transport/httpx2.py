@@ -5,7 +5,7 @@
 import logging
 from typing import Any, Awaitable, Callable
 
-import httpx
+import httpx2
 
 from cuiman.api.exceptions import ClientError
 from gavicore.models import ApiError
@@ -14,64 +14,66 @@ from .args import CLIENT_ERROR_URI, TransportArgs
 from .transport import AsyncTransport, Transport, TransportError
 
 
-class HttpxTransport(Transport, AsyncTransport):
-    """A concrete web API transport based on the httpx package."""
+class Httpx2Transport(Transport, AsyncTransport):
+    """A concrete web API transport based on the httpx2 package."""
 
     def __init__(
         self,
         api_url: str,
         headers: dict[str, str] | None = None,
         return_type_map: dict[type, type] | None = None,
-        token_refresher: Callable[[], dict[str, str]] | None = None,
-        async_token_refresher: (Callable[[], Awaitable[dict[str, str]]] | None) = None,
         debug: bool = False,
+        *,
+        sync_httpx2: httpx2.Client | None = None,
+        async_httpx2: httpx2.AsyncClient | None = None,
+        sync_request: Callable[..., httpx2.Response] | None = None,
+        async_request: Callable[..., Awaitable[httpx2.Response]] | None = None,
     ):
         self.api_url = api_url
         self.headers = headers
         self.return_type_map = return_type_map or {}
-        self.token_refresher = token_refresher
-        self.async_token_refresher = async_token_refresher
         self.debug = debug
-        self.sync_httpx: httpx.Client | None = None
-        self.async_httpx: httpx.AsyncClient | None = None
-        # Note, by default, we silence the httpx logger, however it may be
+        self.sync_httpx2 = sync_httpx2
+        self.async_httpx2 = async_httpx2
+        self.sync_request = sync_request
+        self.async_request = async_request
+        self._owns_http_client = sync_httpx2 is None and async_httpx2 is None
+        # Note, by default, we silence the httpx2 logger, however it may be
         #   useful to make that configurable
-        logging.getLogger("httpx").setLevel(
+        logging.getLogger("httpx2").setLevel(
             logging.DEBUG if debug else logging.CRITICAL
         )
 
     def call(self, args: TransportArgs) -> Any:
-        if self.sync_httpx is None:
-            self.sync_httpx = httpx.Client()
+        if self.sync_httpx2 is None and self.sync_request is None:
+            self.sync_httpx2 = httpx2.Client()
         response = self._sync_request(args)
-        if response.status_code == 401 and self.token_refresher is not None:
-            self.headers = self.token_refresher()
-            response = self._sync_request(args)
         return self._process_response(args, response)
 
     async def async_call(self, args: TransportArgs) -> Any:
-        if self.async_httpx is None:
-            self.async_httpx = httpx.AsyncClient()
+        if self.async_httpx2 is None and self.async_request is None:
+            self.async_httpx2 = httpx2.AsyncClient()
         response = await self._async_request(args)
-        if response.status_code == 401 and self.async_token_refresher is not None:
-            self.headers = await self.async_token_refresher()
-            response = await self._async_request(args)
         return self._process_response(args, response)
 
-    def _sync_request(self, args: TransportArgs) -> httpx.Response:
-        assert self.sync_httpx is not None
+    def _sync_request(self, args: TransportArgs) -> httpx2.Response:
         args_, kwargs_ = self._get_request_args(args)
         try:
-            return self.sync_httpx.request(*args_, **kwargs_)
-        except httpx.HTTPError as e:
+            if self.sync_request is not None:
+                return self.sync_request(*args_, **kwargs_)
+            assert self.sync_httpx2 is not None
+            return self.sync_httpx2.request(*args_, **kwargs_)
+        except httpx2.HTTPError as e:
             raise TransportError(f"{e}") from e
 
-    async def _async_request(self, args: TransportArgs) -> httpx.Response:
-        assert self.async_httpx is not None
+    async def _async_request(self, args: TransportArgs) -> httpx2.Response:
         args_, kwargs_ = self._get_request_args(args)
         try:
-            return await self.async_httpx.request(*args_, **kwargs_)
-        except httpx.HTTPError as e:
+            if self.async_request is not None:
+                return await self.async_request(*args_, **kwargs_)
+            assert self.async_httpx2 is not None
+            return await self.async_httpx2.request(*args_, **kwargs_)
+        except httpx2.HTTPError as e:
             raise TransportError(f"{e}") from e
 
     def _get_request_args(
@@ -81,7 +83,7 @@ class HttpxTransport(Transport, AsyncTransport):
         request_json = args.get_json_for_request()
         extra_kwargs = args.extra_kwargs
         if self.headers:
-            extra_kwargs = dict(args.extra_kwargs)
+            extra_kwargs = dict(extra_kwargs)
             headers = dict(self.headers)
             headers.update(extra_kwargs.pop("headers", {}))
             extra_kwargs["headers"] = headers
@@ -92,7 +94,7 @@ class HttpxTransport(Transport, AsyncTransport):
         }
 
     # noinspection PyMethodMayBeStatic
-    def _process_response(self, args: TransportArgs, response: httpx.Response) -> Any:
+    def _process_response(self, args: TransportArgs, response: httpx2.Response) -> Any:
         try:
             # Note, actually we should only do `response.json()` if JSON is expected,
             # use args.return_types for this decision.
@@ -114,7 +116,7 @@ class HttpxTransport(Transport, AsyncTransport):
             return args.get_response_for_status(
                 response.status_code, response_json, self.return_type_map
             )
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             raise args.get_exception_for_status(
                 response.status_code,
                 response_json,
@@ -122,13 +124,15 @@ class HttpxTransport(Transport, AsyncTransport):
             ) from e
 
     def close(self):
-        if self.sync_httpx is not None:
-            assert self.async_httpx is None
-            self.sync_httpx.close()
-            self.sync_httpx = None
+        if self.sync_httpx2 is not None:
+            assert self.async_httpx2 is None
+            if self._owns_http_client:
+                self.sync_httpx2.close()
+            self.sync_httpx2 = None
 
     async def async_close(self):
-        if self.async_httpx is not None:
-            assert self.sync_httpx is None
-            await self.async_httpx.aclose()
-            self.async_httpx = None
+        if self.async_httpx2 is not None:
+            assert self.sync_httpx2 is None
+            if self._owns_http_client:
+                await self.async_httpx2.aclose()
+            self.async_httpx2 = None

@@ -3,9 +3,10 @@
 #  https://opensource.org/license/apache-2-0.
 
 import base64
+import json
 from typing import (
     Annotated,
-    Awaitable,
+    Any,
     Callable,
     ClassVar,
     Literal,
@@ -13,7 +14,16 @@ from typing import (
     get_args,
 )
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, PrivateAttr, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    Json,
+    PrivateAttr,
+    UrlConstraints,
+    model_validator,
+)
 
 AuthType: TypeAlias = Literal[
     "none",
@@ -59,7 +69,7 @@ OAUTH2_GRANT_TYPE_NAMES: tuple[str, ...] = get_args(OAuth2GrantType)
 class AuthConfigBase(BaseModel):
     """Base class for authentication configuration models."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
 
     secret_fields: ClassVar[SecretFields] = frozenset()
     """Fields that must not be persisted in a client configuration file."""
@@ -104,20 +114,6 @@ class AuthConfigBase(BaseModel):
         """Return the HTTP authentication headers for this configuration."""
         return {}
 
-    def make_token_refresher(self) -> Callable[[], dict[str, str]] | None:
-        """Delegate synchronous token renewal to the shared auth lifecycle."""
-        from .session import make_token_refresher
-
-        return make_token_refresher(self)
-
-    def make_async_token_refresher(
-        self,
-    ) -> Callable[[], Awaitable[dict[str, str]]] | None:
-        """Delegate asynchronous token renewal to the shared auth lifecycle."""
-        from .session import make_async_token_refresher
-
-        return make_async_token_refresher(self)
-
 
 class NoAuthConfig(AuthConfigBase):
     """Configuration for APIs that require no authentication."""
@@ -146,16 +142,16 @@ class BasicAuthConfig(AuthConfigBase):
 
 class _AccessTokenAuthConfig(AuthConfigBase):
     access_token: str | None = None
-    use_bearer: bool = True
-    access_token_header: str = "X-Auth-Token"  # noqa: S105
+    access_token_header: str | None = Field(default=None, min_length=1)
+    """Custom header for the raw token; omitted means standard Bearer signing."""
 
     @property
     def auth_headers(self) -> dict[str, str]:
         if not self.access_token:
             raise ValueError("Missing access token.")
-        if self.use_bearer:
-            return {"Authorization": f"Bearer {self.access_token}"}
-        return {self.access_token_header: self.access_token}
+        if self.access_token_header:
+            return {self.access_token_header: self.access_token}
+        return {"Authorization": f"Bearer {self.access_token}"}
 
 
 class TokenAuthConfig(_AccessTokenAuthConfig):
@@ -175,66 +171,80 @@ class LoginAuthConfig(_AccessTokenAuthConfig):
 
     auth_type: Literal["login"] = "login"
     login_url: HttpUrl
+    """Exact login endpoint; a non-empty path's trailing slash is preserved."""
     username: str | None = None
     password: str | None = None
 
 
-class OAuth2AuthConfig(_AccessTokenAuthConfig):
-    """OAuth2 token endpoint configuration."""
+class OAuthTokenConfig(AuthConfigBase):
+    """Provider configuration with one secret OAuth token bootstrap snapshot."""
 
-    secret_fields: ClassVar[SecretFields] = frozenset(
-        {"username", "password", "client_secret", "refresh_token", "access_token"}
+    secret_fields: ClassVar[SecretFields] = frozenset({"oauth_token"})
+    oauth_token: Json[dict[str, Any]] | dict[str, Any] | None = Field(
+        default=None, repr=False
     )
 
+    def to_secret_dict(self) -> dict[str, str]:
+        """Serialize the complete token for the string-valued keyring record."""
+        values = super().to_secret_dict()
+        if self.oauth_token is not None:
+            values["oauth_token"] = json.dumps(self.oauth_token)
+        return values
+
+
+class OAuth2AuthConfig(OAuthTokenConfig):
+    """OAuth2 password or client-credentials token endpoint configuration."""
+
+    secret_fields: ClassVar[SecretFields] = OAuthTokenConfig.secret_fields | {
+        "username",
+        "password",
+        "client_secret",
+    }
     auth_type: Literal["oauth2"] = "oauth2"
     token_url: HttpUrl
+    """Exact token endpoint; a non-empty path's trailing slash is preserved."""
     grant_type: OAuth2GrantType = "password"
+    client_id: str = Field(min_length=1)
+    client_secret: str | None = None
     username: str | None = None
     password: str | None = None
-    client_id: str | None = None
-    client_secret: str | None = None
-    refresh_token: str | None = None
-
-    @model_validator(mode="after")
-    def validate_grant_credentials(self) -> "OAuth2AuthConfig":
-        """Validate public OAuth2 configuration and supplied credential pairs."""
-        if (self.username is None) != (self.password is None):
-            raise ValueError(
-                "Username and password must be configured together when either is set."
-            )
-        if self.client_secret is not None and self.client_id is None:
-            raise ValueError(
-                "Client ID must be configured when a client secret is set."
-            )
-        if self.grant_type == "client_credentials" and not self.client_id:
-            raise ValueError(
-                "Client ID is required for the OAuth2 client credentials grant."
-            )
-        return self
 
 
-class OidcAuthConfig(_AccessTokenAuthConfig):
-    """OpenID Connect Authorization Code with PKCE configuration.
-
-    ``issuer_url``, ``client_id``, and ``scopes`` are public configuration
-    values. ``access_token`` and ``refresh_token`` are credentials and are
-    stored in the operating-system keyring by the CLI. The ``openid`` scope is
-    included automatically; list only additional provider or API scopes.
-    """
-
-    secret_fields: ClassVar[SecretFields] = frozenset({"access_token", "refresh_token"})
+class OidcAuthConfig(OAuthTokenConfig):
+    """OpenID Connect authorization-code configuration for a public PKCE client."""
 
     auth_type: Literal["oidc"] = "oidc"
-    issuer_url: HttpUrl
+    issuer_url: Annotated[HttpUrl, UrlConstraints(preserve_empty_path=True)]
+    """Issuer identifier, preserving trailing slashes for exact discovery matching."""
     client_id: str = Field(min_length=1)
     scopes: tuple[str, ...] = ()
-    refresh_token: str | None = None
 
     @model_validator(mode="after")
     def include_openid_scope(self) -> "OidcAuthConfig":
-        """Add the required OpenID Connect scope and remove duplicate scopes."""
+        """Include the required OpenID Connect scope without duplicates."""
         self.scopes = tuple(dict.fromkeys(("openid", *self.scopes)))
         return self
+
+
+def has_credentials(auth: AuthConfigBase) -> bool:
+    """Whether configuration supplies credentials without prompting the user."""
+    if isinstance(auth, OAuthTokenConfig):
+        if auth.oauth_token:
+            return True
+        if isinstance(auth, OAuth2AuthConfig):
+            return (
+                bool(auth.client_secret)
+                if auth.grant_type == "client_credentials"
+                else bool(auth.username and auth.password)
+            )
+        return False
+    if isinstance(auth, LoginAuthConfig) and auth.username and auth.password:
+        return True
+    try:
+        _ = auth.auth_headers
+        return True
+    except ValueError:
+        return False
 
 
 class ApiKeyAuthConfig(AuthConfigBase):

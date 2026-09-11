@@ -1,6 +1,7 @@
 # Testing
 *.zarr/
 .cov-report
+notebooks/auth-test.ipynb
 
 # Documentation generation
 docs/notebooks/*.ipynb

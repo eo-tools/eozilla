@@ -57,8 +57,7 @@ def _register_exception_handler() -> Callable[[Any, Any, Any, Any], None]:
                     expanded=True,
                 )
             )
-            return None, None, None  # prevents default traceback
-
+        # IPython accepts None to suppress the text traceback after display.
         return None
 
     # Register handler for MyCustomError

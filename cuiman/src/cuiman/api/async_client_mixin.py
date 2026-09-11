@@ -3,15 +3,21 @@
 #  https://opensource.org/license/apache-2-0.
 
 import asyncio
+import threading
 import warnings
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from abc import abstractmethod
+from typing import Any
+
+import httpx2
+from authlib.integrations.httpx_client import AsyncOAuth2Client
 
 from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
 from gavicore.util.request import ExecutionRequest
 
-from .auth.session import resolve_auth_headers_async
-from .config import ClientConfig
+from .auth.config import OidcAuthConfig
+from .auth.interactive import authorize
+from .auth.oidc import LoopbackCallbackServer
+from .client_mixin_base import ClientMixinBase
 from .defaults import (
     DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
@@ -20,11 +26,6 @@ from .exceptions import ClientError, ClientWarning
 from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
 from .transport import AsyncTransport
-from .transport.httpx import HttpxTransport
-
-if TYPE_CHECKING:
-    pass
-
 
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with ClientMixin!
@@ -32,59 +33,177 @@ if TYPE_CHECKING:
 
 
 # noinspection PyShadowingBuiltins
-class AsyncClientMixin(ABC):
+class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
     """
     Extra methods for the API client (asynchronous mode).
     """
 
+    _async_mode = True
     _transport: AsyncTransport | None
-    _debug: bool
-    _login_lock: asyncio.Lock | None = None
+
+    def _init_client_runtime(self) -> None:
+        super()._init_client_runtime()
+        self._runtime_lock = asyncio.Lock()
+        self._owner_loop: asyncio.AbstractEventLoop | None = None
+
+    def _bind_loop(self) -> asyncio.AbstractEventLoop:
+        loop = asyncio.get_running_loop()
+        if self._owner_loop is not None and self._owner_loop is not loop:
+            raise RuntimeError("AsyncClient must be used on its owning event loop.")
+        self._owner_loop = loop
+        return loop
+
+    async def close(self) -> None:
+        """Close owned connections. A closed client cannot be used again."""
+        self._bind_loop()
+        async with self._runtime_lock:
+            await self._close()
+
+    async def _close(self) -> None:
+        """Close connections while the caller holds the owner lock."""
+        self._closed = True
+        transport, self._transport = self._transport, None
+        try:
+            if transport is not None:
+                await transport.async_close()
+        finally:
+            if self._http_client is not None:
+                await self._http_client.aclose()
+            self._http_client = None
 
     async def login(
-        self, *, interactive: bool = True, no_browser: bool = False, force: bool = False
+        self,
+        *,
+        interactive: bool = True,
+        no_browser: bool = False,
+        force: bool = False,
+        save: bool = False,
     ) -> None:
-        """Prepare authentication, sharing login across concurrent calls.
+        """Prepare authentication using the client's persistent HTTP session.
 
-        Explicit login may prompt for credentials or open an OIDC browser.
-        API methods disable interaction and raise ``LoginRequiredError`` when
-        credentials must be supplied. Cancelled or failed login can be retried.
-        Use ``force=True`` to bypass existing tokens and authenticate afresh.
-        A successful login also updates an existing HTTPX transport.
+        Use force to acquire a fresh token. Requests never prompt or open a
+        browser. With save=True, failure to save credentials raises an error.
         """
-        if self._login_lock is None:
-            self._login_lock = asyncio.Lock()
-        async with self._login_lock:
-            headers = await resolve_auth_headers_async(
-                self.config.auth,
-                interactive=interactive,
-                no_browser=no_browser,
-                force=force,
+        self._bind_loop()
+        async with self._runtime_lock:
+            await self._login(
+                interactive=interactive, no_browser=no_browser, force=force, save=save
             )
-            if self._transport is not None and isinstance(
-                self._transport, HttpxTransport
-            ):
-                self._transport.headers = headers
 
-    async def _get_transport(self) -> AsyncTransport:
-        if self._transport is None:
-            await self.login(interactive=False)
-            # Another first request may have created it while we awaited login.
-            if self._transport is None:
-                assert self.config.api_url is not None
-                self._transport = HttpxTransport(
-                    api_url=f"{self.config.api_url.rstrip('/')}/",
-                    headers=self.config.auth_headers,
-                    return_type_map=self.config.return_type_map,
-                    async_token_refresher=self.config._make_async_token_refresher(),
-                    debug=self._debug,
+    async def _login(
+        self,
+        *,
+        interactive: bool = False,
+        no_browser: bool = False,
+        force: bool = False,
+        save: bool = False,
+    ) -> None:
+        self._require_open()
+        auth = (
+            await asyncio.to_thread(self._credentials, interactive=True, force=force)
+            if interactive
+            else self._credentials(interactive=False, force=force)
+        )
+        self._configure_http_client(auth, self._updated_token)
+        await self._discover()
+        client = self._http_client
+        response = None
+        if isinstance(client, AsyncOAuth2Client) and client.token and not force:
+            await client.ensure_active_token(client.token)
+        elif isinstance(auth, OidcAuthConfig):
+            assert isinstance(client, AsyncOAuth2Client)
+            with LoopbackCallbackServer() as server:
+                url, state, verifier = self._authorization(client, server)
+                cancelled = threading.Event()
+                try:
+                    code = await asyncio.to_thread(
+                        authorize,
+                        server,
+                        url,
+                        state,
+                        no_browser=no_browser,
+                        cancelled=cancelled,
+                    )
+                except asyncio.CancelledError:
+                    cancelled.set()
+                    raise
+                response = await client.fetch_token(code=code, code_verifier=verifier)
+                await self._validate_oidc_token(required=True)
+        elif request := self._login_request(force=force):
+            response = await request()
+        self._accept_login(response, force=force, save=save)
+
+    async def _discover(self) -> None:
+        if url := self._discovery_url:
+            assert self._http_client is not None
+            self._accept_discovery(
+                await self._http_client.request("GET", url, auth=None)
+            )
+
+    async def _validate_oidc_token(self, *, required: bool = False) -> None:
+        with self._oidc_validation(required=required) as url:
+            if url:
+                assert self._http_client is not None
+                response = await self._http_client.request("GET", url, auth=None)
+                self._validate_id_token(response, required=required)
+
+    async def _updated_token(self, _token: dict[str, Any], **_previous: Any) -> None:
+        await self._validate_oidc_token()
+        self._save_credentials()
+
+    async def logout(self) -> None:
+        """Revoke an OIDC token when supported, remove local secrets, and close."""
+        self._bind_loop()
+        async with self._runtime_lock:
+            self._require_open()
+            try:
+                if self._can_revoke:
+                    self._configure_http_client(self.config.auth, self._updated_token)
+                    await self._discover()
+                    if options := self._revocation():
+                        assert isinstance(self._http_client, AsyncOAuth2Client)
+                        response = await self._http_client.revoke_token(**options)
+                        response.raise_for_status()
+            finally:
+                self._closed = True
+                try:
+                    self._forget_credentials()
+                finally:
+                    await self._close()
+
+    async def _request(self, method: str, url: str, **kwargs: Any) -> httpx2.Response:
+        self._bind_loop()
+        async with self._runtime_lock:
+            await self._login()
+            assert self._http_client is not None
+            return await self._http_client.request(
+                method, url, **self._request_options(kwargs)
+            )
+
+    def _app_callbacks(self) -> dict[str, Any]:
+        self._require_open()
+        loop = self._bind_loop()
+
+        def require_running_owner() -> None:
+            self._require_open()
+            if not loop.is_running():
+                raise RuntimeError("The AsyncClient owning event loop is not running.")
+
+        async def prepare() -> None:
+            require_running_owner()
+            await asyncio.wrap_future(
+                asyncio.run_coroutine_threadsafe(self.login(interactive=False), loop)
+            )
+
+        async def request(method: str, url: str, **kwargs: Any) -> httpx2.Response:
+            require_running_owner()
+            return await asyncio.wrap_future(
+                asyncio.run_coroutine_threadsafe(
+                    self._request(method, url, **kwargs), loop
                 )
-        return self._transport
+            )
 
-    @property
-    @abstractmethod
-    def config(self) -> ClientConfig:
-        """Will be overridden by the actual client class."""
+        return dict(prepare=prepare, request=request)
 
     @abstractmethod
     async def get_process(self, process_id: str, **kwargs: Any) -> ProcessDescription:

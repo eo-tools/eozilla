@@ -16,14 +16,10 @@ from pydantic_settings import SettingsConfigDict
 
 from cuiman import AsyncClient, Client
 from cuiman.api.auth import (
-    ApiKeyAuthConfig,
-    BasicAuthConfig,
     LoginAuthConfig,
     NoAuthConfig,
-    OAuth2AuthConfig,
     OidcAuthConfig,
     TokenAuthConfig,
-    TokenResult,
 )
 from cuiman.api.config import (
     ClientConfig,
@@ -86,7 +82,7 @@ class ClientConfigTest(TestCase):
 
         branded_default = BrandedClientConfig(
             api_url="https://default.example.test/processes",
-            auth=TokenAuthConfig(use_bearer=False, access_token_header="X-Branded"),
+            auth=TokenAuthConfig(access_token_header="X-Branded"),
         )
         with patch.dict(
             os.environ,
@@ -101,7 +97,7 @@ class ClientConfigTest(TestCase):
         self.assertIsInstance(config, BrandedClientConfig)
         self.assertEqual("https://environment.example.test/processes", config.api_url)
         self.assertEqual(
-            TokenAuthConfig(use_bearer=False, access_token_header="X-Branded"),
+            TokenAuthConfig(access_token_header="X-Branded"),
             config.auth,
         )
         self.assertEqual("branded", config.service_name)
@@ -272,151 +268,6 @@ class ClientConfigTest(TestCase):
 
         self.assertEqual("environment-password", config.auth.password)
 
-    @patch("cuiman.api.auth.session.renew_oauth2_tokens")
-    @patch("cuiman.api.config.save_auth_secrets")
-    @patch("cuiman.api.config.load_auth_secrets")
-    def test_keyring_loaded_oauth2_config_persists_refreshed_tokens(
-        self, load_auth_secrets, save_auth_secrets, renew_oauth2_tokens
-    ):
-        load_auth_secrets.return_value = {
-            "username": "u",
-            "password": "p",
-            "access_token": "old-access",
-            "refresh_token": "old-refresh",
-        }
-        renew_oauth2_tokens.return_value = TokenResult(
-            access_token="new-access", refresh_token="new-refresh"
-        )
-        original = ClientConfig(
-            api_url="https://eozilla.example.test",
-            auth=OAuth2AuthConfig(token_url="https://identity.example.test/token"),
-        )
-        with tempfile.TemporaryDirectory() as tmp_dir_name:
-            config_path = Path(tmp_dir_name) / "config"
-            original.write(config_path)
-            config = ClientConfig.create(config_path=config_path)
-            config.auth.make_token_refresher()()
-
-        save_auth_secrets.assert_called_once_with(
-            config_path,
-            "https://eozilla.example.test/",
-            "oauth2",
-            {
-                "username": "u",
-                "password": "p",
-                "access_token": "new-access",
-                "refresh_token": "new-refresh",
-            },
-        )
-
-    def test_from_file_rejects_legacy_flat_auth_configurations(self):
-        common = {
-            "api_url": "https://eozilla.example.test",
-            "api_key_header": "X-API-Key",
-            "grant_type": "password",
-            "token_header": "X-Auth-Token",
-            "use_bearer": True,
-        }
-        cases = [
-            ({"auth_type": "none"}, NoAuthConfig()),
-            (
-                {
-                    "auth_type": "basic",
-                    "auth_url": "https://ignored.example.test",
-                    "username": "basic-user",
-                    "password": "basic-password",
-                },
-                BasicAuthConfig(
-                    username="basic-user",
-                    password="basic-password",
-                ),
-            ),
-            (
-                {
-                    "auth_type": "token",
-                    "token": "legacy-token",
-                    "use_bearer": False,
-                    "token_header": "X-Legacy-Token",
-                },
-                TokenAuthConfig(
-                    access_token="legacy-token",
-                    use_bearer=False,
-                    access_token_header="X-Legacy-Token",
-                ),
-            ),
-            (
-                {
-                    "auth_type": "api-key",
-                    "api_key": "legacy-key",
-                    "api_key_header": "X-Legacy-Key",
-                },
-                ApiKeyAuthConfig(
-                    api_key="legacy-key",
-                    api_key_header="X-Legacy-Key",
-                ),
-            ),
-        ]
-
-        with tempfile.TemporaryDirectory() as tmp_dir_name:
-            for index, (legacy_auth, _) in enumerate(cases):
-                with self.subTest(auth_type=legacy_auth["auth_type"]):
-                    config_path = Path(tmp_dir_name) / f"legacy-{index}.yaml"
-                    contents = yaml.safe_dump({**common, **legacy_auth})
-                    config_path.write_text(contents)
-
-                    with self.assertRaisesRegex(
-                        ValueError,
-                        "Legacy configuration format detected, please run 'cuiman configure'",
-                    ):
-                        ClientConfig.from_file(config_path)
-                    self.assertEqual(contents, config_path.read_text())
-
-    def test_from_file_rejects_nested_secret_bearing_auth_configuration(self):
-        config_path = Path(tempfile.mkdtemp()) / "config.yaml"
-        try:
-            config_path.write_text(
-                yaml.safe_dump(
-                    {
-                        "api_url": "https://eozilla.example.test",
-                        "auth": {
-                            "auth_type": "token",
-                            "access_token": "legacy-token",
-                        },
-                    }
-                )
-            )
-
-            with self.assertRaisesRegex(
-                ValueError,
-                "Legacy configuration format detected, please run 'cuiman configure'",
-            ):
-                ClientConfig.from_file(config_path)
-        finally:
-            config_path.unlink(missing_ok=True)
-            config_path.parent.rmdir()
-
-    def test_from_file_rejects_legacy_login_auth_configuration(self):
-        legacy_config = {
-            "api_url": "https://eozilla.example.test",
-            "auth_type": "login",
-            "auth_url": "https://identity.example.test/token",
-            "username": "user",
-            "password": "password",
-        }
-
-        with tempfile.TemporaryDirectory() as tmp_dir_name:
-            config_path = Path(tmp_dir_name) / "config.yaml"
-            contents = yaml.safe_dump(legacy_config)
-            config_path.write_text(contents)
-
-            with self.assertRaisesRegex(
-                ValueError,
-                "Legacy configuration format detected, please run 'cuiman configure'",
-            ):
-                ClientConfig.from_file(config_path)
-
-            self.assertEqual(contents, config_path.read_text())
-
     def test_create_merges_nested_auth_overrides(self):
         original = ClientConfig(
             api_url="https://eozilla.example.test",
@@ -561,7 +412,6 @@ def saved_login_config():
         auth={
             "auth_type": "login",
             "login_url": "http://localhost:8080/auth/login",
-            "use_bearer": False,
             "access_token_header": "X-Saved-Token",
         },
     ).write(path)
@@ -577,7 +427,6 @@ def test_explicit_oidc_replaces_saved_login_auth(
         "auth_type": "oidc",
         "issuer_url": "https://identity.example.test/realms/eozilla-auth",
         "client_id": "cuiman",
-        "use_bearer": True,
     }
     values = {"api_url": "https://processing.example.test/", "auth": auth}
     if source == "auth_model":
@@ -610,7 +459,9 @@ def test_selected_auth_keeps_keyring_credentials_on_resolution(
         for name, value in auth.items():
             monkeypatch.setenv(f"EOZILLA_AUTH__{name.upper()}", value)
         values = {}
-    secrets = {"access_token": "stored-access", "refresh_token": "stored-refresh"}
+    secrets = {
+        "oauth_token": '{"access_token":"stored-access","refresh_token":"stored-refresh"}'
+    }
 
     with patch("cuiman.api.config.load_auth_secrets", return_value=secrets) as load:
         config = ClientConfig.create(**values)
@@ -663,4 +514,64 @@ def test_explicit_auth_replaces_environment_credentials(
     config = ClientConfig.create(**values)
 
     assert config.auth == NoAuthConfig()
-    assert config.auth_headers == {}
+    assert config.auth.auth_headers == {}
+
+
+@pytest.mark.parametrize(
+    "contents",
+    [
+        "auth: [\n  OLD-SECRET\n",
+        "- OLD-SECRET\n",
+        "1: OLD-SECRET\n",
+        "auth_type: token\ntoken: OLD-SECRET\n",
+        "auth:\n  access_token: OLD-SECRET\n",
+        "auth:\n  auth_type: login\n  username: OLD-SECRET\n",
+        "auth:\n  auth_type: token\n  token_header: OLD-SECRET\n",
+        "api_url: OLD-SECRET\n",
+        "auth:\n  auth_type: oauth2\n  token_url: https://identity.test/token\n  client_id: client\n  oauth_token: OLD-SECRET\n",
+    ],
+)
+def test_from_file_reports_invalid_configuration_without_exposing_contents(
+    tmp_path, contents
+):
+    path = tmp_path / "config.yaml"
+    path.write_text(contents, encoding="utf-8")
+    with pytest.raises(ValueError) as error:
+        ClientConfig.from_file(path)
+    assert str(error.value) == (
+        "Deprecated or illegal configuration file, please run the 'configure' command."
+    )
+    assert error.value.__suppress_context__
+    assert path.read_text(encoding="utf-8") == contents
+
+
+def test_from_file_accepts_valid_auth_credentials_without_rewriting(tmp_path):
+    path = tmp_path / "config.yaml"
+    contents = "auth:\n  auth_type: token\n  access_token: saved-token\n"
+    path.write_text(contents, encoding="utf-8")
+    config = ClientConfig.from_file(path)
+    assert config.auth == TokenAuthConfig(access_token="saved-token")
+    assert path.read_text(encoding="utf-8") == contents
+    assert "access_token" not in config.to_file_dict()["auth"]
+
+
+def test_from_file_uses_custom_schema_without_legacy_field_detection(
+    tmp_path, monkeypatch
+):
+    class CustomConfig(ClientConfig):
+        model_config = SettingsConfigDict(extra="allow")
+
+    monkeypatch.setattr(ClientConfig, "default_config", CustomConfig())
+    path = tmp_path / "config.yaml"
+    path.write_text("auth_type: custom-extension\n", encoding="utf-8")
+    config = ClientConfig.from_file(path)
+    assert isinstance(config, CustomConfig)
+    assert config.model_extra == {"auth_type": "custom-extension"}
+
+
+def test_from_file_preserves_file_access_errors(tmp_path):
+    path = tmp_path / "config.yaml"
+    path.write_text("auth: {}", encoding="utf-8")
+    with patch.object(Path, "open", side_effect=PermissionError("Access denied")):
+        with pytest.raises(PermissionError, match="Access denied"):
+            ClientConfig.from_file(path)

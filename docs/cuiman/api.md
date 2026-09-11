@@ -15,6 +15,14 @@ configuration that match the attributes the configuration class.
 asynchronous version, use the `AsyncClient` class instead.
 It provides the same interface, but using asynchronous server calls.
 
+For both clients, `auth=` replaces existing authentication settings when supplied
+as an auth model or a dictionary containing `auth_type`, even if the type is
+unchanged. A dictionary without `auth_type` merges into the selected configuration.
+Missing credentials may still be filled from a matching keyring entry; explicit
+credentials take precedence. See
+[replacing or merging authentication](configuration.md#replacing-or-merging-authentication)
+for examples.
+
 Constructing a client loads configuration and credentials without logging in or
 creating a process API transport. Before its first API request, the client
 automatically exchanges available login/OAuth2 credentials or refresh tokens
@@ -48,32 +56,26 @@ request. Concurrent
 first calls on one `AsyncClient` share login. Failed or cancelled initial login
 can be retried, and closing an unused client does not initiate login.
 
-OAuth2/OIDC token refresh after HTTP 401 works automatically. If a refresh
-request returns `invalid_grant`, an OAuth2 password-grant client with available
-username/password credentials attempts one fresh login before retrying the API
-request once. Without those credentials, or for OIDC, Cuiman raises
-`LoginRequiredError` directing you to sign in again. Other refresh errors are
-propagated without attempting a fresh login.
+Authlib refreshes tokens before known expiry and reacquires client-credentials
+tokens when needed. A processing-service 401 is returned without automatic
+renewal or replay. Rejected refresh propagates the library error. Use
+`login(force=True)` to sign in again and allow credential prompts, or
+`login(force=True, interactive=False)` for a fresh grant with supplied credentials.
 
-Use `force=True` to bypass existing access and refresh tokens explicitly:
+`client.token` returns a copy of the live OAuth2/OIDC token. The configuration's
+`oauth_token` field is only a bootstrap snapshot. Use `login(save=True)` to require
+durable storage in the profile's OS-keyring entry and enable subsequent refresh
+updates to that profile. Optional refresh-save failures
+warn while keeping the live token usable. `logout()` revokes OIDC tokens when
+supported, removes local credentials, and closes the client; await it for
+`AsyncClient`. A closed client cannot be reused. Close waits for active requests;
+logout keeps revocation and local cleanup under the same owner lock. See
+[concurrent calls and cancellation](authentication.md#concurrent-calls-and-cancellation)
+for cancellation behavior.
 
-```python
-client.login(force=True)
-await async_client.login(force=True)
-```
-
-This uses available credentials or permits prompts/OIDC browser login. Combine
-it with `interactive=False` to prohibit interaction, or `no_browser=True` to
-print the OIDC authorization URL. A successful login updates the existing
-HTTPX transport, so subsequent requests use the new token without recreating
-the client. If fresh login provides no refresh token, the previous one is
-discarded. Failed or cancelled login leaves existing credentials unchanged.
-For Basic authentication and API keys, `force` continues to use available
-credentials; a static access token must be supplied again.
-
-Login and refreshed credentials are persisted when the client has a file-backed
-keyring credential source; direct Python/environment credentials remain runtime
-overrides. The `auth_headers` property itself does not perform network I/O.
+The launched app borrows this same client's requester. See
+[Authentication](authentication.md) for storage, error behavior, and event-loop
+ownership requirements.
 
 Methods of the [`Client`](#cuiman.api.Client) and `AsyncClient` 
 may raise a [`ClientError`](#cuiman.api.ClientError) if a server call fails. 
@@ -102,14 +104,8 @@ and optional scopes. `openid` is always included. Use `client.login()` or
 `cuiman login` for the
 interactive Authorization Code with PKCE flow; the resulting access and refresh
 tokens are secrets and belong in the operating-system keyring, not a
-configuration file. The public helpers below expose provider discovery, PKCE,
-code exchange, token refresh, revocation, and the loopback callback server for
-applications that need to implement the same flow themselves.
-
-The proprietary-endpoint helpers `login()` and `login_async()` now return
-`TokenResult` rather than a token string. Use `result.access_token` when only
-the access token is needed. The former `login_for_tokens()` and
-`login_async_for_tokens()` names have been removed.
+configuration file. Use the client lifecycle for discovery, authorization,
+refresh, and logout; one-shot protocol helpers are no longer public APIs.
 
 ::: cuiman.api.auth
 

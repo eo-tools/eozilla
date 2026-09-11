@@ -1,830 +1,249 @@
-#  Copyright (c) 2025-2026 by the Eozilla team and contributors
-#  Permissions are hereby granted under the terms of the Apache 2.0 License:
-#  https://opensource.org/license/apache-2-0.
-
-# ruff: noqa: S105, S106
+"""Configure and load profiles through the same public interface as the CLI."""
 
 import os
-import tempfile
-import unittest
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import Mock
 
 import pytest
+from typer.testing import CliRunner
 import yaml
 
 from cuiman import ClientConfig
-from cuiman.api.auth import (
-    ApiKeyAuthConfig,
-    BasicAuthConfig,
-    LoginAuthConfig,
-    NoAuthConfig,
-    OAuth2AuthConfig,
-    OidcAuthConfig,
-    TokenAuthConfig,
-    TokenResult,
+from cuiman.api.auth import TokenAuthConfig
+from cuiman.cli.cli import new_cli
+from cuiman.cli.config import configure_client_with_prompt, get_config
+
+
+@pytest.fixture(autouse=True)
+def clear_environment(monkeypatch):
+    for name in os.environ:
+        if name.startswith("EOZILLA_"):
+            monkeypatch.delenv(name)
+
+
+def test_missing_profiles_have_actionable_errors(tmp_path):
+    with pytest.raises(ValueError, match="not yet been configured"):
+        get_config(None)
+    with pytest.raises(ValueError, match="not found or empty"):
+        get_config(tmp_path / "missing")
+
+
+@pytest.mark.parametrize(
+    "auth",
+    [
+        {"auth_type": "token"},
+        {
+            "auth_type": "oauth2",
+            "token_url": "https://identity.test/token",
+            "client_id": "client",
+            "grant_type": "client_credentials",
+        },
+    ],
 )
-from cuiman.api.auth.secret_store import SecretStoreError
-from cuiman.cli.config import (
-    _Context,
-    _get_login_config,
-    _get_previous_public_config,
-    _get_public_legacy_config,
-    _prompt_for_auth_type,
-    _prompt_for_oauth2_grant_type,
-    configure_client_with_prompt,
-    get_config,
-    login_client_with_prompt,
-    logout_client,
+def test_load_allows_missing_credentials_only_for_login(auth, monkeypatch):
+    ClientConfig(api_url="https://processing.test", auth=auth).write()
+    monkeypatch.setattr("cuiman.api.config.load_auth_secrets", lambda *args: {})
+    with pytest.raises(ValueError, match="cuiman login"):
+        get_config(None)
+    assert (
+        get_config(None, require_credentials=False).auth.auth_type == auth["auth_type"]
+    )
+
+
+def test_load_uses_keyring_and_retains_profile(monkeypatch, tmp_path):
+    path = tmp_path / "named"
+    ClientConfig(api_url="https://processing.test", auth=TokenAuthConfig()).write(path)
+    monkeypatch.setattr(
+        "cuiman.api.config.load_auth_secrets", lambda *args: {"access_token": "stored"}
+    )
+    assert get_config(path).auth.access_token == "stored"
+    assert get_config(path)._source_path == path
+
+
+@pytest.mark.parametrize(
+    "answers, expected",
+    [
+        (["none"], {"auth_type": "none"}),
+        (["basic"], {"auth_type": "basic"}),
+        (["token", ""], {"auth_type": "token"}),
+        (
+            ["token", "X-Custom"],
+            {"auth_type": "token", "access_token_header": "X-Custom"},
+        ),
+        (
+            ["login", "https://identity.test/login", ""],
+            {"auth_type": "login", "login_url": "https://identity.test/login"},
+        ),
+        (
+            ["api-key", "X-Custom-Key"],
+            {"auth_type": "api-key", "api_key_header": "X-Custom-Key"},
+        ),
+        (
+            ["oauth2", "https://identity.test/token", "PASSWORD", "client"],
+            {
+                "auth_type": "oauth2",
+                "token_url": "https://identity.test/token",
+                "grant_type": "password",
+                "client_id": "client",
+            },
+        ),
+        (
+            ["oidc", "https://identity.test/realm", "client", "profile email openid"],
+            {
+                "auth_type": "oidc",
+                "issuer_url": "https://identity.test/realm",
+                "client_id": "client",
+                "scopes": ["openid", "profile", "email"],
+            },
+        ),
+    ],
 )
-from gavicore.util.testing import set_env
+def test_configure_prompts_only_for_public_provider_settings(
+    answers, expected, monkeypatch
+):
+    prompt = Mock(side_effect=["https://processing.test", *answers])
+    monkeypatch.setattr("typer.prompt", prompt)
+    configure_client_with_prompt()
+    assert yaml.safe_load(ClientConfig.default_path.read_text()) == {
+        "api_url": "https://processing.test/",
+        "auth": expected,
+    }
+    assert prompt.call_count == len(answers) + 1
 
 
-# noinspection PyAttributeOutsideInit,PyPep8Naming
-class ConfigTestMixin:
-    def setUp(self):
-        self.restore_env = set_env(
-            **{key: None for key in os.environ if key.startswith("EOZILLA_")}
-        )
-
-    def tearDown(self):
-        self.restore_env()
-
-
-class GetConfigTest(ConfigTestMixin, unittest.TestCase):
-    def test_get_config_custom(self):
-        with pytest.raises(
-            ValueError,
-            match="Configuration file fantasia.cfg not found or empty.",
-        ):
-            get_config("fantasia.cfg")
-
-    def test_get_config_no_default(self):
-        with pytest.raises(
-            ValueError,
-            match=(
-                r"The client tool has not yet been configured; "
-                r"please use the 'configure' command to set it up\."
-            ),
-        ):
-            get_config(None)
-
-    def test_get_config_rejects_legacy_auth_configuration(self):
-        legacy_config = {
-            "api_url": "https://eozilla.example.test",
-            "auth_type": "login",
-            "auth_url": "https://identity.example.test/token",
-            "username": "user",
-            "password": "password",
-            "token": "access",
-        }
-        ClientConfig.default_path.write_text(yaml.safe_dump(legacy_config))
-
-        with self.assertRaisesRegex(
-            ValueError,
-            "Legacy configuration format detected, please run 'cuiman configure'",
-        ):
-            get_config(None)
-
-    def test_get_login_config_requires_existing_named_file(self):
-        with self.assertRaisesRegex(
-            ValueError,
-            "Configuration file fantasia.cfg not found or empty.",
-        ):
-            _get_login_config("fantasia.cfg")
-
-    @patch("cuiman.cli.config.ClientConfig.from_file", side_effect=ValueError("bad"))
-    @patch("cuiman.cli.config.ClientConfig.read_file_data", return_value={})
-    def test_get_previous_public_config_reraises_unexpected_error(
-        self, _read_file_data: MagicMock, _from_file: MagicMock
-    ):
-        with self.assertRaisesRegex(ValueError, "bad"):
-            _get_previous_public_config("config")
-
-    @patch("cuiman.api.config.load_auth_secrets")
-    def test_get_config_resolves_keyring_credentials(self, load_auth_secrets):
-        load_auth_secrets.return_value = {"access_token": "stored-token"}
-        config_path = ClientConfig.default_path
-        ClientConfig(
-            api_url="https://eozilla.example.test",
-            auth=TokenAuthConfig(),
-        ).write(config_path)
-
-        config = get_config(None)
-
-        self.assertEqual("stored-token", config.auth.access_token)
-
-    @patch("cuiman.api.config.load_auth_secrets", return_value={})
-    def test_get_config_explains_when_login_is_required(
-        self, _load_auth_secrets: MagicMock
-    ):
-        ClientConfig(
-            api_url="https://eozilla.example.test",
-            auth=TokenAuthConfig(),
-        ).write(ClientConfig.default_path)
-
-        with self.assertRaisesRegex(
-            ValueError, r"Please log in first using 'cuiman login'\."
-        ):
-            get_config(None)
-
-    @patch("cuiman.api.config.load_auth_secrets", return_value={})
-    def test_get_config_explains_oauth2_client_credentials_requirement(
-        self, _load_auth_secrets: MagicMock
-    ):
-        ClientConfig(
-            api_url="https://eozilla.example.test",
-            auth=OAuth2AuthConfig(
-                token_url="https://identity.example.test/token",
-                grant_type="client_credentials",
-                client_id="client",
-            ),
-        ).write(ClientConfig.default_path)
-
-        with self.assertRaisesRegex(
-            ValueError, "client_credentials credentials are not configured"
-        ):
-            get_config(None)
+def test_configure_reuses_public_values_but_never_secrets(monkeypatch):
+    config = ClientConfig(
+        api_url="https://processing.test",
+        auth={
+            "auth_type": "token",
+            "access_token": "secret",
+            "access_token_header": "X-Custom",
+        },
+    )
+    config.write()
+    monkeypatch.setattr("typer.prompt", lambda label, **kwargs: kwargs["default"])
+    configure_client_with_prompt()
+    assert ClientConfig.from_file().to_file_dict() == config.to_file_dict()
+    assert "secret" not in ClientConfig.default_path.read_text()
 
 
-class ConfigureClientWithPromptTest(ConfigTestMixin, unittest.TestCase):
-    def assert_is_default_config_path(self, config_path: Path):
-        self.assertEqual(ClientConfig.default_path, config_path)
-        self.assertTrue(ClientConfig.default_path.exists())
+def test_branded_configuration_defaults_are_preserved(monkeypatch):
+    class BrandedConfig(ClientConfig):
+        service_name: str = "branded"
 
-    def test_none_auth_needs_no_additional_configuration(self):
-        context = _Context(cli_params={}, prev_params={}, curr_params={})
-        config_path = configure_client_with_prompt(
-            api_url="http://localhost:9090", auth_type="none"
-        )
+    monkeypatch.setattr(
+        ClientConfig, "default_config", BrandedConfig(api_url="https://branded.test")
+    )
+    prompt = Mock(return_value="https://configured.test")
+    monkeypatch.setattr("typer.prompt", prompt)
+    configure_client_with_prompt(auth_type="none")
+    assert prompt.call_args.kwargs["default"] == "https://branded.test/"
+    config = ClientConfig.from_file()
+    assert isinstance(config, BrandedConfig)
+    assert config.service_name == "branded"
 
-        self.assertIsInstance(context, _Context)
-        self.assert_is_default_config_path(config_path)
-        self.assertEqual(
-            ClientConfig(api_url="http://localhost:9090", auth=NoAuthConfig()),
-            get_config(None),
-        )
 
-    def test_configure_reuses_existing_public_configuration(self):
-        ClientConfig(
-            api_url="https://previous.example.test",
-            auth=NoAuthConfig(),
-        ).write(ClientConfig.default_path)
+def test_switching_auth_type_does_not_reuse_other_provider_settings(monkeypatch):
+    ClientConfig(
+        api_url="https://processing.test",
+        auth={
+            "auth_type": "oidc",
+            "issuer_url": "https://old.test/realm",
+            "client_id": "old-client",
+        },
+    ).write()
+    prompt = Mock(side_effect=["https://new.test/token", "password", "new-client"])
+    monkeypatch.setattr("typer.prompt", prompt)
+    configure_client_with_prompt(api_url="https://processing.test", auth_type="oauth2")
+    assert prompt.call_args.kwargs["default"] == ""
+    assert ClientConfig.from_file().auth.client_id == "new-client"
 
-        configure_client_with_prompt(
-            api_url="https://configured.example.test", auth_type="none"
-        )
 
-        self.assertEqual(
-            "https://configured.example.test/",
-            ClientConfig.from_file(ClientConfig.default_path).api_url,
-        )
+@pytest.mark.parametrize(
+    "old",
+    [
+        {"auth_type": "token", "token": "OLD-SECRET"},
+        {"auth": {"auth_type": "token", "use_bearer": True}},
+        {"auth": {"auth_type": "oauth2", "access_token": "OLD-SECRET"}},
+        "auth: [OLD-SECRET\n",
+        "- OLD-SECRET\n",
+    ],
+)
+def test_incompatible_configuration_is_recreated_without_translation(
+    old, monkeypatch, capsys
+):
+    ClientConfig.default_path.write_text(
+        old
+        if isinstance(old, str)
+        else yaml.safe_dump({"api_url": "https://old.test", **old})
+    )
+    configure_client_with_prompt(
+        api_url="https://new.test", auth_type="token", access_token_header=""
+    )
+    assert "configuring from defaults" in capsys.readouterr().err
+    assert yaml.safe_load(ClientConfig.default_path.read_text()) == {
+        "api_url": "https://new.test/",
+        "auth": {"auth_type": "token"},
+    }
+    assert "OLD-SECRET" not in ClientConfig.default_path.read_text()
 
-    @patch("typer.prompt", return_value="https://configured.example.test/processes")
-    def test_configure_uses_branded_default_config_type_and_values(
-        self, prompt: MagicMock
-    ):
-        class BrandedClientConfig(ClientConfig):
-            service_name: str = "branded"
 
-        branded_default = BrandedClientConfig(
-            api_url="https://default.example.test/processes",
-            auth=NoAuthConfig(),
-        )
-        with patch.object(ClientConfig, "default_config", branded_default):
-            config_path = configure_client_with_prompt(auth_type="none")
-            config = ClientConfig.from_file(config_path)
+@pytest.mark.parametrize("command", ["list-processes", "login", "logout"])
+@pytest.mark.parametrize("contents", ["auth: [OLD-SECRET\n", "auth_type: unknown\n"])
+def test_invalid_file_has_actionable_error_in_custom_cli(command, contents):
+    path = ClientConfig.default_path
+    path.write_text(contents, encoding="utf-8")
+    result = CliRunner().invoke(new_cli(name="sen4cap-client"), [command])
+    assert result.exit_code == 1
+    assert result.stderr.strip() == (
+        "Deprecated or illegal configuration file, please run the 'configure' command."
+    )
+    assert "OLD-SECRET" not in result.output
+    assert path.read_text(encoding="utf-8") == contents
 
-        self.assertIsInstance(config, BrandedClientConfig)
-        self.assertEqual("branded", config.service_name)
-        self.assertEqual(
-            "https://default.example.test/processes",
-            prompt.call_args.kwargs["default"],
-        )
 
-    @patch("typer.prompt")
-    def test_basic_auth_configuration_never_prompts_for_credentials(
-        self, prompt: MagicMock
-    ):
-        prompt.side_effect = ["http://localhorst:9999", "basic"]
-
-        config_path = configure_client_with_prompt()
-
-        self.assert_is_default_config_path(config_path)
-        self.assertEqual(
-            ClientConfig(api_url="http://localhorst:9999", auth=BasicAuthConfig()),
-            ClientConfig.from_file(config_path),
-        )
-        self.assertEqual(2, prompt.call_count)
-
-    @patch("typer.confirm", return_value=True)
-    @patch("typer.prompt")
-    def test_login_auth_configuration_writes_only_public_values(
-        self, prompt: MagicMock, _confirm: MagicMock
-    ):
-        prompt.side_effect = [
-            "http://localhorst:9999",
-            "login",
-            "http://localhorst:9999/signin",
-        ]
-
-        configure_client_with_prompt()
-
-        self.assertEqual(
-            LoginAuthConfig(login_url="http://localhorst:9999/signin"),
-            ClientConfig.from_file(ClientConfig.default_path).auth,
-        )
-        file_data = yaml.safe_load(ClientConfig.default_path.read_text())
-        self.assertEqual(
+@pytest.mark.parametrize(
+    "options,message",
+    [
+        ({"auth_type": "unknown"}, "Invalid authentication type"),
+        (
             {
-                "auth_type": "login",
-                "login_url": "http://localhorst:9999/signin",
-                "use_bearer": True,
-                "access_token_header": "X-Auth-Token",
+                "auth_type": "oauth2",
+                "token_url": "https://identity.test/token",
+                "grant_type": "unknown",
             },
-            file_data["auth"],
-        )
-
-    @patch("typer.confirm", return_value=True)
-    @patch("typer.prompt")
-    def test_oauth2_configuration_writes_only_public_values(
-        self, prompt: MagicMock, _confirm: MagicMock
-    ):
-        prompt.side_effect = [
-            "http://localhorst:9999",
-            "oauth2",
-            "https://identity.example.test/token",
-            "password",
-            "client",
-        ]
-
-        configure_client_with_prompt()
-
-        self.assertEqual(
-            OAuth2AuthConfig(
-                token_url="https://identity.example.test/token", client_id="client"
-            ),
-            ClientConfig.from_file(ClientConfig.default_path).auth,
-        )
-
-    @patch("typer.prompt")
-    def test_oidc_configuration_writes_only_public_values(self, prompt: MagicMock):
-        prompt.side_effect = [
-            "http://localhorst:9999",
-            "oidc",
-            "https://identity.example.test/tenant",
-            "client",
-            "profile email",
-        ]
-
-        configure_client_with_prompt()
-
-        self.assertEqual(
-            OidcAuthConfig(
-                issuer_url="https://identity.example.test/tenant",
-                client_id="client",
-                scopes=("profile", "email"),
-            ),
-            ClientConfig.from_file(ClientConfig.default_path).auth,
-        )
-
-    @patch("typer.confirm", return_value=False)
-    @patch("typer.prompt")
-    def test_token_configuration_keeps_public_header_settings(
-        self, prompt: MagicMock, _confirm: MagicMock
-    ):
-        prompt.side_effect = [
-            "http://localhorst:9999",
-            "token",
-            "X-Custom-Token",
-        ]
-
-        configure_client_with_prompt()
-
-        self.assertEqual(
-            TokenAuthConfig(use_bearer=False, access_token_header="X-Custom-Token"),
-            ClientConfig.from_file(ClientConfig.default_path).auth,
-        )
-
-    @patch("typer.prompt")
-    def test_api_key_configuration_keeps_only_header(self, prompt: MagicMock):
-        prompt.side_effect = ["http://localhorst:9999", "api-key", "X-API-Key"]
-
-        configure_client_with_prompt()
-
-        self.assertEqual(
-            ApiKeyAuthConfig(), ClientConfig.from_file(ClientConfig.default_path).auth
-        )
-
-    def test_configure_rewrites_legacy_file_without_credentials(self):
-        config_path = ClientConfig.default_path
-        config_path.write_text(
-            yaml.safe_dump(
-                {
-                    "api_url": "https://eozilla.example.test",
-                    "auth_type": "token",
-                    "token": "legacy-token",
-                    "use_bearer": False,
-                    "token_header": "X-Legacy-Token",
-                }
-            )
-        )
-
-        with patch("typer.echo") as echo:
-            configure_client_with_prompt(
-                api_url="https://eozilla.example.test",
-                auth_type="token",
-                use_bearer=False,
-                access_token_header="X-Legacy-Token",
-            )
-
-        self.assertTrue(
-            "Warning: legacy configuration detected" in echo.call_args.args[0]
-        )
-        self.assertEqual(
+            "Invalid OAuth2 grant type",
+        ),
+        ({"auth_type": "none", "issuer_url": "https://unused.test"}, "do not apply"),
+        (
             {
-                "api_url": "https://eozilla.example.test/",
-                "auth": {
-                    "auth_type": "token",
-                    "use_bearer": False,
-                    "access_token_header": "X-Legacy-Token",
-                },
+                "auth_type": "token",
+                "access_token_header": "",
+                "password": "DO-NOT-ECHO",
             },
-            yaml.safe_load(config_path.read_text()),
-        )
-
-    def test_configure_rewrites_legacy_login_configuration(self):
-        config_path = ClientConfig.default_path
-        config_path.write_text(
-            yaml.safe_dump(
-                {
-                    "api_url": "https://eozilla.example.test",
-                    "auth_type": "login",
-                    "auth_url": "https://identity.example.test/login",
-                    "username": "legacy-user",
-                    "password": "legacy-password",
-                }
-            )
-        )
-
-        configure_client_with_prompt(
-            api_url="https://eozilla.example.test",
-            auth_type="login",
-            login_url="https://identity.example.test/login",
-            use_bearer=True,
-        )
-
-        self.assertEqual(
-            LoginAuthConfig(login_url="https://identity.example.test/login"),
-            ClientConfig.from_file(config_path).auth,
-        )
-
-    def test_configure_rewrites_legacy_api_key_configuration(self):
-        config_path = ClientConfig.default_path
-        config_path.write_text(
-            yaml.safe_dump(
-                {
-                    "api_url": "https://eozilla.example.test",
-                    "auth_type": "api-key",
-                    "api_key": "legacy-key",
-                    "api_key_header": "X-Legacy-Key",
-                }
-            )
-        )
-
-        configure_client_with_prompt(
-            api_url="https://eozilla.example.test",
-            auth_type="api-key",
-            api_key_header="X-Legacy-Key",
-        )
-
-        self.assertEqual(
-            ApiKeyAuthConfig(api_key_header="X-Legacy-Key"),
-            ClientConfig.from_file(config_path).auth,
-        )
-
-    def test_get_public_legacy_config_rewrites_nested_oauth2_configuration(self):
-        public_config = _get_public_legacy_config(
-            {
-                "api_url": "https://eozilla.example.test",
-                "auth": {
-                    "auth_type": "oauth2",
-                    "auth_url": "https://identity.example.test/token",
-                    "grant_type": "password",
-                    "client_id": "client",
-                    "client_secret": "secret",
-                },
-            }
-        )
-
-        self.assertEqual(
-            {
-                "api_url": "https://eozilla.example.test",
-                "auth": {
-                    "auth_type": "oauth2",
-                    "token_url": "https://identity.example.test/token",
-                    "grant_type": "password",
-                    "client_id": "client",
-                },
-            },
-            public_config,
-        )
-
-    def test_auth_type_invalid(self):
-        with pytest.raises(ValueError, match="Invalid authentication type: torken"):
-            configure_client_with_prompt(
-                api_url="http://localhost:9090", auth_type="torken"
-            )
-
-    def test_oauth2_grant_type_invalid(self):
-        with pytest.raises(ValueError, match="Invalid OAuth2 grant type: unknown"):
-            _prompt_for_oauth2_grant_type(
-                _Context(
-                    cli_params={"grant_type": "unknown"},
-                    prev_params={},
-                    curr_params={},
-                )
-            )
-
-    def test_auth_type_prompt_uses_valid_previous_value_or_oauth2_default(self):
-        for previous_auth_type, expected_default in (
-            ("api-key", "api-key"),
-            ("unrecognized", "oauth2"),
-        ):
-            with self.subTest(previous_auth_type=previous_auth_type):
-                context = _Context(
-                    cli_params={},
-                    prev_params={"auth_type": previous_auth_type},
-                    curr_params={},
-                )
-                with patch("typer.prompt", return_value="oauth2") as prompt:
-                    _prompt_for_auth_type(context)
-
-                self.assertEqual(expected_default, prompt.call_args.kwargs["default"])
+            "do not apply",
+        ),
+    ],
+)
+def test_invalid_options_do_not_overwrite_existing_configuration(
+    options, message, capsys
+):
+    ClientConfig(api_url="https://original.test").write()
+    before = ClientConfig.default_path.read_text()
+    with pytest.raises(ValueError, match=message) as error:
+        configure_client_with_prompt(api_url="https://new.test", **options)
+    assert "DO-NOT-ECHO" not in str(error.value)
+    assert ClientConfig.default_path.read_text() == before
 
 
-class LoginAndLogoutTest(ConfigTestMixin, unittest.TestCase):
-    def setUp(self):
-        super().setUp()
-        # Login/logout resolve credentials before interacting or deleting them.
-        # These tests start with public configuration and an empty secret store.
-        load_secrets = patch("cuiman.api.config.load_auth_secrets", return_value={})
-        self.addCleanup(load_secrets.stop)
-        load_secrets.start()
-
-    def write_config(self, auth) -> Path:
-        with tempfile.NamedTemporaryFile(delete=False) as stream:
-            config_path = Path(stream.name)
-        self.addCleanup(config_path.unlink, missing_ok=True)
-        ClientConfig(api_url="https://eozilla.example.test", auth=auth).write(
-            config_path
-        )
-        return config_path
-
-    def test_login_without_configuration_explains_how_to_continue(self):
-        with pytest.raises(ValueError, match="has not yet been configured"):
-            login_client_with_prompt()
-
-    @patch("cuiman.cli.config.save_auth_secrets")
-    @patch("typer.prompt", side_effect=["alice", "password"])
-    def test_login_basic_stores_credentials(
-        self, _prompt: MagicMock, save_auth_secrets: MagicMock
-    ):
-        config_path = self.write_config(BasicAuthConfig())
-
-        login_client_with_prompt(config_path)
-
-        save_auth_secrets.assert_called_once_with(
-            config_path,
-            "https://eozilla.example.test/",
-            "basic",
-            {"username": "alice", "password": "password"},
-        )
-
-    @patch("cuiman.cli.config.save_auth_secrets")
-    @patch("typer.prompt", return_value="token")
-    def test_login_token_stores_access_token(
-        self, _prompt: MagicMock, save_auth_secrets: MagicMock
-    ):
-        config_path = self.write_config(TokenAuthConfig())
-
-        login_client_with_prompt(config_path)
-
-        self.assertEqual({"access_token": "token"}, save_auth_secrets.call_args.args[3])
-
-    @patch("cuiman.cli.config.save_auth_secrets")
-    @patch("typer.prompt", return_value="api-key")
-    def test_login_api_key_stores_api_key(
-        self, _prompt: MagicMock, save_auth_secrets: MagicMock
-    ):
-        config_path = self.write_config(ApiKeyAuthConfig())
-
-        login_client_with_prompt(config_path)
-
-        self.assertEqual({"api_key": "api-key"}, save_auth_secrets.call_args.args[3])
-
-    @patch("cuiman.cli.config.save_auth_secrets")
-    @patch("cuiman.api.auth.session.login")
-    @patch("typer.prompt", side_effect=["alice", "password"])
-    def test_login_proprietary_stores_credentials_and_token(
-        self,
-        _prompt: MagicMock,
-        login_for_tokens: MagicMock,
-        save_auth_secrets: MagicMock,
-    ):
-        login_for_tokens.return_value = TokenResult(access_token="token")
-        config_path = self.write_config(
-            LoginAuthConfig(login_url="https://identity.example.test/login")
-        )
-
-        login_client_with_prompt(config_path)
-
-        self.assertEqual(
-            {"username": "alice", "password": "password", "access_token": "token"},
-            save_auth_secrets.call_args.args[3],
-        )
-
-    @patch("cuiman.cli.config.save_auth_secrets")
-    @patch("cuiman.api.auth.session.obtain_oauth2_tokens")
-    @patch("typer.prompt", side_effect=["alice", "password"])
-    def test_login_oauth2_stores_credentials_and_tokens(
-        self,
-        _prompt: MagicMock,
-        obtain_oauth2_tokens: MagicMock,
-        save_auth_secrets: MagicMock,
-    ):
-        obtain_oauth2_tokens.return_value = TokenResult(
-            access_token="access", refresh_token="refresh"
-        )
-        config_path = self.write_config(
-            OAuth2AuthConfig(
-                token_url="https://identity.example.test/token", client_id="client"
-            )
-        )
-
-        login_client_with_prompt(config_path)
-
-        self.assertEqual(
-            {
-                "username": "alice",
-                "password": "password",
-                "access_token": "access",
-                "refresh_token": "refresh",
-            },
-            save_auth_secrets.call_args.args[3],
-        )
-
-        self.assertEqual(2, _prompt.call_count)
-        self.assertIsNone(obtain_oauth2_tokens.call_args.args[0].client_secret)
-
-    @patch("cuiman.cli.config.save_auth_secrets")
-    def test_login_rejects_oauth2_client_credentials(
-        self, save_auth_secrets: MagicMock
-    ):
-        config_path = self.write_config(
-            OAuth2AuthConfig(
-                token_url="https://identity.example.test/token",
-                grant_type="client_credentials",
-                client_id="client",
-            )
-        )
-
-        with pytest.raises(ValueError, match="does not support 'cuiman login'"):
-            login_client_with_prompt(config_path)
-
-        save_auth_secrets.assert_not_called()
-
-    @patch("cuiman.cli.config.save_auth_secrets")
-    @patch("cuiman.api.auth.interactive.webbrowser.open", return_value=True)
-    @patch("cuiman.api.auth.interactive.exchange_oidc_code")
-    @patch("cuiman.api.auth.interactive.parse_callback_parameters", return_value="code")
-    @patch(
-        "cuiman.api.auth.interactive.build_authorization_url",
-        return_value="https://login",
+def test_explicit_values_override_saved_defaults_without_prompting(monkeypatch):
+    ClientConfig(
+        api_url="https://old.test",
+        auth={"auth_type": "api-key", "api_key_header": "X-Old"},
+    ).write()
+    prompt = Mock(side_effect=AssertionError("no prompt expected"))
+    monkeypatch.setattr("typer.prompt", prompt)
+    configure_client_with_prompt(
+        api_url="https://new.test", auth_type="API-KEY", api_key_header="X-New"
     )
-    @patch(
-        "cuiman.api.auth.interactive.generate_pkce_verifier", return_value="verifier"
-    )
-    @patch("cuiman.api.auth.interactive.secrets.token_urlsafe", return_value="state")
-    @patch("cuiman.api.auth.interactive.discover_oidc_provider")
-    @patch("cuiman.api.auth.interactive.LoopbackCallbackServer")
-    def test_login_oidc_opens_browser_and_stores_tokens(
-        self,
-        loopback_server: MagicMock,
-        discover: MagicMock,
-        _state: MagicMock,
-        _verifier: MagicMock,
-        authorization_url: MagicMock,
-        parse_callback: MagicMock,
-        exchange: MagicMock,
-        browser_open: MagicMock,
-        save_auth_secrets: MagicMock,
-    ):
-        callback = loopback_server.return_value
-        callback.redirect_uri = "http://127.0.0.1:49152/callback"
-        callback.__enter__.return_value = callback
-        callback.wait_for_callback.return_value = {"code": ["code"], "state": ["state"]}
-        exchange.return_value = TokenResult(
-            access_token="access", refresh_token="refresh"
-        )
-        config_path = self.write_config(
-            OidcAuthConfig(
-                issuer_url="https://identity.example.test",
-                client_id="client",
-            )
-        )
-
-        login_client_with_prompt(config_path)
-
-        browser_open.assert_called_once_with("https://login")
-        callback.wait_for_callback.assert_called_once_with(300.0)
-        parse_callback.assert_called_once_with(
-            {"code": ["code"], "state": ["state"]}, "state"
-        )
-        exchange.assert_called_once_with(
-            discover.return_value,
-            ClientConfig.from_file(config_path).auth,
-            "code",
-            "verifier",
-            "http://127.0.0.1:49152/callback",
-        )
-        self.assertEqual(
-            {"access_token": "access", "refresh_token": "refresh"},
-            save_auth_secrets.call_args.args[3],
-        )
-
-    @patch("cuiman.cli.config.save_auth_secrets")
-    @patch("cuiman.api.auth.interactive.webbrowser.open")
-    @patch("cuiman.api.auth.interactive.exchange_oidc_code")
-    @patch("cuiman.api.auth.interactive.parse_callback_parameters", return_value="code")
-    @patch(
-        "cuiman.api.auth.interactive.build_authorization_url",
-        return_value="https://login",
-    )
-    @patch(
-        "cuiman.api.auth.interactive.generate_pkce_verifier", return_value="verifier"
-    )
-    @patch("cuiman.api.auth.interactive.secrets.token_urlsafe", return_value="state")
-    @patch("cuiman.api.auth.interactive.discover_oidc_provider")
-    @patch("cuiman.api.auth.interactive.LoopbackCallbackServer")
-    @patch("typer.echo")
-    def test_login_oidc_without_browser_prints_url_and_stores_tokens(
-        self,
-        echo: MagicMock,
-        loopback_server: MagicMock,
-        _discover: MagicMock,
-        _state: MagicMock,
-        _verifier: MagicMock,
-        _authorization_url: MagicMock,
-        _parse_callback: MagicMock,
-        exchange: MagicMock,
-        browser_open: MagicMock,
-        save_auth_secrets: MagicMock,
-    ):
-        callback = loopback_server.return_value
-        callback.redirect_uri = "http://127.0.0.1:49152/callback"
-        callback.__enter__.return_value = callback
-        callback.wait_for_callback.return_value = {"code": ["code"], "state": ["state"]}
-        exchange.return_value = TokenResult(access_token="access")
-        config_path = self.write_config(
-            OidcAuthConfig(
-                issuer_url="https://identity.example.test",
-                client_id="client",
-            )
-        )
-
-        login_client_with_prompt(config_path, no_browser=True)
-
-        browser_open.assert_not_called()
-        self.assertIn("https://login", echo.call_args_list[0].args[0])
-        self.assertEqual(
-            {"access_token": "access"}, save_auth_secrets.call_args.args[3]
-        )
-
-    @patch("cuiman.cli.config.save_auth_secrets")
-    @patch("cuiman.api.auth.interactive.webbrowser.open", return_value=False)
-    @patch("cuiman.api.auth.interactive.discover_oidc_provider")
-    def test_login_oidc_explains_when_the_browser_cannot_open(
-        self,
-        _discover: MagicMock,
-        _browser_open: MagicMock,
-        save_auth_secrets: MagicMock,
-    ):
-        config_path = self.write_config(
-            OidcAuthConfig(
-                issuer_url="https://identity.example.test",
-                client_id="client",
-            )
-        )
-
-        with pytest.raises(ValueError, match="--no-browser"):
-            login_client_with_prompt(config_path)
-
-        save_auth_secrets.assert_not_called()
-
-    @patch("cuiman.cli.config.save_auth_secrets")
-    def test_login_none_does_not_write_secrets(self, save_auth_secrets: MagicMock):
-        config_path = self.write_config(NoAuthConfig())
-
-        login_client_with_prompt(config_path)
-
-        save_auth_secrets.assert_not_called()
-
-    @patch("cuiman.cli.config.delete_auth_secrets")
-    def test_logout_deletes_configured_credentials(
-        self, delete_auth_secrets: MagicMock
-    ):
-        config_path = self.write_config(TokenAuthConfig())
-
-        logout_client(config_path)
-
-        delete_auth_secrets.assert_called_once_with(
-            config_path, "https://eozilla.example.test/"
-        )
-
-    @patch("cuiman.cli.config.delete_auth_secrets")
-    @patch(
-        "cuiman.api.config.load_auth_secrets",
-        side_effect=SecretStoreError("Stored Cuiman credentials are invalid."),
-    )
-    def test_logout_deletes_credentials_when_loading_secrets_fails(
-        self, load_auth_secrets: MagicMock, delete_auth_secrets: MagicMock
-    ):
-        for auth in (
-            TokenAuthConfig(),
-            OidcAuthConfig(
-                issuer_url="https://identity.example.test", client_id="client"
-            ),
-        ):
-            for api_url in (
-                "https://eozilla.example.test/",
-                "https://override.example.test/",
-            ):
-                with self.subTest(auth_type=auth.auth_type, api_url=api_url):
-                    load_auth_secrets.reset_mock()
-                    delete_auth_secrets.reset_mock()
-                    config_path = self.write_config(auth)
-                    with patch.dict(os.environ, EOZILLA_API_URL=api_url):
-                        with pytest.raises(
-                            SecretStoreError, match="credentials are invalid"
-                        ):
-                            logout_client(config_path)
-
-                    load_auth_secrets.assert_called_once_with(
-                        config_path, api_url, auth.auth_type
-                    )
-                    delete_auth_secrets.assert_called_once_with(config_path, api_url)
-
-    @patch("cuiman.cli.config.delete_auth_secrets")
-    @patch("cuiman.cli.config.revoke_oidc_tokens")
-    @patch("cuiman.cli.config.ClientConfig.create")
-    def test_logout_oidc_revokes_stored_tokens_then_deletes_them(
-        self,
-        create: MagicMock,
-        revoke: MagicMock,
-        delete_auth_secrets: MagicMock,
-    ):
-        auth = OidcAuthConfig(
-            issuer_url="https://identity.example.test",
-            client_id="client",
-            refresh_token="refresh",
-        )
-        config_path = self.write_config(auth)
-        create.return_value = ClientConfig(
-            api_url="https://eozilla.example.test",
-            auth=auth,
-        )
-
-        logout_client(config_path)
-
-        revoke.assert_called_once_with(auth)
-        delete_auth_secrets.assert_called_once_with(
-            config_path, "https://eozilla.example.test/"
-        )
-
-    @patch("cuiman.cli.config.delete_auth_secrets")
-    @patch("cuiman.cli.config.revoke_oidc_tokens", side_effect=RuntimeError("failed"))
-    @patch("cuiman.cli.config.ClientConfig.create")
-    def test_logout_oidc_deletes_tokens_when_revocation_fails(
-        self,
-        create: MagicMock,
-        _revoke: MagicMock,
-        delete_auth_secrets: MagicMock,
-    ):
-        auth = OidcAuthConfig(
-            issuer_url="https://identity.example.test",
-            client_id="client",
-            refresh_token="refresh",
-        )
-        config_path = self.write_config(auth)
-        create.return_value = ClientConfig(
-            api_url="https://eozilla.example.test",
-            auth=auth,
-        )
-
-        with pytest.raises(RuntimeError, match="failed"):
-            logout_client(config_path)
-
-        delete_auth_secrets.assert_called_once_with(
-            config_path, "https://eozilla.example.test/"
-        )
+    assert ClientConfig.from_file().auth.api_key_header == "X-New"
+    prompt.assert_not_called()

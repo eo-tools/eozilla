@@ -40,7 +40,7 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 **Commands**:
 
 * `configure`: Configure the client tool.
-* `login`: Log in and store the required credentials...
+* `login`: Reuse or obtain credentials and save them...
 * `logout`: Remove the locally stored credentials for...
 * `generate-client`: Generate the Python code for...
 * `list-processes`: List available processes.
@@ -58,6 +58,9 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 
 Configure the client tool.
 
+Prompts require an interactive terminal. In notebook shell commands or
+other noninteractive environments, supply all configuration options.
+
 **Usage**:
 
 ```console
@@ -74,14 +77,14 @@ $ cuiman configure [OPTIONS]
 * `--client-id TEXT`: OAuth2 or OIDC client ID.
 * `--issuer-url TEXT`: The OpenID Connect issuer URL.
 * `--scope TEXT`: An OpenID Connect resource scope; repeat for multiple scopes.
-* `--use-bearer`: Use bearer token?
-* `--access-token-header TEXT`: Access token header
+* `--access-token-header TEXT`: Custom header for static/proprietary tokens; empty means Bearer.
+* `--api-key-header TEXT`: Header used for API-key authentication.
 * `-c, --config PATH`: Client configuration file.
 * `--help`: Show this message and exit.
 
 ## `cuiman login`
 
-Log in and store the required credentials in the OS keyring.
+Reuse or obtain credentials and save them in the OS keyring.
 
 **Usage**:
 
@@ -93,6 +96,8 @@ $ cuiman login [OPTIONS]
 
 * `-c, --config PATH`: Client configuration file.
 * `--no-browser`: Print the OIDC authorization URL instead of opening a browser.
+* `--force`: Sign in again, allowing credential prompts.
+* `--no-input`: Never prompt or open a browser; use supplied credentials.
 * `--help`: Show this message and exit.
 
 ## `cuiman logout`
