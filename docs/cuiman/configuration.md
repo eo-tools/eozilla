@@ -20,18 +20,48 @@ entry overrides that of a previous one.
 This list is implemented in the class method `create()` of the 
 `cuiman.api.ClientConfig` class. 
 
-An `auth` override that includes `auth_type` replaces the previous authentication
-configuration entirely, even when the type is unchanged. For example,
-`Client(auth={"auth_type": "oidc", "issuer_url": "https://identity.example.org/realm",
-"client_id": "cuiman"})` does not inherit a saved `login_url` or custom token
-header settings. This rule applies to configuration files, environment
-variables, configuration objects, and client keyword arguments. An override
-without `auth_type`, such as `auth={"oauth_token": saved_token}`, updates fields in
-the selected authentication configuration. Matching keyring credentials fill
-missing secrets without overwriting explicitly supplied values.
-
 Note that applications using `cuiman` under the hood may customize the 
 configuration, see [Cuiman Customization](./customization.md). 
+
+### Replacing or merging authentication
+
+For both `Client(auth=auth)` and `AsyncClient(auth=auth)`, the supplied value
+determines whether existing authentication settings are replaced or merged:
+
+| Supplied `auth` value | Behavior |
+| --- | --- |
+| Dictionary containing `auth_type` | Replaces previous auth settings, even when the type is unchanged. |
+| Auth model, such as `OAuth2AuthConfig(...)` | Replaces previous auth settings; the model already selects its auth type. |
+| Dictionary without `auth_type` | Merges into the selected auth configuration, preserving unspecified fields. |
+
+For example:
+
+```python
+from cuiman import Client
+from cuiman.api.auth import TokenAuthConfig
+
+# Replace previous auth settings; an old custom header is not inherited.
+client = Client(auth={"auth_type": "token", "access_token": token})
+
+# An auth model also replaces previous settings.
+client = Client(auth=TokenAuthConfig(access_token=token))
+
+# Merge into existing OAuth settings, retaining the provider configuration.
+client = Client(auth={"oauth_token": saved_token})
+```
+
+Partial dictionaries merge recursively, including fields within `oauth_token`;
+`None` values in partial overrides are ignored. To discard previous auth fields,
+supply `auth_type` together with the complete desired provider settings and
+credentials. An explicit auth selection also replaces prior settings from files,
+environment variables, and `config`; keyword settings take precedence over
+`config`. These overrides affect the new client and do not rewrite its file.
+
+**Replacement does not disable keyring lookup.** If a public configuration file
+exists and the selected authentication still lacks usable credentials, the
+matching profile/API URL/auth-type keyring entry can fill missing secrets.
+Explicitly supplied credentials take precedence. This applies after both
+replacement and merging.
 
 ### Configuration Files
 

@@ -15,6 +15,14 @@ configuration that match the attributes the configuration class.
 asynchronous version, use the `AsyncClient` class instead.
 It provides the same interface, but using asynchronous server calls.
 
+For both clients, `auth=` replaces existing authentication settings when supplied
+as an auth model or a dictionary containing `auth_type`, even if the type is
+unchanged. A dictionary without `auth_type` merges into the selected configuration.
+Missing credentials may still be filled from a matching keyring entry; explicit
+credentials take precedence. See
+[replacing or merging authentication](configuration.md#replacing-or-merging-authentication)
+for examples.
+
 Constructing a client loads configuration and credentials without logging in or
 creating a process API transport. Before its first API request, the client
 automatically exchanges available login/OAuth2 credentials or refresh tokens

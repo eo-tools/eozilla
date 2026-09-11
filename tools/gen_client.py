@@ -43,10 +43,15 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
     The client API for the web service ({{ hr_async }} mode).
 
     Args:
-      config: Optional client configuration object. If given,
-        other configuration arguments are ignored.
+      config: Optional configuration object. Explicit keyword settings override
+        its values.
       config_path: Optional path of the configuration file to be loaded
-      config_kwargs: Configuration settings as keyword arguments.
+      config_kwargs: Configuration overrides, including ``auth``. An auth model
+        or a dictionary containing ``auth_type`` replaces previous auth settings,
+        even when the type is unchanged. A dictionary without ``auth_type``
+        merges into the selected auth configuration, including nested mappings.
+        If credentials are still missing, a matching profile's keyring entry may
+        supply them; explicitly supplied credentials take precedence.
       api_url: The service URL of the OGC API - Processes.
     \"\"\"
 

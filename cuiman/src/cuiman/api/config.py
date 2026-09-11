@@ -72,7 +72,13 @@ class ClientConfig(BaseSettings):
     """
 
     auth: AuthConfig = Field(default_factory=NoAuthConfig)
-    """Authentication configuration selected by its ``auth_type`` field."""
+    """Authentication configuration selected by its ``auth_type`` field.
+
+    When resolving settings with ``create()``, an auth model or a dictionary
+    containing ``auth_type`` replaces previous auth settings. A dictionary
+    without ``auth_type`` merges into the selected configuration. Matching
+    keyring credentials may fill missing secrets after resolution.
+    """
 
     _source_path: Path | None = PrivateAttr(default=None)
 
@@ -89,6 +95,17 @@ class ClientConfig(BaseSettings):
         **config_kwargs,
     ) -> "ClientConfig":
         """Resolve client settings, optionally skipping stored keyring secrets.
+
+        Keyword settings override ``config``. An ``auth`` model or a dictionary
+        containing ``auth_type`` replaces previous authentication settings,
+        even when the type is unchanged. A dictionary without ``auth_type``
+        merges into the selected authentication configuration, including nested
+        mappings; ``None`` values in partial overrides are ignored.
+
+        If a public configuration file exists and the resolved authentication
+        lacks usable credentials, matching keyring secrets fill missing values.
+        Explicitly supplied credentials take precedence, including after an
+        auth replacement. Resolution does not rewrite the configuration file.
 
         Set ``resolve_secrets=False`` to resolve the effective service and auth
         configuration without requiring readable keyring credentials.
