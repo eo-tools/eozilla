@@ -26,18 +26,19 @@ from cuiman.api.defaults import DEFAULT_API_URL, DEFAULT_AUTH_TYPE
 def get_config(
     config_path: Path | str | None,
     *,
+    config_type: type[ClientConfig] = ClientConfig,
     require_credentials: bool = True,
     resolve_secrets: bool = True,
 ) -> ClientConfig:
-    """Load an existing profile, optionally allowing login or unreadable secrets."""
-    if ClientConfig.from_file(config_path) is None:
+    """Load one application's profile, optionally allowing missing credentials."""
+    if config_type.from_file(config_path) is None:
         if config_path is None:
             raise ValueError(
                 "The client tool has not yet been configured; "
                 "please use the 'configure' command to set it up."
             )
         raise ValueError(f"Configuration file {config_path} not found or empty.")
-    config = ClientConfig.create(
+    config = config_type.create(
         config_path=config_path, resolve_secrets=resolve_secrets
     )
     if require_credentials and not has_credentials(config.auth):
@@ -48,6 +49,7 @@ def get_config(
 def configure_client_with_prompt(
     config_path: Path | str | None = None,
     *,
+    config_type: type[ClientConfig] = ClientConfig,
     interactive: bool = True,
     **cli_params: Any,
 ) -> Path:
@@ -58,14 +60,17 @@ def configure_client_with_prompt(
     missing settings raise ``ValueError`` before writing the configuration.
     """
     try:
-        previous = ClientConfig.from_file(config_path)
+        previous = config_type.from_file(config_path)
     except ValueError:
         typer.echo(
             "Deprecated or illegal configuration file; configuring from defaults.",
             err=True,
         )
         previous = None
-    public = (previous or ClientConfig.default_config).to_file_dict()
+    # Constructing through ``new_instance`` deliberately skips BaseSettings
+    # sources: configure starts from the selected class's field defaults, not
+    # an ambient process environment or dotenv file.
+    public = (previous or config_type.new_instance()).to_file_dict()
     defaults = {"api_url": public.get("api_url") or DEFAULT_API_URL, **public["auth"]}
     supplied = {name: value for name, value in cli_params.items() if value is not None}
     values: dict[str, Any] = {}
@@ -138,19 +143,20 @@ def configure_client_with_prompt(
             f"Settings do not apply to {auth_type} authentication: {', '.join(sorted(unused))}."
         )
     api_url = values.pop("api_url")
-    config = ClientConfig.new_instance(api_url=api_url, auth=values)
+    config = config_type.new_instance(api_url=api_url, auth=values)
     return config.write(config_path)
 
 
 def login_client_with_prompt(
     config_path: Path | str | None = None,
     *,
+    config_type: type[ClientConfig] = ClientConfig,
     no_browser: bool = False,
     force: bool = False,
     interactive: bool = True,
 ) -> None:
     """Prepare and save credentials, prompting only when needed or forced."""
-    config = get_config(config_path, require_credentials=False)
+    config = get_config(config_path, config_type=config_type, require_credentials=False)
     if config.auth.auth_type == "none":
         typer.echo("The configured service does not require login.")
         return
@@ -161,13 +167,22 @@ def login_client_with_prompt(
     typer.echo("Login completed.")
 
 
-def logout_client(config_path: Path | str | None = None) -> None:
+def logout_client(
+    config_path: Path | str | None = None,
+    *,
+    config_type: type[ClientConfig] = ClientConfig,
+) -> None:
     """Use the client lifecycle to revoke and remove the profile's credentials."""
     try:
-        config = get_config(config_path, require_credentials=False)
+        config = get_config(
+            config_path, config_type=config_type, require_credentials=False
+        )
     except SecretStoreError:
         config = get_config(
-            config_path, require_credentials=False, resolve_secrets=False
+            config_path,
+            config_type=config_type,
+            require_credentials=False,
+            resolve_secrets=False,
         )
     client = Client(config=config, resolve_secrets=False)
     client.logout()

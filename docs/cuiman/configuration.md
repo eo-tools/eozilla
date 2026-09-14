@@ -13,15 +13,19 @@ entry overrides that of a previous one.
 2. Settings loaded from a given or the default configuration file passed as `config_path`.
 3. Credentials stored in the operating-system keyring for that configuration
    file and API URL.
-4. Settings loaded from environment variables prefixed with `EOZILLA_`.
-5. Settings from another configuration object of type `cuiman.api.ClientConfig` passed as `config`.
-6. Settings from keyword arguments passed directly to the client as `config_kwargs`.
+4. Settings loaded from the selected configuration class's `.env` file.
+5. Settings loaded from environment variables using the selected class's prefix.
+6. Settings from another configuration object of type `cuiman.api.ClientConfig` passed as `config`.
+7. Settings from keyword arguments passed directly to the client as `config_kwargs`.
 
 This list is implemented in the class method `create()` of the 
 `cuiman.api.ClientConfig` class. 
 
-Note that applications using `cuiman` under the hood may customize the 
-configuration, see [Cuiman Customization](./customization.md). 
+Applications using `cuiman` can select their own `ClientConfig` subclass for
+each sync client, async client, and CLI. That class is an isolated settings
+namespace: it owns the schema, default profile path, dotenv/environment prefix,
+and field defaults without mutating `ClientConfig` globally. See
+[Cuiman Customization](./customization.md).
 
 ### Replacing or merging authentication
 

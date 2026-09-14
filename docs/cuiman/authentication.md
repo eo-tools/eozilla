@@ -8,6 +8,12 @@ proprietary login, OAuth2 password/client-credentials grants, and OIDC authoriza
 code. See [configuration](configuration.md) for provider settings and the
 [CLI reference](cli.md) for command options.
 
+For an application-specific client, create the sync client, async client, and
+CLI with the same `config_type`. Its resolved configuration, including profile
+identity and any keyring persistor, is retained when the launched app creates
+its backend client; authentication does not fall back to another application's
+defaults.
+
 ## Login and requests
 
 Ordinary processing requests use configured credentials without prompting.

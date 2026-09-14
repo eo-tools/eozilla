@@ -2,6 +2,13 @@
 
 ### Enhancements
 
+- **Cuiman** applications can now select an isolated `ClientConfig` namespace
+  through `Client`, `AsyncClient`, and `new_cli(config_type=...)`. Application
+  field defaults, profile paths, schemas, dotenv/environment settings, and
+  result extensions no longer require mutating global `ClientConfig` defaults.
+  Configuration sources resolve once and consistently across Python clients,
+  CLI commands, and launched apps.
+
 - **Cuiman** now shares one authentication lifecycle across the Python API, CLI,
   and launched app. Persistent Authlib HTTPX2 clients handle OAuth2 password and
   client-credentials grants and OIDC authorization code with PKCE, including

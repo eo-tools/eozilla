@@ -7,6 +7,7 @@
 import os
 import tempfile
 from pathlib import Path
+from typing import ClassVar
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -16,6 +17,7 @@ from pydantic_settings import SettingsConfigDict
 
 from cuiman import AsyncClient, Client
 from cuiman.api.auth import (
+    AuthConfig,
     LoginAuthConfig,
     NoAuthConfig,
     OidcAuthConfig,
@@ -47,7 +49,7 @@ class ClientConfigTest(TestCase):
 
     def test_ctor(self):
         config = ClientConfig()
-        self.assertIsNone(config.api_url)
+        self.assertEqual(DEFAULT_API_URL, config.api_url)
         self.assertEqual(NoAuthConfig(), config.auth)
 
     def test_create_empty(self):
@@ -70,7 +72,7 @@ class ClientConfigTest(TestCase):
             ):
                 ClientConfig.read_file_data(config_path)
 
-    def test_branded_default_config_controls_type_defaults_and_environment(self):
+    def test_config_type_controls_defaults_and_environment(self):
         class BrandedClientConfig(ClientConfig):
             model_config = SettingsConfigDict(
                 env_prefix="BRANDED_",
@@ -78,21 +80,19 @@ class ClientConfigTest(TestCase):
                 extra="forbid",
             )
 
+            api_url: str | None = "https://default.example.test/processes"
+            auth: AuthConfig = TokenAuthConfig(access_token_header="X-Branded")
             service_name: str = "branded"
 
-        branded_default = BrandedClientConfig(
-            api_url="https://default.example.test/processes",
-            auth=TokenAuthConfig(access_token_header="X-Branded"),
-        )
         with patch.dict(
             os.environ,
             {"BRANDED_API_URL": "https://environment.example.test/processes"},
         ):
-            with patch.object(ClientConfig, "default_config", branded_default):
-                with tempfile.TemporaryDirectory() as tmp_dir_name:
-                    config = ClientConfig.create(
-                        config_path=Path(tmp_dir_name) / "missing-config"
-                    )
+            with tempfile.TemporaryDirectory() as tmp_dir_name:
+                config = ClientConfig.create(
+                    config_type=BrandedClientConfig,
+                    config_path=Path(tmp_dir_name) / "missing-config",
+                )
 
         self.assertIsInstance(config, BrandedClientConfig)
         self.assertEqual("https://environment.example.test/processes", config.api_url)
@@ -102,27 +102,24 @@ class ClientConfigTest(TestCase):
         )
         self.assertEqual("branded", config.service_name)
 
-    def test_branded_default_config_loads_files_as_branded_type(self):
+    def test_config_type_loads_files_with_selected_schema(self):
         class BrandedClientConfig(ClientConfig):
             service_name: str = "branded"
 
-        branded_default = BrandedClientConfig(
-            api_url="https://default.example.test/processes",
-            auth=TokenAuthConfig(),
-        )
-        with patch.object(ClientConfig, "default_config", branded_default):
-            with tempfile.TemporaryDirectory() as tmp_dir_name:
-                config_path = Path(tmp_dir_name) / "config"
-                config_path.write_text(
-                    yaml.safe_dump(
-                        {
-                            "api_url": "https://configured.example.test/processes",
-                            "auth": {"auth_type": "none"},
-                            "service_name": "configured",
-                        }
-                    )
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            config_path = Path(tmp_dir_name) / "config"
+            config_path.write_text(
+                yaml.safe_dump(
+                    {
+                        "api_url": "https://configured.example.test/processes",
+                        "auth": {"auth_type": "none"},
+                        "service_name": "configured",
+                    }
                 )
-                config = ClientConfig.from_file(config_path)
+            )
+            config = ClientConfig.from_file(
+                config_path, config_type=BrandedClientConfig
+            )
 
         self.assertIsInstance(config, BrandedClientConfig)
         self.assertEqual("configured", config.service_name)
@@ -374,9 +371,8 @@ class ClientConfigTest(TestCase):
             ClientConfig.default_path, ClientConfig.normalize_config_path("")
         )
 
-    def test_default_config(self):
-        self.assertIsInstance(ClientConfig.default_config, ClientConfig)
-        self.assertEqual(DEFAULT_API_URL, ClientConfig.default_config.api_url)
+    def test_field_defaults(self):
+        self.assertEqual(DEFAULT_API_URL, ClientConfig.new_instance().api_url)
 
     def test_update_if_not_none_skips_none(self):
         target = {"value": "original"}
@@ -402,6 +398,129 @@ class ClientConfigTest(TestCase):
             {"auth": {"auth_type": "token", "access_token": "token"}},
             target,
         )
+
+
+def test_config_namespaces_coexist_with_independent_sources(tmp_path, monkeypatch):
+    """Each selected class owns paths, schemas, and its settings namespace."""
+
+    dotenv_path = tmp_path / ".env"
+    dotenv_path.write_text(
+        "RED_API_URL=https://dotenv.red.test/processes\n"
+        "BLUE_API_URL=https://dotenv.blue.test/processes\n",
+        encoding="utf-8",
+    )
+
+    class RedConfig(ClientConfig):
+        model_config = SettingsConfigDict(
+            env_prefix="RED_",
+            env_nested_delimiter="__",
+            env_file=dotenv_path,
+            extra="forbid",
+        )
+
+        default_path: ClassVar[Path] = tmp_path / "red.yaml"
+        api_url: str | None = "https://default.red.test/processes"
+        application: str = "red"
+
+    class BlueConfig(ClientConfig):
+        model_config = SettingsConfigDict(
+            env_prefix="BLUE_",
+            env_nested_delimiter="__",
+            env_file=dotenv_path,
+            extra="forbid",
+        )
+
+        default_path: ClassVar[Path] = tmp_path / "blue.yaml"
+        api_url: str | None = "https://default.blue.test/processes"
+        application: str = "blue"
+
+    RedConfig.new_instance(api_url="https://file.red.test/processes").write()
+    BlueConfig.new_instance(api_url="https://file.blue.test/processes").write()
+    monkeypatch.setenv("RED_API_URL", "https://environment.red.test/processes")
+
+    red = ClientConfig.create(config_type=RedConfig)
+    blue = ClientConfig.create(config_type=BlueConfig)
+
+    assert red.api_url == "https://environment.red.test/processes"
+    assert blue.api_url == "https://dotenv.blue.test/processes"
+    assert red.application == "red"
+    assert blue.application == "blue"
+    assert red._source_path == RedConfig.default_path
+    assert blue._source_path == BlueConfig.default_path
+    assert type(Client(config_type=RedConfig).config) is RedConfig
+    assert type(AsyncClient(config_type=BlueConfig).config) is BlueConfig
+
+
+def test_explicit_overrides_win_over_environment_and_dotenv(tmp_path, monkeypatch):
+    dotenv_path = tmp_path / ".env"
+    dotenv_path.write_text(
+        "APPLICATION_API_URL=https://dotenv.test/processes\n", encoding="utf-8"
+    )
+
+    class ApplicationConfig(ClientConfig):
+        model_config = SettingsConfigDict(
+            env_prefix="APPLICATION_",
+            env_nested_delimiter="__",
+            env_file=dotenv_path,
+            extra="forbid",
+        )
+
+    monkeypatch.setenv("APPLICATION_API_URL", "https://environment.test/processes")
+
+    config = ApplicationConfig.create(api_url="https://explicit.test/processes")
+
+    assert config.api_url == "https://explicit.test/processes"
+
+
+def test_dotenv_partial_auth_override_is_merged_before_validation(tmp_path):
+    dotenv_path = tmp_path / ".env"
+    dotenv_path.write_text(
+        "APPLICATION_AUTH__ACCESS_TOKEN=dotenv-token\n", encoding="utf-8"
+    )
+
+    class ApplicationConfig(ClientConfig):
+        model_config = SettingsConfigDict(
+            env_prefix="APPLICATION_",
+            env_nested_delimiter="__",
+            env_file=dotenv_path,
+            extra="forbid",
+        )
+
+    profile_path = tmp_path / "profile.yaml"
+    ApplicationConfig.new_instance(auth=TokenAuthConfig()).write(profile_path)
+
+    config = ApplicationConfig.create(config_path=profile_path)
+
+    assert config.auth == TokenAuthConfig(access_token="dotenv-token")
+
+
+def test_config_type_is_inferred_from_instances_and_requires_exact_match():
+    class ParentConfig(ClientConfig):
+        pass
+
+    class ChildConfig(ParentConfig):
+        pass
+
+    child = ChildConfig.new_instance()
+
+    assert type(ClientConfig.create(config=child)) is ChildConfig
+    with pytest.raises(TypeError, match="same concrete"):
+        ClientConfig.create(config=child, config_type=ParentConfig)
+
+
+def test_application_extension_mappings_and_opener_registries_are_isolated():
+    class FirstConfig(ClientConfig):
+        pass
+
+    class SecondConfig(ClientConfig):
+        pass
+
+    assert FirstConfig.return_type_map is not ClientConfig.return_type_map
+    assert SecondConfig.return_type_map is not ClientConfig.return_type_map
+    assert FirstConfig.return_type_map is not SecondConfig.return_type_map
+    assert FirstConfig.get_job_result_opener_registry() is not (
+        SecondConfig.get_job_result_opener_registry()
+    )
 
 
 @pytest.fixture
@@ -486,18 +605,16 @@ def test_explicit_auth_type_resets_fields_even_when_type_is_unchanged(
     )
 
 
-def test_file_auth_replaces_application_default_auth(tmp_path, monkeypatch):
-    monkeypatch.setattr(
-        ClientConfig,
-        "default_config",
-        ClientConfig.new_instance(
-            auth=LoginAuthConfig(login_url="https://default.example.test/login")
-        ),
-    )
+def test_file_auth_replaces_selected_application_default_auth(tmp_path):
+    class ApplicationConfig(ClientConfig):
+        auth: AuthConfig = LoginAuthConfig(
+            login_url="https://default.example.test/login"
+        )
+
     path = tmp_path / "profile.yaml"
     path.write_text("auth:\n  auth_type: none\n")
 
-    assert ClientConfig.create(config_path=path).auth == NoAuthConfig()
+    assert ApplicationConfig.create(config_path=path).auth == NoAuthConfig()
 
 
 @pytest.mark.parametrize("source", ["kwargs", "config"])
@@ -556,15 +673,14 @@ def test_from_file_accepts_valid_auth_credentials_without_rewriting(tmp_path):
 
 
 def test_from_file_uses_custom_schema_without_legacy_field_detection(
-    tmp_path, monkeypatch
+    tmp_path,
 ):
     class CustomConfig(ClientConfig):
         model_config = SettingsConfigDict(extra="allow")
 
-    monkeypatch.setattr(ClientConfig, "default_config", CustomConfig())
     path = tmp_path / "config.yaml"
     path.write_text("auth_type: custom-extension\n", encoding="utf-8")
-    config = ClientConfig.from_file(path)
+    config = ClientConfig.from_file(path, config_type=CustomConfig)
     assert isinstance(config, CustomConfig)
     assert config.model_extra == {"auth_type": "custom-extension"}
 

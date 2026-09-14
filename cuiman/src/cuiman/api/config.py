@@ -15,7 +15,12 @@ from typing import (
 
 import yaml
 from pydantic import BaseModel, Field, HttpUrl, PrivateAttr, field_validator
-from pydantic_settings import BaseSettings, EnvSettingsSource, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    DotEnvSettingsSource,
+    EnvSettingsSource,
+    SettingsConfigDict,
+)
 
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 
@@ -41,14 +46,7 @@ class ClientConfig(BaseSettings):
         hide_input_in_errors=True,
     )
 
-    default_config: ClassVar["ClientConfig"]
-    """
-    Default instance. 
-    Used to create pre-configured instances of this class.
-    Designed to be overridden by library clients.
-    """
-
-    default_path: ClassVar[Path]
+    default_path: ClassVar[Path] = Path("~").expanduser() / ".eozilla" / "config"
     """
     Name of the configuration's local default path. 
     Used for configuration persistence in `~/.<config_name>/`.
@@ -65,7 +63,7 @@ class ClientConfig(BaseSettings):
     The default mapping is empty.
     """
 
-    api_url: Annotated[Optional[str], Field(title="Process API URL")] = None
+    api_url: Annotated[Optional[str], Field(title="Process API URL")] = DEFAULT_API_URL
     """
     The URL of the server that provides a web API compliant with
     OGC API - Processes, Part 1 - Core. This is a base URL: Python and app
@@ -83,6 +81,19 @@ class ClientConfig(BaseSettings):
     """
 
     _source_path: Path | None = PrivateAttr(default=None)
+    _is_resolved: bool = PrivateAttr(default=False)
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Give each application an independent return-type extension mapping.
+
+        A mutable class attribute would otherwise be shared by an application
+        subclass and Cuiman's base configuration.  Copying at class creation
+        preserves registrations inherited up to that point while ensuring later
+        registrations cannot leak into unrelated client namespaces.
+        """
+        super().__init_subclass__(**kwargs)
+        if "return_type_map" not in cls.__dict__:
+            cls.return_type_map = dict(cls.return_type_map)
 
     def _repr_json_(self):
         return self.to_file_dict(), dict(root="Client configuration:")
@@ -92,6 +103,7 @@ class ClientConfig(BaseSettings):
         cls,
         *,
         config: Optional["ClientConfig"] = None,
+        config_type: type["ClientConfig"] | None = None,
         config_path: Optional[Path | str] = None,
         resolve_secrets: bool = True,
         **config_kwargs,
@@ -112,29 +124,47 @@ class ClientConfig(BaseSettings):
         Set ``resolve_secrets=False`` to resolve the effective service and auth
         configuration without requiring readable keyring credentials.
         """
-        # 0. Identify the application-selected configuration type. Applications
-        #    brand Cuiman by assigning a derived ``default_config`` instance;
-        #    its type owns settings metadata such as the environment prefix.
-        config_cls = cls._configured_type()
+        # 0. Select the application namespace before reading any source.  The
+        #    selected Pydantic class owns defaults, schema, dotenv behaviour,
+        #    environment prefix, persistence path, and extensions.
+        config_cls = cls._select_config_type(config_type, config)
+
+        if (
+            config is not None
+            and config._is_resolved
+            and config_path is None
+            and not _has_config_values(config_kwargs)
+        ):
+            # Wrapping an already resolved configuration is common in the CLI
+            # and app.  Re-running sources here could apply a different dotenv
+            # value or lose a credential persistor, so retain its exact result.
+            return _copy_resolved_config(config)
 
         if config_path is None and config is not None:
             config_path = config._source_path
 
+        source_path = config_cls.normalize_config_path(config_path)
+
         # 1. Load the public, file-backed configuration without resolving
         #    environment variables or operating-system credentials yet.
-        file_config = cls.from_file(config_path=config_path)
+        file_config = config_cls.from_file(config_path=source_path)
 
-        # 2. Read raw environment settings. This allows a partial nested auth
-        #    override to be merged before the discriminated union is validated.
-        # Do not use ``cls`` here: CLI and generated clients call this method
-        # on ClientConfig, while application settings belong to config_cls.
+        # 2. Read raw dotenv and environment settings.  They must remain raw so
+        #    a partial nested auth override can be merged before the
+        #    discriminated union is validated.  Process environment deliberately
+        #    wins over dotenv, matching Pydantic's normal settings precedence.
+        dotenv_config = _model_setting_values(
+            config_cls, DotEnvSettingsSource(config_cls)()
+        )
         env_config = EnvSettingsSource(config_cls)()
 
-        # 3. Resolve settings in precedence order. Selecting an auth type starts
-        #    a new auth configuration; overrides without a type update fields.
-        config_dict = cls.default_config.to_dict()
+        # 3. Resolve sources from lowest to highest precedence.  Build class
+        #    defaults via BaseModel rather than BaseSettings so this first layer
+        #    never reads environment variables before the merge is complete.
+        config_dict = config_cls._default_values()
         if file_config is not None:
             _update_config(config_dict, file_config.to_dict())
+        _update_config(config_dict, dotenv_config)
         _update_config(config_dict, env_config)
         if config is not None:
             _update_config(config_dict, config.to_dict())
@@ -142,12 +172,13 @@ class ClientConfig(BaseSettings):
 
         # 4. Build the effective configuration from all non-keyring sources
         #    without re-resolving Pydantic Settings sources.
-        resolved_config = cls.new_instance(**config_dict)
-        resolved_config._source_path = cls.normalize_config_path(config_path)
+        resolved_config = config_cls.new_instance(**config_dict)
+        resolved_config._source_path = source_path
+        resolved_config._is_resolved = True
         if (
             config is not None
             and resolved_config._source_path
-            == cls.normalize_config_path(config._source_path)
+            == config_cls.normalize_config_path(config._source_path)
             and resolved_config.api_url == config.api_url
             and resolved_config.auth.model_dump() == config.auth.model_dump()
         ):
@@ -165,7 +196,7 @@ class ClientConfig(BaseSettings):
         # 5. A public file configuration without usable credentials may have
         #     matching secrets in the operating-system keyring.
         auth_secrets = load_auth_secrets(
-            cls.normalize_config_path(config_path),
+            source_path,
             resolved_config.api_url or "",
             resolved_config.auth.auth_type,
         )
@@ -175,9 +206,7 @@ class ClientConfig(BaseSettings):
             if name in resolved_config.auth.secret_fields
         }
         if not auth_secrets:
-            _set_auth_secret_persistor(
-                resolved_config, cls.normalize_config_path(config_path)
-            )
+            _set_auth_secret_persistor(resolved_config, source_path)
             return resolved_config
 
         # 6. Fill missing credentials in the selected auth configuration.
@@ -188,16 +217,20 @@ class ClientConfig(BaseSettings):
             **auth_secrets,
             **resolved_config.auth.model_dump(mode="json", exclude_none=True),
         }
-        resolved_config = cls.new_instance(**config_dict)
+        resolved_config = config_cls.new_instance(**config_dict)
+        resolved_config._is_resolved = True
         _set_auth_secret_persistor(
             resolved_config,
-            cls.normalize_config_path(config_path),
+            source_path,
         )
         return resolved_config
 
     @classmethod
     def from_file(
-        cls, config_path: Optional[str | Path] = None
+        cls,
+        config_path: Optional[str | Path] = None,
+        *,
+        config_type: type["ClientConfig"] | None = None,
     ) -> Optional["ClientConfig"]:
         """Load a file using the application's configured schema.
 
@@ -208,16 +241,17 @@ class ClientConfig(BaseSettings):
         filesystem access errors propagate unchanged.
         """
         try:
-            config_dict = cls.read_file_data(config_path)
+            config_cls = cls._select_config_type(config_type)
+            config_dict = config_cls.read_file_data(config_path)
             if config_dict is None:
                 return None
             # Validate only the file; create() resolves the other settings sources.
-            config = cls._new_model_instance(cls._configured_type(), **config_dict)
+            config = cls._new_model_instance(config_cls, **config_dict)
         except (ValueError, TypeError, yaml.YAMLError):
             raise ValueError(
                 "Deprecated or illegal configuration file, please run the 'configure' command."
             ) from None
-        config._source_path = cls.normalize_config_path(config_path)
+        config._source_path = config_cls.normalize_config_path(config_path)
         return config
 
     def write(self, config_path: Optional[str | Path] = None) -> Path:
@@ -245,23 +279,32 @@ class ClientConfig(BaseSettings):
         return config_dict
 
     @classmethod
-    def normalize_config_path(cls, config_path) -> Path:
+    def normalize_config_path(
+        cls,
+        config_path: Path | str | None,
+        *,
+        config_type: type["ClientConfig"] | None = None,
+    ) -> Path:
+        """Return a path, using the selected application's default when absent."""
+        config_cls = cls._select_config_type(config_type)
         return (
             config_path
             if isinstance(config_path, Path)
-            else (Path(config_path) if config_path else cls.default_path)
+            else (Path(config_path) if config_path else config_cls.default_path)
         )
 
     @classmethod
     def new_instance(
         cls,
+        *,
+        config_type: type["ClientConfig"] | None = None,
         **kwargs: Any,
     ) -> "ClientConfig":
         # This is the final configuration construction step. Do not invoke
         # BaseSettings.__init__ here: nested environment settings would be
         # merged again and could conflict with the authentication type already
         # selected by the explicit configuration-resolution steps above.
-        return cls._new_model_instance(cls._configured_type(), **kwargs)
+        return cls._new_model_instance(cls._select_config_type(config_type), **kwargs)
 
     @staticmethod
     def _new_model_instance(
@@ -273,11 +316,35 @@ class ClientConfig(BaseSettings):
         return instance
 
     @classmethod
-    def _configured_type(cls) -> type["ClientConfig"]:
-        """Return the concrete configuration type selected by the application."""
-        config_cls = type(cls.default_config)
-        assert issubclass(config_cls, ClientConfig)
-        return config_cls
+    def _default_values(cls) -> dict[str, Any]:
+        """Return Pydantic field defaults without consulting settings sources."""
+        field_defaults = cls._new_model_instance(cls)
+        return field_defaults.model_dump(mode="json", by_alias=True, exclude_none=True)
+
+    @classmethod
+    def _select_config_type(
+        cls,
+        config_type: type["ClientConfig"] | None = None,
+        config: "ClientConfig" | None = None,
+    ) -> type["ClientConfig"]:
+        """Select one configuration namespace and reject ambiguous combinations.
+
+        Exact type matching prevents a parent application's schema, path, or
+        environment prefix from silently being used for a child configuration.
+        Callers may omit ``config_type`` when passing a configuration instance;
+        its concrete type is then the namespace.
+        """
+        if config_type is not None and (
+            not isinstance(config_type, type)
+            or not issubclass(config_type, ClientConfig)
+        ):
+            raise TypeError("config_type must be a ClientConfig subclass.")
+        selected = config_type or (type(config) if config is not None else cls)
+        if config is not None and type(config) is not selected:
+            raise TypeError(
+                "config and config_type must have the same concrete ClientConfig type."
+            )
+        return selected
 
     def to_dict(self):
         config_dict = self.model_dump(
@@ -335,11 +402,6 @@ class ClientConfig(BaseSettings):
         return JobResultOpenerRegistry.create_default()
 
 
-# Set Eozilla defaults.
-# Cuiman applications might want to change them.
-ClientConfig.default_config = ClientConfig(api_url=DEFAULT_API_URL)
-ClientConfig.default_path = Path("~").expanduser() / ".eozilla" / "config"
-
 ProcessPredicate: TypeAlias = Callable[[ProcessSummary], bool]
 """
 Type that describes the [accept_process][ClientConfig.accept_process] class method.
@@ -353,6 +415,20 @@ Type that describes the [accept_input][ClientConfig.accept_process] class method
 AdvancedInputPredicate: TypeAlias = Callable[
     [ProcessDescription, str, InputDescription], bool
 ]
+
+
+def _model_setting_values(
+    config_cls: type[ClientConfig], values: dict[str, Any]
+) -> dict[str, Any]:
+    """Keep dotenv entries that belong to the selected settings schema.
+
+    Unlike ``EnvSettingsSource``, Pydantic's dotenv source exposes unrelated
+    entries in a shared `.env` file as extra fields.  Filtering here makes a
+    multi-application dotenv file safe when a configuration forbids extras.
+    """
+    return {
+        name: value for name, value in values.items() if name in config_cls.model_fields
+    }
 
 
 def _update_if_not_none(target: dict[str, Any], updates: dict[str, Any]):
@@ -372,6 +448,21 @@ def _update_config(target: dict[str, Any], updates: dict[str, Any]) -> None:
         target["auth"] = dict(auth_config)
         updates = {key: value for key, value in updates.items() if key != "auth"}
     _update_if_not_none(target, updates)
+
+
+def _has_config_values(config_kwargs: dict[str, Any]) -> bool:
+    """Whether keyword overrides can change the result of a settings merge."""
+    return any(value is not None for value in config_kwargs.values())
+
+
+def _copy_resolved_config(config: ClientConfig) -> ClientConfig:
+    """Copy a resolved configuration without replaying its external sources.
+
+    ``BaseModel.model_copy`` retains private attributes, including the source
+    path and the auth secret persistor.  Keeping that metadata is essential
+    when a CLI-created configuration is wrapped by a Python or app client.
+    """
+    return config.model_copy(deep=True)
 
 
 def _set_auth_secret_persistor(config: ClientConfig, config_path: Path) -> None:
