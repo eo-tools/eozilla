@@ -6,8 +6,8 @@ from typing import ClassVar
 from unittest.mock import Mock
 
 import pytest
-from typer.testing import CliRunner
 import yaml
+from typer.testing import CliRunner
 
 from cuiman import ClientConfig
 from cuiman.api.auth import TokenAuthConfig
