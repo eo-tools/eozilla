@@ -71,10 +71,27 @@ configuration object, and explicit client keyword arguments. Authentication
 partials are merged before validation, so a `.env` token can supplement public
 provider settings held in a profile.
 
-Set a complete nested `auth` configuration through a configuration file or
-environment variables. Authentication models require their credentials at
-construction time; for example, a proprietary login uses `auth.login_url`,
-while OAuth 2.0 uses `auth.token_url`.
+Subclasses may introduce required fields and default factories. Effective settings
+are validated after sources are merged; Cuiman does not construct an empty
+application configuration to obtain defaults. Existing profiles must still be
+valid against the selected application schema on their own.
+
+Dotenv files use Pydantic Settings' `dotenv_filtering="match_prefix"` policy by
+default. Unrelated namespaces are ignored; extra entries within the application's
+prefix follow its `extra` policy. Set `dotenv_filtering="only_existing"` to read
+only declared fields. Input aliases, including `AliasChoices` and `AliasPath`,
+are normalized before sources are merged, so client keyword overrides retain
+their precedence. Cuiman requires Pydantic Settings 2.14.2 or later.
+
+Authentication models require public provider settings, such as `auth.login_url`
+for proprietary login or `auth.token_url` for OAuth 2.0. Credentials can be supplied
+later through partial overrides or login. Reusing `client.config` keeps a resolved
+snapshot; see [configuration reuse](configuration.md#reusing-resolved-configuration).
+
+Each subclass receives a copy of its parent's `return_type_map` at class creation;
+later changes are isolated. Job-result opener registries are cached per concrete
+class and start with the built-in openers. Register custom openers on each class
+that needs them; parent registrations are not inherited by its subclasses.
 
 ## CLI customisation
 
@@ -100,6 +117,10 @@ cli: typer.Typer = new_cli(
 if __name__ == "__main__":  # pragma: no cover
     cli()
 ```
+
+`configure` preserves saved application fields while updating the public API and
+authentication settings it edits. It uses profile values and class defaults for
+prompts; environment and dotenv overrides are applied when a client is resolved.
 
 ## GUI customisation
 

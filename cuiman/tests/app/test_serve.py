@@ -6,10 +6,12 @@ import importlib
 import webbrowser
 from dataclasses import dataclass
 from importlib.resources import files
+from unittest.mock import Mock
 
 from IPython import display as ipython_display
 
-from cuiman.api.config import ClientConfig
+from cuiman.api.auth import TokenAuthConfig
+from cuiman.api.config import ClientConfig, _set_auth_secret_persistor
 from cuiman.app import App
 from cuiman.app.launch import LaunchedAppService
 
@@ -68,6 +70,32 @@ def test_serve_returns_server_without_display(monkeypatch):
     assert calls["url"] == []
     assert calls["browser_open"] == []
     assert calls["display"] == []
+
+
+def test_standalone_app_backend_preserves_application_snapshot(monkeypatch, tmp_path):
+    calls = install_serve_fakes(monkeypatch)
+
+    class ApplicationConfig(ClientConfig):
+        region: str = "application-default"
+
+    config = ApplicationConfig.create(
+        auth=TokenAuthConfig(access_token="original")  # noqa: S106 - test credential
+    )
+    _set_auth_secret_persistor(config, tmp_path / "application-profile")
+    monkeypatch.setenv("EOZILLA_REGION", "changed-after-resolution")
+    serve_module.serve(config, App.create_remote_store(), display="none")
+
+    backend = calls["app_service"]._request.__self__
+    assert type(backend.config) is ApplicationConfig
+    assert backend.config.region == "application-default"
+    assert backend.config._source_path == config._source_path
+    assert backend.config.auth is not config.auth
+    save = Mock()
+    monkeypatch.setattr("cuiman.api.config.save_auth_secrets", save)
+    backend.config.auth.persist_secrets()
+    save.assert_called_once_with(
+        config._source_path, config.api_url, "token", {"access_token": "original"}
+    )
 
 
 def test_serve_opens_browser(monkeypatch):

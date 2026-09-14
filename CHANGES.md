@@ -46,6 +46,14 @@
 
 ### Fixes
 
+- **Cuiman** resolves fresh configuration sources once and preserves resolved
+  snapshots when wrapping clients or applying overrides. Explicit default-valued
+  settings keep their precedence; required application fields and input aliases
+  work through the shared resolver. Keyring lookup can be requested after an
+  earlier secret-free resolution without rereading sources. CLI configuration
+  preserves saved application fields. Dotenv filtering uses Pydantic Settings'
+  namespace and extra-field policies (requires version 2.14.2 or later).
+
 - **Cuiman** notebook errors now remain visible as structured API errors without
   crashing and disabling IPython's custom exception handler.
 

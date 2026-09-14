@@ -9,11 +9,13 @@ from pathlib import Path
 from typing import Any
 
 import typer
+from pydantic import TypeAdapter
 
 from cuiman.api.auth.config import (
     AUTH_TYPE_NAMES,
     OAUTH2_GRANT_TYPE_NAMES,
     ApiKeyAuthConfig,
+    AuthConfig,
     OAuth2AuthConfig,
     has_credentials,
 )
@@ -31,15 +33,8 @@ def get_config(
     resolve_secrets: bool = True,
 ) -> ClientConfig:
     """Load one application's profile, optionally allowing missing credentials."""
-    if config_type.from_file(config_path) is None:
-        if config_path is None:
-            raise ValueError(
-                "The client tool has not yet been configured; "
-                "please use the 'configure' command to set it up."
-            )
-        raise ValueError(f"Configuration file {config_path} not found or empty.")
     config = config_type.create(
-        config_path=config_path, resolve_secrets=resolve_secrets
+        config_path=config_path, resolve_secrets=resolve_secrets, require_file=True
     )
     if require_credentials and not has_credentials(config.auth):
         raise ValueError("Please use 'cuiman login' to provide credentials.")
@@ -67,11 +62,33 @@ def configure_client_with_prompt(
             err=True,
         )
         previous = None
-    # Constructing through ``new_instance`` deliberately skips BaseSettings
-    # sources: configure starts from the selected class's field defaults, not
-    # an ambient process environment or dotenv file.
-    public = (previous or config_type.new_instance()).to_file_dict()
-    defaults = {"api_url": public.get("api_url") or DEFAULT_API_URL, **public["auth"]}
+    # Prompt defaults are public profile values, falling back to field defaults.
+    # Read only the two fields these prompts edit; an application may have other
+    # required fields that cannot be validated before collecting its settings.
+    public = previous.to_file_dict() if previous is not None else {}
+    public_auth = public.get("auth")
+    if public_auth is None:
+        field = config_type.model_fields["auth"]
+        default_auth = (
+            {"auth_type": "none"}
+            if field.is_required()
+            else field.get_default(call_default_factory=True, validated_data=public)
+        )
+        public_auth = (
+            TypeAdapter(AuthConfig).validate_python(default_auth).to_public_dict()
+        )
+    default_url = public.get("api_url")
+    if default_url is None:
+        field = config_type.model_fields["api_url"]
+        default_url = (
+            None
+            if field.is_required()
+            else field.get_default(call_default_factory=True, validated_data=public)
+        )
+    defaults = {
+        "api_url": ClientConfig.validate_api_url(default_url) or DEFAULT_API_URL,
+        **public_auth,
+    }
     supplied = {name: value for name, value in cli_params.items() if value is not None}
     values: dict[str, Any] = {}
 
@@ -100,7 +117,7 @@ def configure_client_with_prompt(
         "authentication type",
     )
     values["auth_type"] = auth_type
-    if auth_type != public["auth"]["auth_type"]:
+    if auth_type != public_auth["auth_type"]:
         # A new auth mechanism must not inherit unrelated provider settings.
         defaults = {"api_url": values["api_url"]}
     if auth_type == "login":
@@ -143,7 +160,12 @@ def configure_client_with_prompt(
             f"Settings do not apply to {auth_type} authentication: {', '.join(sorted(unused))}."
         )
     api_url = values.pop("api_url")
-    config = config_type.new_instance(api_url=api_url, auth=values)
+    # Preserve application fields that the generic configure command does not
+    # edit. Keep Python input values rather than round-tripping persistence
+    # aliases, which need not be valid Pydantic input aliases.
+    settings = previous.to_dict() if previous is not None else {}
+    settings.update(api_url=api_url, auth=values)
+    config = config_type.new_instance(**settings)
     return config.write(config_path)
 
 
