@@ -2,6 +2,11 @@
 
 ### Enhancements
 
+- **Cuiman** client now supports deploy, replace, undeploy operations as well
+  as querying the formal description of mutable processes for servers that
+  implement the relevant DRU enpoints. This comes with the restriction that
+  only EOAP-based encodings are supported as of now. (#219)
+
 - **Cuiman** clients now prepare authentication and create their transport on
   the first API call. `Client.login()` and `AsyncClient.login()` allow explicit
   login, including credential prompts and OIDC browser authentication; automatic
