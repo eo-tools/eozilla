@@ -10,6 +10,7 @@ from typing import (
     Any,
     Callable,
     ClassVar,
+    Iterable,
     Optional,
     TypeAlias,
 )
@@ -75,6 +76,17 @@ class ClientConfig(BaseSettings):
     The default mapping is empty.
     """
 
+    extra_job_result_openers: ClassVar[Iterable[type[JobResultOpener]]] = ()
+    """Additional job result opener classes for this application.
+
+    Declare an iterable in a subclass. It is captured as a tuple at class creation
+    so generators can be inherited safely. Openers are registered after the
+    built-ins, in iteration order, so the last entry is tried first.
+    Each class's registry is initialized on first use; later changes should use
+    ``register_job_result_opener()``.
+    This class attribute is excluded from configuration settings and persistence.
+    """
+
     api_url: Annotated[Optional[str], Field(title="Process API URL")] = DEFAULT_API_URL
     """
     The URL of the server that provides a web API compliant with
@@ -97,7 +109,7 @@ class ClientConfig(BaseSettings):
     _has_profile: bool = PrivateAttr(default=False)
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
-        """Give each application an independent return-type extension mapping.
+        """Give each application independent extension declarations.
 
         A mutable class attribute would otherwise be shared by an application
         subclass and Cuiman's base configuration.  Copying at class creation
@@ -107,6 +119,7 @@ class ClientConfig(BaseSettings):
         super().__init_subclass__(**kwargs)
         if "return_type_map" not in cls.__dict__:
             cls.return_type_map = dict(cls.return_type_map)
+        cls.extra_job_result_openers = tuple(cls.extra_job_result_openers)
 
     def _repr_json_(self):
         return self.to_file_dict(), dict(root="Client configuration:")
@@ -450,11 +463,15 @@ class ClientConfig(BaseSettings):
         """
         Get the registry for openers that are used to open job results.
 
-        Use it to register custom openers for special job results.
+        Each class starts with the built-ins and its ``extra_job_result_openers``.
+        Use it to register further custom openers for special job results.
 
         Note that the registry contains types/classes, not instances.
         """
-        return JobResultOpenerRegistry.create_default()
+        registry = JobResultOpenerRegistry.create_default()
+        for opener_type in cls.extra_job_result_openers:
+            registry.register(opener_type)
+        return registry
 
 
 ProcessPredicate: TypeAlias = Callable[[ProcessSummary], bool]

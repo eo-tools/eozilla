@@ -9,6 +9,7 @@ import pytest
 
 from cuiman.api.async_client import AsyncClient
 from cuiman.api.client import Client
+from cuiman.api.config import ClientConfig
 from cuiman.api.exceptions import ClientError, ClientWarning
 from cuiman.api.opener import JobResultStatusError
 from gavicore.models import (
@@ -74,8 +75,12 @@ class ClientOpenJobResultTest(TestCase):
         _get_job_results: MagicMock,
         _get_process: MagicMock,
     ):
-        client = Client(api_url="https://acme.ogc.org/api")
-        client.config.register_job_result_opener(AllOpener)
+        class ApplicationConfig(ClientConfig):
+            extra_job_result_openers = [AllOpener]
+
+        client = Client(
+            config_type=ApplicationConfig, api_url="https://acme.ogc.org/api"
+        )
         result = client.open_job_result("job_12", timeout=30, poll_interval=0.01)
         self.assertIsInstance(result, JobResults)
 
@@ -173,8 +178,12 @@ class AsyncClientOpenJobResultTest(IsolatedAsyncioTestCase):
         _get_job_results: MagicMock,
         _get_process: MagicMock,
     ):
-        client = AsyncClient(api_url="https://acme.ogc.org/api")
-        client.config.register_job_result_opener(AllOpener)
+        class ApplicationConfig(ClientConfig):
+            extra_job_result_openers = [AllOpener]
+
+        client = AsyncClient(
+            config=ApplicationConfig.new_instance(api_url="https://acme.ogc.org/api")
+        )
         result = await client.open_job_result("job_12", timeout=30, poll_interval=0.01)
         self.assertIsInstance(result, JobResults)
 

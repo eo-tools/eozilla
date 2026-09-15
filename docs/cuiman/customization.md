@@ -35,6 +35,8 @@ from cuiman.api import AsyncClient, Client, ClientConfig
 from cuiman.api.auth import AuthConfig, NoAuthConfig
 from cuiman.cli import new_cli
 
+from .opener import AnolisJobResultsOpener
+
 # Custom configuration class
 class AnolisClientConfig(ClientConfig):
     model_config = SettingsConfigDict(
@@ -46,6 +48,7 @@ class AnolisClientConfig(ClientConfig):
     default_path: ClassVar[Path] = Path.home() / ".anolis-client"
     api_url: str | None = "https://anolis.api.org/process-api/v1"
     auth: AuthConfig = NoAuthConfig()
+    extra_job_result_openers = [AnolisJobResultsOpener]
 
 
 def create_client(**config: Any) -> Client:
@@ -88,10 +91,25 @@ for proprietary login or `auth.token_url` for OAuth 2.0. Credentials can be supp
 later through partial overrides or login. Reusing `client.config` keeps a resolved
 snapshot; see [configuration reuse](configuration.md#reusing-resolved-configuration).
 
-Each subclass receives a copy of its parent's `return_type_map` at class creation;
-later changes are isolated. Job-result opener registries are cached per concrete
-class and start with the built-in openers. Register custom openers on each class
-that needs them; parent registrations are not inherited by its subclasses.
+Define custom `JobResultOpener` subclasses in the application's `opener` module
+and list them in `extra_job_result_openers`. This attribute has type
+`ClassVar[Iterable[type[JobResultOpener]]]`: its entries are opener classes.
+Lists, tuples, and generators are accepted and captured as a tuple at class
+creation. Subclasses can assign the attribute without repeating its annotation.
+It is excluded from settings and saved profiles.
+
+Each subclass receives a copy of its parent's `return_type_map` and, unless
+overridden, its `extra_job_result_openers` at class creation. Declaring a new
+iterable replaces the inherited extras; an empty iterable keeps only built-ins.
+To extend the parent's declaration, use
+`extra_job_result_openers = [*ParentConfig.extra_job_result_openers, MyOpener]`.
+
+Job-result opener registries are cached per concrete class. On first use, they
+register the built-ins followed by the declared extras in iteration order. The
+last registered opener is tried first, so custom openers take priority over
+built-ins. For later changes, use `MyConfig.register_job_result_opener(...)` and
+its returned unregister callback. These runtime registrations affect only that
+class and are not inherited by subclasses.
 
 ## CLI customisation
 

@@ -8,6 +8,8 @@
   result extensions no longer require mutating global `ClientConfig` defaults.
   Configuration sources resolve once and consistently across Python clients,
   CLI commands, and launched apps.
+  Custom job result opener classes can be declared statically through the
+  subclass's `extra_job_result_openers` iterable.
 
 - **Cuiman** now shares one authentication lifecycle across the Python API, CLI,
   and launched app. Persistent Authlib HTTPX2 clients handle OAuth2 password and
