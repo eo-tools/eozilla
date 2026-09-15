@@ -3,6 +3,11 @@
 The `cuiman` tool is a shell client for any web services 
 compliant with OGC API - Processes, Part 1: Core Standard.
 
+Applications can create a branded CLI with
+`new_cli(name="my-client", config_type=MyClientConfig)`. The selected
+configuration type is used consistently by `configure`, `login`, `logout`, and
+all request commands; it does not alter the default `cuiman` CLI's settings.
+
 
 `cuiman` can be used to get the available processes, get process 
 details, execute processes, and manage the jobs originating from the latter. It 
@@ -40,7 +45,7 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 **Commands**:
 
 * `configure`: Configure the client tool.
-* `login`: Log in and store the required credentials...
+* `login`: Reuse or obtain credentials and save them...
 * `logout`: Remove the locally stored credentials for...
 * `generate-client`: Generate the Python code for...
 * `list-processes`: List available processes.
@@ -58,6 +63,9 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 
 Configure the client tool.
 
+Prompts require an interactive terminal. In notebook shell commands or
+other noninteractive environments, supply all configuration options.
+
 **Usage**:
 
 ```console
@@ -74,14 +82,14 @@ $ cuiman configure [OPTIONS]
 * `--client-id TEXT`: OAuth2 or OIDC client ID.
 * `--issuer-url TEXT`: The OpenID Connect issuer URL.
 * `--scope TEXT`: An OpenID Connect resource scope; repeat for multiple scopes.
-* `--use-bearer`: Use bearer token?
-* `--access-token-header TEXT`: Access token header
+* `--access-token-header TEXT`: Custom header for static/proprietary tokens; empty means Bearer.
+* `--api-key-header TEXT`: Header used for API-key authentication.
 * `-c, --config PATH`: Client configuration file.
 * `--help`: Show this message and exit.
 
 ## `cuiman login`
 
-Log in and store the required credentials in the OS keyring.
+Reuse or obtain credentials and save them in the OS keyring.
 
 **Usage**:
 
@@ -93,6 +101,8 @@ $ cuiman login [OPTIONS]
 
 * `-c, --config PATH`: Client configuration file.
 * `--no-browser`: Print the OIDC authorization URL instead of opening a browser.
+* `--force`: Sign in again, allowing credential prompts.
+* `--no-input`: Never prompt or open a browser; use supplied credentials.
 * `--help`: Show this message and exit.
 
 ## `cuiman logout`

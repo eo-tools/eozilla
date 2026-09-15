@@ -12,7 +12,6 @@ from unittest.mock import patch
 import pytest
 
 from cuiman import ClientConfig
-from cuiman.api.auth import OAuth2AuthConfig, TokenResult
 from cuiman.api.client import Client
 from gavicore.models import (
     ApiError,
@@ -83,74 +82,26 @@ class ClientTest(TestCase):
             patch.object(
                 ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
             ),
-            patch("cuiman.api.client_mixin.HttpxTransport") as httpx_transport_cls,
+            patch(
+                "cuiman.api.client_mixin_base.Httpx2Transport"
+            ) as httpx2_transport_cls,
         ):
-            transport = httpx_transport_cls.return_value
+            transport = httpx2_transport_cls.return_value
 
             client = Client(
                 api_url="https://acme.ogc.org/api",
                 _debug=True,
             )
-            httpx_transport_cls.assert_not_called()
+            httpx2_transport_cls.assert_not_called()
             client._get_transport()
 
         self.assertIs(client._transport, transport)
-        httpx_transport_cls.assert_called_once()
-        _, kwargs = httpx_transport_cls.call_args
+        httpx2_transport_cls.assert_called_once()
+        _, kwargs = httpx2_transport_cls.call_args
         self.assertEqual("https://acme.ogc.org/api/", kwargs["api_url"])
-        self.assertEqual({}, kwargs["headers"])
         self.assertIs(return_type_map, kwargs["return_type_map"])
-        self.assertIsNone(kwargs["token_refresher"])
+        self.assertEqual(client._request, kwargs["sync_request"])
         self.assertTrue(kwargs["debug"])
-
-    def test_default_transport_receives_oauth2_auth_and_refresh_callback(self):
-        old_access = "old-access-token"
-        old_refresh = "old-refresh-token"
-        new_access = "new-access-token"
-        new_refresh = "new-refresh-token"
-
-        with (
-            patch.object(
-                ClientConfig, "default_path", Path(os.devnull, ".eozilla", "config")
-            ),
-            patch("cuiman.api.client_mixin.HttpxTransport") as httpx_transport_cls,
-        ):
-            client = Client(
-                api_url="https://acme.ogc.org/api",
-                auth=OAuth2AuthConfig(
-                    token_url="https://identity.acme.org/token",
-                    username="user",
-                    password="password",
-                    access_token=old_access,
-                    refresh_token=old_refresh,
-                ),
-            )
-            client._get_transport()
-
-        _, kwargs = httpx_transport_cls.call_args
-        self.assertEqual(
-            {"Authorization": f"Bearer {old_access}"},
-            kwargs["headers"],
-        )
-        token_refresher = kwargs["token_refresher"]
-        self.assertIsNotNone(token_refresher)
-
-        with patch(
-            "cuiman.api.auth.session.renew_oauth2_tokens",
-            return_value=TokenResult(
-                access_token=new_access,
-                refresh_token=new_refresh,
-            ),
-        ) as renew_oauth2_tokens:
-            refreshed_headers = token_refresher()
-
-        renew_oauth2_tokens.assert_called_once_with(client.config.auth)
-        self.assertEqual(
-            {"Authorization": f"Bearer {new_access}"},
-            refreshed_headers,
-        )
-        self.assertEqual(new_access, client.config.auth.access_token)
-        self.assertEqual(new_refresh, client.config.auth.refresh_token)
 
     def test_transport_args_for_all_endpoints(self):
         request = ProcessRequest(inputs={"bbox": [10, 20, 30, 40]}, outputs={})
@@ -285,15 +236,17 @@ class ClientTest(TestCase):
                     args.error_types,
                 )
 
-    def test_custom_transport_is_used_without_creating_httpx_transport(self):
-        with patch("cuiman.api.client_mixin.HttpxTransport") as httpx_transport_cls:
+    def test_custom_transport_is_used_without_creating_httpx2_transport(self):
+        with patch(
+            "cuiman.api.client_mixin_base.Httpx2Transport"
+        ) as httpx2_transport_cls:
             client = Client(
                 api_url="https://acme.ogc.org/api",
                 _transport=self.transport,
             )
 
         self.assertIs(client._transport, self.transport)
-        httpx_transport_cls.assert_not_called()
+        httpx2_transport_cls.assert_not_called()
 
     def test_close_without_transport_is_noop(self):
         self.client._transport = None
