@@ -20,8 +20,7 @@ The initial launch URL deliberately has only one Cuiman-specific value::
 The code is short-lived and consumed once.  The cookie selects an in-memory
 session for the life of the Cuiman process. The replacement marker only
 selects Cuiman mode on reload; it grants no access by itself. The session
-contains only the server-side upstream headers; the proxy adds them when it
-forwards a request.
+contains no upstream credentials; every request uses the owning Python client.
 """
 
 from __future__ import annotations
@@ -29,14 +28,13 @@ from __future__ import annotations
 import secrets
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Awaitable, Callable
 from urllib.parse import quote, urlsplit, urlunsplit
 
-import httpx
+import httpx2
 import remotestate as rs
 from fastapi import FastAPI, HTTPException, Request, Response, status
 
-from cuiman.api.auth.session import resolve_auth_headers_async
 from cuiman.api.config import ClientConfig
 
 LAUNCH_QUERY_PARAM = "launch"
@@ -86,13 +84,6 @@ class _LaunchCode:
     created_at: float
 
 
-@dataclass
-class _AppSession:
-    """Server-only state selected by the browser's HttpOnly cookie."""
-
-    headers: dict[str, str]
-
-
 class LaunchedAppService(rs.Service[Any]):
     """Expose Cuiman's secure app-launch endpoints on a RemoteState server.
 
@@ -102,13 +93,22 @@ class LaunchedAppService(rs.Service[Any]):
     the browser session as well.
     """
 
-    def __init__(self, store: rs.Store[Any], client_config: ClientConfig) -> None:
+    def __init__(
+        self,
+        store: rs.Store[Any],
+        client_config: ClientConfig,
+        *,
+        prepare: Callable[[], Awaitable[None]],
+        request: Callable[..., Awaitable[httpx2.Response]],
+    ) -> None:
         super().__init__(store)
         if not client_config.api_url:
             raise ValueError("Required setting 'api_url' not configured")
         self._client_config = client_config
         self._launch_codes: dict[str, _LaunchCode] = {}
-        self._sessions: dict[str, _AppSession] = {}
+        self._sessions: set[str] = set()
+        self._prepare = prepare
+        self._request = request
 
     def create_launch_code(self) -> str:
         """Create a short-lived, single-use browser bootstrap code.
@@ -146,10 +146,16 @@ class LaunchedAppService(rs.Service[Any]):
             except ValueError as error:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST) from error
             self._require_valid_launch_code(launch_code)
-            headers = await self._resolve_auth_headers()
+            try:
+                await self._prepare()
+            except Exception as error:
+                raise HTTPException(
+                    status_code=502,
+                    detail="Unable to authenticate with the processing service.",
+                ) from error
             self._consume_launch_code(launch_code)
             session_id = secrets.token_urlsafe(32)
-            self._sessions[session_id] = _AppSession(headers=headers)
+            self._sessions.add(session_id)
             response.set_cookie(
                 SESSION_COOKIE_NAME,
                 session_id,
@@ -173,9 +179,9 @@ class LaunchedAppService(rs.Service[Any]):
             """Forward a fixed processing-service path using session credentials."""
             if request.method in _UNSAFE_METHODS:
                 _require_same_origin(request)
-            session = self._get_session(request)
+            self._require_session(request)
             _reject_path_traversal(path)
-            return await self._proxy_request(request, path, session)
+            return await self._proxy_request(request, path)
 
     def _consume_launch_code(self, launch_code: str) -> None:
         """Atomically invalidate an otherwise valid launch code."""
@@ -198,60 +204,23 @@ class LaunchedAppService(rs.Service[Any]):
             if launch.created_at < cutoff:
                 del self._launch_codes[launch_code]
 
-    async def _resolve_auth_headers(self) -> dict[str, str]:
-        """Resolve configured credentials without ever serializing them to the app.
-
-        The first browser exchange uses the same non-interactive preparation
-        as Python API calls. It can exchange configured credentials or refresh
-        an OAuth2/OIDC token, and stores only the resulting request headers in
-        the server session. Interactive login must happen explicitly.
-        """
-        return await resolve_auth_headers_async(self._client_config.auth)
-
-    def _get_session(self, request: Request) -> _AppSession:
-        """Look up the server-only session selected by the HttpOnly cookie."""
-        session_id = request.cookies.get(SESSION_COOKIE_NAME)
-        session = self._sessions.get(session_id) if session_id else None
-        if session is None:
+    def _require_session(self, request: Request) -> None:
+        if request.cookies.get(SESSION_COOKIE_NAME) not in self._sessions:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-        return session
 
     async def _proxy_request(
         self,
         request: Request,
         path: str,
-        session: _AppSession,
     ) -> Response:
-        """Forward once, refreshing OAuth credentials and retrying one 401 response."""
+        """Forward once through the client's authenticated requester."""
         try:
-            upstream_response = await self._send_upstream(
-                request, path, session.headers
-            )
-        except httpx.RequestError as error:
+            upstream_response = await self._send_upstream(request, path)
+        except Exception as error:
             raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Unable to reach the configured processing service.",
+                status_code=502,
+                detail="Unable to reach or authenticate with the processing service.",
             ) from error
-        if upstream_response.status_code == status.HTTP_401_UNAUTHORIZED:
-            refresher = self._client_config._make_async_token_refresher()
-            if refresher is not None:
-                try:
-                    refreshed_headers = await refresher()
-                except Exception as error:
-                    raise HTTPException(
-                        status_code=status.HTTP_502_BAD_GATEWAY,
-                        detail="Unable to refresh processing-service credentials.",
-                    ) from error
-                session.headers = refreshed_headers
-                try:
-                    upstream_response = await self._send_upstream(
-                        request, path, session.headers
-                    )
-                except httpx.RequestError as error:
-                    raise HTTPException(
-                        status_code=status.HTTP_502_BAD_GATEWAY,
-                        detail="Unable to reach the configured processing service.",
-                    ) from error
         return Response(
             content=upstream_response.content,
             status_code=upstream_response.status_code,
@@ -266,8 +235,7 @@ class LaunchedAppService(rs.Service[Any]):
         self,
         request: Request,
         path: str,
-        auth_headers: dict[str, str],
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """Send a request to the fixed upstream API without trusting client auth.
 
         The browser may choose a processing API path, method, body, and query
@@ -279,15 +247,14 @@ class LaunchedAppService(rs.Service[Any]):
             for name in _FORWARDED_REQUEST_HEADERS
             if name in request.headers
         }
-        headers.update(auth_headers)
-        async with httpx.AsyncClient(follow_redirects=False) as client:
-            return await client.request(
-                request.method,
-                _get_upstream_url(self._client_config.api_url, path),
-                params=list(request.query_params.multi_items()),
-                content=await request.body(),
-                headers=headers,
-            )
+        return await self._request(
+            request.method,
+            _get_upstream_url(self._client_config.api_url, path),
+            params=list(request.query_params.multi_items()),
+            content=await request.body(),
+            headers=headers,
+            follow_redirects=False,
+        )
 
 
 def _get_launch_code(value: object) -> str:
@@ -356,13 +323,14 @@ def _get_upstream_url(api_url: str | None, path: str) -> str:
     Parsing and reconstructing the URL keeps the configured origin and base
     path fixed. Path traversal segments are rejected before this function is
     called. Query strings and fragments in configuration are deliberately not
-    inherited; request query parameters are forwarded separately.
+    inherited; request query parameters are forwarded separately. An empty
+    path retains the trailing slash, matching the Python client's landing page.
     """
     assert api_url is not None
     parsed_api_url = urlsplit(api_url)
     encoded_path = quote(path, safe="/")
     base_path = parsed_api_url.path.rstrip("/")
-    upstream_path = f"{base_path}/{encoded_path}" if encoded_path else base_path or "/"
+    upstream_path = f"{base_path}/{encoded_path}"
     return urlunsplit(
         (
             parsed_api_url.scheme,

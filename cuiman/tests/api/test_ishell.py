@@ -47,7 +47,7 @@ class IShellTest(TestCase):
             exc,
             None,
         )
-        self.assertEqual((None, None, None), result)
+        self.assertIsNone(result)
 
     def test_exception_handler_with_value_error(self):
         exc = ValueError("Too large")
@@ -58,6 +58,30 @@ class IShellTest(TestCase):
             None,
         )
         self.assertEqual(None, result)
+
+
+def test_client_error_handler_survives_ipython_validation(monkeypatch, capsys):
+    from cuiman.api.ishell import _register_exception_handler
+
+    shell = InteractiveShell.instance()
+    monkeypatch.setattr(shell, "CustomTB", shell.CustomTB)
+    monkeypatch.setattr(shell, "custom_exceptions", shell.custom_exceptions)
+    exc = ClientError(
+        "Upstream token request failed",
+        ApiError(type="error", title="Not Found", status=404),
+    )
+    with patch("IPython.display.display") as display:
+        _register_exception_handler()
+        for _ in range(2):
+            assert shell.CustomTB(type(exc), exc, None) == []
+            assert shell.custom_exceptions == (ClientError,)
+        assert display.call_count == 2
+        assert display.call_args.args[0].data == exc.api_error.model_dump(
+            mode="json", exclude_none=True
+        )
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
 
 
 def test_ishell_registers_handler_when_shell_already_initialized():
