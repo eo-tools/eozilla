@@ -398,6 +398,37 @@ class AsyncClient(ClientAppMixin, AsyncClientMixin):
         w: str | None = None,
         **kwargs: Any,
     ) -> Optional[ProcessSummary]:
+        """Deploy a new process to a server supporting
+        OGC API - Processes — Part 2 (DRU) by providing a process
+        description in a supported format.
+
+        Depending on the service implementation,
+        the server may not return a response body.
+
+        For more information, see
+        [OGC API - Processes — Part 2 (DRU)](https://docs.ogc.org/DRAFTS/20-044.html#deploy).
+
+        Args:
+        content: EOAP to deploy as a raw bytes object.
+        encoding: Format of the EOAP to deploy.
+        w: Optionally point to the workflow identifier for deploying a
+            CWL containing multiple workflow definitions.
+        
+        Returns:
+        ProcessSummary: Process summary of newly added process, when the server
+            returns such an object.
+        
+        Raises:
+        ClientError: If the call to the web service fails
+            with a status code != `2xx`.
+
+            - `403`: Process exists and isn't mutable.
+            - `405`: The server does not allow this method,
+            i.e. DRU is not implemented
+            - `409`: Process exists and is mutable.
+            - `415`: Unsupported media type for supplied process.
+            - `500`: A server error occurred.
+        """
         kwargs["content"] = content
 
         try:
@@ -431,6 +462,38 @@ class AsyncClient(ClientAppMixin, AsyncClientMixin):
         w: str | None = None,
         **kwargs: Any,
     ) -> Optional[ProcessSummary]:
+        """Replace an exisitng and mutable process by providing a new
+        process description in a supported format.
+
+        Depending on the service implementation,
+        the server may not return a response body.
+
+        For more information, see
+        [OGC API - Processes — Part 2 (DRU)](https://docs.ogc.org/DRAFTS/20-044.html#replace).
+
+        Args:
+          process_id: Unique identifier of registered process
+            that is to be replaced.
+          content: EOAP to deploy as a raw bytes object.
+          encoding: Format of the EOAP to deploy.
+          w: Optionally point to the workflow identifier for deploying a
+             CWL containing multiple workflow definitions.
+        
+        Returns:
+          ProcessSummary: Process summary of newly added process, when the server
+            returns such an object.
+        
+        Raises:
+          ClientError: If the call to the web service fails
+            with a status code != `2xx`.
+
+            - `403`: Process exists and isn't mutable.
+            - `405`: The server does not allow this method,
+              i.e. DRU is not implemented
+            - `409`: Process exists and is mutable.
+            - `415`: Unsupported media type for supplied process.
+            - `500`: A server error occurred.
+        """
         kwargs["content"] = content
 
         try:
@@ -460,6 +523,26 @@ class AsyncClient(ClientAppMixin, AsyncClientMixin):
             del self._transport.headers["Content-Type"]  # type: ignore[attr-defined]
 
     async def undeploy_process(self, process_id: str, **kwargs: Any) -> None:
+        """Remove an exisitng and mutable process by providing
+        its process id.
+
+        For more information, see
+        [OGC API - Processes — Part 2 (DRU)](https://docs.ogc.org/DRAFTS/20-044.html#undeploy).
+
+        Args:
+            process_id: Unique identifier of registered process
+                that is to be replaced.
+        
+        Raises:
+          ClientError: If the call to the web service fails
+            with a status code != `2xx`.
+
+            - `403`: The requested process is not mutable
+            - `404`: The requested URI was not found.
+            - `405`: The server does not allow this method,
+              i.e. DRU is not implemented
+            - `500`: A server error occurred.
+        """
         return await self._transport.async_call(
             TransportArgs(
                 path="/processes/{processId}",
@@ -479,6 +562,26 @@ class AsyncClient(ClientAppMixin, AsyncClientMixin):
     async def get_formal_description(
         self, process_id: str, **kwargs: Any
     ) -> OgcApplicationPackage:
+        """Retrieve a formal description of a previously deployed process
+        via the deploy operation.
+        The returned description relates to the most recent deployment.
+
+        For more information, see
+        [OGC API - Processes — Part 2 (DRU)](https://docs.ogc.org/DRAFTS/20-044.html#application-package-retrieval-operation).
+
+        Args:
+            process_id: Unique identifier of registered process.
+        
+        Raises:
+          ClientError: If the call to the web service fails
+            with a status code != `2xx`.
+
+            - `403`: The requested process is not mutable
+            - `404`: The requested process was not found.
+            - `405`: The server does not allow this method,
+              i.e. DRU is not implemented
+            - `500`: A server error occurred.
+        """
         return await self._transport.async_call(
             TransportArgs(
                 path="/processes/{processId}/package",
