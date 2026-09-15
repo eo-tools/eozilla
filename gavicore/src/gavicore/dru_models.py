@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal, TypeAlias
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .models import Link, OgcBaseModel, ProcessDescription
 
@@ -24,6 +24,7 @@ class OgcApplicationPackage(BaseModel):
 
     For more information, see: /req/ogcapppkg/schema
     """
+    model_config = ConfigDict(populate_by_name = True)
 
     process_description: OgcApplicationPackageProcessDescription | None = Field(
         None, alias="processDescription"

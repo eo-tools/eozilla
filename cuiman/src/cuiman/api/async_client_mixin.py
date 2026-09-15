@@ -5,9 +5,16 @@
 import asyncio
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
-from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
+from gavicore.dru_models import OgcApplicationPackage
+from gavicore.models import (
+    JobInfo,
+    JobResults,
+    JobStatus,
+    ProcessDescription,
+    ProcessSummary,
+)
 from gavicore.util.request import ExecutionRequest
 
 from .auth.session import resolve_auth_headers_async
@@ -96,6 +103,41 @@ class AsyncClientMixin(ABC):
 
     @abstractmethod
     async def get_job_results(self, job_id: str, **kwargs: Any) -> JobResults:
+        """Will be overridden by the actual client class."""
+
+    @abstractmethod
+    async def deploy_process(
+        self,
+        content: bytes,
+        encoding: Literal[
+            "application/cwl", "application/cwl+json", "application/cwl+yaml"
+        ],
+        w: str | None = None,
+        **kwargs: Any,
+    ) -> Optional[ProcessSummary]:
+        """Will be overridden by the actual client class."""
+
+    @abstractmethod
+    async def replace_process(
+        self,
+        process_id: str,
+        content: bytes,
+        encoding: Literal[
+            "application/cwl", "application/cwl+json", "application/cwl+yaml"
+        ],
+        w: str | None = None,
+        **kwargs: Any,
+    ) -> Optional[ProcessSummary]:
+        """Will be overridden by the actual client class."""
+
+    @abstractmethod
+    async def undeploy_process(self, process_id: str, **kwargs: Any) -> None:
+        """Will be overridden by the actual client class."""
+
+    @abstractmethod
+    async def get_formal_description(
+        self, process_id: str, **kwargs: Any
+    ) -> OgcApplicationPackage:
         """Will be overridden by the actual client class."""
 
     async def create_execution_request(

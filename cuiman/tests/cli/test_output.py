@@ -5,6 +5,7 @@
 from unittest import TestCase
 
 from cuiman.cli.output import OutputFormat, OutputRenderer, get_renderer
+from gavicore.dru_models import OgcApplicationPackage
 from gavicore.models import (
     JobInfo,
     JobList,
@@ -60,6 +61,13 @@ class OutputTest(TestCase):
                     "  min_val: 0\n"
                     "process_id: primes_between\n"
                 ),
+                "render_process_summary": ("id: ID-1\nversion: 1.0.0\n"),
+                "render_empty_process_summary": (""),
+                "render_application_package": (
+                    "executionUnit:\n"
+                    "  href: https://eoap.example.com/example.cwl\n"
+                    "  type: application/cwl+yaml\n"
+                ),
             },
             outputs,
         )
@@ -101,6 +109,13 @@ class OutputTest(TestCase):
                 "render_process_list_empty": "links: []\nprocesses: []\n",
                 "render_execution_request_valid": (
                     "inputs:\n  max_val: 20\n  min_val: 0\nprocess_id: primes_between\n"
+                ),
+                "render_process_summary": ("id: ID-1\nversion: 1.0.0\n"),
+                "render_empty_process_summary": (""),
+                "render_application_package": (
+                    "executionUnit:\n"
+                    "  href: https://eoap.example.com/example.cwl\n"
+                    "  type: application/cwl+yaml\n"
                 ),
             },
             outputs,
@@ -185,6 +200,18 @@ class OutputTest(TestCase):
                     '  "process_id": "primes_between"\n'
                     "}"
                 ),
+                "render_process_summary": (
+                    '{\n  "id": "ID-1",\n  "version": "1.0.0"\n}'
+                ),
+                "render_empty_process_summary": (""),
+                "render_application_package": (
+                    "{\n"
+                    '  "executionUnit": {\n'
+                    '    "href": "https://eoap.example.com/example.cwl",\n'
+                    '    "type": "application/cwl+yaml"\n'
+                    "  }\n"
+                    "}"
+                ),
             },
             outputs,
         )
@@ -252,5 +279,19 @@ def get_outputs(renderer: OutputRenderer) -> dict[str, str]:
         ),
         "render_job_results": renderer.render_job_results(
             JobResults(**{"return_value": [2, 3, 5, 7, 11, 13]})
+        ),
+        "render_process_summary": renderer.render_process_summary(
+            ProcessSummary(**{"id": "ID-1", "version": "1.0.0"})
+        ),
+        "render_empty_process_summary": renderer.render_process_summary(None),
+        "render_application_package": renderer.render_application_package(
+            OgcApplicationPackage(
+                **{
+                    "execution_unit": {
+                        "href": "https://eoap.example.com/example.cwl",
+                        "type": "application/cwl+yaml",
+                    }
+                }
+            )
         ),
     }

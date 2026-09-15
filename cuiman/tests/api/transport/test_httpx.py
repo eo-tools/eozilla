@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from types import NoneType
 from typing import Any, Callable
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import AsyncMock, MagicMock
@@ -98,6 +99,26 @@ class HttpxSyncTransportTest(TestCase):
             headers={"Authorization": "Bearer: wt8799aafe"},
         )
         self.assertIsInstance(result, ConformanceDeclaration)
+
+    def test_call_success_204(self):
+        transport = make_mocked_transport(204)
+        result = transport.call(
+            TransportArgs(
+                path="/processes/{processId}",
+                method="delete",
+                path_params={"processId": "process-id"},
+                return_types={"204": None},
+                error_types={"403": ApiError, "404": ApiError, "501": ApiError},
+            )
+        )
+        transport.sync_httpx.request.assert_called_once_with(
+            "DELETE",
+            "https://api.example.com/processes/process-id",
+            params={},
+            json=None,
+            headers={"Authorization": "Bearer: wt8799aafe"},
+        )
+        self.assertIsInstance(result, NoneType)
 
     def test_call_success_no_return_type(self):
         transport = make_mocked_transport(

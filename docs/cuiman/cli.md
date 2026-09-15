@@ -52,6 +52,10 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 * `get-job`: Get job details.
 * `dismiss-job`: Cancel a running or delete a finished job.
 * `get-job-results`: Get job results.
+* `deploy-process`: Deploy a new process encoded as an EOAP.
+* `replace-process`: Replace an existing mutable process encoded as an EOAP.
+* `undeploy-process`: Delete an existing mutable process.
+* `get-formal-description`:  Get the formal description of a mutable process.
 * `show-app`: Show the client app in a browser.
 
 ## `cuiman configure`
@@ -325,6 +329,88 @@ $ cuiman get-job-results [OPTIONS] JOB_ID
 **Arguments**:
 
 * `JOB_ID`: Job identifier.  [required]
+
+**Options**:
+
+* `-c, --config PATH`: Client configuration file.
+* `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
+* `--help`: Show this message and exit.
+
+## `cuiman deploy-process`
+
+Deploy a new process encoded as an EOAP.
+
+**Usage**:
+
+```console
+cuiman deploy-process [OPTIONS]
+```
+
+**Options**:
+
+* `-p, --path PATH`: Local path to EOAP to submit. [required]
+*  `--encoding [application/cwl|application/cwl+json|application/cwl+yaml]`: Encoding of EOAP to submit. [required]
+* `-w, --workflow-entrypoint TEXT`: Point to the workflow identifier for deploying a CWL containing multiple workflow definitions.
+* `-c, --config PATH`: Client configuration file.
+* `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
+* `--help`: Show this message and exit.
+
+## `cuiman replace-process`
+
+Replace an existing mutable process encoded as an EOAP.
+
+**Usage**:
+
+```console
+cuiman replace-process [OPTIONS] PROCESS_ID
+```
+
+**Arguments**:
+
+* `PROCESS_ID`: Process identifier. [required]
+
+**Options**:
+
+* `-p, --path PATH`: Local path to EOAP to submit. [required]
+*  `--encoding [application/cwl|application/cwl+json|application/cwl+yaml]`: Encoding of EOAP to submit. [required]
+* `-w, --workflow-entrypoint TEXT`: Point to the workflow identifier for deploying a CWL containing multiple workflow definitions.
+* `-c, --config PATH`: Client configuration file.
+* `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
+* `--help`: Show this message and exit.
+
+## `cuiman undeploy-process`
+
+Delete an existing mutable process.
+
+**Usage**:
+
+```console
+cuiman undeploy-process [OPTIONS] PROCESS_ID
+```
+
+**Arguments**:
+
+* `PROCESS_ID`: Process identifier. [required]
+
+**Options**:
+
+* `-c, --config PATH`: Client configuration file.
+* `-f, --format [simple|json|yaml]`: Output format.  [default: yaml]
+* `--help`: Show this message and exit.
+
+## `cuiman get-formal-description`
+
+Get the formal description of a mutable process.
+
+**Usage**:
+
+```console
+cuiman get-formal-description [OPTIONS] PROCESS_ID
+```
+
+**Arguments**:
+
+* `PROCESS_ID`: Process identifier. [required]
 
 **Options**:
 
