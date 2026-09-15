@@ -17,6 +17,7 @@ nav:
     - CLI Reference: appligator/cli.md
   - Cuiman:
     - Overview: cuiman/index.md
+    - Getting Started: cuiman/getting-started.md
     - Configuration: cuiman/configuration.md
     - Authentication: cuiman/authentication.md
     - Customization: cuiman/customization.md
