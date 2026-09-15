@@ -413,11 +413,11 @@ class AsyncClient(ClientAppMixin, AsyncClientMixin):
         encoding: Format of the EOAP to deploy.
         w: Optionally point to the workflow identifier for deploying a
             CWL containing multiple workflow definitions.
-        
+
         Returns:
         ProcessSummary: Process summary of newly added process, when the server
             returns such an object.
-        
+
         Raises:
         ClientError: If the call to the web service fails
             with a status code != `2xx`.
@@ -429,11 +429,12 @@ class AsyncClient(ClientAppMixin, AsyncClientMixin):
             - `415`: Unsupported media type for supplied process.
             - `500`: A server error occurred.
         """
+        transport = await self._get_transport()
         kwargs["content"] = content
 
         try:
-            self._transport.headers["Content-Type"] = encoding  # type: ignore[attr-defined]
-            return await self._transport.async_call(
+            transport.headers["Content-Type"] = encoding  # type: ignore[attr-defined]
+            return await transport.async_call(
                 TransportArgs(
                     path="/processes",
                     method="post",
@@ -450,7 +451,7 @@ class AsyncClient(ClientAppMixin, AsyncClientMixin):
                 )
             )
         finally:
-            del self._transport.headers["Content-Type"]  # type: ignore[attr-defined]
+            del transport.headers["Content-Type"]  # type: ignore[attr-defined]
 
     async def replace_process(
         self,
@@ -478,11 +479,11 @@ class AsyncClient(ClientAppMixin, AsyncClientMixin):
           encoding: Format of the EOAP to deploy.
           w: Optionally point to the workflow identifier for deploying a
              CWL containing multiple workflow definitions.
-        
+
         Returns:
           ProcessSummary: Process summary of newly added process, when the server
             returns such an object.
-        
+
         Raises:
           ClientError: If the call to the web service fails
             with a status code != `2xx`.
@@ -494,11 +495,12 @@ class AsyncClient(ClientAppMixin, AsyncClientMixin):
             - `415`: Unsupported media type for supplied process.
             - `500`: A server error occurred.
         """
+        transport = await self._get_transport()
         kwargs["content"] = content
 
         try:
-            self._transport.headers["Content-Type"] = encoding  # type: ignore[attr-defined]
-            return await self._transport.async_call(
+            transport.headers["Content-Type"] = encoding  # type: ignore[attr-defined]
+            return await transport.async_call(
                 TransportArgs(
                     path="/processes/{processId}",
                     method="put",
@@ -520,7 +522,7 @@ class AsyncClient(ClientAppMixin, AsyncClientMixin):
                 )
             )
         finally:
-            del self._transport.headers["Content-Type"]  # type: ignore[attr-defined]
+            del transport.headers["Content-Type"]  # type: ignore[attr-defined]
 
     async def undeploy_process(self, process_id: str, **kwargs: Any) -> None:
         """Remove an exisitng and mutable process by providing
@@ -532,7 +534,7 @@ class AsyncClient(ClientAppMixin, AsyncClientMixin):
         Args:
             process_id: Unique identifier of registered process
                 that is to be replaced.
-        
+
         Raises:
           ClientError: If the call to the web service fails
             with a status code != `2xx`.
@@ -543,7 +545,8 @@ class AsyncClient(ClientAppMixin, AsyncClientMixin):
               i.e. DRU is not implemented
             - `500`: A server error occurred.
         """
-        return await self._transport.async_call(
+        transport = await self._get_transport()
+        return await transport.async_call(
             TransportArgs(
                 path="/processes/{processId}",
                 method="delete",
@@ -571,7 +574,7 @@ class AsyncClient(ClientAppMixin, AsyncClientMixin):
 
         Args:
             process_id: Unique identifier of registered process.
-        
+
         Raises:
           ClientError: If the call to the web service fails
             with a status code != `2xx`.
@@ -582,7 +585,8 @@ class AsyncClient(ClientAppMixin, AsyncClientMixin):
               i.e. DRU is not implemented
             - `500`: A server error occurred.
         """
-        return await self._transport.async_call(
+        transport = await self._get_transport()
+        return await transport.async_call(
             TransportArgs(
                 path="/processes/{processId}/package",
                 method="get",
