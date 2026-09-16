@@ -56,6 +56,8 @@
 
 - Added missing ipython dependency for cuiman. (#188)
 
+- Fixed Mermaid diagram rendering in the markdown documentation.
+
 ### Other changes
 
 - Updated installation instructions. (#189)
