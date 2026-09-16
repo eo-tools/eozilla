@@ -2,6 +2,12 @@
 
 ### Enhancements
 
+- **Documentation** now provides maintained Cuiman API, App, CLI, and result
+  opener guides with reusable, tested examples and static screenshots. Examples
+  follow the current authentication, App, and built-in opener interfaces. The
+  strict MkDocs build no longer copies or renders notebooks; original notebooks
+  remain available for independent exploration.
+
 - **Cuiman** applications can now select an isolated `ClientConfig` namespace
   through `Client`, `AsyncClient`, and `new_cli(config_type=...)`. Application
   field defaults, profile paths, schemas, dotenv/environment settings, and

@@ -40,7 +40,7 @@ class ClientAppMixin(ABC):
 
         The app connects to this client's API configuration, renders the app GUI,
         and returns an object that provides the serve result and a shared
-        [app state][cuiman.app.AppState], which you can interact with.
+        [App][cuiman.app.App] state, which you can interact with.
 
         The app state currently only manages the process requests being
         edited and executed by a user. The requests are a mapping from process IDs

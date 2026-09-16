@@ -16,12 +16,12 @@ class JobResultOpener(ABC):
     """Abstract base class for pluggable job result openers.
 
     An opener implementation is free to use the information
-    in the [context object](JobResultOpenContext) `ctx` passed to the
-    methods [accept_job_result()][accept_job_result]
-    and [open_job_result()][open_job_result].
+    in the [context object][cuiman.api.opener.JobResultOpenContext] `ctx` passed to
+    [accept_job_result()][cuiman.api.opener.JobResultOpener.accept_job_result]
+    and [open_job_result()][cuiman.api.opener.JobResultOpener.open_job_result].
     However, if `data_type` or `output_name` are provided, an
     opener MUST be able to deal with them,
-    otherwise [accept_job_result()][accept_job_result]
+    otherwise [accept_job_result()][cuiman.api.opener.JobResultOpener.accept_job_result]
     should return `False`.
     """
 

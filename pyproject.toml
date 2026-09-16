@@ -56,14 +56,12 @@ tomlkit = "*"  # to sync versions
 mkdocs = "==1.6.1"
 mkdocs-autorefs = ">=1.4.3,<1.5"
 mkdocs-get-deps = ">=0.2,<0.3"
-mkdocs-jupyter = ">=0.25.1,<0.26"
 mkdocs-material = ">=9.7.1,<9.8"
 mkdocs-material-extensions = ">=1.3.1,<1.4"
 mkdocstrings = ">=1.0.0,<1.1"
 mkdocstrings-python = ">=2.0.1,<2.1"
-nbformat = ">=5.10.4,<5.11"
 pygments = ">=2.19,<2.20"
-# For mermaid diagrams
+# Markdown extensions, including Mermaid fences and reusable snippets
 pymdown-extensions = ">=10.20,<10.21"
 anaconda-client = ">=1.13.0,<2"
 graphviz = ">=13.1.2,<14"
@@ -109,6 +107,9 @@ known_first_party = [
 [tool.black]
 line-length = 88
 
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
 [tool.ruff]
 include = [
     "appligator/**/*.py",
@@ -120,6 +121,7 @@ include = [
     "procodile/**/*.py",
     "procodile-example/**/*.py",
     "tools/**/*.py",
+    "examples/guides/**/*.py",
 ]
 
 [tool.ruff.lint]
@@ -182,7 +184,7 @@ test-wraptile = "pytest wraptile/tests"
 cov-report-html = "coverage html -d .cov-report && coverage report"
 cov-report-xml = "coverage xml -o coverage.xml && coverage report"
 cov-appligator = "pytest --cov appligator/src/appligator --cov-report= --cov-append appligator/tests"
-cov-cuiman = "pytest --cov cuiman/src/cuiman --cov-report= --cov-append cuiman/tests"
+cov-cuiman = "pytest --cov cuiman/src/cuiman --cov examples/guides/cuiman --cov-report= --cov-append cuiman/tests"
 cov-eozilla = "pytest --cov eozilla/src/eozilla --cov-report= --cov-append eozilla/tests"
 cov-gavicore = "pytest --cov gavicore/src/gavicore --cov-report= --cov-append gavicore/tests"
 cov-procodile = "pytest --cov procodile/src/procodile --cov-report= --cov-append procodile/tests"
@@ -194,6 +196,8 @@ check-eozilla = "ruff check eozilla/src"
 check-gavicore = "ruff check gavicore/src"
 check-procodile = "ruff check procodile/src"
 check-wraptile = "ruff check wraptile/src"
+check-examples = "ruff check examples/guides"
+check-example-format = "ruff format --check examples/guides"
 typecheck = "mypy ."
 gen-server = "python -m tools.gen_server"
 gen-client = "python -m tools.gen_client"
@@ -203,7 +207,7 @@ sync-versions = "python -m tools.sync_versions"
 jl = "jupyter-lab"
 serve = "wraptile run -- wraptile.services.local.testing:service"
 serve-docs = "mkdocs serve"
-build-docs = "mkdocs build"
+build-docs = "mkdocs build --strict"
 
 [tool.pixi.tasks.tests]
 depends-on = [
@@ -244,6 +248,8 @@ depends-on = [
     "check-gavicore",
     "check-procodile",
     "check-wraptile",
+    "check-examples",
+    "check-example-format",
     "typecheck"
 ]
 

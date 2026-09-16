@@ -34,6 +34,8 @@ client.show_app()
 
 ## Further Reading
 
+- [Cuiman App guide](../cuiman/guides/app.md) walks through launching the App,
+  running a process, and updating its inputs from a notebook.
 - [Service providers and services](service-provider.md) explains connection and
   authentication behavior.
 - [Schema forms](schema-form.md) documents how process schemas are rendered as
