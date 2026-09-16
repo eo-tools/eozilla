@@ -73,6 +73,8 @@
 
 - Added missing ipython dependency for cuiman. (#188)
 
+- Fixed Mermaid diagram rendering in the markdown documentation.
+
 ### Other changes
 
 - **Cuiman** makes a breaking authentication configuration and helper-API change.
