@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from gavicore.dru_models import OgcApplicationPackage
 from gavicore.models import (
+    ApiError,
     JobInfo,
     JobResults,
     JobStatus,
@@ -26,7 +27,7 @@ from .defaults import (
 from .exceptions import ClientError, ClientWarning
 from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
-from .transport import AsyncTransport
+from .transport import AsyncTransport, TransportArgs
 from .transport.httpx import HttpxTransport
 
 if TYPE_CHECKING:
@@ -103,41 +104,6 @@ class AsyncClientMixin(ABC):
 
     @abstractmethod
     async def get_job_results(self, job_id: str, **kwargs: Any) -> JobResults:
-        """Will be overridden by the actual client class."""
-
-    @abstractmethod
-    async def deploy_process(
-        self,
-        content: bytes,
-        encoding: Literal[
-            "application/cwl", "application/cwl+json", "application/cwl+yaml"
-        ],
-        w: str | None = None,
-        **kwargs: Any,
-    ) -> Optional[ProcessSummary]:
-        """Will be overridden by the actual client class."""
-
-    @abstractmethod
-    async def replace_process(
-        self,
-        process_id: str,
-        content: bytes,
-        encoding: Literal[
-            "application/cwl", "application/cwl+json", "application/cwl+yaml"
-        ],
-        w: str | None = None,
-        **kwargs: Any,
-    ) -> Optional[ProcessSummary]:
-        """Will be overridden by the actual client class."""
-
-    @abstractmethod
-    async def undeploy_process(self, process_id: str, **kwargs: Any) -> None:
-        """Will be overridden by the actual client class."""
-
-    @abstractmethod
-    async def get_formal_description(
-        self, process_id: str, **kwargs: Any
-    ) -> OgcApplicationPackage:
         """Will be overridden by the actual client class."""
 
     async def create_execution_request(
@@ -240,3 +206,216 @@ class AsyncClientMixin(ABC):
         )
         opener_registry = self.config.get_job_result_opener_registry()
         return await open_job_result(ctx, *opener_registry.opener_types)
+
+    async def deploy_process(
+        self,
+        content: bytes,
+        encoding: Literal[
+            "application/cwl", "application/cwl+json", "application/cwl+yaml"
+        ],
+        w: str | None = None,
+        **kwargs: Any,
+    ) -> Optional[ProcessSummary]:
+        """Deploy a new process to a server supporting
+        OGC API - Processes — Part 2 (DRU) by providing a process
+        description in a supported format.
+
+        Depending on the service implementation,
+        the server may not return a response body.
+
+        For more information, see
+        [OGC API - Processes — Part 2 (DRU)](https://docs.ogc.org/DRAFTS/20-044.html#deploy).
+
+        Args:
+        content: EOAP to deploy as a raw bytes object.
+        encoding: Format of the EOAP to deploy.
+        w: Optionally point to the workflow identifier for deploying a
+            CWL containing multiple workflow definitions.
+
+        Returns:
+        ProcessSummary: Process summary of newly added process, when the server
+            returns such an object.
+
+        Raises:
+        ClientError: If the call to the web service fails
+            with a status code != `2xx`.
+
+            - `403`: Process exists and isn't mutable.
+            - `405`: The server does not allow this method,
+            i.e. DRU is not implemented
+            - `409`: Process exists and is mutable.
+            - `415`: Unsupported media type for supplied process.
+            - `500`: A server error occurred.
+        """
+        transport = await self._get_transport()
+        kwargs["content"] = content
+
+        try:
+            transport.headers["Content-Type"] = encoding  # type: ignore[attr-defined]
+            return await transport.async_call(
+                TransportArgs(
+                    path="/processes",
+                    method="post",
+                    path_params={"w": w},
+                    return_types={"201": ProcessSummary, "202": None},
+                    error_types={
+                        "403": ApiError,
+                        "405": ApiError,
+                        "409": ApiError,
+                        "415": ApiError,
+                        "501": ApiError,
+                    },
+                    extra_kwargs=kwargs,
+                )
+            )
+        finally:
+            del transport.headers["Content-Type"]  # type: ignore[attr-defined]
+
+    async def replace_process(
+        self,
+        process_id: str,
+        content: bytes,
+        encoding: Literal[
+            "application/cwl", "application/cwl+json", "application/cwl+yaml"
+        ],
+        w: str | None = None,
+        **kwargs: Any,
+    ) -> Optional[ProcessSummary]:
+        """Replace an exisitng and mutable process by providing a new
+        process description in a supported format.
+
+        Depending on the service implementation,
+        the server may not return a response body.
+
+        For more information, see
+        [OGC API - Processes — Part 2 (DRU)](https://docs.ogc.org/DRAFTS/20-044.html#replace).
+
+        Args:
+          process_id: Unique identifier of registered process
+            that is to be replaced.
+          content: EOAP to deploy as a raw bytes object.
+          encoding: Format of the EOAP to deploy.
+          w: Optionally point to the workflow identifier for deploying a
+             CWL containing multiple workflow definitions.
+
+        Returns:
+          ProcessSummary: Process summary of newly added process, when the server
+            returns such an object.
+
+        Raises:
+          ClientError: If the call to the web service fails
+            with a status code != `2xx`.
+
+            - `403`: Process exists and isn't mutable.
+            - `405`: The server does not allow this method,
+              i.e. DRU is not implemented
+            - `409`: Process exists and is mutable.
+            - `415`: Unsupported media type for supplied process.
+            - `500`: A server error occurred.
+        """
+        transport = await self._get_transport()
+        kwargs["content"] = content
+
+        try:
+            transport.headers["Content-Type"] = encoding  # type: ignore[attr-defined]
+            return await transport.async_call(
+                TransportArgs(
+                    path="/processes/{processId}",
+                    method="put",
+                    path_params={"processId": process_id, "w": w},
+                    return_types={
+                        "200": ProcessSummary,
+                        "201": ProcessSummary,
+                        "202": ProcessSummary,
+                        "204": None,
+                    },
+                    error_types={
+                        "403": ApiError,
+                        "405": ApiError,
+                        "409": ApiError,
+                        "415": ApiError,
+                        "501": ApiError,
+                    },
+                    extra_kwargs=kwargs,
+                )
+            )
+        finally:
+            del transport.headers["Content-Type"]  # type: ignore[attr-defined]
+
+    async def undeploy_process(self, process_id: str, **kwargs: Any) -> None:
+        """Remove an exisitng and mutable process by providing
+        its process id.
+
+        For more information, see
+        [OGC API - Processes — Part 2 (DRU)](https://docs.ogc.org/DRAFTS/20-044.html#undeploy).
+
+        Args:
+            process_id: Unique identifier of registered process
+                that is to be replaced.
+
+        Raises:
+          ClientError: If the call to the web service fails
+            with a status code != `2xx`.
+
+            - `403`: The requested process is not mutable
+            - `404`: The requested URI was not found.
+            - `405`: The server does not allow this method,
+              i.e. DRU is not implemented
+            - `500`: A server error occurred.
+        """
+        transport = await self._get_transport()
+        return await transport.async_call(
+            TransportArgs(
+                path="/processes/{processId}",
+                method="delete",
+                path_params={"processId": process_id},
+                return_types={"204": None},
+                error_types={
+                    "403": ApiError,
+                    "404": ApiError,
+                    "405": ApiError,
+                    "501": ApiError,
+                },
+                extra_kwargs=kwargs,
+            )
+        )
+
+    async def get_formal_description(
+        self, process_id: str, **kwargs: Any
+    ) -> OgcApplicationPackage:
+        """Retrieve a formal description of a previously deployed process
+        via the deploy operation.
+        The returned description relates to the most recent deployment.
+
+        For more information, see
+        [OGC API - Processes — Part 2 (DRU)](https://docs.ogc.org/DRAFTS/20-044.html#application-package-retrieval-operation).
+
+        Args:
+            process_id: Unique identifier of registered process.
+
+        Raises:
+          ClientError: If the call to the web service fails
+            with a status code != `2xx`.
+
+            - `403`: The requested process is not mutable
+            - `404`: The requested process was not found.
+            - `405`: The server does not allow this method,
+              i.e. DRU is not implemented
+            - `500`: A server error occurred.
+        """
+        transport = await self._get_transport()
+        return await transport.async_call(
+            TransportArgs(
+                path="/processes/{processId}/package",
+                method="get",
+                path_params={"processId": process_id},
+                return_types={"200": OgcApplicationPackage},
+                error_types={
+                    "403": ApiError,
+                    "404": ApiError,
+                    "405": ApiError,
+                    "501": ApiError,
+                },
+                extra_kwargs=kwargs,
+            )
+        )

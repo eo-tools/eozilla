@@ -2,10 +2,15 @@
 
 ### Enhancements
 
-- **Cuiman** client now supports deploy, replace, undeploy operations as well
-  as querying the formal description of mutable processes for servers that
-  implement the relevant DRU enpoints. This comes with the restriction that
-  only EOAP-based encodings are supported as of now. (#219)
+- **Cuiman** client now supports submitting new processes to a running service
+  as defined by OGC API - Processes - Part 2: Deploy, Replace, Undeploy draft
+  specification. The addressed service must support the new endpoints and
+  HTTP methods defined in the draft specification, otherwise HTTP 405 will
+  be returned. Additionally, mutable processes can be replaced, deleted
+  and their formal description queried in the form of an OGC Application
+  Packages. This comes with the restriction that only processes encoded as
+  Earth Observation Applicatoin Packages (CWL + additional metadata) are
+  supported as of now. (#219)
 
 - **Cuiman** clients now prepare authentication and create their transport on
   the first API call. `Client.login()` and `AsyncClient.login()` allow explicit

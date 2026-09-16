@@ -24,7 +24,10 @@ class OgcApplicationPackage(BaseModel):
 
     For more information, see: /req/ogcapppkg/schema
     """
-    model_config = ConfigDict(populate_by_name = True)
+
+    # NOTE: Allowing field population by name and alias to enable default
+    #       argument creation within eozilla's `cuiman` module.
+    model_config = ConfigDict(populate_by_name=True)
 
     process_description: OgcApplicationPackageProcessDescription | None = Field(
         None, alias="processDescription"
