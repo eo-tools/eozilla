@@ -35,6 +35,7 @@ The design questions and proposed answers are:
 | How do existing openers learn which Assets exist? | A resolver enumerates resources; a selected resource is adapted into an opener context. |
 | How can Cuiman recognize STAC from other services? | Prefer process output schemas, then use media type hints and bounded structural inspection. |
 | Which STAC hierarchy levels should services return? | Prefer Item or ItemCollection; support Collection and Catalog with explicit traversal limits. |
+| Where should resource-specific opening and storage settings live? | Carry optional resource hints and access descriptions; apply caller overrides and obtain credentials at runtime. |
 
 The design must retain ordinary links, inline values, and qualified values. It
 must work without project-specific output names, URL patterns, or service IDs.
@@ -67,6 +68,15 @@ neither the file format nor a pixel/column type should be inferred from it.
 suitable preview action is available. This is a desirable enhancement; R1–R3 must
 work independently of preview support. Preview availability and opener
 availability are separate capabilities, described in section 7.
+
+**R4 — Resource-specific opening and access:** support optional opener hints and
+storage descriptions for a selected resource, while allowing callers to override
+opening options. For example, a STAC Asset may identify a Zarr dataset in an AWS
+S3 bucket that requires an access key and secret, together with settings needed
+by `xarray.open_dataset()`. Callers should not have to repeat dataset and storage
+knowledge already supplied by the producer. Credentials belong to the runtime
+access context; they must not be added to serializable resource descriptions.
+Section 7 defines the separation, precedence, and effective reader call.
 
 Scope is discovery, selection, and integration with opening. Implementing a full
 STAC browser, changing the processing service protocol, adding data readers, and
@@ -269,10 +279,20 @@ The following is a conceptual data contract, not a final constructor signature:
 | `media_type` | Effective representation type; retain media type parameters and record inference/overrides. |
 | `title`, `description`, `roles` | Display and selection metadata; roles are a list, not a single classification. |
 | `metadata` | JSON-compatible source metadata, including STAC IDs, version, extensions, and ownership information. |
+| `open_hints` | Optional JSON-compatible hints scoped to registered opener identifiers; suggest candidates and defaults without forcing opener selection. |
+| `access` | Optional non-secret storage characteristics and authentication requirements, interpreted by runtime access/provider adapters. |
 | `children` | Already discovered resources; containment is explicit. |
 | `discovery_state` | `unresolved`, `partial`, `complete`, or `error`; an empty child list alone does not imply completeness. |
 | `continuation` | Optional opaque token for the next page or bounded expansion step. |
 | `diagnostics` | Per-resource detection, access, validation, or traversal messages. |
+
+`open_hints` and `access` are conceptual names, not final API signatures. Keep
+portable dataset facts in metadata and storage descriptions in `access`; an
+opener translates these into its own arguments. Record the source of normalized
+hints so callers can distinguish advertised settings from inferred defaults.
+Runtime credentials and credential-provider objects must remain outside this
+serializable contract. Discovery must work when these optional fields are absent
+or their opener/storage adapter is unavailable.
 
 Enrich Asset listings with a separate, serializable capability assessment keyed
 by resource ID: opener availability, candidate opener identifiers/display names,
@@ -427,7 +447,8 @@ an inaccessible Collection is not an empty dataset.
 
 ## 7. Feed discovered Assets into existing openers
 
-The selected Asset supplies its own resolved URL, media type, and access options.
+The selected Asset supplies its own resolved URL, media type, optional opener
+hints, and access description. Runtime access adapters supply scoped credentials.
 The original STAC link identifies its source container and remains available as
 provenance.
 
@@ -443,7 +464,8 @@ method signatures intact. Without it, preserve current behavior. With it:
 - The original process `output_description` remains available as source context;
   it must not be presented as the selected Asset's schema.
 - Requested `data_type` and opener-specific `options` retain their meaning.
-  Roles and source metadata remain available through `resource`.
+  Explicit caller options take precedence over accepted resource hints as
+  described below. Roles and source metadata remain available through `resource`.
 
 Offer selection through a new `open_job_result_resource()` method so that callers
 of existing `open_job_result()` do not acquire implicit Asset-selection behavior.
@@ -458,6 +480,98 @@ resource even if no usable opener accepts it. Candidate checks must not open
 payloads, and the UI must distinguish a potential action from successful access.
 Preserve dispatch precedence and opening errors, including optional dependencies,
 unsupported formats, and storage authentication failures.
+
+### Resource hints, storage settings, and runtime credentials
+
+Separate producer knowledge from runtime access and consumer preferences:
+
+| Information | Recommended home |
+| --- | --- |
+| Dataset facts, such as Zarr format, group, and consolidated metadata | Resource metadata, translated by the selected opener. |
+| Opener-specific defaults that cannot be expressed portably | Optional `open_hints`, scoped to a registered opener identifier. |
+| Storage provider, region, endpoint, and authentication requirements | Resource `access` description. |
+| Access key, secret, and session token | Runtime credentials from client configuration, an access provider, or explicit caller options. |
+| Consumer preferences, such as chunking, decoding, and variables to drop | Caller options, optionally with resource-specific defaults. |
+
+Generic discovery must remain independent of xarray or any other reader library.
+An opener adapter translates recognized dataset/storage metadata and its own
+hints into reader arguments. A hint may recommend an installed opener but must
+not load arbitrary code, force selection, or bypass the requested return type.
+Options for one opener must not leak into another candidate's context.
+
+For non-secret options, apply the following precedence, lowest to highest:
+
+1. Opener defaults.
+2. Accepted resource hints, including defaults derived from resource metadata.
+3. Client-configured overrides for the selected resource/opener.
+4. Explicit call options.
+
+Merge only mappings declared mergeable by the opener's option schema, such as
+`backend_kwargs` and non-secret `storage_options`; higher-precedence values
+replace the same keys. Scalars and lists are replaced, not concatenated.
+Overriding `chunks` must not discard unrelated storage settings. An opener must
+document how callers clear inherited settings. Preserve the original hints and
+caller inputs; compute effective options separately for each candidate. Expose
+non-secret effective settings and their provenance for inspection.
+
+Credentials are resolved separately for the selected storage target. An explicit
+caller credential set takes precedence over a configured provider; replace the
+whole set atomically, including any session token, rather than combining keys
+from different identities. Otherwise the access adapter uses configured or
+ambient credentials within their authorized scope. Never serialize resolved
+credentials into resource listings, logs, diagnostics, or browser resource
+descriptions. Resolving metadata or assessing candidate openers must not require
+acquiring Asset credentials or testing Asset access.
+
+Remote hints and `x-options` require opener-specific validation before use; they
+must not be forwarded wholesale as reader keyword arguments. Unrecognized or
+unsupported hints remain inspectable with diagnostics. Storage endpoints from
+metadata must respect the scope of locally selected credentials; metadata cannot
+authorize forwarding credentials to another host. Do not inherit a STAC
+container's access settings automatically for its Assets.
+
+#### Example: authenticated Zarr on AWS S3
+
+Suppose the selected Asset has an `s3://` URL, advertises Zarr with consolidated
+metadata, and describes the relevant S3 storage and authentication requirements.
+The caller requests `chunks="auto"`. An access adapter supplies
+`runtime_storage_options` containing the accepted non-secret storage settings
+and the access key/secret (and session token, when needed) obtained at runtime.
+After validation and option resolution, the effective reader call is:
+
+```python
+xr.open_dataset(
+    asset_href,
+    engine="zarr",                 # derived from resource format
+    chunks="auto",                 # caller preference
+    backend_kwargs={
+        "consolidated": True,      # resource hint
+        "storage_options": runtime_storage_options,
+    },
+)
+```
+
+This illustrates the resulting call, not code executed during discovery or a
+new public Cuiman signature. The xarray adapter handles the placement of storage
+settings under `backend_kwargs`, following the
+[xarray cloud-storage documentation](https://docs.xarray.dev/en/stable/io.html#cloud-storage-buckets).
+Missing credentials leave the Asset discoverable and its candidate opener
+visible; opening reports an actionable access failure.
+
+#### STAC interoperability
+
+Prefer portable STAC metadata and recognized extensions, including the
+[Storage extension](https://github.com/stac-extensions/storage), as inputs to the
+generic access description. Interpret extensions according to their advertised
+versions; this proposal does not define a new mandatory STAC extension.
+
+The [xarray Assets extension](https://github.com/stac-extensions/xarray-assets#deprecation-notice)
+defined `xarray:open_kwargs` and `xarray:storage_options`, but is deprecated
+because it was too specific to Python and xarray. Support those fields only as
+an optional compatibility input through a validating adapter, rather than as
+the foundation of the resource contract. Eozilla `x-options` likewise remains
+an optional input with explicitly defined interpretation, not unrestricted
+reader arguments or a credential-distribution mechanism.
 
 ### Opener availability in Asset listings
 
@@ -642,6 +756,8 @@ presentation/export contract. Do not promise every Python opener in every GUI.
   credentials. Reuse configured sessions only within their authorized scope;
   do not forward processing tokens to arbitrary linked hosts or redirects.
   Credential acquisition and URL renewal belong to access/provider adapters.
+  Resource `access` describes requirements; resolved secrets stay in the runtime
+  context, following the option and credential policy in section 7.
 - **Storage:** HTTPS links, signed links, and schemes such as `s3://` are resource
   locations; opening depends on installed readers and configured storage access.
   Missing access leaves an inspectable resource and an actionable diagnostic.
@@ -690,6 +806,18 @@ These are future verification scenarios; this document introduces no code change
     listing alone fetches no preview payload. Preview availability is independent
     of opener availability. Missing or failed preview support leaves R1–R3 and
     other Asset actions functional.
+12. **R4:** an S3 Zarr Asset's validated format/storage metadata and opener hints
+    combine with runtime credentials and caller options to produce the effective
+    xarray call in section 7. No Asset credentials are acquired and no Asset
+    payload is fetched during listing or candidate assessment.
+13. Option resolution follows opener defaults, resource hints, client overrides,
+    and explicit call options in that order. Nested overrides retain unrelated
+    settings; credential replacement is atomic; candidate contexts and original
+    inputs remain independent. Effective non-secret settings are inspectable.
+14. Unsupported or invalid remote hints produce diagnostics without being
+    forwarded as arbitrary reader arguments. An endpoint outside credential
+    scope receives no credentials. Missing access does not hide an Asset, and
+    resolved secrets never enter serialized listings or diagnostics.
 
 ## 11. Open design questions
 
@@ -698,6 +826,10 @@ These are future verification scenarios; this document introduces no code change
   immutable snapshots, and continuation lifetime before exposing a stable API.
 - Confirm resolver method names, registration hooks, multiple-match diagnostics,
   and whether detection deserves a richer result than `bool`.
+- Finalize the `open_hints` and `access` schemas, stable opener identifiers,
+  supported option mappings, clearing inherited settings, and runtime access
+  provider hooks. Choose initial STAC extension adapters and their supported
+  versions; the separation and precedence in section 7 are agreed requirements.
 - How should resource-aware contexts support custom openers that depend on the
   original result mapping or process output schema? Consider an explicit opt-in
   capability or adapter before enabling such openers for Asset selections.
