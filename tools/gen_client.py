@@ -43,10 +43,15 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
     The client API for the web service ({{ hr_async }} mode).
 
     Args:
-      config: Optional client configuration object. If given,
-        other configuration arguments are ignored.
+      config: Optional configuration object. Explicit keyword settings override
+        its values.
       config_path: Optional path of the configuration file to be loaded
-      config_kwargs: Configuration settings as keyword arguments.
+      config_kwargs: Configuration overrides, including ``auth``. An auth model
+        or a dictionary containing ``auth_type`` replaces previous auth settings,
+        even when the type is unchanged. A dictionary without ``auth_type``
+        merges into the selected auth configuration, including nested mappings.
+        If credentials are still missing, a matching profile's keyring entry may
+        supply them; explicitly supplied credentials take precedence.
       api_url: The service URL of the OGC API - Processes.
     \"\"\"
 
@@ -70,6 +75,7 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
             raise ValueError("Required setting 'api_url' not configured")
         self._transport = _transport
         self._debug = _debug
+        self._init_client_runtime()
 
     @property
     def config(self) -> ClientConfig:
@@ -128,7 +134,6 @@ def generate_api_code(schema: OASchema, models: set[str], is_async: bool) -> str
                 path, method_name, method, models, is_async=is_async
             )
             functions.append(function_code)
-    functions.append(generate_close_method_code(is_async))
     return "\n\n".join(functions)
 
 
@@ -218,30 +223,13 @@ def generate_function_code(
         f"def {camel_to_snake(method.operationId)}({param_list})"
         f" -> {return_type_union}:\n"
         f"{function_doc}"
-        f"{C_TAB}{C_TAB}transport = {'await ' if is_async else ''}self._get_transport()\n"
+        f"{C_TAB}{C_TAB}transport = self._get_transport()\n"
         f"{C_TAB}{C_TAB}return "
         f"{'await ' if is_async else ''}"
         f"transport.{'async_' if is_async else ''}call("
         f"TransportArgs({transport_args_list})"
         f")\n"
     )
-
-
-def generate_close_method_code(is_async: bool) -> str:
-    if is_async:
-        return (
-            f"{C_TAB}async def close(self):\n"
-            f'{C_TAB}{C_TAB}"""Close this client."""\n'
-            f"{C_TAB}{C_TAB}if self._transport is not None:"
-            f"{C_TAB}{C_TAB}{C_TAB}await self._transport.async_close()"
-        )
-    else:
-        return (
-            f"{C_TAB}def close(self):\n"
-            f'{C_TAB}{C_TAB}"""Close this client."""\n'
-            f"{C_TAB}{C_TAB}if self._transport is not None:"
-            f"{C_TAB}{C_TAB}{C_TAB}self._transport.close()"
-        )
 
 
 def generate_function_doc(method: OAMethod) -> str:
@@ -316,7 +304,9 @@ def generate_function_doc(method: OAMethod) -> str:
     wrapped_doc_lines = []
     for line in doc_lines:
         if line and not line.startswith("|"):
-            for subline in textwrap.wrap(line, 72):
+            for subline in textwrap.wrap(
+                line, 72, break_long_words=False, break_on_hyphens=False
+            ):
                 # TODO: prefix `subline` 1..N with leading whitespaces from `line`
                 wrapped_doc_lines.append(subline)
         else:

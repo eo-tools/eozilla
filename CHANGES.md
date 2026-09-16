@@ -2,29 +2,27 @@
 
 ### Enhancements
 
-- **Cuiman** clients now prepare authentication and create their transport on
-  the first API call. `Client.login()` and `AsyncClient.login()` allow explicit
-  login, including credential prompts and OIDC browser authentication; automatic
-  login uses only available credentials and never prompts. App launch shares the
-  same authentication preparation. The proprietary `login()` / `login_async()`
-  helpers now return `TokenResult`, replacing the `*_for_tokens()` helpers.
+- **Cuiman** now shares one authentication lifecycle across the Python API, CLI,
+  and launched app. Persistent Authlib HTTPX2 clients handle OAuth2 password and
+  client-credentials grants and OIDC authorization code with PKCE, including
+  expiry, refresh, signing, and revocation. Processing requests authenticate
+  lazily without prompting; explicit `login()` permits prompts or browser login.
+  `client.token` returns a snapshot of the live OAuth token. App requests borrow
+  the same client and observe its refreshed credentials.
 
-- **Cuiman** now keeps CLI authentication credentials in the operating-system
-  keyring instead of its configuration file. `cuiman configure` stores only
-  public service and authentication metadata; the new `cuiman login` and
-  `cuiman logout` commands manage credentials for Basic, token, API-key,
-  proprietary-login, OAuth2 password-grant, and OIDC authorization-code
-  authentication. OIDC login uses provider discovery, Authorization Code with
-  PKCE, and a temporary loopback callback server; it supports browser and
-  `--no-browser` login. OAuth2 and OIDC refresh tokens loaded from the keyring
-  are persisted there after refresh. Existing secret-bearing configuration
-  files are detected and can be safely rewritten. (#205)
+- **Cuiman** now keeps credentials in the operating-system keyring, scoped to the
+  configuration profile and processing API URL. `cuiman configure` stores public
+  settings; `cuiman login` and `cuiman logout` manage credentials for Basic, static
+  tokens, API keys, proprietary login, OAuth2, and OIDC. Login reuses credentials
+  by default, with `--force`, `--no-input`, and `--no-browser` controls. Explicit
+  saving reports failures; optional refresh saves warn while retaining the live
+  token. OIDC logout revokes tokens when the provider supports it. (#205)
 
-- **Cuiman** authentication configuration now uses distinct, nested data models
-  for no authentication, Basic, token, proprietary login, OAuth2, and API-key
-  authentication. OAuth2 grant types are typed, and the configuration and CLI
-  use unambiguous names such as `login_url`, `token_url`, `access_token`, and
-  `access_token_header`. (#176)
+- **Cuiman** authentication configuration uses distinct nested models and typed
+  OAuth2 grants. Configure reuses current public defaults and rejects options
+  unrelated to the selected authentication type. OAuth2/OIDC use one complete
+  `oauth_token` mapping; static tokens, proprietary login, and API keys retain
+  their purpose-specific settings. (#176)
 
 - **Cuiman** app launches now keep processing-service credentials on the
   Cuiman app server. The browser exchanges a short-lived, single-use `launch`
@@ -41,22 +39,51 @@
 
 ### Fixes
 
+- **Cuiman** notebook errors now remain visible as structured API errors without
+  crashing and disabling IPython's custom exception handler.
+
+- **Cuiman** detects deprecated or illegal configuration files through parsing
+  and model validation, including customized client schemas. Invalid files now
+  produce one actionable `configure` message without exposing their contents.
+  Removed legacy-field heuristics; files that validate are accepted, while writes
+  continue to omit credentials.
+
+- **Cuiman** configuration now fails with an actionable message when a prompt
+  needs a terminal, avoiding hangs in notebook commands such as `!cuiman configure`.
+  Fully specified commands still work without a terminal; notebook users can
+  also invoke the configuration prompts directly through Python.
+
 - **Cuiman** now replaces previous authentication settings when a configuration
   source explicitly selects `auth_type`. Python client overrides no longer
   inherit incompatible fields such as a saved `login_url` when selecting OIDC.
   Matching keyring tokens are retained after resolving a complete auth override.
 
-- **Cuiman** now shares token acquisition, renewal, and credential updates in
-  its authentication session helpers. Failed credential persistence during
-  renewal leaves the in-memory session unchanged, matching initial login.
-  Client-credentials grants consistently ignore returned refresh tokens.
+- **Cuiman** serializes API and app requests on their shared client, preventing
+  duplicate concurrent login or refresh operations. Close waits for active
+  requests. Cancelling a queued async login, close, or logout leaves the active
+  client's credentials untouched; once logout starts, local cleanup and closure
+  finish even if provider revocation fails or is cancelled.
 
 - **Cuiman**'s launched-app proxy now rejects path-traversal segments, so a
   browser request cannot escape the configured processing API base path.
 
+- **Cuiman**'s app proxy now retains the API root's trailing slash, matching
+  Python client requests. This fixes app connection failures with HTTP 404 when
+  a processing service distinguishes paths such as `/process` and `/process/`.
+
 - Added missing ipython dependency for cuiman. (#188)
 
 ### Other changes
+
+- **Cuiman** makes a breaking authentication configuration and helper-API change.
+  OAuth2/OIDC require a client ID and replace separate access/refresh-token fields
+  with `oauth_token`. The redundant `use_bearer` field and CLI switch are removed;
+  static/proprietary tokens use an optional `access_token_header` instead.
+  Incompatible profiles must be configured again and credentials saved by login.
+  One-shot OAuth/OIDC helpers, `TokenResult`, and custom renewal machinery are
+  removed in favor of the client lifecycle. Processing-service 401 responses are
+  no longer renewed and replayed, and failed refresh does not fall back to a
+  password grant. See [authentication](docs/cuiman/authentication.md) for details.
 
 - Updated installation instructions. (#189)
 
