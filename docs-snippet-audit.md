@@ -5,10 +5,14 @@ present before this report: 43 files, including pages absent from MkDocs navigat
 Package READMEs and Markdown inside the separate `eozilla-app` checkout are outside
 this scope. That checkout's source and tooling were inspected to assess its docs.
 
-There are 203 fenced blocks. Many are suitable for extraction, but the correct
-unit is usually a complete example module with named sections, not one executable
-file for each fence. Configuration examples belong in data fixtures; signatures,
-CLI help, diagrams, and output need different checks.
+There are 203 fenced blocks, including shell commands, generated help, diagrams,
+output, and explanatory fragments. This inventory records possibilities, not an
+extraction backlog. Extracting all blocks is neither necessary nor recommended.
+
+Extract an example when it demonstrates meaningful behavior that can silently
+break, or when the same code appears in several places. Prefer complete example
+modules with named sections and behavior tests. Keep small, clear examples inline
+unless extraction offers a concrete maintenance benefit.
 
 ## Verification performed
 
@@ -65,6 +69,9 @@ deprecation warnings were reported. The full package suites were not run.
 
 ## Extraction and test ownership
 
+The following table describes possible destinations and checks if an example
+warrants extraction. It does not prescribe implementing every row.
+
 | Area | Extract into | Useful independent checks/tests |
 | --- | --- | --- |
 | Cuiman configuration (15 Python blocks, three data blocks) | `examples/guides/cuiman/configuration.py` plus JSON/YAML fixtures | Import complete helpers, validate `ClientConfig` variants and equivalent file formats, assert merge/replacement behavior; isolate environment, config paths, and credentials. Supply fixture tokens and custom config types. Mock interactive configuration and authentication. |
@@ -87,27 +94,33 @@ also considered. They do not constitute additional self-contained programs; keep
 them with their surrounding explanation or include them as sections of the larger
 examples above.
 
-## Recommended implementation order
+## Recommended minimal scope
 
-1. Repair and extract Procodile examples first: they contain confirmed syntax and
-   runtime failures and can be tested entirely offline.
-2. Extend the existing Cuiman example layout to configuration, authentication,
-   getting started, and customization. Reuse the existing guide-test isolation.
-3. Extract Appligator and Wraptile examples with temporary filesystem fixtures and
-   CLI tests. Add the JSON/YAML schemas and requests as validated data fixtures.
-4. Handle app examples with the app's own tools and tests. The app is a separate
-   checkout, so unconditional includes into `eozilla-app/src` would make the main
-   docs build depend on that checkout. Choose committed synchronized excerpts or
-   explicitly provision the app source in the documentation build first.
-5. Consolidate repeated shell recipes where useful; retain generated help and
-   explanatory blocks in their existing roles. Root README includes need special
-   care because GitHub does not expand `pymdownx.snippets`.
+1. Keep the existing Cuiman extraction setup and tests; they already work.
+2. Fix broken examples directly in Markdown where practical. A typo or incomplete
+   example does not by itself justify new infrastructure.
+3. Extract a few complete Procodile examples, using named sections in the docs and
+   tests that verify results. These have the clearest benefit because the audit
+   found actual syntax and runtime failures, and tests can run entirely offline.
+4. Leave short commands, configuration fragments, signatures, diagrams, generated
+   help, output, and illustrative code inline. Reconsider individual examples only
+   when repeated code or maintenance failures justify extraction.
+
+Do not add a generic snippet framework, a test per fence, or new shell/TypeScript
+tooling solely for this audit. Broader Cuiman, Appligator, Wraptile, and app
+extraction remains optional rather than a planned follow-up.
+
+If app extraction later becomes worthwhile, account for its separate checkout:
+unconditional includes into `eozilla-app/src` would make the main docs build depend
+on that checkout. Root README includes also need special care because GitHub does
+not expand `pymdownx.snippets`.
 
 The root tooling already formats and lints `examples/guides/**/*.py` and includes
 that tree in mypy's scan. Tests for new example modules must still be added to the
 owning package's suite. Only Cuiman's coverage task currently includes its guide
-source explicitly; extend the corresponding coverage tasks for other packages.
-Add data/shell/app checks deliberately: the current Python tasks do not cover them.
+source explicitly; extend another package's coverage task only when adding tested
+examples there. The current Python tasks do not cover data/shell/app checks; that
+gap alone does not justify adding more tooling.
 
 ## Complete file inventory
 
