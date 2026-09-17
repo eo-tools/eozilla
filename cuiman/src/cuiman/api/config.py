@@ -400,7 +400,7 @@ class ClientConfig(BaseSettings):
     def _select_config_type(
         cls,
         config_type: type["ClientConfig"] | None = None,
-        config: "ClientConfig" | None = None,
+        config: "ClientConfig | None" = None,
     ) -> type["ClientConfig"]:
         """Select one configuration namespace and reject ambiguous combinations.
 

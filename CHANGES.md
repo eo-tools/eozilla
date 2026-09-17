@@ -106,6 +106,9 @@
 
 - Updated installation instructions. (#189)
 
+- Enabled ruff's `TC010` check, which rejects annotations such as
+  `x: "Foo" | None` that are invalid at runtime on Python versions before 3.14.
+
 ## Changes in version 0.2.0
 
 ### Enhancements
