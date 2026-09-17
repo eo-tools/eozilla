@@ -90,9 +90,17 @@ class ClientConfig(BaseSettings):
     api_url: Annotated[Optional[str], Field(title="Process API URL")] = DEFAULT_API_URL
     """
     The URL of the server that provides a web API compliant with
-    OGC API - Processes, Part 1 - Core. This is a base URL: Python and app
-    requests append endpoint paths with a slash separator. The landing page
-    uses the base path followed by a trailing slash.
+    OGC API - Processes, Part 1 - Core. Validated with ``HttpUrl`` but stored
+    as a string for consumers that join paths using string operations; an
+    empty string or ``None`` means unconfigured.
+
+    This is a base URL: Python and app requests append endpoint paths with
+    one slash separator. Both ``/process`` and ``/process/`` therefore use
+    ``/process/`` for the landing page and ``/process/processes`` for the
+    process list. This joining rule belongs to request construction, not
+    validation: ``HttpUrl`` preserves a non-empty path's trailing slash
+    and adds ``/`` to a bare host. Authentication endpoint paths instead
+    retain their configured trailing slash when making requests.
     """
 
     auth: AuthConfig = Field(default_factory=NoAuthConfig)
@@ -441,6 +449,11 @@ class ClientConfig(BaseSettings):
     # noinspection PyMethodParameters
     @field_validator("api_url")
     def validate_api_url(cls, v: str | None) -> str | None:
+        """Validate HTTP URLs as strings; leave base-path joining to consumers.
+
+        Empty values become ``None``. Converting ``HttpUrl`` to ``str`` does
+        not strip or append a slash beyond ``HttpUrl``'s own normalization.
+        """
         return None if v is None or v == "" else str(HttpUrl(v))
 
     @classmethod
