@@ -14,6 +14,22 @@ The description of the existing architecture is based on the Eozilla checkout
 at `d72c016`. Requirements expressed as “must” or “should” below describe the
 proposed Cuiman behavior, unless explicitly attributed to an external standard.
 
+The public workflow is **list → inspect/select → open**:
+
+```python
+resources = client.list_job_result_resources(job_id, output_name="dataset")
+resources  # displays a table in JupyterLab
+resource = resources.select(item_id="ndvi-2026-09-01", key="data")
+dataset = client.open_resource(resource, chunks="auto")
+```
+
+Keep `client.open_job_result(job_id, output_name=...)` as the convenience for
+opening a job output directly. Both opening methods dispatch through one
+resource-based opener contract. Replace the old opener implementations and
+context contract; backward compatibility for custom openers is not required in
+this 0.x redesign. Ordinary callers need only a resource listing and a resource,
+without constructing resolvers, registries, contexts, or page objects.
+
 ## 1. Problem and requirements
 
 Processes can produce STAC Items as job outputs, either directly or through
@@ -31,10 +47,10 @@ The design questions and proposed answers are:
 | Question or requirement | Proposed approach |
 | --- | --- |
 | Which OGC model should represent output references? | Use the standard OGC `Link`, represented by `gavicore.models.Link`. |
-| How should output names and values be structured? | Preserve the `JobResults` mapping; attach a separate discovery hierarchy to each output. |
+| How should output names and values be structured? | Preserve the `JobResults` mapping; list derived resources with output ownership and ancestry. |
 | Which output values can produce resources? | Every output value is eligible for resolver acceptance and may yield one or more resources, regardless of its representation or STAC semantics. |
 | How can Python API, CLI, and GUI reuse this functionality? | Share the resource contract and discovery policy; keep rendering and runtime-specific opening separate. |
-| How do existing openers learn which Assets exist? | A resolver enumerates resources; a selected resource is adapted into an opener context. |
+| How do users discover and open data? | The client lists resources; both opening entry points pass one selected resource to the same opener implementation. |
 | How can Cuiman recognize STAC from other services? | Prefer process output schemas, then use media type hints and bounded structural inspection. |
 | Which STAC hierarchy levels should services return? | Prefer Item or ItemCollection; support Collection and Catalog with explicit traversal limits. |
 | Where should resource-specific opening and storage settings live? | Carry optional resource hints and access descriptions; apply caller overrides and obtain credentials at runtime. |
@@ -45,8 +61,9 @@ Discovery must not download Asset payloads or open datasets merely to list them.
 
 ### Required user operations: outputs, Items, Assets
 
-The following three operations must be available as distinct steps through the
-Python API, CLI, and GUI:
+The following three operations must be independently available through the
+Python API, CLI, and GUI. They are inspection views, not a mandatory navigation
+sequence: users can list Assets directly without first selecting an Item.
 
 1. **R1 — List job outputs:** list every output name together with its original
    value, including `Link` objects. This step requires no STAC discovery.
@@ -84,7 +101,7 @@ Section 7 defines the separation, precedence, and effective reader call.
 by `JobResults`, including links, qualified values, inline objects, arrays,
 scalars, and null values, must be eligible for resolver acceptance. A resolver
 that accepts a value may produce one or more `JobResultResource` objects, with
-or without links or children. Neither `Link` normalization nor STAC recognition
+or without links or descendants. Neither `Link` normalization nor STAC recognition
 is a prerequisite for dispatch. Use the same discovery, selection, capability,
 and opening interfaces for these resources. R2 and R3 are STAC-specific
 convenience views over this general model, not restrictions on it.
@@ -95,7 +112,9 @@ bulk downloading are outside this proposal.
 
 ## 2. Current repository architecture
 
-The following existing concepts determine the terminology and integration points:
+The following existing concepts identify the integration points. This section
+describes the implementation being replaced, not compatibility requirements
+for the proposed opener and resource contracts.
 
 | Existing component | Relevant behavior |
 | --- | --- |
@@ -258,32 +277,36 @@ remain distinct because selection includes their owning Item and output.
 ```mermaid
 flowchart TD
     A["OGC result document"] --> B["JobResults: output names to values"]
-    B --> C["Resource discovery service"]
-    D["Process output schemas and configuration"] --> C
-    C --> E["Resolver registry"]
-    E --> F["Accepting resolver: STAC, custom, or generic fallback"]
-    F --> G["One or more resource roots grouped by output"]
-    G --> H["Python API / CLI / App resource selection"]
-    H --> I["Selected resource in opener context"]
-    I --> J["Existing JobResultOpener registry"]
+    B --> C["client.list_job_result_resources"]
+    C --> D["Resource listing: inspect and select"]
+    D --> E["client.open_resource(resource)"]
+    B --> F["client.open_job_result: select and normalize output"]
+    E --> G["Common dispatch: opener receives one resource"]
+    F --> G
 ```
 
-Discovery belongs in Cuiman, alongside the opener extension mechanism. Gavicore
-continues to own the OGC transport models. STAC parsing belongs in a resolver;
-generic resource consumers must not need STAC-specific classes.
+Discovery belongs in Cuiman. Gavicore continues to own the OGC transport models.
+The client hides STAC parsing, bounded metadata loading, adapter selection, and
+opening dispatch. Discovery and reading remain separate extension seams: knowing
+how to enumerate STAC Assets and knowing how to open GeoTIFF are independent
+capabilities. Neither seam requires ordinary callers to learn adapter classes.
 
-### 5.1 Resource model
+### 5.1 Two public result types
 
-Retain the proposed name `JobResultResource`: it matches `JobResultOpener` and
-`JobResultOpenContext`. A candidate package is `cuiman.api.resource`, exported
-through `cuiman.api` once stabilized.
+Expose `JobResultResourceListing` and `JobResultResource` through `cuiman.api`.
+The listing is an iterable, indexable collection of resources, with selection,
+display, and completeness information. There is no separate public page type,
+no per-output page hierarchy, and no capability mapping that callers must join
+back onto resources. Callers do not construct these types for ordinary use.
 
-The following is a conceptual data contract, not a final constructor signature:
+The following resource fields form a conceptual data contract, not a final
+constructor signature:
 
 | Field | Meaning |
 | --- | --- |
 | `id` | Opaque selector unique within the job's discovery view; independent of temporary signed URLs. |
 | `output_name` | Original process output name; required on every resource. |
+| `parent_id`, `path`, `item_id` | Ownership and human-readable ancestry; `item_id` is the source STAC Item identifier when applicable, not a globally unique selector. |
 | `kind` | Extensible semantic kind, initially `value`, `link`, `stac-item`, `stac-item-collection`, `stac-collection`, `stac-catalog`, or `asset`. |
 | `key` | Local source key, such as an Asset key or Item identifier, when available. |
 | `link` | Optional normalized `gavicore.models.Link`; absent for embedded or inline resources without their own URL. |
@@ -291,11 +314,11 @@ The following is a conceptual data contract, not a final constructor signature:
 | `media_type` | Effective representation type; retain media type parameters and record inference/overrides. |
 | `title`, `description`, `roles` | Display and selection metadata; roles are a list, not a single classification. |
 | `metadata` | JSON-compatible source metadata, including STAC IDs, version, extensions, and ownership information. |
+| `provenance` | Source job/service identity and original output context; distinct from the selected resource's value and format. |
 | `open_hints` | Optional JSON-compatible hints scoped to registered opener identifiers; suggest candidates and defaults without forcing opener selection. |
 | `access` | Optional non-secret storage characteristics and authentication requirements, interpreted by runtime access/provider adapters. |
-| `children` | Already discovered resources; containment is explicit. |
-| `discovery_state` | `unresolved`, `partial`, `complete`, or `error`; an empty child list alone does not imply completeness. |
-| `continuation` | Optional opaque token for the next page or bounded expansion step. |
+| `capabilities` | Runtime assessment of opener and preview availability, candidate identifiers/display names, and reasons. |
+| `discovery_state` | `unresolved`, `partial`, `complete`, or `error` for semantic expansion; container state is independent of whether an opener accepts the container itself. |
 | `diagnostics` | Per-resource detection, access, validation, or traversal messages. |
 
 `open_hints` and `access` are conceptual names, not final API signatures. Keep
@@ -306,28 +329,35 @@ Runtime credentials and credential-provider objects must remain outside this
 serializable contract. Discovery must work when these optional fields are absent
 or their opener/storage adapter is unavailable.
 
-Enrich resource listings with a separate, serializable capability assessment keyed
-by resource ID: opener availability, candidate opener identifiers/display names,
-and preview availability/actions. These are computed for the current runtime,
-configuration, and requested return type, not copied from STAC metadata. Keeping
-them separate allows discovery results to be reused when available openers change.
+Access capabilities through `resource.capabilities`. They are computed for the
+current runtime, configuration, and requested return type, not copied from STAC
+metadata. Internally they may be cached separately from discovery metadata and
+refreshed independently. Serialized assessments identify their runtime and scope;
+they are snapshots, not a promise that another runtime can open the resource.
 
-Return a `JobResultResourceListing` with an `outputs` mapping from original output
-names to resource pages and listing-level diagnostics. Each page contains a
-`resources` sequence of root resources, `discovery_state`, optional `continuation`,
-and diagnostics. Always use a sequence, including for a single root; one output
-may yield several sibling roots without an artificial container. Retain every
-original output name even if its page is empty, partial, or failed, and retain
-the original `JobResults` separately.
+The listing owns `discovery_state`, optional opaque `continuation`, and
+`diagnostics`. An `output_states` mapping records discovery state and diagnostics
+for every requested output, including outputs with zero rows or failed discovery;
+it contains no nested resource pages. Preserve the original `JobResults`
+separately. One output can yield multiple resources without an artificial
+container. An empty completed listing is distinct from unresolved or failed
+discovery. Successful sibling resources remain visible on partial failure.
 
-A linked STAC Item can itself be its output's sole root resource; the UI renders
-the output grouping above it. A plain PDF link is a leaf root resource. An inline
-object or qualified value can yield several resources through an accepting
-resolver. Inline resources expose their selected values through the same model;
-callers need not fall back to the original result mapping to open them. No link
-or STAC identity is required. An empty completed page means the accepted value
-contains no resources; it must remain distinguishable from an unresolved or
-failed page.
+The default view lists Assets of recognized Items and ItemCollections directly,
+ordinary links, and inline resources. It includes unsupported resources. Item
+and ItemCollection containers remain independently inspectable using the same
+listing method's views, but are not extra rows in the default Asset-oriented
+view. Collections and Catalogs remain visible as containers requiring explicit
+member traversal; concrete Collection-level Assets are also listed. An empty
+Item remains inspectable even when the default view has no Asset rows.
+
+`select(**criteria)` searches the currently loaded rows and returns exactly one
+match, or raises a no-match or ambiguity error. Criteria include `id`,
+`output_name`, `item_id`, and `key`. It performs no network requests and does not
+claim uniqueness across unloaded pages. Scripts requiring an exact resource
+should use its opaque ID. Indexing, iteration, and length likewise apply only to
+loaded rows. A continuation request returns another listing of the same type;
+iteration never silently fetches all pages.
 
 Resource identity must preserve output and ancestry, including Collection identity
 where needed. Asset keys alone and Item IDs alone are insufficient. Expose an
@@ -335,44 +365,36 @@ opaque selector and a human-readable path; the final escaping and collision
 scheme is an implementation decision. Refreshed signed links must not invalidate
 otherwise unchanged selectors.
 
-The hierarchy is a view over a potentially cyclic graph. Preserve relevant
-navigation links as metadata or deferred actions; do not embed parent/root links
-as child trees. Fetching the same document can be deduplicated while preserving
-its appearance under multiple outputs.
+Ancestry describes a view over a potentially cyclic graph. Preserve relevant
+navigation links as metadata or deferred actions rather than embedding a
+recursive public object tree. Resource descriptions must carry enough ancestry
+to identify owners even when their containers are absent from the current view.
+Fetching the same document can be deduplicated while preserving its appearance
+under multiple outputs.
 
-### 5.2 Resolver contract and registry
+### 5.2 Discovery implementation and extensions
 
-Introduce `JobResultResourceResolver` and a matching registry. A conceptual
-asynchronous contract is:
+Resolvers are discovery adapters behind the client. Built-in STAC discovery
+requires no caller registration or construction of a STAC-specific resolver.
+An extension author supplies an adapter through client configuration; registry
+objects, document-loading contexts, and internal page bookkeeping are not part
+of the ordinary user workflow. This specification does not prescribe extra
+public resolver/context/page classes.
 
-```python
-class JobResultResourceResolver:
-    async def accept(self, ctx) -> bool:
-        """Identify whether this resolver can interpret the supplied value."""
-
-    async def resolve(self, ctx) -> JobResultResourcePage:
-        """Describe zero or more resources without opening data payloads."""
-```
-
-`JobResultResourcePage` is the conceptual page contract described in section 5.1.
-It supports one or multiple resources and explicit empty, partial, and failed
-results without changing the return shape.
-
-The resolve context should carry original results, output name and description,
-the supplied value in its original representation (including any qualified-value
-wrapper), an optional candidate resource for expansion, base URI, optional cached
-document, access/session services, traversal policy, cancellation, and a request
-budget. Initial dispatch must pass every output value to resolver acceptance;
-it must not require constructing a link or detecting STAC first. The same context
-supports explicit expansion of descendant resources, with their selected value
-or link and original output ownership.
+Internally, adapters receive the original value, including qualified wrappers,
+output/schema provenance, base URI, and access to bounded metadata loading.
+The client manages cached documents, sessions, cancellation, and request budgets.
+Every output value is eligible for adapter acceptance without a Link or STAC
+prerequisite. Explicit descendant expansion uses the same machinery while
+preserving the selected resource's value and output ownership.
 
 Contract requirements:
 
 1. Use cheap value/schema/media inspection first. Inspect already available
    inline values directly. When structural inspection requires a referenced
    document, fetch through the shared bounded document loader and reuse that
-   response in `resolve()` and other candidates. Do not fetch once per resolver.
+   response during resolution and other candidates' inspection. Do not fetch
+   once per resolver.
 2. Resolve metadata only. Asset payloads belong to open/download actions.
 3. Use deterministic precedence: configured specialized resolvers before the
    generic fallback. One selected resolver owns the supplied value's semantic
@@ -384,7 +406,7 @@ Contract requirements:
 5. Support cancellation, pagination, depth/Item/request/response-size limits,
    cycle detection, and explicit partial results.
 
-A `StacJobResultResourceResolver` can handle the four supported container kinds.
+A built-in STAC adapter handles the four supported container kinds.
 Separate per-kind implementations are optional internal structure. A generic
 fallback accepts any otherwise unhandled output value and exposes one link or
 value resource without claiming STAC semantics. It preserves null, scalar,
@@ -397,11 +419,12 @@ value and selector. Another resolver can accept a `QualifiedValue` and describe
 resources using its media type and embedded value. Both follow exactly the same
 resource contract and dispatch path as resources discovered from a STAC link.
 
-Mirror `ClientConfig.extra_job_result_openers` with a proposed
-`extra_job_result_resource_resolvers` class attribute and registration/unregister
-API. Preserve configuration-class isolation and deterministic override behavior;
-do not mutate global defaults when importing an application-specific client.
-Concrete registry signatures remain to be agreed.
+Client configuration should accept discovery and opener extensions without
+requiring users to manage registries. Preserve configuration-class isolation,
+deterministic precedence, and application overrides; do not mutate global
+defaults when importing an application-specific client. The extension-author
+contracts and configuration spelling remain to be finalized independently of
+the small listing/opening interface.
 
 ## 6. STAC detection and traversal
 
@@ -485,44 +508,71 @@ follow every link relation. No automatic traversal of `root`, `parent`, or
 `collection` links, and no automatic deep crawling from a Catalog result.
 
 Bounded expansion must return `partial` plus the reason when limits are reached.
-A successfully resolved empty ItemCollection is `complete` with zero children;
+A successfully resolved empty ItemCollection is `complete` with zero members;
 an inaccessible Collection is not an empty dataset.
 
-## 7. Feed discovered resources into existing openers
+## 7. Two opening entry points, one opener contract
 
 The selected resource supplies its own value or resolved URL, media type,
 optional opener hints, and access description. Runtime access adapters supply
 scoped credentials where needed. The original output remains available as
 provenance; for a STAC Asset this includes its source container.
 
-Propose an optional `resource` on `JobResultOpenContext`, leaving existing opener
-method signatures intact. Without it, preserve current behavior. With it:
+Expose two client entry points:
 
-- `job_results` retains the complete original mapping and `output_name` retains
-  the owning process output name.
-- `output_value` exposes the selected resource's normalized link or selected
-  inline/qualified value. `output_link` is present only when that value is
-  link-like; resources without links can be accepted by value-aware openers.
-  Do not substitute the original output value for a selected descendant value.
-- `output_media_type` uses the explicit override first, then selected-resource
-  metadata; it must not inherit the STAC container's GeoJSON type for an Asset.
-- The original process `output_description` remains available as source context;
-  it must not be presented as the selected Asset's schema.
-- Requested `data_type` and opener-specific `options` retain their meaning.
-  Explicit caller options take precedence over accepted resource hints as
-  described below. Roles and source metadata remain available through `resource`.
+```python
+client.open_job_result(job_id, output_name="dataset", data_type=None, **options)
+client.open_resource(resource, data_type=None, **options)
+```
 
-Offer selection through a new `open_job_result_resource()` method so that callers
-of existing `open_job_result()` do not acquire implicit Asset-selection behavior.
-An adapter can create the resource-aware context and dispatch through the
-existing registry. Built-ins that inspect `ctx.output_link` benefit directly.
-Custom openers that inspect `ctx.job_results` themselves need to recognize the
-resource selection or decline it; they must not silently open the container or a
-different resource. Final adapter compatibility is an implementation review item.
+`open_job_result()` keeps the convenient job/output selection and existing
+polling behavior. It normalizes the selected original output into one resource
+and uses common opener dispatch. A plain link or inline value does not require
+STAC discovery first. Opening a STAC output this way means opening the selected
+output itself, subject to an accepting opener; it does not implicitly select a
+descendant Asset. Ambiguous output selection must produce a clear error rather
+than choosing the first output.
 
-Expose a candidate-opener query for selected resources. Discovery lists every
-resource even if no usable opener accepts it. Candidate checks must not open
-payloads, and the UI must distinguish a potential action from successful access.
+`open_resource()` receives an explicitly selected resource, including a linkless
+value. It does not rediscover the output, select a different resource, or poll
+the job. Access adapters may refresh an expired location while preserving the
+resource identity. Both methods support the requested return type, media type
+override, and caller options, and dispatch to the same opener implementation.
+
+Replace the old opener contract with a resource-based contract. Conceptually:
+
+```python
+class JobResultOpener:
+    async def accept(self, resource: JobResultResource, *, runtime) -> bool:
+        """Check for a candidate without reading data payloads."""
+
+    async def open(self, resource: JobResultResource, *, runtime):
+        """Open the selected resource with effective runtime settings."""
+```
+
+`runtime` is a placeholder for client-supplied opening settings and services;
+its exact argument shape remains an implementation decision. It conveys the
+requested return type, effective media type, candidate-specific options, and
+scoped access services. Acceptance must not acquire Asset credentials; access
+services resolve those only when opening. Ordinary callers neither construct
+this runtime argument nor manage opener dispatch.
+
+An opener implements one acceptance method and one opening method. It does not
+need separate methods for job outputs and discovered resources. Rewrite built-in
+and custom openers to this contract; no compatibility adapter, optional
+resource-aware mode, or preservation of `JobResultOpenContext` is required.
+
+The resource is authoritative for its selected link/value, media type, roles,
+and metadata. Original job results, output identity, and process output schema
+are provenance; they must not substitute for the selected resource's value or
+schema. An Asset must not inherit its container's GeoJSON media type. An explicit
+media type override applies to opening without mutating the resource description.
+Options and runtime access remain separate from the serializable resource.
+
+Report candidate openers through each selected resource's capabilities.
+Discovery lists resources even if no usable opener accepts them. Candidate
+checks must not open payloads, and the UI must distinguish a potential action
+from successful access.
 Preserve dispatch precedence and opening errors, including optional dependencies,
 unsupported formats, and storage authentication failures.
 
@@ -542,7 +592,7 @@ Generic discovery must remain independent of xarray or any other reader library.
 An opener adapter translates recognized dataset/storage metadata and its own
 hints into reader arguments. A hint may recommend an installed opener but must
 not load arbitrary code, force selection, or bypass the requested return type.
-Options for one opener must not leak into another candidate's context.
+Options for one opener must not leak into another candidate's runtime settings.
 
 For non-secret options, apply the following precedence, lowest to highest:
 
@@ -622,9 +672,9 @@ reader arguments or a credential-distribution mechanism.
 
 The same assessment applies to all resource kinds, including linkless values.
 R3 requires it for each listed Asset, not only after the user selects one to open.
-Use `is_usable()` and `accept_job_result()` with the selected resource's context
-to determine candidate openers. Expose these states in both structured
-results and user-facing listings:
+Use environment/dependency checks and `accept(resource, ...)` to determine
+candidate openers. Expose these states through `resource.capabilities` in both
+structured results and user-facing listings:
 
 - **Available:** at least one usable registered opener accepts the Asset; include
   its display name and identifier so callers can inspect or choose candidates.
@@ -667,55 +717,100 @@ when an appropriate opener is installed.
 
 Add equivalent methods on `Client` and `AsyncClient`; the synchronous client
 should wrap the same asynchronous discovery implementation, following existing
-Cuiman conventions. Illustrative proposed usage:
+Cuiman conventions. The everyday synchronous workflow is:
 
 ```python
-raw = await client.get_job_results(job_id)  # existing, unchanged
-for output_name, value in (raw.root or {}).items():  # R1
-    print(output_name, value)
+resources = client.list_job_result_resources(job_id, output_name="dataset")
+resources  # renders a table in JupyterLab
 
-# Generic discovery works for any output value, including non-STAC inline data.
-listing = await client.get_job_result_resources(job_id)
-for output_name, page in listing.outputs.items():
-    for resource in page.resources:
-        print(output_name, resource.id, resource.kind, resource.title)
-    # Inspect page.discovery_state, diagnostics, and continuation as needed.
-
-# Proposed convenience views over the same generic discovery service.
-items = await client.get_job_result_items(job_id, output_name="result")  # R2
-item = items.resources[0]  # caller selection; page may also be empty
-assets = await client.get_job_result_assets(job_id, item_id=item.id)  # R3
-for asset in assets.resources:
-    capabilities = assets.capabilities[asset.id]
-    print(asset.title or asset.key, asset.roles, asset.media_type,
-          capabilities.opener_availability)
-
-asset = next(asset for asset in assets.resources if asset.key == "data")
-opened = await client.open_job_result_resource(job_id, resource_id=asset.id)
-
-# Explicit bounded expansion; useful for a Collection or Catalog node.
-expanded = await client.get_job_result_resources(
-    job_id, resource_id=container_id, continuation=continuation
-)
+resource = resources.select(item_id="ndvi-2026-09-01", key="data")
+dataset = client.open_resource(resource, chunks="auto")
 ```
 
-The proposed Item and Asset convenience methods return scoped pages with
-`resources`, `continuation`, completeness, and diagnostics; Asset pages also
-carry the per-resource capability assessments. They reuse
-`get_job_result_resources()` and its resolver registry rather than introducing
-independent STAC discovery logic. Item listing includes the selected output's
-root when that root is itself an Item. Non-STAC outputs return an explicit
-unsupported-kind result rather than an apparently empty Item listing.
+The listing supports iteration and positional access after inspection:
 
-The proposed discovery method accepts output/resource selection and traversal
-limits, returns JSON-serializable resource descriptions, and has a refresh option.
-It dispatches all selected output values through the resolver registry, including
-non-STAC inline and qualified values. The same `open_job_result_resource()` call
-selects any discovered resource by ID, whether it carries a link or an embedded
-value. Callers do not need representation-specific discovery or opening methods.
-The first version should require successful job results and return a clear status
-error for unfinished/failed jobs. Preserve existing polling behavior on
-`open_job_result()`; whether resource opening also waits is an open question.
+```python
+for resource in resources:
+    print(resource.title, resource.media_type, resource.capabilities)
+
+# For a listing whose first row the user has explicitly chosen:
+dataset = client.open_resource(resources[0])
+
+# Direct opening remains available without listing resources first:
+dataset = client.open_job_result(job_id, output_name="dataset")
+```
+
+These are alternative opening workflows: the direct call targets the original
+output, while the selected-resource call targets that exact resource. A proposed
+`resource.open()` convenience, if added, must delegate to the associated client's
+`open_resource()` rather than introduce another opener contract. It is not
+required for the initial interface. Any private client association is excluded
+from serialization; portable descriptions never contain sessions or credentials.
+
+Raw outputs and STAC-specific inspection remain available without introducing
+separate Item/Asset method families. Proposed scoped views are:
+
+```python
+raw = client.get_job_results(job_id)  # R1: original values, no discovery
+
+items = client.list_job_result_resources(
+    job_id, output_name="dataset", kind="stac-item"
+)  # R2: a single Item output yields one row
+item = items.select(item_id="ndvi-2026-09-01")
+assets = client.list_job_result_resources(
+    job_id, parent_id=item.id, kind="asset"
+)  # R3: Assets owned by exactly this Item
+
+# Explicit expansion of a Collection or Catalog identified in a listing:
+expanded = client.list_job_result_resources(
+    job_id, parent_id=container_id
+)
+
+# Explicit continuation using the same scope and view as the first request:
+if resources.continuation is not None:
+    next_resources = client.list_job_result_resources(
+        job_id, output_name="dataset", continuation=resources.continuation
+    )
+```
+
+`kind` selects an inspection view; it does not authorize extra traversal.
+`parent_id` explicitly requests the immediate members of that container within
+the traversal policy and limits, with `kind` filtering those members when given.
+This explicit member view includes Item containers rather than flattening them
+into their Assets. Listing Items from a Collection or Catalog thus
+requires selecting that container as `parent_id`. ItemCollection views inspect
+embedded Items without following every next page. A non-STAC output requested
+as an Item view reports an unsupported-kind diagnostic, distinguishable from an
+empty recognized STAC container. All views return the same listing type.
+
+Continuations are bound to the service/job, scope, view, and access context. The
+client must reject mismatched or expired continuations explicitly. A listing's
+state describes completion of the requested view, not whether a whole Catalog
+has been crawled. Deferred containers retain their own expansion state. A
+complete listing may contain unresolved containers; partial discovery and
+failed outputs must remain visible through listing and output states.
+
+The method also supports traversal limits, a requested return type for capability
+assessment, and refresh. It works for non-STAC and linkless resources. Initial
+listing requires successful job results and reports a clear status error for
+unfinished/failed jobs; it does not implicitly wait. For `AsyncClient`, await
+`list_job_result_resources()`, `open_job_result()`, and `open_resource()`.
+Selection, iteration, and rendering remain local synchronous operations on the
+returned snapshots.
+
+### Notebook rendering
+
+The listing provides a rich HTML representation for JupyterLab and a readable
+plain-text fallback. The default table shows output name (when needed), owning
+Item/path, key, title, roles, format/media type, and opener availability. Candidate
+names and reasons must be inspectable through each resource. Show preview
+availability separately when supported, and use the key as the title fallback.
+
+Render empty, partial, failed, and deferred-discovery states explicitly, including
+a notice when another page is available. Display and redisplay must use loaded
+metadata only: no automatic pagination, metadata fetches, Asset downloads,
+credential acquisition, or preview requests. Escape untrusted titles and other
+metadata in HTML. Rendering must not require pandas or an optional data reader.
 
 ### CLI
 
@@ -724,47 +819,41 @@ Follow the repository's flat, hyphenated command names. Keep the current
 
 ```text
 cuiman get-job-results JOB_ID
-cuiman get-job-result-items JOB_ID --output-name result
-cuiman get-job-result-assets JOB_ID --item-id ITEM_RESOURCE_ID
-cuiman get-job-result-resources JOB_ID
-cuiman get-job-result-resources JOB_ID --output-name result --format json
-cuiman get-job-result-resources JOB_ID --resource-id RESOURCE_ID --expand
-cuiman open-job-result-resource JOB_ID --resource-id RESOURCE_ID
+cuiman list-job-result-resources JOB_ID --output-name dataset
+cuiman list-job-result-resources JOB_ID --output-name dataset --format json
+cuiman list-job-result-resources JOB_ID --output-name dataset --kind stac-item
+cuiman list-job-result-resources JOB_ID --parent-id ITEM_RESOURCE_ID --kind asset
+cuiman list-job-result-resources JOB_ID --parent-id CONTAINER_RESOURCE_ID
+cuiman list-job-result-resources JOB_ID --output-name dataset --continuation TOKEN
 ```
 
-The default listing should display output name, resource selector/path, title,
-kind, media type, roles, and discovery status. For example:
+Use the same default view, scope, and continuation semantics as the Python
+method. A normal listing shows title, roles, format, and opener availability,
+including unsupported resources. For example (selectors abbreviated here):
 
 ```text
-OUTPUT  RESOURCE PATH                    KIND       ROLES      STATUS
-result  ndvi-2026-09-01                   stac-item             complete
-result  ndvi-2026-09-01 / data            asset      data       complete
-result  ndvi-2026-09-01 / thumbnail       asset      thumbnail  complete
-report  report                           link                  complete
+ID  ITEM / PATH      KEY        TITLE        ROLES      FORMAT   OPENER
+r1  ndvi-2026-09-01   data       NDVI raster  data       GeoTIFF  Available: xarray
+r2  ndvi-2026-09-01   thumbnail  Preview      thumbnail  PNG      Unavailable
 ```
 
-The proposed Item/Asset commands implement R2/R3 as scoped views of generic
-discovery. The Asset command must show title, role(s), data type, and opener
-availability in its normal listing, not only in JSON or a details view. Example
-column layout (capability values depend on the installed/configured adapters):
-
-```text
-ASSET      TITLE        ROLES      DATA TYPE    OPENER                 PREVIEW
-data       NDVI raster  data       GeoTIFF      Available: Raster      Available
-thumbnail  Preview      thumbnail  image/png    Unavailable            Available
-metadata   metadata     metadata   unspecified  Unknown                Unavailable
-```
+Add output ownership when listing several outputs, and kind/state for container
+views. Item and Asset inspection use this same command rather than separate
+command families. Missing roles/type display as unspecified. Show continuation
+and discovery diagnostics alongside the table, including for zero-row outputs.
 
 JSON output must retain the complete media type, candidate opener identifiers,
 assessment states/reasons, and source identity. A friendly format label must not
 discard media type parameters. CLI preview, if provided, can launch a supported
 viewer; listing and opener assessment must work without a graphical environment.
 
-Show copyable opaque selectors in the detailed or JSON view. Flattening is a
-presentation option and must retain ancestry. Explicit selection is required
-when ambiguous; scripts receive structured errors rather than prompts. An open
-command also needs a defined output destination or application action, since a
-Python object alone has no CLI presentation; its exact options remain open.
+Make full, copyable opaque selectors available in normal output (a details block
+may avoid overly wide tables) as well as JSON. JSON serialization contains rows,
+scope, output states, continuation, and diagnostics without runtime objects or
+credentials. Scripts receive structured errors rather than selection prompts.
+A CLI open action remains a separate design question: it needs a defined export
+destination or viewer, since returning a Python object has no CLI presentation.
+The listing command does not depend on settling that action.
 
 ### GUI / Eozilla App
 
@@ -778,13 +867,13 @@ states. A discovery failure must not remove the original output link.
 Display multiple resource roots under their owning output group, and allow
 selection and capability inspection for inline and non-STAC resources without
 requiring a URL. The generic CLI commands and GUI must use the same resource
-selectors and page states as the Python API.
+selectors and discovery states as the Python API.
 
-For STAC outputs, the required navigation is **job outputs and values → Items of
-a selected output → Assets of a selected Item**. Each stage must be directly inspectable; a
-flattened Asset list alone does not satisfy R2. ItemCollection output links must
-expand to an Item listing before Asset selection. A direct Item output can show
-its single Item and Assets together while preserving the same selection model.
+For STAC outputs, job outputs, Items, and Assets must each remain independently
+inspectable. A direct Asset listing retaining ownership is the ordinary route;
+users need not pass through an Item selection screen first. An Item view and
+scoped Asset view satisfy R2/R3 using the same resources. A tree may be built
+from ancestry and explicit expansion without exposing a recursive Python model.
 
 The Item's Asset list must show title (falling back to Asset key), all roles,
 data type, and opener availability on each row. Allow inspection of candidate
@@ -794,7 +883,7 @@ or absence must not hide an Asset or block other available actions.
 
 The app's `Service` boundary should expose the same serializable resource
 contract. In a Python-launched app, a proposed local discovery/action adapter can
-reuse the Python client session, resolvers, and opener registry. The current
+reuse the Python client's discovery and opening dispatch. The current
 processing-service proxy does not itself supply this discovery API.
 
 A standalone browser app cannot execute Python opener classes. It needs either
@@ -846,9 +935,13 @@ These are future verification scenarios; this document introduces no code change
    different Items. Empty, mixed, paginated, and limit-truncated cases are explicit.
 4. Collection/Catalog listing does not fetch member documents until requested;
    bounded explicit expansion terminates even with cycles or repeated pages.
-5. Choosing an Asset sends its URL and media type to an opener while preserving
-   the original output name, job results, and source metadata. Existing opening
-   calls without a resource selection retain their behavior.
+5. Both `open_job_result()` and `open_resource()` pass one resource to the same
+   opener contract. The former normalizes the selected original output; the
+   latter opens exactly the supplied resource. Choosing an Asset supplies its
+   own value/media type with original job/output context retained as provenance.
+   Neither route silently selects the first Asset, and an Asset never inherits
+   its container's media type or schema. Rewritten openers need no legacy context
+   or separate job-output opening method.
 6. Unsupported Assets remain listed. Discovery succeeds without optional opener
    dependencies or Asset payload downloads; opening failures remain separate.
 7. Relative URLs, expired signed URLs, separate storage credentials, and a failed
@@ -856,10 +949,12 @@ These are future verification scenarios; this document introduces no code change
 8. Python, CLI JSON, and GUI adapters represent the same output hierarchy,
    selections, completeness, and errors. Resolver configuration is isolated per
    application configuration class.
-9. **R1–R2:** users can first list output names and original values without
-   dereferencing STAC links, then select an ItemCollection output to list its
-   Items, and select an Item independently. A direct Item output yields one
-   Item; non-STAC outputs, empty pages, and partial listings are distinguishable.
+9. **R1–R2:** users can list output names and original values without
+   dereferencing STAC links, inspect an ItemCollection output's Items, and select
+   an Item independently. They can also list its Assets directly without first
+   listing Items. An Item view of a direct Item output yields one Item, including
+   when it has no Assets. Non-STAC outputs, empty recognized containers, and
+   partial listings are distinguishable.
 10. **R3:** each selected Item's Asset listing shows title/key fallback, all roles,
     advertised data type or unspecified, and available/unavailable/unknown opener
     status. Candidate names and assessment reasons are accessible. An accepting
@@ -875,7 +970,7 @@ These are future verification scenarios; this document introduces no code change
     payload is fetched during listing or candidate assessment.
 13. Option resolution follows opener defaults, resource hints, client overrides,
     and explicit call options in that order. Nested overrides retain unrelated
-    settings; credential replacement is atomic; candidate contexts and original
+    settings; credential replacement is atomic; candidate settings and original
     inputs remain independent. Effective non-secret settings are inspectable.
 14. Unsupported or invalid remote hints produce diagnostics without being
     forwarded as arbitrary reader arguments. An endpoint outside credential
@@ -885,29 +980,60 @@ These are future verification scenarios; this document introduces no code change
     without a Link/STAC prerequisite. A non-STAC inline object containing two
     tables produces two selectable sibling resources from one accepting resolver.
     Both retain their output ownership and open their selected values through
-    `open_job_result_resource()` with no fabricated URL or STAC container.
+    `open_resource()` with no fabricated URL or STAC container.
 16. Unhandled scalar, null, array, and object values produce one generic value
     resource each. A present null value remains distinct from an absent value.
-    Single-resource, multiple-resource, empty-complete, partial, and failed pages
-    share the same return shape and preserve the original output mapping.
+    Single-resource, multiple-resource, empty-complete, partial, and failed
+    listings share the same type and preserve the original output mapping.
 17. Python, CLI, and GUI expose non-STAC and linkless resources through the same
     discovery, selection, capability, and opening contracts used for STAC-derived
-    resources. STAC Item/Asset convenience views remain scoped specializations.
+    resources. STAC Item/Asset views use the same listing method and CLI command.
+18. `list_job_result_resources(job_id, output_name="dataset")` returns an
+    iterable, indexable listing. Resources expose their own capabilities. No
+    resolver, registry, context, nested per-output page, or capability-map join
+    is needed in the ordinary list/select/open workflow.
+19. `select()` returns exactly one matching loaded row or reports no match or
+    ambiguity. Duplicate Asset keys and repeated Item IDs in different ancestry
+    remain distinguishable through opaque IDs. Selection, indexing, iteration,
+    and length never fetch additional pages or claim completeness of unloaded
+    results. Mismatched/expired continuations produce explicit errors.
+20. JupyterLab HTML and plain-text representations show ownership, key/title,
+    roles, format, and opener availability, including unsupported resources.
+    Rendering escapes untrusted metadata, needs no optional reader library, and
+    performs no network, credential, or payload access. Empty, failed, partial,
+    and deferred states remain distinguishable, including on redisplay.
+21. The CLI `list-job-result-resources` command has matching default and scoped
+    views, tables, selectors, and explicit continuation. JSON retains ancestry,
+    capability assessments, full media types, output states, and diagnostics.
+    Python runtime associations and credentials are excluded from serialization.
+22. A default listing exposes Item/ItemCollection Assets directly, keeps
+    Collection/Catalog containers visible without fetching members, and includes
+    concrete Collection Assets. Item views and explicit parent expansion retain
+    ownership. Completion of a view does not imply completion of deferred
+    container traversal. Failed or empty outputs remain visible in output states
+    alongside successful siblings.
+23. Synchronous and asynchronous clients share discovery and opening behavior.
+    Initial listing reports unfinished jobs without polling; `open_job_result()`
+    retains polling; `open_resource()` opens the selected resource without
+    polling or repeating discovery, except for any necessary location renewal.
 
 ## 11. Open design questions
 
-- Final model representation: frozen dataclasses like the opener context or
-  Pydantic models for serialization? Agree selector encoding, schema versioning,
+- Final model representation: frozen dataclasses or Pydantic models for
+  serialization? Agree selector encoding, schema versioning,
   immutable snapshots, and continuation lifetime before exposing a stable API.
-- Confirm resolver method names, registration hooks, multiple-match diagnostics,
-  and whether detection deserves a richer result than `bool`.
+- Finalize discovery extension contracts and simple client configuration of
+  discovery/opening adapters, including multiple-match diagnostics and whether
+  detection deserves a richer result than `bool`. Registry and internal page
+  classes need not become public user concepts.
 - Finalize the `open_hints` and `access` schemas, stable opener identifiers,
   supported option mappings, clearing inherited settings, and runtime access
   provider hooks. Choose initial STAC extension adapters and their supported
   versions; the separation and precedence in section 7 are agreed requirements.
-- How should resource-aware contexts support custom openers that depend on the
-  original result mapping or process output schema? Consider an explicit opt-in
-  capability or adapter before enabling such openers for Asset selections.
+- Finalize the client-supplied runtime arguments for opener `accept()` and
+  `open()`, keeping selected resources authoritative and original output/schema
+  information accessible as provenance. Existing custom openers will be
+  rewritten; legacy context compatibility is not a requirement.
 - Which STAC versions and extensions are supported initially? Should full schema
   validation be optional, and should parsing use PySTAC or a minimal parser?
 - Agree concrete request, byte, Item, depth, and timeout defaults; pagination
@@ -918,13 +1044,17 @@ These are future verification scenarios; this document introduces no code change
 - Choose the first GUI integration path and its capability advertisement. Define
   how Python opener results are displayed/exported and which standalone browser
   actions are supported.
-- Decide resource-opening wait behavior, CLI destinations, strict/partial failure
-  exit status, and whether an explicitly configured default Asset is desirable.
-- Agree the Item/Asset convenience method signatures, page contracts, and
-  capability refresh policy. Choose initial preview renderers and whether CLI
-  previews launch a browser or another application. R1–R3 remain required while
-  these API details and the optional P1 implementation are settled.
+- Decide CLI opening destinations/viewers and strict/partial failure exit
+  status. Listing is independently useful and must not depend on a CLI opening
+  action. Implicit first-Asset selection is excluded.
+- Finalize capability refresh controls, discovery-state aggregation on mixed
+  output failures, and serialization spelling. Decide whether a client-associated
+  `resource.open()` convenience adds value beyond `client.open_resource()` and
+  define its session lifetime if provided. Choose initial preview renderers and
+  whether CLI previews launch a browser or another application. R1–R3 remain
+  required independently of optional previews.
 
 The core decision is independent of these details: preserve the OGC output
-mapping, discover a bounded hierarchy of semantic resources, then let the user or
-caller select a resource for the existing opener mechanism.
+mapping, expose a simple resource listing with ownership and bounded discovery,
+and pass one resource to an opener. Two client opening entry points share that
+single opener contract, without preserving the old implementation underneath.
