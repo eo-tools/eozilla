@@ -45,6 +45,9 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
     Args:
       config: Optional configuration object. Explicit keyword settings override
         its values.
+      config_type: Optional application configuration class. It owns the
+        settings schema, defaults, environment namespace, and profile path.
+        When omitted, a supplied ``config`` object's concrete type is used.
       config_path: Optional path of the configuration file to be loaded
       config_kwargs: Configuration overrides, including ``auth``. An auth model
         or a dictionary containing ``auth_type`` replaces previous auth settings,
@@ -59,6 +62,7 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
         self,
         *,
         config: Optional[ClientConfig] = None,
+        config_type: type[ClientConfig] | None = None,
         config_path: Optional[str] = None,
         api_url: Optional[str] = None,
         _debug: bool = False,
@@ -67,6 +71,7 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
     ):
         self._config = ClientConfig.create(
             config=config,
+            config_type=config_type,
             config_path=config_path,
             api_url=api_url,
             **config_kwargs,

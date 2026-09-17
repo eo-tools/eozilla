@@ -2,6 +2,15 @@
 
 ### Enhancements
 
+- **Cuiman** applications can now select an isolated `ClientConfig` namespace
+  through `Client`, `AsyncClient`, and `new_cli(config_type=...)`. Application
+  field defaults, profile paths, schemas, dotenv/environment settings, and
+  result extensions no longer require mutating global `ClientConfig` defaults.
+  Configuration sources resolve once and consistently across Python clients,
+  CLI commands, and launched apps.
+  Custom job result opener classes can be declared statically through the
+  subclass's `extra_job_result_openers` iterable.
+
 - **Cuiman** now shares one authentication lifecycle across the Python API, CLI,
   and launched app. Persistent Authlib HTTPX2 clients handle OAuth2 password and
   client-credentials grants and OIDC authorization code with PKCE, including
@@ -38,6 +47,14 @@
   supported. (#198)
 
 ### Fixes
+
+- **Cuiman** resolves fresh configuration sources once and preserves resolved
+  snapshots when wrapping clients or applying overrides. Explicit default-valued
+  settings keep their precedence; required application fields and input aliases
+  work through the shared resolver. Keyring lookup can be requested after an
+  earlier secret-free resolution without rereading sources. CLI configuration
+  preserves saved application fields. Dotenv filtering uses Pydantic Settings'
+  namespace and extra-field policies (requires version 2.14.2 or later).
 
 - **Cuiman** notebook errors now remain visible as structured API errors without
   crashing and disabling IPython's custom exception handler.

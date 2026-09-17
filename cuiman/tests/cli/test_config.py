@@ -1,11 +1,13 @@
 """Configure and load profiles through the same public interface as the CLI."""
 
 import os
+from pathlib import Path
+from typing import ClassVar
 from unittest.mock import Mock
 
 import pytest
-from typer.testing import CliRunner
 import yaml
+from typer.testing import CliRunner
 
 from cuiman import ClientConfig
 from cuiman.api.auth import TokenAuthConfig
@@ -128,18 +130,37 @@ def test_configure_reuses_public_values_but_never_secrets(monkeypatch):
 
 def test_branded_configuration_defaults_are_preserved(monkeypatch):
     class BrandedConfig(ClientConfig):
+        api_url: str | None = "https://branded.test"
         service_name: str = "branded"
 
-    monkeypatch.setattr(
-        ClientConfig, "default_config", BrandedConfig(api_url="https://branded.test")
-    )
     prompt = Mock(return_value="https://configured.test")
     monkeypatch.setattr("typer.prompt", prompt)
-    configure_client_with_prompt(auth_type="none")
+    configure_client_with_prompt(config_type=BrandedConfig, auth_type="none")
     assert prompt.call_args.kwargs["default"] == "https://branded.test/"
-    config = ClientConfig.from_file()
+    config = BrandedConfig.from_file()
     assert isinstance(config, BrandedConfig)
     assert config.service_name == "branded"
+
+
+def test_custom_cli_uses_its_configuration_namespace(tmp_path):
+    class BrandedConfig(ClientConfig):
+        default_path: ClassVar[Path] = tmp_path / "branded.yaml"
+        service_name: str = "branded"
+
+    result = CliRunner().invoke(
+        new_cli(name="branded-client", config_type=BrandedConfig),
+        [
+            "configure",
+            "--api-url",
+            "https://configured.test/processes",
+            "--auth-type",
+            "none",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert not ClientConfig.default_path.exists()
+    assert BrandedConfig.from_file().service_name == "branded"
 
 
 def test_switching_auth_type_does_not_reuse_other_provider_settings(monkeypatch):

@@ -3,6 +3,11 @@
 The `cuiman` tool is a shell client for any web services 
 compliant with OGC API - Processes, Part 1: Core Standard.
 
+Applications can create a branded CLI with
+`new_cli(name="my-client", config_type=MyClientConfig)`. The selected
+configuration type is used consistently by `configure`, `login`, `logout`, and
+all request commands; it does not alter the default `cuiman` CLI's settings.
+
 
 `cuiman` can be used to get the available processes, get process 
 details, execute processes, and manage the jobs originating from the latter. It 

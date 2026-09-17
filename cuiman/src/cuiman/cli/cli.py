@@ -86,6 +86,7 @@ def new_cli(
     help: str | None = None,
     summary: str | None = None,
     version: str | None = None,
+    config_type: type[ClientConfig] = ClientConfig,
 ) -> typer.Typer:
     """
     Create a server CLI instance for the given, optional name and help text.
@@ -99,6 +100,8 @@ def new_cli(
             if `help` is not provided. Should end with a dot '.'.
         version: Optional version string. If not provided, the
             `cuiman` version will be used.
+        config_type: Application settings class. It supplies the CLI's schema,
+            defaults, environment namespace, and default profile location.
     Return:
         a `typer.Typer` instance
     """
@@ -149,7 +152,7 @@ def new_cli(
             from cuiman.cli.config import get_config
 
             try:
-                config = get_config(config_path)
+                config = get_config(config_path, config_type=config_type)
             except (SecretStoreError, ValueError) as exc:
                 typer.echo(str(exc), err=True)
                 raise typer.Exit(code=1) from exc
@@ -254,6 +257,7 @@ def new_cli(
         try:
             config_path = configure_client_with_prompt(
                 config_path=config_file,
+                config_type=config_type,
                 interactive=sys.stdin.isatty(),
                 api_url=api_url,
                 auth_type=auth_type,
@@ -270,7 +274,7 @@ def new_cli(
             typer.echo(str(exc), err=True)
             raise typer.Exit(code=1) from exc
         typer.echo(f"Client configuration written to {config_path}")
-        _offer_login_after_config(config_path)
+        _offer_login_after_config(config_path, config_type=config_type)
 
     @t.command()
     def login(
@@ -300,6 +304,7 @@ def new_cli(
         with handle_auth_errors():
             login_client_with_prompt(
                 config_file,
+                config_type=config_type,
                 no_browser=no_browser,
                 force=force,
                 interactive=not no_input,
@@ -313,7 +318,7 @@ def new_cli(
         from .config import logout_client
 
         with handle_auth_errors():
-            logout_client(config_file)
+            logout_client(config_file, config_type=config_type)
 
     @t.command()
     def generate_client(
@@ -555,9 +560,13 @@ def new_cli(
     return t
 
 
-def _offer_login_after_config(config_path: Path) -> None:
+def _offer_login_after_config(
+    config_path: Path,
+    *,
+    config_type: type[ClientConfig] = ClientConfig,
+) -> None:
     """Offer interactive login when the new configuration requires it."""
-    configured_config = ClientConfig.from_file(config_path)
+    configured_config = config_type.from_file(config_path)
     assert configured_config is not None
     if (
         configured_config.auth.auth_type != "none"
@@ -567,7 +576,7 @@ def _offer_login_after_config(config_path: Path) -> None:
         from .config import login_client_with_prompt
 
         with handle_auth_errors():
-            login_client_with_prompt(config_path)
+            login_client_with_prompt(config_path, config_type=config_type)
 
 
 def _wait_until_interrupted() -> None:

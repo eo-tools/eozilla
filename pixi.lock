@@ -16535,7 +16535,7 @@ packages:
   requires_dist:
   - ipython
   - pydantic>=2.12
-  - pydantic-settings
+  - pydantic-settings>=2.14.2
   - pyyaml
   - remotestate>=0.3.4,<1
   - typer>=0.26.0,<1

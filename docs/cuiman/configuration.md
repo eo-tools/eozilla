@@ -11,17 +11,55 @@ entry overrides that of a previous one.
 
 1. Default settings hard-coded into the `cuiman.api.ClientConfig` class.
 2. Settings loaded from a given or the default configuration file passed as `config_path`.
-3. Credentials stored in the operating-system keyring for that configuration
-   file and API URL.
-4. Settings loaded from environment variables prefixed with `EOZILLA_`.
-5. Settings from another configuration object of type `cuiman.api.ClientConfig` passed as `config`.
+3. Settings loaded from the selected configuration class's `.env` file.
+4. Settings loaded from environment variables using the selected class's prefix.
+5. Explicit fields from a configuration object passed as `config`.
 6. Settings from keyword arguments passed directly to the client as `config_kwargs`.
 
-This list is implemented in the class method `create()` of the 
-`cuiman.api.ClientConfig` class. 
+`ClientConfig.create()` implements this precedence. Explicit fields retain their
+priority even when their values equal class defaults. Partial authentication
+settings are merged before validating the effective configuration. The file is
+also validated independently so invalid profiles always produce the documented
+`configure` error, even if another source could override their invalid fields.
 
-Note that applications using `cuiman` under the hood may customize the 
-configuration, see [Cuiman Customization](./customization.md). 
+After resolution, matching operating-system keyring entries can fill missing
+credentials. They never replace credentials supplied by any configuration source.
+
+Applications using `cuiman` can select their own `ClientConfig` subclass for
+each sync client, async client, and CLI. That class is an isolated settings
+namespace: it owns the schema, default profile path, dotenv/environment prefix,
+and field defaults without mutating `ClientConfig` globally. See
+[Cuiman Customization](./customization.md).
+
+### Reusing resolved configuration
+
+The configuration returned by `ClientConfig.create()` or `client.config` is a
+resolved snapshot. Passing it to another client preserves its values, application
+type, and profile identity without rereading the file, `.env`, or environment.
+Keyword overrides update that snapshot; an empty override such as `auth={}` does
+not cause unrelated settings to change. Mutable values are copied between clients.
+
+```python
+client = Client(config_type=MyConfig)
+other = AsyncClient(config=client.config, auth={"access_token": replacement_token})
+```
+
+An explicitly different `config_path` starts fresh source loading for that profile;
+the supplied snapshot still has precedence over those sources. To reload all
+sources without carrying snapshot values, construct a new client with `config_type`
+and the desired path, omitting `config`.
+
+Keyring lookup is a separate decision: a snapshot initially created with
+`resolve_secrets=False` can later fill missing credentials with
+`ClientConfig.create(config=snapshot, resolve_secrets=True)`. It retains whether
+its originating profile existed, so this does not require rereading the file.
+Reusing a profile preserves an existing credential persistence hook when the
+API URL and authentication configuration are unchanged.
+
+Direct `MyConfig(...)` construction uses Pydantic Settings' own environment and
+dotenv handling. `MyConfig.new_instance(...)` validates explicit values without
+external sources. Both produce input configurations; use `create()` or a client
+constructor for Cuiman's full resolution and snapshot behavior.
 
 ### Replacing or merging authentication
 

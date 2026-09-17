@@ -222,7 +222,9 @@ class CliTest(TestCase):
 
             _offer_login_after_config(config_path)
 
-        login_client_with_prompt.assert_called_once_with(config_path)
+        login_client_with_prompt.assert_called_once_with(
+            config_path, config_type=ClientConfig
+        )
 
     @patch(
         "cuiman.cli.config.login_client_with_prompt",
@@ -253,7 +255,11 @@ class CliTest(TestCase):
 
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         login_client_with_prompt.assert_called_once_with(
-            "client-config.yaml", no_browser=False, force=False, interactive=True
+            "client-config.yaml",
+            config_type=ClientConfig,
+            no_browser=False,
+            force=False,
+            interactive=True,
         )
 
     @patch("cuiman.cli.config.login_client_with_prompt")
@@ -262,7 +268,11 @@ class CliTest(TestCase):
 
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
         login_client_with_prompt.assert_called_once_with(
-            "client-config.yaml", no_browser=True, force=False, interactive=True
+            "client-config.yaml",
+            config_type=ClientConfig,
+            no_browser=True,
+            force=False,
+            interactive=True,
         )
 
     @patch(
@@ -290,7 +300,9 @@ class CliTest(TestCase):
         result = invoke_cli("logout", "--config", "client-config.yaml")
 
         self.assertEqual(0, result.exit_code, msg=self.get_result_msg(result))
-        logout_client.assert_called_once_with("client-config.yaml")
+        logout_client.assert_called_once_with(
+            "client-config.yaml", config_type=ClientConfig
+        )
 
     @patch("cuiman.cli.config.logout_client", side_effect=ValueError("bad logout"))
     def test_logout_with_configuration_error(self, _logout_client: MagicMock):
