@@ -3,15 +3,10 @@
 #  https://opensource.org/license/apache-2-0.
 
 import sys
-from pathlib import Path
-from typing import Annotated, Final, Optional
+from typing import TYPE_CHECKING, Annotated, Final, Optional
 
 import typer.core
 
-from cuiman.api.auth.config import AUTH_TYPE_NAMES, OAUTH2_GRANT_TYPE_NAMES
-from cuiman.api.auth.secret_store import SecretStoreError
-from cuiman.api.config import ClientConfig
-from cuiman.cli.output import OutputFormat
 from gavicore.util.cli.group import AliasedGroup
 from gavicore.util.cli.parameters import (
     DOT_PATH_OPTION,
@@ -21,7 +16,12 @@ from gavicore.util.cli.parameters import (
     REQUEST_SUBSCRIBER_OPTION,
 )
 
-from .client import handle_auth_errors
+from .output import OutputFormat
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from cuiman.api.config import ClientConfig
 
 DEFAULT_NAME = "cuiman"
 
@@ -86,7 +86,7 @@ def new_cli(
     help: str | None = None,
     summary: str | None = None,
     version: str | None = None,
-    config_type: type[ClientConfig] = ClientConfig,
+    config_type: type["ClientConfig"] | None = None,
 ) -> typer.Typer:
     """
     Create a server CLI instance for the given, optional name and help text.
@@ -102,6 +102,7 @@ def new_cli(
             `cuiman` version will be used.
         config_type: Application settings class. It supplies the CLI's schema,
             defaults, environment namespace, and default profile location.
+            If omitted, `ClientConfig` is loaded when a command needs it.
     Return:
         a `typer.Typer` instance
     """
@@ -149,10 +150,16 @@ def new_cli(
         def get_client(config_path: str | None):
             # defer importing
             from cuiman import Client
-            from cuiman.cli.config import get_config
+            from cuiman.api.auth.secret_store import SecretStoreError
+
+            from .config import get_config
 
             try:
-                config = get_config(config_path, config_type=config_type, cli_name=name)
+                config = get_config(
+                    config_path,
+                    config_type=_get_config_type(config_type),
+                    cli_name=name,
+                )
             except (SecretStoreError, ValueError) as exc:
                 typer.echo(str(exc), err=True)
                 raise typer.Exit(code=1) from exc
@@ -188,7 +195,7 @@ def new_cli(
                 "--auth-type",
                 "-a",
                 help="The authorisation method for the API "
-                f"({'|'.join(AUTH_TYPE_NAMES)}).",
+                "(none|basic|token|login|oauth2|oidc|api-key).",
             ),
         ] = None,
         login_url: Annotated[
@@ -209,7 +216,7 @@ def new_cli(
             str | None,
             typer.Option(
                 "--grant-type",
-                help=f"The OAuth2 grant type ({'|'.join(OAUTH2_GRANT_TYPE_NAMES)}).",
+                help="The OAuth2 grant type (password|client_credentials).",
             ),
         ] = None,
         client_id: Annotated[
@@ -258,7 +265,7 @@ def new_cli(
         try:
             config_path = configure_client_with_prompt(
                 config_path=config_file,
-                config_type=config_type,
+                config_type=_get_config_type(config_type),
                 interactive=sys.stdin.isatty(),
                 api_url=api_url,
                 auth_type=auth_type,
@@ -300,12 +307,13 @@ def new_cli(
         ] = False,
     ):
         """Reuse or obtain credentials and save them in the OS keyring."""
+        from .client import handle_auth_errors
         from .config import login_client_with_prompt
 
         with handle_auth_errors(name):
             login_client_with_prompt(
                 config_file,
-                config_type=config_type,
+                config_type=_get_config_type(config_type),
                 no_browser=no_browser,
                 force=force,
                 interactive=not no_input,
@@ -316,10 +324,11 @@ def new_cli(
         config_file: Annotated[str | None, CONFIG_OPTION] = None,
     ):
         """Remove the locally stored credentials for this configuration."""
+        from .client import handle_auth_errors
         from .config import logout_client
 
         with handle_auth_errors(name):
-            logout_client(config_file, config_type=config_type)
+            logout_client(config_file, config_type=_get_config_type(config_type))
 
     @t.command()
     def generate_client(
@@ -561,13 +570,23 @@ def new_cli(
     return t
 
 
+def _get_config_type(config_type: type["ClientConfig"] | None) -> type["ClientConfig"]:
+    """Resolve the default settings class only for commands that need settings."""
+    if config_type is None:
+        from cuiman.api.config import ClientConfig
+
+        return ClientConfig
+    return config_type
+
+
 def _offer_login_after_config(
-    config_path: Path,
+    config_path: "Path",
     *,
-    config_type: type[ClientConfig] = ClientConfig,
+    config_type: type["ClientConfig"] | None = None,
     cli_name: str | None = None,
 ) -> None:
     """Offer interactive login when the new configuration requires it."""
+    config_type = _get_config_type(config_type)
     configured_config = config_type.from_file(config_path)
     assert configured_config is not None
     if (
@@ -575,6 +594,7 @@ def _offer_login_after_config(
         and sys.stdin.isatty()
         and typer.confirm("Log in now?", default=False)
     ):
+        from .client import handle_auth_errors
         from .config import login_client_with_prompt
 
         with handle_auth_errors(cli_name):

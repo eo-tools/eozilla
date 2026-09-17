@@ -61,6 +61,10 @@
 
 ### Fixes
 
+- **Cuiman** defers client configuration, authentication, and notebook imports
+  until a CLI command needs them. Help, version output, and command discovery
+  no longer load the client runtime. Public Python API imports remain supported.
+
 - **Cuiman** resolves fresh configuration sources once and preserves resolved
   snapshots when wrapping clients or applying overrides. Explicit default-valued
   settings keep their precedence; required application fields and input aliases

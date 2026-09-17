@@ -83,7 +83,7 @@ def new_cli(
             `wraptile` help text will be used
         summary: A one-sentence human-readable description of the tool that
             will be used by the default help text. Hence, used only,
-            if `help`is not provided. Should end with a dot '.'.
+            if `help` is not provided. Should end with a dot '.'.
         version: Optional version string. If not provided, the
             `wraptile` version will be used.
     Return:
