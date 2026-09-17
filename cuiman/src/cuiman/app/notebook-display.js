@@ -15,6 +15,7 @@
    * @property {boolean} proxyApp
    * @property {boolean} autoProxy
    * @property {boolean} openInBrowser
+   * @property {string | null} displayName
    */
 
   function detectJupyterScheme() {
@@ -76,14 +77,14 @@
   async function isJupyterProxyAvailable(url) {
     try {
       const response = await fetch(url, { method: "GET" });
-      console.debug("[cuiman] Jupyter proxy probe", {
+      console.debug(`[${displayName || "app"}] Jupyter proxy probe`, {
         url: url.toString(),
         status: response.status,
         available: response.ok,
       });
       return response.ok;
     } catch (error) {
-      console.debug("[cuiman] Jupyter proxy probe failed", {
+      console.debug(`[${displayName || "app"}] Jupyter proxy probe failed`, {
         url: url.toString(),
         error: String(error),
       });
@@ -99,7 +100,7 @@
     !(configElement instanceof HTMLScriptElement) ||
     !(root instanceof HTMLElement)
   ) {
-    throw new Error("Invalid Cuiman notebook display markup");
+    throw new Error("Invalid notebook display markup");
   }
 
   /** @type {NotebookDisplayConfig} */
@@ -113,6 +114,7 @@
     proxyApp,
     autoProxy,
     openInBrowser,
+    displayName,
   } = config;
 
   let src = new URL(baseSrc, window.location.href);
@@ -121,7 +123,7 @@
   let wsUrl = src.searchParams.get("ws");
   let useProxy = false;
 
-  console.debug("[cuiman] display setup", {
+  console.debug(`[${displayName || "app"}] display setup`, {
     jupyterBaseUrl: proxyPort === null ? null : getJupyterBaseUrl(),
     proxyPort,
     proxyApp,
@@ -176,7 +178,7 @@
     src.searchParams.set("ws", wsUrl);
   }
 
-  console.debug("[cuiman] display target", {
+  console.debug(`[${displayName || "app"}] display target`, {
     appUrl: `${src.origin}${src.pathname}`,
     wsUrl,
     proxy: src.searchParams.get(PROXY_QUERY_PARAM),
@@ -196,7 +198,7 @@
       link.href = src.toString();
       link.target = "_blank";
       link.rel = "noopener";
-      link.textContent = "Open Cuiman app";
+      link.textContent = displayName ? `Open ${displayName} app` : "Open app";
       root.replaceChildren(link);
     }
     return;

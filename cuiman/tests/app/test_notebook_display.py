@@ -17,7 +17,11 @@ pytestmark = pytest.mark.skipif(_NODE is None, reason="Node.js is required")
 _HARNESS = """
 const vm = require('node:vm');
 const fs = require('node:fs');
-const { script, notebookUrl, appUrl, proxyAvailable } = JSON.parse(
+const {
+  script, notebookUrl, appUrl, proxyAvailable,
+  displayName = null, openInBrowser = false, inspectBranding = false,
+  invalidMarkup = false,
+} = JSON.parse(
   fs.readFileSync(0, 'utf8')
 );
 class HTMLElement {
@@ -29,15 +33,16 @@ const config = new HTMLScriptElement();
 config.previousElementSibling = root;
 config.textContent = JSON.stringify({
   baseSrc: appUrl, autoScheme: false, width: '100%', height: '600px',
-  proxyPort: 8765, proxyApp: true, autoProxy: true, openInBrowser: false,
+  proxyPort: 8765, proxyApp: true, autoProxy: true, openInBrowser, displayName,
 });
 const location = new URL(notebookUrl);
+const logs = [];
 const context = {
   URL, HTMLElement, HTMLScriptElement,
-  console: { debug() {} },
-  window: { location },
+  console: { debug(message) { logs.push(message); } },
+  window: { location, open() { return null; } },
   document: {
-    currentScript: { previousElementSibling: config },
+    currentScript: invalidMarkup ? null : { previousElementSibling: config },
     body: { dataset: {} }, documentElement: { dataset: {} },
     getElementById() { return null; },
     createElement() { return { style: {} }; },
@@ -45,7 +50,9 @@ const context = {
   fetch: async () => ({ ok: proxyAvailable, status: proxyAvailable ? 200 : 404 }),
 };
 Promise.resolve(vm.runInNewContext(script, context)).then(() => {
-  process.stdout.write(root.child.src);
+  process.stdout.write(inspectBranding
+    ? JSON.stringify({ label: root.child.textContent, logs })
+    : root.child.src);
 }).catch(error => { console.error(error); process.exitCode = 1; });
 """
 
@@ -127,3 +134,48 @@ def test_notebook_display_url(notebook_url, app_url, proxy_available, expected_u
     )
 
     assert result.stdout == expected_url
+
+
+@pytest.mark.parametrize("name", [None, 'Anolis <name> "quoted"'])
+def test_notebook_link_and_debug_messages_use_display_name(name):
+    result = run_branding_script(displayName=name)
+    assert result.returncode == 0, result.stderr
+    output = json.loads(result.stdout)
+    assert output["label"] == (f"Open {name} app" if name else "Open app")
+    assert output["logs"] == [
+        f"[{name or 'app'}] display setup",
+        f"[{name or 'app'}] Jupyter proxy probe",
+        f"[{name or 'app'}] display target",
+    ]
+
+
+def test_invalid_notebook_markup_has_neutral_error_before_config_is_available():
+    result = run_branding_script(invalidMarkup=True)
+    assert result.returncode == 1
+    assert "Invalid notebook display markup" in result.stderr
+    assert "Cuiman" not in result.stderr
+
+
+def run_branding_script(**options):
+    script = (
+        resources.files("cuiman.app")
+        .joinpath("notebook-display.js")
+        .read_text(encoding="utf-8")
+    )
+    return subprocess.run(  # noqa: S603
+        [_NODE, "-e", _HARNESS],
+        input=json.dumps(
+            dict(
+                script=script,
+                notebookUrl="http://localhost:8888/lab",
+                appUrl="http://localhost:8765/index.html?launch=test-code",
+                proxyAvailable=True,
+                openInBrowser=True,
+                inspectBranding=True,
+                **options,
+            )
+        ),
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )

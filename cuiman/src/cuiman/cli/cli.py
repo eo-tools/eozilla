@@ -92,7 +92,7 @@ def new_cli(
     Create a server CLI instance for the given, optional name and help text.
 
     Args:
-        name: The name of the CLI application. Defaults to `wraptile`.
+        name: The name of the CLI application. Defaults to `cuiman`.
         help: Optional CLI application help text. If not provided, the default
             `cuiman` help text will be used.
         summary: A one-sentence human-readable description of the tool that
@@ -141,7 +141,7 @@ def new_cli(
             from cuiman import __version__ as default_version
 
             if version:
-                typer.echo(f"{version} ({DEFAULT_NAME} {default_version})")
+                typer.echo(f"{name} {version} ({DEFAULT_NAME} {default_version})")
             else:
                 typer.echo(default_version)
             return
@@ -152,7 +152,7 @@ def new_cli(
             from cuiman.cli.config import get_config
 
             try:
-                config = get_config(config_path, config_type=config_type)
+                config = get_config(config_path, config_type=config_type, cli_name=name)
             except (SecretStoreError, ValueError) as exc:
                 typer.echo(str(exc), err=True)
                 raise typer.Exit(code=1) from exc
@@ -166,6 +166,7 @@ def new_cli(
         for k, v in dict(
             get_client=get_client,
             traceback=traceback,
+            cli_name=name,
             # add global options here...
             # verbose=verbose,
         ).items():
@@ -274,7 +275,7 @@ def new_cli(
             typer.echo(str(exc), err=True)
             raise typer.Exit(code=1) from exc
         typer.echo(f"Client configuration written to {config_path}")
-        _offer_login_after_config(config_path, config_type=config_type)
+        _offer_login_after_config(config_path, config_type=config_type, cli_name=name)
 
     @t.command()
     def login(
@@ -301,7 +302,7 @@ def new_cli(
         """Reuse or obtain credentials and save them in the OS keyring."""
         from .config import login_client_with_prompt
 
-        with handle_auth_errors():
+        with handle_auth_errors(name):
             login_client_with_prompt(
                 config_file,
                 config_type=config_type,
@@ -317,7 +318,7 @@ def new_cli(
         """Remove the locally stored credentials for this configuration."""
         from .config import logout_client
 
-        with handle_auth_errors():
+        with handle_auth_errors(name):
             logout_client(config_file, config_type=config_type)
 
     @t.command()
@@ -564,6 +565,7 @@ def _offer_login_after_config(
     config_path: Path,
     *,
     config_type: type[ClientConfig] = ClientConfig,
+    cli_name: str | None = None,
 ) -> None:
     """Offer interactive login when the new configuration requires it."""
     configured_config = config_type.from_file(config_path)
@@ -575,7 +577,7 @@ def _offer_login_after_config(
     ):
         from .config import login_client_with_prompt
 
-        with handle_auth_errors():
+        with handle_auth_errors(cli_name):
             login_client_with_prompt(config_path, config_type=config_type)
 
 

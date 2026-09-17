@@ -114,7 +114,7 @@ def new_cli(
             from wraptile import __version__ as default_version
 
             if version:
-                typer.echo(f"{version} ({DEFAULT_NAME} {default_version})")
+                typer.echo(f"{name} {version} ({DEFAULT_NAME} {default_version})")
             else:
                 typer.echo(default_version)
             return

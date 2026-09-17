@@ -142,6 +142,7 @@ def serve(
             proxy_app=proxy_app,
             auto_proxy=proxy == "auto",
             open_in_browser=display == "browser",
+            display_name=config.display_name,
         )
         ipython_display(display_object)
 

@@ -2,6 +2,13 @@
 
 ### Enhancements
 
+- **Cuiman** now supports application branding in login guidance, notebook links,
+  browser debug messages, and app-launch errors through optional
+  `ClientConfig.display_name` and `cli_name` class metadata. CLI recovery messages
+  use the name passed to `new_cli()`, with neutral wording where branding is
+  unavailable. Custom-version output in **Cuiman** and **Wraptile** now includes
+  the branded command name while retaining the underlying library version.
+
 - **Documentation** now provides maintained Cuiman API, App, CLI, and result
   opener guides with reusable, tested examples and static screenshots. Examples
   follow the current authentication, App, and built-in opener interfaces. The

@@ -66,6 +66,20 @@ class ClientConfig(BaseSettings):
     Designed to be overridden by library clients.
     """
 
+    display_name: ClassVar[str | None] = None
+    """Application name for notebook labels and app-launch errors.
+
+    Override in an application subclass. When absent, messages use neutral
+    wording. This metadata is excluded from settings and saved profiles.
+    """
+
+    cli_name: ClassVar[str | None] = None
+    """Optional command name for login guidance in the Python API.
+
+    Set only when the application provides a CLI. CLI instances use their own
+    ``new_cli(name=...)`` value instead. This metadata is not persisted.
+    """
+
     return_type_map: ClassVar[dict[type, type]] = {}
     """
     A mapping from a hard-coded client return type to a 

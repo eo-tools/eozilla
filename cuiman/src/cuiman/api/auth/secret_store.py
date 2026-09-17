@@ -49,7 +49,7 @@ def load_auth_secrets(
             part = _get_password(service, account)
             if part is None:
                 raise SecretStoreError(
-                    "Stored Cuiman credentials are incomplete. Please log in again."
+                    "Stored credentials are incomplete. Please log in again."
                 )
             parts.append(part)
         stored_value = "".join(parts)
@@ -59,14 +59,14 @@ def load_auth_secrets(
         stored_auth_type = stored_data["auth_type"]
         secrets = stored_data["secrets"]
     except (KeyError, TypeError, json.JSONDecodeError) as exc:
-        raise SecretStoreError("Stored Cuiman credentials are invalid.") from exc
+        raise SecretStoreError("Stored credentials are invalid.") from exc
     if stored_auth_type != auth_type:
         return {}
     if not isinstance(secrets, dict) or not all(
         isinstance(name, str) and isinstance(value, str)
         for name, value in secrets.items()
     ):
-        raise SecretStoreError("Stored Cuiman credentials are invalid.")
+        raise SecretStoreError("Stored credentials are invalid.")
     return secrets
 
 
@@ -95,7 +95,7 @@ def save_auth_secrets(
                 for start in range(0, len(stored_value), _CHUNK_SIZE)
             ]
             if len(parts) > _MAX_CHUNKS:
-                raise SecretStoreError("Cuiman credentials exceed the storage limit.")
+                raise SecretStoreError("Credentials exceed the storage limit.")
             generation = uuid4().hex
             for service, part in zip(
                 _chunk_services(account, (generation, len(parts))), parts, strict=True
@@ -149,7 +149,7 @@ def _chunk_info(value: str | None) -> tuple[str, int] | None:
         or type(count) is not int
         or not 1 <= count <= _MAX_CHUNKS
     ):
-        raise SecretStoreError("Stored Cuiman credential metadata is invalid.")
+        raise SecretStoreError("Stored credential metadata is invalid.")
     return generation, count
 
 

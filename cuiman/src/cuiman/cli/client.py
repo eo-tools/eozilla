@@ -21,15 +21,21 @@ GetClient: TypeAlias = Callable[[str | None], Client]
 
 
 @contextmanager
-def handle_auth_errors() -> Iterator[None]:
+def handle_auth_errors(cli_name: str | None = None) -> Iterator[None]:
     """Report actionable CLI failures without echoing provider token responses."""
+    login = f"{cli_name} login" if cli_name else "login"
     try:
         yield
     except (AuthlibBaseError, JoseError, httpx2.HTTPError) as exc:
         typer.echo(
             "Authentication failed. Check provider settings and credentials; "
-            "use 'cuiman login --force' to sign in again.",
+            f"use '{login} --force' to sign in again.",
             err=True,
+        )
+        raise typer.Exit(code=1) from exc
+    except LoginRequiredError as exc:
+        typer.echo(
+            f"Authentication requires login. Use '{login}' to sign in.", err=True
         )
         raise typer.Exit(code=1) from exc
     except (SecretStoreError, RuntimeError, TimeoutError, ValueError) as exc:
@@ -92,7 +98,7 @@ class UseClient:
             isinstance(exc_value, (AuthlibBaseError, JoseError, LoginRequiredError))
             and not show_traceback
         ):
-            with handle_auth_errors():
+            with handle_auth_errors(self.ctx.obj.get("cli_name")):
                 raise exc_value
 
         return False  # propagate exception

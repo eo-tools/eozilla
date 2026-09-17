@@ -60,6 +60,7 @@ def test_create_app_display_object_returns_auto_scheme_html():
         "proxyApp": False,
         "autoProxy": False,
         "openInBrowser": False,
+        "displayName": None,
     }
 
 
@@ -95,9 +96,17 @@ def test_create_app_display_object_uses_jupyter_proxy():
     )
     assert "async function isJupyterProxyAvailable(url)" in display_object.data
     assert 'fetch(url, { method: "GET" })' in display_object.data
-    assert 'console.debug("[cuiman] Jupyter proxy probe"' in display_object.data
-    assert 'console.debug("[cuiman] display setup"' in display_object.data
-    assert 'console.debug("[cuiman] display target"' in display_object.data
+    assert (
+        'console.debug(`[${displayName || "app"}] Jupyter proxy probe`'
+        in display_object.data
+    )
+    assert (
+        'console.debug(`[${displayName || "app"}] display setup`' in display_object.data
+    )
+    assert (
+        'console.debug(`[${displayName || "app"}] display target`'
+        in display_object.data
+    )
     assert 'getJupyterProxyUrl(proxyPort, "ws")' in display_object.data
     assert "const isCuimanMode =" in display_object.data
     assert "if (useProxy && !isCuimanMode)" in display_object.data
@@ -147,7 +156,10 @@ def test_create_app_display_object_opens_browser_with_link_fallback():
 
     assert _get_display_config(display_object)["openInBrowser"] is True
     assert 'window.open(src.toString(), "_blank", "noopener")' in display_object.data
-    assert 'link.textContent = "Open Cuiman app"' in display_object.data
+    assert (
+        'link.textContent = displayName ? `Open ${displayName} app` : "Open app"'
+        in display_object.data
+    )
 
 
 def test_create_app_display_object_escapes_script_end_in_config():
@@ -164,6 +176,19 @@ def test_create_app_display_object_escapes_script_end_in_config():
         display_object.data
     )
     assert _get_display_config(display_object)["baseSrc"] == app_url
+
+
+def test_display_name_is_serialized_safely():
+    name = 'Anolis </script><script>alert("name")</script>'
+    display_object = create_app_display_object(
+        "https://example.test/app?launch=code",
+        auto_scheme=False,
+        width="100%",
+        height=600,
+        display_name=name,
+    )
+    assert _get_display_config(display_object)["displayName"] == name
+    assert name not in display_object.data
 
 
 def test_notebook_display_script_is_package_data():

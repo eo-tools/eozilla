@@ -46,6 +46,8 @@ class AnolisClientConfig(ClientConfig):
     )
 
     default_path: ClassVar[Path] = Path.home() / ".anolis-client"
+    display_name: ClassVar[str | None] = "Anolis"
+    cli_name: ClassVar[str | None] = "anolis-client"
     api_url: str | None = "https://anolis.api.org/process-api/v1"
     auth: AuthConfig = NoAuthConfig()
     extra_job_result_openers = [AnolisJobResultsOpener]
@@ -61,6 +63,18 @@ def create_async_client(**config: Any) -> AsyncClient:
 
 cli = new_cli(name="anolis-client", config_type=AnolisClientConfig)
 ```
+
+`display_name` supplies the application name for notebook links, browser debug
+messages, and app-launch errors. `cli_name` optionally adds a login command to
+Python API errors; leave it unset for applications without a CLI. Both are class
+metadata, excluded from environment settings and saved profiles. Without them,
+messages use neutral wording. Low-level credential-storage errors also use
+neutral wording, including errors raised before configuration can be loaded.
+
+CLI recovery messages always use the name passed to `new_cli()`, even when it
+differs from `config_type.cli_name`. Creating a CLI does not modify the config
+class or other clients. With a custom version, `--version` prints
+`anolis-client <application-version> (cuiman <library-version>)`.
 
 `config_type` selects the schema, field defaults, dotenv and environment
 settings, profile path, and result-opening extensions for a client or CLI.
