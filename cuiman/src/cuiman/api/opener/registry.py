@@ -20,6 +20,7 @@ class JobResultOpenerRegistry:
         """Create a registry that includes default job result openers."""
         from .impl import (
             GeopandasDataFrameOpener,
+            ImageOpener,
             PandasDataFrameOpener,
             XarrayDatasetOpener,
         )
@@ -28,6 +29,8 @@ class JobResultOpenerRegistry:
         registry.register(GeopandasDataFrameOpener)
         registry.register(PandasDataFrameOpener)
         registry.register(XarrayDatasetOpener)
+        # Prefer Pillow for images before the generic dataset opener.
+        registry.register(ImageOpener)
         return registry
 
     @property

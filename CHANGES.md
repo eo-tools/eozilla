@@ -54,6 +54,10 @@
 
 ### Fixes
 
+- **Cuiman** now registers its Pillow image opener by default and gives it
+  precedence over xarray for supported images, including PNG and JPEG job
+  results. Explicit requests for an xarray dataset remain supported.
+
 - **Cuiman** resolves fresh configuration sources once and preserves resolved
   snapshots when wrapping clients or applying overrides. Explicit default-valued
   settings keep their precedence; required application fields and input aliases
