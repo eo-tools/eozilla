@@ -2,9 +2,11 @@
 
 `client.get_job_results(job_id)` retrieves result values and references.
 `client.open_job_result(job_id)` waits for completion and opens a selected
-output using a registered opener. Cuiman includes xarray, pandas, and GeoPandas
-openers; each requires its corresponding optional library. Custom openers
-extend or specialize this behavior.
+output using a registered opener. Cuiman includes Pillow, xarray, pandas, and
+GeoPandas openers; each requires its corresponding optional library. The Pillow
+image opener takes precedence over the dataset openers for supported images,
+including PNG and JPEG, and returns a `PIL.Image.Image`. Custom openers extend
+or specialize this behavior.
 
 The following example uses `simulate_scene` from the
 [local test service](api.md#start-the-local-service). Run the Python blocks in
