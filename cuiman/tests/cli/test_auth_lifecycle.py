@@ -10,6 +10,55 @@ from cuiman.api.auth.secret_store import SecretStoreError
 from cuiman.cli.config import login_client_with_prompt, logout_client
 
 
+@pytest.mark.parametrize("command", ["login", "list-processes"])
+def test_branded_cli_auth_failure_uses_its_own_name(command, monkeypatch):
+    from authlib.integrations.base_client.errors import OAuthError
+    from typer.testing import CliRunner
+
+    from cuiman.cli.cli import new_cli
+
+    class ApplicationConfig(ClientConfig):
+        cli_name = "api-client"
+
+    ApplicationConfig(auth={"auth_type": "token", "access_token": "token"}).write()
+    monkeypatch.setattr(
+        "cuiman.api.config.load_auth_secrets", lambda *args: {"access_token": "token"}
+    )
+    failure = Mock(side_effect=OAuthError(error="private-provider-detail"))
+    monkeypatch.setattr("cuiman.api.client.Client.login", failure)
+    monkeypatch.setattr("cuiman.api.client.Client.get_processes", failure)
+    for name in ("anolis-client", "gecko-client"):
+        result = CliRunner().invoke(
+            new_cli(name=name, config_type=ApplicationConfig), [command]
+        )
+        assert result.exit_code == 1, result.output
+        assert f"'{name} login --force'" in result.output
+        assert "api-client" not in result.output
+        assert "private-provider-detail" not in result.output
+    assert ApplicationConfig.cli_name == "api-client"
+    assert ClientConfig.cli_name is None
+
+
+@pytest.mark.parametrize("command", [["login", "--no-input"], ["list-processes"]])
+def test_branded_cli_missing_credentials_uses_its_own_name(command, monkeypatch):
+    from typer.testing import CliRunner
+
+    from cuiman.cli.cli import new_cli
+
+    class ApplicationConfig(ClientConfig):
+        cli_name = "api-client"
+
+    ApplicationConfig(auth={"auth_type": "token"}).write()
+    monkeypatch.setattr("cuiman.api.config.load_auth_secrets", lambda *args: {})
+    result = CliRunner().invoke(
+        new_cli(name="anolis-client", config_type=ApplicationConfig), command
+    )
+    assert result.exit_code == 1
+    assert "'anolis-client login'" in result.output
+    assert "api-client" not in result.output
+    assert "cuiman" not in result.output
+
+
 @pytest.mark.parametrize(
     "auth,answers",
     [

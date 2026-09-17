@@ -55,7 +55,7 @@ LAUNCH_CODE_TTL_SECONDS = 300
 INVALID_LAUNCH_STATUS = status.HTTP_410_GONE
 """Response status for an expired or otherwise unusable launch code."""
 
-INVALID_LAUNCH_DETAIL = "The Cuiman app launch has expired or is no longer valid."
+INVALID_LAUNCH_DETAIL = "The app launch has expired or is no longer valid."
 """Server-authoritative explanation for ``INVALID_LAUNCH_STATUS``."""
 
 _UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
@@ -194,7 +194,12 @@ class LaunchedAppService(rs.Service[Any]):
         if launch_code not in self._launch_codes:
             raise HTTPException(
                 status_code=INVALID_LAUNCH_STATUS,
-                detail=INVALID_LAUNCH_DETAIL,
+                detail=(
+                    f"The {self._client_config.display_name} app launch has expired "
+                    "or is no longer valid."
+                    if self._client_config.display_name
+                    else INVALID_LAUNCH_DETAIL
+                ),
             )
 
     def _remove_expired_launch_codes(self) -> None:
@@ -313,7 +318,7 @@ def _reject_path_traversal(path: str) -> None:
     if ".." in path.split("/"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Path traversal is not allowed in a Cuiman proxy request.",
+            detail="Path traversal is not allowed in a proxy request.",
         )
 
 

@@ -27,6 +27,29 @@ def kind(request):
     return request.param
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("cli_name", [None, "anolis-client"])
+async def test_login_guidance_uses_application_metadata(kind, cli_name):
+    class ApplicationConfig(ClientConfig):
+        display_name = "Anolis"
+
+    ApplicationConfig.cli_name = cli_name
+    client = kind(config_type=ApplicationConfig, auth={"auth_type": "token"})
+    try:
+        with pytest.raises(LoginRequiredError) as caught:
+            await invoke(client.login, interactive=False)
+        message = str(caught.value)
+        assert "client.login()" in message
+        assert "cuiman" not in message
+        assert ("'anolis-client login'" in message) == bool(cli_name)
+        assert "display_name" not in client.config.model_dump()
+        assert "cli_name" not in client.config.to_file_dict()
+        assert ClientConfig.display_name is None
+        assert ClientConfig.cli_name is None
+    finally:
+        await invoke(client.close)
+
+
 def oauth(**changes):
     return dict(
         auth_type="oauth2",

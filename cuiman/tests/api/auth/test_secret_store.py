@@ -103,7 +103,7 @@ def test_load_auth_secrets_ignores_record_for_another_auth_type(
 def test_load_auth_secrets_rejects_invalid_record(mock_get_password, tmp_path: Path):
     mock_get_password.return_value = "not-json"
 
-    with pytest.raises(SecretStoreError, match="Stored Cuiman credentials are invalid"):
+    with pytest.raises(SecretStoreError, match="Stored credentials are invalid"):
         load_auth_secrets(tmp_path / "config", "https://api.example.test/", "login")
 
 
@@ -115,7 +115,7 @@ def test_load_auth_secrets_rejects_non_string_secret_value(
         {"auth_type": "token", "secrets": {"access_token": 1}}
     )
 
-    with pytest.raises(SecretStoreError, match="Stored Cuiman credentials are invalid"):
+    with pytest.raises(SecretStoreError, match="Stored credentials are invalid"):
         load_auth_secrets(tmp_path / "config", "https://api.example.test/", "token")
 
 

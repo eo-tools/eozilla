@@ -34,6 +34,18 @@ def test_get_app_dist_url_or_dir_accepts_explicit_dist_url_or_dir():
     assert serve_module._get_app_dist_url_or_dir("C:/app/dist") == "C:/app/dist"
 
 
+def test_serve_passes_application_display_name_to_notebook(monkeypatch):
+    install_serve_fakes(monkeypatch)
+    create_display = Mock()
+    monkeypatch.setattr(serve_module, "create_app_display_object", create_display)
+
+    class ApplicationConfig(ClientConfig):
+        display_name = "Anolis"
+
+    serve_module.serve(ApplicationConfig(), App.create_remote_store())
+    assert create_display.call_args.kwargs["display_name"] == "Anolis"
+
+
 def test_bundled_app_uses_relative_asset_urls():
     index_html = files("cuiman.app").joinpath("dist/index.html").read_text()
 
@@ -161,6 +173,7 @@ def test_serve_displays_in_notebook(monkeypatch):
             "proxy_app": False,
             "auto_proxy": False,
             "open_in_browser": False,
+            "display_name": None,
         }
     ]
     assert calls["browser_open"] == []
@@ -190,6 +203,7 @@ def test_serve_uses_jupyter_proxy_in_notebook(monkeypatch):
             "proxy_app": True,
             "auto_proxy": False,
             "open_in_browser": False,
+            "display_name": None,
         }
     ]
 
@@ -221,6 +235,7 @@ def test_serve_opens_browser_from_notebook(monkeypatch):
             "proxy_app": False,
             "auto_proxy": False,
             "open_in_browser": True,
+            "display_name": None,
         }
     ]
 
@@ -250,6 +265,7 @@ def test_serve_opens_proxy_browser_from_notebook(monkeypatch):
             "proxy_app": True,
             "auto_proxy": False,
             "open_in_browser": True,
+            "display_name": None,
         }
     ]
 
@@ -278,6 +294,7 @@ def test_serve_auto_proxy_is_resolved_in_notebook(monkeypatch):
             "proxy_app": True,
             "auto_proxy": True,
             "open_in_browser": False,
+            "display_name": None,
         }
     ]
 
