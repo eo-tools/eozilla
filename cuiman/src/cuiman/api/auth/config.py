@@ -171,7 +171,12 @@ class LoginAuthConfig(_AccessTokenAuthConfig):
 
     auth_type: Literal["login"] = "login"
     login_url: HttpUrl
-    """Exact login endpoint; a non-empty path's trailing slash is preserved."""
+    """Login endpoint, retained as a validated ``HttpUrl``.
+
+    Converted to a string for the login request without API base-URL joining:
+    ``/login`` and ``/login/`` remain distinct endpoint paths. ``HttpUrl``
+    preserves a non-empty path's trailing slash but adds ``/`` to a bare host.
+    """
     username: str | None = None
     password: str | None = None
 
@@ -202,7 +207,12 @@ class OAuth2AuthConfig(OAuthTokenConfig):
     }
     auth_type: Literal["oauth2"] = "oauth2"
     token_url: HttpUrl
-    """Exact token endpoint; a non-empty path's trailing slash is preserved."""
+    """OAuth2 token endpoint, retained as a validated ``HttpUrl``.
+
+    Converted to a string for Authlib without API base-URL joining:
+    ``/token`` and ``/token/`` remain distinct endpoint paths. ``HttpUrl``
+    preserves a non-empty path's trailing slash but adds ``/`` to a bare host.
+    """
     grant_type: OAuth2GrantType = "password"
     client_id: str = Field(min_length=1)
     client_secret: str | None = None
@@ -215,7 +225,13 @@ class OidcAuthConfig(OAuthTokenConfig):
 
     auth_type: Literal["oidc"] = "oidc"
     issuer_url: Annotated[HttpUrl, UrlConstraints(preserve_empty_path=True)]
-    """Issuer identifier, preserving trailing slashes for exact discovery matching."""
+    """OIDC issuer identifier used for exact discovery and ID-token matching.
+
+    ``preserve_empty_path=True`` also keeps ``https://identity.example``
+    distinct from ``https://identity.example/``; ordinary ``HttpUrl`` fields
+    add ``/`` to a bare host. A trailing slash is stripped only when building
+    the discovery URL, never from the issuer identifier used for matching.
+    """
     client_id: str = Field(min_length=1)
     scopes: tuple[str, ...] = ()
 
