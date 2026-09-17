@@ -49,6 +49,10 @@ for the login flow and credential lifecycle.
 
 ::: cuiman.api.opener.JobResultOpenerRegistry
 
+## App API
+
+::: cuiman.app.App
+
 
 ## CLI API
 

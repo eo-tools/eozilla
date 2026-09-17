@@ -65,7 +65,7 @@ that comprises a single or multiple Python functions:
 Each step is registered as part of the workflow and enables more complex, 
   structured execution logic.
 
-Please see ![Workflows](workflow-dev.md#creating-a-workflow) documentation to learn more
+Please see [Workflows](workflow-dev.md#creating-a-workflow) documentation to learn more
 about it.
 
 The `ctx` object of type [JobContext][procodile.JobContext]
@@ -78,7 +78,7 @@ can be further specified by
 [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/) annotations.
 Field annotations for an argument can be provided via the `inputs` dictionary
 passed to the [`main`][procodile.ProcessRegistry.main] or 
-[`process`][procodile.ProcessRegistry.process] and [`step`][procodile.Process.step]
+its `process` alias and [`step`][procodile.Workflow.step]
 decorators,
 or preferably as part of the type declaration using the Python `Annotated`
 special form. An example for the latter is

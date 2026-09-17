@@ -8,6 +8,10 @@ repo_name: eo-tools/eozilla
 
 copyright: Copyright &copy; 2026 Eozilla Team
 
+# Ignore generated copies left by older notebook-based builds.
+exclude_docs: |
+  /notebooks/
+
 nav:
   - What is it?: index.md
   - Appligator:
@@ -22,11 +26,11 @@ nav:
     - Authentication: cuiman/authentication.md
     - Customization: cuiman/customization.md
     - GUI-Generation: cuiman/gui-generation.md
-    - Usage:
-      - notebooks/cuiman-api.ipynb
-      - notebooks/cuiman-gui.ipynb
-      - notebooks/cuiman-cli.ipynb
-      - notebooks/cuiman-openers.ipynb
+    - User Guides:
+      - Python API: cuiman/guides/api.md
+      - App: cuiman/guides/app.md
+      - Command Line: cuiman/guides/cli.md
+      - Result Openers: cuiman/guides/openers.md
     - CLI Reference: cuiman/cli.md
     - API Reference: cuiman/api.md
   - Gavicore:
@@ -84,7 +88,6 @@ theme:
     - navigation.indexes
     - toc.follow
     - content.code.copy
-  custom_dir: docs/overrides
 
 markdown_extensions:
   - attr_list
@@ -98,6 +101,10 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
   # - pymdownx.highlight
+  - pymdownx.snippets:
+      base_path: !relative $config_dir
+      check_paths: true
+      dedent_subsections: true
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
@@ -112,7 +119,6 @@ extra:
 plugins:
   - search
   - autorefs
-  - mkdocs-jupyter
   - mkdocstrings:
       handlers:
         python:
@@ -141,6 +147,3 @@ plugins:
             #      schema: true
 extra_css:
   - overrides/css/custom.css
-
-hooks:
-  - docs/hooks/notebooks_json_output.py

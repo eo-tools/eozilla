@@ -24,9 +24,9 @@ if TYPE_CHECKING:
 class JobResultOpenContext:
     """The context around the results of a process job that allows opening
     the job results or a particular job result.
-    Includes `job_results` of type [JobResults][JobResults] and the
+    Includes `job_results` of type [JobResults][gavicore.models.JobResults] and the
     context surrounding it.
-    The context object is passed to the methods of [JobResultOpener][JobResultOpener].
+    The context object is passed to [JobResultOpener][cuiman.api.opener.JobResultOpener].
     """
 
     config: "ClientConfig"
@@ -46,7 +46,7 @@ class JobResultOpenContext:
     Name of the output that should be opened.
     If given, an opener must accept that name and be able to
     return a value of that name from the 
-    [open_job_result()][JobResultOpener.open_job_result] method.
+    [open_job_result()][cuiman.api.opener.JobResultOpener.open_job_result] method.
     """
 
     data_type: type | None = None
@@ -54,13 +54,13 @@ class JobResultOpenContext:
     Data type of the output that should be opened.
     If given, an opener must accept that value and be able to
     return a value of that type from the 
-    [open_job_result()][JobResultOpener.open_job_result] method.
+    [open_job_result()][cuiman.api.opener.JobResultOpener.open_job_result] method.
     """
 
     _media_type: str | None = None
     """The user-provided media type of the output produced.
     If given, provides or overrides the output's media type.
-    Use [output_media_type][output_media_type] to make use of 
+    Use [output_media_type][cuiman.api.opener.JobResultOpenContext.output_media_type] to make use of
     the effective media type.  
     """
 
@@ -95,14 +95,14 @@ class JobResultOpenContext:
     @property
     def output_link(self) -> Link | None:
         """Output link.
-        May be `None` if [`output_value`][output_value] is not a link.
+        May be `None` if `output_value` is not a link.
         """
         return _to_link(self.output_value)
 
     @property
     def output_qualified_value(self) -> QualifiedValue | None:
         """Qualified output value.
-        May be `None` if [`output_value`][output_value] is not a qualified value.
+        May be `None` if `output_value` is not a qualified value.
         """
         return _to_qualified_value(self.output_value)
 
@@ -110,7 +110,7 @@ class JobResultOpenContext:
     def output_media_type(self) -> str | None:
         """The output value's media type.
         If provided, the media type value is usually data format's MIME-type string.
-        May be `None` if [`output_value`][output_value] does not have
+        May be `None` if `output_value` does not have
         a media type assigned.
         """
         value = self.output_value

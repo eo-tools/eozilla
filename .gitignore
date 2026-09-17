@@ -3,8 +3,8 @@
 .cov-report
 notebooks/auth-test.ipynb
 
-# Documentation generation
-docs/notebooks/*.ipynb
+# Legacy generated documentation (excluded from the site)
+docs/notebooks/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

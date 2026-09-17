@@ -46,9 +46,9 @@ from .opener import JobResultOpener, JobResultOpenerRegistry
 class ClientConfig(BaseSettings):
     """Client configuration.
 
-    Args:
+    Attributes:
         api_url: a URL pointing to a service compliant with
-            the OCG API - Processes.
+            the OGC API - Processes.
     """
 
     model_config = SettingsConfigDict(
