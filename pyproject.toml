@@ -131,6 +131,7 @@ select = [
     "F", # bugbear (common logic issues)
     "I", # Isort (import order)
     "S", # Bandit (security checks)
+    "TC010", # flake8-type-checking (invalid string member in X | Y union)
 ]
 ignore = [
     "E501",  # line-too-long
