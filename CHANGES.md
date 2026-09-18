@@ -1,30 +1,26 @@
-## Changes in version 0.2.1 (in development)
+## Changes in version 0.3.0 (in development)
 
 ### Enhancements
 
-- **Cuiman** now supports application branding in login guidance, notebook links,
+The **Cuiman** client has been largely enhanced:
+
+- Now supporting application branding in login guidance, notebook links,
   browser debug messages, and app-launch errors through optional
   `ClientConfig.display_name` and `cli_name` class metadata. CLI recovery messages
   use the name passed to `new_cli()`, with neutral wording where branding is
   unavailable. Custom-version output in **Cuiman** and **Wraptile** now includes
   the branded command name while retaining the underlying library version.
 
-- **Documentation** now provides maintained Cuiman API, App, CLI, and result
-  opener guides with reusable, tested examples and static screenshots. Examples
-  follow the current authentication, App, and built-in opener interfaces. The
-  strict MkDocs build no longer copies or renders notebooks; original notebooks
-  remain available for independent exploration.
-
-- **Cuiman** applications can now select an isolated `ClientConfig` namespace
-  through `Client`, `AsyncClient`, and `new_cli(config_type=...)`. Application
-  field defaults, profile paths, schemas, dotenv/environment settings, and
-  result extensions no longer require mutating global `ClientConfig` defaults.
+- Client applications build on Cuiman can now select an isolated `ClientConfig` 
+  namespace through `Client`, `AsyncClient`, and `new_cli(config_type=...)`. 
+  Application field defaults, profile paths, schemas, dotenv/environment settings, 
+  and result extensions no longer require mutating global `ClientConfig` defaults.
   Configuration sources resolve once and consistently across Python clients,
   CLI commands, and launched apps.
   Custom job result opener classes can be declared statically through the
   subclass's `extra_job_result_openers` iterable.
 
-- **Cuiman** now shares one authentication lifecycle across the Python API, CLI,
+- We now share one authentication lifecycle across the Python API, CLI,
   and launched app. Persistent Authlib HTTPX2 clients handle OAuth2 password and
   client-credentials grants and OIDC authorization code with PKCE, including
   expiry, refresh, signing, and revocation. Processing requests authenticate
@@ -32,7 +28,7 @@
   `client.token` returns a snapshot of the live OAuth token. App requests borrow
   the same client and observe its refreshed credentials.
 
-- **Cuiman** now keeps credentials in the operating-system keyring, scoped to the
+- Credentials are now kept in the operating-system keyring, scoped to the
   configuration profile and processing API URL. `cuiman configure` stores public
   settings; `cuiman login` and `cuiman logout` manage credentials for Basic, static
   tokens, API keys, proprietary login, OAuth2, and OIDC. Login reuses credentials
@@ -40,13 +36,13 @@
   saving reports failures; optional refresh saves warn while retaining the live
   token. OIDC logout revokes tokens when the provider supports it. (#205)
 
-- **Cuiman** authentication configuration uses distinct nested models and typed
+- The authentication configuration uses distinct nested models and typed
   OAuth2 grants. Configure reuses current public defaults and rejects options
   unrelated to the selected authentication type. OAuth2/OIDC use one complete
   `oauth_token` mapping; static tokens, proprietary login, and API keys retain
   their purpose-specific settings. (#176)
 
-- **Cuiman** app launches now keep processing-service credentials on the
+- Client app launches now keep processing-service credentials on the
   Cuiman app server. The browser exchanges a short-lived, single-use `launch`
   code for an HttpOnly session cookie and makes same-origin requests through
   the app-server proxy. The initial URL no longer carries timestamp or
@@ -59,59 +55,68 @@
   protocol change: the legacy `service` query parameter is no longer
   supported. (#198)
 
+- The documentation has been updated to provide maintained Cuiman API, App, CLI, 
+  and result opener guides with reusable, tested examples and static screenshots. 
+  Examples follow the current authentication, App, and built-in opener interfaces. 
+  The strict MkDocs build no longer copies or renders notebooks; original 
+  notebooks remain available for independent exploration.
+
+
 ### Fixes
 
-- **Cuiman** defers client configuration, authentication, and notebook imports
-  until a CLI command needs them. Help, version output, and command discovery
-  no longer load the client runtime. Public Python API imports remain supported.
-
-- **Cuiman** now registers its Pillow image opener by default and gives it
-  precedence over xarray for supported images, including PNG and JPEG job
-  results. Explicit requests for an xarray dataset remain supported.
-
-- **Cuiman** resolves fresh configuration sources once and preserves resolved
-  snapshots when wrapping clients or applying overrides. Explicit default-valued
-  settings keep their precedence; required application fields and input aliases
-  work through the shared resolver. Keyring lookup can be requested after an
-  earlier secret-free resolution without rereading sources. CLI configuration
-  preserves saved application fields. Dotenv filtering uses Pydantic Settings'
-  namespace and extra-field policies (requires version 2.14.2 or later).
-
-- **Cuiman** notebook errors now remain visible as structured API errors without
-  crashing and disabling IPython's custom exception handler.
-
-- **Cuiman** detects deprecated or illegal configuration files through parsing
-  and model validation, including customized client schemas. Invalid files now
-  produce one actionable `configure` message without exposing their contents.
-  Removed legacy-field heuristics; files that validate are accepted, while writes
-  continue to omit credentials.
-
-- **Cuiman** configuration now fails with an actionable message when a prompt
-  needs a terminal, avoiding hangs in notebook commands such as `!cuiman configure`.
-  Fully specified commands still work without a terminal; notebook users can
-  also invoke the configuration prompts directly through Python.
-
-- **Cuiman** now replaces previous authentication settings when a configuration
-  source explicitly selects `auth_type`. Python client overrides no longer
-  inherit incompatible fields such as a saved `login_url` when selecting OIDC.
-  Matching keyring tokens are retained after resolving a complete auth override.
-
-- **Cuiman** serializes API and app requests on their shared client, preventing
-  duplicate concurrent login or refresh operations. Close waits for active
-  requests. Cancelling a queued async login, close, or logout leaves the active
-  client's credentials untouched; once logout starts, local cleanup and closure
-  finish even if provider revocation fails or is cancelled.
-
-- **Cuiman**'s launched-app proxy now rejects path-traversal segments, so a
-  browser request cannot escape the configured processing API base path.
-
-- **Cuiman**'s app proxy now retains the API root's trailing slash, matching
-  Python client requests. This fixes app connection failures with HTTP 404 when
-  a processing service distinguishes paths such as `/process` and `/process/`.
-
-- Added missing ipython dependency for cuiman. (#188)
-
 - Fixed Mermaid diagram rendering in the markdown documentation.
+
+- Several fixes have been applied to the **Cuiman** client:
+
+  - It defers client configuration, authentication, and notebook imports
+    until a CLI command needs them. Help, version output, and command discovery
+    no longer load the client runtime. Public Python API imports remain supported.
+
+  - It now registers its Pillow image opener by default and gives it
+    precedence over xarray for supported images, including PNG and JPEG job
+    results. Explicit requests for an xarray dataset remain supported.
+
+  - It resolves fresh configuration sources once and preserves resolved
+    snapshots when wrapping clients or applying overrides. Explicit default-valued
+    settings keep their precedence; required application fields and input aliases
+    work through the shared resolver. Keyring lookup can be requested after an
+    earlier secret-free resolution without rereading sources. CLI configuration
+    preserves saved application fields. Dotenv filtering uses Pydantic Settings'
+    namespace and extra-field policies (requires version 2.14.2 or later).
+
+  - Errors occurring in notebooks now remain visible as structured API errors 
+    without crashing and disabling IPython's custom exception handler.
+
+  - It detects deprecated or illegal configuration files through parsing
+    and model validation, including customized client schemas. Invalid files now
+    produce one actionable `configure` message without exposing their contents.
+    Removed legacy-field heuristics; files that validate are accepted, while writes
+    continue to omit credentials.
+
+  - The configuration now fails with an actionable message when a prompt
+    needs a terminal, avoiding hangs in notebook commands such as `!cuiman configure`.
+    Fully specified commands still work without a terminal; notebook users can
+    also invoke the configuration prompts directly through Python.
+
+  - It now replaces previous authentication settings when a configuration
+    source explicitly selects `auth_type`. Python client overrides no longer
+    inherit incompatible fields such as a saved `login_url` when selecting OIDC.
+    Matching keyring tokens are retained after resolving a complete auth override.
+
+  - It serializes API and app requests on their shared client, preventing
+    duplicate concurrent login or refresh operations. Close waits for active
+    requests. Cancelling a queued async login, close, or logout leaves the active
+    client's credentials untouched; once logout starts, local cleanup and closure
+    finish even if provider revocation fails or is cancelled.
+
+  - It's launched-app proxy now rejects path-traversal segments, so a
+    browser request cannot escape the configured processing API base path.
+
+  - The app proxy now retains the API root's trailing slash, matching
+    Python client requests. This fixes app connection failures with HTTP 404 when
+    a processing service distinguishes paths such as `/process` and `/process/`.
+
+  - Added missing `ipython` dependency. (#188)
 
 ### Other changes
 
@@ -129,6 +134,7 @@
 
 - Enabled ruff's `TC010` check, which rejects annotations such as
   `x: "Foo" | None` that are invalid at runtime on Python versions before 3.14.
+
 
 ## Changes in version 0.2.0
 
