@@ -203,3 +203,12 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Downloaded font assets
+docs/assets/fonts/*.ttf
+docs/assets/fonts/*.otf
+docs/assets/fonts/*.woff
+docs/assets/fonts/*.woff2
+docs/assets/fonts/*.eot
+docs/assets/fonts/*.ttc
+docs/assets/fonts/*.otc
