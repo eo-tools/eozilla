@@ -150,6 +150,13 @@ if __name__ == "__main__":  # pragma: no cover
     cli()
 ```
 
+The default CLI loads client configuration, authentication, and notebook
+dependencies only when a command needs them. Help and version output do not load
+the client runtime. `new_cli()` uses `config_type=None` to defer resolving the
+default `ClientConfig`; passing an application configuration class still works
+as above. Imports performed by an application's own entry point occur before
+`new_cli()` and should also be kept lightweight where possible.
+
 `configure` preserves saved application fields while updating the public API and
 authentication settings it edits. It uses profile values and class defaults for
 prompts; environment and dotenv overrides are applied when a client is resolved.
