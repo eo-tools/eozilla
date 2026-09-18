@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../configuration/">
+        <link rel="prev" href="../authentication/">
       
       
         <link rel="next" href="../gui-generation/">
@@ -41,17 +41,11 @@
     
     
       
-        
-        
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
-        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
-      
     
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../overrides/css/custom.css">
+      <link rel="stylesheet" href="../../stylesheets/custom.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -353,6 +347,28 @@
   
   
   
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../eozilla-app/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Eozilla App
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
     <li class="md-tabs__item">
       <a href="../../contributing/" class="md-tabs__link">
         
@@ -630,6 +646,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -694,6 +714,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../configuration/" class="md-nav__link">
         
   
@@ -702,6 +750,34 @@
     
   
     Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
   
 
     
@@ -884,17 +960,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_7" >
         
           
-          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3_7" id="__nav_3_7_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    Usage
+    User Guides
   
 
     
@@ -905,12 +981,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Usage
+    User Guides
   
 
           </label>
@@ -923,14 +999,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notebooks/cuiman-api/" class="md-nav__link">
+      <a href="../guides/api/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Cuiman API Usage
+    Python API
   
 
     
@@ -951,14 +1027,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notebooks/cuiman-gui/" class="md-nav__link">
+      <a href="../guides/app/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Cuiman GUI Usage
+    App
   
 
     
@@ -979,14 +1055,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notebooks/cuiman-cli/" class="md-nav__link">
+      <a href="../guides/cli/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Cuiman CLI Usage
+    Command Line
   
 
     
@@ -1007,14 +1083,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notebooks/cuiman-openers/" class="md-nav__link">
+      <a href="../guides/openers/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Job Result Openers
+    Result Openers
   
 
     
@@ -1110,8 +1186,6 @@
       
         
           
-        
-      
         
       
         
@@ -1454,7 +1528,7 @@
   <span class="md-ellipsis">
     
   
-    gavicore.ui
+    gavicore.util
   
 
     
@@ -1467,128 +1541,6 @@
         
         <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    gavicore.ui
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../gavicore/ui/description/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Description
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../gavicore/ui/api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API Reference
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    gavicore.util
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2003,6 +1955,234 @@
   
   
   
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../eozilla-app/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Eozilla App
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Eozilla App
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../eozilla-app/service-provider/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Service Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../eozilla-app/schema-form/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Forms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../eozilla-app/dynamic-expressions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dynamic Expressions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../../contributing/" class="md-nav__link">
         
@@ -2105,19 +2285,20 @@
 
 <h1 id="cuiman-customization">Cuiman Customization</h1>
 <p>Applications can create their own clients using <code>cuiman</code> under the hood. 
-For this, an application can customize the <code>cuiman</code> configuration and its
-default values.</p>
+For this, an application defines a configuration class that owns its settings
+namespace and default values. Importing that application never changes the
+process-wide defaults used by plain <code>cuiman</code> or another application.</p>
 <p>This is best explained by an example. In the following we explain 
 the client customization by a hypothetic processing system "Anolis"
 that should get its own <code>anolis-client</code>.</p>
 <p>The <code>cuiman</code> API allows for the following customizations:</p>
 <ol>
-<li>The <code>cuiman.ClientConfig</code> is a 
+<li>The <code>cuiman.api.ClientConfig</code> is a 
    <a href="https://docs.pydantic.dev/latest/concepts/pydantic_settings/">pydantic Settings</a>
    class. It can be used as base class and then configured with a custom 
    <code>pydantic_settings.SettingsConfigDict</code> instance.</li>
-<li>Some <code>cuiman.ClientConfig</code> class attributes in can be overridden   <br />
-   to initialize custom default values.</li>
+<li>Ordinary Pydantic field defaults and a <code>default_path</code> class attribute define
+   application defaults and profile persistence.</li>
 <li>Applications can customize the way how job results are opened.</li>
 <li>Applications can create their own CLI instance with custom settings.</li>
 <li>Applications can customize the way the process input GUIs are generated.</li>
@@ -2125,42 +2306,106 @@ that should get its own <code>anolis-client</code>.</p>
 <h2 id="api-customisation">API customisation</h2>
 <p>In a module <code>src/anolis_client/api.py</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ClassVar</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">SettingsConfigDict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cuiman.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncClient</span><span class="p">,</span> <span class="n">Client</span><span class="p">,</span> <span class="n">ClientConfig</span><span class="p">,</span> <span class="n">ClientError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuiman.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncClient</span><span class="p">,</span> <span class="n">Client</span><span class="p">,</span> <span class="n">ClientConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuiman.api.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthConfig</span><span class="p">,</span> <span class="n">NoAuthConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuiman.cli</span><span class="w"> </span><span class="kn">import</span> <span class="n">new_cli</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.opener</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnolisJobResultsOpener</span>
 
 <span class="c1"># Custom configuration class</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">AnolisClientConfig</span><span class="p">(</span><span class="n">ClientConfig</span><span class="p">):</span>
-  <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span>
-      <span class="n">env_prefix</span><span class="o">=</span><span class="s2">&quot;ANOLIS_&quot;</span><span class="p">,</span>
-      <span class="n">env_file</span><span class="o">=</span><span class="s2">&quot;.env&quot;</span><span class="p">,</span>
-      <span class="n">extra</span><span class="o">=</span><span class="s2">&quot;allow&quot;</span><span class="p">,</span>  <span class="c1"># base ClientConfig uses &quot;forbid&quot;</span>
-  <span class="p">)</span>
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span>
+        <span class="n">env_prefix</span><span class="o">=</span><span class="s2">&quot;ANOLIS_&quot;</span><span class="p">,</span>
+        <span class="n">env_file</span><span class="o">=</span><span class="s2">&quot;.env&quot;</span><span class="p">,</span>
+        <span class="n">extra</span><span class="o">=</span><span class="s2">&quot;allow&quot;</span><span class="p">,</span>  <span class="c1"># base ClientConfig uses &quot;forbid&quot;</span>
+    <span class="p">)</span>
 
-<span class="c1"># Custom configuration defaults</span>
-<span class="n">ClientConfig</span><span class="o">.</span><span class="n">default_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;~&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;.anolis-client&quot;</span>
-<span class="n">ClientConfig</span><span class="o">.</span><span class="n">default_config</span> <span class="o">=</span> <span class="n">AnolisClientConfig</span><span class="p">(</span>
-    <span class="n">api_url</span><span class="o">=</span><span class="s2">&quot;https://anolis.api.org/process-api/v1&quot;</span><span class="p">,</span>
-    <span class="n">auth_url</span><span class="o">=</span><span class="s2">&quot;https://anolis.api.org/auth/login&quot;</span><span class="p">,</span>
-    <span class="n">auth_type</span><span class="o">=</span><span class="s2">&quot;login&quot;</span><span class="p">,</span>
-    <span class="n">use_bearer</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
+    <span class="n">default_path</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;.anolis-client&quot;</span>
+    <span class="n">display_name</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Anolis&quot;</span>
+    <span class="n">cli_name</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;anolis-client&quot;</span>
+    <span class="n">api_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">&quot;https://anolis.api.org/process-api/v1&quot;</span>
+    <span class="n">auth</span><span class="p">:</span> <span class="n">AuthConfig</span> <span class="o">=</span> <span class="n">NoAuthConfig</span><span class="p">()</span>
+    <span class="n">extra_job_result_openers</span> <span class="o">=</span> <span class="p">[</span><span class="n">AnolisJobResultsOpener</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">create_client</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Client</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">Client</span><span class="p">(</span><span class="n">config_type</span><span class="o">=</span><span class="n">AnolisClientConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">config</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">create_async_client</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncClient</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">AsyncClient</span><span class="p">(</span><span class="n">config_type</span><span class="o">=</span><span class="n">AnolisClientConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">config</span><span class="p">)</span>
+
+
+<span class="n">cli</span> <span class="o">=</span> <span class="n">new_cli</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;anolis-client&quot;</span><span class="p">,</span> <span class="n">config_type</span><span class="o">=</span><span class="n">AnolisClientConfig</span><span class="p">)</span>
 </code></pre></div>
+<p><code>display_name</code> supplies the application name for notebook links, browser debug
+messages, and app-launch errors. <code>cli_name</code> optionally adds a login command to
+Python API errors; leave it unset for applications without a CLI. Both are class
+metadata, excluded from environment settings and saved profiles. Without them,
+messages use neutral wording. Low-level credential-storage errors also use
+neutral wording, including errors raised before configuration can be loaded.</p>
+<p>CLI recovery messages always use the name passed to <code>new_cli()</code>, even when it
+differs from <code>config_type.cli_name</code>. Creating a CLI does not modify the config
+class or other clients. With a custom version, <code>--version</code> prints
+<code>anolis-client &lt;application-version&gt; (cuiman &lt;library-version&gt;)</code>.</p>
+<p><code>config_type</code> selects the schema, field defaults, dotenv and environment
+settings, profile path, and result-opening extensions for a client or CLI.
+When a <code>config</code> instance is supplied without <code>config_type</code>, its concrete type
+is inferred. Supplying both requires the exact same type, which prevents one
+application from silently reading another's profile or environment namespace.</p>
+<p>Sources resolve once in this order, from lowest to highest precedence: field
+defaults, persistent configuration file, <code>.env</code>, process environment, supplied
+configuration object, and explicit client keyword arguments. Authentication
+partials are merged before validation, so a <code>.env</code> token can supplement public
+provider settings held in a profile.</p>
+<p>Subclasses may introduce required fields and default factories. Effective settings
+are validated after sources are merged; Cuiman does not construct an empty
+application configuration to obtain defaults. Existing profiles must still be
+valid against the selected application schema on their own.</p>
+<p>Dotenv files use Pydantic Settings' <code>dotenv_filtering="match_prefix"</code> policy by
+default. Unrelated namespaces are ignored; extra entries within the application's
+prefix follow its <code>extra</code> policy. Set <code>dotenv_filtering="only_existing"</code> to read
+only declared fields. Input aliases, including <code>AliasChoices</code> and <code>AliasPath</code>,
+are normalized before sources are merged, so client keyword overrides retain
+their precedence. Cuiman requires Pydantic Settings 2.14.2 or later.</p>
+<p>Authentication models require public provider settings, such as <code>auth.login_url</code>
+for proprietary login or <code>auth.token_url</code> for OAuth 2.0. Credentials can be supplied
+later through partial overrides or login. Reusing <code>client.config</code> keeps a resolved
+snapshot; see <a href="../configuration/#reusing-resolved-configuration">configuration reuse</a>.</p>
+<p>Define custom <code>JobResultOpener</code> subclasses in the application's <code>opener</code> module
+and list them in <code>extra_job_result_openers</code>. This attribute has type
+<code>ClassVar[Iterable[type[JobResultOpener]]]</code>: its entries are opener classes.
+Lists, tuples, and generators are accepted and captured as a tuple at class
+creation. Subclasses can assign the attribute without repeating its annotation.
+It is excluded from settings and saved profiles.</p>
+<p>Each subclass receives a copy of its parent's <code>return_type_map</code> and, unless
+overridden, its <code>extra_job_result_openers</code> at class creation. Declaring a new
+iterable replaces the inherited extras; an empty iterable keeps only built-ins.
+To extend the parent's declaration, use
+<code>extra_job_result_openers = [*ParentConfig.extra_job_result_openers, MyOpener]</code>.</p>
+<p>Job-result opener registries are cached per concrete class. On first use, they
+register the built-ins followed by the declared extras in iteration order. The
+last registered opener is tried first, so custom openers take priority over
+built-ins. For later changes, use <code>MyConfig.register_job_result_opener(...)</code> and
+its returned unregister callback. These runtime registrations affect only that
+class and are not inherited by subclasses.</p>
 <h2 id="cli-customisation">CLI customisation</h2>
 <p>In a module <code>src/anolis_client/cli.py</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">importlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">import_module</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">typer</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">typer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cuiman.cli</span><span class="w"> </span><span class="kn">import</span> <span class="n">new_cli</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">anolis_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span> <span class="k">as</span> <span class="n">version</span>
 
-<span class="c1"># Force pre-configuration of Anolis configuration</span>
-<span class="n">import_module</span><span class="p">(</span><span class="s2">&quot;anolis_client.api&quot;</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">anolis_client.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnolisClientConfig</span>
 
 <span class="n">cli</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Typer</span> <span class="o">=</span> <span class="n">new_cli</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;anolis-client&quot;</span><span class="p">,</span>
     <span class="n">summary</span><span class="o">=</span><span class="s2">&quot;Client for the Anolis processing service.&quot;</span><span class="p">,</span>
     <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span>
+    <span class="n">config_type</span><span class="o">=</span><span class="n">AnolisClientConfig</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="c1"># As cli is of type `typer.Typer`, you can add custom options here.</span>
@@ -2168,6 +2413,15 @@ that should get its own <code>anolis-client</code>.</p>
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
     <span class="n">cli</span><span class="p">()</span>
 </code></pre></div>
+<p>The default CLI loads client configuration, authentication, and notebook
+dependencies only when a command needs them. Help and version output do not load
+the client runtime. <code>new_cli()</code> uses <code>config_type=None</code> to defer resolving the
+default <code>ClientConfig</code>; passing an application configuration class still works
+as above. Imports performed by an application's own entry point occur before
+<code>new_cli()</code> and should also be kept lightweight where possible.</p>
+<p><code>configure</code> preserves saved application fields while updating the public API and
+authentication settings it edits. It uses profile values and class defaults for
+prompts; environment and dotenv overrides are applied when a client is resolved.</p>
 <h2 id="gui-customisation">GUI customisation</h2>
 <p>Please refer to the chapter <a href="../gui-generation/">GUI-Generation</a>
 dedicated to the generation and customization of the client GUI generated
@@ -2208,13 +2462,14 @@ from OGC process descriptions.</p>
   
     <div class="md-copyright__highlight">
       Copyright &copy; 2026 Eozilla Team
+      
+        &nbsp;&nbsp;&nbsp;
+        <a href="https://www.brockmann-consult.de/imprint/" rel="noopener">Imprint</a>
+      
+        &nbsp;&nbsp;&nbsp;
+        <a href="https://www.brockmann-consult.de/privacy-policy/" rel="noopener">Privacy Policy</a>
+      
     </div>
-  
-  
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
   
 </div>
       

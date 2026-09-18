@@ -1,0 +1,3429 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../service-provider/">
+      
+      
+        <link rel="next" href="../dynamic-expressions/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Schema Forms - Eozilla 🦖</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#schema-form-generator" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Eozilla 🦖" class="md-header__button md-logo" aria-label="Eozilla 🦖" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Eozilla 🦖
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Schema Forms
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/eo-tools/eozilla" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    eo-tools/eozilla
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  What is it?
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../appligator/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Appligator
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../cuiman/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Cuiman
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../gavicore/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Gavicore
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../procodile/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Procodile
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../wraptile/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Wraptile
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Eozilla App
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Eozilla 🦖" class="md-nav__button md-logo" aria-label="Eozilla 🦖" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Eozilla 🦖
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/eo-tools/eozilla" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    eo-tools/eozilla
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is it?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../appligator/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Appligator
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Appligator
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../appligator/usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../appligator/gen_dockerfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generating Dockerfiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../appligator/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../cuiman/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cuiman
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Cuiman
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cuiman/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cuiman/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cuiman/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cuiman/customization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Customization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cuiman/gui-generation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GUI-Generation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_7" id="__nav_3_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cuiman/guides/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cuiman/guides/app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    App
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cuiman/guides/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cuiman/guides/openers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Result Openers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cuiman/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cuiman/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../gavicore/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gavicore
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Gavicore
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    gavicore.models
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    gavicore.models
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gavicore/models/description/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Description
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gavicore/models/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    gavicore.service
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    gavicore.service
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gavicore/service/description/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Description
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gavicore/service/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    gavicore.util
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    gavicore.util
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gavicore/util/description/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Description
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gavicore/util/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../procodile/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Procodile
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Procodile
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../procodile/usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../procodile/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../procodile/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../wraptile/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Wraptile
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Wraptile
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../wraptile/usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../wraptile/customization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Customization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../wraptile/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Eozilla App
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Eozilla App
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../service-provider/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Service Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Forms
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Forms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#goal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Goal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-facing-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User-Facing Integration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#main-package-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Main Package Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type-level-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type-Level Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#field-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field Metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#value-initialization-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Value Initialization Rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#factory-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Factory Registry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#current-factory-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current Factory Behavior
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Current Factory Behavior">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nullable-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nullable Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#boolean-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boolean Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integer-and-number-factories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integer And Number Factories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enum-rendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enum Rendering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#string-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        String Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#array-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Array Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#object-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Object Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#composition-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composition Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#map-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Map Support
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-fallback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON Fallback
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#process-input-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process Input Integration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema2ui-playground" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        schema2ui Playground
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-coverage-worth-knowing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Coverage Worth Knowing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-add-a-new-specialized-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How To Add A New Specialized Field
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notes-and-caveats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes And Caveats
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dynamic-expressions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dynamic Expressions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#goal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Goal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-facing-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User-Facing Integration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#main-package-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Main Package Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type-level-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type-Level Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#field-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field Metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#value-initialization-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Value Initialization Rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#factory-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Factory Registry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#current-factory-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current Factory Behavior
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Current Factory Behavior">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nullable-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nullable Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#boolean-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boolean Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integer-and-number-factories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integer And Number Factories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enum-rendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enum Rendering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#string-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        String Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#array-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Array Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#object-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Object Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#composition-factory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composition Factory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#map-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Map Support
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-fallback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON Fallback
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#process-input-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process Input Integration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema2ui-playground" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        schema2ui Playground
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-coverage-worth-knowing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Coverage Worth Knowing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-add-a-new-specialized-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How To Add A New Specialized Field
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notes-and-caveats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes And Caveats
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="schema-form-generator">Schema Form Generator</h1>
+<p>This document describes the TypeScript/React schema-form generator in
+<code>eozilla-app</code>. It is intentionally written for future AI agents and maintainers
+who need to continue the work without rediscovering the design.</p>
+<h2 id="goal">Goal</h2>
+<p>The schema-form generator turns OpenAPI/JSON-schema-derived process input
+metadata into a controlled React form built from Mantine components.</p>
+<p>The generator is built around a few core ideas:</p>
+<ul>
+<li>normalized <code>Field</code> metadata extracted from schemas</li>
+<li>a scored field factory registry</li>
+<li>a render context that can recursively render child fields</li>
+<li>a JSON fallback for unsupported or partially supported shapes</li>
+</ul>
+<h2 id="user-facing-integration">User-Facing Integration</h2>
+<p>The process inputs panel supports two editor modes:</p>
+<ul>
+<li><code>Form</code>: generated controls from <code>SchemaForm</code></li>
+<li>
+<p><code>JSON</code>: unstyled and tabular, raw JSON input fields</p>
+</li>
+<li>
+<p>state type: <code>ProcessEditorMode</code></p>
+</li>
+<li>app state property: <code>processEditorMode</code></li>
+<li>default: <code>"form"</code></li>
+<li>action: <code>setProcessEditorMode()</code></li>
+<li>hook: <code>useProcessEditorMode()</code></li>
+</ul>
+<p>Relevant files:</p>
+<ul>
+<li><code>src/state/types.ts</code></li>
+<li><code>src/store/actions.ts</code></li>
+<li><code>src/store/hooks.ts</code></li>
+<li><code>src/components/panels/process/ProcessInputsSubPanel.tsx</code></li>
+<li><code>src/components/panels/process/GeneratedProcessInputsView.tsx</code></li>
+<li><code>src/components/panels/process/ProcessInputsView.tsx</code></li>
+</ul>
+<p><code>ProcessInputsView.tsx</code> must remain a valid fallback path. The generated form is
+an additional UI, not a replacement for raw JSON editing.</p>
+<h2 id="main-package-layout">Main Package Layout</h2>
+<div class="highlight"><pre><span></span><code>src/components/schema-form/
+  ArrayField.tsx
+  FieldShell.tsx
+  JsonFallbackField.tsx
+  MapField.tsx
+  SchemaForm.tsx
+  SelectiveCompositionField.tsx
+  fieldUtils.ts
+  generator.ts
+  selectiveCompositionUtils.ts
+  types.ts
+  factories/
+    array.tsx
+    boolean.tsx
+    composition.tsx
+    defaultRegistry.ts
+    enum.tsx
+    integer.tsx
+    jsonFallback.tsx
+    nullable.tsx
+    number.tsx
+    object.tsx
+    string.tsx
+</code></pre></div>
+<p>Supporting schema and value helpers live in:</p>
+<div class="highlight"><pre><span></span><code>src/utils/field.ts
+src/utils/json/
+</code></pre></div>
+<h2 id="core-architecture">Core Architecture</h2>
+<p>The public component is <code>SchemaForm</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">SchemaForm</span>
+<span class="w">  </span><span class="na">field</span><span class="o">=</span><span class="p">{</span><span class="nx">inputsField</span><span class="p">}</span>
+<span class="w">  </span><span class="na">value</span><span class="o">=</span><span class="p">{</span><span class="nx">processInputs</span><span class="p">}</span>
+<span class="w">  </span><span class="na">onChange</span><span class="o">=</span><span class="p">{</span><span class="nx">handleChange</span><span class="p">}</span>
+<span class="w">  </span><span class="na">hideLabel</span><span class="o">=</span><span class="p">{</span><span class="nx">hideLabel</span><span class="p">}</span>
+<span class="w">  </span><span class="na">hideAdvanced</span><span class="o">=</span><span class="p">{</span><span class="nx">hideAdvanced</span><span class="p">}</span>
+<span class="p">/&gt;</span>
+</code></pre></div>
+<p><code>SchemaForm</code> memoizes a <code>DefaultSchemaFormGenerator</code>, which asks the registry for
+the highest-scoring <code>FieldFactory</code> and renders through that factory.</p>
+<pre class="mermaid"><code>flowchart TD
+  A[SchemaForm] --&gt; B[DefaultSchemaFormGenerator]
+  B --&gt; C[FieldFactoryRegistry.lookup]
+  C --&gt; D[Best scoring FieldFactory]
+  D --&gt; E[render ctx]
+  E --&gt; F{Needs child fields?}
+  F -- yes --&gt; B
+  F -- no --&gt; G[Mantine or custom field]</code></pre>
+<h3 id="type-level-model">Type-Level Model</h3>
+<pre class="mermaid"><code>classDiagram
+  class SchemaFormGenerator {
+    +renderField(field, value, onChange, options) ReactElement
+  }
+
+  class FieldFactoryRegistry {
+    -factories: FieldFactory[]
+    +lookup(field) FieldFactory
+  }
+
+  class FieldFactory {
+    +getScore(field) number
+    +render(ctx) ReactElement
+  }
+
+  class FieldRenderContext {
+    +field: Field
+    +path: string[]
+    +value: JsonValue | undefined
+    +onChange(value)
+    +hideLabel?: boolean
+    +hideAdvanced?: boolean
+  }
+
+  SchemaFormGenerator --&gt; FieldFactoryRegistry
+  FieldFactoryRegistry --&gt; FieldFactory
+  FieldFactory --&gt; FieldRenderContext</code></pre>
+<h2 id="field-metadata">Field Metadata</h2>
+<p>The generator does not work directly on raw schemas. It first builds a <code>Field</code>
+tree in <code>src/utils/field.ts</code>.</p>
+<p>Supported field variants:</p>
+<ul>
+<li>primitive fields</li>
+<li>arrays</li>
+<li>objects</li>
+<li><code>oneOf</code></li>
+<li><code>anyOf</code></li>
+<li><code>allOf</code></li>
+</ul>
+<p>UI metadata is collected from these schema conventions:</p>
+<ul>
+<li>grouped <code>x-ui</code></li>
+<li><code>x-ui-*</code></li>
+<li><code>x-ui:*</code></li>
+<li><code>ui-*</code></li>
+<li><code>ui:*</code></li>
+<li>generic <code>x-*</code> fallback</li>
+</ul>
+<p>Recognized UI hints currently include:</p>
+<ul>
+<li><code>widget</code></li>
+<li><code>layout</code></li>
+<li><code>order</code></li>
+<li><code>advanced</code></li>
+<li><code>visible</code></li>
+<li><code>hidden</code></li>
+<li><code>enabled</code></li>
+<li><code>disabled</code></li>
+<li><code>placeholder</code></li>
+<li><code>password</code></li>
+<li><code>minimum</code></li>
+<li><code>maximum</code></li>
+<li><code>step</code></li>
+<li><code>separator</code></li>
+</ul>
+<p>Examples:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;x-ui:widget&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;slider&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;x-ui:minimum&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;x-ui:maximum&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;x-ui:step&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;x-ui&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;widget&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;textarea&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;placeholder&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Describe the request&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="value-initialization-rules">Value Initialization Rules</h2>
+<p><code>createJsonValueForSchema()</code> defines the initial controlled value when a field
+does not yet have one.</p>
+<p>Current priority:</p>
+<ol>
+<li>explicit schema <code>default</code></li>
+<li>first <code>enum</code> value</li>
+<li>primitive defaults: <code>false</code>, <code>0</code>, <code>""</code></li>
+<li>arrays based on <code>minItems</code> and item defaults</li>
+<li>objects with all declared properties initialized</li>
+<li><code>oneOf</code> / <code>anyOf</code>: first option, with discriminator injected if needed</li>
+<li><code>allOf</code>: merged schema value</li>
+<li>nullable fallback: <code>null</code></li>
+<li>untyped fallback: <code>0</code></li>
+</ol>
+<p>Important behavior:</p>
+<ul>
+<li>object defaults are eager: every declared property gets an initial value</li>
+<li>arrays with <code>minItems: 0</code> still start with one item when the item schema has a
+  default</li>
+<li>discriminator values are written automatically for the active selective
+  composition option</li>
+</ul>
+<h2 id="factory-registry">Factory Registry</h2>
+<p>The default registry order is:</p>
+<ol>
+<li><code>nullableFieldFactory</code></li>
+<li><code>booleanFieldFactory</code></li>
+<li><code>integerFieldFactory</code></li>
+<li><code>numberFieldFactory</code></li>
+<li><code>stringFieldFactory</code></li>
+<li><code>arrayFieldFactory</code></li>
+<li><code>objectFieldFactory</code></li>
+<li><code>compositionFieldFactory</code></li>
+<li><code>jsonFallbackFieldFactory</code></li>
+</ol>
+<p>This order matters because the registry picks the highest positive score.</p>
+<p>Current score strategy:</p>
+<ul>
+<li>nullable: <code>100</code></li>
+<li>string-backed map fields and bbox map arrays: <code>20</code></li>
+<li>standard typed handlers: <code>10</code></li>
+<li>untyped composition: <code>5</code></li>
+<li>JSON fallback: catch-all lowest positive score</li>
+</ul>
+<h2 id="current-factory-behavior">Current Factory Behavior</h2>
+<h3 id="nullable-factory">Nullable Factory</h3>
+<p>File: <code>src/components/schema-form/factories/nullable.tsx</code></p>
+<p>Nullable fields render as:</p>
+<ul>
+<li>a wrapper <code>FieldShell</code></li>
+<li>a <code>Switch</code> that toggles <code>null</code> vs non-null</li>
+<li>a collapsed inner child field when enabled</li>
+</ul>
+<p>When enabled, the inner value is re-created from the non-nullable schema with
+<code>createJsonValueForSchema()</code>.</p>
+<h3 id="boolean-factory">Boolean Factory</h3>
+<p>File: <code>src/components/schema-form/factories/boolean.tsx</code></p>
+<p>Supported mappings:</p>
+<ul>
+<li>default: Mantine <code>Checkbox</code></li>
+<li><code>widget: switch</code>: Mantine <code>Switch</code></li>
+</ul>
+<h3 id="integer-and-number-factories">Integer And Number Factories</h3>
+<p>Files:</p>
+<ul>
+<li><code>src/components/schema-form/factories/integer.tsx</code></li>
+<li><code>src/components/schema-form/factories/number.tsx</code></li>
+</ul>
+<p>Supported mappings:</p>
+<ul>
+<li>default: Mantine <code>NumberInput</code></li>
+<li><code>widget: slider</code> with finite min/max and <code>min &lt; max</code>: Mantine <code>Slider</code></li>
+<li>enums: delegated to shared enum rendering</li>
+</ul>
+<p>Notes:</p>
+<ul>
+<li>integer values are normalized with <code>Math.round()</code></li>
+<li>min/max/step can come from either the schema or UI metadata overrides</li>
+</ul>
+<h3 id="enum-rendering">Enum Rendering</h3>
+<p>File: <code>src/components/schema-form/factories/enum.tsx</code></p>
+<p>Enum rendering is shared by string and numeric factories.</p>
+<p>Supported mappings:</p>
+<ul>
+<li>default: Mantine <code>Select</code></li>
+<li><code>widget: radio</code> or <code>radio-column</code>: vertical <code>Radio.Group</code></li>
+<li><code>widget: radio-row</code>: horizontal <code>Radio.Group</code></li>
+<li><code>widget: button</code>: <code>SegmentedControl</code></li>
+</ul>
+<p>Enum values are serialized through <code>JSON.stringify()</code> so non-string enum values
+can round-trip through UI controls.</p>
+<h3 id="string-factory">String Factory</h3>
+<p>File: <code>src/components/schema-form/factories/string.tsx</code></p>
+<p>Supported mappings:</p>
+<ul>
+<li>default: Mantine <code>TextInput</code></li>
+<li><code>widget: textarea</code>: Mantine <code>Textarea</code></li>
+<li><code>format: password</code> or <code>password: true</code>: Mantine <code>PasswordInput</code></li>
+<li>string enums: shared enum rendering</li>
+<li><code>format: date</code>: Mantine <code>DatePickerInput</code></li>
+<li><code>format: time</code>: Mantine <code>TimeInput</code></li>
+<li><code>format: date-time</code>: Mantine <code>DateTimePicker</code></li>
+<li><code>widget: map</code>: custom <code>MapField</code> for WKT polygon editing</li>
+</ul>
+<p>Date/time behavior:</p>
+<ul>
+<li>date values are stored as <code>YYYY-MM-DD</code></li>
+<li>time values are stored as <code>HH:mm:ss</code></li>
+<li>date-time values are stored as <code>YYYY-MM-DDTHH:mm:ss</code></li>
+<li>invalid incoming date/time strings are shown as empty UI values</li>
+<li>date and date-time pickers are clearable only when the schema is nullable</li>
+</ul>
+<p>The app imports <code>@mantine/dates/styles.css</code> in <code>src/main.tsx</code> and in the
+standalone <code>schema2ui</code> entry point.</p>
+<h3 id="array-factory">Array Factory</h3>
+<p>Files:</p>
+<ul>
+<li><code>src/components/schema-form/factories/array.tsx</code></li>
+<li><code>src/components/schema-form/ArrayField.tsx</code></li>
+</ul>
+<p>Supported modes:</p>
+<ul>
+<li>separator-based text input for primitive non-enum item arrays</li>
+<li>explicit array editor for <code>widget: editor</code></li>
+<li>bbox map editor for 4-number arrays with <code>widget: map</code></li>
+</ul>
+<p>Input mode behavior:</p>
+<ul>
+<li>default separator: <code>", "</code></li>
+<li>custom separators supported via <code>separator</code></li>
+<li>primitive item parsing supports <code>string</code>, <code>number</code>, <code>integer</code>, <code>boolean</code></li>
+<li>parse errors stay local as warning state until the text becomes valid</li>
+</ul>
+<p>Editor mode behavior:</p>
+<ul>
+<li>renders one child field per item</li>
+<li>supports add, remove, move up, move down</li>
+<li>respects <code>minItems</code> and <code>maxItems</code></li>
+<li>new items are created via <code>createJsonValueForSchema(items)</code></li>
+</ul>
+<p>Important limitations:</p>
+<ul>
+<li>primitive arrays with <code>enum</code> items do not use the simple input mode</li>
+<li>object arrays require <code>widget: editor</code></li>
+<li>date/date-time arrays are currently plain separator-based text input, not
+  specialized pickers</li>
+</ul>
+<h3 id="object-factory">Object Factory</h3>
+<p>File: <code>src/components/schema-form/factories/object.tsx</code></p>
+<p>Objects render nested generated forms for visible properties.</p>
+<p>String-valued visibility and enablement metadata is evaluated through the
+<code>dynamic-expression</code> module described in <a href="../dynamic-expressions/">Dynamic Expressions</a>.</p>
+<p>It respects:</p>
+<ul>
+<li><code>hidden</code></li>
+<li><code>advanced</code></li>
+<li><code>hideAdvanced</code></li>
+<li><code>order</code></li>
+<li><code>layout</code></li>
+</ul>
+<p>Layout can be:</p>
+<ul>
+<li><code>"column"</code></li>
+<li><code>"row"</code></li>
+<li>nested layout groups of <code>{ type, items }</code></li>
+</ul>
+<p>Object rendering notes:</p>
+<ul>
+<li>root labels are hidden automatically for root objects without a schema title</li>
+<li>visible fields are ordered by explicit <code>order</code> first, then original property
+  order</li>
+<li>advanced fields can animate in via <code>input-row-appear</code></li>
+</ul>
+<p>Fallback behavior:</p>
+<ul>
+<li><code>widget: editor</code> objects go to JSON fallback</li>
+<li>objects with no declared properties only render as structured forms when
+  <code>additionalProperties === false</code></li>
+<li>loose or schema-less objects therefore stay in the JSON fallback path</li>
+</ul>
+<h3 id="composition-factory">Composition Factory</h3>
+<p>Files:</p>
+<ul>
+<li><code>src/components/schema-form/factories/composition.tsx</code></li>
+<li><code>src/components/schema-form/SelectiveCompositionField.tsx</code></li>
+<li><code>src/components/schema-form/selectiveCompositionUtils.ts</code></li>
+</ul>
+<p>Composition support now exists for:</p>
+<ul>
+<li><code>oneOf</code></li>
+<li><code>anyOf</code></li>
+<li><code>allOf</code></li>
+</ul>
+<p>Behavior:</p>
+<ul>
+<li>only untyped composition fields score here; typed schemas should stay with
+  their stronger type-specific factory</li>
+<li><code>oneOf</code> and <code>anyOf</code> with multiple options render as Mantine <code>Tabs</code></li>
+<li>the active option is inferred from discriminator values first, then schema
+  validation</li>
+<li>each option keeps its own draft value in local component state</li>
+<li>switching options writes discriminator values when the schema defines one</li>
+<li>single-option compositions collapse directly to the child renderer</li>
+<li>empty compositions fall back to JSON</li>
+</ul>
+<p><code>allOf</code> behavior:</p>
+<ul>
+<li>multiple <code>allOf</code> parts are merged before rendering</li>
+<li>current merge logic is intentionally shallow and only combines:</li>
+<li>first defined <code>type</code></li>
+<li>object <code>properties</code></li>
+</ul>
+<p>This is important: <code>allOf</code> is supported, but not as a full JSON Schema merger.</p>
+<h3 id="map-support">Map Support</h3>
+<p>File: <code>src/components/schema-form/MapField.tsx</code></p>
+<p>Map editing is now a first-class specialized field.</p>
+<p>Supported variants:</p>
+<ul>
+<li>string <code>widget: map</code>: WKT polygon editor</li>
+<li>4-number array <code>widget: map</code>: bbox editor</li>
+</ul>
+<p>Current WKT behavior:</p>
+<ul>
+<li>uses OpenLayers</li>
+<li>supports drawing a rectangle or free polygon</li>
+<li>only accepts one <code>POLYGON</code> geometry</li>
+<li>stores values as WKT in <code>EPSG:4326</code></li>
+<li>delete clears to <code>""</code></li>
+</ul>
+<p>Current bbox behavior:</p>
+<ul>
+<li>value shape: <code>[minLon, minLat, maxLon, maxLat]</code></li>
+<li>editing happens through a rectangle draw interaction</li>
+<li>zero-area bbox hides geometry and control affordances</li>
+<li>delete resets to <code>[0, 0, 0, 0]</code></li>
+</ul>
+<p>The component also switches its basemap for Mantine light/dark color scheme.</p>
+<h3 id="json-fallback">JSON Fallback</h3>
+<p>Files:</p>
+<ul>
+<li><code>src/components/schema-form/factories/jsonFallback.tsx</code></li>
+<li><code>src/components/schema-form/JsonFallbackField.tsx</code></li>
+</ul>
+<p>This remains the safety net for unsupported shapes.</p>
+<p>Behavior:</p>
+<ul>
+<li>renders Mantine <code>JsonInput</code></li>
+<li>pretty-prints current value</li>
+<li>validates both JSON syntax and schema compatibility</li>
+<li>keeps local text draft state so invalid intermediate edits do not break the
+  controlled outer value</li>
+</ul>
+<p>Keep this path intact when extending the generator.</p>
+<h2 id="process-input-integration">Process Input Integration</h2>
+<p>Process descriptions are converted into one root object field by
+<code>getFieldFromProcessDescriptionInputs()</code>.</p>
+<p>The conversion rules from process input metadata are worth documenting because
+they affect generated UI shape:</p>
+<ul>
+<li><code>minOccurs === 1</code> marks the input as required</li>
+<li><code>maxOccurs &gt;= 1</code> turns the input into an array with <code>minItems</code>/<code>maxItems</code></li>
+<li><code>maxOccurs === "unbounded"</code> also becomes an array</li>
+<li>root process inputs always become <code>type: object</code> with
+  <code>additionalProperties: false</code></li>
+</ul>
+<p><code>GeneratedProcessInputsView.tsx</code> renders one root form and then diffs the
+top-level object back into the existing request store via <code>setProcessInput()</code>.</p>
+<pre class="mermaid"><code>sequenceDiagram
+  participant P as ProcessDescription
+  participant F as getFieldFromProcessDescriptionInputs
+  participant S as SchemaForm
+  participant G as GeneratedProcessInputsView
+  participant Z as Zustand store
+
+  P-&gt;&gt;F: inputs
+  F-&gt;&gt;S: root ObjectField
+  S-&gt;&gt;G: onChange(nextInputs)
+  G-&gt;&gt;G: compare top-level values
+  G-&gt;&gt;Z: setProcessInput(name, value)</code></pre>
+<p>Important consequence:</p>
+<ul>
+<li>updates are applied per top-level input name</li>
+<li>equality is checked through <code>JSON.stringify()</code></li>
+<li>non-object root updates are ignored</li>
+</ul>
+<h2 id="schema2ui-playground">schema2ui Playground</h2>
+<p>The developer playground lives in <code>src/schema2ui/</code> and starts with:</p>
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span>run<span class="w"> </span>schema2ui
+</code></pre></div>
+<p>It is intentionally separate from the main app and is the primary place for
+manual UI-generation work.</p>
+<p>Current features:</p>
+<ul>
+<li>fixture sidebar with one schema case per file</li>
+<li>persisted selected fixture in <code>localStorage</code></li>
+<li>hide-advanced toggle</li>
+<li>reset current generated value</li>
+<li>light/dark theme toggle</li>
+<li>live controlled value preview</li>
+<li>raw schema preview</li>
+<li>local <code>$ref</code> resolution from <code>components.schemas</code></li>
+</ul>
+<p>Current fixture corpus:</p>
+<ul>
+<li><code>any</code></li>
+<li><code>array-bbox</code></li>
+<li><code>array-datetime</code></li>
+<li><code>array-editor</code></li>
+<li><code>array-input</code></li>
+<li><code>boolean</code></li>
+<li><code>combinations</code></li>
+<li><code>discriminator</code></li>
+<li><code>dynamic-expressions</code></li>
+<li><code>integer</code></li>
+<li><code>map-wkt</code></li>
+<li><code>nullable-only</code></li>
+<li><code>nullable-required</code></li>
+<li><code>number</code></li>
+<li><code>object-additional-props</code></li>
+<li><code>object-layout</code></li>
+<li><code>object-nested</code></li>
+<li><code>string</code></li>
+</ul>
+<p>For root object fixtures, the playground intentionally renders each visible
+property as a separate case so maintainers can inspect multiple variations from
+one file side by side.</p>
+<h2 id="test-coverage-worth-knowing">Test Coverage Worth Knowing</h2>
+<p>The generator now has direct tests for the areas that were previously only
+planned work:</p>
+<ul>
+<li>registry dispatch</li>
+<li>field metadata extraction</li>
+<li>value creation rules</li>
+<li>array modes</li>
+<li>map controls</li>
+<li>object fallback behavior</li>
+<li>composition rendering and discriminator writes</li>
+<li>schema fixture <code>$ref</code> resolution</li>
+</ul>
+<p>Useful test files:</p>
+<ul>
+<li><code>src/components/schema-form/generator.test.ts</code></li>
+<li><code>src/components/schema-form/MapField.test.tsx</code></li>
+<li><code>src/components/schema-form/factories/array.test.tsx</code></li>
+<li><code>src/components/schema-form/factories/composition.test.tsx</code></li>
+<li><code>src/components/schema-form/factories/object.test.ts</code></li>
+<li><code>src/components/schema-form/factories/string.test.tsx</code></li>
+<li><code>src/utils/field.test.ts</code></li>
+<li><code>src/utils/json/createJsonValueForSchema.test.ts</code></li>
+<li><code>src/schema2ui/schemaFixtures.test.ts</code></li>
+</ul>
+<h2 id="how-to-add-a-new-specialized-field">How To Add A New Specialized Field</h2>
+<p>Add a new factory under <code>src/components/schema-form/factories/</code>.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="kr">type</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">FieldFactory</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;../types&quot;</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="kd">const</span><span class="w"> </span><span class="nx">bboxFieldFactory</span><span class="o">:</span><span class="w"> </span><span class="kt">FieldFactory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">getScore</span><span class="p">(</span><span class="nx">field</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">isBBoxField</span><span class="p">(</span><span class="nx">field</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="nx">100</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">0</span><span class="p">;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nx">render</span><span class="p">(</span><span class="nx">ctx</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">&lt;</span><span class="nt">BBoxEditor</span><span class="w"> </span><span class="na">value</span><span class="o">=</span><span class="p">{</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">value</span><span class="p">}</span><span class="w"> </span><span class="na">onChange</span><span class="o">=</span><span class="p">{</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">onChange</span><span class="p">}</span><span class="w"> </span><span class="p">/&gt;;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">};</span>
+</code></pre></div>
+<p>Then register it in <code>defaultRegistry.ts</code> ahead of broader handlers when it is a
+more specific match.</p>
+<p>Guidelines:</p>
+<ul>
+<li>beat the generic typed score if you are specializing an existing supported
+  type</li>
+<li>keep the component controlled</li>
+<li>preserve JSON fallback for unsupported cases</li>
+<li>add a <code>schema2ui</code> fixture for the new behavior</li>
+<li>add focused tests for factory scoring and rendering</li>
+</ul>
+<h2 id="notes-and-caveats">Notes And Caveats</h2>
+<ul>
+<li>The generator is controlled. Do not hide committed field state inside child
+  components unless it is transient draft state.</li>
+<li><code>JsonFallbackField</code> and array text input intentionally keep local draft state
+  so invalid intermediate text does not destroy the outer value.</li>
+<li><code>allOf</code> support is shallow, not a complete schema merge engine.</li>
+<li>Unstructured objects still rely on JSON fallback by design.</li>
+<li>WKT map support is currently limited to one polygon.</li>
+<li>Bbox map support assumes <code>[minLon, minLat, maxLon, maxLat]</code> in <code>EPSG:4326</code>.</li>
+<li><code>processEditorMode</code> is app-global by design.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 Eozilla Team
+      
+        &nbsp;&nbsp;&nbsp;
+        <a href="https://www.brockmann-consult.de/imprint/" rel="noopener">Imprint</a>
+      
+        &nbsp;&nbsp;&nbsp;
+        <a href="https://www.brockmann-consult.de/privacy-policy/" rel="noopener">Privacy Policy</a>
+      
+    </div>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/eo-tools/eozilla" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/eozilla/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.tabs", "navigation.sections", "navigation.indexes", "toc.follow", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -12,7 +12,7 @@
         <link rel="prev" href="../customization/">
       
       
-        <link rel="next" href="../../notebooks/cuiman-api/">
+        <link rel="next" href="../guides/api/">
       
       
         
@@ -41,17 +41,11 @@
     
     
       
-        
-        
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
-        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
-      
     
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../overrides/css/custom.css">
+      <link rel="stylesheet" href="../../stylesheets/custom.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -353,6 +347,28 @@
   
   
   
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../eozilla-app/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Eozilla App
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
     <li class="md-tabs__item">
       <a href="../../contributing/" class="md-tabs__link">
         
@@ -630,6 +646,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -694,6 +714,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../configuration/" class="md-nav__link">
         
   
@@ -702,6 +750,34 @@
     
   
     Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
   
 
     
@@ -810,15 +886,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#customizing-schemas" class="md-nav__link">
+  <a href="#customizing-the-ui" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Customizing Schemas
+        Customizing the UI
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Customizing Schemas">
+    <nav class="md-nav" aria-label="Customizing the UI">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -925,67 +1001,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#customizing-the-ui-generation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Customizing the UI Generation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Customizing the UI Generation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-define-the-required-customization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Define the required customization
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-create-a-custom-field-factory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Create a custom field factory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-implement-the-custom-field-factory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Implement the custom field factory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-register-the-custom-field-factory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Register the custom field factory
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1028,17 +1043,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_7" >
         
           
-          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3_7" id="__nav_3_7_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    Usage
+    User Guides
   
 
     
@@ -1049,12 +1064,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Usage
+    User Guides
   
 
           </label>
@@ -1067,14 +1082,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notebooks/cuiman-api/" class="md-nav__link">
+      <a href="../guides/api/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Cuiman API Usage
+    Python API
   
 
     
@@ -1095,14 +1110,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notebooks/cuiman-gui/" class="md-nav__link">
+      <a href="../guides/app/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Cuiman GUI Usage
+    App
   
 
     
@@ -1123,14 +1138,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notebooks/cuiman-cli/" class="md-nav__link">
+      <a href="../guides/cli/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Cuiman CLI Usage
+    Command Line
   
 
     
@@ -1151,14 +1166,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notebooks/cuiman-openers/" class="md-nav__link">
+      <a href="../guides/openers/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Job Result Openers
+    Result Openers
   
 
     
@@ -1254,8 +1269,6 @@
       
         
           
-        
-      
         
       
         
@@ -1598,7 +1611,7 @@
   <span class="md-ellipsis">
     
   
-    gavicore.ui
+    gavicore.util
   
 
     
@@ -1611,128 +1624,6 @@
         
         <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    gavicore.ui
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../gavicore/ui/description/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Description
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../gavicore/ui/api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API Reference
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    gavicore.util
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2147,6 +2038,234 @@
   
   
   
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../eozilla-app/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Eozilla App
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Eozilla App
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../eozilla-app/service-provider/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Service Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../eozilla-app/schema-form/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Forms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../eozilla-app/dynamic-expressions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dynamic Expressions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../../contributing/" class="md-nav__link">
         
@@ -2195,15 +2314,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#customizing-schemas" class="md-nav__link">
+  <a href="#customizing-the-ui" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Customizing Schemas
+        Customizing the UI
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Customizing Schemas">
+    <nav class="md-nav" aria-label="Customizing the UI">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2310,67 +2429,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#customizing-the-ui-generation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Customizing the UI Generation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Customizing the UI Generation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-define-the-required-customization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Define the required customization
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-create-a-custom-field-factory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Create a custom field factory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-implement-the-custom-field-factory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Implement the custom field factory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-register-the-custom-field-factory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Register the custom field factory
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -2392,18 +2450,12 @@
 
 
 <h1 id="cuiman-gui-generation">Cuiman GUI-Generation</h1>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>This document describes Cuiman's legacy notebook GUI based on <code>cuiman.gui</code>
-and <code>gavicore.ui</code>. It remains available on the <code>maintenance/0.1.x</code> branch
-for existing users, but it is deprecated and will not work in newer
-Eozilla versions.</p>
-</div>
-<p>The Cuiman GUI to build process requests is generated from a selected 
-<a href="https://docs.ogc.org/is/18-062r2/18-062r2.html#toc35">OGC process descriptions</a>.
-For a given process, the input descriptions are used to build an 
-<a href="https://swagger.io/specification/v3/">OpenAPI Schema v3.0</a> of type <code>object</code> 
-comprising the inputs as properties. The GUI is generated from this root schemas. </p>
+<p>The UI for the process inputs is generated from the
+<a href="https://docs.ogc.org/is/18-062r2/18-062r2.html#toc35">OGC process description</a>
+of the currently selected process. The input descriptions are used to build an
+<a href="https://swagger.io/specification/v3/">OpenAPI Schema v3.0</a> of type <code>object</code>
+comprising the inputs as properties.
+The GUI is generated from this root schema.</p>
 <p>The pipeline in short:</p>
 <pre><code>Process Input Descriptions
    ↓
@@ -2411,20 +2463,20 @@ Schema
    ↓
 Field Metadata
    ↓
-Field = View Model + View (Panel viewables)
+Field = View Model + View (Mantine React components)
 </code></pre>
 <p>The UI generation at its core is not aware of the target UI library
 that is used to render the UI and let users interact with it.</p>
-<p>The framework used to generate UIs is implemented in the Eozilla 
-Gavicore package <code>gavicore.ui</code> and is documented 
-<a href="../../gavicore/ui/description/">here</a>.  </p>
-<h2 id="customizing-schemas">Customizing Schemas</h2>
-<p>Cuiman's default UI library is <a href="https://panel.holoviz.org/">Panel</a>.
-Therefore, most of the customization configuration is directly mapped
-to configuration of the underlying Panel widgets and viewables.</p>
+<p>The framework used to generate UIs is implemented in the
+<a href="../../eozilla-app/">Eozilla App</a> and its schema-form behavior is
+<a href="../../eozilla-app/schema-form/">documented here</a>.</p>
+<h2 id="customizing-the-ui">Customizing the UI</h2>
+<p>The UI generated from the process inputs can be customized by
+the way the inputs' OpenAPI schemas are defined.
+This is described in the following.</p>
 <h3 id="schema-mapping-overview">Schema Mapping Overview</h3>
-<p>A given schema is converted into UI fields given using the available metadata that 
-is part of the schema itself and metadata that can be specified using special 
+<p>A given schema is converted into UI fields using the available metadata that
+is part of the schema itself and metadata that can be specified using special
 schema properties prefixed by "x-ui".</p>
 <p><strong>Mapped OpenAPI/JSON schema metadata:</strong></p>
 <ul>
@@ -2432,7 +2484,7 @@ schema properties prefixed by "x-ui".</p>
 <li><code>description</code> - used as tool-tip text, where possible</li>
 <li><code>default</code> - serves as default value for the widget</li>
 <li><code>enum</code> - provides the options for select-like widgets</li>
-<li><code>format</code> - mostly for type <code>string</code>, controls the actual target data type  </li>
+<li><code>format</code> - mostly for type <code>string</code>, controls the actual target data type</li>
 </ul>
 <p><strong>Supported "x-ui" metadata extensions</strong>:</p>
 <ul>
@@ -2441,34 +2493,33 @@ schema properties prefixed by "x-ui".</p>
 <li><code>x-ui-minimum</code> - minimum value for sliders</li>
 <li><code>x-ui-maximum</code> - maximum value for sliders</li>
 <li><code>x-ui-step</code> - step size for sliders</li>
-<li><code>x-ui-order</code> - number of string used for sorting the fields of a group</li>
+<li><code>x-ui-order</code> - number or string used for sorting the fields of a group</li>
 <li><code>x-ui-layout</code> - grouping fields and group layout</li>
 </ul>
-<p>Note that you can also use the prefix "x-ui:" instead of "x-ui-". The latter is 
-more convenient when encoding schemas is YAML. If multiple extensions are used,
-in a schema or process input description, they can also be grouped in an object 
+<p>Note that you can also use the prefix "x-ui:" instead of "x-ui-". The latter is
+more convenient when encoding schemas in YAML. If multiple extensions are used
+in a schema or process input description, they can also be grouped in an object
 property named <code>x-ui</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">x-ui</span><span class="p">:</span><span class="w"> </span>
-<span class="w">      </span><span class="nt">widget</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slider,</span>
-<span class="w">      </span><span class="nt">minimum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0,</span><span class="w">        </span>
-<span class="w">      </span><span class="nt">maximum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100,</span>
-<span class="w">      </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5,</span>
-<span class="w">    </span><span class="err">}</span>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">x-ui</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">widget</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slider</span>
+<span class="w">      </span><span class="nt">minimum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">      </span><span class="nt">maximum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">      </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
 </code></pre></div>
-<p>The extensions can occur in bot schemas and process input/output descriptions. </p>
-<p><strong>Schema widget mapping:</strong> </p>
+<p>The extensions can occur in both schemas and process input or output descriptions.</p>
+<p><strong>Schema widget mapping:</strong></p>
 <p>The following list provides an overview about the currently implemented
-mapping of schema elements to Panel widgets and panels.</p>
+mapping of schema elements to Mantine widgets and components.</p>
 <ul>
 <li><code>type: boolean</code>: creates <strong>checkbox</strong> and <strong>switch</strong> widgets.</li>
 <li><code>type: integer</code> and <code>type: number</code>: creates numeric <strong>input</strong> or <strong>slider</strong> widgets.<ul>
-<li><code>enum: [...]</code>: creates numeric <strong>select</strong>, <strong>radio group</strong>, 
-  or <strong>toggle button group</strong> widgets. </li>
+<li><code>enum: [...]</code>: creates numeric <strong>select</strong>, <strong>radio group</strong>,
+  or <strong>segmented control</strong> widgets.</li>
 </ul>
 </li>
 <li><code>type: string</code>: creates <strong>text input</strong>, <strong>textarea</strong>, <strong>date/time picker</strong> widgets.<ul>
-<li><code>enum: [...]</code>: creates textual <strong>select</strong>, <strong>radio group</strong>, 
-  or <strong>toggle button group</strong> widgets. </li>
+<li><code>enum: [...]</code>: creates textual <strong>select</strong>, <strong>radio group</strong>,
+  or <strong>segmented control</strong> widgets.</li>
 <li><code>format: password</code>: creates a <strong>password input</strong> widget.</li>
 <li><code>format: date-time</code>: creates a <strong>datetime picker</strong> widget.</li>
 <li><code>format: date</code>: creates a <strong>date picker</strong> widget.</li>
@@ -2476,281 +2527,168 @@ mapping of schema elements to Panel widgets and panels.</p>
 </ul>
 </li>
 <li><code>type: array</code>: creates <strong>array input</strong> widgets for numeric and textual item types
-  or <strong>array editors</strong> for any item schema type. 
-  A few special tuple types such as <strong>geographic bounding boxes</strong> and 
-  <strong>date(-time) ranges</strong> are supported too.</li>
-<li><code>type: object</code>: creates a <strong>sub-form</strong> with optionally ordered and outlaid 
+  or <strong>array editors</strong> for any item schema type.
+  A special tuple type for <strong>geographic bounding boxes</strong> is supported too.</li>
+<li><code>type: object</code>: creates a <strong>sub-form</strong> with optionally ordered and outlaid
   fields for the object properties.</li>
-<li><code>oneOf: [s1, s2, s3, ...]</code>: creates a <strong>tabs panel</strong> with a tab 
-  generated for each subschemas <code>s{i}</code>. An optional schema <code>discriminator</code> 
+<li><code>oneOf: [s1, s2, s3, ...]</code>: creates a <strong>tabs</strong> view with a tab
+  generated for each subschema <code>s{i}</code>. An optional schema <code>discriminator</code>
   is fully supported. Typically, the item schemas are objects.</li>
-<li><code>anyOf: [s1, s2, s3, ...]</code>: same as <code>oneOf</code>. </li>
+<li><code>anyOf: [s1, s2, s3, ...]</code>: same as <code>oneOf</code>.</li>
 <li><code>allOf: [s1, s2, s3, ...]</code>: creates a field for the schema resulting from
   merging the schemas <code>s{i}</code>. Typically, the item schemas are objects.</li>
-<li><code>nullable: true</code>: creates a <strong>labeled switch</strong> widget that if selected, shows
+<li><code>nullable: true</code>: creates a <strong>labeled switch</strong> widget that, if selected, shows
   the generated field for the same schema, but using <code>nullable: false</code>. If
   unselected, the value is <code>null</code> (JSON) or <code>Null</code> (Python).</li>
 </ul>
-<p>If none of the above is given, a JSON editor widget will be generated for a given 
+<p>If none of the above is given, a JSON editor widget will be generated for a given
 schema.</p>
 <p><strong>Partly supported schema keywords:</strong></p>
 <ul>
-<li><code>$ref</code>: only schema-relative references are currently 
-  supported. For example, <code>$ref: #/$defs/Complex</code> expects a schema definition 
+<li><code>$ref</code>: only schema-relative references are currently
+  supported. For example, <code>$ref: #/$defs/Complex</code> expects a schema definition
   named <code>Complex</code> in a top-level JSON object <code>$defs</code> in the same schema.
-  Schema definitions can also be referenced in nested objects, e.g., 
+  Schema definitions can also be referenced in nested objects, e.g.,
   <code>$ref: #/components/schemas/Complex</code>.</li>
 <li><code>prefixItems</code>: JSON schema introduced this keyword to represent typed
   tuples. Since there is no unambiguous OpenAPI schema representation,
-  multiple prefix-item schemas are converted into an <code>items</code> value which 
-  comprises a <code>oneOf</code> element of the converted <code>prefixItems</code> schemas. </li>
-<li><code>items</code>: if the value is a list of schemas (= tuple), see <code>prefixItems</code> above. </li>
+  multiple prefix-item schemas are converted into an <code>items</code> value which
+  comprises a <code>oneOf</code> element of the converted <code>prefixItems</code> schemas.</li>
+<li><code>items</code>: if the value is a list of schemas (= tuple), see <code>prefixItems</code> above.</li>
 </ul>
 <p><strong>Currently unsupported schema keywords:</strong></p>
 <ul>
 <li><code>additionalProperties</code>: currently not implemented, ignored for time being.
-  The plan is to support it by a special editor that allows adding and removing 
+  The plan is to support it by a special editor that allows adding and removing
   named properties. Will work only if and only if <code>properties</code> is not given.</li>
 <li><code>minProperties</code>, <code>maxProperties</code>: ignored.</li>
 <li><code>additionalItems</code>: ignored.</li>
 <li><code>not</code> - ignored, hence falls back to an untyped schema.</li>
 </ul>
 <p>The following subsections describe the default mapping of schema types
-to Panel widgets in more detail including the available customization options. </p>
+to Mantine widgets in more detail including the available customization options.</p>
 <h3 id="type-boolean">Type <code>boolean</code></h3>
-<p>Schemas of type <code>boolean</code> generate 
-a <a href="https://panel.holoviz.org/reference/widgets/Checkbox.html">checkbox</a>
-by default. </p>
-<p><strong>Customisation options</strong>: </p>
+<p>Schemas of type <code>boolean</code> generate a
+<a href="https://mantine.dev/core/checkbox/">checkbox</a>
+by default.</p>
+<p><strong>Customisation options</strong>:</p>
 <ul>
-<li><code>x-ui-widget: switch</code>: generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/Switch.html">switch</a> instead.</li>
+<li><code>x-ui-widget: switch</code>: generates a
+  <a href="https://mantine.dev/core/switch/">switch</a> instead.</li>
 </ul>
 <h3 id="type-integer-and-number">Type <code>integer</code> and <code>number</code></h3>
-<p>Schemas of type <code>integer</code> and <code>number</code> generate 
-an <a href="https://panel.holoviz.org/reference/widgets/IntInput.html">int input</a>
-or <a href="https://panel.holoviz.org/reference/widgets/FloatInput.html">float input</a> 
-by default if <code>enum</code> is not specified. With <code>enum</code>, a 
-<a href="https://panel.holoviz.org/reference/widgets/Select.html">select</a> is generated.</p>
-<p><strong>Customisation options</strong>: </p>
+<p>Schemas of type <code>integer</code> and <code>number</code> generate a
+<a href="https://mantine.dev/core/number-input/">number input</a>
+by default if <code>enum</code> is not specified. With <code>enum</code>, a
+<a href="https://mantine.dev/core/select/">select</a> is generated.</p>
+<p><strong>Customisation options</strong>:</p>
 <ul>
-<li><code>x-ui-widget: slider</code> generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/IntSlider.html">slider</a>. 
+<li><code>x-ui-widget: slider</code> generates a
+  <a href="https://mantine.dev/core/slider/">slider</a>.
   Requires <code>minimum</code> and <code>maximum</code> to be given too, optionally also <code>step</code> to
-  control the step size. </li>
+  control the step size.</li>
 </ul>
 <p>If <code>enum</code> is given too:</p>
 <ul>
-<li><code>x-ui-widget: slider</code> generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/DiscreteSlider.html">discrete slider</a>.</li>
-<li><code>x-ui-widget: radio</code> generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/RadioBoxGroup">radio box group</a>.</li>
-<li><code>x-ui-widget: button</code> generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/RadioButtonGroup">radio button group</a>.</li>
-<li><code>x-ui-widget: select</code> generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/Select">select</a> widget.</li>
+<li><code>x-ui-widget: radio</code> generates a
+  <a href="https://mantine.dev/core/radio/">radio group</a>.</li>
+<li><code>x-ui-widget: button</code> generates a
+  <a href="https://mantine.dev/core/segmented-control/">segmented control</a>.</li>
+<li><code>x-ui-widget: select</code> generates a
+  <a href="https://mantine.dev/core/select/">select</a> widget.</li>
 </ul>
 <h3 id="type-string">Type <code>string</code></h3>
-<p>Schemas of Type <code>string</code> generates 
-a <a href="https://panel.holoviz.org/reference/widgets/TextInput.html">text-input</a>
-by default if <code>format</code> is not provided (or currently unsupported) and <code>enum</code> 
-is not specified. </p>
-<p>If <code>enum</code> is specified, a <a href="https://panel.holoviz.org/reference/widgets/Select">select</a> 
+<p>Schemas of type <code>string</code> generate a
+<a href="https://mantine.dev/core/text-input/">text input</a>
+by default if <code>format</code> is not provided (or currently unsupported) and <code>enum</code>
+is not specified.</p>
+<p>If <code>enum</code> is specified, a <a href="https://mantine.dev/core/select/">select</a>
 widget is generated by default.</p>
 <p>If <code>format</code> is given:</p>
 <ul>
-<li><code>format: byte</code>: generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/FileInput.html">file input</a> 
-  and stores the file data as base64-encoded string.</li>
-<li><code>format: password</code>: generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/PasswordInput.html">password input</a>
-  and stores the password as plain text (take care!).</li>
-<li><code>format: date-time</code>: generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/DatetimePicker.html">datetime picker</a>.</li>
-<li><code>format: date</code>: generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/DatePicker.html">date picker</a>.</li>
-<li><code>format: time</code>: generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/TimePicker.html">time picker</a>.</li>
+<li><code>format: password</code>: generates a
+  <a href="https://mantine.dev/core/password-input/">password input</a> widget.</li>
+<li><code>format: date-time</code>: generates a
+  <a href="https://mantine.dev/dates/date-time-picker/">datetime picker</a>.</li>
+<li><code>format: date</code>: generates a
+  <a href="https://mantine.dev/dates/date-picker-input/">date picker</a>.</li>
+<li><code>format: time</code>: generates a
+  <a href="https://mantine.dev/dates/time-input/">time picker</a>.</li>
 </ul>
-<p><strong>Customisation options</strong>: </p>
+<p><strong>Customisation options</strong>:</p>
 <ul>
-<li><code>x-ui-widget: dropper</code>: generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/FileDropper.html">file dropper</a> 
-  if <code>format</code> is <code>bytes</code> and stores the file data as base64-encoded string.  </li>
-<li><code>x-ui-widget: input</code>: generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/DatetimeInput.html">datetime input</a> 
-  if <code>format</code> is <code>date-time</code>.  </li>
-<li><code>x-ui-widget: textarea</code>: generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/TextAreaInput.html">text area input</a> 
+<li><code>x-ui-widget: textarea</code>: generates a
+  <a href="https://mantine.dev/core/textarea/">text area input</a>
   if <code>format</code> is not provided or currently unsupported.</li>
 </ul>
 <p>If <code>enum</code> is specified:</p>
 <ul>
-<li><code>x-ui-widget: radio</code> generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/RadioBoxGroup">radio box group</a>.</li>
-<li><code>x-ui-widget: button</code> generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/RadioButtonGroup">radio button group</a>.</li>
-<li><code>x-ui-widget: select</code> generates a 
-  <a href="https://panel.holoviz.org/reference/widgets/Select">select</a> widget.</li>
+<li><code>x-ui-widget: radio</code> generates a
+  <a href="https://mantine.dev/core/radio/">radio group</a>.</li>
+<li><code>x-ui-widget: button</code> generates a
+  <a href="https://mantine.dev/core/segmented-control/">segmented control</a>.</li>
+<li><code>x-ui-widget: select</code> generates a
+  <a href="https://mantine.dev/core/select/">select</a> widget.</li>
 </ul>
 <h3 id="type-array">Type <code>array</code></h3>
 <p>With a few exceptions, the <code>array</code> type will generate an <em>array editor</em> field.
-The editor is used to interactively add, edit, and remove array items. 
-The array item fields are generated from the schema's <code>items</code> property 
+The editor is used to interactively add, edit, and remove array items.
+The array item fields are generated from the schema's <code>items</code> property
 which specifies the items' schema.</p>
-<p>A few tuple types are supported that generate special widgets instead of 
+<p>A few tuple types are supported that generates a special widget instead of
 the default array editor:</p>
 <ul>
-<li>
-<p><strong>geographic bounding boxes</strong>: item type <code>number</code> with <code>minItems: 4</code>, <code>maxItems: 4</code>, 
-  and <code>x-ui-widget: map</code> (or <code>format: bbox</code>) creates a special editor to enter the 
-  bounding box using an <a href="https://ipyleaflet.readthedocs.io/">ipyleaflet</a> map. 
-  It lets users draw a geometry whose bounding box will become the effective field 
-  value.</p>
-</li>
-<li>
-<p><strong>date(-time) ranges</strong>: item type <code>string</code> with <code>minItems: 2</code>, <code>maxItems: 2</code> creates 
-  a <a href="https://panel.holoviz.org/reference/widgets/DatetimeRangePicker.html">date-time range picker</a> 
-  for item format <code>date-time</code> or 
-  a <a href="https://panel.holoviz.org/reference/widgets/DateRangePicker.html">date range picker</a> 
-  for item format <code>date</code>. </p>
-</li>
+<li><strong>geographic bounding boxes</strong>: item type <code>number</code> with <code>minItems: 4</code>, <code>maxItems: 4</code>,
+  and <code>x-ui-widget: map</code> (or <code>format: bbox</code>) creates a special editor to enter the
+  bounding box using a map.
+  It lets users draw a geometry whose bounding box will become the effective field
+  value.</li>
 </ul>
-<p><strong>Customisation options</strong>: </p>
+<p><strong>Customisation options</strong>:</p>
 <ul>
 <li><code>x-ui-widget: input</code> generates array input widgets where users enter array
-  items into a <a href="https://panel.holoviz.org/reference/widgets/TextInput.html">text-input</a>
-  separated by a comma or a character specified by the <code>x-ui-separator</code> property.   </li>
-<li><code>x-ui-widget: textarea</code> similar as above, but uses a multi-line 
-  <a href="https://panel.holoviz.org/reference/widgets/TextAreaInput.html">text area</a>.</li>
+  items into a text input separated by a comma or a character specified by the <code>x-ui-separator</code> property.</li>
+<li><code>x-ui-widget: textarea</code> is similar as above, but uses a multi-line
+  text area.</li>
 </ul>
 <h3 id="type-object">Type <code>object</code></h3>
-<p>Schemas of Type <code>object</code> generate a sub-form with optionally ordered and outlaid 
+<p>Schemas of type <code>object</code> generate a sub-form with optionally ordered and outlaid
 fields for the object's <code>properties</code>.</p>
-<p><strong>Customisation options</strong>: </p>
-<p>If no layout or order is specified, the property forms are generated in the 
+<p><strong>Customisation options</strong>:</p>
+<p>If no layout or order is specified, the property forms are generated in the
 order that corresponds to order of the <code>properties</code> in the object schema.</p>
 <ul>
-<li><code>x-ui-layout: column</code>: arranges the sub-fields in a column  </li>
-<li><code>x-ui-layout: row</code>: arranges the sub-fields in a row  </li>
+<li><code>x-ui-layout: column</code>: arranges the sub-fields in a column</li>
+<li><code>x-ui-layout: row</code>: arranges the sub-fields in a row</li>
 <li><code>x-ui-layout: { layout }</code>: specifies a layout. A layout is an object with
   two properties <code>type</code> and <code>items</code>. <code>type</code> is either <code>column</code> (default)
-  or <code>row</code> and <code>items</code> is an optional list of property names or of other layout 
-  objects. If <code>items</code> is not not given, it defaults to all properties that 
+  or <code>row</code> and <code>items</code> is an optional list of property names or of other layout
+  objects. If <code>items</code> is not given, it defaults to all properties that
   have not yet been part of the layout.</li>
 <li><code>x-ui-order: &lt;order&gt;</code>: an integer value that can be used in the property schemas
-  to specify the fields order. The default order value is the index of 
+  to specify the fields order. The default order value is the index of
   a property in its given order.</li>
 </ul>
 <h3 id="nullable-schemas"><code>nullable</code> Schemas</h3>
-<p>If <code>nullable: true</code> a labeled switch widget is created that if selected, 
+<p>If <code>nullable: true</code> a labeled switch widget is created that if selected,
 shows the generated field for the same schema, but using <code>nullable: false</code>.
-If the switch is unselected, the effective value of the field will be 
+If the switch is unselected, the effective value of the field will be
 <code>null</code> (<code>Null</code> in Python).</p>
 <h3 id="oneof-and-anyof-schemas"><code>oneOf</code> and <code>anyOf</code> Schemas</h3>
-<p>The values of both <code>oneOf</code> and <code>anyOf</code> are lists that define 
-alternative schemas. They create create a <strong>tabs panel</strong> with a tab 
-generated for each subschemas <code>s{i}</code>. </p>
+<p>The values of both <code>oneOf</code> and <code>anyOf</code> are lists that define
+alternative schemas. They create a <strong>tabs</strong> view with a tab
+generated for each subschema <code>s{i}</code>.</p>
 <p>Given that all subschemas are of type <code>object</code> an optional schema
 <code>discriminator</code> specifies a common object property whose value
-uniquely identifies the type of the subschema. The subschemas must 
-be specified by schema references using the <code>$ref</code> keyword. 
-The discriminator property is omitted from the generated sub-forms 
-as its field value is determined by <code>$ref</code> schema name or the 
+uniquely identifies the type of the subschema. The subschemas must
+be specified by schema references using the <code>$ref</code> keyword.
+The discriminator property is omitted from the generated sub-forms
+as its field value is determined by <code>$ref</code> schema name or the
 discriminator's optional <code>mapping</code> keys.</p>
 <h3 id="allof-schemas"><code>allOf</code> Schemas</h3>
 <p>The <code>allOf</code> schema combination creates a field for the schema resulting from
 merging all its subschemas. Typically, the item schemas are objects and <code>allOf</code>
 is used to represent a type derived form two or more subtypes.</p>
-<h2 id="customizing-the-ui-generation">Customizing the UI Generation</h2>
-<p>Under the hood the <code>cuiman.gui</code> package uses the common package 
-<code>gavicore.ui</code> that provides the core UI generation framework.
-Within that framework, <code>gavicore.ui.panel</code> implements a UI generator 
-using the <a href="https://pypi.org/project/panel/">panel</a> package.
-However, <a href="https://pypi.org/project/panel/">panel</a> is an optional package to Gavicore
-as usually only Eozilla/Cuiman client applications require a GUI.</p>
-<h3 id="1-define-the-required-customization">1. Define the required customization</h3>
-<p>Let's say we want to generate a custom UI for a 2-tuple representing
-a numeric value range, whose values can be validated by the following 
-schema: </p>
-<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">    </span><span class="nt">items</span><span class="p">:</span><span class="w"> </span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">number</span>
-<span class="w">      </span><span class="nt">minimum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-1.0</span>
-<span class="w">      </span><span class="nt">maximum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
-<span class="w">    </span><span class="nt">minItems</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
-<span class="w">    </span><span class="nt">maxItems</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">-1.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">]</span>
-</code></pre></div>
-<p>The UI field to be generated for this schema should be a 
-<a href="https://panel.holoviz.org/reference/widgets/EditableRangeSlider.html">numeric range slider</a>. 
-Furthermore, we say that the field is only used if <code>x-ui-widget: range-input</code>.</p>
-<h3 id="2-create-a-custom-field-factory">2. Create a custom field factory</h3>
-<p>In order to generate the desired UI field, we'll develop a custom
-<code>gavicore.ui.panel.PanelFieldFactory</code> class and register an instance of it 
-in the framework. </p>
-<p>The <code>PanelFieldFactory</code> is a typed abstract base class that implements 
-the generic <code>gavicore.ui.FieldFactory</code> interface. A <code>FieldFactory</code> is 
-responsible for calculating a "suitability score" for a given field metadata
- <code>gavicore.ui.FieldMeta</code> which includes the OpenAPI schema and derived metadata.</p>
-<p>The framework selects the factory with the highest score for a given schema.
-The default score returned by the inbuilt factories is <code>5</code>.
-If a factory was selected, it is asked to create a <code>gavicore.ui.Field</code> given the
-current <code>gavicore.ui.FieldContext</code>. A <code>PanelFieldFactory</code> is supposed to only create 
-<code>gavicore.ui.panel.PanelField</code> instances.</p>
-<p>The above is best explained by example. First we create a new class
-<code>NumberRangeFactory</code> that derives from <code>PanelFieldFactoryBase</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">gavicore.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataType</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gavicore.ui</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldContext</span><span class="p">,</span> <span class="n">FieldMeta</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gavicore.ui.panel</span><span class="w"> </span><span class="kn">import</span> <span class="n">PanelField</span><span class="p">,</span> <span class="n">PanelFieldFactoryBase</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">NumberRangeFactory</span><span class="p">(</span><span class="n">PanelFieldFactoryBase</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_array_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meta</span><span class="p">:</span> <span class="n">FieldMeta</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the score of this factory for an array schema.&quot;&quot;&quot;</span>
-        <span class="o">...</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">create_array_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">FieldContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PanelField</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the Panel field for the selected array schema.&quot;&quot;&quot;</span>
-        <span class="o">...</span>
-</code></pre></div>
-<h3 id="3-implement-the-custom-field-factory">3. Implement the custom field factory</h3>
-<p>Lets implement <code>get_array_score()</code> first:</p>
-<div class="highlight"><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">get_array_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meta</span><span class="p">:</span> <span class="n">FieldMeta</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="n">schema</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">schema_</span>
-        <span class="k">assert</span> <span class="n">schema</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">DataType</span><span class="o">.</span><span class="n">array</span>  <span class="c1"># will never fail </span>
-        <span class="n">is_range_input</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">meta</span><span class="o">.</span><span class="n">widget</span> <span class="o">==</span> <span class="s1">&#39;range-input&#39;</span> 
-            <span class="ow">and</span> <span class="n">schema</span><span class="o">.</span><span class="n">items</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> 
-            <span class="ow">and</span> <span class="n">schema</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">DataType</span><span class="o">.</span><span class="n">number</span>
-            <span class="ow">and</span> <span class="n">schema</span><span class="o">.</span><span class="n">minItems</span> <span class="o">==</span> <span class="mi">2</span> 
-            <span class="ow">and</span> <span class="n">schema</span><span class="o">.</span><span class="n">maxItems</span> <span class="o">==</span> <span class="mi">2</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="mi">100</span> <span class="k">if</span> <span class="n">is_range_input</span> <span class="k">else</span> <span class="mi">0</span>
-</code></pre></div>
-<p>Now <code>create_array_field()</code>:</p>
-<div class="highlight"><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">create_array_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">FieldContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="c1"># A view model is a reactive holder for some value, </span>
-        <span class="c1"># here an array value:</span>
-        <span class="n">view_model</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">array</span><span class="p">()</span>
-        <span class="c1"># The view must derive from type pn.widgets.WidgetBase</span>
-        <span class="n">view</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">widgets</span><span class="o">.</span><span class="n">EditableRangeSlider</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>  <span class="c1"># always use ctx.label for adding labels to widgets </span>
-            <span class="n">value</span><span class="o">=</span><span class="n">view_model</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="c1"># the view model&#39;s initial value is used here</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">PanelField</span><span class="p">(</span><span class="n">view_model</span><span class="o">=</span><span class="n">view_model</span><span class="p">,</span> <span class="n">view</span><span class="o">=</span><span class="n">view</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="4-register-the-custom-field-factory">4. Register the custom field factory</h3>
-<p>Finally, we register an instance of the new class in the Cuiman client's 
-configuration:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">cuiman.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientConfig</span>
-
-<span class="n">config</span> <span class="o">=</span> <span class="n">ClientConfig</span><span class="o">.</span><span class="n">default_config</span>
-<span class="n">config</span><span class="o">.</span><span class="n">get_field_factory_registry</span><span class="p">()</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">NumberRangeFactory</span><span class="p">())</span>
-</code></pre></div>
-<p>The next time you run the Cuiman GUI client, it will consider that factory
-for generating its GUIs for a given OGC process description, provided
-that the above code is executed once before the GUI is used.</p>
 
 
 
@@ -2787,13 +2725,14 @@ that the above code is executed once before the GUI is used.</p>
   
     <div class="md-copyright__highlight">
       Copyright &copy; 2026 Eozilla Team
+      
+        &nbsp;&nbsp;&nbsp;
+        <a href="https://www.brockmann-consult.de/imprint/" rel="noopener">Imprint</a>
+      
+        &nbsp;&nbsp;&nbsp;
+        <a href="https://www.brockmann-consult.de/privacy-policy/" rel="noopener">Privacy Policy</a>
+      
     </div>
-  
-  
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
   
 </div>
       
