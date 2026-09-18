@@ -87,6 +87,8 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
         save: bool = False,
     ) -> None:
         self._require_open()
+        if self._prepare_http_auth(save=save):
+            return
         auth = self._credentials(interactive=interactive, force=force)
         self._configure_http_client(auth, self._updated_token)
         self._discover()
@@ -143,7 +145,8 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
 
     def _request(self, method: str, url: str, **kwargs: Any) -> httpx2.Response:
         with self._runtime_lock:
-            self._login()
+            if self._prepare_request(kwargs):
+                self._login()
             assert self._http_client is not None
             return self._http_client.request(
                 method, url, **self._request_options(kwargs)

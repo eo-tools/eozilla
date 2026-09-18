@@ -28,6 +28,8 @@ code_header = """
 
 from typing import Any, Optional
 
+import httpx2
+
 from gavicore.models import {{ model_imports }}
 
 from .async_client_mixin import AsyncClientMixin
@@ -56,6 +58,10 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
         If credentials are still missing, a matching profile's keyring entry may
         supply them; explicitly supplied credentials take precedence.
       api_url: The service URL of the OGC API - Processes.
+      http_auth: Optional runtime HTTPX2 auth adapter, shared by Python and app
+        requests. Overrides configured authentication without acquiring or saving
+        its credentials. Per-request auth (including None) or an Authorization
+        header overrides this default. The adapter is never serialized.
     \"\"\"
 
     def __init__(
@@ -65,22 +71,21 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
         config_type: type[ClientConfig] | None = None,
         config_path: Optional[str] = None,
         api_url: Optional[str] = None,
+        http_auth: httpx2.Auth | None = None,
         _debug: bool = False,
         _transport: Optional[{{ uc_async }}Transport] = None,
         **config_kwargs,
     ):
-        self._config = ClientConfig.create(
+        self._init_client(
             config=config,
             config_type=config_type,
             config_path=config_path,
             api_url=api_url,
+            http_auth=http_auth,
+            _debug=_debug,
+            _transport=_transport,
             **config_kwargs,
         )
-        if not self._config.api_url:
-            raise ValueError("Required setting 'api_url' not configured")
-        self._transport = _transport
-        self._debug = _debug
-        self._init_client_runtime()
 
     @property
     def config(self) -> ClientConfig:

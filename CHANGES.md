@@ -4,6 +4,12 @@
 
 The **Cuiman** client has been largely enhanced:
 
+- Runtime `http_auth` adapters are now accepted by both Python clients and
+  shared with launched-app requests. Explicit request auth (including `None`)
+  and Authorization headers take precedence and bypass configured login and
+  signing. Client adapters bypass configured credentials and keyring storage.
+  (#211)
+
 - Now supporting application branding in login guidance, notebook links,
   browser debug messages, and app-launch errors through optional
   `ClientConfig.display_name` and `cli_name` class metadata. CLI recovery messages

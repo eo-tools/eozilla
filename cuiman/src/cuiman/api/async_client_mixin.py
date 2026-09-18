@@ -99,6 +99,8 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
         save: bool = False,
     ) -> None:
         self._require_open()
+        if self._prepare_http_auth(save=save):
+            return
         auth = (
             await asyncio.to_thread(self._credentials, interactive=True, force=force)
             if interactive
@@ -174,7 +176,8 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
     async def _request(self, method: str, url: str, **kwargs: Any) -> httpx2.Response:
         self._bind_loop()
         async with self._runtime_lock:
-            await self._login()
+            if self._prepare_request(kwargs):
+                await self._login()
             assert self._http_client is not None
             return await self._http_client.request(
                 method, url, **self._request_options(kwargs)

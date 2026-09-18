@@ -46,6 +46,27 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
     _transport: Any
     _debug: bool
 
+    def _init_client(
+        self,
+        *,
+        http_auth: httpx2.Auth | None = None,
+        _debug: bool = False,
+        _transport: Any = None,
+        **config_kwargs: Any,
+    ) -> None:
+        """Initialize generated clients with shared configuration and auth policy."""
+        if http_auth is not None and not isinstance(http_auth, httpx2.Auth):
+            raise TypeError("http_auth must be an httpx2.Auth instance or None.")
+        if http_auth is not None:
+            config_kwargs["resolve_secrets"] = False
+        self._config = ClientConfig.create(**config_kwargs)
+        if not self._config.api_url:
+            raise ValueError("Required setting 'api_url' not configured")
+        self._http_auth = http_auth
+        self._transport = _transport
+        self._debug = _debug
+        self._init_client_runtime()
+
     @property
     def _config_path(self) -> Path:
         return ClientConfig.normalize_config_path(self.config._source_path)
@@ -120,7 +141,7 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
     ) -> None:
         self.config.auth = auth
         if self._http_client is None:
-            if isinstance(auth, OAuthTokenConfig):
+            if self._http_auth is None and isinstance(auth, OAuthTokenConfig):
                 factory = AsyncOAuth2Client if self._async_mode else OAuth2Client
                 self._http_client = cast(
                     _HttpClient,
@@ -128,8 +149,10 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
                 )
             else:
                 http_factory = httpx2.AsyncClient if self._async_mode else httpx2.Client
-                self._http_client = cast(_HttpClient, http_factory())
-        if isinstance(auth, OAuth2AuthConfig):
+                self._http_client = cast(
+                    _HttpClient, http_factory(auth=self._http_auth)
+                )
+        if self._http_auth is None and isinstance(auth, OAuth2AuthConfig):
             client = self._http_client
             assert isinstance(client, (OAuth2Client, AsyncOAuth2Client))
             if client.client_secret != auth.client_secret:
@@ -211,8 +234,10 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
 
     @property
     def _can_revoke(self) -> bool:
-        return isinstance(self.config.auth, OidcAuthConfig) and bool(
-            self.token or self.config.auth.oauth_token
+        return (
+            self._http_auth is None
+            and isinstance(self.config.auth, OidcAuthConfig)
+            and bool(self.token or self.config.auth.oauth_token)
         )
 
     def _save_credentials(self, *, required: bool = False) -> None:
@@ -226,6 +251,9 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
             _set_auth_secret_persistor(self.config, self._config_path)
 
     def _forget_credentials(self) -> None:
+        if self._http_auth is not None:
+            self._http_auth = None
+            return
         try:
             delete_auth_secrets(self._config_path, self.config.api_url or "")
         finally:
@@ -280,11 +308,47 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
             **requesters,
         )
 
+    def _prepare_http_auth(self, *, save: bool) -> bool:
+        """Prepare an external adapter without invoking configured login or storage."""
+        if self._http_auth is None:
+            return False
+        if save:
+            raise ValueError("http_auth credentials cannot be saved by Cuiman.")
+        self._configure_http_client(self.config.auth, self._updated_token)
+        return True
+
+    def _uses_config_auth(self, kwargs: dict[str, Any]) -> bool:
+        """Select configured auth only when neither request nor client overrides it."""
+        return (
+            self._http_auth is None
+            and kwargs.get("auth", httpx2.USE_CLIENT_DEFAULT)
+            is httpx2.USE_CLIENT_DEFAULT
+            and "authorization" not in httpx2.Headers(kwargs.get("headers"))
+        )
+
+    def _prepare_request(self, kwargs: dict[str, Any]) -> bool:
+        """Prepare override requests; return whether configured login is needed."""
+        self._require_open()
+        if self._uses_config_auth(kwargs):
+            return True
+        self._configure_http_client(self.config.auth, self._updated_token)
+        return False
+
+    @abstractmethod
+    def _updated_token(self, _token: dict[str, Any], **_previous: Any) -> Any:
+        """Persist an Authlib update in the owner's I/O mode."""
+
     def _request_options(self, kwargs: dict[str, Any]) -> dict[str, Any]:
-        if not isinstance(self.config.auth, OAuthTokenConfig):
+        if self._uses_config_auth(kwargs) and not isinstance(
+            self.config.auth, OAuthTokenConfig
+        ):
             headers = httpx2.Headers(self.config.auth.auth_headers)
             headers.update(kwargs.get("headers", {}))
             kwargs["headers"] = headers
-        elif "authorization" in httpx2.Headers(kwargs.get("headers")):
-            kwargs.setdefault("auth", None)
+        elif (
+            "authorization" in httpx2.Headers(kwargs.get("headers"))
+            and kwargs.get("auth", httpx2.USE_CLIENT_DEFAULT)
+            is httpx2.USE_CLIENT_DEFAULT
+        ):
+            kwargs["auth"] = None
         return kwargs
