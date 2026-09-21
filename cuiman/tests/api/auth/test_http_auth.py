@@ -7,7 +7,7 @@ import httpx2
 import pytest
 
 from cuiman import AsyncClient, Client, ClientConfig
-from cuiman.api.auth import LoginRequiredError
+from cuiman.api.auth import LoginRequiredError, TokenAuthConfig
 from cuiman.api.exceptions import ClientError
 
 
@@ -73,7 +73,8 @@ AUTH_CONFIGS = [
 @pytest.mark.parametrize("auth", AUTH_CONFIGS)
 async def test_client_adapter_bypasses_configured_auth(kind, auth, auth_provider):
     adapter = MutableAuth()
-    client = kind(api_url="https://processing.test", auth=auth, http_auth=adapter)
+    config = ClientConfig(api_url="https://processing.test", auth=auth)
+    client = kind(config=config, auth=adapter)
     try:
         await invoke(client.login, force=True)
         assert not auth_provider.requests
@@ -86,8 +87,8 @@ async def test_client_adapter_bypasses_configured_auth(kind, auth, auth_provider
         assert runtime.auth is adapter
         assert adapter.calls == 2
         assert client.token is None
-        assert "http_auth" not in client.config.to_file_dict()
-        assert "http_auth" not in client._repr_json_()[0]
+        assert client.config.to_file_dict() == config.to_file_dict()
+        assert client._repr_json_()[0] == config.to_file_dict()
         assert [r.headers["authorization"] for r in auth_provider.requests] == [
             "Bearer first",
             "Bearer second",
@@ -132,7 +133,7 @@ async def test_request_overrides_do_not_replace_client_adapter(kind, auth_provid
     adapter = MutableAuth()
     other = MutableAuth()
     other.value = "other"
-    client = kind(api_url="https://processing.test", http_auth=adapter)
+    client = kind(api_url="https://processing.test", auth=adapter)
     try:
         for options in (
             {"auth": None},
@@ -217,7 +218,7 @@ async def test_adapter_skips_keyring_and_rejects_saving(
     unused = Mock(side_effect=AssertionError("Unrelated credentials were accessed"))
     monkeypatch.setattr("cuiman.api.config.load_auth_secrets", unused)
     monkeypatch.setattr("cuiman.api.client_mixin_base.delete_auth_secrets", unused)
-    client = kind(http_auth=MutableAuth())
+    client = kind(auth=MutableAuth())
     await invoke(client.get_conformance)
     runtime = client._http_client
     with pytest.raises(ValueError, match="cannot be saved"):
@@ -234,12 +235,14 @@ async def test_adapter_logout_does_not_revoke_configured_token(
     unused = Mock(side_effect=AssertionError("Unrelated credentials were deleted"))
     monkeypatch.setattr("cuiman.api.client_mixin_base.delete_auth_secrets", unused)
     client = kind(
-        http_auth=MutableAuth(),
-        auth=dict(
-            auth_type="oidc",
-            issuer_url="https://identity.test/realm",
-            client_id="client",
-            oauth_token={"access_token": "unused"},
+        auth=MutableAuth(),
+        config=ClientConfig(
+            auth=dict(
+                auth_type="oidc",
+                issuer_url="https://identity.test/realm",
+                client_id="client",
+                oauth_token={"access_token": "unused"},
+            )
         ),
     )
     await invoke(client.logout)
@@ -254,7 +257,7 @@ async def test_adapter_failure_and_processing_401_are_not_replayed(kind, auth_pr
             raise ValueError("Auth unavailable")
             yield request
 
-    client = kind(http_auth=FailingAuth())
+    client = kind(auth=FailingAuth())
     try:
         with pytest.raises(ValueError, match="Auth unavailable"):
             await invoke(client.get_conformance)
@@ -262,7 +265,7 @@ async def test_adapter_failure_and_processing_401_are_not_replayed(kind, auth_pr
     finally:
         await invoke(client.close)
     adapter = MutableAuth()
-    client = kind(http_auth=adapter)
+    client = kind(auth=adapter)
     auth_provider.statuses.append(401)
     try:
         with pytest.raises(ClientError):
@@ -272,6 +275,52 @@ async def test_adapter_failure_and_processing_401_are_not_replayed(kind, auth_pr
         await invoke(client.close)
 
 
-def test_client_adapter_requires_native_auth(kind):
+def test_auth_rejects_unsupported_object(kind):
     with pytest.raises(TypeError, match="httpx2.Auth"):
-        kind(http_auth=object())
+        kind(auth=object())
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "options, expected_header, expected_value",
+    [
+        ({}, "X-Auth-Token", "original"),
+        ({"auth": None}, "X-Auth-Token", "original"),
+        ({"auth": {"access_token": "partial"}}, "X-Auth-Token", "partial"),
+        (
+            {"auth": {"auth_type": "token", "access_token": "replacement"}},
+            "Authorization",
+            "Bearer replacement",
+        ),
+        (
+            {"auth": TokenAuthConfig(access_token="model-token")},  # noqa: S106 - test credential
+            "Authorization",
+            "Bearer model-token",
+        ),
+        ({"auth": {"auth_type": "none"}}, None, None),
+    ],
+)
+async def test_constructor_auth_retains_configuration_resolution(
+    kind, auth_provider, options, expected_header, expected_value
+):
+    config = ClientConfig(
+        api_url="https://processing.test",
+        auth={
+            "auth_type": "token",
+            "access_token": "original",
+            "access_token_header": "X-Auth-Token",
+        },
+    )
+    client = kind(config=config, **options)
+    try:
+        await invoke(client.get_conformance)
+        headers = auth_provider.requests[-1].headers
+        if expected_header:
+            assert headers[expected_header] == expected_value
+        else:
+            assert "authorization" not in headers
+            assert "x-auth-token" not in headers
+        assert config.auth.access_token == "original"  # noqa: S105 - test credential
+        assert config.auth.access_token_header == "X-Auth-Token"  # noqa: S105 - header name
+    finally:
+        await invoke(client.close)

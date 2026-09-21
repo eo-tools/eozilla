@@ -16,6 +16,7 @@ from .config import (
     SecretFields,
     TokenAuthConfig,
 )
+from .jupyterhub import JupyterHubAuth, JupyterHubAuthError
 from .oauth2_client import LoginRequiredError
 
 __all__ = [
@@ -32,4 +33,6 @@ __all__ = [
     "SecretFields",
     "TokenAuthConfig",
     "LoginRequiredError",
+    "JupyterHubAuth",
+    "JupyterHubAuthError",
 ]

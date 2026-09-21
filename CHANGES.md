@@ -4,7 +4,12 @@
 
 The **Cuiman** client has been largely enhanced:
 
-- Runtime `http_auth` adapters are now accepted by both Python clients and
+- The explicit `JupyterHubAuth` HTTPX2 adapter retrieves the current upstream
+  access token before each processing request in both client modes. Refresh
+  stays with JupyterHub; lookup failures stop processing without interaction,
+  fallback, or replay. Automatic discovery remains separate. (#211)
+
+- Runtime HTTPX2 `auth` adapters are now accepted by both Python clients and
   shared with launched-app requests. Explicit request auth (including `None`)
   and Authorization headers take precedence and bypass configured login and
   signing. Client adapters bypass configured credentials and keyring storage.

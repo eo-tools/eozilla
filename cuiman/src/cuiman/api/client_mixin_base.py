@@ -17,6 +17,7 @@ from authlib.integrations.httpx_client import AsyncOAuth2Client, OAuth2Client
 
 from .auth.config import (
     AuthConfig,
+    AuthConfigBase,
     LoginAuthConfig,
     OAuth2AuthConfig,
     OAuthTokenConfig,
@@ -49,16 +50,24 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
     def _init_client(
         self,
         *,
-        http_auth: httpx2.Auth | None = None,
+        auth: AuthConfig | dict[str, Any] | httpx2.Auth | None = None,
         _debug: bool = False,
         _transport: Any = None,
         **config_kwargs: Any,
     ) -> None:
         """Initialize generated clients with shared configuration and auth policy."""
-        if http_auth is not None and not isinstance(http_auth, httpx2.Auth):
-            raise TypeError("http_auth must be an httpx2.Auth instance or None.")
+        if auth is not None and not isinstance(
+            auth, (AuthConfigBase, dict, httpx2.Auth)
+        ):
+            raise TypeError(
+                "auth must be an authentication configuration, dictionary, "
+                "httpx2.Auth instance, or None."
+            )
+        http_auth = auth if isinstance(auth, httpx2.Auth) else None
         if http_auth is not None:
             config_kwargs["resolve_secrets"] = False
+        elif auth is not None:
+            config_kwargs["auth"] = auth
         self._config = ClientConfig.create(**config_kwargs)
         if not self._config.api_url:
             raise ValueError("Required setting 'api_url' not configured")
@@ -313,7 +322,9 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
         if self._http_auth is None:
             return False
         if save:
-            raise ValueError("http_auth credentials cannot be saved by Cuiman.")
+            raise ValueError(
+                "Runtime auth adapter credentials cannot be saved by Cuiman."
+            )
         self._configure_http_client(self.config.auth, self._updated_token)
         return True
 

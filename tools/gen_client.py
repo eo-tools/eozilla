@@ -32,6 +32,7 @@ import httpx2
 
 from gavicore.models import {{ model_imports }}
 
+from .auth.config import AuthConfig
 from .async_client_mixin import AsyncClientMixin
 from .client_mixin import ClientMixin
 from .client_app_mixin import ClientAppMixin
@@ -51,17 +52,17 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
         settings schema, defaults, environment namespace, and profile path.
         When omitted, a supplied ``config`` object's concrete type is used.
       config_path: Optional path of the configuration file to be loaded
-      config_kwargs (Any): Configuration overrides, including ``auth``. An auth model
-        or a dictionary containing ``auth_type`` replaces previous auth settings,
-        even when the type is unchanged. A dictionary without ``auth_type``
-        merges into the selected auth configuration, including nested mappings.
-        If credentials are still missing, a matching profile's keyring entry may
-        supply them; explicitly supplied credentials take precedence.
+      config_kwargs (Any): Additional configuration overrides.
       api_url: The service URL of the OGC API - Processes.
-      http_auth: Optional runtime HTTPX2 auth adapter, shared by Python and app
-        requests. Overrides configured authentication without acquiring or saving
-        its credentials. Per-request auth (including None) or an Authorization
-        header overrides this default. The adapter is never serialized.
+      auth: Authentication configuration or a runtime HTTPX2 auth adapter.
+        An auth model or dictionary containing ``auth_type`` replaces previous
+        settings. A dictionary without ``auth_type`` merges into configured auth,
+        including nested mappings; matching keyring secrets fill missing values.
+        An HTTPX2 adapter overrides configured authentication without acquiring
+        or saving its credentials. It is shared by Python and app requests and
+        is never serialized. Omitted or None retains configured authentication.
+        Per-request auth (including None) or an Authorization header overrides
+        the client's authentication for that request.
     \"\"\"
 
     def __init__(
@@ -71,7 +72,7 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
         config_type: type[ClientConfig] | None = None,
         config_path: Optional[str] = None,
         api_url: Optional[str] = None,
-        http_auth: httpx2.Auth | None = None,
+        auth: AuthConfig | dict[str, Any] | httpx2.Auth | None = None,
         _debug: bool = False,
         _transport: Optional[{{ uc_async }}Transport] = None,
         **config_kwargs,
@@ -81,7 +82,7 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
             config_type=config_type,
             config_path=config_path,
             api_url=api_url,
-            http_auth=http_auth,
+            auth=auth,
             _debug=_debug,
             _transport=_transport,
             **config_kwargs,

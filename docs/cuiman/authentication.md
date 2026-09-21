@@ -70,7 +70,12 @@ proxy filters incoming headers and always uses the owning client's credentials.
 ## Runtime HTTP authentication adapters
 
 Both `Client` and `AsyncClient` accept a native `httpx2.Auth` instance as the
-constructor's `http_auth` argument. The adapter belongs to the running client,
+constructor's `auth` argument, which also accepts an authentication
+configuration model or dictionary. These are alternative selections. Omitting
+constructor `auth` or passing `None` retains configured authentication; supplying
+a model or dictionary keeps the existing replacement and partial-merge rules.
+Per-request `auth=None` instead suppresses authentication for that request.
+The adapter belongs to the running client,
 is never serialized into configuration, and is used by Python calls and the
 launched app through the same owned HTTP client.
 
@@ -79,7 +84,7 @@ import httpx2
 from cuiman import Client
 
 adapter = httpx2.BasicAuth("user", "password")
-client = Client(api_url="https://processing.example.org/api", http_auth=adapter)
+client = Client(api_url="https://processing.example.org/api", auth=adapter)
 try:
     processes = client.get_processes()
     public_processes = client.get_processes(auth=None)
@@ -93,7 +98,7 @@ Authentication precedence is:
    authentication for that request. Caller-supplied headers remain intact.
 2. An explicit per-request `Authorization` header, when request `auth` is omitted
    or is `httpx2.USE_CLIENT_DEFAULT`.
-3. The client-level `http_auth` adapter.
+3. The client-level `auth` adapter.
 4. Configured authentication.
 
 Overrides bypass configured login, token refresh, and configured authentication
@@ -114,6 +119,64 @@ returns 401. An adapter defines its own HTTPX2 authentication flow, which may it
 perform additional requests. Custom adapters must support the chosen client's
 synchronous or asynchronous mode. Automatic JupyterHub discovery is not yet
 implemented.
+
+## Explicit JupyterHub authentication
+
+Use `JupyterHubAuth` when your Hub exposes an upstream access token accepted by
+your processing service:
+
+```python
+import os
+from cuiman import Client
+from cuiman.api.auth import JupyterHubAuth
+
+client = Client(
+    api_url="https://processing.example.org/api",
+    auth=JupyterHubAuth(
+        hub_api_url=os.environ["JUPYTERHUB_API_URL"],
+        hub_api_token=os.environ["JUPYTERHUB_API_TOKEN"],
+    ),
+)
+try:
+    processes = client.get_processes()
+finally:
+    client.close()
+```
+
+The same adapter works with `AsyncClient`; await its processing calls and
+`close()`. These arguments are explicit. Constructing an adapter or calling
+`login()` does not contact the Hub or validate token availability.
+
+Before each authenticated processing request, the adapter calls
+`<hub_api_url>/user` with the Hub credential, reads `auth_state.access_token`,
+and signs the processing request with that upstream bearer token. Hub and
+processing requests use the owner's existing HTTP client and effective request
+timeout. Processing headers, cookies, query parameters, and body are not copied
+to the lookup. Tokens are not cached or persisted by the adapter. The Hub owns
+refresh; Cuiman does not use refresh tokens or implement an expiry timer.
+
+The deployment must enable `Authenticator.enable_auth_state`, configure
+`JUPYTERHUB_CRYPT_KEY`, and grant `admin:auth_state!user` to the user and server
+roles. Use OAuthenticator's refresh support (17.2 or later), with a nonzero
+`auth_refresh_age` and suitable provider refresh credentials. See the official
+[JupyterHub token-retrieval setup](https://oauthenticator.readthedocs.io/en/latest/how-to/refresh.html#refreshing-tokens-from-user-sessions)
+for the complete role configuration. A running notebook alone does not establish
+that these permissions or token capabilities are available.
+
+Only attach the adapter to a client whose processing service is a trusted
+recipient of the upstream token. Use the Hub API base URL, including any prefix,
+not a browser login URL. HTTPS is recommended; HTTP is allowed for trusted private
+Hub networks. Lookup redirects are rejected; retain HTTPX2's default of not
+following redirects to avoid contacting redirect targets before that check.
+
+Missing or malformed auth state raises `JupyterHubAuthError` with setup guidance
+and no response-body contents. HTTP status and network failures use the existing
+Cuiman `TransportError` wrapper with the underlying HTTPX2 exception as its cause.
+All lookup failures stop the processing request. A processing-service 401 is
+returned without token recovery or request replay. A later caller-initiated
+request performs a fresh lookup. Per-request authentication overrides still
+bypass the adapter, and logout closes the Cuiman owner without signing out of
+JupyterHub.
 
 ## Token configuration and storage
 
