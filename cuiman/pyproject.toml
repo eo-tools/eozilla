@@ -4,7 +4,7 @@
 
 [project]
 name = "cuiman"
-version = "0.3.0"
+version = "0.3.1"
 description = "Provides a client Python API, GUI, and CLI for servers compliant with OGC API - Processes"
 readme = "README.md"
 authors = [

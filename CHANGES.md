@@ -1,3 +1,9 @@
+## Changes in version 0.3.1
+
+- Fixed the Cuiman app to render geometry editor maps correctly also in in dark mode. 
+  See [eozilla-app v0.2.1](https://github.com/eo-tools/eozilla-app/releases/tag/v0.2.1).
+
+
 ## Changes in version 0.3.0
 
 ### Enhancements
