@@ -30,7 +30,7 @@ pip = "*"
 hatch = "*"
 # Build for publication
 rattler-build = ">=0.48.1,<0.49"
-twine = ">=6.2.0,<7"
+twine = ">=7.0.0,<8"
 # Code style & linting
 isort = "*"
 ruff = "*"
