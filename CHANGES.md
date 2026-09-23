@@ -1,5 +1,29 @@
 ## Changes in version 0.3.2 (in development)
 
+### Enhancements
+
+**Cuiman** now supports JupyterHub authentication in Python, the CLI, and the
+launched app. On a suitably configured Hub, you can use its access token for
+your processing service without copying or managing tokens yourself. (#211)
+
+- New auth type `auto` is the default for new configurations. It detects
+  available authentication, currently JupyterHub only, and uses anonymous access
+  if none is detected. If detected authentication fails, Cuiman reports an error
+  instead of continuing anonymously.
+- New auth type `jupyter` requires JupyterHub authentication and reports an error
+  if it is unavailable. Use `client.login()` or `cuiman login` to check token
+  availability before making requests.
+- Auth type `none` always uses anonymous access and skips detection. Existing
+  profiles explicitly configured with `none` keep this behavior.
+- Python and app requests use the current token supplied by JupyterHub, including
+  updates made by the Hub. Tokens are not passed to the app browser. Cuiman logout
+  closes the local client without signing you out of JupyterHub.
+
+Select an auth type with `Client(auth={"auth_type": "auto"})` or
+`cuiman configure --auth-type auto`, replacing `auto` with `none` or `jupyter`
+as needed. See [Authentication](docs/cuiman/authentication.md) for Hub setup
+and usage details.
+
 
 ## Changes in version 0.3.1
 
@@ -12,17 +36,6 @@
 ### Enhancements
 
 The **Cuiman** client has been largely enhanced:
-
-- The explicit `JupyterHubAuth` HTTPX2 adapter retrieves the current upstream
-  access token before each processing request in both client modes. Refresh
-  stays with JupyterHub; lookup failures stop processing without interaction,
-  fallback, or replay. Automatic discovery remains separate. (#211)
-
-- Runtime HTTPX2 `auth` adapters are now accepted by both Python clients and
-  shared with launched-app requests. Explicit request auth (including `None`)
-  and Authorization headers take precedence and bypass configured login and
-  signing. Client adapters bypass configured credentials and keyring storage.
-  (#211)
 
 - Now supporting application branding in login guidance, notebook links,
   browser debug messages, and app-launch errors through optional
