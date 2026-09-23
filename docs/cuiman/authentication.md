@@ -65,9 +65,8 @@ login. Rejected refresh raises the library error; it does not fall back to the
 password grant. A processing-service 401 is returned as a processing API error.
 Cuiman does not renew and replay that request.
 
-OAuth uses standard bearer signing. Python callers can override request auth
-with the HTTPX2 `auth` argument or an explicit `Authorization` header. The browser
-proxy filters incoming headers and always uses the owning client's credentials.
+OAuth uses standard bearer signing. The browser proxy filters incoming headers
+and always uses the owning client's credentials.
 
 ## Runtime HTTP authentication adapters
 
@@ -76,7 +75,6 @@ constructor's `auth` argument, which also accepts an authentication
 configuration model or dictionary. These are alternative selections. Omitting
 constructor `auth` or passing `None` retains configured authentication; supplying
 a model or dictionary keeps the existing replacement and partial-merge rules.
-Per-request `auth=None` instead suppresses authentication for that request.
 The adapter belongs to the running client,
 is never serialized into configuration, and is used by Python calls and the
 launched app through the same owned HTTP client.
@@ -89,25 +87,12 @@ adapter = httpx2.BasicAuth("user", "password")
 client = Client(api_url="https://processing.example.org/api", auth=adapter)
 try:
     processes = client.get_processes()
-    public_processes = client.get_processes(auth=None)
 finally:
     client.close()
 ```
 
-Authentication precedence is:
-
-1. An explicit per-request `auth`, including `auth=None` to disable automatic
-   authentication for that request. Caller-supplied headers remain intact.
-2. An explicit per-request `Authorization` header, when request `auth` is omitted
-   or is `httpx2.USE_CLIENT_DEFAULT`.
-3. The client-level `auth` adapter.
-4. Configured authentication: `auto` discovers a mechanism, `none` uses
-   anonymous access, and other types select their explicit mechanism.
-
-Overrides bypass configured login, token refresh, and configured authentication
-headers, including API-key and custom token headers. They do not change defaults
-for later requests. An explicit client adapter also skips loading keyring secrets
-for the overridden configuration. Configuration still needs to be valid.
+A client-level adapter takes precedence over configured authentication and
+skips loading its keyring credentials. Configuration still needs to be valid.
 
 With a client adapter, `login()` prepares the HTTP client. For `JupyterHubAuth`,
 it also verifies that the Hub returns a usable upstream token; arbitrary adapters
@@ -141,7 +126,6 @@ Select `Client(auth={"auth_type": "none"})` to disable discovery and use anonymo
 access. Existing profiles explicitly configured with `none` remain anonymous.
 `AutoAuthConfig()` and `NoAuthConfig()` are the equivalent typed configurations.
 Explicit configured authentication and runtime adapters bypass discovery.
-Per-request `auth=None` or an `Authorization` header also bypasses discovery.
 
 To require JupyterHub authentication, use the existing `auth` argument:
 
@@ -223,9 +207,8 @@ and no response-body contents. HTTP status and network failures use the existing
 Cuiman `TransportError` wrapper with the underlying HTTPX2 exception as its cause.
 All lookup failures stop the processing request. A processing-service 401 is
 returned without token recovery or request replay. A later caller-initiated
-request performs a fresh lookup. Per-request authentication overrides still
-bypass the adapter, and logout closes the Cuiman owner without signing out of
-JupyterHub.
+request performs a fresh lookup. Logout closes the Cuiman owner without signing
+out of JupyterHub.
 
 ## JupyterHub and the launched app
 
