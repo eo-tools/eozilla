@@ -51,7 +51,12 @@ def hub(monkeypatch):
                 return httpx2.Response(state.status, content=state.content)
             return httpx2.Response(state.status, json=state.body)
         assert request.url.host == "processing.test"
-        return httpx2.Response(state.processing_status, json={"conformsTo": []})
+        body = (
+            {"processes": [], "links": []}
+            if request.url.path.endswith("/processes")
+            else {"conformsTo": []}
+        )
+        return httpx2.Response(state.processing_status, json=body)
 
     for cls in (httpx2.Client, httpx2.AsyncClient):
         original = cls.__init__
@@ -85,7 +90,8 @@ async def test_current_token_is_retrieved_for_each_request(kind, hub, trailing_s
     assert not hub.clients
     try:
         await invoke(client.login)
-        assert not hub.requests
+        assert [r.url.host for r in hub.requests] == ["hub.test"]
+        hub.requests.clear()
         assert (await invoke(client.get_conformance)).conformsTo == []
         hub.body = {"auth_state": {"access_token": "upstream-second"}}
         await invoke(client.get_conformance)
@@ -306,3 +312,345 @@ def test_private_network_http_url_is_supported():
     assert lookup.extensions["timeout"] == httpx2.Timeout(5).as_dict()
     assert lookup.content == b""
     flow.close()
+
+
+@pytest.fixture
+def hub_environment(monkeypatch):
+    monkeypatch.setenv("JUPYTERHUB_API_URL", HUB_URL)
+    monkeypatch.setenv("JUPYTERHUB_API_TOKEN", HUB_TOKEN)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("auth_type", [None, "auto", "jupyter"])
+async def test_discovery_and_required_auth_verify_then_refetch(
+    kind, hub, hub_environment, auth_type
+):
+    client = kind(
+        api_url="https://processing.test",
+        auth={"auth_type": auth_type} if auth_type else None,
+    )
+    assert not hub.requests and not hub.clients
+    try:
+        await invoke(client.login, interactive=False)
+        assert [r.url.host for r in hub.requests] == ["hub.test"]
+        hub.body = {"auth_state": {"access_token": "changed"}}
+        await invoke(client.get_conformance)
+        assert [r.url.host for r in hub.requests] == [
+            "hub.test",
+            "hub.test",
+            "processing.test",
+        ]
+        assert hub.requests[-1].headers["authorization"] == "Bearer changed"
+        assert len(hub.clients) == 1
+        assert client.token is None
+        serialized = json.dumps(client.config.to_file_dict())
+        assert HUB_TOKEN not in serialized and "changed" not in serialized
+        with pytest.raises(ValueError, match="cannot be saved"):
+            await invoke(client.login, save=True)
+    finally:
+        await invoke(client.logout)
+    assert hub.clients[0].is_closed
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "environment,auth_type",
+    [("absent", "auto"), ("absent", "none"), ("valid", "none"), ("invalid", "none")],
+)
+async def test_anonymous_without_candidate_or_with_explicit_none(
+    kind, hub, monkeypatch, environment, auth_type
+):
+    if environment == "invalid":
+        monkeypatch.setenv("JUPYTERHUB_API_URL", "malformed")
+    elif environment == "valid":
+        monkeypatch.setenv("JUPYTERHUB_API_URL", HUB_URL)
+        monkeypatch.setenv("JUPYTERHUB_API_TOKEN", HUB_TOKEN)
+    client = kind(api_url="https://processing.test", auth={"auth_type": auth_type})
+    try:
+        await invoke(client.login, interactive=False)
+        await invoke(client.get_conformance)
+        await invoke(client.get_conformance)
+        assert [r.url.host for r in hub.requests] == ["processing.test"] * 2
+        assert all("authorization" not in r.headers for r in hub.requests)
+    finally:
+        await invoke(client.close)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("required", [False, True])
+@pytest.mark.parametrize(
+    "values",
+    [
+        (HUB_URL, None),
+        (None, HUB_TOKEN),
+        ("", ""),
+        ("https://user:secret@hub.test", HUB_TOKEN),
+        (HUB_URL, "bad\nsecret"),
+    ],
+)
+async def test_invalid_environment_never_sends_processing_request(
+    kind, hub, monkeypatch, required, values
+):
+    for name, value in zip(("JUPYTERHUB_API_URL", "JUPYTERHUB_API_TOKEN"), values):
+        if value is not None:
+            monkeypatch.setenv(name, value)
+    client = kind(
+        api_url="https://processing.test",
+        auth={"auth_type": "jupyter"} if required else None,
+    )
+    try:
+        with pytest.raises(JupyterHubAuthError) as caught:
+            await invoke(client.execute_process, "p", ProcessRequest(inputs={}))
+        assert "secret" not in str(caught.value)
+        assert not hub.requests
+        monkeypatch.setenv("JUPYTERHUB_API_URL", HUB_URL)
+        monkeypatch.setenv("JUPYTERHUB_API_TOKEN", HUB_TOKEN)
+        await invoke(client.get_conformance)
+        assert [r.url.host for r in hub.requests] == ["hub.test", "processing.test"]
+    finally:
+        await invoke(client.close)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("operation", ["login", "get_conformance"])
+async def test_required_auth_without_environment_fails(kind, hub, operation):
+    client = kind(api_url="https://processing.test", auth={"auth_type": "jupyter"})
+    try:
+        with pytest.raises(JupyterHubAuthError, match="requires both"):
+            await invoke(getattr(client, operation))
+        assert not hub.requests
+    finally:
+        await invoke(client.logout)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("required", [False, True])
+@pytest.mark.parametrize("failure", ["missing-token", "http", "network"])
+async def test_candidate_failure_blocks_login_and_processing_without_fallback(
+    kind, hub, hub_environment, required, failure
+):
+    if failure == "missing-token":
+        hub.body = {"auth_state": {}}
+        login_error, request_error = JupyterHubAuthError, JupyterHubAuthError
+    elif failure == "http":
+        hub.status = 403
+        login_error, request_error = httpx2.HTTPStatusError, TransportError
+    else:
+        hub.error = httpx2.ReadTimeout("Hub unavailable")
+        login_error, request_error = httpx2.ReadTimeout, TransportError
+    client = kind(
+        api_url="https://processing.test",
+        auth={"auth_type": "jupyter"} if required else None,
+    )
+    try:
+        with pytest.raises(login_error):
+            await invoke(client.login, interactive=False)
+        with pytest.raises(request_error):
+            await invoke(client.execute_process, "p", ProcessRequest(inputs={}))
+        assert [r.url.host for r in hub.requests] == ["hub.test"] * 2
+    finally:
+        await invoke(client.close)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("required", [False, True])
+@pytest.mark.parametrize(
+    "override",
+    [
+        {"auth": None},
+        {"headers": {"authorization": "Bearer override"}},
+        {"auth": httpx2.BasicAuth("user", "password")},
+    ],
+)
+async def test_request_override_defers_discovery_and_reuses_session(
+    kind, hub, monkeypatch, required, override
+):
+    monkeypatch.setenv("JUPYTERHUB_API_URL", "invalid")
+    client = kind(
+        api_url="https://processing.test",
+        auth={"auth_type": "jupyter"} if required else None,
+    )
+    try:
+        await invoke(client.get_conformance, **override)
+        assert [r.url.host for r in hub.requests] == ["processing.test"]
+        monkeypatch.setenv("JUPYTERHUB_API_URL", HUB_URL)
+        monkeypatch.setenv("JUPYTERHUB_API_TOKEN", HUB_TOKEN)
+        await invoke(client.get_conformance)
+        assert [r.url.host for r in hub.requests] == [
+            "processing.test",
+            "hub.test",
+            "processing.test",
+        ]
+        assert hub.requests[-1].headers["authorization"] == "Bearer upstream-first"
+        assert len(hub.clients) == 1
+    finally:
+        await invoke(client.close)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "auth",
+    [
+        {"auth_type": "token", "access_token": "configured"},
+        httpx2.BasicAuth("user", "password"),
+    ],
+)
+async def test_explicit_auth_wins_over_invalid_hub_environment(
+    kind, hub, monkeypatch, auth
+):
+    monkeypatch.setenv("JUPYTERHUB_API_URL", "invalid")
+    client = kind(api_url="https://processing.test", auth=auth)
+    try:
+        await invoke(client.get_conformance)
+        assert [r.url.host for r in hub.requests] == ["processing.test"]
+        assert "authorization" in hub.requests[0].headers
+    finally:
+        await invoke(client.close)
+
+
+@pytest.mark.asyncio
+async def test_incomplete_explicit_auth_does_not_fall_back_to_hub(
+    kind, hub, hub_environment
+):
+    from cuiman.api.auth import LoginRequiredError
+
+    client = kind(api_url="https://processing.test", auth={"auth_type": "token"})
+    try:
+        with pytest.raises(LoginRequiredError):
+            await invoke(client.get_conformance)
+        assert not hub.requests
+    finally:
+        await invoke(client.close)
+
+
+def test_settings_roundtrip_and_environment_precedence(tmp_path, monkeypatch):
+    from pydantic_settings import SettingsConfigDict
+
+    from cuiman import ClientConfig
+    from cuiman.api.auth import AutoAuthConfig, JupyterAuthConfig, NoAuthConfig
+
+    class BrandedConfig(ClientConfig):
+        model_config = SettingsConfigDict(env_prefix="BRANDED_")
+
+    path = tmp_path / "profile"
+    BrandedConfig(auth=NoAuthConfig()).write(path)
+    assert isinstance(BrandedConfig.create(config_path=path).auth, NoAuthConfig)
+    monkeypatch.setenv("EOZILLA_AUTH__AUTH_TYPE", "auto")
+    assert isinstance(ClientConfig.create().auth, AutoAuthConfig)
+    assert isinstance(BrandedConfig.create(config_path=path).auth, NoAuthConfig)
+    monkeypatch.setenv("BRANDED_AUTH__AUTH_TYPE", "auto")
+    assert isinstance(BrandedConfig.create(config_path=path).auth, AutoAuthConfig)
+    config = BrandedConfig.create(config_path=path, auth=JupyterAuthConfig())
+    assert isinstance(config.auth, JupyterAuthConfig)
+    config.write(path)
+    assert isinstance(BrandedConfig.from_file(path).auth, JupyterAuthConfig)
+    monkeypatch.setenv("EOZILLA_AUTH__AUTH_TYPE", "jupyter")
+    assert isinstance(ClientConfig.create().auth, JupyterAuthConfig)
+
+
+@pytest.mark.asyncio
+async def test_saved_none_profile_stays_anonymous_until_explicitly_overridden(
+    kind, hub, hub_environment, tmp_path
+):
+    from cuiman import ClientConfig
+
+    path = tmp_path / "existing-profile"
+    ClientConfig(api_url="https://processing.test", auth={"auth_type": "none"}).write(
+        path
+    )
+    client = kind(config_path=path, auth=None)
+    try:
+        await invoke(client.get_conformance)
+        assert [r.url.host for r in hub.requests] == ["processing.test"]
+        assert "authorization" not in hub.requests[-1].headers
+    finally:
+        await invoke(client.close)
+    client = kind(config_path=path, auth={"auth_type": "auto"})
+    try:
+        await invoke(client.get_conformance)
+        assert [r.url.host for r in hub.requests] == [
+            "processing.test",
+            "hub.test",
+            "processing.test",
+        ]
+        assert ClientConfig.from_file(path).auth.auth_type == "none"
+        assert client.config.auth.auth_type == "auto"
+    finally:
+        await invoke(client.close)
+
+
+@pytest.mark.parametrize("auth_type", ["auto", "jupyter"])
+def test_cli_login_verifies_hub_without_saving(hub, hub_environment, auth_type):
+    from typer.testing import CliRunner
+
+    from cuiman import ClientConfig
+    from cuiman.cli.cli import new_cli
+
+    ClientConfig(
+        api_url="https://processing.test", auth={"auth_type": auth_type}
+    ).write()
+    result = CliRunner().invoke(new_cli(), ["login", "--no-input"])
+    assert result.exit_code == 0, result.output
+    assert "Login completed" in result.output
+    assert [r.url.host for r in hub.requests] == ["hub.test"]
+    assert hub.clients[0].is_closed
+
+
+@pytest.mark.parametrize("command", [["login", "--no-input"], ["list-processes"]])
+def test_cli_required_hub_failure_is_actionable(command):
+    from typer.testing import CliRunner
+
+    from cuiman import ClientConfig
+    from cuiman.cli.cli import new_cli
+
+    ClientConfig(
+        api_url="https://processing.test", auth={"auth_type": "jupyter"}
+    ).write()
+    result = CliRunner().invoke(new_cli(), command)
+    assert result.exit_code == 1, result.output
+    assert "JUPYTERHUB_API_URL" in result.output
+    assert "Login completed" not in result.output
+
+
+@pytest.mark.parametrize("command", [["login", "--no-input"], ["list-processes"]])
+@pytest.mark.parametrize("auth_type", ["auto", "none"])
+def test_cli_auth_selection_from_environment(
+    hub, hub_environment, command, auth_type, monkeypatch
+):
+    from typer.testing import CliRunner
+
+    from cuiman import ClientConfig
+    from cuiman.cli.cli import new_cli
+
+    ClientConfig(api_url="https://processing.test", auth={"auth_type": "none"}).write()
+    monkeypatch.setenv("EOZILLA_AUTH__AUTH_TYPE", auth_type)
+    result = CliRunner().invoke(new_cli(), command)
+    assert result.exit_code == 0, result.output
+    assert any(r.url.host == "hub.test" for r in hub.requests) is (auth_type == "auto")
+    assert ClientConfig.from_file().auth.auth_type == "none"
+
+
+@pytest.mark.parametrize("auth_type", ["auto", "none", "jupyter"])
+def test_cli_configure_persists_auth_selection(tmp_path, auth_type):
+    from typer.testing import CliRunner
+
+    from cuiman import ClientConfig
+    from cuiman.cli.cli import new_cli
+
+    path = tmp_path / "profile"
+    args = [
+        "configure",
+        "--config",
+        str(path),
+        "--api-url",
+        "https://processing.test",
+        "--auth-type",
+        auth_type,
+    ]
+    result = CliRunner().invoke(new_cli(), args)
+    assert result.exit_code == 0, result.output
+    config = ClientConfig.from_file(path)
+    assert config.to_file_dict() == {
+        "api_url": "https://processing.test/",
+        "auth": {"auth_type": auth_type},
+    }

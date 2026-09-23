@@ -45,7 +45,7 @@ $ cuiman [OPTIONS] COMMAND [ARGS]...
 **Commands**:
 
 * `configure`: Configure the client tool.
-* `login`: Reuse or obtain credentials and save them...
+* `login`: Verify JupyterHub auth, or obtain and save...
 * `logout`: Remove the locally stored credentials for...
 * `generate-client`: Generate the Python code for...
 * `list-processes`: List available processes.
@@ -75,7 +75,7 @@ $ cuiman configure [OPTIONS]
 **Options**:
 
 * `--api-url TEXT`: The URL of a service complying to the OGC API - Processes.
-* `-a, --auth-type TEXT`: The authorisation method for the API (none|basic|token|login|oauth2|oidc|api-key).
+* `-a, --auth-type TEXT`: The authorisation method for the API (auto|none|basic|token|login|oauth2|oidc|api-key|jupyter).
 * `--login-url TEXT`: The proprietary login endpoint URL.
 * `--token-url TEXT`: The OAuth2 token endpoint URL.
 * `--grant-type TEXT`: The OAuth2 grant type (password|client_credentials).
@@ -89,7 +89,7 @@ $ cuiman configure [OPTIONS]
 
 ## `cuiman login`
 
-Reuse or obtain credentials and save them in the OS keyring.
+Verify JupyterHub auth, or obtain and save other credentials.
 
 **Usage**:
 

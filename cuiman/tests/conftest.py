@@ -17,6 +17,13 @@ from cuiman.api.config import ClientConfig
 
 
 @pytest.fixture(autouse=True)
+def isolate_jupyter_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Never discover or use a developer's real Hub credentials in tests."""
+    monkeypatch.delenv("JUPYTERHUB_API_URL", raising=False)
+    monkeypatch.delenv("JUPYTERHUB_API_TOKEN", raising=False)
+
+
+@pytest.fixture(autouse=True)
 def block_system_keyring(monkeypatch: pytest.MonkeyPatch) -> None:
     """Require explicit keyring mocks instead of accessing a machine's secrets."""
 

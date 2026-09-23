@@ -3,9 +3,11 @@
 Python clients, CLI login/logout, and the launched app share one authentication
 lifecycle. Each Cuiman client owns one persistent HTTP client. OAuth2 and OIDC use
 Authlib's `OAuth2Client` or `AsyncOAuth2Client` directly; other mechanisms use HTTPX2.
-Supported mechanisms are no authentication, Basic, static tokens, API keys,
-proprietary login, OAuth2 password/client-credentials grants, and OIDC authorization
-code. See [configuration](configuration.md) for provider settings and the
+Supported mechanisms are anonymous access, JupyterHub, Basic, static tokens,
+API keys, proprietary login, OAuth2 password/client-credentials grants, and OIDC
+authorization code. The default `auto` selection discovers authentication;
+currently only JupyterHub discovery is supported. See
+[configuration](configuration.md) for provider settings and the
 [CLI reference](cli.md) for command options.
 
 For an application-specific client, create the sync client, async client, and
@@ -99,15 +101,17 @@ Authentication precedence is:
 2. An explicit per-request `Authorization` header, when request `auth` is omitted
    or is `httpx2.USE_CLIENT_DEFAULT`.
 3. The client-level `auth` adapter.
-4. Configured authentication.
+4. Configured authentication: `auto` discovers a mechanism, `none` uses
+   anonymous access, and other types select their explicit mechanism.
 
 Overrides bypass configured login, token refresh, and configured authentication
 headers, including API-key and custom token headers. They do not change defaults
 for later requests. An explicit client adapter also skips loading keyring secrets
 for the overridden configuration. Configuration still needs to be valid.
 
-With a client adapter, `login()` prepares the HTTP client without invoking the
-adapter; its auth flow runs when a request is sent. `force`, `interactive`, and
+With a client adapter, `login()` prepares the HTTP client. For `JupyterHubAuth`,
+it also verifies that the Hub returns a usable upstream token; arbitrary adapters
+are not invoked until a request is sent. `force`, `interactive`, and
 `no_browser` do not initiate configured login. `login(save=True)` raises an error
 because Cuiman cannot persist arbitrary adapter credentials. `client.token`
 returns `None`. `logout()` closes the client without deleting overridden profile
@@ -117,8 +121,52 @@ call adapter-specific cleanup methods.
 Cuiman adds no fallback or replay when an adapter fails or the processing service
 returns 401. An adapter defines its own HTTPX2 authentication flow, which may itself
 perform additional requests. Custom adapters must support the chosen client's
-synchronous or asynchronous mode. Automatic JupyterHub discovery is not yet
-implemented.
+synchronous or asynchronous mode.
+
+## JupyterHub discovery and required authentication
+
+New configurations default to `auth_type="auto"`, which discovers an available
+authentication mechanism. Currently only JupyterHub discovery is supported;
+other mechanisms may be added in the future. If no mechanism is detected, access
+is anonymous. A detected mechanism that is misconfigured or fails raises an
+error instead of falling back to anonymous access or another mechanism.
+
+Currently, `auto` looks for `JUPYTERHUB_API_URL` and `JUPYTERHUB_API_TOKEN` on the
+first authenticated operation. Both absent means anonymous access. Partial or
+malformed settings raise `JupyterHubAuthError`; a failed Hub lookup stops the
+operation. Construction performs no network I/O. Selection is retained for that
+client; create a new client after changing its environment or auth settings.
+
+Select `Client(auth={"auth_type": "none"})` to disable discovery and use anonymous
+access. Existing profiles explicitly configured with `none` remain anonymous.
+`AutoAuthConfig()` and `NoAuthConfig()` are the equivalent typed configurations.
+Explicit configured authentication and runtime adapters bypass discovery.
+Per-request `auth=None` or an `Authorization` header also bypasses discovery.
+
+To require JupyterHub authentication, use the existing `auth` argument:
+
+```python
+client = Client(
+    api_url="https://processing.example.org/api",
+    auth={"auth_type": "jupyter"},
+)
+try:
+    client.login()  # Verify that the Hub currently supplies an upstream token.
+    processes = client.get_processes()
+finally:
+    client.close()
+```
+
+`JupyterAuthConfig()` is the equivalent typed configuration. Required Jupyter
+auth errors when the environment or token is unavailable. Verification establishes token availability at that moment; it
+cannot guarantee that the processing service will accept it later. Async clients
+use the same policy; await `login()`, processing calls, and `close()`.
+
+Use `configure --auth-type auto`, `none`, or `jupyter` to persist the selection
+from the CLI. Set `EOZILLA_AUTH__AUTH_TYPE=auto` (or an application's own prefix)
+for an environment override. `login` verifies availability for detected or
+required Jupyter auth. Hub credentials and upstream tokens are never written
+to profiles or the keyring.
 
 ## Explicit JupyterHub authentication
 
@@ -144,8 +192,9 @@ finally:
 ```
 
 The same adapter works with `AsyncClient`; await its processing calls and
-`close()`. These arguments are explicit. Constructing an adapter or calling
-`login()` does not contact the Hub or validate token availability.
+`close()`. These arguments are explicit. Constructing an adapter does not contact
+the Hub. `login()` checks token availability using only the Hub endpoint; each
+later processing request still retrieves a fresh token.
 
 Before each authenticated processing request, the adapter calls
 `<hub_api_url>/user` with the Hub credential, reads `auth_state.access_token`,

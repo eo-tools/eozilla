@@ -82,7 +82,9 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
         """Prepare authentication using the client's persistent HTTP session.
 
         Use force to acquire a fresh token. Requests never prompt or open a
-        browser. With save=True, failure to save credentials raises an error.
+        browser. JupyterHub login verifies a usable upstream token without
+        caching or saving it. With save=True, failure to save credentials raises
+        an error; runtime auth adapters cannot be saved.
         """
         self._bind_loop()
         async with self._runtime_lock:
@@ -100,6 +102,8 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
     ) -> None:
         self._require_open()
         if self._prepare_http_auth(save=save):
+            if probe := self._http_auth_probe():
+                self._accept_http_auth_probe(await probe())
             return
         auth = (
             await asyncio.to_thread(self._credentials, interactive=True, force=force)

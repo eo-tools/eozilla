@@ -195,7 +195,7 @@ def new_cli(
                 "--auth-type",
                 "-a",
                 help="The authorisation method for the API "
-                "(none|basic|token|login|oauth2|oidc|api-key).",
+                "(auto|none|basic|token|login|oauth2|oidc|api-key|jupyter).",
             ),
         ] = None,
         login_url: Annotated[
@@ -306,7 +306,7 @@ def new_cli(
             ),
         ] = False,
     ):
-        """Reuse or obtain credentials and save them in the OS keyring."""
+        """Verify JupyterHub auth, or obtain and save other credentials."""
         from .client import handle_auth_errors
         from .config import login_client_with_prompt
 
@@ -590,7 +590,7 @@ def _offer_login_after_config(
     configured_config = config_type.from_file(config_path)
     assert configured_config is not None
     if (
-        configured_config.auth.auth_type != "none"
+        configured_config.auth.auth_type not in {"auto", "none"}
         and sys.stdin.isatty()
         and typer.confirm("Log in now?", default=False)
     ):

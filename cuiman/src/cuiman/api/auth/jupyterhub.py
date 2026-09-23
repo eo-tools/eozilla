@@ -4,7 +4,9 @@
 
 """HTTPX2 authentication using an upstream token owned by JupyterHub."""
 
+import os
 from collections.abc import Generator
+from typing import Self, TypeGuard
 
 import httpx2
 from pydantic import HttpUrl
@@ -59,6 +61,28 @@ class JupyterHubAuth(httpx2.Auth):
         self._user_url = httpx2.URL(str(url).rstrip("/") + "/user")
         self._hub_api_token = hub_api_token
 
+    @classmethod
+    def from_environment(cls, *, required: bool = False) -> Self | None:
+        """Discover a Hub candidate without I/O; fail if required but absent.
+
+        Both variables absent means no candidate. Partial or invalid values
+        always raise a sanitized error. A candidate is only usable once the Hub
+        successfully returns an upstream token during login or a request.
+        """
+        url = os.environ.get("JUPYTERHUB_API_URL")
+        token = os.environ.get("JUPYTERHUB_API_TOKEN")
+        if url is None and token is None and not required:
+            return None
+        if not url or not token:
+            raise JupyterHubAuthError(
+                "JupyterHub authentication requires both JUPYTERHUB_API_URL "
+                "and JUPYTERHUB_API_TOKEN in the current server environment."
+            )
+        try:
+            return cls(hub_api_url=url, hub_api_token=token)
+        except ValueError as exc:
+            raise JupyterHubAuthError(str(exc)) from None
+
     def auth_flow(
         self, request: httpx2.Request
     ) -> Generator[httpx2.Request, httpx2.Response, None]:
@@ -66,20 +90,24 @@ class JupyterHubAuth(httpx2.Auth):
         # Build from scratch: processing headers, cookies, body, and query must
         # not be forwarded to the Hub. Auth-flow requests bypass build_request,
         # so explicitly retain the owner's effective timeout.
-        hub_request = httpx2.Request(
+        response = yield self._user_request(
+            request.extensions.get("timeout", httpx2.Timeout(5).as_dict())
+        )
+        request.headers["Authorization"] = f"Bearer {self._access_token(response)}"
+        yield request
+
+    def _user_request(self, timeout: dict | None = None) -> httpx2.Request:
+        return httpx2.Request(
             "GET",
             self._user_url,
             headers={
                 "Authorization": f"Bearer {self._hub_api_token}",
                 "Accept": "application/json",
             },
-            extensions={
-                "timeout": request.extensions.get(
-                    "timeout", httpx2.Timeout(5).as_dict()
-                )
-            },
+            extensions={"timeout": timeout} if timeout is not None else {},
         )
-        response = yield hub_request
+
+    def _access_token(self, response: httpx2.Response) -> str:
         response.raise_for_status()
         if response.history or response.url != self._user_url:
             raise JupyterHubAuthError("JupyterHub auth-state lookup was redirected.")
@@ -101,11 +129,10 @@ class JupyterHubAuth(httpx2.Auth):
                 "JupyterHub auth_state contains no usable upstream access_token. "
                 "Check the Hub authenticator and sign in to JupyterHub again."
             )
-        request.headers["Authorization"] = f"Bearer {token}"
-        yield request
+        return token
 
 
-def _is_bearer_token(value: object) -> bool:
+def _is_bearer_token(value: object) -> TypeGuard[str]:
     """Reject empty tokens and characters that cannot safely form a header."""
     return (
         isinstance(value, str)

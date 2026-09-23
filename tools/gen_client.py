@@ -55,6 +55,9 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
       config_kwargs (Any): Additional configuration overrides.
       api_url: The service URL of the OGC API - Processes.
       auth: Authentication configuration or a runtime HTTPX2 auth adapter.
+        Defaults to auth_type="auto": discover authentication (currently only
+        JupyterHub), otherwise use anonymous access. Auth type "none" disables
+        discovery; "jupyter" requires JupyterHub authentication.
         An auth model or dictionary containing ``auth_type`` replaces previous
         settings. A dictionary without ``auth_type`` merges into configured auth,
         including nested mappings; matching keyring secrets fill missing values.

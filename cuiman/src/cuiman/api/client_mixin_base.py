@@ -25,6 +25,7 @@ from .auth.config import (
     has_credentials,
 )
 from .auth.interactive import prompt_auth
+from .auth.jupyterhub import JupyterHubAuth
 from .auth.login import prepare_login, process_login_response
 from .auth.oauth2_client import LoginRequiredError, oauth_options, save_credentials
 from .auth.oidc import (
@@ -82,6 +83,7 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
 
     def _init_client_runtime(self) -> None:
         self._http_client: _HttpClient | None = None
+        self._auth_selected = False
         self._closed = False
         self._ready = False
         self._oidc_metadata: dict[str, Any] = {}
@@ -260,7 +262,7 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
             _set_auth_secret_persistor(self.config, self._config_path)
 
     def _forget_credentials(self) -> None:
-        if self._http_auth is not None:
+        if self._http_auth is not None or self.config.auth.auth_type == "jupyter":
             self._http_auth = None
             return
         try:
@@ -317,8 +319,40 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
             **requesters,
         )
 
+    def _select_http_auth(self) -> None:
+        """Resolve discovery once, only when an operation uses client auth."""
+        if self._auth_selected:
+            return
+        auth_type = self.config.auth.auth_type
+        if self._http_auth is None and auth_type in {"auto", "jupyter"}:
+            # JupyterHub is currently the only mechanism discovered by auto.
+            self._http_auth = JupyterHubAuth.from_environment(
+                required=auth_type == "jupyter"
+            )
+            # An earlier request override may already have opened the session.
+            if self._http_client is not None and self._http_auth is not None:
+                self._http_client.auth = self._http_auth
+        self._auth_selected = True
+
+    def _http_auth_probe(self) -> Callable[[], Any] | None:
+        """Bind a Hub-only availability check to the owner's HTTP session."""
+        if isinstance(self._http_auth, JupyterHubAuth):
+            assert self._http_client is not None
+            return partial(
+                self._http_client.send,
+                self._http_auth._user_request(),
+                auth=None,
+                follow_redirects=False,
+            )
+        return None
+
+    def _accept_http_auth_probe(self, response: httpx2.Response) -> None:
+        assert isinstance(self._http_auth, JupyterHubAuth)
+        self._http_auth._access_token(response)
+
     def _prepare_http_auth(self, *, save: bool) -> bool:
         """Prepare an external adapter without invoking configured login or storage."""
+        self._select_http_auth()
         if self._http_auth is None:
             return False
         if save:
@@ -330,16 +364,21 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
 
     def _uses_config_auth(self, kwargs: dict[str, Any]) -> bool:
         """Select configured auth only when neither request nor client overrides it."""
+        return self._http_auth is None and not self._has_request_auth(kwargs)
+
+    @staticmethod
+    def _has_request_auth(kwargs: dict[str, Any]) -> bool:
+        request_auth = kwargs.get("auth", httpx2.USE_CLIENT_DEFAULT)
         return (
-            self._http_auth is None
-            and kwargs.get("auth", httpx2.USE_CLIENT_DEFAULT)
-            is httpx2.USE_CLIENT_DEFAULT
-            and "authorization" not in httpx2.Headers(kwargs.get("headers"))
+            request_auth is not httpx2.USE_CLIENT_DEFAULT
+            or "authorization" in httpx2.Headers(kwargs.get("headers"))
         )
 
     def _prepare_request(self, kwargs: dict[str, Any]) -> bool:
         """Prepare override requests; return whether configured login is needed."""
         self._require_open()
+        if not self._has_request_auth(kwargs):
+            self._select_http_auth()
         if self._uses_config_auth(kwargs):
             return True
         self._configure_http_client(self.config.auth, self._updated_token)

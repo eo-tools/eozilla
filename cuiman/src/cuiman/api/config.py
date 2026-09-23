@@ -36,7 +36,7 @@ from pydantic_settings import (
 
 from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 
-from .auth import AuthConfig, AuthConfigBase, NoAuthConfig
+from .auth import AuthConfig, AuthConfigBase, AutoAuthConfig
 from .auth.config import has_credentials
 from .auth.secret_store import load_auth_secrets, save_auth_secrets
 from .defaults import DEFAULT_API_URL
@@ -117,8 +117,12 @@ class ClientConfig(BaseSettings):
     retain their configured trailing slash when making requests.
     """
 
-    auth: AuthConfig = Field(default_factory=NoAuthConfig)
+    auth: AuthConfig = Field(default_factory=AutoAuthConfig)
     """Authentication configuration selected by its ``auth_type`` field.
+
+    Defaults to ``auto``: discover authentication, currently JupyterHub only,
+    or use anonymous access if no mechanism is detected. Explicit ``none``
+    disables discovery, including in existing profiles.
 
     When resolving settings with ``create()``, an auth model or a dictionary
     containing ``auth_type`` replaces previous auth settings. A dictionary
