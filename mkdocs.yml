@@ -66,6 +66,8 @@ theme:
   name: material
   # logo: assets/logo.png
   # favicon: assets/logo.ico
+  font: false
+  custom_dir: docs/overrides
   palette:
     # Palette toggle for light mode
     - scheme: default
@@ -115,6 +117,11 @@ extra:
       link: https://github.com/eo-tools/eozilla
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/eozilla/
+  footer_links:
+    - text: Imprint
+      href: https://www.brockmann-consult.de/imprint/
+    - text: Privacy Policy
+      href: https://www.brockmann-consult.de/privacy-policy/
 
 plugins:
   - search
@@ -146,4 +153,7 @@ plugins:
             #  - griffe_pydantic:
             #      schema: true
 extra_css:
-  - overrides/css/custom.css
+  - stylesheets/custom.css
+
+hooks:
+  - docs/hooks/download_fonts.py

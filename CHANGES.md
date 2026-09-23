@@ -1,4 +1,13 @@
-## Changes in version 0.3.0 (in development)
+## Changes in version 0.3.2 (in development)
+
+
+## Changes in version 0.3.1
+
+- Updated **Cuiman** with the [app v0.2.1](https://github.com/eo-tools/eozilla-app/releases/tag/v0.2.1) 
+  that fixes map editor rendering in dark mode. 
+
+
+## Changes in version 0.3.0
 
 ### Enhancements
 
