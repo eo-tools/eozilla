@@ -2,7 +2,6 @@
 
 import inspect
 import json
-from types import SimpleNamespace
 
 import httpx2
 import pytest
@@ -25,50 +24,6 @@ async def invoke(method, *args, **kwargs):
 @pytest.fixture(params=[Client, AsyncClient], ids=["sync", "async"])
 def kind(request):
     return request.param
-
-
-@pytest.fixture
-def hub(monkeypatch):
-    state = SimpleNamespace(
-        requests=[],
-        clients=[],
-        body={"auth_state": {"access_token": "upstream-first"}},
-        content=None,
-        status=200,
-        processing_status=200,
-        error=None,
-    )
-
-    def handle(request):
-        state.requests.append(request)
-        if request.url.host == "hub.test":
-            assert request.headers["authorization"] == f"Bearer {HUB_TOKEN}"
-            assert request.method == "GET"
-            assert request.url.path == "/prefix/hub/api/user"
-            if state.error is not None:
-                raise state.error
-            if state.content is not None:
-                return httpx2.Response(state.status, content=state.content)
-            return httpx2.Response(state.status, json=state.body)
-        assert request.url.host == "processing.test"
-        body = (
-            {"processes": [], "links": []}
-            if request.url.path.endswith("/processes")
-            else {"conformsTo": []}
-        )
-        return httpx2.Response(state.processing_status, json=body)
-
-    for cls in (httpx2.Client, httpx2.AsyncClient):
-        original = cls.__init__
-
-        def initialize(self, *args, _original=original, **kwargs):
-            kwargs.setdefault("transport", httpx2.MockTransport(handle))
-            kwargs.setdefault("trust_env", False)
-            _original(self, *args, **kwargs)
-            state.clients.append(self)
-
-        monkeypatch.setattr(cls, "__init__", initialize)
-    return state
 
 
 def client_for(kind, **kwargs):
@@ -312,12 +267,6 @@ def test_private_network_http_url_is_supported():
     assert lookup.extensions["timeout"] == httpx2.Timeout(5).as_dict()
     assert lookup.content == b""
     flow.close()
-
-
-@pytest.fixture
-def hub_environment(monkeypatch):
-    monkeypatch.setenv("JUPYTERHUB_API_URL", HUB_URL)
-    monkeypatch.setenv("JUPYTERHUB_API_TOKEN", HUB_TOKEN)
 
 
 @pytest.mark.asyncio

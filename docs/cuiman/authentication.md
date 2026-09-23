@@ -227,6 +227,32 @@ request performs a fresh lookup. Per-request authentication overrides still
 bypass the adapter, and logout closes the Cuiman owner without signing out of
 JupyterHub.
 
+## JupyterHub and the launched app
+
+The app uses the same authentication selection and HTTP session as its owning
+Python client. When JupyterHub auth is selected, the launch-code exchange
+verifies that the Hub can provide an upstream token before creating a browser
+session.
+Every later app request retrieves the current token again, just like Python
+requests. Changes made by the Hub's refresh mechanism therefore reach both.
+
+Hub credentials and upstream tokens stay in Python. The browser receives an
+opaque HttpOnly session cookie; its Authorization header and cookies are not
+forwarded to the Hub or processing service. A failed lookup stops the processing
+request and returns a generic app error without provider response details.
+A failed launch check leaves the unexpired launch code available for retry.
+Processing requests are never replayed after an authentication failure.
+
+Stopping an app that borrows a Python client leaves that client usable.
+Closing or logging out of the client closes its HTTP session and makes later
+app requests fail. A standalone app server closes its own client when stopped.
+For `auto` and `jupyter`, logout does not access the keyring or sign the user
+out of JupyterHub, even before the first request. Start a new client to resume.
+
+Authentication discovery is independent of `show_app(proxy="auto")`, which
+controls how the notebook browser reaches the local app server through
+`jupyter-server-proxy`.
+
 ## Token configuration and storage
 
 OAuth2 and OIDC accept one `oauth_token` mapping as bootstrap credentials. Keep
@@ -256,8 +282,10 @@ therefore be explicitly saved without first loading them from the keyring.
 
 `client.logout()` revokes an OIDC refresh token (or access token) if discovery
 advertises revocation, removes local credentials, and closes the client. Local
-removal and closure still run if revocation fails. Other mechanisms remove local
-credentials without a provider revocation operation. CLI logout uses this method.
+removal and closure still run if revocation fails. Other credential-based
+mechanisms remove local credentials without a provider revocation operation.
+Runtime adapters, `auto`, and `jupyter` only close the local client; they do not
+delete profile credentials or sign out of JupyterHub. CLI logout uses this method.
 Create a new client after close or logout.
 
 ## OIDC and the launched app

@@ -262,7 +262,10 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
             _set_auth_secret_persistor(self.config, self._config_path)
 
     def _forget_credentials(self) -> None:
-        if self._http_auth is not None or self.config.auth.auth_type == "jupyter":
+        if self._http_auth is not None or self.config.auth.auth_type in {
+            "auto",
+            "jupyter",
+        }:
             self._http_auth = None
             return
         try:

@@ -157,7 +157,7 @@ def test_cli_none_logout_and_missing_config(monkeypatch, capsys, tmp_path):
         login_client_with_prompt()
     with pytest.raises(ValueError, match="not found"):
         login_client_with_prompt(tmp_path / "missing")
-    ClientConfig(api_url="https://processing.test").write()
+    ClientConfig(api_url="https://processing.test", auth={"auth_type": "none"}).write()
     login_client_with_prompt()
     assert "Login completed" in capsys.readouterr().out
     deleted = Mock()
