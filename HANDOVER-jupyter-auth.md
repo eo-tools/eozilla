@@ -30,6 +30,49 @@ The assistant's default tool directory may be `C:\Users\norma\Documents\Codex`; 
 - Python and app requests share their owner's HTTP session. Stopping an app that borrows a client leaves the client usable; closing/logging out of the owner makes later app requests fail. Standalone app servers close their owned clients.
 - Logout for `auto` and `jupyter` does not access the keyring or sign out of JupyterHub, including before discovery.
 
+## Token-refresh hooks: clarification from 2026-09-24
+
+No refresh-notification callback was implemented. The initial `JupyterHubAuth`
+commit (`ffc3f464`) already retrieved auth state before each processing request;
+a callback was not subsequently removed. Repository history does not establish
+when or why the earlier callback idea was dropped from the discussion.
+
+Official JupyterHub and OAuthenticator docs and source were checked. They provide
+Hub-side extension hooks, but no documented subscription through which a notebook
+client receives upstream-token rotation notifications. This conclusion follows
+from the hook contracts and the
+[JupyterHub API specification](https://github.com/jupyterhub/jupyterhub/blob/main/docs/source/_static/rest-api.yml).
+
+- `OAuthenticator.refresh_user_hook` receives existing auth state before default
+  refresh. Returning `None` permits default refresh; another supported result
+  overrides it. It is not an after-refresh notification. The API reference dates
+  it to OAuthenticator 17.3.
+  [Hook reference](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.oauth2.html#oauthenticator.oauth2.OAuthenticator.refresh_user_hook)
+- `OAuthenticator.modify_auth_state_hook` transforms auth state while building
+  the authentication model, before its persistence. It can see refreshed tokens,
+  but also runs during login and checks using unchanged tokens; invocation alone
+  does not establish token rotation. It provides no remote notification delivery.
+  [Reference](https://oauthenticator.readthedocs.io/en/latest/reference/api/gen/oauthenticator.oauth2.html#oauthenticator.oauth2.OAuthenticator.modify_auth_state_hook),
+  [implementation](https://github.com/jupyterhub/oauthenticator/blob/main/oauthenticator/oauth2.py)
+- `Spawner.auth_state_hook` passes auth state to a spawner before server start.
+  Its documented purpose is startup configuration, not ongoing token updates.
+  [Spawner reference](https://jupyterhub.readthedocs.io/en/stable/reference/api/spawner.html#jupyterhub.spawner.Spawner.auth_state_hook)
+
+A custom Hub-side integration could detect token changes and notify Cuiman, but
+would require additional notification infrastructure. The reviewed interfaces
+do not supply a built-in client subscription.
+
+For user sessions, OAuthenticator documents requesting `/hub/api/user` with the
+server's Hub token and reading `auth_state.access_token`. The request invokes
+refresh logic when `auth_refresh_age` has elapsed. Auth-state configuration and
+permissions are required, as are provider refresh credentials for token renewal.
+This matches Cuiman's lookup approach; looking up the token before *every*
+processing request is Cuiman's own choice, not a documented requirement.
+[User-session refresh guide](https://oauthenticator.readthedocs.io/en/latest/how-to/refresh.html#refreshing-tokens-from-user-sessions)
+
+These findings cover the reviewed upstream interfaces, not every third-party
+extension. No runtime changes or live deployment tests were made for this review.
+
 ## Implementation landmarks
 
 - `cuiman/src/cuiman/api/auth/config.py`: `AutoAuthConfig`, `NoAuthConfig`, `JupyterAuthConfig`, and the discriminated auth union.
