@@ -73,7 +73,7 @@ def configure_client_with_prompt(
     if public_auth is None:
         field = config_type.model_fields["auth"]
         default_auth = (
-            {"auth_type": "none"}
+            {"auth_type": DEFAULT_AUTH_TYPE}
             if field.is_required()
             else field.get_default(call_default_factory=True, validated_data=public)
         )
@@ -180,14 +180,14 @@ def login_client_with_prompt(
     force: bool = False,
     interactive: bool = True,
 ) -> None:
-    """Prepare and save credentials, prompting only when needed or forced."""
+    """Verify Hub auth or prepare and save credentials, prompting when needed."""
     config = get_config(config_path, config_type=config_type, require_credentials=False)
-    if config.auth.auth_type == "none":
-        typer.echo("The configured service does not require login.")
-        return
     with closing(Client(config=config)) as client:
         client.login(
-            force=force, no_browser=no_browser, interactive=interactive, save=True
+            force=force,
+            no_browser=no_browser,
+            interactive=interactive,
+            save=config.auth.auth_type not in {"auto", "none", "jupyter"},
         )
     typer.echo("Login completed.")
 

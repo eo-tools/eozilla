@@ -11,6 +11,11 @@ used classes and functions are also made available directly through the
 same interface with asynchronous server calls. Server calls may raise
 `ClientError` if they fail.
 
+With the default HTTPX2 transport, additional method `**kwargs` are forwarded to
+the underlying HTTPX2 request method and follow its semantics. This includes
+HTTPX2 authentication options, which are distinct from Cuiman's constructor
+configuration. Configure authentication on the client for normal use.
+
 For concepts and first requests, see [Getting Started](getting-started.md).
 See [Configuration](configuration.md) for settings and
 [Authentication](authentication.md) for login, token storage, and client lifecycle.

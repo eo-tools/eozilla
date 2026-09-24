@@ -17,6 +17,13 @@ from cuiman.api.config import ClientConfig
 
 
 @pytest.fixture(autouse=True)
+def isolate_jupyter_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Never discover or use a developer's real Hub credentials in tests."""
+    monkeypatch.delenv("JUPYTERHUB_API_URL", raising=False)
+    monkeypatch.delenv("JUPYTERHUB_API_TOKEN", raising=False)
+
+
+@pytest.fixture(autouse=True)
 def block_system_keyring(monkeypatch: pytest.MonkeyPatch) -> None:
     """Require explicit keyring mocks instead of accessing a machine's secrets."""
 
@@ -133,3 +140,57 @@ def auth_provider(monkeypatch):
     monkeypatch.setattr("cuiman.api.client_mixin.authorize", authorize)
     monkeypatch.setattr("cuiman.api.async_client_mixin.authorize", authorize)
     return state
+
+
+@pytest.fixture
+def hub(monkeypatch):
+    state = SimpleNamespace(
+        api_url="https://hub.test/prefix/hub/api",
+        api_token="hub-credential",
+        requests=[],
+        clients=[],
+        body={"auth_state": {"access_token": "upstream-first"}},
+        content=None,
+        status=200,
+        processing_status=200,
+        error=None,
+    )
+
+    def handle(request):
+        state.requests.append(request)
+        if request.url.host == "hub.test":
+            assert request.headers["authorization"] == f"Bearer {state.api_token}"
+            assert request.method == "GET"
+            assert request.url.path == "/prefix/hub/api/user"
+            if state.error is not None:
+                raise state.error
+            if state.content is not None:
+                return httpx2.Response(state.status, content=state.content)
+            return httpx2.Response(state.status, json=state.body)
+        assert request.url.host == "processing.test"
+        body = (
+            {"processes": [], "links": []}
+            if request.url.path.endswith("/processes")
+            else {"conformsTo": []}
+        )
+        return httpx2.Response(state.processing_status, json=body)
+
+    for cls in (httpx2.Client, httpx2.AsyncClient):
+        original = cls.__init__
+
+        def initialize(self, *args, _original=original, **kwargs):
+            owns_transport = "transport" not in kwargs
+            kwargs.setdefault("transport", httpx2.MockTransport(handle))
+            kwargs.setdefault("trust_env", False)
+            _original(self, *args, **kwargs)
+            if owns_transport:
+                state.clients.append(self)
+
+        monkeypatch.setattr(cls, "__init__", initialize)
+    return state
+
+
+@pytest.fixture
+def hub_environment(monkeypatch, hub):
+    monkeypatch.setenv("JUPYTERHUB_API_URL", hub.api_url)
+    monkeypatch.setenv("JUPYTERHUB_API_TOKEN", hub.api_token)

@@ -304,7 +304,8 @@ $ cuiman login
 writes it to the configuration file. `login` asks for credentials only when
 the selected authentication type requires them and stores them in the OS
 keyring. `logout` removes the matching keyring entry. For authentication type
-`none`, `configure` does not offer login.
+`none` or `auto`, `configure` does not offer interactive login. Explicit `login`
+can verify discovered or required Jupyter authentication without saving tokens.
 
 When a configured authenticated service is used without available credentials,
 the CLI reports `Please use 'cuiman login' to provide credentials.` instead of showing
@@ -324,6 +325,11 @@ configuration can obtain their initial access token automatically. They do not
 require a pre-existing access token or an interactive CLI login.
 
 ### Remote notebooks
+
+With the default auth type `auto`, clients currently detect JupyterHub through
+`JUPYTERHUB_API_URL` and `JUPYTERHUB_API_TOKEN`. Both variables must be valid and
+the Hub must expose an upstream token through auth state. Select auth type `none`
+to use anonymous access without discovery, or `jupyter` to require Hub auth. See [JupyterHub authentication](authentication.md#jupyterhub-discovery-and-required-authentication).
 
 A deployment can provide the processing API URL and an access token through
 `EOZILLA_API_URL`, `EOZILLA_AUTH__AUTH_TYPE=token`, and
@@ -350,10 +356,10 @@ see [Authentication lifecycle](./authentication.md).
 The most important configuration setting is `api_url` which provides the 
 base URL to the OGC API - Processes.
 
-By default, `cuiman` assumes the service the API URL is pointing to 
-does not perform any authorisation on the incoming requests - which 
-is rarely the case. Therefore, the client need to be configured with 
-respect to some service-specific authorisation method.
+By default, `cuiman` uses auth type `auto` to discover an authentication
+mechanism, currently JupyterHub only. If none is detected, it uses anonymous
+access. Configure an explicit authentication type when the processing service
+requires different credentials. Auth type `none` disables discovery.
 
 ## Authentication Settings
 
@@ -361,15 +367,36 @@ The `cuiman` package allows for a limited set of client authentication
 types. The authentication type is provided by the nested `auth.auth_type`
 configuration setting.
 
+### Auth type `auto` (default)
+
+Discover an available authentication mechanism. Currently only JupyterHub is
+supported; other mechanisms may be added later. No detected mechanism means
+anonymous access. Detected but misconfigured or failed authentication raises an
+error, without fallback.
+
+```python
+config = ClientConfig(api_url="...", auth={"auth_type": "auto"})
+```
+
+The typed equivalent is `AutoAuthConfig()`. Configure it through
+`cuiman configure --auth-type auto` or `EOZILLA_AUTH__AUTH_TYPE=auto`.
+
 ### Auth type `none`
 
-The authentication type `none` means, the server doesn't require any 
-client authentication. This is usually the case only for development 
-environments.
+Always use anonymous access without discovery, including inside JupyterHub.
+Existing profiles explicitly configured with `none` retain this behavior.
 
 ```python
 config = ClientConfig(api_url="...", auth={"auth_type": "none"})
 ```
+
+### Auth type `jupyter`
+
+Require JupyterHub to supply an upstream token using `auth={"auth_type": "jupyter"}`.
+This fails when the Hub environment or token is unavailable. `client.login()` checks availability before any processing request.
+No Hub credentials or upstream tokens are stored in configuration or the keyring.
+See [JupyterHub authentication](authentication.md#jupyterhub-discovery-and-required-authentication)
+for discovery settings, CLI flags, and required Hub setup.
 
 ### Auth type `basic`
 

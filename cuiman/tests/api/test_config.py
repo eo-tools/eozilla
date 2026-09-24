@@ -18,6 +18,7 @@ from pydantic_settings import SettingsConfigDict
 from cuiman import AsyncClient, Client
 from cuiman.api.auth import (
     AuthConfig,
+    AutoAuthConfig,
     LoginAuthConfig,
     NoAuthConfig,
     OidcAuthConfig,
@@ -53,7 +54,7 @@ class ClientConfigTest(TestCase):
     def test_ctor(self):
         config = ClientConfig()
         self.assertEqual(DEFAULT_API_URL, config.api_url)
-        self.assertEqual(NoAuthConfig(), config.auth)
+        self.assertEqual(AutoAuthConfig(), config.auth)
 
     def test_create_empty(self):
         with tempfile.TemporaryDirectory() as tmp_dir_name:
@@ -61,7 +62,7 @@ class ClientConfigTest(TestCase):
                 config_path=Path(tmp_dir_name) / "missing-config"
             )
         self.assertEqual(DEFAULT_API_URL, config.api_url)
-        self.assertEqual(NoAuthConfig(), config.auth)
+        self.assertEqual(AutoAuthConfig(), config.auth)
 
     def test_read_file_data_handles_empty_and_non_mapping_files(self):
         with tempfile.TemporaryDirectory() as tmp_dir_name:
