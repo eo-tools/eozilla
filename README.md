@@ -8,12 +8,10 @@
 
 # Eozilla 🦖
 
-Eozilla is a suite of tools for workflow orchestration systems and
-[OGC API - Processes](https://github.com/opengeospatial/ogcapi-processes)
-implementation.
+Eozilla is a suite of tools for deploying, executing, and orchestrating satellite 
+data processing workflows in the cloud using 
+[OGC API - Processes](https://github.com/opengeospatial/ogcapi-processes).
 
-Eozilla has been developed to cloudify satellite data processor applications and 
-run them in the cloud.
 
 ## Features
 
