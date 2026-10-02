@@ -5,8 +5,9 @@
   Undeploy. (#168)
   This is a breaking change: former module paths and package-level class 
   exports are removed without compatibility aliases: 
-  - Split Gavicore models and service interfaces into `gavicore.models.core|dru` and 
-    `gavicore.service.core|dru` modules, retaining shared error helpers.
+  - Split Gavicore models and service interfaces into 
+    `gavicore.models.core|dru` and `gavicore.service.core|dru` modules, 
+    retaining shared error helpers.
   - Split Wraptile routes into `wraptile.routes.core|dru`, with the 
     application-package response class alongside DRU routes.
 
