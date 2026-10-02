@@ -2,14 +2,23 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+"""HTTP routes and application package responses for OGC Processes Part 2: DRU."""
+
 import fastapi
+from fastapi.responses import JSONResponse
 
 from gavicore.models.core import ApiError, ProcessSummary
 from gavicore.models.dru import OgcApplicationPackage
 from gavicore.service.dru import DruService
 
-from .ap_response import OgcApplicationPackageResponse
-from .provider import get_service
+from ..provider import get_service
+
+
+class OgcApplicationPackageResponse(JSONResponse):
+    """Custom response class to correctly incorporate content type in response."""
+
+    media_type = "application/ogcapppkg+json"
+
 
 dru_router = fastapi.APIRouter()
 

@@ -1,12 +1,14 @@
 ## Changes in version 0.4.0 (in development)
 
-- Restructured **Gavicore** models and service interfaces into `core` and `dru`
-  modules aligned with OGC API - Processes Parts 1 and 2. Shared error helpers
-  remain in `gavicore.service.errors`. Tests mirror the new structure, and
-  workspace imports, documentation, notebooks, and generator paths have been
-  updated. This is a breaking change: import models and interfaces directly
-  from their `core` or `dru` modules; the former DRU modules and package-level
-  class exports have been removed. (#168)
+- Restructured **Gavicore** and **Wraptile** around 
+  OGC API – Processes Part 1: Core and Part 2: Deploy, Replace, 
+  Undeploy. (#168)
+  This is a breaking change: former module paths and package-level class 
+  exports are removed without compatibility aliases: 
+  - Split Gavicore models and service interfaces into `gavicore.models.core|dru` and 
+    `gavicore.service.core|dru` modules, retaining shared error helpers.
+  - Split Wraptile routes into `wraptile.routes.core|dru`, with the 
+    application-package response class alongside DRU routes.
 
 
 ## Changes in version 0.3.1

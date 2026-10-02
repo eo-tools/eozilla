@@ -96,7 +96,7 @@ class ServiceBase(Service, ABC):
 
             if issubclass(service.__class__, DruService):
                 from wraptile.app import app as app_module
-                from wraptile.dru_routes import dru_router
+                from wraptile.routes.dru import dru_router
 
                 app_module.include_router(dru_router)
 

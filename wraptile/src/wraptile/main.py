@@ -1,15 +1,13 @@
-#  Copyright (c) 2025-2026 by the Eozilla team and contributors
+#  Copyright (c) 2026- by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from . import routes
+"""Export the FastAPI application with its Core routes registered.
+
+DRU routes are registered separately when a DRU-capable service is loaded.
+"""
+
 from .app import app
+from .routes import core
 
-"""
-This module imports both, the FastAPI `app` instance and the application's 
-path functions from the `routes` module. 
-It also sets the server's service instance and exports the application as 
-the `app` module attribute.
-"""
-
-__all__ = ["app", "routes"]
+__all__ = ["app", "core"]
