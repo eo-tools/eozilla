@@ -4,7 +4,7 @@
 
 import fastapi
 
-from gavicore.models import (
+from gavicore.models.core import (
     Capabilities,
     ConformanceDeclaration,
     JobInfo,
@@ -14,7 +14,7 @@ from gavicore.models import (
     ProcessList,
     ProcessRequest,
 )
-from gavicore.service import Service
+from gavicore.service.core import Service
 
 from .app import app
 from .provider import get_service

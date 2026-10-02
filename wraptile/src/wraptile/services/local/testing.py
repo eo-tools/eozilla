@@ -10,7 +10,7 @@ from typing import Annotated, Optional
 import pydantic
 from pydantic import Field
 
-from gavicore.models import InputDescription, Link, OutputDescription, Schema
+from gavicore.models.core import InputDescription, Link, OutputDescription, Schema
 from procodile import FromMain, FromStep, JobContext
 from wraptile.services.local import LocalService
 

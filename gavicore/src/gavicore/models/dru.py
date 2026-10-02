@@ -2,13 +2,15 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+"""Application package models for OGC API - Processes Part 2: DRU."""
+
 from __future__ import annotations
 
 from typing import Annotated, Any, Literal, TypeAlias
 
 from pydantic import BaseModel, Field
 
-from .models import Link, OgcBaseModel, ProcessDescription
+from .core import Link, OgcBaseModel, ProcessDescription
 
 # ---------------------------------------------------------------------
 #    OGC Application Package and Workflow descriptions

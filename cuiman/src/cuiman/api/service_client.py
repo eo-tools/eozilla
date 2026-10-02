@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final, Protocol
 
-from gavicore.models import DataType, InputDescription, ProcessDescription, Schema
+from gavicore.models.core import DataType, InputDescription, ProcessDescription, Schema
 
 TAB: Final[str] = "    "
 
@@ -145,7 +145,7 @@ def _render_module(
         "",
         f"from {client_type.base_module} import {client_type.base_class_name}",
         f"from cuiman.api.jobs import JobOptions, {client_type.helper_name}",
-        "from gavicore.models import ProcessRequest",
+        "from gavicore.models.core import ProcessRequest",
         "",
         f"__all__ = [{class_name!r}]",
         "",

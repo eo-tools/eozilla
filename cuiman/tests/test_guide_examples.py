@@ -17,7 +17,7 @@ from cuiman.api.opener import JobResultOpenContext, JobResultOpenerRegistry
 from cuiman.app import App
 from cuiman.cli import cli
 from examples.guides.cuiman import api, app, openers
-from gavicore.models import JobInfo, JobResults, Link, ProcessRequest
+from gavicore.models.core import JobInfo, JobResults, Link, ProcessRequest
 from procodile import Job
 from wraptile.services.local.testing import service
 

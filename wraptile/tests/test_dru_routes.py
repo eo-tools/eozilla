@@ -9,13 +9,13 @@ from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
-from gavicore.dru_models import (
+from gavicore.models.core import ProcessDescription, ProcessSummary
+from gavicore.models.dru import (
     GenericExecutionUnit,
     OgcApplicationPackage,
     OgcApplicationPackageProcessDescription,
 )
-from gavicore.dru_service import DruService
-from gavicore.models import ProcessDescription, ProcessSummary
+from gavicore.service.dru import DruService
 from wraptile.dru_routes import (
     deploy_process,
     dru_router,

@@ -7,7 +7,7 @@ from typing import Annotated, Any, Literal
 from pydantic import Field
 
 from cuiman.api.config import ClientConfig
-from gavicore.models import InputDescription, ProcessDescription
+from gavicore.models.core import InputDescription, ProcessDescription
 from gavicore.util.model import extend_model
 
 

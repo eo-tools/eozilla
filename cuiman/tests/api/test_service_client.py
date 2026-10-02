@@ -15,7 +15,7 @@ from cuiman.api.service_client import (
     generate_service_client_modules,
     write_service_client_modules,
 )
-from gavicore.models import DataType, InputDescription, ProcessDescription, Schema
+from gavicore.models.core import DataType, InputDescription, ProcessDescription, Schema
 
 
 def mk_process_description() -> ProcessDescription:

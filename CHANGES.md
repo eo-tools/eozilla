@@ -1,4 +1,12 @@
-## Changes in version 0.3.2 (in development)
+## Changes in version 0.4.0 (in development)
+
+- Restructured **Gavicore** models and service interfaces into `core` and `dru`
+  modules aligned with OGC API - Processes Parts 1 and 2. Shared error helpers
+  remain in `gavicore.service.errors`. Tests mirror the new structure, and
+  workspace imports, documentation, notebooks, and generator paths have been
+  updated. This is a breaking change: import models and interfaces directly
+  from their `core` or `dru` modules; the former DRU modules and package-level
+  class exports have been removed. (#168)
 
 
 ## Changes in version 0.3.1

@@ -8,7 +8,7 @@ from unittest import TestCase
 
 from pydantic import BaseModel
 
-import gavicore.dru_models as m
+import gavicore.models.dru as m
 
 REQUIRED_CLASSES = {
     "OgcApplicationPackage",
@@ -27,6 +27,16 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class DRUModelsTest(TestCase):
+    def test_notebook_representation(self):
+        package = m.OgcApplicationPackage(executionUnit={"type": "python"})
+        self.assertEqual(
+            (
+                {"executionUnit": {"type": "python"}},
+                {"root": "OgcApplicationPackage object:"},
+            ),
+            package._repr_json_(),
+        )
+
     def test_classes(self):
         all_classes = set(
             name

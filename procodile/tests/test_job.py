@@ -8,7 +8,7 @@ import pydantic
 import pytest
 from pydantic import Field
 
-from gavicore.models import JobResults, JobStatus, ProcessRequest, Subscriber
+from gavicore.models.core import JobResults, JobStatus, ProcessRequest, Subscriber
 from procodile import (
     FromMain,
     Job,

@@ -11,7 +11,7 @@ from typing import Any
 import httpx2
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 
-from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
+from gavicore.models.core import JobInfo, JobResults, JobStatus, ProcessDescription
 from gavicore.util.request import ExecutionRequest
 
 from .auth.config import OidcAuthConfig

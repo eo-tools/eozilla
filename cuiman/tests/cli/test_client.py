@@ -12,7 +12,7 @@ from cuiman.api.client import Client
 from cuiman.api.transport import TransportError
 from cuiman.cli.cli import cli
 from cuiman.cli.client import use_client
-from gavicore.models import ApiError
+from gavicore.models.core import ApiError
 
 # TODO: make tests more robust or independent of the an existing
 #  `~/.eozilla/config`. All tests here may fail if cuiman has been

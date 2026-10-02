@@ -2,8 +2,8 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-"""Core and DRU interfaces and shared API error helpers."""
+"""OGC API - Processes models, organized into Core and DRU."""
 
-from . import core, dru, errors
+from . import core, dru
 
-__all__ = ["core", "dru", "errors"]
+__all__ = ["core", "dru"]

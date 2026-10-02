@@ -13,7 +13,7 @@ import pytest
 
 from cuiman import ClientConfig
 from cuiman.api.client import Client
-from gavicore.models import (
+from gavicore.models.core import (
     ApiError,
     Capabilities,
     ConformanceDeclaration,

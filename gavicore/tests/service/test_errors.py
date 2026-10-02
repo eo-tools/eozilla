@@ -6,7 +6,7 @@ from unittest import TestCase
 
 import pytest
 
-from gavicore.models import ApiError
+from gavicore.models.core import ApiError
 from gavicore.service import errors
 
 

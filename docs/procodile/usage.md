@@ -250,11 +250,11 @@ The process request file format in detail:
   Values may be of any JSON-serializable type accepted by
   the given process.
 - `outputs`: Optional process outputs given as key-value mapping.
-  Values are of type [Output][gavicore.models.Output]
+  Values are of type [Output][gavicore.models.core.Output]
   and should be supported by the given process.
 - `subscriber`: Optional object comprising callback
   URLs that are informed about process status changes
   while the processing takes place. The URLs are `successUri`,
   `inProgressUri`, and `failedUri` and none is required.
-  See also [Subscriber][gavicore.models.Subscriber].
+  See also [Subscriber][gavicore.models.core.Subscriber].
 

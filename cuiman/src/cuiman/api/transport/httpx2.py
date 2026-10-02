@@ -8,7 +8,7 @@ from typing import Any, Awaitable, Callable
 import httpx2
 
 from cuiman.api.exceptions import ClientError
-from gavicore.models import ApiError
+from gavicore.models.core import ApiError
 
 from .args import CLIENT_ERROR_URI, TransportArgs
 from .transport import AsyncTransport, Transport, TransportError

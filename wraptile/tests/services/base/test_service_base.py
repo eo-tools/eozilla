@@ -7,9 +7,7 @@ from unittest import TestCase
 
 import pytest
 
-from gavicore.dru_models import OgcApplicationPackage
-from gavicore.dru_service import DruService
-from gavicore.models import (
+from gavicore.models.core import (
     JobInfo,
     JobList,
     JobResults,
@@ -18,6 +16,8 @@ from gavicore.models import (
     ProcessRequest,
     ProcessSummary,
 )
+from gavicore.models.dru import OgcApplicationPackage
+from gavicore.service.dru import DruService
 from gavicore.util.testing import set_env_cm
 from wraptile.constants import ENV_VAR_SERVICE
 from wraptile.exceptions import ServiceConfigException

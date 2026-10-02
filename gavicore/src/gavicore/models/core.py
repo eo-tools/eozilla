@@ -2,6 +2,8 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+"""Data models for OGC API - Processes Part 1: Core."""
+
 from __future__ import annotations
 
 from abc import ABC
@@ -34,7 +36,7 @@ class OgcBaseModel(BaseModel, ABC):
 
 
 class DataType(Enum):
-    """The optional data type of [Schema][gavicore.models.Schema]."""
+    """The optional data type of [Schema][gavicore.models.core.Schema]."""
 
     boolean = "boolean"
     integer = "integer"
@@ -182,7 +184,7 @@ class Schema(OgcBaseModel):
 class Discriminator(OgcBaseModel):
     """
     OpenAPI discriminator used in conjunctions with
-    [`oneOf`][gavicore.models.Schema.oneOf]/[`anyOf`][gavicore.models.Schema.anyOf]
+    [`oneOf`][gavicore.models.core.Schema.oneOf]/[`anyOf`][gavicore.models.core.Schema.anyOf]
     given that
 
     - all entries are references of the form `{"$ref": "#/..."`}` and
@@ -478,12 +480,12 @@ class ProcessRequest(OgcBaseModel):
 
     outputs: dict[str, Output] | None = None
     """Optional process outputs given as key-value mapping.
-    Values are of type [Output][gavicore.models.Output]
+    Values are of type [Output][gavicore.models.core.Output]
     supported by the given process."""
 
     subscriber: Subscriber | None = None
     """Optional subscriber of type
-    [Subscriber][gavicore.models.Subscriber] comprising callback
+    [Subscriber][gavicore.models.core.Subscriber] comprising callback
     URLs that are informed about process status changes
     while the processing takes place."""
 
@@ -582,7 +584,7 @@ JobResult: TypeAlias = Link | QualifiedValue | InlineValue
 class JobResults(RootModel[dict[str, JobResult] | None]):
     """
     A job's results.
-    Basically a mapping from output name to [JobResult][gavicore.models.JobResult].
+    Basically a mapping from output name to [JobResult][gavicore.models.core.JobResult].
     """
 
     root: dict[str, JobResult] | None = None
