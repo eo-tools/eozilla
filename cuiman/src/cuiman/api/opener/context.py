@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import BaseModel
 
-from gavicore.models import (
+from gavicore.models.core import (
     InlineValue,
     JobResults,
     Link,
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 class JobResultOpenContext:
     """The context around the results of a process job that allows opening
     the job results or a particular job result.
-    Includes `job_results` of type [JobResults][gavicore.models.JobResults] and the
+    Includes `job_results` of type [JobResults][gavicore.models.core.JobResults] and the
     context surrounding it.
     The context object is passed to [JobResultOpener][cuiman.api.opener.JobResultOpener].
     """

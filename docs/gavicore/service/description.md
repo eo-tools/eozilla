@@ -3,15 +3,29 @@
 
 ## Overview
 
-This package defines the core interface [`Service`][gavicore.service.Service] 
-which is an abstraction of the Wraptile server's backend implementation.
+This package defines two interfaces for the Wraptile server's backend
+implementation:
+
+- [`Service`][gavicore.service.core.Service] in `gavicore.service.core`
+  defines OGC API - Processes Part 1: Core operations.
+- [`DruService`][gavicore.service.dru.DruService] in `gavicore.service.dru`
+  extends `Service` with Part 2: Deploy, Replace, Undeploy operations and
+  application-package retrieval.
+
+```python
+from gavicore.service.core import Service
+from gavicore.service.dru import DruService
+```
+
+Import service interfaces from the module that owns them.
 
 In addition, it provides a utility module [`errors`][gavicore.service.errors] 
 which helps creating RFC7807-compliant error objects of type 
-[`ApiError`][gavicore.models.ApiError].
+[`ApiError`][gavicore.models.core.ApiError]. Error helpers are shared across
+Core, DRU, and Eozilla-specific operations.
 
 The following class diagram provides an overview of how 
-[`Service`][gavicore.service.Service] relates to other model classes defined in 
+[`Service`][gavicore.service.core.Service] relates to other model classes defined in
 Gavicore.
 
 
@@ -30,6 +44,13 @@ direction TB
     }
     class ProcessList {
     }
+    class DruService {
+        deploy_process()
+        replace_process(process_id)
+        undeploy_process(process_id)
+        get_formal_description(process_id)
+    }
+    DruService --|> Service
     class ProcessSummary {
         process_id
     }

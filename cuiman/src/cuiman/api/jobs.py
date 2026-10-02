@@ -9,7 +9,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Final, Protocol
 
-from gavicore.models import (
+from gavicore.models.core import (
     ApiError,
     JobInfo,
     JobResults,

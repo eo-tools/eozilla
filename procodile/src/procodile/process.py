@@ -9,7 +9,7 @@ from typing import Any, Callable, Literal, Optional, get_args, get_origin
 from pydantic import BaseModel, Field, ValidationError, create_model
 from pydantic.fields import FieldInfo
 
-from gavicore.models import (
+from gavicore.models.core import (
     InputDescription,
     OutputDescription,
     ProcessDescription,
@@ -77,14 +77,14 @@ class Process:
                 provided, the function's docstring, if any, will be used.
             inputs: Optional mapping from function argument names
                 to [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/)
-                or [`InputDescription`][gavicore.models.InputDescription] instances.
+                or [`InputDescription`][gavicore.models.core.InputDescription] instances.
                 The preferred way is to annotate the arguments directly
                 as described in [The Annotated Pattern](https://docs.pydantic.dev/latest/concepts/fields/#the-annotated-pattern).
                 Use `InputDescription` instances to pass extra information that cannot
                 be represented by a `pydantic.Field`, e.g., `additionalParameters` or `keywords`.
             outputs: Mapping from output names to
                 [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/)
-                or [`OutputDescription`][gavicore.models.InputDescription] instances.
+                or [`OutputDescription`][gavicore.models.core.InputDescription] instances.
                 Required, if you have multiple outputs returned as a
                 dictionary. In this case, the function must return a typed `tuple` and
                 output names refer to the items of the tuple in given order.

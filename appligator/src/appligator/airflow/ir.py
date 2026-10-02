@@ -12,7 +12,7 @@ from appligator.airflow.models import (
     Toleration,
     WorkflowIR,
 )
-from gavicore.models import InputDescription
+from gavicore.models.core import InputDescription
 from procodile import WorkflowStepRegistry
 from procodile.workflow import FINAL_STEP_ID
 

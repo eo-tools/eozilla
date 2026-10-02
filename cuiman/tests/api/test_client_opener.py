@@ -12,7 +12,7 @@ from cuiman.api.client import Client
 from cuiman.api.config import ClientConfig
 from cuiman.api.exceptions import ClientError, ClientWarning
 from cuiman.api.opener import JobResultStatusError
-from gavicore.models import (
+from gavicore.models.core import (
     ApiError,
     JobInfo,
     JobResults,

@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from gavicore.models import (
+from gavicore.models.core import (
     InputDescription,
     ProcessDescription,
     ProcessRequest,

@@ -2,14 +2,14 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+"""Helpers for resolving API problem types and building `ApiError` values."""
+
 from __future__ import annotations
 
 from typing import Final, Literal, TypeAlias, TypeGuard, get_args
 
-from gavicore.models import ApiError
-from gavicore.util.ensure import ensure_type
-
-"""Helpers for resolving API problem types and building `ApiError` values."""
+from ..models.core import ApiError
+from ..util.ensure import ensure_type
 
 ErrorTypeId: TypeAlias = Literal[
     # OGC API - Processes Part 1 (Core)
@@ -181,7 +181,7 @@ def create_api_error(
         traceback: An optional server-side traceback string or list of lines.
 
     Returns:
-        The constructed [`ApiError`][gavicore.models.ApiError] instance.
+        The constructed [`ApiError`][gavicore.models.core.ApiError] instance.
     """
     type_uri = get_error_type_uri(type_id)
 

@@ -28,7 +28,7 @@ code_header = """
 
 from typing import Any, Optional
 
-from gavicore.models import {{ model_imports }}
+from gavicore.models.core import {{ model_imports }}
 
 from .async_client_mixin import AsyncClientMixin
 from .client_mixin import ClientMixin

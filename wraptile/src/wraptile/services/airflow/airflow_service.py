@@ -22,7 +22,7 @@ from airflow_client.client.api import DAGApi
 from airflow_client.client.api import DagRunApi as DAGRunApi
 from airflow_client.client.api import XComApi
 
-from gavicore.models import (
+from gavicore.models.core import (
     InputDescription,
     JobInfo,
     JobList,

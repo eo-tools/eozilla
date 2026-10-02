@@ -8,7 +8,7 @@ from unittest import TestCase
 
 import pytest
 
-from gavicore.models import Schema
+from gavicore.models.core import Schema
 from gavicore.util.testing import BaseModelMixin, set_env_cm, use_temp_dir
 
 

@@ -1,29 +1,33 @@
-#  Copyright (c) 2026- by the Eozilla team and contributors
+#  Copyright (c) 2026 by the Eozilla team and contributors
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from unittest import IsolatedAsyncioTestCase
+"""Tests for DRU routes and application package responses."""
+
+from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import AsyncMock
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
-from gavicore.dru_models import (
+from gavicore.models.core import ProcessDescription, ProcessSummary
+from gavicore.models.dru import (
     GenericExecutionUnit,
     OgcApplicationPackage,
     OgcApplicationPackageProcessDescription,
 )
-from gavicore.dru_service import DruService
-from gavicore.models import ProcessDescription, ProcessSummary
-from wraptile.dru_routes import (
+from gavicore.service.dru import DruService
+from wraptile.provider import get_service
+from wraptile.routes.dru import (
+    OgcApplicationPackageResponse,
     deploy_process,
     dru_router,
     get_formal_description,
     replace_process,
     undeploy_process,
 )
-from wraptile.provider import get_service
 
 EXPECTED_ROUTES = [
     APIRoute(
@@ -133,4 +137,15 @@ class DruRouterTest(IsolatedAsyncioTestCase):
             ),
         )
 
+        self.assertEqual("application/ogcapppkg+json", response.headers["content-type"])
         self.mocked_service.get_formal_description.assert_called_once()
+
+
+class OgcApplicationPackageResponseTest(TestCase):
+    def test_subclasses_json_response(self):
+        self.assertTrue(issubclass(OgcApplicationPackageResponse, JSONResponse))
+
+    def test_media_type(self):
+        self.assertEqual(
+            OgcApplicationPackageResponse.media_type, "application/ogcapppkg+json"
+        )

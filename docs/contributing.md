@@ -158,8 +158,11 @@ pixi run generate
 This will generate Eozilla's
 
 - client implementation in `cuiman/src/cuiman/client.py` and CLI documentation `docs/cli.md`
-- server routes in `wraptile/src/wraptile/routes.py` and the 
-  service interface in `wraptile/src/wraptile/service.py`
+- Core server routes in `wraptile/src/wraptile/routes/core.py` and the
+  service interface in `gavicore/src/gavicore/service/core.py`
+
+DRU routes and their application-package response class are maintained in
+`wraptile/src/wraptile/routes/dru.py`.
 
 ### Documentation
 

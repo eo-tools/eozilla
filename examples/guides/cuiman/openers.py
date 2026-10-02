@@ -13,7 +13,7 @@ import xarray as xr
 
 from cuiman import Client
 from cuiman.api.opener import JobResultOpenContext, JobResultOpener
-from gavicore.models import ProcessRequest
+from gavicore.models.core import ProcessRequest
 
 # --8<-- [end:imports]
 

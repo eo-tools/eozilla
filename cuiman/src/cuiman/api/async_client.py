@@ -5,7 +5,7 @@
 
 from typing import Any, Optional
 
-from gavicore.models import (
+from gavicore.models.core import (
     ApiError,
     Capabilities,
     ConformanceDeclaration,

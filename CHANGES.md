@@ -1,4 +1,15 @@
-## Changes in version 0.3.2 (in development)
+## Changes in version 0.4.0 (in development)
+
+- Restructured **Gavicore** and **Wraptile** around 
+  OGC API – Processes Part 1: Core and Part 2: Deploy, Replace, 
+  Undeploy. (#168)
+  This is a breaking change: former module paths and package-level class 
+  exports are removed without compatibility aliases: 
+  - Split Gavicore models and service interfaces into 
+    `gavicore.models.core|dru` and `gavicore.service.core|dru` modules, 
+    retaining shared error helpers.
+  - Split Wraptile routes into `wraptile.routes.core|dru`, with the 
+    application-package response class alongside DRU routes.
 
 
 ## Changes in version 0.3.1
