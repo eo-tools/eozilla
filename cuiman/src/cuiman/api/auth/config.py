@@ -26,6 +26,7 @@ from pydantic import (
 )
 
 AuthType: TypeAlias = Literal[
+    "auto",
     "none",
     "basic",
     "token",
@@ -33,13 +34,17 @@ AuthType: TypeAlias = Literal[
     "oauth2",
     "oidc",
     "api-key",
+    "jupyter",
 ]
 """Authentication mechanism selected by an ``AuthConfig`` discriminator.
 
 The allowed values select the corresponding configuration model and define how
 authentication headers or credentials are obtained:
 
-* ``"none"`` uses no authentication.
+* ``"auto"`` discovers an available authentication mechanism, otherwise uses
+  anonymous access. Currently only JupyterHub discovery is supported.
+* ``"none"`` uses anonymous access without discovery.
+* ``"jupyter"`` requires an upstream access token from the current JupyterHub.
 * ``"basic"`` sends the configured username and password in an HTTP Basic
   ``Authorization`` header.
 * ``"token"`` uses a pre-existing access token, either as a Bearer
@@ -115,10 +120,31 @@ class AuthConfigBase(BaseModel):
         return {}
 
 
+class AutoAuthConfig(AuthConfigBase):
+    """Discover authentication, otherwise use anonymous access.
+
+    Currently discovers only JupyterHub; other mechanisms may be added later.
+    A detected mechanism that is misconfigured or fails raises an error instead
+    of falling back. Selection occurs on the first authenticated operation.
+    """
+
+    auth_type: Literal["auto"] = "auto"
+
+
 class NoAuthConfig(AuthConfigBase):
-    """Configuration for APIs that require no authentication."""
+    """Use anonymous access without discovering authentication."""
 
     auth_type: Literal["none"] = "none"
+
+
+class JupyterAuthConfig(AuthConfigBase):
+    """Require JupyterHub authentication using the current server environment.
+
+    Availability is verified by login or the first authenticated request. Hub
+    credentials and upstream tokens are never part of this configuration.
+    """
+
+    auth_type: Literal["jupyter"] = "jupyter"
 
 
 class BasicAuthConfig(AuthConfigBase):
@@ -281,13 +307,15 @@ class ApiKeyAuthConfig(AuthConfigBase):
 
 
 AuthConfig: TypeAlias = Annotated[
-    NoAuthConfig
+    AutoAuthConfig
+    | NoAuthConfig
     | BasicAuthConfig
     | TokenAuthConfig
     | LoginAuthConfig
     | OAuth2AuthConfig
     | OidcAuthConfig
-    | ApiKeyAuthConfig,
+    | ApiKeyAuthConfig
+    | JupyterAuthConfig,
     Field(discriminator="auth_type"),
 ]
 """Discriminated union of authentication configuration models."""

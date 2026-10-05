@@ -7,7 +7,9 @@ from .config import (
     AuthConfig,
     AuthConfigBase,
     AuthType,
+    AutoAuthConfig,
     BasicAuthConfig,
+    JupyterAuthConfig,
     LoginAuthConfig,
     NoAuthConfig,
     OAuth2AuthConfig,
@@ -16,6 +18,7 @@ from .config import (
     SecretFields,
     TokenAuthConfig,
 )
+from .jupyterhub import JupyterHubAuth, JupyterHubAuthError
 from .oauth2_client import LoginRequiredError
 
 __all__ = [
@@ -23,7 +26,9 @@ __all__ = [
     "AuthConfig",
     "AuthConfigBase",
     "AuthType",
+    "AutoAuthConfig",
     "BasicAuthConfig",
+    "JupyterAuthConfig",
     "LoginAuthConfig",
     "NoAuthConfig",
     "OAuth2AuthConfig",
@@ -32,4 +37,6 @@ __all__ = [
     "SecretFields",
     "TokenAuthConfig",
     "LoginRequiredError",
+    "JupyterHubAuth",
+    "JupyterHubAuthError",
 ]

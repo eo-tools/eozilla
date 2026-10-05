@@ -28,8 +28,11 @@ code_header = """
 
 from typing import Any, Optional
 
+import httpx2
+
 from gavicore.models import {{ model_imports }}
 
+from .auth.config import AuthConfig
 from .async_client_mixin import AsyncClientMixin
 from .client_mixin import ClientMixin
 from .client_app_mixin import ClientAppMixin
@@ -49,13 +52,20 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
         settings schema, defaults, environment namespace, and profile path.
         When omitted, a supplied ``config`` object's concrete type is used.
       config_path: Optional path of the configuration file to be loaded
-      config_kwargs (Any): Configuration overrides, including ``auth``. An auth model
-        or a dictionary containing ``auth_type`` replaces previous auth settings,
-        even when the type is unchanged. A dictionary without ``auth_type``
-        merges into the selected auth configuration, including nested mappings.
-        If credentials are still missing, a matching profile's keyring entry may
-        supply them; explicitly supplied credentials take precedence.
+      config_kwargs (Any): Additional configuration overrides.
       api_url: The service URL of the OGC API - Processes.
+      auth: Authentication configuration or a runtime HTTPX2 auth adapter.
+        Defaults to auth_type="auto": discover authentication (currently only
+        JupyterHub), otherwise use anonymous access. Auth type "none" disables
+        discovery; "jupyter" requires JupyterHub authentication.
+        An auth model or dictionary containing ``auth_type`` replaces previous
+        settings. A dictionary without ``auth_type`` merges into configured auth,
+        including nested mappings; matching keyring secrets fill missing values.
+        An HTTPX2 adapter overrides configured authentication without acquiring
+        or saving its credentials. It is shared by Python and app requests and
+        is never serialized. Omitted or None retains configured authentication.
+        Per-request auth (including None) or an Authorization header overrides
+        the client's authentication for that request.
     \"\"\"
 
     def __init__(
@@ -65,22 +75,21 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
         config_type: type[ClientConfig] | None = None,
         config_path: Optional[str] = None,
         api_url: Optional[str] = None,
+        auth: AuthConfig | dict[str, Any] | httpx2.Auth | None = None,
         _debug: bool = False,
         _transport: Optional[{{ uc_async }}Transport] = None,
         **config_kwargs,
     ):
-        self._config = ClientConfig.create(
+        self._init_client(
             config=config,
             config_type=config_type,
             config_path=config_path,
             api_url=api_url,
+            auth=auth,
+            _debug=_debug,
+            _transport=_transport,
             **config_kwargs,
         )
-        if not self._config.api_url:
-            raise ValueError("Required setting 'api_url' not configured")
-        self._transport = _transport
-        self._debug = _debug
-        self._init_client_runtime()
 
     @property
     def config(self) -> ClientConfig:

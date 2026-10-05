@@ -71,6 +71,38 @@ Keep `client` and `app` for subsequent cells. `client.show_app()` also supports
 For remote Jupyter deployments, see
 [notebook proxy configuration](../configuration.md#remote-notebooks).
 
+## Use JupyterHub authentication
+
+In a Hub deployment configured to expose an upstream token accepted by the
+processing service, use the same client for Python calls and the embedded app:
+
+```python
+from cuiman import Client
+
+client = Client(
+    api_url="https://processing.example.org/api",
+    auth={"auth_type": "jupyter"},
+)
+client.login()  # Verify token availability before opening the app.
+app = client.show_app(display="notebook")
+```
+
+Use `auth={"auth_type": "auto"}` for discovery with anonymous access when no
+mechanism is detected, or `none` to skip discovery entirely. The app uses the
+current Hub token for every processing request without sending it to the browser.
+See [Hub setup and authentication](../authentication.md#jupyterhub-discovery-and-required-authentication)
+for the required permissions and refresh configuration. For an async client,
+await `login()` and keep its owning event loop running while using the app.
+
+When finished, stop the app and then close the client:
+
+```python
+app.serve_result.stop()
+client.close()  # await client.close() for AsyncClient
+```
+
+This does not sign you out of JupyterHub.
+
 ## Update inputs from Python
 
 After opening Sleep Processor in the App, update the same form from Python:

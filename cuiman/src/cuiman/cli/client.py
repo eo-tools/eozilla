@@ -11,7 +11,7 @@ import typer
 from authlib.common.errors import AuthlibBaseError
 from joserfc.errors import JoseError
 
-from cuiman.api.auth import LoginRequiredError
+from cuiman.api.auth import JupyterHubAuthError, LoginRequiredError
 from cuiman.api.auth.secret_store import SecretStoreError
 from cuiman.api.client import Client
 from cuiman.api.exceptions import ClientError
@@ -95,7 +95,10 @@ class UseClient:
             if not show_traceback:
                 raise typer.Exit(code=3)
         elif (
-            isinstance(exc_value, (AuthlibBaseError, JoseError, LoginRequiredError))
+            isinstance(
+                exc_value,
+                (AuthlibBaseError, JoseError, LoginRequiredError, JupyterHubAuthError),
+            )
             and not show_traceback
         ):
             with handle_auth_errors(self.ctx.obj.get("cli_name")):

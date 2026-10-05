@@ -64,6 +64,7 @@ def test_load_uses_keyring_and_retains_profile(monkeypatch, tmp_path):
 @pytest.mark.parametrize(
     "answers, expected",
     [
+        (["auto"], {"auth_type": "auto"}),
         (["none"], {"auth_type": "none"}),
         (["basic"], {"auth_type": "basic"}),
         (["token", ""], {"auth_type": "token"}),
@@ -268,3 +269,14 @@ def test_explicit_values_override_saved_defaults_without_prompting(monkeypatch):
     )
     assert ClientConfig.from_file().auth.api_key_header == "X-New"
     prompt.assert_not_called()
+
+
+@pytest.mark.parametrize("existing", [None, "none", "auto"])
+def test_configure_defaults_to_auto_and_preserves_explicit_selection(
+    existing, monkeypatch
+):
+    if existing:
+        ClientConfig(auth={"auth_type": existing}).write()
+    monkeypatch.setattr("typer.prompt", lambda label, **kwargs: kwargs["default"])
+    configure_client_with_prompt()
+    assert ClientConfig.from_file().auth.auth_type == (existing or "auto")

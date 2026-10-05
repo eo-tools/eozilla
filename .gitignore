@@ -3,8 +3,10 @@
 .cov-report
 notebooks/auth-test.ipynb
 
-# Legacy generated documentation (excluded from the site)
+# Generated documentation (excluded from the site)
 docs/notebooks/
+# Downloaded fonts
+docs/assets/fonts/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
