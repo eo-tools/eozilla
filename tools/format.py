@@ -30,3 +30,6 @@ for ws_folder in [(root / ws) for ws in workspaces]:
     for src_folder in [(ws_folder / f) for f in ("src", "tests")]:
         format_folder(["isort"], src_folder)
         format_folder(["ruff", "format"], src_folder)
+
+format_folder(["isort"], root / "examples" / "guides")
+format_folder(["ruff", "format"], root / "examples" / "guides")

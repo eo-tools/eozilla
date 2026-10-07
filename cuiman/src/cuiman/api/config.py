@@ -46,9 +46,9 @@ from .opener import JobResultOpener, JobResultOpenerRegistry
 class ClientConfig(BaseSettings):
     """Client configuration.
 
-    Args:
+    Attributes:
         api_url: a URL pointing to a service compliant with
-            the OCG API - Processes.
+            the OGC API - Processes.
     """
 
     model_config = SettingsConfigDict(
@@ -64,6 +64,20 @@ class ClientConfig(BaseSettings):
     Name of the configuration's local default path. 
     Used for configuration persistence in `~/.<config_name>/`.
     Designed to be overridden by library clients.
+    """
+
+    display_name: ClassVar[str | None] = None
+    """Application name for notebook labels and app-launch errors.
+
+    Override in an application subclass. When absent, messages use neutral
+    wording. This metadata is excluded from settings and saved profiles.
+    """
+
+    cli_name: ClassVar[str | None] = None
+    """Optional command name for login guidance in the Python API.
+
+    Set only when the application provides a CLI. CLI instances use their own
+    ``new_cli(name=...)`` value instead. This metadata is not persisted.
     """
 
     return_type_map: ClassVar[dict[type, type]] = {}
@@ -400,7 +414,7 @@ class ClientConfig(BaseSettings):
     def _select_config_type(
         cls,
         config_type: type["ClientConfig"] | None = None,
-        config: "ClientConfig" | None = None,
+        config: "ClientConfig | None" = None,
     ) -> type["ClientConfig"]:
         """Select one configuration namespace and reject ambiguous combinations.
 

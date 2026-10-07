@@ -5,8 +5,10 @@ The Eozilla _Cuiman_ tool provides a client for servers compliant with the
 
 It comprises the following interfaces:
 
-- [Cuiman Python API](../notebooks/cuiman-api.ipynb)
-- [Cuiman GUI](../notebooks/cuiman-gui.ipynb) (deprecated legacy interface; it
-  remains available on the `maintenance/0.1.x` branch, but will not work in
-  newer Eozilla versions)
-- [Cuiman CLI](../notebooks/cuiman-cli.ipynb)
+- [Python API](guides/api.md)
+- [Eozilla App](guides/app.md), launched by Cuiman in a browser or notebook
+- [Command line](guides/cli.md)
+
+The [result opener guide](guides/openers.md) explains how to open datasets and
+add custom readers. Start with [Getting Started](getting-started.md) for client
+concepts, configuration, and authentication.

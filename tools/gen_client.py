@@ -49,7 +49,7 @@ class {{ uc_async }}Client(ClientAppMixin, {{ uc_async }}ClientMixin):
         settings schema, defaults, environment namespace, and profile path.
         When omitted, a supplied ``config`` object's concrete type is used.
       config_path: Optional path of the configuration file to be loaded
-      config_kwargs: Configuration overrides, including ``auth``. An auth model
+      config_kwargs (Any): Configuration overrides, including ``auth``. An auth model
         or a dictionary containing ``auth_type`` replaces previous auth settings,
         even when the type is unchanged. A dictionary without ``auth_type``
         merges into the selected auth configuration, including nested mappings.

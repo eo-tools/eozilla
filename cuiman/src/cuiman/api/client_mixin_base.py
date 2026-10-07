@@ -103,8 +103,14 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
             candidate = auth
         if not has_credentials(candidate) or (force and interactive):
             if not interactive:
+                cli_hint = (
+                    f", or use '{self.config.cli_name} login'"
+                    if self.config.cli_name
+                    else ""
+                )
                 raise LoginRequiredError(
-                    "Authentication requires login. Call client.login() (await it for AsyncClient), or use 'cuiman login'."
+                    "Authentication requires login. Call client.login() "
+                    f"(await it for AsyncClient){cli_hint}."
                 )
             return auth.model_copy(update=prompt_auth(auth, force=force).model_dump())
         return auth

@@ -27,6 +27,7 @@ def create_app_display_object(
     proxy_app: bool = False,
     auto_proxy: bool = False,
     open_in_browser: bool = False,
+    display_name: str | None = None,
 ) -> DisplayObject:
     """Create the notebook display object for the Cuiman app."""
     query = parse_qs(urlsplit(app_url).query, keep_blank_values=True)
@@ -41,6 +42,7 @@ def create_app_display_object(
             proxy_app=proxy_app,
             auto_proxy=auto_proxy,
             open_in_browser=open_in_browser,
+            display_name=display_name,
         )
     return _get_iframe_html(
         app_url,
@@ -76,6 +78,7 @@ def _get_iframe_script_html(
     proxy_app: bool,
     auto_proxy: bool,
     open_in_browser: bool,
+    display_name: str | None,
 ) -> HTML:
     config = {
         "baseSrc": base_src,
@@ -86,6 +89,7 @@ def _get_iframe_script_html(
         "proxyApp": proxy_app,
         "autoProxy": auto_proxy,
         "openInBrowser": open_in_browser,
+        "displayName": display_name,
     }
     config_json = json.dumps(config, separators=(",", ":")).replace("<", "\\u003c")
 

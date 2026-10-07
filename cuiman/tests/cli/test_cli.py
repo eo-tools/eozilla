@@ -455,4 +455,4 @@ class CustomizedCliTest(TestCase):
         customized_cli = new_cli("foobar", version="1.0.3")
         result = runner.invoke(customized_cli, ["--version"])
         self.assertEqual(0, result.exit_code)
-        self.assertEqual(f"1.0.3 (cuiman {__version__})\n", result.output)
+        self.assertEqual(f"foobar 1.0.3 (cuiman {__version__})\n", result.output)

@@ -2,7 +2,8 @@
 
 Cuiman is a client for processing services that implement OGC API - Processes.
 It lets you discover available processes, run them with your own inputs, and
-retrieve their results through a Python API or command-line interface (CLI).
+retrieve their results through a Python API, command-line interface (CLI), or
+the [Eozilla App](guides/app.md).
 
 ## Basic concepts
 
@@ -16,7 +17,7 @@ retrieve their results through a Python API or command-line interface (CLI).
 The usual workflow is to list the service's processes with `get_processes()`,
 inspect one with `get_process(process_id)`, and run it with `execute_process()`.
 Use `get_job(job_id)` to check a job's status and `get_job_results(job_id)` to
-retrieve its results. The [Python API usage notebook](../notebooks/cuiman-api.ipynb)
+retrieve its results. The [Python API guide](guides/api.md)
 walks through this workflow.
 
 ## Create a Python client
@@ -80,7 +81,7 @@ When explicit login is needed, use `await client.login()` before the requests.
 
 Run `cuiman configure` to set up the service URL and authentication. Run
 `cuiman login` if you need to sign in interactively or save credentials. The
-[CLI usage notebook](../notebooks/cuiman-cli.ipynb) demonstrates processing
+[CLI guide](guides/cli.md) demonstrates processing
 commands, and the [CLI Reference](cli.md) lists their options.
 
 For Python classes, method signatures, and parameters, see the

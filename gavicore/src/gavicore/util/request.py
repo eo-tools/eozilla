@@ -30,7 +30,7 @@ class ExecutionRequest(ProcessRequest):
     - to allow the process identifier being part of the request,
     - to allow creating nested object values for input names with dots.
 
-    Args:
+    Attributes:
         process_id: Process identifier
         dotpath: Whether dots in input names should be used to create
             nested object values. Defaults to `False`.

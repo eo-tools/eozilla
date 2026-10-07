@@ -44,7 +44,7 @@ def test_missing_profiles_have_actionable_errors(tmp_path):
 def test_load_allows_missing_credentials_only_for_login(auth, monkeypatch):
     ClientConfig(api_url="https://processing.test", auth=auth).write()
     monkeypatch.setattr("cuiman.api.config.load_auth_secrets", lambda *args: {})
-    with pytest.raises(ValueError, match="cuiman login"):
+    with pytest.raises(ValueError, match="the 'login' command"):
         get_config(None)
     assert (
         get_config(None, require_credentials=False).auth.auth_type == auth["auth_type"]

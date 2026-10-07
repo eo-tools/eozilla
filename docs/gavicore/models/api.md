@@ -30,6 +30,10 @@
 
 ::: gavicore.models.JobResult
 
+::: gavicore.models.JobResults
+
+::: gavicore.models.ApiError
+
 
 ## `gavicore.models` - OGC Application Package and Workflow descriptions
 

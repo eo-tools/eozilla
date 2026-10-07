@@ -6,6 +6,11 @@ The Procodile Python API is provided by the `procodile` package.
 
 ::: procodile.Process
 
+::: procodile.Workflow
+    options:
+      members:
+        - step
+
 ::: procodile.JobContext
 
 ::: procodile.JobCancelledException

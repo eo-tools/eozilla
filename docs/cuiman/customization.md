@@ -46,6 +46,8 @@ class AnolisClientConfig(ClientConfig):
     )
 
     default_path: ClassVar[Path] = Path.home() / ".anolis-client"
+    display_name: ClassVar[str | None] = "Anolis"
+    cli_name: ClassVar[str | None] = "anolis-client"
     api_url: str | None = "https://anolis.api.org/process-api/v1"
     auth: AuthConfig = NoAuthConfig()
     extra_job_result_openers = [AnolisJobResultsOpener]
@@ -61,6 +63,18 @@ def create_async_client(**config: Any) -> AsyncClient:
 
 cli = new_cli(name="anolis-client", config_type=AnolisClientConfig)
 ```
+
+`display_name` supplies the application name for notebook links, browser debug
+messages, and app-launch errors. `cli_name` optionally adds a login command to
+Python API errors; leave it unset for applications without a CLI. Both are class
+metadata, excluded from environment settings and saved profiles. Without them,
+messages use neutral wording. Low-level credential-storage errors also use
+neutral wording, including errors raised before configuration can be loaded.
+
+CLI recovery messages always use the name passed to `new_cli()`, even when it
+differs from `config_type.cli_name`. Creating a CLI does not modify the config
+class or other clients. With a custom version, `--version` prints
+`anolis-client <application-version> (cuiman <library-version>)`.
 
 `config_type` selects the schema, field defaults, dotenv and environment
 settings, profile path, and result-opening extensions for a client or CLI.
@@ -135,6 +149,13 @@ cli: typer.Typer = new_cli(
 if __name__ == "__main__":  # pragma: no cover
     cli()
 ```
+
+The default CLI loads client configuration, authentication, and notebook
+dependencies only when a command needs them. Help and version output do not load
+the client runtime. `new_cli()` uses `config_type=None` to defer resolving the
+default `ClientConfig`; passing an application configuration class still works
+as above. Imports performed by an application's own entry point occur before
+`new_cli()` and should also be kept lightweight where possible.
 
 `configure` preserves saved application fields while updating the public API and
 authentication settings it edits. It uses profile values and class defaults for

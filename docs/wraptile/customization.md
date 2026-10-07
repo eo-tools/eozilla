@@ -29,3 +29,7 @@ __all__ = ["cli"]
 if __name__ == "__main__":  # pragma: no cover
     cli()    
 ```
+
+With a custom version, `--version` includes the branded command name:
+`anolis-server <application-version> (wraptile <library-version>)`. The
+parenthesized version identifies the underlying library.

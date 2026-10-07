@@ -31,13 +31,16 @@ def get_config(
     config_type: type[ClientConfig] = ClientConfig,
     require_credentials: bool = True,
     resolve_secrets: bool = True,
+    cli_name: str | None = None,
 ) -> ClientConfig:
     """Load one application's profile, optionally allowing missing credentials."""
     config = config_type.create(
         config_path=config_path, resolve_secrets=resolve_secrets, require_file=True
     )
     if require_credentials and not has_credentials(config.auth):
-        raise ValueError("Please use 'cuiman login' to provide credentials.")
+        command = cli_name or config_type.cli_name
+        login = f"'{command} login'" if command else "the 'login' command"
+        raise ValueError(f"Please use {login} to provide credentials.")
     return config
 
 

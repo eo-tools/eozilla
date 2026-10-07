@@ -12,7 +12,13 @@ from pydantic import AliasChoices, AliasPath, BaseModel, Field, model_validator
 from pydantic_settings import SettingsConfigDict
 
 from cuiman import AsyncClient, Client, ClientConfig
-from cuiman.api.auth import AuthConfig, LoginAuthConfig, TokenAuthConfig
+from cuiman.api.auth import (
+    AuthConfig,
+    LoginAuthConfig,
+    NoAuthConfig,
+    OAuth2AuthConfig,
+    TokenAuthConfig,
+)
 from cuiman.api.config import _set_auth_secret_persistor
 from cuiman.cli.config import configure_client_with_prompt, get_config
 
@@ -23,6 +29,47 @@ def clear_environment(monkeypatch):
     for name in os.environ:
         if name.startswith("EOZILLA_"):
             monkeypatch.delenv(name)
+
+
+@pytest.mark.parametrize("client_type", [Client, AsyncClient])
+@pytest.mark.parametrize("external_sources", [False, True])
+def test_client_keywords_override_application_defaults(
+    client_type, external_sources, tmp_path, monkeypatch
+):
+    dotenv = tmp_path / ".env"
+
+    class ApplicationConfig(ClientConfig):
+        model_config = SettingsConfigDict(
+            env_prefix="S2GOS_", env_file=dotenv, extra="allow"
+        )
+        default_path: ClassVar[Path] = tmp_path / "profile"
+        api_url: str | None = "https://service.test/processes"
+        auth: AuthConfig = OAuth2AuthConfig(
+            token_url="https://identity.test/token",
+            client_id="cuiman",
+            grant_type="password",
+        )
+
+    for name in os.environ:
+        if name.startswith("S2GOS_"):
+            monkeypatch.delenv(name)
+    if external_sources:
+        ApplicationConfig.default_path.write_text(
+            "api_url: https://profile.test/processes\n"
+        )
+        dotenv.write_text("S2GOS_API_URL=https://dotenv.test/processes\n")
+        monkeypatch.setenv("S2GOS_API_URL", "https://environment.test/processes")
+        monkeypatch.setenv("S2GOS_AUTH", '{"auth_type":"token"}')
+
+    client = client_type(
+        config_type=ApplicationConfig,
+        api_url="http://127.0.0.1:8008",
+        auth={"auth_type": "none"},
+    )
+
+    assert isinstance(client.config, ApplicationConfig)
+    assert client.config.api_url == "http://127.0.0.1:8008/"
+    assert client.config.auth == NoAuthConfig()
 
 
 @pytest.mark.parametrize("client_type", [Client, AsyncClient])

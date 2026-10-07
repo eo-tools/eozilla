@@ -59,30 +59,9 @@ The dev mode is useful if you are changing server code:
 wraptile dev -- wraptile.services.local.testing:service
 ```
 
-Run the Eozilla client Python API
-
-```python
-from cuiman import Client
-
-client = Client()
-client.get_processes()
-client.get_jobs()
-```
-
-Run Eozilla client GUI (in Jupyter notebooks)
-
-```python
-from cuiman import Client
-
-client = Client()
-client.show_app()
-```
-
-Run Eozilla client CLI
-
-```commandline
-$ cuiman --help
-```
+Follow the [Python API](cuiman/guides/api.md), [App](cuiman/guides/app.md),
+[command-line](cuiman/guides/cli.md), and [result opener](cuiman/guides/openers.md)
+guides for runnable examples against this local service.
 
 ### Formatting & code checking
 
@@ -190,10 +169,65 @@ The Eozilla documentation is built using the
 With repository root as current working directory:
 
 ```bash
-mkdocs build
-mkdocs serve
-mkdocs gh-deploy
+pixi run build-docs
+pixi run serve-docs
 ```
+
+`build-docs` runs in strict mode locally and in CI. Documentation builds read
+maintained Markdown and committed assets; they do not copy, execute, or render
+notebooks. Old generated copies under `docs/notebooks/` are excluded from the
+site. The original files in `notebooks/` remain independent historical examples.
+
+#### Maintaining guides and examples
+
+Edit the Cuiman user guides in `docs/cuiman/guides/`. Their Python, shell, and
+JSON examples live in `examples/guides/cuiman/`. Include code with
+`pymdownx.snippets` so that the displayed examples are also checked and tested.
+Use named sections instead of line numbers:
+
+```python
+# ;--8<-- [start:example-name]
+print("Example")
+# ;--8<-- [end:example-name]
+```
+
+Include a section inside a Markdown code fence:
+
+````markdown
+```python
+;--8<-- "examples/guides/cuiman/example.py:example-name"
+```
+````
+
+Remove the illustrative semicolon from the markers when writing actual snippets.
+Whole files, such as a JSON request, need no section suffix. Paths resolve from
+the repository root, and missing files or named sections fail the build.
+Subsections are dedented for display. Show each helper's call as well as its
+definition, and link to the complete example source.
+
+Run the standard maintenance commands:
+
+```bash
+pixi run format
+pixi run checks
+pixi run test-cuiman
+pixi run build-docs
+```
+
+`checks` includes example linting, formatting, and type checking. The guide
+tests in `cuiman/tests/test_guide_examples.py` run offline, use temporary datasets,
+and isolate client configuration. Cuiman coverage includes the example source.
+For a focused run, use `pixi run pytest cuiman/tests/test_guide_examples.py`.
+Run the scripts manually with the local test service to verify the complete
+workflow. Shell recipes are copied individually rather than executed in a batch.
+
+Store guide screenshots in `docs/assets/guides/cuiman/`, with descriptive names
+and alt text. Record capture date, source, and reproduction steps in
+`examples/guides/cuiman/README.md`. Refresh images deliberately when the interface
+changes; documentation builds only copy committed images. Review the rendered
+guides with `pixi run serve-docs`, since GitHub previews do not expand snippets.
+
+#### Generated CLI references
 
 The documentations of all Eozilla CLIs are generated.
 After changing any CLI code, always update their respective 

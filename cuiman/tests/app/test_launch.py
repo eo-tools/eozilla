@@ -38,6 +38,21 @@ def test_launch_code_is_single_use_and_creates_cookie_session():
     assert repeated.json() == {"detail": INVALID_LAUNCH_DETAIL}
 
 
+def test_launch_error_uses_application_display_name():
+    class ApplicationConfig(ClientConfig):
+        display_name = "Anolis"
+
+    _, client = create_test_client(config_type=ApplicationConfig)
+    response = client.post(LAUNCH_ENDPOINT, json={"launch": "expired"})
+    assert response.status_code == INVALID_LAUNCH_STATUS
+    assert response.json() == {
+        "detail": "The Anolis app launch has expired or is no longer valid."
+    }
+    _, default_client = create_test_client()
+    response = default_client.post(LAUNCH_ENDPOINT, json={"launch": "expired"})
+    assert response.json() == {"detail": INVALID_LAUNCH_DETAIL}
+
+
 def test_launch_session_cookie_is_secure_behind_an_https_proxy():
     service, client = create_test_client()
     launch_code = service.create_launch_code()
@@ -159,7 +174,7 @@ def test_proxy_rejects_a_path_that_escapes_the_configured_api_base():
 
     assert response.status_code == 400
     assert response.json() == {
-        "detail": "Path traversal is not allowed in a Cuiman proxy request."
+        "detail": "Path traversal is not allowed in a proxy request."
     }
 
 
@@ -202,8 +217,9 @@ def create_test_client(
     auth=None,
     *,
     raise_server_exceptions: bool = True,
+    config_type: type[ClientConfig] = ClientConfig,
 ) -> tuple[LaunchedAppService, TestClient]:
-    config = ClientConfig(
+    config = config_type(
         api_url="https://process.example.test/api",
         auth=auth or TokenAuthConfig(access_token="token"),
     )
