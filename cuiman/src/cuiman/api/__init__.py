@@ -7,6 +7,7 @@ from .client import Client
 from .config import ClientConfig
 from .exceptions import ClientError
 from .jobs import JobMonitor, JobOptions
+from .resources import JobResultResource, JobResultResourceListing
 
 __all__ = [
     "AsyncClient",
@@ -15,4 +16,6 @@ __all__ = [
     "ClientError",
     "JobMonitor",
     "JobOptions",
+    "JobResultResource",
+    "JobResultResourceListing",
 ]

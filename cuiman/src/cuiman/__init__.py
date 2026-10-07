@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from .api.exceptions import ClientError as ClientError
     from .api.jobs import JobMonitor as JobMonitor
     from .api.jobs import JobOptions as JobOptions
+    from .api.resources import JobResultResource as JobResultResource
+    from .api.resources import JobResultResourceListing as JobResultResourceListing
 
 __version__ = version("cuiman")
 
@@ -22,6 +24,8 @@ __all__ = [
     "ClientError",
     "JobMonitor",
     "JobOptions",
+    "JobResultResource",
+    "JobResultResourceListing",
     "__version__",
 ]
 
