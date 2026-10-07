@@ -469,7 +469,11 @@ def _merge_dicts_flat(d1: dict[str, Any], d2: dict[str, Any]) -> dict[str, Any]:
 
 def _schema_to_schema_dict(schema: Schema) -> dict[str, Any]:
     return schema.model_dump(
-        mode="json", exclude_unset=True, exclude_defaults=True, exclude_none=True
+        mode="json",
+        by_alias=True,
+        exclude_unset=True,
+        exclude_defaults=True,
+        exclude_none=True,
     )
 
 
