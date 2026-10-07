@@ -11,6 +11,8 @@ from pydantic import BaseModel, ValidationError
 
 from gavicore.models import Link, QualifiedValue
 
+from ..context import JobResultContext
+from ..metadata import DiscoveryError
 from ..resources import (
     DiscoveryState,
     JobResultResource,
@@ -18,12 +20,14 @@ from ..resources import (
     OutputDiscoveryState,
     ResourceDiagnostic,
 )
-from .context import DiscoveryError, ResolutionContext
 
 
 class JobResultResolver(ABC):
     """Discover resource descriptions without reading data payloads.
 
+    Resolvers make compound outputs, such as STAC documents, selectable as
+    individual resources. Openers can then read a selected resource without
+    needing to understand the original output's structure.
     One selected resolver owns an output's semantic interpretation and may
     produce zero, one, or many flat resources. The result includes containers
     needed for later inspection; user-facing view filtering follows resolution
@@ -31,19 +35,30 @@ class JobResultResolver(ABC):
     """
 
     @abstractmethod
-    async def accept(self, ctx: ResolutionContext) -> bool:
-        """Inspect any original value/schema, sharing bounded metadata loading."""
+    async def accept(self, ctx: JobResultContext) -> bool:
+        """Decide whether this resolver should interpret the original output.
+
+        Inspect the value and schema, using the shared loader for bounded
+        metadata probes when needed. Dispatch uses this decision to select one
+        resolver; resource enumeration belongs to ``resolve()``.
+        """
 
     @abstractmethod
-    async def resolve(self, ctx: ResolutionContext) -> JobResultResourceListing:
-        """Return resources, ownership, states, and diagnostics for one output."""
+    async def resolve(self, ctx: JobResultContext) -> JobResultResourceListing:
+        """Describe selectable resources after dispatch chooses this resolver.
+
+        Include ownership, discovery states, and diagnostics so callers can
+        inspect the resulting view and understand any incomplete discovery.
+        """
 
 
 async def resolve_job_result(
-    ctx: ResolutionContext, *resolver_types: type[JobResultResolver]
+    ctx: JobResultContext, *resolver_types: type[JobResultResolver]
 ) -> JobResultResourceListing:
     """Select one resolver in priority order, with an unconditional value fallback.
 
+    This is the common dispatch path for built-in and application interpretations
+    of an output. The fallback ensures unrecognized outputs remain selectable.
     Original values are eligible before Link normalization or STAC detection.
     A failed selected resolver leaves the original output inspectable with a
     diagnostic; cancellation propagates. No results from accepting siblings are
@@ -51,6 +66,7 @@ async def resolve_job_result(
     """
     from .impl import ValueResolver
 
+    ctx.require_output()
     for resolver_type in resolver_types:
         assert_resolver_type_valid(resolver_type)
         try:
@@ -77,7 +93,11 @@ async def resolve_job_result(
 
 
 def output_link(value: Any) -> Link | None:
-    """Normalize a typed or raw OGC Link, without probing its target."""
+    """Recognize typed and raw OGC Links consistently across resolvers.
+
+    Return a validated Link, or ``None`` for a value that is not a valid Link,
+    without probing the target.
+    """
     if isinstance(value, Link):
         return value
     if isinstance(value, dict) and isinstance(value.get("href"), str):
@@ -89,7 +109,10 @@ def output_link(value: Any) -> Link | None:
 
 
 def output_media_type(value: Any) -> str | None:
-    """Return advertised media metadata, retaining all media type parameters."""
+    """Read the advertised format from an original OGC output for discovery.
+
+    Handle Links and qualified values, retaining all media type parameters.
+    """
     if isinstance(value, Link):
         return value.type
     if isinstance(value, QualifiedValue):
@@ -101,7 +124,11 @@ def output_media_type(value: Any) -> str | None:
 
 
 def json_value(value: Any) -> Any:
-    """Convert OGC model instances to their JSON representation without mutation."""
+    """Make OGC model values usable in portable resource metadata.
+
+    Convert model instances to JSON-compatible values with wire field names;
+    leave other values unchanged and do not mutate the input.
+    """
     return (
         value.model_dump(mode="json", by_alias=True)
         if isinstance(value, BaseModel)
@@ -109,8 +136,12 @@ def json_value(value: Any) -> Any:
     )
 
 
-def output_provenance(ctx: ResolutionContext) -> dict[str, Any]:
-    """Describe the source output separately from effective resource access."""
+def output_provenance(ctx: JobResultContext) -> dict[str, Any]:
+    """Record where a derived resource came from for later inspection.
+
+    Preserve original output and process facts as provenance, separately from
+    the selected resource's effective location, value, and format.
+    """
     return {
         "job_id": ctx.job_id,
         "service_url": ctx.service_url,
@@ -122,13 +153,17 @@ def output_provenance(ctx: ResolutionContext) -> dict[str, Any]:
 
 
 def result_listing(
-    ctx: ResolutionContext,
+    ctx: JobResultContext,
     resources: list[JobResultResource] | tuple[JobResultResource, ...],
     *,
     state: DiscoveryState = "complete",
     diagnostics: tuple[ResourceDiagnostic, ...] = (),
 ) -> JobResultResourceListing:
-    """Build one flat listing with state even when its output produces no rows."""
+    """Package one resolver's resources and progress into a consistent listing.
+
+    Record the output's state even when it produces no resource rows, so an
+    empty result does not lose its discovery status or failure explanation.
+    """
     return JobResultResourceListing(
         resources=tuple(resources),
         discovery_state=state,
@@ -144,7 +179,11 @@ def result_listing(
 def discovery_diagnostic(
     error: Exception, code: str, subject: str
 ) -> ResourceDiagnostic:
-    """Report a failure without exposing arbitrary runtime exception messages."""
+    """Turn an extension failure into an explanation callers can safely display.
+
+    Preserve a ``DiscoveryError`` explanation; for other exceptions report only
+    the type, since arbitrary runtime messages may contain credentials.
+    """
     return ResourceDiagnostic(
         code=error.code if isinstance(error, DiscoveryError) else code,
         message=error.message
@@ -155,7 +194,10 @@ def discovery_diagnostic(
 
 
 def assert_resolver_type_valid(resolver_type: type[JobResultResolver]) -> None:
-    """Reject extension entries that are not JobResultResolver subclasses."""
+    """Validate registry and dispatch entries before using a resolver extension.
+
+    Raise ``TypeError`` unless the entry is a ``JobResultResolver`` subclass.
+    """
     if not isinstance(resolver_type, type) or not issubclass(
         resolver_type, JobResultResolver
     ):

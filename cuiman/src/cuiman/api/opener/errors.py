@@ -6,21 +6,11 @@ from gavicore.models import JobInfo
 
 
 class JobResultOpenError(Exception):
-    """A job result could not be opened.
-
-    This error is potentially raised by the
-    [JobResultOpenerRegistry.open_job_result()][JobResultOpenerRegistry.open_result]
-    method.
-    """
+    """No configured opener could successfully open the selected resource."""
 
 
 class JobResultStatusError(JobResultOpenError):
-    """A job result could not be opened.
-
-    This error is potentially raised by the
-    [JobResultOpenerRegistry.open_job_result()][JobResultOpenerRegistry.open_result]
-    method.
-    """
+    """Job-output opening stopped because the job failed or was canceled."""
 
     def __init__(self, job_info: JobInfo):
         message = (

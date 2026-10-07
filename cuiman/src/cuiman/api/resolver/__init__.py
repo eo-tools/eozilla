@@ -4,14 +4,13 @@
 
 """Developer contracts for resource discovery and resolver-owned transformations."""
 
-from .context import (
+from ..metadata import (
     DiscoveryError,
     DiscoveryLimits,
     MetadataDocument,
     MetadataFetcher,
     MetadataLoader,
     MetadataResponse,
-    ResolutionContext,
 )
 from .registry import JobResultResolverRegistry
 from .resolver import JobResultResolver, resolve_job_result
@@ -33,7 +32,6 @@ __all__ = [
     "MetadataFetcher",
     "MetadataLoader",
     "MetadataResponse",
-    "ResolutionContext",
     "ResourceEntry",
     "ResourceTransformer",
     "resolve_job_result",

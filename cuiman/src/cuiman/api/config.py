@@ -39,9 +39,11 @@ from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
 from .auth import AuthConfig, AuthConfigBase, NoAuthConfig
 from .auth.config import has_credentials
 from .auth.secret_store import load_auth_secrets, save_auth_secrets
+from .context import ResourceAccessProvider
 from .defaults import DEFAULT_API_URL
 from .opener import JobResultOpener, JobResultOpenerRegistry
 from .resolver import JobResultResolver, JobResultResolverRegistry
+from .resources import JobResultResource
 
 
 class ClientConfig(BaseSettings):
@@ -109,6 +111,13 @@ class ClientConfig(BaseSettings):
     discovery. Each configuration class has independent runtime registrations;
     extensions must have a no-argument constructor. This developer declaration
     is excluded from settings and persistence.
+    """
+
+    job_result_access_provider: ClassVar[ResourceAccessProvider | None] = None
+    """Locally scoped storage access provider, invoked only during resource opening.
+
+    Excluded from settings/persistence. Provider implementations enforce target
+    scope; process API credentials are never automatically used for storage.
     """
 
     api_url: Annotated[Optional[str], Field(title="Process API URL")] = DEFAULT_API_URL
@@ -494,6 +503,17 @@ class ClientConfig(BaseSettings):
             A function that can be called to unregister the opener.
         """
         return cls.get_job_result_opener_registry().register(opener_type)
+
+    @classmethod
+    def get_job_result_opener_options(
+        cls, resource: JobResultResource, opener_id: str
+    ) -> dict[str, Any]:
+        """Local option overrides for this selected resource/opener.
+
+        Override for application preferences, returning a fresh mapping.
+        Explicit caller options take precedence over these settings.
+        """
+        return {}
 
     @classmethod
     @cache

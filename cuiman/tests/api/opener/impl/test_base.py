@@ -7,14 +7,18 @@ from unittest.async_case import IsolatedAsyncioTestCase
 
 import pytest
 
+from cuiman.api import JobResultContext
 from cuiman.api.config import ClientConfig
-from cuiman.api.opener import JobResultOpenContext, JobResultOpener
+from cuiman.api.opener import JobResultOpener
 from cuiman.api.opener.impl.base import OptionalModuleOpener, PathOpener
+from cuiman.api.resources import JobResultResource
 from gavicore.models import (
     InlineValue,
     JobResults,
     Link,
 )
+
+from ..helpers import make_case
 
 
 class OptionalModuleTestOpener(OptionalModuleOpener):
@@ -49,7 +53,8 @@ class PathTestOpener(PathOpener):
         path_like: str,
         filename_ext: str,
         media_type: str | None,
-        ctx: JobResultOpenContext,
+        resource: JobResultResource,
+        context: JobResultContext,
     ) -> Any:
         self.path_or_url = path_like
         self.filename_ext = filename_ext
@@ -60,7 +65,7 @@ class PathTestOpener(PathOpener):
 def create_ctx(
     return_value: Link | InlineValue,
 ):
-    return JobResultOpenContext(
+    return make_case(
         config=ClientConfig(api_url="https://example.com/"),
         job_id="job_10",
         job_results=JobResults(**{"return_value": return_value}),
@@ -94,18 +99,18 @@ class OptionalModuleOpenerTest(IsolatedAsyncioTestCase):
     async def test_accept_job_result(self):
         opener = OptionalModuleTestOpener()
         ctx = create_ctx(nc_link)
-        self.assertEqual(False, await opener.accept_job_result(ctx))
+        self.assertEqual(False, await opener.accept(ctx.resource, context=ctx.context))
         impl_opener: PathTestOpener = opener.implementing_opener
         impl_opener.accepts_data_type = True
         impl_opener.accepts_media_type = True
         impl_opener.accepts_filename_ext = True
-        self.assertEqual(True, await opener.accept_job_result(ctx))
+        self.assertEqual(True, await opener.accept(ctx.resource, context=ctx.context))
 
     @pytest.mark.asyncio
     async def test_open_job_result(self):
         opener = OptionalModuleTestOpener()
         ctx = create_ctx(nc_link)
-        self.assertEqual(137, await opener.open_job_result(ctx))
+        self.assertEqual(137, await opener.open(ctx.resource, context=ctx.context))
         impl_opener: PathTestOpener = opener.implementing_opener
         self.assertEqual(
             "https://example.com/cube.nc?off=0x64ea", impl_opener.path_or_url
@@ -168,13 +173,15 @@ class PathOpenerTest(IsolatedAsyncioTestCase):
         opener.accepts_filename_ext = accepts_filename_ext
         opener.accepts_media_type = accepts_media_type
         opener.accepts_data_type = accepts_data_type
-        self.assertIs(await opener.accept_job_result(ctx), expected_result)
+        self.assertIs(
+            await opener.accept(ctx.resource, context=ctx.context), expected_result
+        )
 
     @pytest.mark.asyncio
     async def test_open_job_result(self):
         opener = PathTestOpener()
         ctx = create_ctx(nc_link)
-        self.assertEqual(137, await opener.open_job_result(ctx))
+        self.assertEqual(137, await opener.open(ctx.resource, context=ctx.context))
         self.assertEqual("https://example.com/cube.nc?off=0x64ea", opener.path_or_url)
         self.assertEqual(".nc", opener.filename_ext)
         self.assertEqual("application/x-netcdf", opener.media_type)
@@ -182,17 +189,18 @@ class PathOpenerTest(IsolatedAsyncioTestCase):
     def test_get_path_or_url(self):
         ctx = create_ctx(nc_link)
         self.assertEqual(
-            "https://example.com/cube.nc?off=0x64ea", PathOpener.get_path_like(ctx)
+            "https://example.com/cube.nc?off=0x64ea",
+            PathOpener.get_path_like(ctx.resource),
         )
 
         ctx = create_ctx(int_value)
-        self.assertIsNone(PathOpener.get_path_like(ctx))
+        self.assertIsNone(PathOpener.get_path_like(ctx.resource))
 
         ctx = create_ctx("regions.gpckg")
-        self.assertEqual("regions.gpckg", PathOpener.get_path_like(ctx))
+        self.assertEqual("regions.gpckg", PathOpener.get_path_like(ctx.resource))
 
         ctx = create_ctx({"path": "./dataset.zarr"})
-        self.assertEqual("./dataset.zarr", PathOpener.get_path_like(ctx))
+        self.assertEqual("./dataset.zarr", PathOpener.get_path_like(ctx.resource))
 
     def test_get_filename_ext(self):
         self.assertEqual(
@@ -200,3 +208,24 @@ class PathOpenerTest(IsolatedAsyncioTestCase):
         )
         self.assertEqual(".gpckg", PathOpener.get_filename_ext("dataset.gpckg"))
         self.assertEqual(".zarr", PathOpener.get_filename_ext("./data.set.zarr"))
+
+    def test_qualified_resource_paths_and_url_suffixes(self):
+        resource = JobResultResource(
+            id="r",
+            output_name="x",
+            kind="value",
+            value={"mediaType": "text/csv", "value": {"path": "table.csv"}},
+        )
+        self.assertEqual("table.csv", PathOpener.get_path_like(resource))
+        self.assertEqual(
+            ".csv",
+            PathOpener.get_filename_ext(
+                "https://store.test/table.CSV?signature=a.b#c.d"
+            ),
+        )
+        self.assertEqual(
+            "",
+            PathOpener.get_filename_ext(
+                "https://store.test/directory.with.dots/dataset"
+            ),
+        )

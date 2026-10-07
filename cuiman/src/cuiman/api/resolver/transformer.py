@@ -13,13 +13,14 @@ from urllib.parse import quote
 
 from gavicore.models import Link
 
+from ..context import JobResultContext
+from ..metadata import DiscoveryError
 from ..resources import (
     JobResultResource,
     JobResultResourceListing,
     ResourceCapabilities,
     make_resource_id,
 )
-from .context import DiscoveryError, ResolutionContext
 from .location import resolve_location
 from .resolver import JobResultResolver, discovery_diagnostic, result_listing
 
@@ -27,6 +28,9 @@ from .resolver import JobResultResolver, discovery_diagnostic, result_listing
 class ResourceTransformer(ABC):
     """Enrich, rewrite, or expand one resolved resource without mutating it.
 
+    Transformers add application-specific descriptions after a resolver has
+    interpreted the output. For example, they can describe known files inside
+    a folder without making the base resolver understand that folder layout.
     Return the unchanged resource for a non-match. Expansion normally includes
     the source ancestor. Later stages receive this stage's results; the same
     stage is never reapplied recursively to its own descendants.
@@ -34,14 +38,20 @@ class ResourceTransformer(ABC):
 
     @abstractmethod
     async def transform(
-        self, resource: JobResultResource, ctx: ResolutionContext
+        self, resource: JobResultResource, ctx: JobResultContext
     ) -> tuple[JobResultResource, ...]:
-        """Return replacements using only metadata and shared discovery services."""
+        """Return the resources that the next stage or caller should see.
+
+        Use metadata and shared discovery services to enrich or expand the
+        source; return ``(resource,)`` when it does not match.
+        """
 
 
 class ComposedJobResultResolver(JobResultResolver):
     """Delegate recognition/discovery and apply an owned, ordered transformer chain.
 
+    Composition lets an application reuse a built-in resolver and add its own
+    interpretation of the discovered resources as one registrable extension.
     Registered subclasses supply their base and transformers in a no-argument
     constructor. An optional acceptance predicate scopes project-specific
     behavior before base acceptance. Transformation runs only after selection.
@@ -54,20 +64,31 @@ class ComposedJobResultResolver(JobResultResolver):
         base: JobResultResolver,
         transformers: Sequence[ResourceTransformer],
         *,
-        accepts: Callable[[ResolutionContext], bool] | None = None,
+        accepts: Callable[[JobResultContext], bool] | None = None,
     ):
         self._base = base
         self._transformers = tuple(transformers)
         self._accepts = accepts
 
-    async def accept(self, ctx: ResolutionContext) -> bool:
-        """Check project scope and base recognition without running transformers."""
+    async def accept(self, ctx: JobResultContext) -> bool:
+        """Decide whether this composed interpretation applies to the output.
+
+        Check the optional application predicate before base recognition;
+        transformers run only after dispatch selects this resolver.
+        """
+        ctx.require_output()
         return (
             self._accepts is None or self._accepts(ctx)
         ) and await self._base.accept(ctx)
 
-    async def resolve(self, ctx: ResolutionContext) -> JobResultResourceListing:
-        """Transform the selected base's flat view using the same operation context."""
+    async def resolve(self, ctx: JobResultContext) -> JobResultResourceListing:
+        """Apply application transformations to the base resolver's resource view.
+
+        Share the operation context and enforce resource identity, ownership,
+        and count limits. Failed transformations retain their source resources
+        with diagnostics so successful siblings remain usable.
+        """
+        ctx.require_output()
         listing = await self._base.resolve(ctx)
         resources = listing.resources
         diagnostics = list(listing.diagnostics)
@@ -138,8 +159,11 @@ class ComposedJobResultResolver(JobResultResolver):
 
 @dataclass(frozen=True)
 class ResourceEntry:
-    """One developer-supplied descendant; this is not an external config format.
+    """Declare a known file or directory inside a folder-like result.
 
+    ``FolderResourceTransformer`` uses these entries to make descendants
+    selectable without scanning storage. Extensions translate their own
+    configuration into entries; this class does not prescribe its file format.
     The extension owns configuration acquisition and declares directory nodes
     explicitly. Locations of children are relative to their parent directory.
     No format or credentials are inferred from an ancestor's description.
@@ -179,6 +203,9 @@ class ResourceEntry:
 class FolderResourceTransformer(ResourceTransformer):
     """Expand matching folder resources from declared metadata without storage I/O.
 
+    Use this when a process returns a folder whose useful contents are known
+    from application configuration. It makes those files individually selectable
+    while retaining the folder as their source.
     Completeness describes the supplied configuration, never an exhaustive or
     verified directory inventory. Selectors depend on the source identity and
     entry keys, so location renewal does not change them. Results are rebuilt
@@ -189,7 +216,7 @@ class FolderResourceTransformer(ResourceTransformer):
         self,
         entries: Sequence[ResourceEntry] | None,
         *,
-        matches: Callable[[JobResultResource, ResolutionContext], bool],
+        matches: Callable[[JobResultResource, JobResultContext], bool],
         config_id: str | None = None,
         config_revision: str | None = None,
     ):
@@ -199,9 +226,15 @@ class FolderResourceTransformer(ResourceTransformer):
         self._config_revision = config_revision
 
     async def transform(
-        self, resource: JobResultResource, ctx: ResolutionContext
+        self, resource: JobResultResource, ctx: JobResultContext
     ) -> tuple[JobResultResource, ...]:
-        """Retain the folder and describe valid configured descendants and failures."""
+        """Make declared folder contents selectable while retaining their source.
+
+        Resolve child locations against declared parent directories and preserve
+        valid entries when siblings fail. No directory listing or access check
+        is performed; completeness refers only to the supplied entries.
+        """
+        ctx.require_output()
         if not self._matches(resource, ctx):
             return (resource,)
         if self._entries is None:

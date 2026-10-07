@@ -49,15 +49,29 @@ for the login flow and credential lifecycle.
 such as an xarray Dataset, a pandas or GeoPandas DataFrame, or a Pillow image.
 `client.open_job_result()` selects a reader from the configured openers.
 `is_usable()` checks whether an opener can run in the current environment;
-`accept_job_result()` checks whether it is a candidate for the requested output
-and return type. Acceptance does not guarantee successful access or reading.
-`open_job_result()` performs the read and returns the resulting object.
+`accept(resource, context=...)` checks whether it is a candidate for the selected
+resource and return type. Acceptance does not guarantee successful access or reading.
+`open(resource, context=...)` performs the read and returns the resulting object.
 
-`JobResultOpenContext` supplies the original job results, client configuration,
-process description, output selection, requested Python return type, media type
-override, and reader options. Its properties expose the selected output value,
-normalized Link or qualified value, and effective media type. Clients construct
-this context for callers and pass it to the opener's acceptance and opening methods.
+`JobResultContext` supplies the receiving client's configuration, requested
+Python return type, effective media type override, and candidate reader options.
+It is shared with resolution and transformation, where it also carries the
+original output name/value, process metadata, containing-document base URI, and
+bounded metadata loader/limits. Clients construct it and resolve settings
+independently for each candidate. Opening-only contexts leave the original output
+name/value unset; discovery requires both before I/O. An explicitly supplied null
+is a valid value. Standalone discovery can omit client
+configuration. Fields are frozen, and candidate options remain independent mappings.
+The selected resource supplies its own link/value and format; its original
+job/output description and schema remain provenance.
+
+`client.open_job_result(job_id, output_name=...)` retains polling and normalizes
+one original output without expanding STAC or selecting an Asset.
+`client.open_job_result(resource)` opens exactly that resource without job lookup,
+polling, or repeated discovery. Both forms share opener dispatch and support
+`data_type`, `media_type`, and reader options. Strings always identify jobs.
+Explicit `output_name`, `poll_interval`, or `timeout` arguments with a resource
+raise `TypeError`, including explicitly supplied defaults or `None`.
 
 `JobResultOpenerRegistry` maintains the ordered opener classes. Built-in readers
 cover datasets, tables, geospatial tables, and images, subject to their optional
@@ -66,24 +80,29 @@ dependencies. Applications add their own classes through
 later registrations take priority, and configuration classes have isolated
 registries. See [Customization](customization.md) for application examples.
 
-The three classes below describe the current context-based implementation.
-The [Job Result Resources](job-result-resources.md) redesign will replace the
-context and opener method signatures with a single resource-based contract,
-shared by opening an original job output and an explicitly selected resource.
+Producer hints are validated before use. Settings resolve in order from opener
+defaults, resource hints, client overrides, and explicit call options. Declared
+mappings merge by key; `None` clears inheritance. `context.non_secret_options`
+and `context.option_sources` expose effective settings and their source.
+`ResourceAccessProvider` supplies locally authorized storage access only during
+reading; candidate checks acquire no credentials or payloads. See
+[Customization](customization.md#opening-extensions) for the extension contract.
 
 ::: cuiman.api.opener.JobResultOpener
 
-::: cuiman.api.opener.JobResultOpenContext
+::: cuiman.api.JobResultContext
 
 ::: cuiman.api.opener.JobResultOpenerRegistry
+
+::: cuiman.api.opener.ResourceAccessProvider
 
 ### Job result resource descriptions
 
 `JobResultResource` describes a selected job output or a derived resource.
 `JobResultResourceListing` holds loaded resources, discovery states, diagnostics,
-and an optional continuation. These models are available now; client discovery
-and integration with `open_job_result()` are being implemented incrementally
-according to [Job Result Resources](job-result-resources.md).
+and an optional continuation. Resources can be passed to `open_job_result()` now;
+client discovery is being implemented incrementally according to
+[Job Result Resources](job-result-resources.md).
 
 Both models are frozen Pydantic snapshots. Nested JSON objects are read-only
 mappings and arrays are tuples in Python; `model_dump(mode="json")` and
@@ -120,8 +139,12 @@ scope and expiry will be enforced by the discovery implementation.
 
 The developer discovery contracts are available from `cuiman.api.resolver`.
 `JobResultResolver` receives every original output value through
-`ResolutionContext`; it selects one semantic interpretation before Link or STAC
-normalization. Concrete built-ins are available from `cuiman.api.resolver.impl`,
+the same `cuiman.api.JobResultContext` used by openers. Discovery requires its
+original output name and value and selects one semantic interpretation before
+Link or STAC normalization. Its loader/cache and limits are shared by delegated
+resolvers, transformers, and derived opener contexts. Opening preferences do not
+alter discovery, and discovery never calls the storage access provider.
+Concrete built-ins are available from `cuiman.api.resolver.impl`,
 mirroring `cuiman.api.opener.impl`. `StacResolver` recognizes core STAC structure
 without PySTAC or full schema validation. It describes embedded Items and concrete Assets, retaining
 Collection/Catalog metadata and navigation without crawling descendants.
@@ -136,9 +159,16 @@ for each concrete configuration class. Ordinary callers continue to configure
 extensions through their client configuration.
 
 `MetadataLoader` shares bounded JSON fetches, parsed documents, failures, and the
-request budget across acceptance and resolution. A runtime `MetadataFetcher`
-supplies transport and scoped authentication; it must bound reads using the
-requested byte and time limits. Resolved relative references use the containing
+request budget across acceptance and resolution. The fetch/parse handoff is
+`MetadataFetcher` → `MetadataResponse` → `MetadataLoader` → `MetadataDocument`:
+the fetcher reads bytes using the application's transport, the response carries
+those bytes and their effective URL, and the loader parses and caches JSON before
+returning an independent document copy to the resolver. The separate response and
+document keep transport work out of resolvers and retain the reference base
+alongside the parsed value. `DiscoveryLimits` bounds both fetching and resource
+expansion; `DiscoveryError` carries failures that become portable diagnostics.
+The fetcher owns scoped authentication and must bound reads using the requested
+byte and time limits. Resolved relative references use the containing
 document's effective URI, including redirects. Cache snapshots are independent;
 `clear()` between operations provides an explicit refresh. Default limits are
 16 requests, 2 MiB per response, 100 embedded Items, 1000 resources, depth 8,
@@ -164,8 +194,6 @@ the foundation does not yet issue client continuation tokens.
 ::: cuiman.api.resolver.JobResultResolver
 
 ::: cuiman.api.resolver.JobResultResolverRegistry
-
-::: cuiman.api.resolver.ResolutionContext
 
 ::: cuiman.api.resolver.DiscoveryLimits
 

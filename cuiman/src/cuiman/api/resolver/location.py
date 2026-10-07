@@ -8,7 +8,7 @@ import ntpath
 import posixpath
 from urllib.parse import quote, urljoin, urlsplit, urlunsplit
 
-from .context import DiscoveryError
+from ..metadata import DiscoveryError
 
 
 def resolve_location(

@@ -7,8 +7,8 @@
 from typing import Any
 from urllib.parse import quote
 
+from ...context import JobResultContext
 from ...resources import JobResultResource, JobResultResourceListing, make_resource_id
-from ..context import ResolutionContext
 from ..resolver import (
     JobResultResolver,
     json_value,
@@ -20,14 +20,28 @@ from ..resolver import (
 
 
 class ValueResolver(JobResultResolver):
-    """Preserve an otherwise unhandled value or ordinary link as one resource."""
+    """Keep every original output selectable when no specialized resolver applies.
 
-    async def accept(self, ctx: ResolutionContext) -> bool:
-        """Accept every output, including scalars, arrays, objects, and null."""
+    Represent an unhandled value or ordinary Link as one resource without
+    interpreting its internal structure. This is also the adapter used when
+    opening an original output directly by job ID.
+    """
+
+    async def accept(self, ctx: JobResultContext) -> bool:
+        """Provide the unconditional fallback after specialized interpretations.
+
+        Accept every supplied output, including scalars, arrays, objects, and null.
+        """
+        ctx.require_output()
         return True
 
-    async def resolve(self, ctx: ResolutionContext) -> JobResultResourceListing:
-        """Normalize references without dereferencing them or splitting values."""
+    async def resolve(self, ctx: JobResultContext) -> JobResultResourceListing:
+        """Wrap the original output for the common resource selection/opening path.
+
+        Normalize Link representations without dereferencing them or splitting
+        inline values into descendants.
+        """
+        ctx.require_output()
         link = output_link(ctx.value)
         description = ctx.output_description
         fields: dict[str, Any] = {

@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from cuiman.api import JobResultContext
 from cuiman.api.config import ClientConfig
 from cuiman.api.resolver import (
     ComposedJobResultResolver,
@@ -17,7 +18,6 @@ from cuiman.api.resolver import (
     FolderResourceTransformer,
     MetadataLoader,
     MetadataResponse,
-    ResolutionContext,
     ResourceEntry,
     ResourceTransformer,
     resolve_job_result,
@@ -48,7 +48,7 @@ from gavicore.models import Link, OutputDescription, QualifiedValue
     ],
 )
 async def test_fallback_preserves_every_original_value(value):
-    ctx = ResolutionContext(
+    ctx = JobResultContext(
         "output",
         value,
         job_id="job",
@@ -79,7 +79,7 @@ async def test_fallback_preserves_every_original_value(value):
 async def test_ordinary_links_are_not_probed(value):
     fetch = AsyncMock()
     listing = await resolve_job_result(
-        ResolutionContext("report", value, loader=MetadataLoader(fetch)), StacResolver
+        JobResultContext("report", value, loader=MetadataLoader(fetch)), StacResolver
     )
     assert listing[0].kind == "link"
     assert not listing[0].has_value
@@ -100,11 +100,11 @@ async def test_dispatch_precedence_original_values_and_failure():
         async def accept(self, ctx):
             raise AssertionError("Second resolver was run")
 
-    assert (
-        await resolve_job_result(ResolutionContext("x", source), First, MustNotRun)
-    )[0].kind == "value"
+    assert (await resolve_job_result(JobResultContext("x", source), First, MustNotRun))[
+        0
+    ].kind == "value"
     with pytest.raises(TypeError, match="subclass"):
-        await resolve_job_result(ResolutionContext("x", None), object)
+        await resolve_job_result(JobResultContext("x", None), object)
     for error, state, code in [
         (RuntimeError("SECRET"), "error", "resolver-failure"),
         (
@@ -118,7 +118,7 @@ async def test_dispatch_precedence_original_values_and_failure():
             async def accept(self, ctx):
                 raise error
 
-        listing = await resolve_job_result(ResolutionContext("x", source), Broken)
+        listing = await resolve_job_result(JobResultContext("x", source), Broken)
         assert listing[0].value["custom"] == (1, 2)
         assert listing.discovery_state == state
         assert listing.diagnostics[0].code == code
@@ -235,7 +235,7 @@ async def test_timeout_and_cancellation():
             "https://source.test/meta"
         )
     fetch = AsyncMock(side_effect=asyncio.CancelledError)
-    ctx = ResolutionContext(
+    ctx = JobResultContext(
         "x",
         Link(href="https://source.test/meta", type="application/json"),
         loader=MetadataLoader(fetch),
@@ -250,16 +250,16 @@ def test_context_limits_validation():
     with pytest.raises(ValueError, match="positive"):
         DiscoveryLimits(timeout=0)
     with pytest.raises(ValueError, match="output name"):
-        ResolutionContext("", None)
+        JobResultContext("", None)
     loader = MetadataLoader(AsyncMock(), DiscoveryLimits(max_items=2))
-    assert ResolutionContext("x", None, loader=loader).limits is loader.limits
+    assert JobResultContext("x", None, loader=loader).limits is loader.limits
 
 
 @pytest.mark.asyncio
 async def test_stac_item_preserves_source_and_metadata():
     source = _item()
     original = deepcopy(source)
-    ctx = ResolutionContext(
+    ctx = JobResultContext(
         "dataset", source, base_uri="https://source.test/path/item.json"
     )
     assert await StacResolver().accept(ctx)
@@ -291,7 +291,7 @@ async def test_referenced_stac_reuses_probe_and_containing_redirect_base():
             json.dumps(source).encode(), "https://redirect.test/results/page.json"
         )
     )
-    ctx = ResolutionContext(
+    ctx = JobResultContext(
         "x",
         Link(
             href="https://source.test/meta", type="application/geo+json; charset=utf-8"
@@ -330,14 +330,14 @@ async def test_referenced_stac_reuses_probe_and_containing_redirect_base():
     ],
 )
 async def test_ordinary_geojson_and_json_not_misclassified(value):
-    ctx = ResolutionContext("x", value)
+    ctx = JobResultContext("x", value)
     assert not await StacResolver().accept(ctx)
     assert (await resolve_job_result(ctx, StacResolver))[0].kind == "value"
 
 
 @pytest.mark.asyncio
 async def test_empty_and_mixed_collections():
-    empty = ResolutionContext(
+    empty = JobResultContext(
         "x", {"type": "FeatureCollection", "features": []}, stac_hint=True
     )
     listing = await resolve_job_result(empty, StacResolver)
@@ -351,7 +351,7 @@ async def test_empty_and_mixed_collections():
         "links": [{"rel": "next", "href": "next.json"}],
     }
     listing = await resolve_job_result(
-        ResolutionContext("x", source, base_uri="file:///C:/results/page.json"),
+        JobResultContext("x", source, base_uri="file:///C:/results/page.json"),
         StacResolver,
     )
     assert listing.discovery_state == "partial"
@@ -372,7 +372,7 @@ async def test_schema_hints_and_mismatch():
     schema = {
         "$ref": "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json"
     }
-    ctx = ResolutionContext(
+    ctx = JobResultContext(
         "x", {"ordinary": True}, output_description=OutputDescription(schema=schema)
     )
     listing = await resolve_job_result(ctx, StacResolver)
@@ -391,17 +391,17 @@ async def test_schema_hints_and_mismatch():
         },
     ]:
         assert await StacResolver().accept(
-            ResolutionContext(
+            JobResultContext(
                 "x", _item(), output_description=OutputDescription(schema=hint)
             )
         )
     cycle = {"$defs": {"loop": {"$ref": "#/$defs/loop"}}, "$ref": "#/$defs/loop"}
     assert not await StacResolver().accept(
-        ResolutionContext("x", None, output_description=OutputDescription(schema=cycle))
+        JobResultContext("x", None, output_description=OutputDescription(schema=cycle))
     )
     union = OutputDescription(schema={"oneOf": [schema, {"type": "object"}]})
     assert not await StacResolver().accept(
-        ResolutionContext("x", {"ordinary": True}, output_description=union)
+        JobResultContext("x", {"ordinary": True}, output_description=union)
     )
 
 
@@ -415,14 +415,14 @@ async def test_qualified_stac_self_base_versions_and_extensions():
         QualifiedValue(value=item, mediaType="application/json"),
         {"value": item, "mediaType": "application/json"},
     ]:
-        listing = await resolve_job_result(ResolutionContext("x", value), StacResolver)
+        listing = await resolve_job_result(JobResultContext("x", value), StacResolver)
         assert listing.select(key="data").link.href == "s3://bucket/results/data.csv"
         assert {d.code for d in listing.diagnostics} == {
             "stac-version",
             "stac-extensions",
         }
     item["links"].append({"rel": "self", "href": "https://different.test/meta"})
-    listing = await resolve_job_result(ResolutionContext("x", item), StacResolver)
+    listing = await resolve_job_result(JobResultContext("x", item), StacResolver)
     assert listing.select(key="data").diagnostics[0].code == "missing-base"
 
 
@@ -442,7 +442,7 @@ async def test_containers_do_not_crawl_or_materialize_templates(kind):
     }
     fetch = AsyncMock()
     listing = await resolve_job_result(
-        ResolutionContext("x", source, loader=MetadataLoader(fetch)), StacResolver
+        JobResultContext("x", source, loader=MetadataLoader(fetch)), StacResolver
     )
     assert listing[0].discovery_state == "unresolved"
     assert len(listing) == (2 if kind == "Collection" else 1)
@@ -457,17 +457,17 @@ async def test_initial_discovery_limits_and_missing_loader():
         "links": [],
     }
     listing = await resolve_job_result(
-        ResolutionContext("x", source, limits=DiscoveryLimits(max_items=1)),
+        JobResultContext("x", source, limits=DiscoveryLimits(max_items=1)),
         StacResolver,
     )
     assert listing.diagnostics[0].code == "item-limit"
     limited = await resolve_job_result(
-        ResolutionContext("x", source, limits=DiscoveryLimits(max_resources=1)),
+        JobResultContext("x", source, limits=DiscoveryLimits(max_resources=1)),
         StacResolver,
     )
     assert len(limited) == 1 and limited.discovery_state == "partial"
     missing = await resolve_job_result(
-        ResolutionContext(
+        JobResultContext(
             "x", Link(href="https://source.test/meta", type="application/json")
         ),
         StacResolver,
@@ -570,8 +570,8 @@ async def test_folder_chain_provenance_and_refresh_identity():
     resolver = ComposedJobResultResolver(
         StacResolver(), [folder, Enrich()], accepts=lambda ctx: ctx.output_name == "x"
     )
-    assert not await resolver.accept(ResolutionContext("other", source))
-    ctx = ResolutionContext("x", source, base_uri="file:///C:/results/item.json")
+    assert not await resolver.accept(JobResultContext("other", source))
+    ctx = JobResultContext("x", source, base_uri="file:///C:/results/item.json")
     assert await resolver.accept(ctx)
     first = await resolver.resolve(ctx)
     ndvi = first.select(key="ndvi")
@@ -589,7 +589,7 @@ async def test_folder_chain_provenance_and_refresh_identity():
     assert source == before
     source["assets"]["folder"]["href"] = "file:///D:/renewed/products"
     second = await resolver.resolve(
-        ResolutionContext("x", source, base_uri=ctx.base_uri)
+        JobResultContext("x", source, base_uri=ctx.base_uri)
     )
     assert second.select(key="ndvi").id == ndvi.id
     assert (
@@ -609,7 +609,7 @@ async def test_transform_failures_preserve_sources_successes_and_cancel():
 
     resolver = ComposedJobResultResolver(StacResolver(), [Broken()])
     result = await resolver.resolve(
-        ResolutionContext("x", _item(), base_uri="https://source.test/item.json")
+        JobResultContext("x", _item(), base_uri="https://source.test/item.json")
     )
     assert result.discovery_state == "partial"
     assert result.select(key="data").link.href == "https://source.test/data.csv"
@@ -622,7 +622,7 @@ async def test_transform_failures_preserve_sources_successes_and_cancel():
 
     with pytest.raises(asyncio.CancelledError):
         await ComposedJobResultResolver(ValueResolver(), [Cancel()]).resolve(
-            ResolutionContext("x", None)
+            JobResultContext("x", None)
         )
 
 
@@ -648,12 +648,12 @@ async def test_invalid_transformation_outputs(invalid):
     if invalid == "sibling":
         base, ctx = (
             StacResolver(),
-            ResolutionContext("x", _item(), base_uri="https://source.test/item.json"),
+            JobResultContext("x", _item(), base_uri="https://source.test/item.json"),
         )
     else:
         base, ctx = (
             ValueResolver(),
-            ResolutionContext("x", None, limits=DiscoveryLimits(max_resources=1)),
+            JobResultContext("x", None, limits=DiscoveryLimits(max_resources=1)),
         )
     result = await ComposedJobResultResolver(base, [Invalid()]).resolve(ctx)
     assert len(result) == (3 if invalid == "sibling" else 1)
@@ -685,7 +685,7 @@ async def test_changed_capabilities_are_invalidated_and_continuation_retained():
             return (resource.with_updates(media_type="text/csv"),)
 
     result = await ComposedJobResultResolver(Base(), [Rewrite()]).resolve(
-        ResolutionContext("x", [])
+        JobResultContext("x", [])
     )
     assert result[0].capabilities.opener.state == "unknown"
     assert result.continuation == "token"
@@ -703,7 +703,7 @@ async def test_folder_limits_missing_config_and_bad_siblings():
             children=(ResourceEntry("deep", "deep.csv"),),
         ),
     )
-    ctx = ResolutionContext(
+    ctx = JobResultContext(
         "x", Link(href="file:///C:/products"), limits=DiscoveryLimits(max_depth=1)
     )
     folder = FolderResourceTransformer(entries, matches=lambda r, c: True)
@@ -716,18 +716,16 @@ async def test_folder_limits_missing_config_and_bad_siblings():
     assert result.diagnostics[0].code == "folder-configuration"
     no_base = FolderResourceTransformer([], matches=lambda r, c: True)
     result = await ComposedJobResultResolver(ValueResolver(), [no_base]).resolve(
-        ResolutionContext("x", None)
+        JobResultContext("x", None)
     )
     assert result.diagnostics[0].code == "folder-base"
     original = (await ValueResolver().resolve(ctx))[0]
     limited = await folder.transform(
-        original, ResolutionContext("x", None, limits=DiscoveryLimits(max_resources=1))
+        original, JobResultContext("x", None, limits=DiscoveryLimits(max_resources=1))
     )
     assert limited[0].diagnostics[0].code == "resource-limit"
     relative = (
-        await ValueResolver().resolve(
-            ResolutionContext("x", Link(href="relative/base"))
-        )
+        await ValueResolver().resolve(JobResultContext("x", Link(href="relative/base")))
     )[0]
     invalid = await folder.transform(relative, ctx)
     assert invalid[0].diagnostics[0].code == "ambiguous-base"
@@ -742,7 +740,7 @@ async def test_probe_decline_malformed_link_and_unrecognized_collection():
     fetch = AsyncMock(
         return_value=MetadataResponse(b'{"ordinary": true}', "https://source.test/meta")
     )
-    ctx = ResolutionContext(
+    ctx = JobResultContext(
         "x",
         Link(href="https://source.test/meta", type="application/json"),
         loader=MetadataLoader(fetch),
@@ -750,7 +748,7 @@ async def test_probe_decline_malformed_link_and_unrecognized_collection():
     assert (await resolve_job_result(ctx, StacResolver))[0].kind == "link"
     assert fetch.await_count == 1
     malformed = {"href": "somewhere", "title": {"invalid": True}}
-    assert (await resolve_job_result(ResolutionContext("x", malformed)))[
+    assert (await resolve_job_result(JobResultContext("x", malformed)))[
         0
     ].kind == "value"
     partial = {
@@ -761,10 +759,10 @@ async def test_probe_decline_malformed_link_and_unrecognized_collection():
         "links": [],
         "extent": {},
     }
-    assert not await StacResolver().accept(ResolutionContext("x", partial))
+    assert not await StacResolver().accept(JobResultContext("x", partial))
     schema = {"allOf": [{"type": "object", "properties": {"a": {"type": "string"}}}]}
     assert not await StacResolver().accept(
-        ResolutionContext(
+        JobResultContext(
             "x",
             None,
             output_description=OutputDescription(schema=schema),
@@ -775,7 +773,7 @@ async def test_probe_decline_malformed_link_and_unrecognized_collection():
 
 @pytest.mark.asyncio
 async def test_exact_resource_limit_and_depth_limit():
-    ctx = ResolutionContext(
+    ctx = JobResultContext(
         "x",
         _item(),
         base_uri="https://source.test/item.json",
@@ -784,7 +782,7 @@ async def test_exact_resource_limit_and_depth_limit():
     assert (await StacResolver().resolve(ctx)).discovery_state == "complete"
     collection = {"type": "FeatureCollection", "features": [_item()], "links": []}
     result = await StacResolver().resolve(
-        ResolutionContext("x", collection, limits=DiscoveryLimits(max_depth=1))
+        JobResultContext("x", collection, limits=DiscoveryLimits(max_depth=1))
     )
     assert len(result) == 2
     assert (
@@ -792,7 +790,7 @@ async def test_exact_resource_limit_and_depth_limit():
         and result.diagnostics[0].code == "depth-limit"
     )
     limited = await StacResolver().resolve(
-        ResolutionContext("x", _item(), limits=DiscoveryLimits(max_resources=1))
+        JobResultContext("x", _item(), limits=DiscoveryLimits(max_resources=1))
     )
     assert limited.diagnostics[0].code == "resource-limit"
 
@@ -829,7 +827,7 @@ async def test_repeated_local_schema_refs_and_schema_breadth():
         schema={"$defs": {"item": reference}, "anyOf": [local, local]}
     )
     # Definitive schema evidence accepts before fetching even for a binary type.
-    ctx = ResolutionContext(
+    ctx = JobResultContext(
         "x",
         Link(href="https://source.test/result", type="application/octet-stream"),
         output_description=description,
@@ -839,7 +837,7 @@ async def test_repeated_local_schema_refs_and_schema_breadth():
         schema={"oneOf": [reference, {"type": "string"}, {"type": "integer"}]}
     )
     assert not await StacResolver().accept(
-        ResolutionContext(
+        JobResultContext(
             "x", None, output_description=broad, limits=DiscoveryLimits(max_resources=1)
         )
     )
@@ -853,7 +851,7 @@ async def test_malformed_asset_locations_and_collection_assets_preserve_siblings
         {"rel": "self", "href": "https://[bad/item"},
         {"rel": "parent", "href": "https://unused.test/"},
     ]
-    listing = await resolve_job_result(ResolutionContext("x", item), StacResolver)
+    listing = await resolve_job_result(JobResultContext("x", item), StacResolver)
     assert listing[0].kind == "stac-item"
     assert listing.select(key="bad").discovery_state == "error"
     assert listing.select(key="data").diagnostics[0].code == "missing-base"
@@ -867,7 +865,7 @@ async def test_malformed_asset_locations_and_collection_assets_preserve_siblings
         "license": "proprietary",
         "assets": [],
     }
-    listing = await resolve_job_result(ResolutionContext("x", collection), StacResolver)
+    listing = await resolve_job_result(JobResultContext("x", collection), StacResolver)
     assert listing[0].kind == "stac-collection"
     assert listing.discovery_state == "partial"
     assert listing.diagnostics[0].code == "invalid-assets"
@@ -876,10 +874,10 @@ async def test_malformed_asset_locations_and_collection_assets_preserve_siblings
 @pytest.mark.asyncio
 async def test_root_asset_identity_contains_item_ancestry():
     first = await StacResolver().resolve(
-        ResolutionContext("x", _item("a"), base_uri="https://source.test/meta")
+        JobResultContext("x", _item("a"), base_uri="https://source.test/meta")
     )
     second = await StacResolver().resolve(
-        ResolutionContext("x", _item("b"), base_uri="https://source.test/meta")
+        JobResultContext("x", _item("b"), base_uri="https://source.test/meta")
     )
     assert first.select(key="data").id != second.select(key="data").id
 
@@ -907,7 +905,7 @@ async def test_custom_resolver_can_split_non_stac_values_and_reuse_loader():
 
     source = {"tables": {"a": [1, 2], "b": None}}
     listing = await resolve_job_result(
-        ResolutionContext("x", source), Tables, StacResolver
+        JobResultContext("x", source), Tables, StacResolver
     )
     assert len(listing) == 2
     assert listing.select(key="b").has_value and listing.select(key="b").value is None
@@ -924,7 +922,7 @@ async def test_custom_resolver_can_split_non_stac_values_and_reuse_loader():
         )
     )
     loader = MetadataLoader(fetch)
-    ctx = ResolutionContext(
+    ctx = JobResultContext(
         "x",
         Link(href="https://source.test/item.json", type="application/json"),
         loader=loader,

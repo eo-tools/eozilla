@@ -2,21 +2,30 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-"""Developer contexts and shared, bounded metadata loading for discovery."""
+"""Fetch and parse JSON descriptions so resolvers can discover linked resources.
+
+``MetadataFetcher`` reads bytes into a ``MetadataResponse``; ``MetadataLoader``
+parses those bytes into a ``MetadataDocument`` and shares its cache and
+``DiscoveryLimits`` across resolver calls. This keeps transport-specific details
+out of resolvers and bounds discovery without reading the described data files.
+"""
 
 import asyncio
 import json
 import math
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Protocol
-
-from gavicore.models import OutputDescription, ProcessDescription
 
 
 @dataclass(frozen=True)
 class DiscoveryLimits:
-    """Initial discovery limits, shared by a resolver and its transformations."""
+    """Bound the work needed to turn one output into resource descriptions.
+
+    A shared set of limits prevents delegated resolvers and transformers from
+    each starting a fresh budget. The loader enforces request, byte, and time
+    limits; resolvers and transformers enforce expansion limits.
+    """
 
     max_requests: int = 16
     """Maximum metadata fetch attempts within one loader operation."""
@@ -49,7 +58,13 @@ class DiscoveryLimits:
 
 @dataclass(frozen=True)
 class MetadataResponse:
-    """A bounded response supplied by a runtime metadata fetch adapter."""
+    """Metadata bytes and their source information returned by a fetcher.
+
+    This is the handoff from transport-specific fetching to JSON parsing in
+    ``MetadataLoader``. The effective URL preserves the base for relative links
+    after redirects; the media type preserves the server's format description.
+    The fetcher must bound its read before constructing this response.
+    """
 
     content: bytes
     """JSON metadata bytes; the fetcher must stop at the requested size limit."""
@@ -60,18 +75,34 @@ class MetadataResponse:
 
 
 class MetadataFetcher(Protocol):
-    """Runtime metadata I/O; implementations own sessions and scoped authentication."""
+    """Supply metadata reads to the loader using the application's transport.
+
+    This callable contract lets discovery use an existing HTTP session, local
+    files, or a test fetcher without embedding those choices in resolvers.
+    Implementations own sessions and authentication scoped to the metadata URL;
+    they must enforce the supplied byte and time limits while reading.
+    """
 
     async def __call__(
         self, href: str, *, max_bytes: int, timeout: float
     ) -> MetadataResponse:
-        """Read at most ``max_bytes`` of metadata, never an Asset payload."""
+        """Read metadata within ``max_bytes`` and ``timeout`` for JSON discovery.
+
+        Return the effective URL so the loader can retain the document's base.
+        This operation fetches a description, never an Asset's data payload.
+        """
         ...
 
 
 @dataclass(frozen=True)
 class MetadataDocument:
-    """Parsed metadata returned as an independent snapshot from the loader."""
+    """Parsed JSON and its reference base, ready for a resolver to inspect.
+
+    Unlike ``MetadataResponse``, this contains a Python value rather than bytes.
+    The loader returns an independent copy so a resolver cannot change cached
+    metadata seen by another resolver; ``base_uri`` travels with the value so
+    relative Asset and navigation links keep their meaning.
+    """
 
     value: Any
     """Parsed JSON value; changing it does not change the cached document."""
@@ -82,7 +113,12 @@ class MetadataDocument:
 
 
 class DiscoveryError(Exception):
-    """A discovery failure with a non-secret, portable explanation."""
+    """Carry a discovery failure that can become a resource diagnostic.
+
+    The code and non-secret message let callers report failures without copying
+    transport exception text, which may contain credentials. ``partial`` marks
+    a limit that stopped discovery while leaving an incomplete view usable.
+    """
 
     code: str
     """Machine-readable failure identifier."""
@@ -99,11 +135,14 @@ class DiscoveryError(Exception):
 
 
 class MetadataLoader:
-    """Share cached metadata and fetch budgets across resolver delegation.
+    """Load JSON descriptions once for cooperating resolvers and transformers.
 
-    Fetch adapters receive explicit size/time limits and must bound their reads.
-    The loader also checks the returned size, parses JSON once, caches successes
-    and failures, and propagates cancellation. No Asset access service is used.
+    Acceptance and resolution can inspect the same linked document without
+    fetching it twice or each consuming a separate request budget. The supplied
+    fetcher handles transport; this loader checks response size, parses JSON,
+    caches successes and failures, and returns independent document copies.
+    It also enforces timeouts and propagates cancellation. Asset credentials
+    and data reading belong to opening, outside this loader.
     """
 
     limits: DiscoveryLimits
@@ -118,11 +157,20 @@ class MetadataLoader:
 
     @property
     def request_count(self) -> int:
-        """Number of metadata fetch attempts, excluding cache hits."""
+        """Count fetch attempts to inspect consumption of the shared request budget.
+
+        Cache hits do not consume requests; failed fetch attempts do.
+        """
         return self._requests
 
     async def load(self, href: str) -> MetadataDocument:
-        """Load bounded JSON metadata once, returning an independent snapshot."""
+        """Return parsed metadata for recognition or resource expansion.
+
+        Reuse cached documents and failures for this URL so acceptance and
+        resolution share the same fetch. Each successful call returns an
+        independent copy. Raise ``DiscoveryError`` for limits, invalid JSON,
+        or fetching failures, leaving reporting to the discovery caller.
+        """
         async with self._lock:
             cached = self._cache.get(href)
             if isinstance(cached, DiscoveryError):
@@ -171,51 +219,13 @@ class MetadataLoader:
                 raise error from exc
 
     def clear(self) -> None:
-        """Discard cached metadata and failures and reset the request budget.
+        """Start fresh discovery by clearing documents, failures, and request usage.
 
         Call between operations for an explicit refresh, never during a load.
         Transformation results are not cached by this loader.
         """
         self._cache.clear()
         self._requests = 0
-
-
-@dataclass(frozen=True)
-class ResolutionContext:
-    """Original output, provenance, and shared discovery services for extensions.
-
-    Every output value is passed here unchanged, including qualified wrappers.
-    Resolvers may inspect but must not mutate source values or process metadata.
-    A composed resolver delegates with this same context and loader. Ordinary
-    client callers will not need to construct developer contexts.
-    """
-
-    output_name: str
-    """Original process output identifier; retained by all derived resources."""
-    value: Any
-    """Original Link, qualified value, or arbitrary inline output value."""
-    job_id: str | None = None
-    """Producing job identity, when supplied by the client."""
-    service_url: str | None = None
-    """Producing service identity; never an authorization to forward credentials."""
-    base_uri: str | None = None
-    """Containing result document URI for relative output references."""
-    output_description: OutputDescription | None = None
-    """Original output/schema description, used for detection and provenance."""
-    process_description: ProcessDescription | None = None
-    """Producing process description, available for process-scoped acceptance."""
-    loader: MetadataLoader | None = None
-    """Shared bounded metadata loader; absent for purely inline discovery."""
-    limits: DiscoveryLimits = field(default_factory=DiscoveryLimits)
-    """Discovery limits; a supplied loader's limits take precedence."""
-    stac_hint: bool = False
-    """Explicit STAC candidate hint permitting a bounded metadata probe."""
-
-    def __post_init__(self) -> None:
-        if not self.output_name:
-            raise ValueError("An output name is required")
-        if self.loader is not None:
-            object.__setattr__(self, "limits", self.loader.limits)
 
 
 def _invalid_constant(value: str) -> None:

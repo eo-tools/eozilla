@@ -10,13 +10,14 @@ from urllib.parse import quote, urlsplit
 
 from gavicore.models import Link, QualifiedValue
 
+from ...context import JobResultContext
+from ...metadata import DiscoveryError
 from ...resources import (
     JobResultResource,
     JobResultResourceListing,
     ResourceDiagnostic,
     make_resource_id,
 )
-from ..context import DiscoveryError, ResolutionContext
 from ..location import resolve_location
 from ..resolver import (
     JobResultResolver,
@@ -32,6 +33,8 @@ from ..resolver import (
 class StacResolver(JobResultResolver):
     """Recognize STAC structure without full validation or optional dependencies.
 
+    This makes Assets inside a STAC output individually selectable and openable
+    while preserving their containing documents for inspection and provenance.
     Initial discovery enumerates embedded Items and concrete Assets. Collection
     and Catalog navigation remains unresolved and never triggers a crawl.
     References use the shared loader and containing document URI. Unknown
@@ -39,8 +42,13 @@ class StacResolver(JobResultResolver):
     this initial view; this class does not fetch advertised next pages.
     """
 
-    async def accept(self, ctx: ResolutionContext) -> bool:
-        """Use schema/inline evidence before a bounded JSON metadata probe."""
+    async def accept(self, ctx: JobResultContext) -> bool:
+        """Decide whether the output has enough STAC evidence for this resolver.
+
+        Prefer schema and inline structure; probe a linked JSON document through
+        the shared loader only when its format or an explicit hint warrants it.
+        """
+        ctx.require_output()
         schema, strong = _schema_evidence(ctx)
         if strong:
             return True
@@ -59,8 +67,13 @@ class StacResolver(JobResultResolver):
         value, _ = await _document(ctx)
         return _kind(value, explicit=schema or ctx.stac_hint) is not None
 
-    async def resolve(self, ctx: ResolutionContext) -> JobResultResourceListing:
-        """Describe loaded STAC containers and Assets, preserving malformed siblings."""
+    async def resolve(self, ctx: JobResultContext) -> JobResultResourceListing:
+        """Expose loaded STAC containers and Assets for selection and inspection.
+
+        Enumerate embedded Items and Assets within discovery limits, preserving
+        successful siblings and reporting malformed or deferred content.
+        """
+        ctx.require_output()
         value, base = await _document(ctx)
         schema, _ = _schema_evidence(ctx)
         kind = _kind(value, explicit=schema or ctx.stac_hint)
@@ -247,7 +260,7 @@ def _payload(value: Any) -> Any:
     return json_value(value)
 
 
-async def _document(ctx: ResolutionContext) -> tuple[Any, str | None]:
+async def _document(ctx: JobResultContext) -> tuple[Any, str | None]:
     link = output_link(ctx.value)
     if link is not None:
         if ctx.loader is None:
@@ -313,7 +326,7 @@ def _kind(value: Any, *, explicit: bool = False) -> str | None:
     return None
 
 
-def _schema_evidence(ctx: ResolutionContext) -> tuple[bool, bool]:
+def _schema_evidence(ctx: JobResultContext) -> tuple[bool, bool]:
     schema = (
         json_value(ctx.output_description.schema_) if ctx.output_description else None
     )
@@ -394,7 +407,7 @@ def _text(value: Any, key: str) -> str | None:
 
 
 def _asset(
-    ctx: ResolutionContext,
+    ctx: JobResultContext,
     owner: JobResultResource,
     key: str,
     asset: Any,

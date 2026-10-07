@@ -63,7 +63,12 @@ _SNAPSHOT_CONFIG = ConfigDict(
 
 
 class ResourceDiagnostic(BaseModel):
-    """A portable explanation of detection, validation, access, or traversal."""
+    """Explain a discovery or assessment condition alongside usable resources.
+
+    Listings and resources carry these diagnostics so partial results retain
+    their failure explanations. Messages and details must be non-secret because
+    the description can be displayed or serialized outside the client.
+    """
 
     model_config = _SNAPSHOT_CONFIG
 
@@ -81,7 +86,11 @@ class ResourceDiagnostic(BaseModel):
 
 
 class ResourceAction(BaseModel):
-    """An opener or preview candidate identified within its execution runtime."""
+    """Identify an available opener or preview action for display and selection.
+
+    Capability assessments store an action's identity and title rather than a
+    reader instance, keeping the assessment portable across client boundaries.
+    """
 
     model_config = _SNAPSHOT_CONFIG
 
@@ -98,6 +107,8 @@ class ResourceAction(BaseModel):
 class ResourceCapability(BaseModel):
     """An assessment snapshot, scoped to a runtime and non-secret settings.
 
+    This lets a caller see which actions could handle a resource before reading
+    its data. It records candidate availability in the assessing environment.
     Available means that a candidate exists, without verifying payload access.
     An unknown assessment can describe pending or failed assessment through
     ``reason``. Scope may record the requested return type and configuration
@@ -133,7 +144,11 @@ class ResourceCapability(BaseModel):
 
 
 class ResourceCapabilities(BaseModel):
-    """Independent opener and preview availability for one resource."""
+    """Keep data-opening and preview availability separate for one resource.
+
+    A resource can support a preview without a Python data reader, or vice
+    versa. Each assessment therefore has its own state, candidates, and scope.
+    """
 
     model_config = _SNAPSHOT_CONFIG
 
@@ -145,7 +160,11 @@ class ResourceCapabilities(BaseModel):
 
 
 class OutputDiscoveryState(BaseModel):
-    """Discovery state for an output, including outputs without resource rows."""
+    """Preserve discovery progress even when an output produces no resource rows.
+
+    A listing uses this per-output record to distinguish an empty successful
+    result from unresolved, limited, or failed discovery.
+    """
 
     model_config = _SNAPSHOT_CONFIG
 
@@ -159,6 +178,8 @@ class OutputDiscoveryState(BaseModel):
 def make_resource_id(output_name: str, *ancestry: str) -> str:
     """Encode stable output/ancestry identities, never effective access URLs.
 
+    Stable IDs let callers select the same resource after a signed URL is renewed
+    or its configured location changes.
     The versioned selector is opaque to callers and unique within a job view.
     Resolvers supply all relevant owners, including Collection identity and
     configured entry identity. Encoding components separately prevents path
@@ -175,6 +196,9 @@ def make_resource_id(output_name: str, *ancestry: str) -> str:
 class JobResultResource(BaseModel):
     """One selectable job result, with portable ownership and access metadata.
 
+    This is the handoff from discovery to opening: a resolver describes a value,
+    file, or container, and a caller passes the chosen description to an opener.
+    The caller can also inspect or serialize it without retaining a live client.
     Fields and nested JSON metadata are read-only snapshots. JSON arrays become
     tuples in Python and serialize back to arrays. ``has_value`` distinguishes
     an omitted value from a present null; serialization preserves that distinction.
@@ -259,12 +283,19 @@ class JobResultResource(BaseModel):
 
     @property
     def has_value(self) -> bool:
-        """Whether a selected value is present, including an explicit null."""
+        """Distinguish a selected null value from a resource with no inline value.
+
+        This preserves the meaning of original outputs during opening and JSON
+        serialization.
+        """
         return "value" in self.model_fields_set
 
     @property
     def display_title(self) -> str:
-        """Title with the local key, then opaque ID, as fallbacks."""
+        """Provide a display label even when the producer supplied no title.
+
+        Fall back to the local key, then the opaque resource ID.
+        """
         return self.title or self.key or self.id
 
     def with_updates(self, **changes: Any) -> "JobResultResource":
@@ -309,16 +340,26 @@ class JobResultResource(BaseModel):
 
 
 class ResourceNotFoundError(LookupError):
-    """No currently loaded resource matches the supplied selection criteria."""
+    """Report that local selection found no matching loaded resource.
+
+    Callers can change their criteria or explicitly request further discovery;
+    selection itself never fetches additional resources.
+    """
 
 
 class AmbiguousResourceError(ValueError):
-    """Several currently loaded resources match the supplied criteria."""
+    """Require a more precise selection when several loaded resources match.
+
+    This prevents an arbitrary row from being opened when a key is repeated
+    across outputs or Items. Select by opaque ID or include ownership criteria.
+    """
 
 
 class JobResultResourceListing(BaseModel):
     """A portable snapshot of loaded resources, discovery states, and diagnostics.
 
+    This gives callers a view to inspect and select from before opening data,
+    while retaining progress and failures that individual rows cannot express.
     Selection, positional access, iteration, length, and rendering are local:
     they never fetch metadata, follow continuations, or assess capabilities.
     ``continuation`` is an opaque token for a separate client request. Its scope
@@ -391,6 +432,8 @@ class JobResultResourceListing(BaseModel):
     def select(self, **criteria: str | None) -> JobResultResource:
         """Select exactly one loaded row by ID, output name, Item ID, or key.
 
+        Use this to choose the resource to pass to ``open_job_result()`` without
+        fetching metadata or reading data.
         Raises ``ResourceNotFoundError`` or ``AmbiguousResourceError``. A match
         does not claim uniqueness across unloaded pages; use an opaque ID for
         an exact selection. Unsupported criteria raise ``TypeError``.

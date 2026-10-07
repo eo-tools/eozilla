@@ -12,6 +12,8 @@ from .resolver import JobResultResolver, assert_resolver_type_valid
 class JobResultResolverRegistry:
     """A registry of resolver classes, with later registrations taking priority.
 
+    This selects the interpretations dispatch considers, letting application
+    resolvers precede built-in STAC recognition and the generic value fallback.
     Registries contain classes, not instances, loaders, or transformation state.
     Client configuration maintains an independent registry per concrete class.
     """

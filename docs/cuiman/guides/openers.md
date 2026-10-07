@@ -67,17 +67,23 @@ job's output does not submit a new job. Always close datasets after use.
 A custom opener decides whether it can handle the requested output, then opens
 it. This example specializes in local Zarr links and converts file URIs to
 native paths, including on Windows. It also handles escaped spaces in paths,
-which the built-in reader's current file-URI handling may not resolve. Use
-paths without spaces for the built-in example, or this custom opener:
+as do the built-in path readers:
 
 ```python
 --8<-- "examples/guides/cuiman/openers.py:custom"
 ```
 
-`ctx.output_link` resolves the requested output name; it can be `None`.
+`resource.link` is the selected output or Asset's link; it can be `None`.
 The acceptance check also respects the requested data type and media type.
 The example imports xarray directly because it is required by this guide;
 reusable plugins can implement `is_usable()` to detect optional dependencies.
+
+The client's resource overload, `client.open_job_result(resource)`, uses the same
+opener methods and opens exactly the supplied resource without polling or
+repeating discovery. `context` supplies this client's requested type, media type
+override, and reader settings. Call `context.reader_options(resource)` only when
+reading; acceptance must not acquire storage credentials. Original job/output
+information remains in `resource.provenance`.
 
 Register the opener temporarily and use the same completed job:
 

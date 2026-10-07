@@ -13,13 +13,16 @@ from remotestate import ServeResult
 from typer.testing import CliRunner
 
 from cuiman import Client, ClientConfig
-from cuiman.api.opener import JobResultOpenContext, JobResultOpenerRegistry
+from cuiman.api import JobResultContext
+from cuiman.api.opener import JobResultOpenerRegistry
 from cuiman.app import App
 from cuiman.cli import cli
 from examples.guides.cuiman import api, app, openers
 from gavicore.models import JobInfo, JobResults, Link, ProcessRequest
 from procodile import Job
 from wraptile.services.local.testing import service
+
+from .api.opener.helpers import make_case
 
 REQUEST_PATH = (
     Path(__file__).resolve().parents[2]
@@ -216,7 +219,7 @@ def scene_context(tmp_path, request):
     job = Job.create(service.process_registry.get("simulate_scene"), scene_request)
     results = job.run()
     assert job.job_info.status == api.JobStatus.successful
-    return JobResultOpenContext(
+    return make_case(
         config=ClientConfig(auth={"auth_type": "none"}),
         job_id=job.job_info.jobID,
         job_results=results,
@@ -229,8 +232,8 @@ def scene_context(tmp_path, request):
 @pytest.mark.parametrize("scene_context", ["scene with spaces.zarr"], indirect=True)
 async def test_custom_opener_reads_actual_local_scene(scene_context):
     opener = openers.LocalZarrOpener()
-    assert await opener.accept_job_result(scene_context)
-    dataset = await opener.open_job_result(scene_context)
+    assert await opener.accept(scene_context.resource, context=scene_context.context)
+    dataset = await opener.open(scene_context.resource, context=scene_context.context)
     try:
         assert dict(dataset.sizes) == {"time": 2, "lat": 4, "lon": 4}
         assert set(dataset.data_vars) == {"a", "b"}
@@ -279,7 +282,7 @@ async def test_custom_opener_reads_actual_local_scene(scene_context):
 async def test_custom_opener_rejects_incompatible_output(
     value, output_name, data_type, media_type
 ):
-    ctx = JobResultOpenContext(
+    ctx = make_case(
         config=ClientConfig(auth={"auth_type": "none"}),
         job_id="existing-job",
         job_results=JobResults(root={"return_value": value}),
@@ -287,7 +290,7 @@ async def test_custom_opener_rejects_incompatible_output(
         data_type=data_type,
         _media_type=media_type,
     )
-    assert not await openers.LocalZarrOpener().accept_job_result(ctx)
+    assert not await openers.LocalZarrOpener().accept(ctx.resource, context=ctx.context)
 
 
 @pytest.mark.parametrize("custom", [False, True])

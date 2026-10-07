@@ -12,7 +12,9 @@ from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
 
-from cuiman.api.opener import JobResultOpenContext, JobResultOpener
+from cuiman.api import JobResultContext
+from cuiman.api.opener import JobResultOpener
+from cuiman.api.resources import JobResultResource
 from cuiman.api.transport import AsyncTransport, Transport, TransportArgs
 
 
@@ -92,8 +94,12 @@ class MockTransport(AsyncTransport, Transport):  # pragma: no cover
 class AllOpener(JobResultOpener):
     """An opener that can open everything."""
 
-    async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
+    async def accept(
+        self, resource: JobResultResource, *, context: JobResultContext
+    ) -> bool:
         return True
 
-    async def open_job_result(self, ctx: JobResultOpenContext) -> Any:
-        return ctx.job_results
+    async def open(
+        self, resource: JobResultResource, *, context: JobResultContext
+    ) -> Any:
+        return resource

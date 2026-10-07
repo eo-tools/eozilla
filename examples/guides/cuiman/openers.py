@@ -12,7 +12,9 @@ from urllib.request import url2pathname
 import xarray as xr
 
 from cuiman import Client
-from cuiman.api.opener import JobResultOpenContext, JobResultOpener
+from cuiman.api import JobResultContext
+from cuiman.api.opener import JobResultOpener
+from cuiman.api.resources import JobResultResource
 from gavicore.models import ProcessRequest
 
 # --8<-- [end:imports]
@@ -52,24 +54,28 @@ def open_scene(client: Client, job_id: str) -> xr.Dataset:
 class LocalZarrOpener(JobResultOpener):
     """Open local Zarr links as datasets, converting file URIs to native paths."""
 
-    async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
+    async def accept(
+        self, resource: JobResultResource, *, context: JobResultContext
+    ) -> bool:
         """Accept the selected output only if it is a local Zarr dataset."""
-        link = ctx.output_link
-        if link is None or ctx.data_type not in (None, xr.Dataset):
+        link = resource.link
+        if link is None or context.data_type not in (None, xr.Dataset):
             return False
         url = urlsplit(link.href)
         return (
-            ctx.output_media_type == "application/zarr"
+            context.media_type_for(resource) == "application/zarr"
             and url.scheme == "file"
             and url.netloc in ("", "localhost")
         )
 
-    async def open_job_result(self, ctx: JobResultOpenContext) -> xr.Dataset:
+    async def open(
+        self, resource: JobResultResource, *, context: JobResultContext
+    ) -> xr.Dataset:
         """Pass the native filesystem path and reader options to xarray."""
-        link = ctx.output_link
+        link = resource.link
         assert link is not None
         path = url2pathname(urlsplit(link.href).path)
-        return xr.open_zarr(path, **ctx.options)
+        return xr.open_zarr(path, **await context.reader_options(resource))
 
 
 # --8<-- [end:custom]

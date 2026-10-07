@@ -7,12 +7,14 @@ from typing import Any
 
 from PIL import Image
 
-from cuiman.api.opener import JobResultOpenContext
-
+from ...context import JobResultContext
+from ...resources import JobResultResource
 from .base import PathOpener
 
 
 class ImageOpenerImpl(PathOpener):
+    """Pillow image adapter with optional S3 storage support."""
+
     def accept_data_type(self, data_type: type) -> bool:
         return data_type is Image.Image
 
@@ -22,10 +24,13 @@ class ImageOpenerImpl(PathOpener):
     def accept_filename_ext(self, filename_ext: str) -> bool:
         return filename_ext.lower() in Image.registered_extensions()
 
-    async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
-        if not await super().accept_job_result(ctx):
+    async def accept(
+        self, resource: JobResultResource, *, context: JobResultContext
+    ) -> bool:
+        """Check image metadata and required storage dependencies without reading."""
+        if not await super().accept(resource, context=context):
             return False
-        path_like = self.get_path_like(ctx)
+        path_like = self.get_path_like(resource)
         if path_like and path_like.startswith("s3://") and find_spec("s3fs") is None:
             return False
         return True
@@ -35,14 +40,20 @@ class ImageOpenerImpl(PathOpener):
         path_like: str,
         filename_ext: str,
         media_type: str | None,
-        ctx: JobResultOpenContext,
+        resource: JobResultResource,
+        context: JobResultContext,
     ) -> Any:
+        """Read an image, acquiring S3 access only for a selected S3 target."""
+        options = dict(context.options)
+        options.pop("storage_options", None)
         if path_like.startswith("s3://"):
             import s3fs  # type: ignore[import-not-found]
 
-            storage_options = ctx.options.get("storage_options", {})
+            storage_options = (await context.reader_options(resource)).get(
+                "storage_options", {}
+            )
             fs = s3fs.S3FileSystem(**storage_options)
             with fs.open(path_like, "rb") as f:
                 # .copy() forces load before the file handle closes (PIL is lazy)
-                return Image.open(f).copy()
-        return Image.open(path_like)
+                return Image.open(f, **options).copy()
+        return Image.open(path_like, **options)

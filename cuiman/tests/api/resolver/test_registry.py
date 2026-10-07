@@ -4,12 +4,9 @@
 
 import pytest
 
+from cuiman.api import JobResultContext
 from cuiman.api.config import ClientConfig
-from cuiman.api.resolver import (
-    JobResultResolverRegistry,
-    ResolutionContext,
-    resolve_job_result,
-)
+from cuiman.api.resolver import JobResultResolverRegistry, resolve_job_result
 from cuiman.api.resolver.impl import StacResolver, ValueResolver
 
 
@@ -104,11 +101,11 @@ async def test_default_registry_dispatches_stac_before_value():
         "assets": {},
     }
     listing = await resolve_job_result(
-        ResolutionContext("x", item), *registry.resolver_types
+        JobResultContext("x", item), *registry.resolver_types
     )
     assert listing[0].kind == "stac-item"
     listing = await resolve_job_result(
-        ResolutionContext("x", {"ordinary": True}), *registry.resolver_types
+        JobResultContext("x", {"ordinary": True}), *registry.resolver_types
     )
     assert listing[0].kind == "value"
     assert listing[0].value == {"ordinary": True}

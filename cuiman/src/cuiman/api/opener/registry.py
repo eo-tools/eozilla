@@ -7,17 +7,26 @@ from typing import Callable, TypeAlias
 from .opener import JobResultOpener, assert_opener_type_valid
 
 JobResultOpenerType: TypeAlias = type[JobResultOpener]
+"""An opener class registered for fresh instances during resource dispatch."""
 
 
 class JobResultOpenerRegistry:
-    """A simple registry for job result openers."""
+    """Choose which reader classes dispatch tries and in what order.
+
+    Later registrations take priority, allowing application readers to precede
+    built-ins. The registry stores classes rather than live readers or operation
+    state, and client configuration keeps a registry per concrete config class.
+    """
 
     def __init__(self):
         self._opener_types: list[JobResultOpenerType] = []
 
     @classmethod
     def create_default(cls) -> "JobResultOpenerRegistry":
-        """Create a registry that includes default job result openers."""
+        """Supply built-in image, dataset, and table readers for client defaults.
+
+        Optional dependencies are checked when dispatch considers each reader.
+        """
         from .impl import (
             GeopandasDataFrameOpener,
             ImageOpener,
@@ -35,17 +44,20 @@ class JobResultOpenerRegistry:
 
     @property
     def opener_types(self) -> tuple[JobResultOpenerType, ...]:
-        """The tuple of registered job result openers."""
+        """Return a snapshot of reader classes in the order dispatch tries them."""
         return tuple(self._opener_types)
 
     def register(self, opener_type: JobResultOpenerType) -> Callable[[], None]:
-        """Register a job result opener.
+        """Give an application reader priority over previously registered readers.
+
+        Registering an existing class moves it to the front without duplication.
 
         Args:
             opener_type: The type of the opener to be registered.
 
         Returns:
-            A function that can be called to unregister the opener.
+            An idempotent function that unregisters the opener, useful for
+            temporary registrations and test cleanup.
         """
         assert_opener_type_valid(opener_type)
 
@@ -64,7 +76,5 @@ class JobResultOpenerRegistry:
         return unregister
 
     def clear(self) -> None:
-        """Clears the registry.
-        Removes registered all job result openers.
-        """
+        """Remove all reader classes to build a configuration from an empty registry."""
         self._opener_types = []
