@@ -54,6 +54,7 @@ The design questions and proposed answers are:
 | How can Cuiman recognize STAC from other services? | Prefer process output schemas, then use media type hints and bounded structural inspection. |
 | Which STAC hierarchy levels should services return? | Prefer Item or ItemCollection; support Collection and Catalog with explicit traversal limits. |
 | Where should resource-specific opening and storage settings live? | Carry optional resource hints and access descriptions; apply caller overrides and obtain credentials at runtime. |
+| How can developers reuse an existing resolver for project-specific outputs? | Compose the existing resolver with a resource transformer and register the composed resolver through the normal discovery extension mechanism. |
 
 The design must retain ordinary links, inline values, and qualified values. It
 must work without project-specific output names, URL patterns, or service IDs.
@@ -105,6 +106,19 @@ or without links or descendants. Neither `Link` normalization nor STAC recogniti
 is a prerequisite for dispatch. Use the same discovery, selection, capability,
 and opening interfaces for these resources. R2 and R3 are STAC-specific
 convenience views over this general model, not restrictions on it.
+
+**R6 — Resolver reuse through resource transformation:** developers implementing
+discovery extensions must be able to reuse an existing resolver, such as the
+STAC resolver, and extend its results with a resource transformer. The composed
+resolver enriches, rewrites, or expands the base resolver's resources. In particular,
+a STAC Asset may point to a folder in a filesystem, while external configuration
+for its producing process describes a subtree using relative paths and other
+Asset information. Combine that description with the folder location to produce
+resources with absolute access locations and explicit ancestry. The configuration
+format and its acquisition are outside this proposal; the developer's resolver
+supplies that project-specific knowledge to its transformer. Transformers apply to
+any resource kind, not only STAC Assets, and callers use the same list/select/open
+workflow for their results.
 
 Scope is discovery, selection, and integration with opening. Implementing a full
 STAC browser, changing the processing service protocol, adding data readers, and
@@ -278,7 +292,8 @@ remain distinct because selection includes their owning Item and output.
 flowchart TD
     A["OGC result document"] --> B["JobResults: output names to values"]
     B --> C["client.list_job_result_resources"]
-    C --> D["Resource listing: inspect and select"]
+    C --> T["Selected resolver: base resolution and optional transformation"]
+    T --> D["Resource listing: inspect and select"]
     D --> E["client.open_job_result(resource): use selected resource"]
     B --> F["client.open_job_result(job_id): select and normalize output"]
     E --> G["Common dispatch: opener receives one resource"]
@@ -314,7 +329,7 @@ constructor signature:
 | `media_type` | Effective representation type; retain media type parameters and record inference/overrides. |
 | `title`, `description`, `roles` | Display and selection metadata; roles are a list, not a single classification. |
 | `metadata` | JSON-compatible source metadata, including STAC IDs, version, extensions, and ownership information. |
-| `provenance` | Source job/service identity and original output context; distinct from the selected resource's value and format. |
+| `provenance` | Source job/service identity, original output context, and derivation/transform information; distinct from the selected resource's value and format. |
 | `open_hints` | Optional JSON-compatible hints scoped to registered opener identifiers; suggest candidates and defaults without forcing opener selection. |
 | `access` | Optional non-secret storage characteristics and authentication requirements, interpreted by runtime access/provider adapters. |
 | `capabilities` | Runtime assessment of opener and preview availability, candidate identifiers/display names, and reasons. |
@@ -351,6 +366,12 @@ view. Collections and Catalogs remain visible as containers requiring explicit
 member traversal; concrete Collection-level Assets are also listed. An empty
 Item remains inspectable even when the default view has no Asset rows.
 
+Configured transformations can add derived resources and containers to these
+views, including a folder subtree described in section 5.3. Preserve their
+ancestry without requiring recursive public objects. A STAC Item's immediate
+Asset view retains the original folder Asset; its derived descendants are
+available in the default resource view and through explicit parent views.
+
 `select(**criteria)` searches the currently loaded rows and returns exactly one
 match, or raises a no-match or ambiguity error. Criteria include `id`,
 `output_name`, `item_id`, and `key`. It performs no network requests and does not
@@ -378,8 +399,10 @@ Resolvers are discovery adapters behind the client. Built-in STAC discovery
 requires no caller registration or construction of a STAC-specific resolver.
 An extension author supplies an adapter through client configuration; registry
 objects, document-loading contexts, and internal page bookkeeping are not part
-of the ordinary user workflow. This specification does not prescribe extra
-public resolver/context/page classes.
+of the ordinary user workflow. Developers need supported contracts for reusing
+existing resolvers and transforming their results, as described in section 5.3.
+This specification leaves concrete developer-facing class names and signatures
+open; ordinary callers do not need public resolver/context/page objects.
 
 Internally, adapters receive the original value, including qualified wrappers,
 output/schema provenance, base URI, and access to bounded metadata loading.
@@ -425,6 +448,125 @@ deterministic precedence, and application overrides; do not mutate global
 defaults when importing an application-specific client. The extension-author
 contracts and configuration spelling remain to be finalized independently of
 the small listing/opening interface.
+
+### 5.3 Developer composition of resolvers and resource transformers
+
+The primary users of resource transformers are developers implementing the
+discovery extensions in section 5.2. Provide a supported way to compose an
+existing resolver with a transformer: the base resolver interprets the source
+representation, then the transformer applies project-specific knowledge to its
+resolved resources. Developers should be able to reuse STAC recognition, parsing,
+bounded loading, and traversal without copying or replacing that implementation.
+Composition may use a wrapper/decorator or a supported extension hook; inheritance
+must not be the only means of reuse.
+
+The developer registers the composed resolver as one discovery extension through
+the existing client configuration mechanism. That resolver owns its transformer
+or ordered transformer chain and obtains any external per-process configuration.
+The client selects and invokes it using the same precedence and contract as other
+resolvers. Ordinary callers continue to list, select, and open resources without
+registering a separate client-wide transformation pipeline.
+
+Conceptually, a project resolver can delegate as follows; these method names and
+the context shape illustrate the developer contract, not final public signatures:
+
+```python
+class ProjectResultResolver:
+    async def accept(self, ctx):
+        return matches_project_process(ctx) and await self.base.accept(ctx)
+
+    async def resolve(self, ctx):
+        resolved = await self.base.resolve(ctx)
+        return await self.transformer.transform(resolved, ctx)
+```
+
+The project-specific acceptance check scopes the extension to its relevant
+service/process. Base acceptance and resolution share the client's cached
+documents, sessions, budgets, and cancellation; delegation must not introduce
+duplicate fetches or a separate discovery operation. Acceptance does not run
+transformation or construct the subtree. Transformation runs inside the selected
+resolver after base resolution and before client view filtering, final selector
+assignment, and capability assessment. Explicit expansion and continuation must
+retain that composed resolver's policy and apply its transformations to the
+corresponding newly resolved resources.
+
+A transformer receives resolved resources and the provenance/discovery context
+needed for its work. The composing resolver provides the relevant external
+configuration, whether through the transformer instance or its invocation.
+The configuration format, loading mechanism, public class names, and hook
+signatures remain implementation decisions. Project rules remain scoped to the
+composed resolver rather than becoming global assumptions about STAC, output
+names, or folder layouts.
+
+A transformer may leave resources unchanged, enrich or rewrite their descriptions,
+or expand one resource into several related resources. When the developer composes
+several transformers, later transformers receive the preceding stage's results.
+Transformations produce derived descriptions without mutating the original
+`JobResults`, source STAC documents, or existing
+listing snapshots. Preserve source locations, configuration identity/revision
+when available, and transformation provenance separately from effective access
+locations. Configured Asset metadata supplies each derived resource's own key,
+title, roles, format, and optional opening/access hints; a folder's media type
+must not become the format of all its descendants.
+
+#### Example: a STAC Asset representing a folder
+
+Suppose an Item has a `products` Asset whose resolved location is
+`file:///C:/results/job-123/products/`. External configuration for that process
+describes a subtree containing `rasters/ndvi.tif` and `reports/summary.csv`, with
+the corresponding titles, roles, and media types. A transformer produces:
+
+```text
+Item ndvi-2026-09-01
+  products  -> file:///C:/results/job-123/products/  [original folder Asset]
+    rasters -> file:///C:/results/job-123/products/rasters/
+      ndvi  -> file:///C:/results/job-123/products/rasters/ndvi.tif
+    reports -> file:///C:/results/job-123/products/reports/
+      summary -> file:///C:/results/job-123/products/reports/summary.csv
+```
+
+This illustrates the resulting resource ancestry, not a configuration schema or
+new STAC document. Directory nodes are resource containers; derived data resources
+are selectable/openable using `client.open_job_result(resource)`. Retain the
+original folder Asset as their ancestor and provenance. Derived descendants do
+not become additional Assets in the source STAC Item or new top-level job outputs.
+
+The folder location is the base for these configured relative paths. It differs
+from the containing STAC document's base used to resolve the folder Asset's own
+relative `href`. Apply location-aware joining for filesystem paths, file URIs,
+and supported storage schemes; do not concatenate strings or assume that a folder
+base without a trailing separator denotes a file. Folder interpretation comes
+from explicit configuration or metadata, not a guessed filename suffix. Preserve
+the original relative paths and their declared bases. Absolute entries retain
+their explicitly supplied locations; they do not acquire folder credentials
+automatically. Missing or ambiguous bases produce diagnostics instead of guessed
+paths.
+
+Construct the declared subtree from configuration without crawling the filesystem,
+listing object-store keys, testing file existence, or reading payloads. Its
+discovery completeness describes the configured view, not an exhaustive inventory
+or verified accessibility of the directory. Any future filesystem enumeration
+requires an explicit, bounded discovery action. Declared descendants may appear
+in the default view without explicit traversal because their metadata
+is already supplied; this does not authorize fetching deferred STAC containers.
+
+Transformers share discovery limits and cancellation and must not recursively
+reapply themselves to their own output without an explicit bounded policy.
+Derive selectors from stable source ancestry and configured entry identity so
+refresh does not duplicate descendants or invalidate selectors when only the
+folder's effective location changes. Transformation/configuration failures retain
+the source resource and successful siblings with diagnostics and appropriate
+partial/error states. Unextended base resolvers retain their ordinary behavior;
+the composed resolver defines diagnostics/fallback for missing project
+configuration. A changed access location or format requires fresh
+capability assessment; cached transformed results must account for configuration
+revision as well as source metadata and access context.
+
+The resolver-owned transformation chain belongs to discovery. Opening an already
+selected resource does not repeat it; necessary access/location renewal must preserve that
+selection and its derived path. The job-ID form of `open_job_result()` still opens
+the selected original output and must not implicitly select one of a folder's
+derived descendants.
 
 ## 6. STAC detection and traversal
 
@@ -930,6 +1072,8 @@ presentation/export contract. Do not promise every Python opener in every GUI.
   base, including redirects and appropriate self-link context for embedded
   Items. Report an unresolved base instead of guessing. Preserve signed query
   parameters exactly; do not use signed URLs as resource identity.
+  Configured folder descendants instead use the explicitly declared folder base,
+  with scheme-aware joining and derivation provenance as described in section 5.3.
 - **Authentication:** processing API, STAC host, and Asset store may have different
   credentials. Reuse configured sessions only within their authorized scope;
   do not forward processing tokens to arbitrary linked hosts or redirects.
@@ -1051,6 +1195,31 @@ These are future verification scenarios; this document introduces no code change
     Typing overloads describe these rules for both client variants. A resource
     opens with the receiving client's configuration/access services without
     requiring a private client association or mutating its portable description.
+25. **R6:** a developer registers a project resolver composed from the existing
+    STAC resolver and a transformer, without copying the STAC implementation or
+    separately registering transformers with the client. Base delegation shares
+    cached documents and discovery limits. A folder Asset and external
+    configuration for its producing process yield a subtree with absolute
+    locations, individual Asset metadata,
+    stable selectors, and preserved output/Item/folder ancestry. A relative folder
+    `href` resolves against the STAC document before configured child paths resolve
+    against the resulting folder base, including a base without a trailing slash.
+    No filesystem scan, existence check, Asset credential acquisition, or payload
+    read is required to list the declared subtree.
+26. Resolver-owned transformers can enrich, rewrite, or expand non-STAC and
+    linkless resources as well. Process acceptance keeps unrelated outputs on
+    their ordinary resolver paths. Missing project configuration is diagnostic;
+    failures preserve source resources and successful siblings. Refresh creates
+    no duplicate descendants, changed configuration invalidates derived caches,
+    and capability assessment uses transformed locations and formats.
+    Acceptance does not transform resources; initial resolution, explicit
+    expansion, and continuation use the selected composed resolver's policy.
+27. Derived resources use the same Python, CLI, and GUI list/select/open contracts.
+    Source STAC and `JobResults` values remain unchanged; Item Asset views retain
+    their original Assets. Opening a selected descendant does not rerun transforms
+    or select a sibling, and direct job-output opening does not silently choose a
+    derived child. Configuration completeness is distinct from directory inventory
+    completeness and access success.
 
 ## 11. Open design questions
 
@@ -1061,6 +1230,12 @@ These are future verification scenarios; this document introduces no code change
   discovery/opening adapters, including multiple-match diagnostics and whether
   detection deserves a richer result than `bool`. Registry and internal page
   classes need not become public user concepts.
+- Finalize the developer-facing resolver composition and transformer contracts,
+  including wrapper/hook support, resolver-owned ordering, process-scoped
+  configuration lookup, derived-entry identity, and location renewal for folder
+  descendants. The external configuration schema and its loading mechanism are
+  outside this proposal; reuse of an existing resolver with a transformer is
+  required.
 - Finalize the `open_hints` and `access` schemas, stable opener identifiers,
   supported option mappings, clearing inherited settings, and runtime access
   provider hooks. Choose initial STAC extension adapters and their supported
