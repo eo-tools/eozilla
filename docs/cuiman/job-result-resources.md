@@ -20,11 +20,11 @@ The public workflow is **list → inspect/select → open**:
 resources = client.list_job_result_resources(job_id, output_name="dataset")
 resources  # displays a table in JupyterLab
 resource = resources.select(item_id="ndvi-2026-09-01", key="data")
-dataset = client.open_resource(resource, chunks="auto")
+dataset = client.open_job_result(resource, chunks="auto")
 ```
 
-Keep `client.open_job_result(job_id, output_name=...)` as the convenience for
-opening a job output directly. Both opening methods dispatch through one
+Use the same `client.open_job_result()` method to open either a job output by ID
+or an explicitly selected resource. Both argument forms dispatch through one
 resource-based opener contract. Replace the old opener implementations and
 context contract; backward compatibility for custom openers is not required in
 this 0.x redesign. Ordinary callers need only a resource listing and a resource,
@@ -50,7 +50,7 @@ The design questions and proposed answers are:
 | How should output names and values be structured? | Preserve the `JobResults` mapping; list derived resources with output ownership and ancestry. |
 | Which output values can produce resources? | Every output value is eligible for resolver acceptance and may yield one or more resources, regardless of its representation or STAC semantics. |
 | How can Python API, CLI, and GUI reuse this functionality? | Share the resource contract and discovery policy; keep rendering and runtime-specific opening separate. |
-| How do users discover and open data? | The client lists resources; both opening entry points pass one selected resource to the same opener implementation. |
+| How do users discover and open data? | The client lists resources; `open_job_result()` accepts either a job ID or a resource and passes one selected resource to the same opener implementation. |
 | How can Cuiman recognize STAC from other services? | Prefer process output schemas, then use media type hints and bounded structural inspection. |
 | Which STAC hierarchy levels should services return? | Prefer Item or ItemCollection; support Collection and Catalog with explicit traversal limits. |
 | Where should resource-specific opening and storage settings live? | Carry optional resource hints and access descriptions; apply caller overrides and obtain credentials at runtime. |
@@ -279,8 +279,8 @@ flowchart TD
     A["OGC result document"] --> B["JobResults: output names to values"]
     B --> C["client.list_job_result_resources"]
     C --> D["Resource listing: inspect and select"]
-    D --> E["client.open_resource(resource)"]
-    B --> F["client.open_job_result: select and normalize output"]
+    D --> E["client.open_job_result(resource): use selected resource"]
+    B --> F["client.open_job_result(job_id): select and normalize output"]
     E --> G["Common dispatch: opener receives one resource"]
     F --> G
 ```
@@ -511,33 +511,59 @@ Bounded expansion must return `partial` plus the reason when limits are reached.
 A successfully resolved empty ItemCollection is `complete` with zero members;
 an inaccessible Collection is not an empty dataset.
 
-## 7. Two opening entry points, one opener contract
+## 7. One opening entry point, one opener contract
 
 The selected resource supplies its own value or resolved URL, media type,
 optional opener hints, and access description. Runtime access adapters supply
 scoped credentials where needed. The original output remains available as
 provenance; for a STAC Asset this includes its source container.
 
-Expose two client entry points:
+Expose one overloaded client method whose first argument is either a string job
+ID or a `JobResultResource`:
 
 ```python
 client.open_job_result(job_id, output_name="dataset", data_type=None, **options)
-client.open_resource(resource, data_type=None, **options)
+client.open_job_result(resource, data_type=None, **options)
 ```
 
-`open_job_result()` keeps the convenient job/output selection and existing
-polling behavior. It normalizes the selected original output into one resource
-and uses common opener dispatch. A plain link or inline value does not require
+With a string job ID, `open_job_result()` keeps the convenient job/output
+selection and existing polling behavior. It normalizes the selected original
+output into one resource and uses common opener dispatch. A plain link or inline value does not require
 STAC discovery first. Opening a STAC output this way means opening the selected
 output itself, subject to an accepting opener; it does not implicitly select a
 descendant Asset. Ambiguous output selection must produce a clear error rather
 than choosing the first output.
 
-`open_resource()` receives an explicitly selected resource, including a linkless
-value. It does not rediscover the output, select a different resource, or poll
-the job. Access adapters may refresh an expired location while preserving the
-resource identity. Both methods support the requested return type, media type
-override, and caller options, and dispatch to the same opener implementation.
+With a `JobResultResource`, `open_job_result()` opens exactly that resource,
+including a linkless value. It does not rediscover the output, select a different
+resource, or poll the job. Access adapters may refresh an expired location while
+preserving the resource identity. Both forms support the requested return type,
+media type override, and caller options, and dispatch to the same opener
+implementation.
+
+Define the argument rules explicitly:
+
+- Keep the existing first parameter name `job_id`, broadening its accepted type
+  to `str | JobResultResource`, so existing calls such as
+  `client.open_job_result(job_id="123")` continue to work. Provide typing overloads
+  for the job-ID and resource forms, backed by one implementation.
+- Strings always identify jobs, including strings that resemble resource IDs or
+  URLs. Resolve a resource selector through a listing before passing the resulting
+  `JobResultResource`; do not infer its meaning from string content.
+- `output_name`, `poll_interval`, and `timeout` are job-ID-only arguments. Exclude
+  them from the resource overload. Explicitly supplying any of them with a
+  resource raises `TypeError`, even if its value matches a default; do not ignore
+  them or forward them as reader options. Preserve existing job-ID call syntax,
+  including positional arguments and keyword names.
+- Other unsupported first-argument types raise `TypeError`; a raw output value
+  must first be described as a resource through the discovery interface.
+- The receiving client supplies opener configuration and scoped runtime access
+  services. Opening a resource requires no hidden association with its original
+  client. Resource provenance must not silently redirect dispatch to another
+  client's session or authorize credentials for a different service or store.
+
+The same argument rules apply to `Client` and `AsyncClient`. The resource form
+does not require a job lookup merely because job identity appears in provenance.
 
 Replace the old opener contract with a resource-based contract. Conceptually:
 
@@ -724,7 +750,7 @@ resources = client.list_job_result_resources(job_id, output_name="dataset")
 resources  # renders a table in JupyterLab
 
 resource = resources.select(item_id="ndvi-2026-09-01", key="data")
-dataset = client.open_resource(resource, chunks="auto")
+dataset = client.open_job_result(resource, chunks="auto")
 ```
 
 The listing supports iteration and positional access after inspection:
@@ -734,7 +760,7 @@ for resource in resources:
     print(resource.title, resource.media_type, resource.capabilities)
 
 # For a listing whose first row the user has explicitly chosen:
-dataset = client.open_resource(resources[0])
+dataset = client.open_job_result(resources[0])
 
 # Direct opening remains available without listing resources first:
 dataset = client.open_job_result(job_id, output_name="dataset")
@@ -743,8 +769,8 @@ dataset = client.open_job_result(job_id, output_name="dataset")
 These are alternative opening workflows: the direct call targets the original
 output, while the selected-resource call targets that exact resource. A proposed
 `resource.open()` convenience, if added, must delegate to the associated client's
-`open_resource()` rather than introduce another opener contract. It is not
-required for the initial interface. Any private client association is excluded
+`open_job_result(resource)` rather than introduce another opener contract. It is
+not required for the initial interface. Any private client association is excluded
 from serialization; portable descriptions never contain sessions or credentials.
 
 Raw outputs and STAC-specific inspection remain available without introducing
@@ -794,7 +820,7 @@ The method also supports traversal limits, a requested return type for capabilit
 assessment, and refresh. It works for non-STAC and linkless resources. Initial
 listing requires successful job results and reports a clear status error for
 unfinished/failed jobs; it does not implicitly wait. For `AsyncClient`, await
-`list_job_result_resources()`, `open_job_result()`, and `open_resource()`.
+`list_job_result_resources()` and either argument form of `open_job_result()`.
 Selection, iteration, and rendering remain local synchronous operations on the
 returned snapshots.
 
@@ -935,10 +961,11 @@ These are future verification scenarios; this document introduces no code change
    different Items. Empty, mixed, paginated, and limit-truncated cases are explicit.
 4. Collection/Catalog listing does not fetch member documents until requested;
    bounded explicit expansion terminates even with cycles or repeated pages.
-5. Both `open_job_result()` and `open_resource()` pass one resource to the same
-   opener contract. The former normalizes the selected original output; the
-   latter opens exactly the supplied resource. Choosing an Asset supplies its
-   own value/media type with original job/output context retained as provenance.
+5. Both argument forms of `open_job_result()` pass one resource to the same
+   opener contract. The job-ID form normalizes the selected original output;
+   the resource form opens exactly the supplied resource. Choosing an Asset
+   supplies its own value/media type with original job/output context retained
+   as provenance.
    Neither route silently selects the first Asset, and an Asset never inherits
    its container's media type or schema. Rewritten openers need no legacy context
    or separate job-output opening method.
@@ -980,7 +1007,7 @@ These are future verification scenarios; this document introduces no code change
     without a Link/STAC prerequisite. A non-STAC inline object containing two
     tables produces two selectable sibling resources from one accepting resolver.
     Both retain their output ownership and open their selected values through
-    `open_resource()` with no fabricated URL or STAC container.
+    `open_job_result(resource)` with no fabricated URL or STAC container.
 16. Unhandled scalar, null, array, and object values produce one generic value
     resource each. A present null value remains distinct from an absent value.
     Single-resource, multiple-resource, empty-complete, partial, and failed
@@ -1013,9 +1040,17 @@ These are future verification scenarios; this document introduces no code change
     container traversal. Failed or empty outputs remain visible in output states
     alongside successful siblings.
 23. Synchronous and asynchronous clients share discovery and opening behavior.
-    Initial listing reports unfinished jobs without polling; `open_job_result()`
-    retains polling; `open_resource()` opens the selected resource without
-    polling or repeating discovery, except for any necessary location renewal.
+    Initial listing reports unfinished jobs without polling; the job-ID form of
+    `open_job_result()` retains polling; the resource form opens the selected
+    resource without polling or repeating discovery, except for any necessary
+    location renewal.
+24. `open_job_result(job_id="123")` and existing positional job-ID calls retain
+    their syntax. Strings always select jobs; other unsupported target types
+    raise `TypeError`. Explicit `output_name`, `poll_interval`, or `timeout`
+    arguments with a resource raise `TypeError` before dispatch or network access.
+    Typing overloads describe these rules for both client variants. A resource
+    opens with the receiving client's configuration/access services without
+    requiring a private client association or mutating its portable description.
 
 ## 11. Open design questions
 
@@ -1049,12 +1084,13 @@ These are future verification scenarios; this document introduces no code change
   action. Implicit first-Asset selection is excluded.
 - Finalize capability refresh controls, discovery-state aggregation on mixed
   output failures, and serialization spelling. Decide whether a client-associated
-  `resource.open()` convenience adds value beyond `client.open_resource()` and
-  define its session lifetime if provided. Choose initial preview renderers and
+  `resource.open()` convenience adds value beyond
+  `client.open_job_result(resource)` and define its session lifetime if provided.
+  Choose initial preview renderers and
   whether CLI previews launch a browser or another application. R1–R3 remain
   required independently of optional previews.
 
 The core decision is independent of these details: preserve the OGC output
 mapping, expose a simple resource listing with ownership and bounded discovery,
-and pass one resource to an opener. Two client opening entry points share that
-single opener contract, without preserving the old implementation underneath.
+and pass one resource to an opener. One overloaded client opening method shares
+that single opener contract, without preserving the old implementation underneath.
