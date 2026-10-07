@@ -116,6 +116,79 @@ scope and expiry will be enforced by the discovery implementation.
 
 ::: cuiman.api.JobResultResourceListing
 
+### Discovery extensions and resource transformers
+
+The developer discovery contracts are available from `cuiman.api.resolver`.
+`JobResultResolver` receives every original output value through
+`ResolutionContext`; it selects one semantic interpretation before Link or STAC
+normalization. Concrete built-ins are available from `cuiman.api.resolver.impl`,
+mirroring `cuiman.api.opener.impl`. `StacResolver` recognizes core STAC structure
+without PySTAC or full schema validation. It describes embedded Items and concrete Assets, retaining
+Collection/Catalog metadata and navigation without crawling descendants.
+`ValueResolver` preserves an otherwise unhandled value or Link as one resource.
+
+`JobResultResolverRegistry` manages resolver classes in precedence order, matching
+the opener registry. Its default is STAC discovery followed by the generic value
+resolver. `register()` validates and promotes a class without duplicates and
+returns an idempotent unregister callback; `clear()` removes registered classes.
+`ClientConfig.get_job_result_resolver_registry()` caches an independent registry
+for each concrete configuration class. Ordinary callers continue to configure
+extensions through their client configuration.
+
+`MetadataLoader` shares bounded JSON fetches, parsed documents, failures, and the
+request budget across acceptance and resolution. A runtime `MetadataFetcher`
+supplies transport and scoped authentication; it must bound reads using the
+requested byte and time limits. Resolved relative references use the containing
+document's effective URI, including redirects. Cache snapshots are independent;
+`clear()` between operations provides an explicit refresh. Default limits are
+16 requests, 2 MiB per response, 100 embedded Items, 1000 resources, depth 8,
+and 10 seconds per metadata fetch. Applications can supply `DiscoveryLimits`.
+
+`ComposedJobResultResolver` delegates to a base resolver using the same context
+and then applies its ordered `ResourceTransformer` chain. Each transformer
+returns replacements for one source resource; later stages receive the preceding
+stage's results. Failure retains that source and successful siblings with
+diagnostics. Changed descriptions discard prior capability assessments.
+`FolderResourceTransformer` derives an explicitly declared subtree from
+`ResourceEntry` objects without scanning storage or testing accessibility.
+These objects adapt developer-supplied configuration; they do not prescribe an
+external configuration format. See [Customization](customization.md#discovery-extensions)
+for composition and registration.
+
+This implementation step supplies an unfiltered flat discovery view, including
+inspectable containers. Client listing/traversal, continuation routing, view
+filtering, and final capability assessment are still being implemented. Item and
+resource limits or advertised next pages produce explicit partial diagnostics;
+the foundation does not yet issue client continuation tokens.
+
+::: cuiman.api.resolver.JobResultResolver
+
+::: cuiman.api.resolver.JobResultResolverRegistry
+
+::: cuiman.api.resolver.ResolutionContext
+
+::: cuiman.api.resolver.DiscoveryLimits
+
+::: cuiman.api.resolver.MetadataLoader
+
+::: cuiman.api.resolver.MetadataFetcher
+
+::: cuiman.api.resolver.MetadataResponse
+
+::: cuiman.api.resolver.MetadataDocument
+
+::: cuiman.api.resolver.impl.StacResolver
+
+::: cuiman.api.resolver.impl.ValueResolver
+
+::: cuiman.api.resolver.ComposedJobResultResolver
+
+::: cuiman.api.resolver.ResourceTransformer
+
+::: cuiman.api.resolver.FolderResourceTransformer
+
+::: cuiman.api.resolver.ResourceEntry
+
 ## App API
 
 ::: cuiman.app.App

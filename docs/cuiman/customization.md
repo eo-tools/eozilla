@@ -125,6 +125,96 @@ built-ins. For later changes, use `MyConfig.register_job_result_opener(...)` and
 its returned unregister callback. These runtime registrations affect only that
 class and are not inherited by subclasses.
 
+## Discovery extensions
+
+Discovery extensions are independent of opener extensions. Declare classes in
+`ClientConfig.extra_job_result_resolvers` or register one later using
+`MyConfig.register_job_result_resolver(...)`. Later declarations/registrations
+take priority over built-in STAC and value discovery. Declarations are captured
+as tuples and inherited; runtime registrations are isolated per configuration
+class and return an idempotent unregister callback. Resolver classes need a
+no-argument constructor. These declarations are excluded from saved settings.
+
+As with openers, `MyConfig.get_job_result_resolver_registry()` returns a registry
+cached per concrete configuration class. Its `resolver_types` property is an
+ordered tuple snapshot. Developers can construct an empty
+`JobResultResolverRegistry` or call `create_default()` to test discovery ordering
+independently of client configuration. The registry manages classes; metadata
+loaders, budgets, and transformer instances belong to discovery operations.
+
+A project resolver can reuse STAC discovery and own its folder transformation:
+
+```python
+from cuiman.api import ClientConfig
+from cuiman.api.resolver import (
+    ComposedJobResultResolver,
+    FolderResourceTransformer,
+    ResourceEntry,
+)
+from cuiman.api.resolver.impl import StacResolver
+
+
+class ProjectResultResolver(ComposedJobResultResolver):
+    def __init__(self):
+        # The project supplies configuration; discovery never scans this folder.
+        folder = FolderResourceTransformer(
+            entries=(
+                ResourceEntry(
+                    key="reports",
+                    location="reports",
+                    kind="container",
+                    children=(
+                        ResourceEntry(
+                            key="summary",
+                            location="summary.csv",
+                            title="Processing summary",
+                            media_type="text/csv",
+                            roles=("data",),
+                        ),
+                    ),
+                ),
+            ),
+            matches=lambda resource, ctx: resource.key == "products",
+            config_id="project-products",
+            config_revision="1",
+        )
+        super().__init__(
+            StacResolver(),
+            (folder,),
+            accepts=lambda ctx: (
+                ctx.process_description is not None
+                and ctx.process_description.id == "project-process"
+            ),
+        )
+
+
+class ProjectConfig(ClientConfig):
+    extra_job_result_resolvers = (ProjectResultResolver,)
+```
+
+The base resolver and its transformer share the client's metadata loader and
+limits. Acceptance checks project scope and STAC evidence without constructing
+the declared subtree. Transformations run after base resolution, preserve
+original source descriptions, and attach configuration identity/revision and
+relative-path provenance. The folder remains the descendants' ancestor.
+Each entry supplies its own format, reader hints, and non-secret access
+description; these are not inherited from the folder. Locations support
+filesystem paths, file URIs, and hierarchical storage URIs. Relative entries
+use the declared folder base even without its trailing separator; absolute
+entries retain their supplied locations. Missing configuration or ambiguous
+bases produce diagnostics and retain successful siblings.
+
+Selectors use source ancestry and entry keys rather than effective URLs.
+Folder location renewal therefore preserves descendant selection. Transformations
+are recomputed on each resolution, so refreshed configuration does not reuse a
+cached subtree. Completeness describes the configured view, not a verified or
+exhaustive directory inventory. Transformation chains are owned by their resolver;
+ordinary callers do not configure a separate client-wide pipeline.
+
+These developer contracts are available now. Client listing/traversal and the
+resource overload of `open_job_result()` are being integrated in subsequent
+steps; the existing client methods do not yet invoke discovery extensions.
+
 ## CLI customisation
 
 In a module `src/anolis_client/cli.py`:

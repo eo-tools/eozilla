@@ -41,6 +41,7 @@ from .auth.config import has_credentials
 from .auth.secret_store import load_auth_secrets, save_auth_secrets
 from .defaults import DEFAULT_API_URL
 from .opener import JobResultOpener, JobResultOpenerRegistry
+from .resolver import JobResultResolver, JobResultResolverRegistry
 
 
 class ClientConfig(BaseSettings):
@@ -101,6 +102,15 @@ class ClientConfig(BaseSettings):
     This class attribute is excluded from configuration settings and persistence.
     """
 
+    extra_job_result_resolvers: ClassVar[Iterable[type[JobResultResolver]]] = ()
+    """Application discovery extensions, captured as a tuple at class creation.
+
+    Later entries take precedence over earlier entries and built-in STAC/value
+    discovery. Each configuration class has independent runtime registrations;
+    extensions must have a no-argument constructor. This developer declaration
+    is excluded from settings and persistence.
+    """
+
     api_url: Annotated[Optional[str], Field(title="Process API URL")] = DEFAULT_API_URL
     """
     The URL of the server that provides a web API compliant with
@@ -142,6 +152,7 @@ class ClientConfig(BaseSettings):
         if "return_type_map" not in cls.__dict__:
             cls.return_type_map = dict(cls.return_type_map)
         cls.extra_job_result_openers = tuple(cls.extra_job_result_openers)
+        cls.extra_job_result_resolvers = tuple(cls.extra_job_result_resolvers)
 
     def _repr_json_(self):
         return self.to_file_dict(), dict(root="Client configuration:")
@@ -498,6 +509,32 @@ class ClientConfig(BaseSettings):
         registry = JobResultOpenerRegistry.create_default()
         for opener_type in cls.extra_job_result_openers:
             registry.register(opener_type)
+        return registry
+
+    @classmethod
+    def register_job_result_resolver(
+        cls, resolver_type: type[JobResultResolver]
+    ) -> Callable[[], None]:
+        """Register a discovery extension with highest priority for this class.
+
+        Return an idempotent unregister function. Registration does not leak to
+        parent, sibling, or child configuration classes. Prefer declarations
+        for extensions that should be inherited by application subclasses.
+        """
+        return cls.get_job_result_resolver_registry().register(resolver_type)
+
+    @classmethod
+    @cache
+    def get_job_result_resolver_registry(cls) -> JobResultResolverRegistry:
+        """Get this class's registry of discovery extensions.
+
+        Each class starts with the built-ins and its ``extra_job_result_resolvers``.
+        The registry contains resolver classes, not instances or operation state.
+        Later registrations take priority and affect only this concrete class.
+        """
+        registry = JobResultResolverRegistry.create_default()
+        for resolver_type in cls.extra_job_result_resolvers:
+            registry.register(resolver_type)
         return registry
 
 
