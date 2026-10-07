@@ -33,9 +33,11 @@ from .defaults import (
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
 )
 from .exceptions import ClientError, ClientWarning
+from .listing import _validate_listing_arguments, list_job_result_resources
+from .metadata import DiscoveryLimits
 from .opener import JobResultStatusError
 from .opener.opener import open_job_result
-from .resources import JobResultResource
+from .resources import JobResultResource, JobResultResourceListing
 from .transport import Transport
 
 # -----------------------------------------------------
@@ -54,11 +56,13 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
     def _init_client_runtime(self) -> None:
         super()._init_client_runtime()
         self._runtime_lock = threading.RLock()
+        self._job_result_lock = threading.RLock()
 
     def close(self) -> None:
         """Close owned connections. A closed client cannot be used again."""
         with self._runtime_lock:
             self._closed = True
+            self._job_result_metadata_cache = None
             transport, self._transport = self._transport, None
             try:
                 if transport is not None:
@@ -205,6 +209,78 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
         return ExecutionRequest.from_process_description(
             process_description, dotpath=dotpath
         )
+
+    def list_job_result_resources(
+        self,
+        job_id: str,
+        *,
+        output_name: str | None = None,
+        parent_id: str | None = None,
+        kind: str | None = None,
+        data_type: type | None = None,
+        limits: DiscoveryLimits | None = None,
+        refresh: bool = False,
+    ) -> JobResultResourceListing:
+        """Discover selectable targets and reader availability for a completed job.
+
+        The default view shows STAC Assets, ordinary outputs, declared descendants,
+        and deferred Catalog/Collection containers. Select ``kind`` for another
+        view or ``parent_id`` for immediate loaded members; neither selection nor
+        rendering reads Asset data. Explicit remote traversal and continuation
+        are not yet implemented. This synchronous method runs the same discovery
+        and assessment pipeline as ``AsyncClient``.
+
+        Args:
+            job_id: Producing job identifier, never a resource URL.
+            output_name: Original output to resolve; omit to include every output.
+            parent_id: Exact loaded resource selector for an immediate-member view.
+            kind: Semantic kind to filter, such as ``stac-item`` or ``asset``.
+            data_type: Desired Python return type for opener candidate assessment.
+            limits: Request, response, time, and expansion bounds.
+            refresh: Discard cached metadata and failures before this listing.
+
+        Returns:
+            A portable snapshot with loaded rows, output states, and diagnostics.
+            Each row includes opener availability; previews remain unassessed.
+
+        Raises:
+            JobResultStatusError: The job is unfinished, failed, or dismissed;
+                listing checks once and does not wait for completion.
+            ResourceNotFoundError: The output or loaded parent selector is absent.
+            ClientError: Processing API retrieval failed.
+            TypeError: Listing arguments are invalid.
+        """
+        _validate_listing_arguments(
+            job_id, output_name, parent_id, kind, data_type, limits, refresh
+        )
+        self._require_open()
+        with self._job_result_lock:
+            job = self.get_job(job_id)
+            if job.status != JobStatus.successful:
+                raise JobResultStatusError(job)
+            results = self.get_job_results(job_id)
+            process = None
+            if job.processID:
+                try:
+                    process = self.get_process(job.processID)
+                except ClientError:
+                    warnings.warn(
+                        "Process description unavailable during resource discovery",
+                        ClientWarning,
+                        stacklevel=2,
+                    )
+            context = self._job_result_context(
+                job_id, limits=limits, data_type=data_type, refresh=refresh
+            )
+            return run_sync(
+                list_job_result_resources,
+                context,
+                results,
+                process,
+                output_name=output_name,
+                parent_id=parent_id,
+                kind=kind,
+            )
 
     @overload
     def open_job_result(

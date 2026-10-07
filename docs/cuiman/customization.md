@@ -292,10 +292,13 @@ cached subtree. Completeness describes the configured view, not a verified or
 exhaustive directory inventory. Transformation chains are owned by their resolver;
 ordinary callers do not configure a separate client-wide pipeline.
 
-These developer contracts and resource opening are available now. Client
-listing/traversal is being integrated in subsequent steps; the existing client
-methods do not yet invoke discovery extensions. A selected transformed descendant
-can already be passed to `open_job_result()` without rerunning its transformer.
+`client.list_job_result_resources()` invokes configured discovery extensions and
+assesses opener candidates after transformation. A selected descendant can then
+be passed to `open_job_result()` without rerunning its transformer. Configure
+`ClientConfig.job_result_metadata_fetcher` for other metadata transports or locally
+scoped authentication; the default uses unauthenticated HTTP(S) and local files,
+without forwarding process API credentials. The hook is excluded from saved
+profiles. Explicit remote traversal and continuation remain pending.
 
 ## CLI customisation
 

@@ -13,14 +13,20 @@ out of resolvers and bounds discovery without reading the described data files.
 import asyncio
 import json
 import math
+import ntpath
 from copy import deepcopy
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Protocol
+from urllib.parse import urlsplit
+from urllib.request import url2pathname
+
+import httpx2
 
 
 @dataclass(frozen=True)
 class DiscoveryLimits:
-    """Bound the work needed to turn one output into resource descriptions.
+    """Bound the work needed to turn job outputs into resource descriptions.
 
     A shared set of limits prevents delegated resolvers and transformers from
     each starting a fresh budget. The loader enforces request, byte, and time
@@ -227,6 +233,79 @@ class MetadataLoader:
         self._cache.clear()
         self._requests = 0
 
+    def for_operation(self) -> "MetadataLoader":
+        """Reuse cached documents in a new operation with fresh request limits.
+
+        Clients use this between listings so each request has its own budget and
+        async lock, including when synchronous calls run on different event loops.
+        Copies isolate cached values and failures from the preceding operation.
+        Retain at most one request budget's most recent entries so repeated
+        listings of changing metadata URLs cannot grow the cache indefinitely.
+        """
+        loader = MetadataLoader(self._fetch, self.limits)
+        loader._cache = {
+            href: DiscoveryError(value.code, value.message, partial=value.partial)
+            if isinstance(value, DiscoveryError)
+            else deepcopy(value)
+            for href, value in list(self._cache.items())[-self.limits.max_requests :]
+        }
+        return loader
+
+
+async def fetch_metadata(
+    href: str, *, max_bytes: int, timeout: float
+) -> MetadataResponse:
+    """Read bounded metadata using unauthenticated HTTP or a local file.
+
+    This is the client's default transport for JSON discovery. HTTP redirects
+    retain their effective URL and reads stop at the byte limit. Processing API
+    credentials and Asset access providers are not used. Applications requiring
+    another transport or scoped authentication configure a ``MetadataFetcher``.
+    """
+    if ntpath.isabs(href) or href.startswith("/"):
+        path = Path(href)
+    else:
+        url = urlsplit(href)
+        if url.scheme in {"http", "https"}:
+            async with httpx2.AsyncClient(follow_redirects=True) as client:
+                async with client.stream("GET", href, timeout=timeout) as response:
+                    response.raise_for_status()
+                    http_content = bytearray()
+                    async for chunk in response.aiter_bytes(
+                        chunk_size=min(max_bytes + 1, 65536)
+                    ):
+                        if len(http_content) + len(chunk) > max_bytes:
+                            raise DiscoveryError(
+                                "byte-limit",
+                                "Metadata response size limit reached",
+                                partial=True,
+                            )
+                        http_content.extend(chunk)
+                    return MetadataResponse(
+                        bytes(http_content),
+                        str(response.url),
+                        response.headers.get("content-type"),
+                    )
+        if url.scheme != "file" or url.netloc not in {"", "localhost"}:
+            raise DiscoveryError(
+                "metadata-scheme", "Metadata location requires a configured fetcher"
+            )
+        path = Path(url2pathname(url.path))
+    content = await asyncio.wait_for(
+        asyncio.to_thread(_read_metadata_file, path, max_bytes), timeout
+    )
+    return MetadataResponse(content, path.resolve().as_uri())
+
 
 def _invalid_constant(value: str) -> None:
     raise ValueError(f"Non-JSON constant: {value}")
+
+
+def _read_metadata_file(path: Path, max_bytes: int) -> bytes:
+    with path.open("rb") as stream:
+        content = stream.read(max_bytes)
+        if stream.read(1):
+            raise DiscoveryError(
+                "byte-limit", "Metadata response size limit reached", partial=True
+            )
+    return content

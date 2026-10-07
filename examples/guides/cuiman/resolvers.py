@@ -89,9 +89,10 @@ async def discover_output(
 ) -> JobResultResourceListing:
     """Adapt one completed output to the implemented developer discovery contract.
 
-    Client listing methods are still pending. This guide helper supplies source
-    facts and dispatches the receiving configuration's resolver classes directly.
-    It does not alter the original results or open any Asset data.
+    This lower-level example illustrates the context/loader handoff for extension
+    authors. Ordinary callers use ``client.list_job_result_resources()`` instead,
+    which also selects a view and assesses opener candidates. This helper retains
+    the unfiltered flat view and does not open any Asset data.
     """
     context = JobResultContext(
         output_name=output_name,
@@ -188,7 +189,9 @@ async def example_session() -> None:
                 client, "simulate_stac_item", root / "inline"
             )
             print(results.model_dump_json(indent=2))
-            resources = await discover_output(client, job_id, results, process)
+            resources = await client.list_job_result_resources(
+                job_id, output_name="result", data_type=pd.DataFrame
+            )
             print(resources)
             # --8<-- [end:inline-call]
 
@@ -203,7 +206,9 @@ async def example_session() -> None:
                 ProductFolderResolver
             )
             try:
-                expanded = await discover_output(client, job_id, results, process)
+                expanded = await client.list_job_result_resources(
+                    job_id, output_name="result", data_type=pd.DataFrame
+                )
             finally:
                 unregister()
             configured = expanded.select(key="observations")
@@ -215,8 +220,14 @@ async def example_session() -> None:
                 client, "simulate_stac_item_collection", root / "linked"
             )
             loader = MetadataLoader(fetch_local_metadata)
-            resources = await discover_output(
+            flat = await discover_output(
                 client, job_id, results, process, loader=loader
+            )
+            resources = await client.list_job_result_resources(
+                job_id, output_name="result", data_type=pd.DataFrame
+            )
+            assert resources.select(item_id="ndvi-2026-09-02", key="data").id == (
+                flat.select(item_id="ndvi-2026-09-02", key="data").id
             )
             print(resources)
             resource = resources.select(item_id="ndvi-2026-09-02", key="data")

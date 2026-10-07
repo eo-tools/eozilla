@@ -8,9 +8,17 @@ from typing import Any
 from urllib.parse import quote
 
 from ...context import JobResultContext
-from ...resources import JobResultResource, JobResultResourceListing, make_resource_id
+from ...metadata import DiscoveryError
+from ...resources import (
+    JobResultResource,
+    JobResultResourceListing,
+    ResourceDiagnostic,
+    make_resource_id,
+)
+from ..location import resolve_location
 from ..resolver import (
     JobResultResolver,
+    discovery_diagnostic,
     json_value,
     output_link,
     output_media_type,
@@ -43,6 +51,16 @@ class ValueResolver(JobResultResolver):
         """
         ctx.require_output()
         link = output_link(ctx.value)
+        diagnostics: tuple[ResourceDiagnostic, ...] = ()
+        if link is not None and ctx.base_uri is not None:
+            try:
+                link = link.model_copy(
+                    update={"href": resolve_location(link.href, ctx.base_uri)}
+                )
+            except (DiscoveryError, ValueError) as exc:
+                diagnostics = (
+                    discovery_diagnostic(exc, "output-location", "Output location"),
+                )
         description = ctx.output_description
         fields: dict[str, Any] = {
             "id": make_resource_id(ctx.output_name),
@@ -54,10 +72,16 @@ class ValueResolver(JobResultResolver):
             or (description.title if description else None),
             "description": description.description if description else None,
             "provenance": output_provenance(ctx),
-            "discovery_state": "complete",
+            "discovery_state": "error" if diagnostics else "complete",
+            "diagnostics": diagnostics,
         }
         if link is not None:
             fields["link"] = link
         else:
             fields["value"] = json_value(ctx.value)
-        return result_listing(ctx, [JobResultResource(**fields)])
+        return result_listing(
+            ctx,
+            [JobResultResource(**fields)],
+            state="error" if diagnostics else "complete",
+            diagnostics=diagnostics,
+        )

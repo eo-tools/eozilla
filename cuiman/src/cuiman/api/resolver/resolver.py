@@ -72,7 +72,12 @@ async def resolve_job_result(
         try:
             resolver = resolver_type()
             if await resolver.accept(ctx):
-                return await resolver.resolve(ctx)
+                listing = await resolver.resolve(ctx)
+                if not isinstance(listing, JobResultResourceListing):
+                    raise TypeError("Resolvers must return a resource listing")
+                if any(r.output_name != ctx.output_name for r in listing):
+                    raise ValueError("Resolution changed output ownership")
+                return listing
         except Exception as exc:
             fallback = await ValueResolver().resolve(ctx)
             diagnostic = discovery_diagnostic(

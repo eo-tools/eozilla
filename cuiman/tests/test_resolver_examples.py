@@ -100,7 +100,7 @@ async def test_session_restores_registration_and_closes_after_discovery_failure(
 ):
     registry = resolver_client.config.get_job_result_resolver_registry()
     original = registry.resolver_types
-    discover = resolvers.discover_output
+    discover = resolver_client.list_job_result_resources
     calls = 0
 
     async def failing_discovery(*args, **kwargs):
@@ -110,7 +110,7 @@ async def test_session_restores_registration_and_closes_after_discovery_failure(
             raise RuntimeError("discovery failed")
         return await discover(*args, **kwargs)
 
-    monkeypatch.setattr(resolvers, "discover_output", failing_discovery)
+    monkeypatch.setattr(resolver_client, "list_job_result_resources", failing_discovery)
     close = AsyncMock(wraps=resolver_client.close)
     monkeypatch.setattr(resolver_client, "close", close)
     with pytest.raises(RuntimeError, match="discovery failed"):

@@ -10,7 +10,11 @@ class JobResultOpenError(Exception):
 
 
 class JobResultStatusError(JobResultOpenError):
-    """Job-output opening stopped because the job failed or was canceled."""
+    """Require a successful job before opening or listing its results.
+
+    Carries the job's status information so callers can distinguish an unfinished
+    execution from a failure or dismissal without retrying result retrieval.
+    """
 
     def __init__(self, job_info: JobInfo):
         message = (

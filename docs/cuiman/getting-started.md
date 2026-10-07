@@ -26,10 +26,11 @@ retrieve its results. The [Python API guide](guides/api.md)
 walks through this workflow.
 
 Use `open_job_result(job_id, output_name=...)` to wait for and open one original
-output. Use `open_job_result(resource)` to read an explicitly selected target
-without polling or repeated discovery. See the [opener guide](guides/openers.md)
-and [resolver guide](guides/resolvers.md). Client-level resource listing is still
-pending; the resolver guide currently uses the implemented developer contracts.
+output. Use `list_job_result_resources(job_id)` to inspect targets in completed
+results, select one with `resources.select(...)`, and pass it to
+`open_job_result(resource)` without polling or repeated discovery. Listing also
+reports reader availability without reading data. See the
+[opener guide](guides/openers.md) and [resolver guide](guides/resolvers.md).
 
 ## Create a Python client
 

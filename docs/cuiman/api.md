@@ -100,8 +100,20 @@ reading; candidate checks acquire no credentials or payloads. See
 
 `JobResultResource` describes a selected job output or a derived resource.
 `JobResultResourceListing` holds loaded resources, discovery states, diagnostics,
-and an optional continuation. Resources can be passed to `open_job_result()` now;
-client discovery is being implemented incrementally according to
+and an optional continuation. `client.list_job_result_resources(job_id)` checks
+for successful completion once, resolves all original outputs, and returns the
+default Asset-oriented view. Ordinary outputs and declared descendants remain
+visible; root Items/ItemCollections are hidden, while deferred Catalog/Collection
+containers remain visible. Use `output_name`, `kind`, or `parent_id` for a scoped
+view, and pass a selected resource to `open_job_result()`.
+
+Both client modes use the same discovery pipeline. `data_type` scopes candidate
+assessment; `limits` supplies `DiscoveryLimits`. Assessment checks every configured
+opener without reading payloads or acquiring storage access. Preview availability
+remains unknown. `refresh=True` discards cached metadata and failures. Each listing
+gets a fresh request budget; transformations and assessments are recomputed.
+The client retains a bounded metadata cache for its most recently listed job.
+Explicit remote traversal and continuation remain pending according to
 [Job Result Resources](job-result-resources.md).
 
 Both models are frozen Pydantic snapshots. Nested JSON objects are read-only
@@ -170,6 +182,8 @@ returning an independent document copy to the resolver. The separate response an
 document keep transport work out of resolvers and retain the reference base
 alongside the parsed value. `DiscoveryLimits` bounds both fetching and resource
 expansion; `DiscoveryError` carries failures that become portable diagnostics.
+Clients default to bounded unauthenticated HTTP(S) and local file reads; configure
+`ClientConfig.job_result_metadata_fetcher` for other transports or scoped access.
 The fetcher owns scoped authentication and must bound reads using the requested
 byte and time limits. Resolved relative references use the containing
 document's effective URI, including redirects. Cache snapshots are independent;
@@ -188,11 +202,12 @@ These objects adapt developer-supplied configuration; they do not prescribe an
 external configuration format. See [Customization](customization.md#discovery-extensions)
 for composition and registration.
 
-This implementation step supplies an unfiltered flat discovery view, including
-inspectable containers. Client listing/traversal, continuation routing, view
-filtering, and final capability assessment are still being implemented. Item and
-resource limits or advertised next pages produce explicit partial diagnostics;
-the foundation does not yet issue client continuation tokens.
+Developer resolver dispatch supplies an unfiltered flat discovery view, including
+inspectable containers. Client listing applies view filters after composition and
+then assesses each visible resource. Item/resource limits and advertised next
+pages produce explicit partial diagnostics. Remote container traversal and client
+continuation tokens remain pending; an immediate-member view reports deferred
+navigation instead of claiming a complete remote member inventory.
 
 ::: cuiman.api.resolver.JobResultResolver
 

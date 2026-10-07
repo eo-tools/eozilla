@@ -41,6 +41,7 @@ from .auth.config import has_credentials
 from .auth.secret_store import load_auth_secrets, save_auth_secrets
 from .context import ResourceAccessProvider
 from .defaults import DEFAULT_API_URL
+from .metadata import MetadataFetcher
 from .opener import JobResultOpener, JobResultOpenerRegistry
 from .resolver import JobResultResolver, JobResultResolverRegistry
 from .resources import JobResultResource
@@ -118,6 +119,15 @@ class ClientConfig(BaseSettings):
 
     Excluded from settings/persistence. Provider implementations enforce target
     scope; process API credentials are never automatically used for storage.
+    """
+
+    job_result_metadata_fetcher: ClassVar[MetadataFetcher | None] = None
+    """Optional transport and locally scoped authentication for metadata discovery.
+
+    The default reads unauthenticated HTTP(S) and local files. Configure this
+    callable to support other schemes or authorized metadata access; it must
+    enforce the supplied size and time limits. It never reads Asset payloads.
+    Excluded from settings and saved profiles, like the Asset access provider.
     """
 
     api_url: Annotated[Optional[str], Field(title="Process API URL")] = DEFAULT_API_URL

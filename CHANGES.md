@@ -9,8 +9,11 @@
 - **Cuiman** adds portable resource/listing models, STAC and value resolvers,
   isolated resolver registries, bounded metadata loading, and resolver-owned
   transformer chains for declared folder contents. Discovery, transformation,
-  and opening share `JobResultContext`. Client-level listing/traversal and
-  CLI/App discovery views are still pending.
+  and opening share `JobResultContext`. Sync/async `list_job_result_resources()`
+  exposes default Asset views, kind filters, immediate loaded members, and opener
+  availability. Metadata uses bounded HTTP/file reads or a configured fetcher;
+  listings reuse cached documents and support explicit refresh. Remote traversal,
+  continuation, and CLI/App discovery views are still pending.
 
 - Custom **Cuiman** openers must implement `accept(resource, *, context)` and
   `open(resource, *, context)`. These replace the old context and opener method

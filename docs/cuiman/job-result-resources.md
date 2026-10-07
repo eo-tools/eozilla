@@ -2,9 +2,10 @@
 
 Status: implementation in progress. Portable resources, resolver/transformer
 contracts, bounded metadata loading, a shared `JobResultContext`, and both
-`open_job_result()` argument forms are implemented. Client-level listing,
-traversal/continuation, final capability assessment, and CLI/App discovery views
-remain pending. See the [opener guide](guides/openers.md) and
+`open_job_result()` argument forms are implemented. Sync/async client listing
+supports default, kind, and immediate loaded-member views, shared metadata budgets,
+refresh, and final opener assessment. Explicit remote traversal/continuation and
+CLI/App discovery views remain pending. See the [opener guide](guides/openers.md) and
 [resolver guide](guides/resolvers.md) for the currently executable workflow.
 
 STAC type names (Item, ItemCollection, Collection, Catalog, and Asset) are

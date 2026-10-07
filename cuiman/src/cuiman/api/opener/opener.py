@@ -12,7 +12,13 @@ from typing import Any, ClassVar
 
 from ..context import JobResultContext
 from ..exceptions import ClientWarning
-from ..resources import JobResultResource, ResourceDiagnostic
+from ..resources import (
+    JobResultResource,
+    ResourceAction,
+    ResourceCapabilities,
+    ResourceCapability,
+    ResourceDiagnostic,
+)
 from .errors import JobResultOpenError
 
 
@@ -162,6 +168,83 @@ async def open_job_result(
     )
 
 
+async def assess_job_result(
+    resource: JobResultResource,
+    *opener_types: type[JobResultOpener],
+    context: JobResultContext,
+) -> JobResultResource:
+    """Describe which configured readers could open a resource before data access.
+
+    Listing uses the same environment checks, option preparation, and acceptance
+    contract as opening. It checks every candidate without invoking ``open()`` or
+    the access provider. Failures leave availability unknown unless another
+    candidate succeeds, and report only exception types. Preview assessment is
+    independent and remains unknown until a preview implementation is supplied.
+    """
+    candidates: list[ResourceAction] = []
+    diagnostics = list(resource.diagnostics)
+    failed = False
+    usable = False
+    for opener_type in opener_types:
+        try:
+            assert_opener_type_valid(opener_type)
+            if not opener_type.is_usable():
+                continue
+            usable = True
+            opener = opener_type()
+            candidate = context.for_opener(resource, opener)
+            for diagnostic in candidate.diagnostics:
+                if diagnostic not in diagnostics:
+                    diagnostics.append(diagnostic)
+            if await opener.accept(resource, context=candidate):
+                action = ResourceAction(
+                    id=opener.identifier(), title=opener_type.__name__
+                )
+                if action.id not in {existing.id for existing in candidates}:
+                    candidates.append(action)
+        except Exception as exc:
+            failed = True
+            diagnostics.append(
+                ResourceDiagnostic(
+                    code="opener-assessment",
+                    severity="error",
+                    message=f"Opener assessment failed ({type(exc).__name__})",
+                )
+            )
+    scope = {
+        "data_type": _type_name(context.data_type),
+        "config_type": _type_name(type(context.config)) if context.config else None,
+    }
+    capability = ResourceCapability(
+        state="available" if candidates else "unknown" if failed else "unavailable",
+        candidates=tuple(candidates),
+        runtime="python",
+        scope=scope,
+        reason=(
+            "Some opener checks failed"
+            if candidates and failed
+            else None
+            if candidates
+            else "Opener assessment failed"
+            if failed
+            else "No registered opener is usable; optional dependencies may be missing"
+            if not usable
+            else "No configured opener accepts this resource and requested return type"
+        ),
+    )
+    return resource.with_updates(
+        capabilities=ResourceCapabilities(
+            opener=capability,
+            preview=ResourceCapability(
+                runtime="python",
+                scope=scope,
+                reason="Python preview assessment is not implemented",
+            ),
+        ),
+        diagnostics=tuple(diagnostics),
+    )
+
+
 def assert_opener_type_valid(opener_type: type[JobResultOpener]) -> None:
     """Reject entries that are not opener subclasses."""
     if not isclass(opener_type) or not issubclass(opener_type, JobResultOpener):
@@ -176,6 +259,10 @@ def _warn(opener_type: type[JobResultOpener], error: Exception) -> None:
         category=ClientWarning,
         stacklevel=2,
     )
+
+
+def _type_name(value: type | None) -> str | None:
+    return f"{value.__module__}.{value.__qualname__}" if value is not None else None
 
 
 def _valid_hint(key: str, value: Any) -> bool:

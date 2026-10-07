@@ -6,11 +6,11 @@ several Assets; resolving it gives each Asset a selectable resource with its own
 link, format, roles, and ownership. A transformer can then enrich those resources
 or add descendants declared by application configuration.
 
-The current API provides resolver dispatch, resource listings, composition, and
-`client.open_job_result(resource)`. Client listing and traversal methods are still
-pending. This guide calls the developer contract `resolve_job_result()` directly;
-the helper below is example code, not a new client method. It does not implement
-pagination, capability assessment, or Catalog/Collection crawling.
+Use `client.list_job_result_resources(job_id)` to discover and assess selectable
+targets, then `client.open_job_result(resource)` to read one. Both sync and async
+clients provide this workflow. Listing checks job status once and requires success;
+it does not wait or read Asset payloads. Explicit remote Catalog/Collection
+traversal and continuation remain pending.
 
 ## Start the testing service
 
@@ -64,24 +64,43 @@ affecting this testing-service session; the example never saves a profile.
 ## Resolve the Item and select an Asset
 
 ```python
---8<-- "examples/guides/cuiman/resolvers.py:discovery"
-
 --8<-- "examples/guides/cuiman/resolvers.py:inline-call"
 ```
 
-The helper supplies the original output, process/schema facts, and client
+The client supplies the original output, process/schema facts, and client
 configuration through `JobResultContext`. It then uses the configured resolver
 registry in priority order. `StacResolver` recognizes the inline structure
 without fetching metadata or requiring PySTAC. `ValueResolver` is the fallback
 for ordinary Links and arbitrary values, including null; it preserves them as
 one resource rather than splitting or dereferencing them.
 
-The flat listing contains the Item and three Assets: `data`, `report`, and
-`products`. Relative Asset locations use the inline Item's absolute self link
+The default listing contains three Assets: `data`, `report`, and `products`.
+Relative Asset locations use the inline Item's absolute self link
 as their base. Roles or formats absent from the producer remain unspecified.
 Listings show metadata and progress locally; rendering, indexing, and selection
-do not fetch additional documents. Opener/preview capabilities are `unknown`
-because this developer dispatch does not yet perform client assessment.
+do not fetch additional documents. The client assesses all configured opener
+candidates after transformation, scoped to the requested return type. Available
+means a candidate exists; it does not verify access. Missing readers/dependencies
+give unavailable, and failed checks give unknown. Preview availability remains
+unknown.
+
+Omit `output_name` to include every output, including the independent text report.
+Use `kind` for a semantic view or `parent_id` for immediate loaded members:
+
+```python
+all_outputs = await client.list_job_result_resources(job_id)
+items = await client.list_job_result_resources(
+    job_id, output_name="result", kind="stac-item"
+)
+assets = await client.list_job_result_resources(job_id, parent_id=items[0].id)
+assert assets.select(key="data").id == resources.select(key="data").id
+```
+
+Root Items/ItemCollections are omitted from the default view. Deferred
+Catalog/Collection containers and concrete Collection Assets remain visible.
+Kind filtering does not authorize remote traversal. Empty recognized STAC views
+are complete; unsupported STAC kinds for ordinary outputs have diagnostics.
+Per-output states preserve progress even when a view has no rows.
 
 ```python
 --8<-- "examples/guides/cuiman/resolvers.py:open-call"
@@ -138,26 +157,35 @@ A metadata loader fetches this description; it never reads the described CSVs:
 ```python
 from examples.guides.cuiman.resolvers import fetch_local_metadata
 
+--8<-- "examples/guides/cuiman/resolvers.py:discovery"
+
 --8<-- "examples/guides/cuiman/resolvers.py:linked-call"
 ```
 
-Here `fetch_local_metadata` is a bounded file reader supporting only local file
-URLs. For another deployment, supply a `MetadataFetcher` using its transport and
-locally scoped authentication. The fetcher returns `MetadataResponse` bytes,
+The client defaults to bounded unauthenticated HTTP(S) or local file reads. For
+another deployment, configure `ClientConfig.job_result_metadata_fetcher` using its
+transport and locally scoped authentication. Processing API credentials are not
+automatically forwarded. The fetcher returns `MetadataResponse` bytes,
 effective URL, and media type. `MetadataLoader` parses and caches them, then
 returns an independent `MetadataDocument` containing JSON and its reference base.
 Keeping the base with the value lets relative links remain correct after redirects.
 
-Acceptance and resolution share the loader, so the printed metadata fetch count
-is `1`. Relative Assets in embedded Items resolve against the ItemCollection
+The lower-level `discover_output()` helper illustrates the extension-author
+context/loader handoff alongside the public client listing. Its unfiltered flat
+view includes containers and does not assess capabilities. The example's bounded
+local fetcher and loader record one fetch shared by acceptance and resolution.
+The same Asset has the same selector in both views.
+Relative Assets in embedded Items resolve against the ItemCollection
 document. Both Items have a `data` key, so this call selects by Item ID as well.
 The opened row contains date `2026-09-02` and NDVI `0.75`.
 
 Default `DiscoveryLimits` allow 16 fetch attempts, 2 MiB per response, 100 embedded
 Items, 1000 resources per stage, depth 8, and 10 seconds per fetch. Pass custom
-limits to `MetadataLoader` to change them. Cached successes and failures share
-the request budget; use `loader.clear()` between operations for an explicit
-refresh. Transformations are recomputed, rather than stored in this cache.
+limits to `client.list_job_result_resources(..., limits=...)` to change them.
+The request budget is shared across outputs and resets for each listing. The
+client retains a bounded cache of parsed documents and failures for its most
+recent job; `refresh=True` discards it. Transformations and capability assessments
+are recomputed. For standalone loaders, use `loader.clear()` to refresh.
 Limits and malformed entries produce diagnostics and incomplete states while
 preserving successful siblings. Cancellation propagates. Advertised next pages
 and Catalog/Collection navigation are retained for future explicit traversal;
