@@ -18,6 +18,8 @@ The `cuiman` API allows for the following customizations:
 2. Ordinary Pydantic field defaults and a `default_path` class attribute define
    application defaults and profile persistence.
 3. Applications can customize the way how job results are opened.
+   They can also specialize resource discovery by composing resolvers and
+   transformers.
 4. Applications can create their own CLI instance with custom settings.
 5. Applications can customize the way the process input GUIs are generated.
 
@@ -127,6 +129,8 @@ class and are not inherited by subclasses.
 
 ## Opening extensions
 
+For a runnable reader example, see the [opener guide](guides/openers.md).
+
 `cuiman.api.JobResultContext` is shared by resolvers, transformers, and openers.
 It carries client configuration and operation services alongside source output
 facts and opening preferences. Discovery uses the original output name/value,
@@ -186,7 +190,7 @@ backend flag. Candidates receive independent options and never mutate hints or
 caller inputs. Inspect `context.non_secret_options` and `context.option_sources`
 for effective settings and top-level provenance.
 
-Use `await runtime.reader_options(resource)` only when reading. Xarray adapters
+Use `await context.reader_options(resource)` only when reading. Xarray adapters
 pass `storage_in_backend=True`. This invokes
 `ClientConfig.job_result_access_provider.resolve(resource)` when configured and
 needed, placing its result in storage reader options. Implement that async
@@ -199,6 +203,9 @@ portable resource descriptions. Custom secret option names require corresponding
 filtering before displaying inspected runtime settings.
 
 ## Discovery extensions
+
+The [resolver guide](guides/resolvers.md) demonstrates both built-in discovery
+and a composed folder resolver against the local testing service.
 
 Discovery extensions are independent of opener extensions. Declare classes in
 `ClientConfig.extra_job_result_resolvers` or register one later using

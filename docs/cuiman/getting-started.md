@@ -13,12 +13,23 @@ the [Eozilla App](guides/app.md).
   you which inputs it accepts and which outputs it produces.
 - A **job** represents a process execution. You can inspect its status and
   retrieve its results when it finishes.
+- An **opener** reads a selected output or resource into a Python object, such as
+  a dataset or table. Built-in readers use optional data libraries.
+- A **resource** describes one selectable target within a result. A resolver
+  discovers these descriptions from compound outputs such as STAC documents;
+  a transformer can add application-specific metadata or declared descendants.
 
 The usual workflow is to list the service's processes with `get_processes()`,
 inspect one with `get_process(process_id)`, and run it with `execute_process()`.
 Use `get_job(job_id)` to check a job's status and `get_job_results(job_id)` to
 retrieve its results. The [Python API guide](guides/api.md)
 walks through this workflow.
+
+Use `open_job_result(job_id, output_name=...)` to wait for and open one original
+output. Use `open_job_result(resource)` to read an explicitly selected target
+without polling or repeated discovery. See the [opener guide](guides/openers.md)
+and [resolver guide](guides/resolvers.md). Client-level resource listing is still
+pending; the resolver guide currently uses the implemented developer contracts.
 
 ## Create a Python client
 

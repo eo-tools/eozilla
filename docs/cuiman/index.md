@@ -9,6 +9,10 @@ It comprises the following interfaces:
 - [Eozilla App](guides/app.md), launched by Cuiman in a browser or notebook
 - [Command line](guides/cli.md)
 
-The [result opener guide](guides/openers.md) explains how to open datasets and
-add custom readers. Start with [Getting Started](getting-started.md) for client
+The [result opener guide](guides/openers.md) explains how to open original outputs
+and selected resources and add custom readers. The
+[result resolver guide](guides/resolvers.md) discovers STAC Assets and adds known
+folder contents through composition. Explore both in the
+[job result resources notebook](https://github.com/eo-tools/eozilla/blob/main/notebooks/cuiman-job-result-resources.ipynb)
+using the local testing service. Start with [Getting Started](getting-started.md) for client
 concepts, configuration, and authentication.

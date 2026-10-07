@@ -47,6 +47,9 @@ def client():
     result = Mock(spec=Client)
     result.execute_process.return_value = JobInfo(jobID="new-job-42", status="accepted")
     result.open_job_result.return_value.sizes = {"time": 2, "lat": 4, "lon": 4}
+    result.get_job_results.return_value = JobResults(
+        root={"return_value": Link(href="file:///scene.zarr", type="application/zarr")}
+    )
     return result
 
 
@@ -331,6 +334,27 @@ def test_custom_registration_restored_on_failure(monkeypatch, opener_registry):
         client.close()
 
 
+def test_selected_scene_example_reads_without_job_lookup(
+    monkeypatch, scene_context, opener_registry
+):
+    client = api.create_client()
+    monkeypatch.setattr(client, "get_job_results", lambda _: scene_context.job_results)
+    resource = openers.describe_scene(client, "existing-job")
+    unexpected = Mock(side_effect=AssertionError("Resource opening looked up the job"))
+    monkeypatch.setattr(client, "get_job", unexpected)
+    monkeypatch.setattr(client, "get_job_results", unexpected)
+    try:
+        dataset = openers.open_scene_resource(client, resource)
+        try:
+            assert dict(dataset.sizes) == {"time": 2, "lat": 4, "lon": 4}
+            assert resource.link == scene_context.resource.link
+        finally:
+            dataset.close()
+        unexpected.assert_not_called()
+    finally:
+        client.close()
+
+
 @pytest.mark.parametrize("error", [None, RuntimeError("unreadable")])
 def test_opener_session_closes_resources(monkeypatch, client, error):
     monkeypatch.setattr(openers, "Client", Mock(return_value=client))
@@ -341,8 +365,11 @@ def test_opener_session_closes_resources(monkeypatch, client, error):
             openers.example_session()
     else:
         assert openers.example_session() == "new-job-42"
-        client.open_job_result.return_value.close.assert_called_once()
-    assert client.open_job_result.call_args.args == ("new-job-42",)
+        assert client.open_job_result.return_value.close.call_count == 2
+        resource = client.open_job_result.call_args.args[0]
+        assert resource.link.href == "file:///scene.zarr"
+        assert resource.media_type == "application/zarr"
+    assert client.open_job_result.call_args_list[0].args == ("new-job-42",)
     client.execute_process.assert_called_once()
     client.close.assert_called_once()
 
@@ -352,7 +379,7 @@ def test_opener_script_runs_and_closes(monkeypatch, client):
     monkeypatch.chdir(REQUEST_PATH.parents[3])
     runpy.run_path(openers.__file__, run_name="__main__")
     client.execute_process.assert_called_once()
-    client.open_job_result.return_value.close.assert_called_once()
+    assert client.open_job_result.return_value.close.call_count == 2
     client.close.assert_called_once()
 
 

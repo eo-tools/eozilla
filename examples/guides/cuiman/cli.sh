@@ -68,3 +68,7 @@ python -m examples.guides.cuiman.app
 # --8<-- [start:python-openers]
 python -m examples.guides.cuiman.openers
 # --8<-- [end:python-openers]
+
+# --8<-- [start:python-resolvers]
+python -m examples.guides.cuiman.resolvers
+# --8<-- [end:python-resolvers]

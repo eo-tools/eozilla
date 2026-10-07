@@ -1,5 +1,26 @@
 ## Changes in version 0.3.2 (in development)
 
+- **Cuiman** now opens either an original job output or an explicitly selected
+  `JobResultResource` through the same `open_job_result()` method. Resource calls
+  use the receiving client's settings without polling or repeating discovery.
+  Reader options combine validated producer hints, client defaults, and caller
+  overrides; scoped storage access is acquired only when reading.
+
+- **Cuiman** adds portable resource/listing models, STAC and value resolvers,
+  isolated resolver registries, bounded metadata loading, and resolver-owned
+  transformer chains for declared folder contents. Discovery, transformation,
+  and opening share `JobResultContext`. Client-level listing/traversal and
+  CLI/App discovery views are still pending.
+
+- Custom **Cuiman** openers must implement `accept(resource, *, context)` and
+  `open(resource, *, context)`. These replace the old context and opener method
+  signatures in this 0.x redesign. Updated opener/resolver guides, maintained
+  examples, and a testing-service notebook demonstrate the new contracts.
+
+- **Wraptile**'s local testing service adds `simulate_stac_item` and
+  `simulate_stac_item_collection`, producing small CSV/text Assets with relative
+  links and folder references for discovery and opening examples.
+
 - **Procodile** no longer drops $ref schema references when building process 
   descriptions. (#239)
 

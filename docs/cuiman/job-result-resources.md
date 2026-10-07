@@ -1,6 +1,11 @@
 # Job Result Resources and STAC Discovery
 
-Status: proposed design; the new interfaces and commands below are not implemented.
+Status: implementation in progress. Portable resources, resolver/transformer
+contracts, bounded metadata loading, a shared `JobResultContext`, and both
+`open_job_result()` argument forms are implemented. Client-level listing,
+traversal/continuation, final capability assessment, and CLI/App discovery views
+remain pending. See the [opener guide](guides/openers.md) and
+[resolver guide](guides/resolvers.md) for the currently executable workflow.
 
 STAC type names (Item, ItemCollection, Collection, Catalog, and Asset) are
 capitalized in prose, while code identifiers and JSON keys retain their
@@ -154,14 +159,14 @@ the current environment can open it.
 
 Relevant repository sources:
 
-- [Gavicore models](../../gavicore/src/gavicore/models.py)
-- [Client convenience methods](../../cuiman/src/cuiman/api/client_mixin.py)
-- [Asynchronous methods](../../cuiman/src/cuiman/api/async_client_mixin.py)
-- [Opener context](../../cuiman/src/cuiman/api/opener/context.py)
-- [Opener contract and dispatch](../../cuiman/src/cuiman/api/opener/opener.py)
-- [Opener registry](../../cuiman/src/cuiman/api/opener/registry.py)
+- [Gavicore models](https://github.com/eo-tools/eozilla/blob/d72c016/gavicore/src/gavicore/models.py)
+- [Client convenience methods](https://github.com/eo-tools/eozilla/blob/d72c016/cuiman/src/cuiman/api/client_mixin.py)
+- [Asynchronous methods](https://github.com/eo-tools/eozilla/blob/d72c016/cuiman/src/cuiman/api/async_client_mixin.py)
+- [Opener context](https://github.com/eo-tools/eozilla/blob/d72c016/cuiman/src/cuiman/api/opener/context.py)
+- [Opener contract and dispatch](https://github.com/eo-tools/eozilla/blob/d72c016/cuiman/src/cuiman/api/opener/opener.py)
+- [Opener registry](https://github.com/eo-tools/eozilla/blob/d72c016/cuiman/src/cuiman/api/opener/registry.py)
 - [Customization](customization.md) and [API reference](api.md)
-- [CLI implementation](../../cuiman/src/cuiman/cli/cli.py)
+- [CLI implementation](https://github.com/eo-tools/eozilla/blob/d72c016/cuiman/src/cuiman/cli/cli.py)
 - [App service architecture](../eozilla-app/service-provider.md)
 
 The current browser app, including launches from Python, is the GUI target.

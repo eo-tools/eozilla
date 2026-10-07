@@ -6,6 +6,7 @@ The local test server writes the requested directory, replacing existing data.
 
 # --8<-- [start:imports]
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from urllib.parse import urlsplit
 from urllib.request import url2pathname
 
@@ -14,8 +15,8 @@ import xarray as xr
 from cuiman import Client
 from cuiman.api import JobResultContext
 from cuiman.api.opener import JobResultOpener
-from cuiman.api.resources import JobResultResource
-from gavicore.models import ProcessRequest
+from cuiman.api.resources import JobResultResource, make_resource_id
+from gavicore.models import Link, ProcessRequest
 
 # --8<-- [end:imports]
 
@@ -41,13 +42,40 @@ def open_scene(client: Client, job_id: str) -> xr.Dataset:
         job_id,
         output_name="return_value",
         data_type=xr.Dataset,
-        engine="zarr",
         timeout=30,
         poll_interval=0.1,
     )
 
 
 # --8<-- [end:builtin]
+
+
+# --8<-- [start:resource]
+def describe_scene(client: Client, job_id: str) -> JobResultResource:
+    """Describe this known process's completed output for explicit selection.
+
+    This example constructs a resource from an ordinary Link. For compound STAC
+    outputs, use a resolver to discover the selectable Assets instead.
+    """
+    results = client.get_job_results(job_id)
+    link = Link.model_validate((results.root or {})["return_value"])
+    return JobResultResource(
+        id=make_resource_id("return_value"),
+        output_name="return_value",
+        kind="link",
+        link=link,
+        media_type=link.type,
+        discovery_state="complete",
+        provenance={"job_id": job_id},
+    )
+
+
+def open_scene_resource(client: Client, resource: JobResultResource) -> xr.Dataset:
+    """Open the supplied target directly, using this client's built-in reader."""
+    return client.open_job_result(resource, data_type=xr.Dataset, chunks=None)
+
+
+# --8<-- [end:resource]
 
 
 # --8<-- [start:custom]
@@ -63,7 +91,8 @@ class LocalZarrOpener(JobResultOpener):
             return False
         url = urlsplit(link.href)
         return (
-            context.media_type_for(resource) == "application/zarr"
+            (context.media_type_for(resource) or "").partition(";")[0].strip().lower()
+            == "application/zarr"
             and url.scheme == "file"
             and url.netloc in ("", "localhost")
         )
@@ -99,7 +128,12 @@ def open_with_custom_opener(client: Client, job_id: str) -> xr.Dataset:
 def example_session() -> str:
     """Submit one scene, print its dataset summary, and release resources."""
     # --8<-- [start:connect]
-    client = Client(api_url="http://127.0.0.1:8008", auth={"auth_type": "none"})
+    profile = TemporaryDirectory(prefix="cuiman-opener-profile-")
+    client = Client(
+        config_path=str(Path(profile.name) / "client-config.yaml"),
+        api_url="http://127.0.0.1:8008",
+        auth={"auth_type": "none"},
+    )
     # --8<-- [end:connect]
     try:
         # --8<-- [start:submit-call]
@@ -115,10 +149,20 @@ def example_session() -> str:
         finally:
             dataset.close()
         # --8<-- [end:open-call]
+
+        # --8<-- [start:resource-call]
+        resource = describe_scene(client, job_id)
+        dataset = open_scene_resource(client, resource)
+        try:
+            print(dataset)
+        finally:
+            dataset.close()
+        # --8<-- [end:resource-call]
         return job_id
     finally:
         # --8<-- [start:close]
         client.close()
+        profile.cleanup()
         # --8<-- [end:close]
 
 

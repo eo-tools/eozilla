@@ -131,6 +131,9 @@ selectors derived from output and owner identities; effective URLs are excluded
 from identity so renewing a signed location preserves selection. Continuation
 scope and expiry will be enforced by the discovery implementation.
 
+For executable examples of discovery, selection, and opening, see the
+[opener guide](guides/openers.md) and [resolver guide](guides/resolvers.md).
+
 ::: cuiman.api.JobResultResource
 
 ::: cuiman.api.JobResultResourceListing
