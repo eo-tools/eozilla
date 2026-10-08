@@ -6,6 +6,9 @@
   when one is named `return_value`; missing and ambiguous selections fail before
   reader dispatch, while explicit null outputs remain valid selections.
 
+- **Procodile** no longer drops $ref schema references when building process 
+  descriptions. (#239)
+
 
 ## Changes in version 0.3.1
 

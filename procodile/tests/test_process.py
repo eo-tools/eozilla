@@ -576,6 +576,33 @@ def test_create_schema_fail():
 
 
 # noinspection PyArgumentList
+def test_process_output_schema_preserves_references():
+    def result() -> dict[str, str]:
+        return {"value": "example"}
+
+    schema = Schema(
+        **{
+            "$ref": "https://example.org/result.json",
+            "properties": {"value": {"$ref": "https://example.org/value.json"}},
+        }
+    )
+    process = Process.create(
+        result, outputs={"result": OutputDescription(schema=schema)}
+    )
+
+    output_schema = process.description.outputs["result"].schema_
+    assert output_schema.ref == "https://example.org/result.json"
+    serialized = process.description.model_dump(mode="json", by_alias=True)
+    serialized_schema = serialized["outputs"]["result"]["schema"]
+    assert serialized_schema["$ref"] == "https://example.org/result.json"
+    assert serialized_schema["properties"]["value"]["$ref"] == (
+        "https://example.org/value.json"
+    )
+    assert "ref" not in serialized_schema
+    assert "ref" not in serialized_schema["properties"]["value"]
+
+
+# noinspection PyArgumentList
 def test_merge_schemas():
     from procodile.process import _merge_schemas
 
