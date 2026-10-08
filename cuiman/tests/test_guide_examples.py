@@ -246,12 +246,6 @@ async def test_custom_opener_reads_actual_local_scene(scene_context):
         (42, "return_value", xr.Dataset, None),
         (
             Link(href="file:///scene.zarr", type="application/zarr"),
-            "missing",
-            xr.Dataset,
-            None,
-        ),
-        (
-            Link(href="file:///scene.zarr", type="application/zarr"),
             "return_value",
             str,
             None,

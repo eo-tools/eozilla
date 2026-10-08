@@ -15,14 +15,18 @@ from .errors import JobResultOpenError
 class JobResultOpener(ABC):
     """Abstract base class for pluggable job result openers.
 
-    An opener implementation is free to use the information
+    An opener handles the authoritative selected value and effective location
     in the [context object][cuiman.api.opener.JobResultOpenContext] `ctx` passed to
     [accept_job_result()][cuiman.api.opener.JobResultOpener.accept_job_result]
     and [open_job_result()][cuiman.api.opener.JobResultOpener.open_job_result].
-    However, if `data_type` or `output_name` are provided, an
-    opener MUST be able to deal with them,
+    Original job results and process metadata are optional source facts; they
+    must not be used to select a sibling output. If `data_type` is provided, an
+    opener MUST be able to return that type,
     otherwise [accept_job_result()][cuiman.api.opener.JobResultOpener.accept_job_result]
     should return `False`.
+
+    Output selection is validated before dispatch, so acceptance does not need
+    to resolve output names or distinguish missing outputs from selected nulls.
     """
 
     @classmethod

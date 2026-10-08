@@ -5,15 +5,10 @@
 from abc import abstractmethod
 from functools import cached_property
 from importlib.util import find_spec
-from pathlib import Path
 from typing import Any
 
-import pydantic
-
-from cuiman.api.opener import JobResultOpenContext, JobResultOpener
-
-_PATH_LIKE_KEYS = ("href", "url", "path")
-_PATH_LIKE_TYPES = (str, Path)
+from ..context import JobResultOpenContext
+from ..opener import JobResultOpener
 
 
 class OptionalModuleOpener(JobResultOpener):
@@ -111,23 +106,8 @@ class PathOpener(JobResultOpener):
 
     @classmethod
     def get_path_like(cls, ctx: JobResultOpenContext) -> str | None:
-        output_link = ctx.output_link
-        if output_link:
-            return output_link.href
-        output_value = ctx.output_value
-        value = (
-            output_value.model_dump()
-            if isinstance(output_value, pydantic.BaseModel)
-            else output_value
-        )
-        if isinstance(value, _PATH_LIKE_TYPES):
-            return str(value)
-        elif isinstance(value, dict):
-            for k in _PATH_LIKE_KEYS:
-                v = value.get(k)
-                if v is not None and isinstance(v, _PATH_LIKE_TYPES):
-                    return str(v)
-        return None
+        """Return the effective location of the context's selected target."""
+        return ctx.location
 
     @classmethod
     def get_filename_ext(cls, path_like: str):

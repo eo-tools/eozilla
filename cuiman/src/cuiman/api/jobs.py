@@ -77,7 +77,10 @@ class JobOptions:
     """Options for generated service-client job execution."""
 
     output_name: str | None = None
-    """Name of the output to open. If omitted, the opener chooses."""
+    """Name of the output to open; required when a job has multiple outputs.
+
+    A sole output is selected automatically before opener dispatch.
+    """
 
     data_type: type | None = None
     """Expected or desired data type of the opened result."""

@@ -125,6 +125,15 @@ built-ins. For later changes, use `MyConfig.register_job_result_opener(...)` and
 its returned unregister callback. These runtime registrations affect only that
 class and are not inherited by subclasses.
 
+Each opener receives a `JobResultOpenContext` describing one selected target.
+Use `ctx.value` (or `ctx.output_value`), `ctx.location`, and
+`ctx.output_media_type` to open that target, and respect `ctx.data_type`.
+Producing-job information is optional source context; do not select another
+output from `ctx.job_results`. The client automatically selects a sole output;
+multiple outputs require `output_name`, including when one is named
+`return_value`. See the [opener guide](guides/openers.md) for selection and context
+details.
+
 ## CLI customisation
 
 In a module `src/anolis_client/cli.py`:

@@ -212,7 +212,8 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
 
         Args:
             job_id: the job ID
-            output_name: the name of the output to be opened.
+            output_name: the name of the output to be opened. Required when the
+                job has multiple outputs; a sole output is selected automatically.
             data_type: the expected/desired data type to be returned.
                 If provided, the return value will be of that type.
                 If not provided, the return value will be the type
@@ -230,7 +231,8 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
 
         Raises:
             ClientError: if an API error occurs
-            JobResultOpenError: if an opener error occurs
+            JobResultOpenError: if output selection is missing or ambiguous,
+                or an opener error occurs
             JobResultStatusError: if the job failed or was canceled
             TimeoutError: if the job does not finish within the timeout
         """
@@ -248,6 +250,15 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
         if job_info.status != JobStatus.successful:
             raise JobResultStatusError(job_info)
         job_results = self.get_job_results(job_id)
+        ctx = JobResultOpenContext(
+            config=self.config,
+            job_id=job_id,
+            job_results=job_results,
+            output_name=output_name,
+            data_type=data_type,
+            _media_type=media_type,
+            options=options,
+        )
         process_id = job_info.processID
         process_description: ProcessDescription | None = None
         if process_id:
@@ -260,16 +271,7 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
                     category=ClientWarning,
                     stacklevel=2,
                 )
-        ctx = JobResultOpenContext(
-            config=self.config,
-            job_id=job_id,
-            job_results=job_results,
-            process_description=process_description,
-            output_name=output_name,
-            data_type=data_type,
-            _media_type=media_type,
-            options=options,
-        )
+        ctx.process_description = process_description
         opener_registry = self.config.get_job_result_opener_registry()
         return run_sync(
             open_job_result,

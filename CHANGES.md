@@ -1,5 +1,11 @@
 ## Changes in version 0.3.2 (in development)
 
+- Cuiman job-result openers now receive one selected target with optional job
+  provenance and an effective location. Selected job values are copied to preserve
+  original results. Multiple outputs require an explicit `output_name`, including
+  when one is named `return_value`; missing and ambiguous selections fail before
+  reader dispatch, while explicit null outputs remain valid selections.
+
 
 ## Changes in version 0.3.1
 

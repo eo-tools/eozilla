@@ -57,6 +57,12 @@ Retain the returned `job_id`. Once its status is `successful`,
 process output, and `engine="zarr"` is forwarded to xarray. The printed sizes
 are `lat: 4`, `lon: 4`, and `time: 2`.
 
+If a job has exactly one output, `output_name` can be omitted. Multiple outputs
+require an explicit name, even if one is named `return_value`. A missing name or
+ambiguous selection raises `JobResultOpenError` before reader dispatch. Selecting
+an output whose value is `null` is valid; whether it can be opened depends on the
+configured readers. `get_job_results()` retains all original names and values.
+
 The helper waits up to 30 seconds for completion. A running job that exceeds
 this deadline raises `TimeoutError`; failed or dismissed jobs raise
 `JobResultStatusError`. Inspect the job before retrying. Opening an existing
@@ -74,7 +80,21 @@ paths without spaces for the built-in example, or this custom opener:
 --8<-- "examples/guides/cuiman/openers.py:custom"
 ```
 
-`ctx.output_link` resolves the requested output name; it can be `None`.
+The client selects the output before invoking any opener. `ctx.value` (also
+available as `ctx.output_value`) is an independent copy of that selected job
+output. `ctx.output_name` contains its resolved name, including when a sole
+output was selected automatically. `ctx.output_link` interprets the selected
+value as a Link when possible; it can be `None`. `ctx.location` holds the
+effective path or URL for path readers, and `ctx.output_media_type` retains the
+selected value's media type or the caller's override.
+
+The context can also be constructed with a direct `value` and optional `location`
+without producing-job information. `job_id`, `job_results`, and
+`process_description` are optional source facts. Custom openers should read the
+selected value/location rather than choose another output from `job_results`.
+`ctx.output_description` uses the selected name to find matching process metadata;
+a process schema does not independently select an output.
+
 The acceptance check also respects the requested data type and media type.
 The example imports xarray directly because it is required by this guide;
 reusable plugins can implement `is_usable()` to detect optional dependencies.

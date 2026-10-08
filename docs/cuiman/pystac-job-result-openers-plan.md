@@ -1,6 +1,6 @@
 # PySTAC job-result openers: implementation plan
 
-Status: design for review; implementation has not started.
+Status: Step 1 implemented and verified; awaiting user review before Step 2.
 
 This plan implements [PySTAC Job Results and Asset Opening](pystac-job-result-openers.md).
 That document remains the behavioral specification, subject to the user-approved
@@ -29,6 +29,9 @@ The checkout inspected on 2026-10-08 is `forman/217-cuiman_stac_openers` at
 `0544abc25a0fb48482058a86e6bdf250317783f9`. Local `main` is
 `7c06deaee8d95225bb9b90e9c7f55853a883a4ed`; the current branch adds the initial
 specification commit. Recheck these facts before implementation.
+
+At the start of Step 1, the current task branch was verified at
+`b786d2660c42160f15e90d2bbf136dc9cc9b5ded`. Implementation remains on that branch.
 
 Use the existing task branch `forman/217-cuiman_stac_openers` for all implementation
 steps. Do not create or switch branches. This user instruction overrides the
@@ -71,6 +74,28 @@ processes are added in Step 2.
 selection rules, including the removal of the `return_value` preference.
 
 **Pause:** review the shared context and selection behavior.
+
+### Step 1 implementation record
+
+- Kept the public name `JobResultOpenContext`. Added authoritative `value` and
+  effective `location`, with optional producing-job facts. Existing
+  `output_value`, Link/qualified-value helpers, and media-type overrides remain
+  available for readers.
+- Job outputs are selected and copied during context construction. Missing,
+  empty, and ambiguous results fail clearly; explicit null and empty-string output
+  names are valid selections. Process descriptions use the selected output's name.
+- Both clients validate selection before optional schema lookup and dispatch.
+  Path readers use the context's effective location. Polling/status/API errors and
+  registration behavior remain covered by the existing and extended tests.
+- Updated public docstrings, the opener/customization guides, and CHANGES.md.
+- Baseline: 68 relevant tests passed, with 100% opener-module coverage.
+- Final verification: 727 Cuiman tests passed; Cuiman and maintained guide examples
+  have 100% statement coverage. Ruff lint/format checks, Mypy over 48 Cuiman source
+  files, and the strict MkDocs build passed.
+- Environment workaround: normal Pixi initialization could not use its cache;
+  final tests/type/docs commands used `pixi run --as-is` with the explicit existing
+  Pixi Python interpreter. Test temporary files, coverage output, and generated
+  docs were isolated under `.pixi/step1/`.
 
 ## Step 2: testing processes, native STAC opening, and bounded metadata transport
 
