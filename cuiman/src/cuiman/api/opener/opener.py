@@ -9,7 +9,7 @@ from typing import Any
 
 from ..exceptions import ClientWarning
 from .context import JobResultOpenContext
-from .errors import JobResultOpenError
+from .errors import JobResultOpenError, StacJobResultOpenError
 
 
 class JobResultOpener(ABC):
@@ -35,6 +35,10 @@ class JobResultOpener(ABC):
         current OS or Python environment.
         """
         return True
+
+    @classmethod
+    def _unavailable_error(cls, ctx: JobResultOpenContext) -> Exception | None:
+        return None
 
     @abstractmethod
     async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
@@ -104,8 +108,20 @@ async def open_job_result(
         try:
             if opener_type.is_usable():
                 opener = opener_type()
+            else:
+                unavailable = opener_type._unavailable_error(ctx)
+                if unavailable is not None:
+                    errors.append((opener_type, unavailable))
+                    accepted_opener_count += 1
         except Exception as e:
             _warn(opener_type, e)
+
+        if (
+            errors
+            and isinstance(errors[-1][1], StacJobResultOpenError)
+            and errors[-1][1].required
+        ):
+            break
 
         if opener is not None:
             accepted: bool
@@ -121,6 +137,8 @@ async def open_job_result(
                     return await opener.open_job_result(ctx)
                 except Exception as e:
                     errors.append((opener_type, e))
+                    if isinstance(e, StacJobResultOpenError) and e.required:
+                        break
 
     # Error management
     if not errors:

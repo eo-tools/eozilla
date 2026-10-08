@@ -304,6 +304,8 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
             _media_type=media_type,
             options=options,
         )
+        if self._transport is not None:
+            ctx.document_href = self._transport.get_response_href(job_results)
         process_id = job_info.processID
         process_description: ProcessDescription | None = None
         if process_id:

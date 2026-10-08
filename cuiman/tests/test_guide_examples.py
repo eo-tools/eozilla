@@ -379,6 +379,32 @@ def test_rendered_python_walkthrough_runs_in_order(
     )
     client.show_app.return_value = client_app
     client.get_job.return_value = JobInfo(jobID="new-job-42", status="successful")
+    if guide == "openers":
+        from datetime import datetime, timezone
+
+        import pystac
+
+        dataset = client.open_job_result.return_value
+        members = []
+        for index in range(2):
+            member = pystac.Item(
+                f"scene-{index + 1}",
+                None,
+                None,
+                datetime(2026, 1, 1, tzinfo=timezone.utc),
+                {},
+            )
+            member.add_asset(
+                "data",
+                pystac.Asset(
+                    "https://metadata.test/data.zarr", media_type="application/zarr"
+                ),
+            )
+            members.append(member)
+        collection = pystac.ItemCollection(members)
+        client.open_job_result.side_effect = lambda *args, **kwargs: (
+            collection if kwargs.get("data_type") is pystac.ItemCollection else dataset
+        )
     source = (root / "docs/cuiman/guides" / f"{guide}.md").read_text(encoding="utf-8")
     rendered = markdown(
         source,

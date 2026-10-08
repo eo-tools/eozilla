@@ -2,11 +2,117 @@
 
 `client.get_job_results(job_id)` retrieves result values and references.
 `client.open_job_result(job_id)` waits for completion and opens a selected
-output using a registered opener. Cuiman includes Pillow, xarray, pandas, and
+output using a registered opener. Cuiman includes PySTAC, Pillow, xarray, pandas, and
 GeoPandas openers; each requires its corresponding optional library. The Pillow
 image opener takes precedence over the dataset openers for supported images,
 including PNG and JPEG, and returns a `PIL.Image.Image`. Custom openers extend
 or specialize this behavior.
+
+## Native STAC outputs
+
+Install `cuiman[stac]` for STAC opening. The supported and verified PySTAC range
+is `>=1.15.2,<1.16`; the development Pixi environment includes it. Ordinary Cuiman
+imports and non-STAC readers work without PySTAC. The built-in STAC opener runs
+before generic data readers; later custom registrations retain precedence.
+
+Start the [local testing service](../../wraptile/usage.md#stac-testing-processes)
+and run this from the Pixi environment:
+
+```python
+import pystac
+from cuiman import Client
+from gavicore.models import ProcessRequest
+
+client = Client(api_url="http://localhost:8008", auth={"auth_type": "none"})
+try:
+    job = client.execute_process(
+        "create_inline_stac", ProcessRequest(inputs={"item_count": 2})
+    )
+    items = client.open_job_result(
+        job.jobID, output_name="item_collection", data_type=pystac.ItemCollection
+    )
+    print([item.id for item in items])  # ['scene-1', 'scene-2']
+    print(items[0].assets["data"].href)
+    raw = client.get_job_results(job.jobID)  # original JSON and all output names
+finally:
+    client.close()
+```
+
+Repeat with `create_linked_stac` to fetch the equivalent metadata through ordinary
+Link outputs. `output_name="item"` returns an Item; ItemCollection embeds the
+requested Items. Collection and Catalog documents also return their native
+PySTAC types, and requesting Catalog accepts a Collection. A mismatched explicit
+native type fails. Unknown extension fields and concrete Collection Assets are
+retained; `item_assets` definitions remain separate from concrete Assets.
+
+The opener unwraps qualified values, recognizes STAC structure or schema hints,
+and considers linked JSON/GeoJSON as candidates. Ordinary inline GeoJSON,
+including empty FeatureCollections, is not assumed to be STAC. Weak linked
+candidates can fall back after parsing disproves STAC; strong STAC evidence or an
+explicit native request makes parsing failures terminal. Missing PySTAC for a
+required STAC output explains the optional dependency.
+
+Opening reads only the selected metadata document. It does not fetch parent,
+root, child, member, next-page, preview, or Asset payloads. Advertised next-page
+links remain available without automatic pagination. Asset reading through the
+client and transformation composition are introduced in subsequent implementation
+steps.
+
+### Metadata limits and access
+
+ClientConfig settings `stac_metadata_max_bytes`, `stac_metadata_timeout`, and
+`stac_metadata_max_requests` default to 2 MiB of decoded bytes per document,
+10 seconds per fetch, and 16 requests per opening operation, including redirects.
+Limits are enforced during streamed reads; documents are never silently truncated.
+HTTP and local files (native Windows paths and file URIs with spaces) are
+supported metadata sources. Remote storage metadata requires an application I/O
+policy. Acceptance performs no reads or credential acquisition.
+
+Metadata access is separate from processing API authentication. To add scoped
+headers, declare a runtime factory on an application configuration subclass:
+
+```python
+from cuiman import ClientConfig
+from cuiman.api.opener import StacMetadataIO
+
+class AppConfig(ClientConfig):
+    @staticmethod
+    def stac_metadata_io_factory(config):
+        # Obtain this token from your application's credential provider at runtime.
+        return StacMetadataIO(
+            max_bytes=config.stac_metadata_max_bytes,
+            timeout=config.stac_metadata_timeout,
+            max_requests=config.stac_metadata_max_requests,
+            headers_by_origin={
+                "https://metadata.example.org": {"Authorization": "Bearer <token>"}
+            },
+        )
+```
+
+Use `Client(config_type=AppConfig, ...)` or AsyncClient with that configuration.
+Headers apply only to explicitly listed scheme/host/port origins. Redirects
+recompute headers for their destination; API credentials, response cookies, and
+environment proxies are not inherited. List another origin explicitly to grant
+it metadata credentials. Factories may supply fresh `sync_transport_factory` and
+`async_transport_factory` transports. Runtime policy and secrets are excluded
+from persisted client settings and PySTAC JSON; Cuiman metadata errors omit URLs
+and underlying exception details.
+
+Linked metadata uses its effective URI after redirects. Inline metadata prefers
+an unambiguous absolute self link, then the effective result-document URI retained
+by the client transport. Embedded Item references follow their ItemCollection's
+containing document even if an Item advertises an unrelated self link. Native
+objects receive normalized references while raw result JSON remains unchanged.
+A relative reference without a known base fails instead of guessing the API URL.
+Custom transports can implement `get_response_href(value)` to supply source facts;
+its default returns None.
+
+Returned objects retain an individual read-only PySTAC StacIO policy. Explicit
+native navigation, such as `catalog.get_children()`, performs synchronous bounded
+reads, including for objects returned by AsyncClient. Each navigated document gets
+a fresh operation budget; the initial budget is not a whole-catalog crawl budget.
+Initial async opening uses async HTTP I/O and off-thread local-file reads, and
+propagates cancellation. This policy never changes PySTAC's global default.
 
 The following example uses `simulate_scene` from the
 [local test service](api.md#start-the-local-service). Run the Python blocks in

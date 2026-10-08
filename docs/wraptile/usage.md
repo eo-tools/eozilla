@@ -87,3 +87,77 @@ schedule — the two tokens have unrelated lifetimes.
 > where audience and role enforcement happen), and **Airflow** checks its own JWT
 > on everything after. Without a gateway in the path the `Authorization` header
 > is simply ignored, and the same flow still works.
+
+## STAC testing processes
+
+The local testing service includes `create_inline_stac` and `create_linked_stac`.
+Both accept `item_count` (default 2, allowed 1–4) and generate equivalent STAC
+Items with stable IDs, geometry, temporal metadata, and Assets named `data`
+(2×2 Zarr NDVI grid), `report` (CSV), and `products` (folder). Every run has a
+separate generated directory. The folder deliberately has no trailing separator
+for later declared-product expansion examples.
+
+Run from the repository root:
+
+```powershell
+pixi run serve
+```
+
+The service listens on port 8008 by default and mounts only its testing artifact
+directory at `/testing-stac`. Existing service CORS settings allow browser access
+from eozilla-app. Other service implementations do not mount this route. Files
+are retained for inspection; the directory has no browser listing.
+
+Optional environment settings, configured **before** starting the server:
+
+```powershell
+$env:EOZILLA_TESTING_STAC_DIR = "C:/path/to/testing-artifacts"
+$env:EOZILLA_TESTING_STAC_URL = "http://localhost:8008/testing-stac"
+pixi run serve
+```
+
+Defaults are `.pixi/testing-stac` beneath the server working directory and
+`http://localhost:8008/testing-stac`. The public URL must identify this server's
+mount from the client/browser's perspective; adjust it for another hostname,
+port, or reverse-proxy prefix. It cannot contain credentials, queries, or
+fragments. Generation uses the development environment's NumPy, xarray, and Zarr,
+without requiring PySTAC on the producer.
+
+Submit `POST /processes/create_inline_stac/execution` or
+`POST /processes/create_linked_stac/execution` with:
+
+```json
+{"inputs": {"item_count": 2}}
+```
+
+Inspect `GET /jobs/{jobID}/results` after the job succeeds. Both have five named
+outputs: `item`, `item_collection`, `report`, `item_count`, and `optional`.
+Inline outputs hold JSON directly; linked metadata outputs have this shape
+(the run ID differs per execution):
+
+```json
+{
+  "item": {"href": "http://localhost:8008/testing-stac/<run-id>/scene-1.json", "type": "application/geo+json"},
+  "item_collection": {"href": "http://localhost:8008/testing-stac/<run-id>/items.json", "type": "application/geo+json"},
+  "report": {"href": "http://localhost:8008/testing-stac/<run-id>/scene-1/products/summary.csv", "type": "text/csv"},
+  "item_count": 2,
+  "optional": null
+}
+```
+
+An Item's `data` Asset has relative href `scene-1/products/data.zarr`, title
+`NDVI grid`, media type `application/zarr`, and role `data`. Embedded Items use
+their containing ItemCollection base. Scene 1 contains `[[0, 1], [2, 3]]`; Scene 2
+contains `[[1, 2], [3, 4]]`. CSV means are 1.5 and 2.5. IDs and Asset keys remain
+stable across runs, while locations differ. The ordinary CSV Link, integer, and
+explicit null also exercise non-STAC output selection in eozilla-app.
+
+These processes supply raw API values and reachable products for app testing.
+They do not add new browser STAC presentation or Python Asset actions. See the
+[Cuiman opener guide](../cuiman/guides/openers.md#native-stac-outputs) for opening
+these outputs as native PySTAC objects.
+
+When finished, stop the server and remove the generated run directories from
+the configured artifact directory. For the default directory, from the repository
+root, use `Remove-Item -LiteralPath .pixi/testing-stac -Recurse`. Keep any products
+you want to retain before cleaning up.

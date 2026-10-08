@@ -6,6 +6,7 @@ from copy import deepcopy
 from functools import cache
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Annotated,
     Any,
     Callable,
@@ -41,6 +42,9 @@ from .auth.config import has_credentials
 from .auth.secret_store import load_auth_secrets, save_auth_secrets
 from .defaults import DEFAULT_API_URL
 from .opener import JobResultOpener, JobResultOpenerRegistry
+
+if TYPE_CHECKING:
+    from .opener.metadata import StacMetadataIO
 
 
 class ClientConfig(BaseSettings):
@@ -100,6 +104,37 @@ class ClientConfig(BaseSettings):
     ``register_job_result_opener()``.
     This class attribute is excluded from configuration settings and persistence.
     """
+
+    stac_metadata_io_factory: ClassVar[
+        Callable[["ClientConfig"], "StacMetadataIO"] | None
+    ] = None
+    """Optional application factory for scoped metadata I/O per opening operation.
+
+    Supply runtime headers/transport policy here, separately from process auth.
+    The factory runs during opening, never acceptance, and is not persisted.
+    """
+
+    stac_metadata_max_bytes: int = Field(default=2 * 1024 * 1024, gt=0)
+    """Maximum decoded bytes per STAC metadata document."""
+
+    stac_metadata_timeout: float = Field(default=10.0, gt=0, allow_inf_nan=False)
+    """Per-fetch STAC metadata timeout in seconds."""
+
+    stac_metadata_max_requests: int = Field(default=16, gt=0)
+    """Maximum metadata requests per opening operation, including redirects."""
+
+    def create_stac_metadata_io(self) -> "StacMetadataIO":
+        """Create independent metadata access policy without process credentials."""
+        factory = type(self).stac_metadata_io_factory
+        if factory is not None:
+            return factory(self)
+        from .opener.metadata import StacMetadataIO
+
+        return StacMetadataIO(
+            max_bytes=self.stac_metadata_max_bytes,
+            timeout=self.stac_metadata_timeout,
+            max_requests=self.stac_metadata_max_requests,
+        )
 
     api_url: Annotated[Optional[str], Field(title="Process API URL")] = DEFAULT_API_URL
     """
@@ -458,6 +493,13 @@ class ClientConfig(BaseSettings):
             exclude_none=True,
         )
         config_dict["auth"] = self.auth.to_public_dict()
+        for name in (
+            "stac_metadata_max_bytes",
+            "stac_metadata_timeout",
+            "stac_metadata_max_requests",
+        ):
+            if getattr(self, name) == type(self).model_fields[name].default:
+                config_dict.pop(name, None)
         return config_dict
 
     # noinspection PyMethodParameters

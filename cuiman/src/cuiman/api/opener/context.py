@@ -21,6 +21,7 @@ from .errors import JobResultOpenError
 
 if TYPE_CHECKING:
     from ..config import ClientConfig
+    from .metadata import StacMetadataIO
 
 _UNSELECTED = object()
 
@@ -85,6 +86,14 @@ class JobResultOpenContext:
     Derived from Link, qualified, and supported path-like values when omitted.
     This field does not imply that relative locations have been resolved.
     """
+
+    document_href: str | None = None
+    """Effective containing result-document URI supplied by the transport.
+
+    Used only as source context for inline metadata; never guessed from api_url.
+    """
+
+    _stac_metadata_io: "StacMetadataIO | None" = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         """Select and copy a job output, then normalize its location without I/O."""

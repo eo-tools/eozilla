@@ -1,5 +1,12 @@
 # Cuiman Configuration
 
+STAC metadata limits can be configured with `stac_metadata_max_bytes` (2097152),
+`stac_metadata_timeout` (10 seconds), and `stac_metadata_max_requests` (16).
+Non-default values are saved in profiles; defaults are omitted. Runtime scoped
+metadata credentials and transports belong in the application class's
+`stac_metadata_io_factory`, separately from processing authentication. See
+[metadata limits and access](guides/openers.md#metadata-limits-and-access).
+
 The `cuiman` configuration settings may be passed in a couple of ways 
 to the Python API and CLI clients. The different ways also have different 
 precedence.

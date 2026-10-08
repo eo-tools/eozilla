@@ -5,21 +5,118 @@
 import datetime
 import time
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional
 
 import pydantic
 from pydantic import Field
 
 from gavicore.models import InputDescription, Link, OutputDescription, Schema
 from procodile import FromMain, FromStep, JobContext
-from wraptile.services.local import LocalService
 
-service = LocalService(
+from .local_service import LocalService
+
+
+class _TestingService(LocalService):
+    """Local testing service with HTTP access to its generated STAC products."""
+
+    def configure(self, processes: bool | None = None, max_workers: int | None = None):
+        """Configure execution and mount the testing artifact directory."""
+        super().configure(processes=processes, max_workers=max_workers)
+        from wraptile.app import app
+
+        from ._testing_stac import mount_artifacts
+
+        mount_artifacts(app)
+
+
+service = _TestingService(
     title="Eozilla API Server (local dummy for testing)",
     description="Local test server implementing the OGC API - Processes 1.0 Standard",
 )
 
 registry = service.process_registry
+
+
+@registry.process(
+    id="create_inline_stac",
+    title="Create inline STAC outputs",
+    outputs={
+        "item": OutputDescription(
+            title="STAC Item",
+            schema=Schema(
+                **{
+                    "$ref": "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json"
+                }
+            ),
+        ),
+        "item_collection": OutputDescription(
+            title="STAC ItemCollection",
+            schema=Schema(
+                type="object",
+                properties={
+                    "features": {
+                        "type": "array",
+                        "items": {"properties": {"stac_version": {"type": "string"}}},
+                    }
+                },
+            ),
+        ),
+        "report": OutputDescription(
+            title="Ordinary CSV link", schema=Schema(type="object")
+        ),
+        "item_count": OutputDescription(
+            title="Number of embedded Items", schema=Schema(type="integer")
+        ),
+        "optional": OutputDescription(
+            title="Explicit null output", schema=Schema(nullable=True)
+        ),
+    },
+)
+def create_inline_stac(
+    item_count: Annotated[int, Field(ge=1, le=4)] = 2,
+) -> tuple[dict[str, Any], dict[str, Any], Link, int, None]:
+    """Create small real Zarr/CSV products and return inline STAC JSON.
+
+    Output lives under EOZILLA_TESTING_STAC_DIR and is advertised beneath
+    EOZILLA_TESTING_STAC_URL. Each run has its own directory retained for review.
+    Requires the optional xarray, NumPy, and Zarr testing dependencies.
+    """
+    from ._testing_stac import create_outputs
+
+    return create_outputs(item_count, inline=True)
+
+
+@registry.process(
+    id="create_linked_stac",
+    title="Create linked STAC outputs",
+    outputs={
+        "item": OutputDescription(title="STAC Item link", schema=Schema(type="object")),
+        "item_collection": OutputDescription(
+            title="STAC ItemCollection link", schema=Schema(type="object")
+        ),
+        "report": OutputDescription(
+            title="Ordinary CSV link", schema=Schema(type="object")
+        ),
+        "item_count": OutputDescription(
+            title="Number of embedded Items", schema=Schema(type="integer")
+        ),
+        "optional": OutputDescription(
+            title="Explicit null output", schema=Schema(nullable=True)
+        ),
+    },
+)
+def create_linked_stac(
+    item_count: Annotated[int, Field(ge=1, le=4)] = 2,
+) -> tuple[Link, Link, Link, int, None]:
+    """Write the inline demo's equivalent metadata and return ordinary Links.
+
+    The testing service serves metadata and products at /testing-stac; set
+    EOZILLA_TESTING_STAC_URL to its public URL when using another host or port.
+    Generated run directories remain available until explicitly cleaned up.
+    """
+    from ._testing_stac import create_outputs
+
+    return create_outputs(item_count, inline=False)
 
 
 @registry.process(

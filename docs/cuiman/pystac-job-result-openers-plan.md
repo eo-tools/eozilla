@@ -1,6 +1,7 @@
 # PySTAC job-result openers: implementation plan
 
-Status: Step 1 implemented and verified; awaiting user review before Step 2.
+Status: Step 1 approved and committed by the user. Step 2 implemented and verified;
+awaiting user review before Step 3.
 
 This plan implements [PySTAC Job Results and Asset Opening](pystac-job-result-openers.md).
 That document remains the behavioral specification, subject to the user-approved
@@ -198,6 +199,54 @@ process requests, the HTTP setup, and cleanup instructions.
 
 **Pause:** review both processes, product layout, browser accessibility, native
 opening, dependency behavior, and transport policy together.
+
+### Step 2 implementation record
+
+- Added `create_inline_stac` and `create_linked_stac` to the existing testing
+  registry. Both produce equivalent Item/ItemCollection metadata, real 2×2 Zarr
+  grids and CSV reports, a declared products-folder Asset, and ordinary Link,
+  integer, and null outputs. Counts are bounded to 1–4 before generation; each run
+  has a separate directory with stable Item IDs and Asset keys.
+- The testing service mounts its configured artifact directory at `/testing-stac`.
+  Default output is `.pixi/testing-stac`, advertised at
+  `http://localhost:8008/testing-stac`. Environment overrides, browser access,
+  execution requests, representative outputs, and explicit cleanup are documented
+  in the Wraptile usage guide. Restart an existing testing server to expose the
+  new registered processes and HTTP mount.
+- Added optional `cuiman[stac]` with verified PySTAC `>=1.15.2,<1.16`, plus the Pixi
+  development dependency and lock update. The built-in optional wrapper preserves
+  deferred imports and registration precedence. Native Item, ItemCollection,
+  Collection, and Catalog parsing preserves unknown fields and concrete Asset
+  ownership without following remote links. Collection satisfies a Catalog
+  request; incompatible native requests and required STAC failures are terminal.
+- Added bounded `StacMetadataIO`, configurable limits and a runtime application
+  factory. HTTP streams and off-thread local files use independent operation
+  budgets/caches; cancellation propagates. Explicit origin headers remain separate
+  from process authentication, and redirects do not inherit credentials or cookies.
+  Each returned object's read-only PySTAC I/O retains the application policy for
+  explicit synchronous navigation without changing PySTAC's global default.
+- Retained effective job-result response URIs per exact result object using weak
+  references, with an optional custom-transport hook. Inline metadata prefers its
+  absolute self URI; embedded Items use their containing ItemCollection. Normalized
+  native references leave original results untouched and reject missing bases.
+- Baseline: 136 targeted Cuiman tests and 11 testing-service tests passed. Final:
+  788 Cuiman tests, 129 Wraptile tests (4 existing skips), and 154 Procodile tests
+  passed. Cuiman, maintained guide examples, and Wraptile have 100% statement
+  coverage. Package Ruff lint/format checks, Mypy over 72 source files, the strict
+  documentation build, and `git diff --check` passed.
+- An independent temporary localhost server exercised both real processes with
+  both clients: native Item/ItemCollection opening, original outputs including
+  null, reachable relative products, and ordinary CSV opening passed. Only the
+  temporary test server was stopped; the existing user server was preserved.
+- Environment: the Pixi dependency update encountered a locked running
+  `wraptile.exe`. The manifest/lock update used `pixi add --no-install`; interrupted
+  editable-package registrations were restored without stopping that server.
+  Checks used `pixi run --as-is` with the explicit Pixi interpreter. QA outputs
+  remain isolated under `.pixi/step2/`; Procodile temporary files were confined
+  there after Windows denied writes in its default external temporary directory.
+- Updated essential opener/configuration/testing-service documentation and
+  CHANGES.md. Asset overloads, Asset reader/access hints, transformations, and
+  the optional notebook remain in their later approved steps.
 
 ## Step 3: exact-Asset overload for both clients
 

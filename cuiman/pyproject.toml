@@ -55,6 +55,9 @@ dependencies = [
   "gavicore >=0.3.2.dev0",
 ]
 
+[project.optional-dependencies]
+stac = ["pystac >=1.15.2,<1.16"]
+
 [project.scripts]
 cuiman = "cuiman.cli:cli"
 

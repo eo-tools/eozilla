@@ -1,5 +1,12 @@
 ## Changes in version 0.3.2 (in development)
 
+- Cuiman's optional `stac` extra opens selected inline or linked STAC outputs as
+  native PySTAC Items, ItemCollections, Collections, and Catalogs. Metadata reads
+  use configurable byte, time, and request bounds with separate scoped access;
+  initial opening retains lazy navigation without reading Asset payloads.
+  Wraptile's local testing service adds `create_inline_stac` and
+  `create_linked_stac`, generating small Zarr/CSV products served over HTTP.
+
 - Cuiman job-result openers now receive one selected target with optional job
   provenance and an effective location. Selected job values are copied to preserve
   original results. Multiple outputs require an explicit `output_name`, including

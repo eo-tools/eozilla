@@ -10,6 +10,7 @@ from .openers import (
     GeopandasDataFrameOpener,
     ImageOpener,
     PandasDataFrameOpener,
+    StacJobResultOpener,
     XarrayDatasetOpener,
 )
 
@@ -19,5 +20,6 @@ __all__ = [
     "GeopandasDataFrameOpener",
     "ImageOpener",
     "PandasDataFrameOpener",
+    "StacJobResultOpener",
     "XarrayDatasetOpener",
 ]

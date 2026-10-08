@@ -3,12 +3,13 @@
 #  https://opensource.org/license/apache-2-0.
 
 import logging
+import weakref
 from typing import Any, Awaitable, Callable
 
 import httpx2
 
 from cuiman.api.exceptions import ClientError
-from gavicore.models import ApiError
+from gavicore.models import ApiError, JobResults
 
 from .args import CLIENT_ERROR_URI, TransportArgs
 from .transport import AsyncTransport, Transport, TransportError
@@ -38,6 +39,7 @@ class Httpx2Transport(Transport, AsyncTransport):
         self.sync_request = sync_request
         self.async_request = async_request
         self._owns_http_client = sync_httpx2 is None and async_httpx2 is None
+        self._result_sources: dict[int, tuple[weakref.ReferenceType[Any], str]] = {}
         # Note, by default, we silence the httpx2 logger, however it may be
         #   useful to make that configurable
         logging.getLogger("httpx2").setLevel(
@@ -113,15 +115,28 @@ class Httpx2Transport(Transport, AsyncTransport):
             ) from e
         try:
             response.raise_for_status()
-            return args.get_response_for_status(
+            result = args.get_response_for_status(
                 response.status_code, response_json, self.return_type_map
             )
+            if isinstance(result, JobResults) and isinstance(response.url, httpx2.URL):
+                identity = id(result)
+                sources = self._result_sources
+                sources[identity] = (
+                    weakref.ref(result, lambda _: sources.pop(identity, None)),
+                    str(response.url),
+                )
+            return result
         except httpx2.HTTPError as e:
             raise args.get_exception_for_status(
                 response.status_code,
                 response_json,
                 f"{e}",
             ) from e
+
+    def get_response_href(self, value: Any) -> str | None:
+        """Return the effective URI of these exact results, without mutating them."""
+        source = self._result_sources.get(id(value))
+        return source[1] if source is not None and source[0]() is value else None
 
     def close(self):
         if self.sync_httpx2 is not None:

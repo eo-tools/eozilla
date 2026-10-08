@@ -436,6 +436,30 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pyparsing-3.3.2-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pyproject_hooks-1.2.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-1.15.2-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-core-1.15.2-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-classification-2.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-datacube-2.2.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-eo-1.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-file-2.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-grid-1.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-item-assets-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-label-1.0.2-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-mgrs-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-mlm-1.4.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-pointcloud-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-projection-2.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-raster-1.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-render-2.0.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-sar-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-sat-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-scientific-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-storage-2.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-table-1.2.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-timestamps-1.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-version-1.2.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-view-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-xarray-assets-1.0.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-9.1.1-pyhc364b38_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-asyncio-1.4.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-cov-7.1.0-pyhcf101f3_0.conda
@@ -698,6 +722,30 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pyparsing-3.3.2-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pyproject_hooks-1.2.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-1.15.2-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-core-1.15.2-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-classification-2.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-datacube-2.2.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-eo-1.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-file-2.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-grid-1.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-item-assets-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-label-1.0.2-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-mgrs-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-mlm-1.4.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-pointcloud-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-projection-2.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-raster-1.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-render-2.0.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-sar-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-sat-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-scientific-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-storage-2.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-table-1.2.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-timestamps-1.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-version-1.2.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-view-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-xarray-assets-1.0.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-9.1.1-pyhc364b38_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-asyncio-1.4.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-cov-7.1.0-pyhcf101f3_0.conda
@@ -1157,6 +1205,30 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pyparsing-3.3.2-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pyproject_hooks-1.2.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyh09c184e_7.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-1.15.2-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-core-1.15.2-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-classification-2.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-datacube-2.2.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-eo-1.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-file-2.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-grid-1.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-item-assets-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-label-1.0.2-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-mgrs-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-mlm-1.4.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-pointcloud-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-projection-2.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-raster-1.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-render-2.0.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-sar-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-sat-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-scientific-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-storage-2.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-table-1.2.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-timestamps-1.1.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-version-1.2.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-view-1.0.1-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-xarray-assets-1.0.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-9.1.1-pyhc364b38_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-asyncio-1.4.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-cov-7.1.0-pyhcf101f3_0.conda
@@ -8416,6 +8488,370 @@ packages:
   run_exports: {}
   size: 21085
   timestamp: 1733217331982
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-1.15.2-pyhcf101f3_0.conda
+  sha256: a45b3a815b59de229ebbccf49b02de27497dcf7fb60ac9299322945493f7fd3d
+  md5: ad00420df7f2364fe838e9fc24d443a1
+  depends:
+  - python >=3.10
+  - pystac-core >=1.15.0,<2
+  - pystac-ext-classification
+  - pystac-ext-datacube
+  - pystac-ext-eo
+  - pystac-ext-file
+  - pystac-ext-grid
+  - pystac-ext-item-assets
+  - pystac-ext-label
+  - pystac-ext-mgrs
+  - pystac-ext-mlm
+  - pystac-ext-pointcloud
+  - pystac-ext-projection
+  - pystac-ext-raster
+  - pystac-ext-render
+  - pystac-ext-sar
+  - pystac-ext-sat
+  - pystac-ext-scientific
+  - pystac-ext-storage
+  - pystac-ext-table
+  - pystac-ext-timestamps
+  - pystac-ext-version
+  - pystac-ext-view
+  - pystac-ext-xarray-assets
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac?source=hash-mapping
+  run_exports: {}
+  size: 14337
+  timestamp: 1786137688778
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-core-1.15.2-pyhcf101f3_0.conda
+  sha256: e16c5f6f37f382c00e165d0f208c502896692a94db59455b5a46392feed35228
+  md5: 152986b0424e3e8deddce283354d170a
+  depends:
+  - python >=3.10
+  - python-dateutil >=2.7.0
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-core?source=hash-mapping
+  run_exports: {}
+  size: 94349
+  timestamp: 1785888347697
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-classification-2.0.1-pyhcf101f3_0.conda
+  sha256: 5b781fa8301e401e8416828c3595f6847ef9f37b749bae0a645407afd7e24d6c
+  md5: 3f3421dbf3ea847fa48eb00a6a88bef0
+  depends:
+  - python >=3.10
+  - pystac-core
+  - pystac-ext-raster
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-classification?source=compressed-mapping
+  run_exports: {}
+  size: 15356
+  timestamp: 1786442459841
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-datacube-2.2.1-pyhcf101f3_0.conda
+  sha256: 9424f5b4e4837efee035a340a7fd4fe1cf8feb7e422efb5f805bccffbbd9f057
+  md5: c78adc1476402329e655c9ba61e424a8
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-datacube?source=compressed-mapping
+  run_exports: {}
+  size: 15135
+  timestamp: 1786443156017
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-eo-1.1.1-pyhcf101f3_0.conda
+  sha256: bdf9a6e942c21721e0c36658969fd6bb91e6b32222197c7bcdc4f1ecfadbbd23
+  md5: 906ae840cecc53214ecfbe7f4dc7d45d
+  depends:
+  - python >=3.10
+  - pystac-core
+  - pystac-ext-projection
+  - pystac-ext-view
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-eo?source=compressed-mapping
+  run_exports: {}
+  size: 15803
+  timestamp: 1786443173854
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-file-2.1.1-pyhcf101f3_0.conda
+  sha256: e578797a807872b1450a5a8cb6b6bd2506a81d8779a35b247fd2bed893cecfa0
+  md5: c4eeb8c7e5edd1ff97a104bf847fa87f
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-file?source=compressed-mapping
+  run_exports: {}
+  size: 13956
+  timestamp: 1786443154082
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-grid-1.1.1-pyhcf101f3_0.conda
+  sha256: c547fcffe4a9f00659d1e3a9330ea9ca11892b907bb2abe42351fa3a7e682b0c
+  md5: 072c0fd7b47fa116879d969978e90286
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-grid?source=hash-mapping
+  run_exports: {}
+  size: 11867
+  timestamp: 1786398173117
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-item-assets-1.0.1-pyhcf101f3_0.conda
+  sha256: 748b97abd786b2249b51f370dc97080f8c07027113451805046db1fe045e4718
+  md5: 6d925150a33dadfe459bf28d475ddb51
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-item-assets?source=compressed-mapping
+  run_exports: {}
+  size: 11949
+  timestamp: 1786442905517
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-label-1.0.2-pyhcf101f3_0.conda
+  sha256: 0e378fd1f1a179fb819494b68d036a2d211da13221c387f965d68a64d80619f8
+  md5: a34b8d0300d4d50e5c93a67c1f0d6170
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-label?source=compressed-mapping
+  run_exports: {}
+  size: 16126
+  timestamp: 1786389238851
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-mgrs-1.0.1-pyhcf101f3_0.conda
+  sha256: 6c0b8e156151fd7d6961ca54a32d8db0100825202bbf484fefdc2bb57bfcb428
+  md5: d0cd0523f6ade7ed663a377d294a8256
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-mgrs?source=compressed-mapping
+  run_exports: {}
+  size: 12316
+  timestamp: 1786387300909
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-mlm-1.4.1-pyhcf101f3_0.conda
+  sha256: d0ba927a4e386d822b863d8d2420ee430d240e8d88b75076595f1c741f22b980
+  md5: c287041aa8622f85325ab2554dbe57cc
+  depends:
+  - python >=3.10
+  - pystac-core
+  - pystac-ext-classification
+  - pystac-ext-raster
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-mlm?source=compressed-mapping
+  run_exports: {}
+  size: 21237
+  timestamp: 1786442462729
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-pointcloud-1.0.1-pyhcf101f3_0.conda
+  sha256: 6913cb9a9e538b5bc30ccd3834e23a0901e8c57936623f3f8a8202e7d0907313
+  md5: 72787ba6f1dacb821da17975747b366b
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-pointcloud?source=compressed-mapping
+  run_exports: {}
+  size: 14508
+  timestamp: 1786391772575
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-projection-2.0.1-pyhcf101f3_0.conda
+  sha256: 379baa11b3b57e0c5e9d9adc016fba0568e79c6e3aa2574ba5786571f6bbe544
+  md5: cb45f62be547252c74bb824dff57f761
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-projection?source=compressed-mapping
+  run_exports: {}
+  size: 15411
+  timestamp: 1786442864330
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-raster-1.1.1-pyhcf101f3_0.conda
+  sha256: f86b260243f921cd8c6903a91784def26c356d6dc94b588a05dbc1ce20313621
+  md5: da866f00a4f6ad13d2c532e550a09377
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-raster?source=hash-mapping
+  run_exports: {}
+  size: 14910
+  timestamp: 1786398179933
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-render-2.0.0-pyhcf101f3_0.conda
+  sha256: 377113cb3c58c5fa0d2dc9d6e7d00390b13bb048915876bb2d34b97ef4604e18
+  md5: 1629dbf5dc5b1a655018953b55538f1f
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-render?source=hash-mapping
+  run_exports: {}
+  size: 13284
+  timestamp: 1786103716486
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-sar-1.0.1-pyhcf101f3_0.conda
+  sha256: 8c42f11e5bbb78d9421b4f5babdcc27ab687f3792c0236153a5ca54a09171fd8
+  md5: 09a9ad3ea833e20edbe4de9b7b706509
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-sar?source=compressed-mapping
+  run_exports: {}
+  size: 14659
+  timestamp: 1786443146885
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-sat-1.0.1-pyhcf101f3_0.conda
+  sha256: 90ae741d6750078c64bdcfebe542281e368a1334ae53ac3a687c27baaa1d14c0
+  md5: 50f9f2eee614fbaaccee422e989a170b
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-sat?source=compressed-mapping
+  run_exports: {}
+  size: 13070
+  timestamp: 1786443087822
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-scientific-1.0.1-pyhcf101f3_0.conda
+  sha256: e58705fd9518dabfe19a2856070086abd42bcedf815e0e21122e23484112649b
+  md5: 4ca00de8b9ff64a84425af7938b4e034
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-scientific?source=compressed-mapping
+  run_exports: {}
+  size: 13623
+  timestamp: 1786442867266
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-storage-2.0.1-pyhcf101f3_0.conda
+  sha256: 625907c277aa91233e94773b6b7740f0dc845ec5bfa3a1ba428f9fa3d6037bf5
+  md5: c9697fb59967b3c5d9781d18f2955170
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-storage?source=compressed-mapping
+  run_exports: {}
+  size: 15695
+  timestamp: 1786442546297
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-table-1.2.1-pyhcf101f3_0.conda
+  sha256: 2650f09562baab696bf9f54cb75e2165e74a3a3bd1c24394ba2c949a82c8932c
+  md5: 8e7e71d6fa90b315f0ceafe56241a951
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-table?source=compressed-mapping
+  run_exports: {}
+  size: 12916
+  timestamp: 1786442861020
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-timestamps-1.1.1-pyhcf101f3_0.conda
+  sha256: cc1aaad264dd32efa1f6dd28b93c6ceb9c179fec1a5514b31ccc5c2e97c269fb
+  md5: 9f9dbfc1679d450cd3d39131f6dc3cf1
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-timestamps?source=compressed-mapping
+  run_exports: {}
+  size: 12748
+  timestamp: 1786443708446
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-version-1.2.1-pyhcf101f3_0.conda
+  sha256: 21228a0c5c4ac93383056ac198cc4ef92913d36ba9da59e2e011bd10a7633117
+  md5: e296ea1aa3e76bb1ff99c2dda0437c67
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-version?source=compressed-mapping
+  run_exports: {}
+  size: 13926
+  timestamp: 1786391923285
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-view-1.0.1-pyhcf101f3_0.conda
+  sha256: da4c0e230e13bce76dd6d22d30b2ab8bf06b9da6c171307f55bfebad4b0051e0
+  md5: 2762663c40d62569991df13cde22466a
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-view?source=compressed-mapping
+  run_exports: {}
+  size: 12978
+  timestamp: 1786442636227
+- conda: https://conda.anaconda.org/conda-forge/noarch/pystac-ext-xarray-assets-1.0.1-pyhcf101f3_0.conda
+  sha256: 64e0dad84bf33d3527a5046d75f54b308a2e89a9f187e71bdab42c5e8d8a46b4
+  md5: 836aa5939d7dfd0431998587469066ca
+  depends:
+  - python >=3.10
+  - pystac-core
+  - python
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/pystac-ext-xarray-assets?source=hash-mapping
+  run_exports: {}
+  size: 12122
+  timestamp: 1786393090726
 - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-9.1.1-pyhc364b38_2.conda
   sha256: 430051d80765207a7d782b2b188230ba1489d35c6e75fd9903f76cb9fda4af16
   md5: 64c98a12c4e23eb238bf66bbecafdf3c
@@ -16426,6 +16862,7 @@ packages:
   - joserfc>=1.6,<2
   - keyring
   - gavicore>=0.3.2.dev0
+  - pystac>=1.15.2,<1.16 ; extra == 'stac'
   requires_python: '>=3.10'
 - pypi: ./eozilla
   name: eozilla

@@ -44,3 +44,25 @@ class ImageOpener(OptionalModuleOpener):
 
         Image.init()
         return ImageOpenerImpl()
+
+
+class StacJobResultOpener(OptionalModuleOpener):
+    """Open native STAC metadata when the optional ``cuiman[stac]`` extra is installed."""
+
+    required = ("pystac",)
+
+    def _create_implementing_opener(self) -> JobResultOpener:
+        from ._stac import StacJobResultOpenerImpl
+
+        return StacJobResultOpenerImpl()
+
+    @classmethod
+    def _unavailable_error(cls, ctx):
+        from ..errors import StacJobResultOpenError
+        from ._stac_support import candidate_stac, strong_stac
+
+        if candidate_stac(ctx) and strong_stac(ctx):
+            return StacJobResultOpenError(
+                "STAC opening requires the optional cuiman[stac] dependency"
+            )
+        return None
