@@ -6,12 +6,14 @@ from typing import Any
 
 import xarray as xr
 
-from cuiman.api.opener import JobResultOpenContext
-
+from ...context import JobResultContext
+from ...resources import JobResultResource
 from .base import PathOpener
 
 
 class XarrayDatasetOpenerImpl(PathOpener):
+    """Xarray adapter for the selected dataset and effective backend settings."""
+
     def accept_data_type(self, data_type: type) -> bool:
         return data_type is xr.Dataset
 
@@ -26,7 +28,11 @@ class XarrayDatasetOpenerImpl(PathOpener):
         path_like: str,
         filename_ext: str,
         media_type: str | None,
-        ctx: JobResultOpenContext,
+        resource: JobResultResource,
+        context: JobResultContext,
     ) -> Any:
+        """Read this dataset using scoped storage options under backend_kwargs."""
         # Use xarray's generic read function
-        return xr.open_dataset(path_like, **ctx.options)
+        return xr.open_dataset(
+            path_like, **await context.reader_options(resource, storage_in_backend=True)
+        )

@@ -3,101 +3,108 @@
 #  https://opensource.org/license/apache-2-0.
 
 from abc import abstractmethod
+from collections.abc import Mapping
 from functools import cached_property
 from importlib.util import find_spec
-from pathlib import Path
+from pathlib import PurePosixPath
 from typing import Any
+from urllib.parse import urlsplit
+from urllib.request import url2pathname
 
-import pydantic
-
-from cuiman.api.opener import JobResultOpenContext, JobResultOpener
-
-_PATH_LIKE_KEYS = ("href", "url", "path")
-_PATH_LIKE_TYPES = (str, Path)
+from ...context import JobResultContext
+from ...resources import JobResultResource
+from ..opener import JobResultOpener
 
 
 class OptionalModuleOpener(JobResultOpener):
-    """Abstract base class for openers that are usable only if
-    one or more modules are available in the current Python environment.
+    """Expose a reader without requiring its optional dependency at import time.
 
-    Derived classes must
-
-    - set the `required` class attribute to the names of the
-      packages or modules required by the implementing opener.
-    - implement the
-      [create_implementing_opener][create_implementing_opener] method
-      that creates the actual opener implementation opener instance.
+    The registry can list this opener even when the reader is absent. Dispatch
+    checks its required modules and imports the concrete adapter only on use.
     """
 
     required: tuple[str, ...] = ()
-    """The names of module required for the implementing opener."""
+    """Modules required by the implementing opener."""
 
     @classmethod
     def is_usable(cls) -> bool:
-        """Checks, if all the modules given by
-        [required][required] are available.
-        """
-        return all(find_spec(m) for m in cls.required)
+        """Whether every declared optional reader module is available."""
+        return all(find_spec(module) for module in cls.required)
 
     @cached_property
-    def implementing_opener(self):
-        """The implementing opener."""
+    def implementing_opener(self) -> JobResultOpener:
+        """Reader adapter, initialized only when this candidate is used."""
         return self._create_implementing_opener()
 
     @abstractmethod
     def _create_implementing_opener(self) -> JobResultOpener:
-        """Create and return the opener implementation."""
+        """Create the concrete reader adapter."""
 
-    async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
-        """Delegates the call to the implementing opener."""
-        return await self.implementing_opener.accept_job_result(ctx)
+    async def accept(
+        self, resource: JobResultResource, *, context: JobResultContext
+    ) -> bool:
+        """Check the concrete adapter without reading a payload."""
+        return await self.implementing_opener.accept(resource, context=context)
 
-    async def open_job_result(self, ctx: JobResultOpenContext) -> Any:
-        """Delegates the call to the implementing opener."""
-        return await self.implementing_opener.open_job_result(ctx)
+    async def open(
+        self, resource: JobResultResource, *, context: JobResultContext
+    ) -> Any:
+        """Open through the concrete reader adapter."""
+        return await self.implementing_opener.open(resource, context=context)
 
 
 class PathOpener(JobResultOpener):
-    """
-    Abstract base class for job results that use a path-like
-    string (path or URL) to reference an output dataset.
-    Job result output values are typically modeled as
-    `gavicore.models.Link` values.
+    """Share target extraction and format checks among file-based readers.
+
+    Subclasses supply supported formats, return types, and the actual read.
+    This base handles the selected link or path-like value consistently without
+    consulting original-output provenance or probing storage during acceptance.
     """
 
-    async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
-        path_like = self.get_path_like(ctx)
-        if not path_like:
+    async def accept(
+        self, resource: JobResultResource, *, context: JobResultContext
+    ) -> bool:
+        """Check selected location, requested type, format, and filename extension."""
+        path = self.get_path_like(resource)
+        if not path:
             return False
-        data_type = ctx.data_type
-        if isinstance(data_type, type) and not self.accept_data_type(data_type):
+        if context.data_type is not None and not self.accept_data_type(
+            context.data_type
+        ):
             return False
-        media_type = ctx.output_media_type
-        if media_type and not self.accept_media_type(media_type):
+        media_type = context.media_type_for(resource)
+        if media_type and not self.accept_media_type(
+            media_type.partition(";")[0].strip().lower()
+        ):
             return False
-        filename_ext = self.get_filename_ext(path_like)
-        if filename_ext and not self.accept_filename_ext(filename_ext):
-            return False
-        return True
+        extension = self.get_filename_ext(path)
+        return not extension or self.accept_filename_ext(extension)
 
     @abstractmethod
     def accept_media_type(self, media_type: str) -> bool:
-        """Check whether given media type (MIME-type) is accepted."""
+        """Whether the normalized base media type is supported."""
 
     @abstractmethod
     def accept_filename_ext(self, filename_ext: str) -> bool:
-        """Check whether given filename extension is accepted."""
+        """Whether the filename extension is supported."""
 
     @abstractmethod
     def accept_data_type(self, data_type: type) -> bool:
-        """Check whether given data type is accepted."""
+        """Whether this adapter returns the requested Python type."""
 
-    async def open_job_result(self, ctx: JobResultOpenContext) -> Any:
-        path_or_url = self.get_path_like(ctx)
-        assert path_or_url  # from accept() we know we have path_or_url
-        filename_ext = self.get_filename_ext(path_or_url)
-        media_type = ctx.output_media_type
-        return await self.open_path_like(path_or_url, filename_ext, media_type, ctx)
+    async def open(
+        self, resource: JobResultResource, *, context: JobResultContext
+    ) -> Any:
+        """Read the selected target using runtime settings and scoped storage access."""
+        path = self.get_path_like(resource)
+        assert path
+        return await self.open_path_like(
+            path,
+            self.get_filename_ext(path),
+            context.media_type_for(resource),
+            resource,
+            context,
+        )
 
     @abstractmethod
     async def open_path_like(
@@ -105,35 +112,50 @@ class PathOpener(JobResultOpener):
         path_like: str,
         filename_ext: str,
         media_type: str | None,
-        ctx: JobResultOpenContext,
+        resource: JobResultResource,
+        context: JobResultContext,
     ) -> Any:
-        """Open the given path or URL."""
+        """Adapt a normalized selected location to the concrete reader library.
+
+        The base has extracted the path and format; implementations use the
+        context to obtain effective options and any required storage access.
+        """
 
     @classmethod
-    def get_path_like(cls, ctx: JobResultOpenContext) -> str | None:
-        output_link = ctx.output_link
-        if output_link:
-            return output_link.href
-        output_value = ctx.output_value
-        value = (
-            output_value.model_dump()
-            if isinstance(output_value, pydantic.BaseModel)
-            else output_value
+    def get_path_like(cls, resource: JobResultResource) -> str | None:
+        """Extract only the selected target, never a provenance link or schema."""
+        value: Any = resource.link.href if resource.link else resource.value
+        if isinstance(value, Mapping) and "mediaType" in value and "value" in value:
+            value = value["value"]
+        if isinstance(value, Mapping):
+            value = next(
+                (
+                    value[key]
+                    for key in ("href", "url", "path")
+                    if isinstance(value.get(key), str)
+                ),
+                None,
+            )
+        if not isinstance(value, str):
+            return None
+        if value.startswith("file:"):
+            parts = urlsplit(value)
+            value = url2pathname(
+                (
+                    "//" + parts.netloc
+                    if parts.netloc and parts.netloc != "localhost"
+                    else ""
+                )
+                + parts.path
+            )
+        return value
+
+    @classmethod
+    def get_filename_ext(cls, path_like: str) -> str:
+        """Filename suffix without URL query/fragment or directory dots."""
+        path = (
+            urlsplit(path_like).path
+            if "://" in path_like
+            else path_like.replace("\\", "/")
         )
-        if isinstance(value, _PATH_LIKE_TYPES):
-            return str(value)
-        elif isinstance(value, dict):
-            for k in _PATH_LIKE_KEYS:
-                v = value.get(k)
-                if v is not None and isinstance(v, _PATH_LIKE_TYPES):
-                    return str(v)
-        return None
-
-    @classmethod
-    def get_filename_ext(cls, path_like: str):
-        if "://" in path_like:
-            path = path_like.rsplit("?", maxsplit=1)[0]
-        else:
-            path = path_like
-        index = path.rindex(".")
-        return path[index:] if index > 0 else ""
+        return PurePosixPath(path).suffix.lower()

@@ -12,6 +12,7 @@ from cuiman.api.client import Client
 from cuiman.api.config import ClientConfig
 from cuiman.api.exceptions import ClientError, ClientWarning
 from cuiman.api.opener import JobResultStatusError
+from cuiman.api.resources import JobResultResource
 from gavicore.models import (
     ApiError,
     JobInfo,
@@ -68,7 +69,7 @@ endless_run = [JobStatus.accepted] + 100 * [JobStatus.running]
 class ClientOpenJobResultTest(TestCase):
     @patch.object(Client, "get_job", side_effect=mk_job_infos(*successful_run))
     @patch.object(Client, "get_job_results", return_value=mk_job_results())
-    @patch.object(Client, "get_process", return_value=mk_process_description)
+    @patch.object(Client, "get_process", return_value=mk_process_description())
     def test_successful_run(
         self,
         _get_job: MagicMock,
@@ -82,11 +83,11 @@ class ClientOpenJobResultTest(TestCase):
             config_type=ApplicationConfig, api_url="https://acme.ogc.org/api"
         )
         result = client.open_job_result("job_12", timeout=30, poll_interval=0.01)
-        self.assertIsInstance(result, JobResults)
+        self.assertIsInstance(result, JobResultResource)
 
     @patch.object(Client, "get_job", side_effect=mk_job_infos(*failed_run))
     @patch.object(Client, "get_job_results", return_value=mk_job_results())
-    @patch.object(Client, "get_process", return_value=mk_process_description)
+    @patch.object(Client, "get_process", return_value=mk_process_description())
     def test_failed_run(
         self,
         _get_job: MagicMock,
@@ -106,7 +107,7 @@ class ClientOpenJobResultTest(TestCase):
 
     @patch.object(Client, "get_job", side_effect=mk_job_infos(*endless_run))
     @patch.object(Client, "get_job_results", return_value=mk_job_results())
-    @patch.object(Client, "get_process", return_value=mk_process_description)
+    @patch.object(Client, "get_process", return_value=mk_process_description())
     def test_endless_run(
         self,
         _get_job: MagicMock,
@@ -150,7 +151,7 @@ class ClientOpenJobResultTest(TestCase):
         ):
             result = client.open_job_result("job_12", timeout=30, poll_interval=0.01)
 
-        self.assertIsInstance(result, JobResults)
+        self.assertIsInstance(result, JobResultResource)
 
 
 class AsyncClientOpenJobResultTest(IsolatedAsyncioTestCase):
@@ -169,7 +170,7 @@ class AsyncClientOpenJobResultTest(IsolatedAsyncioTestCase):
     @patch.object(
         AsyncClient,
         "get_process",
-        return_value=mk_process_description,
+        return_value=mk_process_description(),
         new_callable=AsyncMock,
     )
     async def test_successful_run(
@@ -185,7 +186,7 @@ class AsyncClientOpenJobResultTest(IsolatedAsyncioTestCase):
             config=ApplicationConfig.new_instance(api_url="https://acme.ogc.org/api")
         )
         result = await client.open_job_result("job_12", timeout=30, poll_interval=0.01)
-        self.assertIsInstance(result, JobResults)
+        self.assertIsInstance(result, JobResultResource)
 
     @patch.object(
         AsyncClient,
@@ -202,7 +203,7 @@ class AsyncClientOpenJobResultTest(IsolatedAsyncioTestCase):
     @patch.object(
         AsyncClient,
         "get_process",
-        return_value=mk_process_description,
+        return_value=mk_process_description(),
         new_callable=AsyncMock,
     )
     async def test_failed_run(
@@ -237,7 +238,7 @@ class AsyncClientOpenJobResultTest(IsolatedAsyncioTestCase):
     @patch.object(
         AsyncClient,
         "get_process",
-        return_value=mk_process_description,
+        return_value=mk_process_description(),
         new_callable=AsyncMock,
     )
     async def test_endless_run(
@@ -300,4 +301,4 @@ class AsyncClientOpenJobResultTest(IsolatedAsyncioTestCase):
                 "job_12", timeout=30, poll_interval=0.01
             )
 
-        self.assertIsInstance(result, JobResults)
+        self.assertIsInstance(result, JobResultResource)

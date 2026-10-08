@@ -1,7 +1,8 @@
 # Cuiman guide examples
 
 These files supply the snippets in `docs/cuiman/guides/`. They use the current
-Cuiman interfaces and are independent of the historical notebooks in `notebooks/`.
+Cuiman interfaces. The current `notebooks/cuiman-job-result-resources.ipynb`
+reuses the resolver helpers; the other notebooks remain historical examples.
 Imports do not connect to services or submit jobs.
 
 From the repository root, run `pixi install`, start `pixi run serve` in one
@@ -13,8 +14,15 @@ terminal, and use `pixi shell` in another:
   alive until Ctrl+C. In a notebook, import `open_app`, `set_duration`, and
   `close_app`; call `open_app(display="notebook")` and retain its two handles.
 - `python -m examples.guides.cuiman.openers`: submit a small simulated scene and
-  open its Zarr output with the built-in reader. The custom opener is an optional
+  open its Zarr output by job ID and explicit resource with the built-in reader.
+  The custom opener is an optional
   alternative demonstrated separately in the guide.
+- `python -m examples.guides.cuiman.resolvers`: submit both STAC testing processes,
+  discover inline/linked Assets, open selected CSVs, and temporarily register a
+  composed resolver for declared folder contents. Fresh temporary directories
+  are removed after reading; the server and client must share the filesystem.
+- `pixi run jl`: open `notebooks/cuiman-job-result-resources.ipynb` and run its
+  cells in order. It uses top-level `await` and the same external testing service.
 - `cli.sh`: individual command recipes for Bash or PowerShell. Running the file
   exits without executing them. Configure updates the saved profile, submit
   creates a job, and dismiss cancels or deletes the selected job.
@@ -34,6 +42,8 @@ Run `pixi run format`, `pixi run checks`, `pixi run test-cuiman`, and
 temporary Zarr datasets produced by the local process implementation. They check
 job-ID reuse, successful-result gating, request validity, cleanup, and opener
 registration. Example source is included in Cuiman coverage.
+Resolver examples and the notebook are exercised with actual test-process
+outputs and file reads, without requiring a separate HTTP server in tests.
 
 Keep snippet names stable. Documentation builds validate includes but never
 execute examples. Inspect the rendered guides with `pixi run serve-docs`.

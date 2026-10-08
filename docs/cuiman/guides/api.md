@@ -87,7 +87,12 @@ the failure. To cancel a running job or delete a finished one, call
 `client.dismiss_job(job_id)` with the specific job you intend to dismiss.
 
 For file or dataset outputs, [Result openers](openers.md) explains the
-difference between retrieving result references and opening their data.
+difference between retrieving result references and opening their data, through
+either a job ID or an explicitly selected resource. [Result resolvers](resolvers.md)
+shows how STAC outputs become selectable Assets using the current discovery
+extension contracts. The
+[job result resources notebook](https://github.com/eo-tools/eozilla/blob/main/notebooks/cuiman-job-result-resources.ipynb)
+demonstrates these interfaces with the testing service.
 
 ## Close the client
 

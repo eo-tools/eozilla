@@ -9,12 +9,9 @@ import pytest
 import xarray as xr
 from PIL import Image
 
+from cuiman.api import JobResultContext
 from cuiman.api.config import ClientConfig
-from cuiman.api.opener import (
-    JobResultOpenContext,
-    JobResultOpener,
-    JobResultOpenerRegistry,
-)
+from cuiman.api.opener import JobResultOpener, JobResultOpenerRegistry
 from cuiman.api.opener.impl import (
     GeopandasDataFrameOpener,
     ImageOpener,
@@ -22,14 +19,21 @@ from cuiman.api.opener.impl import (
     XarrayDatasetOpener,
 )
 from cuiman.api.opener.opener import open_job_result
+from cuiman.api.resources import JobResultResource
 from gavicore.models import JobResults, Link
+
+from .helpers import make_case
 
 
 class DummyOpener1(JobResultOpener):
-    async def accept_job_result(self, _ctx: JobResultOpenContext) -> bool:
+    async def accept(
+        self, resource: JobResultResource, *, context: JobResultContext
+    ) -> bool:
         return False
 
-    async def open_job_result(self, _ctx: JobResultOpenContext) -> Any:
+    async def open(
+        self, resource: JobResultResource, *, context: JobResultContext
+    ) -> Any:
         return None
 
 
@@ -63,7 +67,7 @@ async def test_default_opens_images_before_datasets(extension, media_type):
     href = f"/path/to/image.{extension}"
     if media_type == "image":
         media_type = "image/png" if extension == "png" else "image/jpeg"
-    ctx = JobResultOpenContext(
+    ctx = make_case(
         config=ClientConfig(api_url="https://example.com/"),
         job_id="image-job",
         job_results=JobResults(root={"image": Link(href=href, type=media_type)}),
@@ -74,7 +78,9 @@ async def test_default_opens_images_before_datasets(extension, media_type):
         patch("PIL.Image.open", return_value=expected) as open_image,
         patch("xarray.open_dataset") as open_dataset,
     ):
-        result = await open_job_result(ctx, *registry.opener_types)
+        result = await open_job_result(
+            ctx.resource, *registry.opener_types, context=ctx.context
+        )
 
     assert result is expected
     open_image.assert_called_once_with(href)
@@ -84,7 +90,7 @@ async def test_default_opens_images_before_datasets(extension, media_type):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("data_type,image_usable", [(None, False), (xr.Dataset, True)])
 async def test_default_dataset_fallback(data_type, image_usable):
-    ctx = JobResultOpenContext(
+    ctx = make_case(
         config=ClientConfig(api_url="https://example.com/"),
         job_id="image-job",
         job_results=JobResults(root={"image": Link(href="/image.png")}),
@@ -97,7 +103,9 @@ async def test_default_dataset_fallback(data_type, image_usable):
         patch("PIL.Image.open") as open_image,
         patch("xarray.open_dataset", return_value=expected) as open_dataset,
     ):
-        result = await open_job_result(ctx, *registry.opener_types)
+        result = await open_job_result(
+            ctx.resource, *registry.opener_types, context=ctx.context
+        )
 
     assert result is expected
     open_image.assert_not_called()

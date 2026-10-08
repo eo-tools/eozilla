@@ -20,12 +20,12 @@ from gavicore.models import (
 from gavicore.util.runsync import run_sync
 
 from .config import ClientConfig
+from .context import JobResultContext, describe_job_output
 from .defaults import (
     DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
 )
 from .exceptions import ClientError
-from .opener import JobResultOpenContext
 from .opener.opener import open_job_result
 
 JobUpdateHandler = Callable[[JobInfo], Awaitable[None] | None]
@@ -203,9 +203,20 @@ def _open_finished_job_result(
     process_description = (
         client.get_process(job_info.processID) if job_info.processID else None
     )
-    ctx = _new_open_context(client, job_info, job_results, options, process_description)
+    context = _new_context(client, options)
+    resource = run_sync(
+        describe_job_output,
+        job_info.jobID,
+        job_results,
+        options.output_name,
+        service_url=client.config.api_url,
+        process_description=process_description,
+        context=context,
+    )
     opener_registry = client.config.get_job_result_opener_registry()
-    return run_sync(open_job_result, ctx, *opener_registry.opener_types)
+    return run_sync(
+        open_job_result, resource, *opener_registry.opener_types, context=context
+    )
 
 
 async def _async_open_finished_job_result(
@@ -215,26 +226,29 @@ async def _async_open_finished_job_result(
     process_description = (
         (await client.get_process(job_info.processID)) if job_info.processID else None
     )
-    ctx = _new_open_context(client, job_info, job_results, options, process_description)
-    opener_registry = client.config.get_job_result_opener_registry()
-    return await open_job_result(ctx, *opener_registry.opener_types)
-
-
-def _new_open_context(
-    client: _ClientLike | _AsyncClientLike,
-    job_info: JobInfo,
-    job_results: JobResults,
-    options: JobOptions,
-    process_description: ProcessDescription | None,
-) -> JobResultOpenContext:
-    return JobResultOpenContext(
-        config=client.config,
-        job_id=job_info.jobID,
-        job_results=job_results,
+    context = _new_context(client, options)
+    resource = await describe_job_output(
+        job_info.jobID,
+        job_results,
+        options.output_name,
+        service_url=client.config.api_url,
         process_description=process_description,
-        output_name=options.output_name,
+        context=context,
+    )
+    opener_registry = client.config.get_job_result_opener_registry()
+    return await open_job_result(
+        resource, *opener_registry.opener_types, context=context
+    )
+
+
+def _new_context(
+    client: _ClientLike | _AsyncClientLike,
+    options: JobOptions,
+) -> JobResultContext:
+    return JobResultContext(
+        config=client.config,
         data_type=options.data_type,
-        _media_type=options.media_type,
+        media_type=options.media_type,
         options=options.opener_options,
     )
 

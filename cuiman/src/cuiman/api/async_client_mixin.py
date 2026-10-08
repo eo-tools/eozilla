@@ -6,7 +6,7 @@ import asyncio
 import threading
 import warnings
 from abc import abstractmethod
-from typing import Any
+from typing import Any, overload
 
 import httpx2
 from authlib.integrations.httpx_client import AsyncOAuth2Client
@@ -18,13 +18,23 @@ from .auth.config import OidcAuthConfig
 from .auth.interactive import authorize
 from .auth.oidc import LoopbackCallbackServer
 from .client_mixin_base import ClientMixinBase
+from .context import (
+    _UNSET,
+    JobResultContext,
+    _Unset,
+    _validate_open_arguments,
+    describe_job_output,
+)
 from .defaults import (
     DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
 )
 from .exceptions import ClientError, ClientWarning
-from .opener import JobResultOpenContext, JobResultStatusError
+from .listing import _validate_listing_arguments, list_job_result_resources
+from .metadata import DiscoveryLimits
+from .opener import JobResultStatusError
 from .opener.opener import open_job_result
+from .resources import JobResultResource, JobResultResourceListing
 from .transport import AsyncTransport
 
 # -----------------------------------------------------
@@ -44,6 +54,7 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
     def _init_client_runtime(self) -> None:
         super()._init_client_runtime()
         self._runtime_lock = asyncio.Lock()
+        self._job_result_lock = asyncio.Lock()
         self._owner_loop: asyncio.AbstractEventLoop | None = None
 
     def _bind_loop(self) -> asyncio.AbstractEventLoop:
@@ -62,6 +73,7 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
     async def _close(self) -> None:
         """Close connections while the caller holds the owner lock."""
         self._closed = True
+        self._job_result_metadata_cache = None
         transport, self._transport = self._transport, None
         try:
             if transport is not None:
@@ -243,6 +255,76 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
             process_description, dotpath=dotpath
         )
 
+    async def list_job_result_resources(
+        self,
+        job_id: str,
+        *,
+        output_name: str | None = None,
+        parent_id: str | None = None,
+        kind: str | None = None,
+        data_type: type | None = None,
+        limits: DiscoveryLimits | None = None,
+        refresh: bool = False,
+    ) -> JobResultResourceListing:
+        """Discover selectable targets and reader availability for a completed job.
+
+        Uses the same pipeline and views as ``Client.list_job_result_resources``.
+        Await API retrieval and bounded metadata discovery; selection, iteration,
+        and rendering on the returned snapshot remain local synchronous actions.
+        Checks job status once without polling. Remote container traversal and
+        continuation are not yet implemented.
+
+        Args:
+            job_id: Producing job identifier, never a resource URL.
+            output_name: Original output to resolve; omit to include every output.
+            parent_id: Exact loaded resource selector for immediate members.
+            kind: Semantic kind filter, such as ``stac-item`` or ``asset``.
+            data_type: Desired Python return type for opener candidate assessment.
+            limits: Request, response, time, and expansion bounds.
+            refresh: Discard cached metadata and failures before this listing.
+
+        Returns:
+            A portable listing with assessed opener candidates and output states.
+
+        Raises:
+            JobResultStatusError: The job has not completed successfully.
+            ResourceNotFoundError: The output or loaded parent selector is absent.
+            ClientError: Processing API retrieval failed.
+            TypeError: Listing arguments are invalid.
+        """
+        _validate_listing_arguments(
+            job_id, output_name, parent_id, kind, data_type, limits, refresh
+        )
+        self._require_open()
+        self._bind_loop()
+        async with self._job_result_lock:
+            job = await self.get_job(job_id)
+            if job.status != JobStatus.successful:
+                raise JobResultStatusError(job)
+            results = await self.get_job_results(job_id)
+            process = None
+            if job.processID:
+                try:
+                    process = await self.get_process(job.processID)
+                except ClientError:
+                    warnings.warn(
+                        "Process description unavailable during resource discovery",
+                        ClientWarning,
+                        stacklevel=2,
+                    )
+            context = self._job_result_context(
+                job_id, limits=limits, data_type=data_type, refresh=refresh
+            )
+            return await list_job_result_resources(
+                context,
+                results,
+                process,
+                output_name=output_name,
+                parent_id=parent_id,
+                kind=kind,
+            )
+
+    @overload
     async def open_job_result(
         self,
         job_id: str,
@@ -252,11 +334,37 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
         poll_interval: float = DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
         timeout: float = DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
         **options: Any,
+    ) -> Any: ...
+
+    @overload
+    async def open_job_result(
+        self,
+        job_id: JobResultResource,
+        *,
+        data_type: type | None = None,
+        media_type: str | None = None,
+        **options: Any,
+    ) -> Any: ...
+
+    async def open_job_result(
+        self,
+        job_id: str | JobResultResource,
+        output_name: str | None | _Unset = _UNSET,
+        data_type: type | None = None,
+        media_type: str | None = None,
+        poll_interval: float | _Unset = _UNSET,
+        timeout: float | _Unset = _UNSET,
+        **options: Any,
     ) -> Any:
-        """Open the results of the job given by its ID.
+        """Open one original job output or an explicitly selected resource.
+
+        Resource calls open that resource directly using this client's settings.
+        Explicit output_name, poll_interval, or timeout arguments with a resource
+        raise TypeError, including explicitly supplied None/default values.
+        Strings always identify jobs. Multiple outputs require output_name.
 
         Args:
-            job_id: the job ID
+            job_id: the job ID or selected JobResultResource
             output_name: the name of the output to be opened.
             data_type: the expected/desired data type to be returned.
                 If provided, the return value will be of that type.
@@ -278,7 +386,30 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
             JobResultOpenError: if an opener error occurs
             JobResultStatusError: if the job failed or was canceled
             TimeoutError: if the job does not finish within the timeout
+            TypeError: if the target or resource arguments are invalid
         """
+        output_name, poll_interval, timeout = _validate_open_arguments(
+            job_id,
+            output_name,
+            poll_interval,
+            timeout,
+            default_poll=DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
+            default_timeout=DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
+        )
+        self._require_open()
+        self._bind_loop()
+        context = JobResultContext(
+            config=self.config,
+            data_type=data_type,
+            media_type=media_type,
+            options=options,
+        )
+        if isinstance(job_id, JobResultResource):
+            return await open_job_result(
+                job_id,
+                *self.config.get_job_result_opener_registry().opener_types,
+                context=context,
+            )
         deadline = asyncio.get_running_loop().time() + timeout
         while True:
             job_info = await self.get_job(job_id)
@@ -305,15 +436,15 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
                     category=ClientWarning,
                     stacklevel=2,
                 )
-        ctx = JobResultOpenContext(
-            config=self.config,
-            job_id=job_id,
-            job_results=job_results,
+        resource = await describe_job_output(
+            job_id,
+            job_results,
+            output_name,
+            service_url=self.config.api_url,
             process_description=process_description,
-            output_name=output_name,
-            data_type=data_type,
-            _media_type=media_type,
-            options=options,
+            context=context,
         )
         opener_registry = self.config.get_job_result_opener_registry()
-        return await open_job_result(ctx, *opener_registry.opener_types)
+        return await open_job_result(
+            resource, *opener_registry.opener_types, context=context
+        )

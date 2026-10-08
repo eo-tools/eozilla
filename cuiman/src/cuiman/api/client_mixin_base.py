@@ -34,6 +34,8 @@ from .auth.oidc import (
 )
 from .auth.secret_store import delete_auth_secrets
 from .config import ClientConfig, _set_auth_secret_persistor
+from .context import JobResultContext
+from .metadata import DiscoveryLimits, MetadataLoader, fetch_metadata
 from .transport.httpx2 import Httpx2Transport
 
 _HttpClient = TypeVar("_HttpClient", httpx2.Client, httpx2.AsyncClient)
@@ -55,6 +57,9 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
         self._closed = False
         self._ready = False
         self._oidc_metadata: dict[str, Any] = {}
+        self._job_result_metadata_cache: (
+            tuple[tuple[Any, ...], MetadataLoader] | None
+        ) = None
         self._oidc_nonce: str | None = (
             getattr(self.config.auth, "oauth_token", None) or {}
         ).get("_cuiman_nonce")
@@ -288,3 +293,29 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
         elif "authorization" in httpx2.Headers(kwargs.get("headers")):
             kwargs.setdefault("auth", None)
         return kwargs
+
+    def _job_result_context(
+        self,
+        job_id: str,
+        *,
+        limits: DiscoveryLimits | None,
+        data_type: type | None,
+        refresh: bool,
+    ) -> JobResultContext:
+        limits = limits or DiscoveryLimits()
+        fetch = type(self.config).job_result_metadata_fetcher or fetch_metadata
+        scope = (self.config.api_url, job_id, id(fetch), limits)
+        previous = self._job_result_metadata_cache
+        loader = (
+            previous[1].for_operation()
+            if not refresh and previous is not None and previous[0] == scope
+            else MetadataLoader(fetch, limits)
+        )
+        self._job_result_metadata_cache = (scope, loader)
+        return JobResultContext(
+            config=self.config,
+            job_id=job_id,
+            service_url=self.config.api_url,
+            data_type=data_type,
+            loader=loader,
+        )

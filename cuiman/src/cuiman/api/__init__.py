@@ -5,14 +5,19 @@
 from .async_client import AsyncClient
 from .client import Client
 from .config import ClientConfig
+from .context import JobResultContext
 from .exceptions import ClientError
 from .jobs import JobMonitor, JobOptions
+from .resources import JobResultResource, JobResultResourceListing
 
 __all__ = [
     "AsyncClient",
     "Client",
     "ClientConfig",
     "ClientError",
+    "JobResultContext",
     "JobMonitor",
     "JobOptions",
+    "JobResultResource",
+    "JobResultResourceListing",
 ]

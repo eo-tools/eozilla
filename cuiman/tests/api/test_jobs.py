@@ -101,7 +101,9 @@ class ExecuteAndOpenResultTest(TestCase):
             ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
             job_options=JobOptions(poll_interval=0.01),
         )
-        self.assertEqual(mk_job_results(), result)
+        self.assertEqual(
+            mk_job_results().root["result"].model_dump(), result.link.model_dump()
+        )
 
     def test_failed_job_raises_client_error(self):
         client = FakeClient(JobStatus.running, (JobStatus.failed, "out of memory"))
@@ -140,7 +142,9 @@ class ExecuteAndOpenResultTest(TestCase):
             ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
             job_options=JobOptions(poll_interval=0.01, monitor=monitor),
         )
-        self.assertEqual(mk_job_results(), result)
+        self.assertEqual(
+            mk_job_results().root["result"].model_dump(), result.link.model_dump()
+        )
         self.assertEqual(
             [JobStatus.accepted, JobStatus.running, JobStatus.successful],
             updates,
@@ -180,7 +184,9 @@ class ExecuteAndOpenResultTest(TestCase):
             ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
             job_options=JobOptions(poll_interval=0.01),
         )
-        self.assertEqual(mk_job_results(), result)
+        self.assertEqual(
+            mk_job_results().root["result"].model_dump(), result.link.model_dump()
+        )
 
 
 class AsyncExecuteAndOpenResultTest(IsolatedAsyncioTestCase):
@@ -198,7 +204,9 @@ class AsyncExecuteAndOpenResultTest(IsolatedAsyncioTestCase):
             ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
             job_options=JobOptions(poll_interval=0.01, monitor=monitor),
         )
-        self.assertEqual(mk_job_results(), result)
+        self.assertEqual(
+            mk_job_results().root["result"].model_dump(), result.link.model_dump()
+        )
         self.assertEqual(
             [JobStatus.accepted, JobStatus.running, JobStatus.successful],
             updates,
@@ -259,4 +267,6 @@ class AsyncExecuteAndOpenResultTest(IsolatedAsyncioTestCase):
             ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
             job_options=JobOptions(poll_interval=0.01),
         )
-        self.assertEqual(mk_job_results(), result)
+        self.assertEqual(
+            mk_job_results().root["result"].model_dump(), result.link.model_dump()
+        )

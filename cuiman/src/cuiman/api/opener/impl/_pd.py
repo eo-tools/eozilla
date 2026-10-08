@@ -6,12 +6,15 @@ from typing import Any, Callable
 
 import pandas as pd
 
-from cuiman.api.opener import JobResultOpenContext, JobResultOpenError
-
+from ...context import JobResultContext
+from ...resources import JobResultResource
+from ..errors import JobResultOpenError
 from .base import PathOpener
 
 
 class PandasDataFrameOpenerImpl(PathOpener):
+    """Pandas adapter selecting a reader from this resource's format or suffix."""
+
     def accept_data_type(self, data_type: type) -> bool:
         return data_type is pd.DataFrame
 
@@ -26,13 +29,19 @@ class PandasDataFrameOpenerImpl(PathOpener):
         path_like: str,
         filename_ext: str,
         media_type: str | None,
-        ctx: JobResultOpenContext,
+        resource: JobResultResource,
+        context: JobResultContext,
     ) -> Any:
-        read_x = self.media_type_readers.get(media_type) if media_type else None
+        """Read the selected table using the matching pandas reader."""
+        read_x = (
+            self.media_type_readers.get(media_type.partition(";")[0].strip().lower())
+            if media_type
+            else None
+        )
         if read_x is None:
             read_x = self.filename_ext_readers.get(filename_ext)
         if read_x is not None:
-            return read_x(path_like, **ctx.options)
+            return read_x(path_like, **await context.reader_options(resource))
         # Pandas doesn't have a generic read function like xarray or geopandas
         raise JobResultOpenError("No appropriate pandas read function found")
 

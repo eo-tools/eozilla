@@ -6,12 +6,14 @@ from typing import Any, Callable
 
 import geopandas as gpd
 
-from cuiman.api.opener import JobResultOpenContext
-
+from ...context import JobResultContext
+from ...resources import JobResultResource
 from .base import PathOpener
 
 
 class GeopandasDataFrameOpenerImpl(PathOpener):
+    """GeoPandas adapter selecting a reader from this resource's format or suffix."""
+
     def accept_data_type(self, data_type: type) -> bool:
         return data_type is gpd.GeoDataFrame
 
@@ -26,17 +28,23 @@ class GeopandasDataFrameOpenerImpl(PathOpener):
         path_like: str,
         filename_ext: str,
         media_type: str | None,
-        ctx: JobResultOpenContext,
+        resource: JobResultResource,
+        context: JobResultContext,
     ) -> Any:
+        """Read the selected geospatial table using scoped storage settings."""
         # See if we need a special geopandas read function
-        read_x = self.media_type_readers.get(media_type) if media_type else None
+        read_x = (
+            self.media_type_readers.get(media_type.partition(";")[0].strip().lower())
+            if media_type
+            else None
+        )
         if read_x is None:
             read_x = self.filename_ext_readers.get(filename_ext)
         if read_x is not None:
-            return read_x(path_like, **ctx.options)
+            return read_x(path_like, **await context.reader_options(resource))
 
         # Use geopandas's generic read function
-        return gpd.read_file(path_like, **ctx.options)
+        return gpd.read_file(path_like, **await context.reader_options(resource))
 
     @property
     def media_type_readers(self) -> dict[str, Callable]:

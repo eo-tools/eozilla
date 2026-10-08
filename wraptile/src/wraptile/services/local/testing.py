@@ -3,9 +3,10 @@
 #  https://opensource.org/license/apache-2-0.
 
 import datetime
+import json
 import time
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional
 
 import pydantic
 from pydantic import Field
@@ -208,6 +209,129 @@ def simulate_scene(
         href = Path(output_path).resolve().as_uri()
     # noinspection PyArgumentList
     return Link(href=href, hreflang=None, type="application/zarr", rel=None)
+
+
+@registry.process(
+    id="simulate_stac_item",
+    title="Generate a STAC Item for testing",
+    description="Write small local products and return an inline Item and a report link.",
+    outputs={
+        "result": OutputDescription(
+            title="STAC Item",
+            schema=Schema(
+                **{
+                    "$ref": "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json"
+                }
+            ),
+        ),
+        "report": Field(title="Processing report"),
+    },
+)
+def simulate_stac_item(output_dir: str) -> tuple[dict[str, Any], Link]:
+    """Write an Item with relative Assets into ``output_dir`` and return two outputs.
+
+    The saved Item's self link supplies the base for its inline representation.
+    The products folder intentionally has no trailing slash, for configured
+    subtree discovery. Its contents are not an external transformer configuration.
+    """
+    directory = Path(output_dir).resolve()
+    item = _write_stac_item(directory, datetime.date(2026, 9, 1))
+    return item, Link(
+        href=(directory / "products" / "reports" / "summary.txt").as_uri(),
+        type="text/plain",
+        title="Processing report",
+    )
+
+
+@registry.process(
+    id="simulate_stac_item_collection",
+    title="Generate a linked STAC ItemCollection for testing",
+    description="Write two dated Items and return a link to their ItemCollection.",
+    outputs={
+        "result": OutputDescription(
+            title="STAC ItemCollection",
+            schema=Schema(
+                **{
+                    "type": "object",
+                    "properties": {
+                        "type": {"type": "string", "enum": ["FeatureCollection"]},
+                        "features": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json"
+                            },
+                        },
+                    },
+                    "required": ["type", "features"],
+                }
+            ),
+        ),
+    },
+)
+def simulate_stac_item_collection(output_dir: str) -> Link:
+    """Write an ItemCollection and local products with repeated Asset keys.
+
+    Embedded Items use relative Asset paths based on the ItemCollection document,
+    independently of their own self links. No top-level STAC version is needed.
+    """
+    directory = Path(output_dir).resolve()
+    items = []
+    for date in (datetime.date(2026, 9, 1), datetime.date(2026, 9, 2)):
+        item_dir = directory / date.isoformat()
+        item = _write_stac_item(item_dir, date)
+        for asset in item["assets"].values():
+            asset["href"] = f"{date.isoformat()}/{asset['href']}"
+        items.append(item)
+    path = directory / "items.json"
+    collection = {
+        "type": "FeatureCollection",
+        "features": items,
+        "links": [
+            {"rel": "self", "href": path.as_uri(), "type": "application/geo+json"}
+        ],
+    }
+    path.write_text(json.dumps(collection, indent=2), encoding="utf-8")
+    return Link(
+        href=path.as_uri(),
+        type="application/geo+json",
+        title="Dated vegetation results",
+    )
+
+
+def _write_stac_item(directory: Path, date: datetime.date) -> dict[str, Any]:
+    tables = directory / "products" / "tables"
+    reports = directory / "products" / "reports"
+    tables.mkdir(parents=True, exist_ok=True)
+    reports.mkdir(parents=True, exist_ok=True)
+    (tables / "observations.csv").write_text(
+        f"date,ndvi\n{date.isoformat()},0.75\n", encoding="utf-8"
+    )
+    (reports / "summary.txt").write_text(
+        f"Vegetation observations for {date.isoformat()}\n", encoding="utf-8"
+    )
+    path = directory / "item.json"
+    item = {
+        "type": "Feature",
+        "stac_version": "1.1.0",
+        "id": f"ndvi-{date.isoformat()}",
+        "geometry": None,
+        "properties": {"datetime": f"{date.isoformat()}T00:00:00Z"},
+        "links": [
+            {"rel": "self", "href": path.as_uri(), "type": "application/geo+json"}
+        ],
+        "assets": {
+            "data": {
+                "href": "products/tables/observations.csv",
+                "type": "text/csv",
+                "title": "NDVI observations",
+                "roles": ["data"],
+            },
+            "report": {"href": "products/reports/summary.txt", "type": "text/plain"},
+            "products": {"href": "products", "title": "Product folder"},
+        },
+    }
+    path.write_text(json.dumps(item, indent=2), encoding="utf-8")
+    return item
 
 
 class SceneSpec(pydantic.BaseModel):

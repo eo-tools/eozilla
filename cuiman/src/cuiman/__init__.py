@@ -9,9 +9,12 @@ if TYPE_CHECKING:
     from .api.async_client import AsyncClient as AsyncClient
     from .api.client import Client as Client
     from .api.config import ClientConfig as ClientConfig
+    from .api.context import JobResultContext as JobResultContext
     from .api.exceptions import ClientError as ClientError
     from .api.jobs import JobMonitor as JobMonitor
     from .api.jobs import JobOptions as JobOptions
+    from .api.resources import JobResultResource as JobResultResource
+    from .api.resources import JobResultResourceListing as JobResultResourceListing
 
 __version__ = version("cuiman")
 
@@ -20,8 +23,11 @@ __all__ = [
     "Client",
     "ClientConfig",
     "ClientError",
+    "JobResultContext",
     "JobMonitor",
     "JobOptions",
+    "JobResultResource",
+    "JobResultResourceListing",
     "__version__",
 ]
 

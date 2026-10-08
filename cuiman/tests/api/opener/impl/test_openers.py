@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from dataclasses import replace
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import MagicMock, patch
 
@@ -11,7 +12,8 @@ import pytest
 import xarray as xr
 from PIL import Image
 
-from cuiman.api.opener import JobResultOpenContext, JobResultOpenError
+from cuiman.api import JobResultContext
+from cuiman.api.opener import JobResultOpenError
 from cuiman.api.opener.impl import (
     GeopandasDataFrameOpener,
     ImageOpener,
@@ -20,6 +22,7 @@ from cuiman.api.opener.impl import (
 )
 from gavicore.models import JobResults, Link
 
+from ..helpers import make_case
 from .test_base import create_ctx
 
 
@@ -41,7 +44,7 @@ class GeopandasDataFrameOpenerTest(IsolatedAsyncioTestCase):
                 type="application/geoparquet",
             )
         )
-        result = await opener.open_job_result(ctx)
+        result = await opener.open(ctx.resource, context=ctx.context)
         self.assertIs(result, fake_gdf)
         mock_read_parquet.assert_called_once_with(
             "s3://regions/region-data.geoparquet",
@@ -59,7 +62,7 @@ class GeopandasDataFrameOpenerTest(IsolatedAsyncioTestCase):
                 type="application/octet-stream",
             )
         )
-        result = await opener.open_job_result(ctx)
+        result = await opener.open(ctx.resource, context=ctx.context)
         self.assertIs(result, fake_gdf)
         mock_read_parquet.assert_called_once_with(
             "s3://regions/region-data.feather",
@@ -77,7 +80,7 @@ class GeopandasDataFrameOpenerTest(IsolatedAsyncioTestCase):
                 type="application/json",
             )
         )
-        result = await opener.open_job_result(ctx)
+        result = await opener.open(ctx.resource, context=ctx.context)
         self.assertIs(result, fake_gdf)
         mock_read_parquet.assert_called_once_with(
             "s3://regions/region-data.geojson",
@@ -102,7 +105,7 @@ class PandasDataFrameOpenerTest(IsolatedAsyncioTestCase):
                 type="application/parquet",
             )
         )
-        result = await opener.open_job_result(ctx)
+        result = await opener.open(ctx.resource, context=ctx.context)
         self.assertIs(result, fake_df)
         mock_read_parquet.assert_called_once_with(
             "s3://regions/region-data.parquet",
@@ -120,7 +123,7 @@ class PandasDataFrameOpenerTest(IsolatedAsyncioTestCase):
                 type="text/plain",
             )
         )
-        result = await opener.open_job_result(ctx)
+        result = await opener.open(ctx.resource, context=ctx.context)
         self.assertIs(result, fake_df)
         mock_read_parquet.assert_called_once_with(
             "s3://regions/region-data.csv",
@@ -137,7 +140,7 @@ class PandasDataFrameOpenerTest(IsolatedAsyncioTestCase):
         with pytest.raises(
             JobResultOpenError, match="No appropriate pandas read function found"
         ):
-            await opener.open_job_result(ctx)
+            await opener.open(ctx.resource, context=ctx.context)
 
 
 class XarrayDatasetOpenerTest(IsolatedAsyncioTestCase):
@@ -158,8 +161,10 @@ class XarrayDatasetOpenerTest(IsolatedAsyncioTestCase):
                 type="application/x-zarr",
             )
         )
-        ctx.options = {"chunks": {"x": 2}, "decode_times": False}
-        result = await opener.open_job_result(ctx)
+        ctx.context = replace(
+            ctx.context, options={"chunks": {"x": 2}, "decode_times": False}
+        )
+        result = await opener.open(ctx.resource, context=ctx.context)
         self.assertIs(result, fake_ds)
         mock_open_dataset.assert_called_once_with(
             "https://example.com/cube.zarr?off=0x64ea",
@@ -181,7 +186,7 @@ class ImageOpenerTest(IsolatedAsyncioTestCase):
 
         opener = ImageOpener()
         ctx = create_ctx(Link(href="/path/to/image.png", type="image/png"))
-        result = await opener.open_job_result(ctx)
+        result = await opener.open(ctx.resource, context=ctx.context)
         self.assertIs(result, fake_image)
         mock_image_open.assert_called_once_with("/path/to/image.png")
 
@@ -204,8 +209,10 @@ class ImageOpenerTest(IsolatedAsyncioTestCase):
                 ctx = create_ctx(
                     Link(href="s3://my-bucket/images/photo.png", type="image/png")
                 )
-                ctx.options = {"storage_options": {"anon": True}}
-                result = await opener.open_job_result(ctx)
+                ctx.context = replace(
+                    ctx.context, options={"storage_options": {"anon": True}}
+                )
+                result = await opener.open(ctx.resource, context=ctx.context)
 
         self.assertIs(result, fake_image)
         mock_s3fs_module.S3FileSystem.assert_called_once_with(anon=True)
@@ -215,29 +222,31 @@ class ImageOpenerTest(IsolatedAsyncioTestCase):
     async def test_accept_job_result(self):
         opener = ImageOpener()
 
-        ctx = JobResultOpenContext(
-            config=create_ctx(Link(href="/image.png", type="image/png")).config,
+        ctx = make_case(
+            config=create_ctx(Link(href="/image.png", type="image/png")).context.config,
             job_id="test",
             job_results=JobResults(
                 **{"return_value": Link(href="/image.png", type="image/png")}
             ),
             data_type=Image.Image,
         )
-        self.assertTrue(await opener.accept_job_result(ctx))
+        self.assertTrue(await opener.accept(ctx.resource, context=ctx.context))
 
-        ctx_wrong_type = JobResultOpenContext(
-            config=create_ctx(Link(href="/image.png", type="image/png")).config,
+        ctx_wrong_type = make_case(
+            config=create_ctx(Link(href="/image.png", type="image/png")).context.config,
             job_id="test",
             job_results=JobResults(
                 **{"return_value": Link(href="/image.png", type="image/png")}
             ),
             data_type=int,
         )
-        self.assertFalse(await opener.accept_job_result(ctx_wrong_type))
+        self.assertFalse(
+            await opener.accept(ctx_wrong_type.resource, context=ctx_wrong_type.context)
+        )
 
     async def test_accept_job_result_s3_without_s3fs(self):
         opener = ImageOpener()
         ctx = create_ctx(Link(href="s3://my-bucket/images/photo.png", type="image/png"))
-        ctx.data_type = Image.Image
+        ctx.context = replace(ctx.context, data_type=Image.Image)
         with patch.dict("sys.modules", {"s3fs": None}):
-            self.assertFalse(await opener.accept_job_result(ctx))
+            self.assertFalse(await opener.accept(ctx.resource, context=ctx.context))

@@ -2,9 +2,12 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+import json
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import patch
+from urllib.parse import urljoin
 
 import wraptile.services.local.testing as testing_module
 from gavicore.models import (
@@ -133,6 +136,130 @@ class TestingFunctionsTest(TestCase):
             self.assertTrue(link.href.startswith("file:///"))
             self.assertTrue(link.href.endswith("/datacube.zarr"))
 
+    def test_run_simulate_stac_item(self):
+        with TemporaryDirectory() as tmp_dir:
+            directory = Path(tmp_dir) / "result with spaces"
+            process = self.registry.get("simulate_stac_item")
+            self.assertIsInstance(process, Process)
+            job = Job.create(
+                process, ProcessRequest(inputs={"output_dir": str(directory)})
+            )
+            results = job.run()
+
+            self.assertEqual(JobStatus.successful, job.job_info.status)
+            self.assertIsInstance(results, JobResults)
+            self.assertEqual({"result", "report"}, set(results.root))
+            item = results.root["result"]
+            self.assertEqual(
+                json.loads((directory / "item.json").read_text(encoding="utf-8")),
+                item,
+            )
+            self._assert_stac_item(item, "2026-09-01")
+            self.assertEqual("products", item["assets"]["products"]["href"])
+            self.assertNotIn("type", item["assets"]["products"])
+            self.assertNotIn("roles", item["assets"]["report"])
+            self.assertNotIn("title", item["assets"]["report"])
+            self.assertEqual(
+                (directory / "products" / "tables" / "observations.csv").as_uri(),
+                urljoin(item["links"][0]["href"], item["assets"]["data"]["href"]),
+            )
+            report = results.root["report"]
+            self.assertIsInstance(report, Link)
+            self.assertEqual("text/plain", report.type)
+            self.assertEqual(
+                (directory / "products" / "reports" / "summary.txt").as_uri(),
+                report.href,
+            )
+            self.assertEqual(
+                "Vegetation observations for 2026-09-01\n",
+                (directory / "products" / "reports" / "summary.txt").read_text(
+                    encoding="utf-8"
+                ),
+            )
+            restored = JobResults.model_validate_json(results.model_dump_json())
+            self.assertEqual(results, restored)
+
+    def test_run_simulate_stac_item_collection(self):
+        with TemporaryDirectory() as tmp_dir:
+            directory = Path(tmp_dir) / "result with spaces"
+            process = self.registry.get("simulate_stac_item_collection")
+            self.assertIsInstance(process, Process)
+            job = Job.create(
+                process, ProcessRequest(inputs={"output_dir": str(directory)})
+            )
+            results = job.run()
+
+            self.assertEqual(JobStatus.successful, job.job_info.status)
+            self.assertIsInstance(results, JobResults)
+            self.assertEqual({"result"}, set(results.root))
+            link = results.root["result"]
+            self.assertIsInstance(link, Link)
+            self.assertEqual((directory / "items.json").as_uri(), link.href)
+            self.assertEqual("application/geo+json", link.type)
+            collection = json.loads(
+                (directory / "items.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual("FeatureCollection", collection["type"])
+            self.assertNotIn("stac_version", collection)
+            self.assertEqual(2, len(collection["features"]))
+            self.assertEqual(link.href, collection["links"][0]["href"])
+            for item, date in zip(
+                collection["features"], ["2026-09-01", "2026-09-02"], strict=True
+            ):
+                self._assert_stac_item(item, date)
+                self.assertEqual({"data", "report", "products"}, set(item["assets"]))
+                standalone = json.loads(
+                    (directory / date / "item.json").read_text(encoding="utf-8")
+                )
+                for key, asset in item["assets"].items():
+                    self.assertEqual(
+                        f"{date}/{standalone['assets'][key]['href']}", asset["href"]
+                    )
+                    self.assertEqual(
+                        (directory / date / standalone["assets"][key]["href"]).as_uri(),
+                        urljoin(link.href, asset["href"]),
+                    )
+                self.assertEqual(
+                    f"date,ndvi\n{date},0.75\n",
+                    (
+                        directory / date / "products" / "tables" / "observations.csv"
+                    ).read_text(encoding="utf-8"),
+                )
+            restored = JobResults.model_validate_json(results.model_dump_json())
+            self.assertEqual(results, restored)
+
+    def test_stac_process_output_schemas(self):
+        item_schema = (
+            self.registry.get("simulate_stac_item")
+            .description.outputs["result"]
+            .schema_
+        )
+        self.assertEqual(
+            "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json",
+            item_schema.ref,
+        )
+        collection_schema = (
+            self.registry.get("simulate_stac_item_collection")
+            .description.outputs["result"]
+            .schema_
+        )
+        schema = collection_schema.model_dump(mode="json", by_alias=True)
+        self.assertEqual(["FeatureCollection"], schema["properties"]["type"]["enum"])
+        self.assertEqual(
+            item_schema.ref, schema["properties"]["features"]["items"]["$ref"]
+        )
+
+    def _assert_stac_item(self, item, date):
+        self.assertEqual("Feature", item["type"])
+        self.assertEqual("1.1.0", item["stac_version"])
+        self.assertEqual(f"ndvi-{date}", item["id"])
+        self.assertIsNone(item["geometry"])
+        self.assertEqual(f"{date}T00:00:00Z", item["properties"]["datetime"])
+        self.assertEqual("self", item["links"][0]["rel"])
+        self.assertEqual("text/csv", item["assets"]["data"]["type"])
+        self.assertEqual("NDVI observations", item["assets"]["data"]["title"])
+        self.assertEqual(["data"], item["assets"]["data"]["roles"])
+
     def test_run_processor(self):
         process = self.registry.get("218")
         self.assertIsInstance(process, Process)
@@ -196,6 +323,8 @@ class TestingServiceTest(IsolatedAsyncioTestCase):
                 "primes_between",
                 "return_base_model",
                 "simulate_scene",
+                "simulate_stac_item",
+                "simulate_stac_item_collection",
                 "sleep_a_while",
                 "process_pipeline",
                 "218",
