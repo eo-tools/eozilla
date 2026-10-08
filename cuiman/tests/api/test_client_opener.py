@@ -365,7 +365,7 @@ async def test_clients_dispatch_one_independent_selected_output(
         ),
     ):
         result = client.open_job_result(
-            job_id="job_12", output_name=output_name, chunks="auto"
+            job_id_or_asset="job_12", output_name=output_name, chunks="auto"
         )
         if client_type is AsyncClient:
             result = await result

@@ -21,7 +21,6 @@ from .errors import JobResultOpenError
 
 if TYPE_CHECKING:
     from ..config import ClientConfig
-    from .metadata import StacMetadataIO
 
 _UNSELECTED = object()
 
@@ -68,8 +67,9 @@ class JobResultOpenContext:
     """
 
     _media_type: str | None = None
-    """The user-provided media type of the output produced.
-    If given, provides or overrides the output's media type.
+    """Explicit media type for the selected target.
+    Supplied by the caller or normalized from target metadata at the client
+    entry point. If given, provides or overrides the output's media type.
     Use [output_media_type][cuiman.api.opener.JobResultOpenContext.output_media_type] to make use of
     the effective media type.  
     """
@@ -92,8 +92,6 @@ class JobResultOpenContext:
 
     Used only as source context for inline metadata; never guessed from api_url.
     """
-
-    _stac_metadata_io: "StacMetadataIO | None" = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         """Select and copy a job output, then normalize its location without I/O."""

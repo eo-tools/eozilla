@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the Apache 2.0 License:
 # https://opensource.org/license/apache-2-0.
 
-"""Shared client configuration, token snapshots, and local auth policy."""
+"""Shared client configuration, authentication, and result-opening helpers."""
 
 import secrets
 from abc import ABC, abstractmethod
@@ -14,6 +14,8 @@ from typing import Any, Callable, ClassVar, Generic, Iterator, TypeVar, cast
 
 import httpx2
 from authlib.integrations.httpx_client import AsyncOAuth2Client, OAuth2Client
+
+from gavicore.models import JobResults
 
 from .auth.config import (
     AuthConfig,
@@ -34,13 +36,15 @@ from .auth.oidc import (
 )
 from .auth.secret_store import delete_auth_secrets
 from .config import ClientConfig, _set_auth_secret_persistor
+from .opener import JobResultOpenContext
+from .opener.opener import open_job_result
 from .transport.httpx2 import Httpx2Transport
 
 _HttpClient = TypeVar("_HttpClient", httpx2.Client, httpx2.AsyncClient)
 
 
 class ClientMixinBase(ABC, Generic[_HttpClient]):
-    """Share local auth policy; Authlib owns OAuth tokens and protocol operations."""
+    """Share local auth policy and result-opening logic between client modes."""
 
     _async_mode: ClassVar[bool] = False
     _transport: Any
@@ -77,6 +81,35 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
     def _require_open(self) -> None:
         if self._closed:
             raise RuntimeError("Client is closed. Create a new client to continue.")
+
+    def _new_job_result_context(
+        self,
+        job_id: str,
+        job_results: JobResults,
+        *,
+        output_name: str | None,
+        data_type: type | None,
+        media_type: str | None,
+        options: dict[str, Any],
+    ) -> JobResultOpenContext:
+        """Build a job-output context, retaining its result-document location."""
+        ctx = JobResultOpenContext(
+            config=self.config,
+            job_id=job_id,
+            job_results=job_results,
+            output_name=output_name,
+            data_type=data_type,
+            _media_type=media_type,
+            options=options,
+        )
+        if self._transport is not None:
+            ctx.document_href = self._transport.get_response_href(job_results)
+        return ctx
+
+    async def _open_result_context(self, ctx: JobResultOpenContext) -> Any:
+        """Open the selected target using this client's configured openers."""
+        registry = self.config.get_job_result_opener_registry()
+        return await open_job_result(ctx, *registry.opener_types)
 
     def _credentials(self, *, interactive: bool, force: bool) -> AuthConfig:
         auth = self.config.auth

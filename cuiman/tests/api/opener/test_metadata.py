@@ -1,229 +1,112 @@
 import asyncio
 import gc
+import json
 import os
 import threading
-import time
 from unittest.mock import patch
 
 import httpx2
+import pystac
 import pytest
 
 from cuiman.api.config import ClientConfig
-from cuiman.api.opener import StacJobResultOpenError, StacMetadataIO
-from cuiman.api.opener.metadata import _local_path, _origin
+from cuiman.api.opener import JobResultOpenContext, JobResultOpenError
+from cuiman.api.opener.impl import StacJobResultOpener
+from cuiman.api.opener.impl._paths import _local_path
+from cuiman.api.opener.opener import open_job_result
 from cuiman.api.transport import TransportArgs
 from cuiman.api.transport.httpx2 import Httpx2Transport
-from gavicore.models import JobResults
+from gavicore.models import JobResults, Link
 
 
-@pytest.mark.parametrize(
-    "limit,value",
-    [
-        ("max_bytes", 0),
-        ("max_requests", 0),
-        ("timeout", 0),
-        ("timeout", float("inf")),
-        ("timeout", float("nan")),
-    ],
-)
-def test_invalid_limits(limit, value):
-    with pytest.raises(ValueError):
-        StacMetadataIO(**{limit: value})
-    with pytest.raises(ValueError):
-        ClientConfig(**{"stac_metadata_" + limit: value})
+def document():
+    return {
+        "type": "Catalog",
+        "stac_version": "1.1.0",
+        "id": "catalog",
+        "description": "test",
+        "links": [],
+    }
 
 
 @pytest.mark.asyncio
-async def test_file_reads_cache_limits_and_independent_operations(tmp_path):
-    path = tmp_path / "file with spaces.json"
-    path.write_text("hello", encoding="utf-8")
-    reader = StacMetadataIO(max_bytes=5, max_requests=1)
-    assert await reader.async_read_text_with_href(str(path)) == ("hello", path.as_uri())
-    path.write_text("changed", encoding="utf-8")
-    assert reader.read_text_with_href(path.as_uri())[0] == "hello"
-    other = tmp_path / "other.json"
-    other.write_text("ok", encoding="utf-8")
-    with pytest.raises(StacJobResultOpenError, match="request limit"):
-        reader.read_text_with_href(str(other))
-    assert reader.new_operation().read_text_with_href(str(other))[0] == "ok"
-    with pytest.raises(StacJobResultOpenError, match="byte limit"):
-        await reader.new_operation().async_read_text_with_href(str(path))
-    with pytest.raises(StacJobResultOpenError, match="byte limit"):
-        reader.new_operation().read_text_with_href(str(path))
-    with pytest.raises(StacJobResultOpenError, match="FileNotFoundError"):
-        reader.new_operation().read_text_with_href(
-            str(tmp_path / "missing-secret.json")
-        )
-    with pytest.raises(StacJobResultOpenError, match="FileNotFoundError") as failure:
-        await reader.new_operation().async_read_text_with_href(
-            str(tmp_path / "missing-secret.json")
-        )
+@pytest.mark.parametrize("file_uri", [False, True])
+async def test_default_pystac_reads_local_metadata_with_spaces(tmp_path, file_uri):
+    path = tmp_path / "metadata with spaces.json"
+    path.write_text(json.dumps(document()), encoding="utf-8")
+    href = path.as_uri() if file_uri else str(path)
+    ctx = JobResultOpenContext(
+        config=ClientConfig(), value=Link(href=href, type="application/json")
+    )
+    result = await open_job_result(ctx, StacJobResultOpener)
+    assert isinstance(result, pystac.Catalog) and result.id == "catalog"
+    assert _local_path(result.get_self_href()) == path
+    assert isinstance(result._stac_io, pystac.stac_io.DefaultStacIO)
+
+
+@pytest.mark.asyncio
+async def test_initial_read_is_off_thread_and_cancellation_propagates():
+    started = threading.Event()
+    release = threading.Event()
+    thread_ids = []
+
+    def read(source):
+        thread_ids.append(threading.get_ident())
+        started.set()
+        release.wait(2)
+        return document()
+
+    ctx = JobResultOpenContext(
+        config=ClientConfig(), value=Link(href="https://data.test/catalog.json")
+    )
+    with patch.object(pystac.stac_io.DefaultStacIO, "read_json", side_effect=read):
+        task = asyncio.create_task(open_job_result(ctx, StacJobResultOpener))
+        try:
+            assert await asyncio.to_thread(started.wait, 1)
+            assert len(thread_ids) == 1 and thread_ids[0] != threading.get_ident()
+            assert not task.done()
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+        finally:
+            release.set()
+
+
+@pytest.mark.asyncio
+async def test_read_failure_is_sanitized():
+    ctx = JobResultOpenContext(
+        config=ClientConfig(),
+        value=Link(href="https://data.test/catalog.json?secret=token"),
+    )
+    with patch.object(
+        pystac.stac_io.DefaultStacIO, "read_json", side_effect=OSError("secret=token")
+    ):
+        with pytest.raises(JobResultOpenError, match="OSError") as failure:
+            await open_job_result(ctx, StacJobResultOpener)
     assert "secret" not in str(failure.value)
 
 
-@pytest.mark.parametrize("asynchronous", [False, True])
-def test_redirect_headers_budgets_cache_and_sanitized_errors(asynchronous):
-    seen = []
-
-    def handle(request):
-        seen.append(request)
-        if request.url.host == "a.test":
-            return httpx2.Response(
-                302,
-                headers={
-                    "location": "https://b.test/result.json?signature=private",
-                    "set-cookie": "auth=private; Domain=test; Path=/",
-                },
-            )
-        return httpx2.Response(200, content=b"{}")
-
-    reader = StacMetadataIO(
-        max_requests=2,
-        headers_by_origin={"https://a.test": {"Authorization": "Bearer secret"}},
-        sync_transport_factory=lambda: httpx2.MockTransport(handle),
-        async_transport_factory=lambda: httpx2.MockTransport(handle),
-    )
-
-    def read(policy, source):
-        return (
-            asyncio.run(policy.async_read_text_with_href(source))
-            if asynchronous
-            else policy.read_text_with_href(source)
-        )
-
-    text, effective = read(reader, "https://a.test/start.json")
-    assert text == "{}" and effective == "https://b.test/result.json?signature=private"
-    assert seen[0].headers["authorization"] == "Bearer secret"
-    assert "authorization" not in seen[1].headers and "cookie" not in seen[1].headers
-    assert read(reader, effective) == (text, effective)
-    assert len(seen) == 2
-    with pytest.raises(StacJobResultOpenError, match="request limit"):
-        read(reader, "https://b.test/other.json")
-    reader.max_requests = 1
-    with pytest.raises(StacJobResultOpenError, match="request limit"):
-        read(reader.new_operation(), "https://a.test/start.json")
-    reader.max_requests = 2
-    reader.max_bytes = 1
-    with pytest.raises(StacJobResultOpenError, match="byte limit"):
-        read(reader.new_operation(), "https://b.test/result.json")
-
-
-@pytest.mark.parametrize("asynchronous", [False, True])
-@pytest.mark.parametrize("mode", ["status", "unsupported", "invalid-utf8", "failure"])
-def test_metadata_failure_sanitization(asynchronous, mode):
-    def handle(request):
-        if mode == "failure":
-            raise RuntimeError("credential=private")
-        if mode == "status":
-            return httpx2.Response(403)
-        if mode == "unsupported":
-            return httpx2.Response(302, headers={"location": "file:///private.json"})
-        return httpx2.Response(200, content=b"\xff")
-
-    reader = StacMetadataIO(
-        sync_transport_factory=lambda: httpx2.MockTransport(handle),
-        async_transport_factory=lambda: httpx2.MockTransport(handle),
-    )
-    with pytest.raises(StacJobResultOpenError) as failure:
-        if asynchronous:
-            asyncio.run(
-                reader.async_read_text_with_href("https://a.test/?secret=private")
-            )
-        else:
-            reader.read_text_with_href("https://a.test/?secret=private")
-    assert "private" not in str(failure.value) and "secret" not in str(failure.value)
-
-
-class SlowStream(httpx2.AsyncByteStream):
-    def __init__(self):
-        self.closed = False
-        self.started = asyncio.Event()
-
-    async def __aiter__(self):
-        self.started.set()
-        await asyncio.sleep(10)
-        yield b"{}"
-
-    async def aclose(self):
-        self.closed = True
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("cancel", [False, True])
-async def test_stream_timeout_cancellation_and_cleanup(cancel):
-    stream = SlowStream()
-    reader = StacMetadataIO(
-        timeout=0.02 if not cancel else 10,
-        async_transport_factory=lambda: httpx2.MockTransport(
-            lambda request: httpx2.Response(200, stream=stream)
-        ),
-    )
-    task = asyncio.create_task(reader.async_read_text_with_href("https://a.test/a"))
-    await stream.started.wait()
-    if cancel:
-        task.cancel()
-    with pytest.raises(asyncio.CancelledError if cancel else StacJobResultOpenError):
-        await task
-    assert stream.closed
-
-
-@pytest.mark.asyncio
-async def test_file_io_off_loop_and_cancellation():
-    started = threading.Event()
-    stopped = threading.Event()
-
-    def read(source, stop):
-        started.set()
-        stop.wait(2)
-        stopped.set()
-        return "{}", "file:///result.json"
-
-    reader = StacMetadataIO()
-    with patch.object(reader, "_read_file", side_effect=read):
-        task = asyncio.create_task(reader.async_read_text_with_href("unused"))
-        while not started.is_set():
-            await asyncio.sleep(0.001)
-        task.cancel()
-        with pytest.raises(asyncio.CancelledError):
-            await task
-        assert await asyncio.to_thread(stopped.wait, 1)
-
-
-def test_file_deadline_and_stop(tmp_path):
-    path = tmp_path / "test.json"
-    path.write_text("{}", encoding="utf-8")
-    reader = StacMetadataIO()
-    stop = threading.Event()
-    stop.set()
-    with pytest.raises(StacJobResultOpenError, match="cancelled"):
-        reader._read_file(str(path), stop)
-    with pytest.raises(StacJobResultOpenError, match="timed out"):
-        reader._check_deadline(time.monotonic() - 1)
-    with pytest.raises(StacJobResultOpenError, match="scheme"):
-        reader.read_text_with_href("s3://bucket/item.json")
+def test_local_path_conversion(tmp_path):
+    path = tmp_path / "file with spaces.json"
+    assert _local_path(path.as_uri()) == path
+    assert _local_path(str(path)) == path
     assert _local_path("file://localhost" + path.as_uri()[7:]) == path
-    with pytest.raises(StacJobResultOpenError, match="origin"):
-        _origin("https://username:secret@host/")
     if os.name == "nt":
         assert str(_local_path("file://server/share/item.json")).startswith(
             "\\\\server"
         )
-    with patch("cuiman.api.opener.metadata.os.name", "posix"):
-        with pytest.raises(StacJobResultOpenError, match="Remote file"):
+    with patch("cuiman.api.opener.impl._paths.os.name", "posix"):
+        with pytest.raises(JobResultOpenError, match="Remote file"):
             _local_path("file://server/share/item.json")
+    with pytest.raises(JobResultOpenError, match="scheme"):
+        _local_path("s3://bucket/item.json")
 
 
-def test_configured_limits_persist_and_factory_is_runtime_only():
-    config = ClientConfig(
-        stac_metadata_max_bytes=1024,
-        stac_metadata_timeout=2,
-        stac_metadata_max_requests=3,
-    )
-    saved = config.to_file_dict()
-    restored = ClientConfig(**saved)
-    reader = restored.create_stac_metadata_io()
-    assert (reader.max_bytes, reader.timeout, reader.max_requests) == (1024, 2, 3)
-    assert "stac_metadata_io_factory" not in saved
+def test_native_io_factory_is_runtime_only():
+    class Config(ClientConfig):
+        stac_io_factory = staticmethod(lambda config: pystac.StacIO.default())
+
+    assert "stac_io_factory" not in Config().to_file_dict()
 
 
 def test_transport_defaults_and_job_context_source_facts():

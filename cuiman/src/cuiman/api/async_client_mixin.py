@@ -6,7 +6,7 @@ import asyncio
 import threading
 import warnings
 from abc import abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any, overload
 
 import httpx2
 from authlib.integrations.httpx_client import AsyncOAuth2Client
@@ -23,9 +23,12 @@ from .defaults import (
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
 )
 from .exceptions import ClientError, ClientWarning
-from .opener import JobResultOpenContext, JobResultStatusError
-from .opener.opener import open_job_result
+from .opener import JobResultStatusError
+from .opener.impl._stac.asset import OMITTED, _asset_context, _Omitted
 from .transport import AsyncTransport
+
+if TYPE_CHECKING:
+    from pystac import Asset
 
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with ClientMixin!
@@ -243,20 +246,48 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
             process_description, dotpath=dotpath
         )
 
+    @overload
     async def open_job_result(
         self,
-        job_id: str,
+        job_id_or_asset: str,
         output_name: str | None = None,
         data_type: type | None = None,
         media_type: str | None = None,
         poll_interval: float = DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
         timeout: float = DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
         **options: Any,
+    ) -> Any: ...
+
+    @overload
+    async def open_job_result(
+        self,
+        job_id_or_asset: "Asset",
+        *,
+        data_type: type | None = None,
+        media_type: str | None = None,
+        **options: Any,
+    ) -> Any: ...
+
+    async def open_job_result(
+        self,
+        job_id_or_asset: "str | Asset",
+        output_name: str | None | _Omitted = OMITTED,
+        data_type: type | None = None,
+        media_type: str | None = None,
+        poll_interval: float | _Omitted = OMITTED,
+        timeout: float | _Omitted = OMITTED,
+        **options: Any,
     ) -> Any:
-        """Open the results of the job given by its ID.
+        """Open an original job output or exactly the supplied native Asset.
+
+        Strings always identify jobs. An Asset uses this client's readers and
+        its own href, media type, and owner base, with no processing API calls,
+        metadata rediscovery, sibling selection, or transformation. Job-only
+        arguments must be omitted for Assets, even when their values are None
+        or equal to the job defaults.
 
         Args:
-            job_id: the job ID
+            job_id_or_asset: the job ID string or exact `pystac.Asset` to read.
             output_name: the name of the output to be opened. Required when the
                 job has multiple outputs; a sole output is selected automatically.
             data_type: the expected/desired data type to be returned.
@@ -275,12 +306,40 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
             The job result value.
 
         Raises:
+            TypeError: if the target type is unsupported or an Asset receives
+                explicit output_name, poll_interval, or timeout.
             ClientError: if an API error occurs
             JobResultOpenError: if output selection is missing or ambiguous,
                 or an opener error occurs
             JobResultStatusError: if the job failed or was canceled
             TimeoutError: if the job does not finish within the timeout
         """
+        if not isinstance(job_id_or_asset, str):
+            ctx = _asset_context(
+                self.config,
+                job_id_or_asset,
+                output_name=output_name,
+                poll_interval=poll_interval,
+                timeout=timeout,
+                data_type=data_type,
+                media_type=media_type,
+                options=options,
+            )
+            self._require_open()
+            self._bind_loop()
+            return await self._open_result_context(ctx)
+        job_id = job_id_or_asset
+        output_name = None if isinstance(output_name, _Omitted) else output_name
+        poll_interval = (
+            DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL
+            if isinstance(poll_interval, _Omitted)
+            else poll_interval
+        )
+        timeout = (
+            DEFAULT_OPEN_JOB_RESULT_TIMEOUT
+            if isinstance(timeout, _Omitted)
+            else timeout
+        )
         deadline = asyncio.get_running_loop().time() + timeout
         while True:
             job_info = await self.get_job(job_id)
@@ -295,17 +354,14 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
         if job_info.status != JobStatus.successful:
             raise JobResultStatusError(job_info)
         job_results = await self.get_job_results(job_id)
-        ctx = JobResultOpenContext(
-            config=self.config,
+        ctx = self._new_job_result_context(
             job_id=job_id,
             job_results=job_results,
             output_name=output_name,
             data_type=data_type,
-            _media_type=media_type,
+            media_type=media_type,
             options=options,
         )
-        if self._transport is not None:
-            ctx.document_href = self._transport.get_response_href(job_results)
         process_id = job_info.processID
         process_description: ProcessDescription | None = None
         if process_id:
@@ -319,5 +375,4 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
                     stacklevel=2,
                 )
         ctx.process_description = process_description
-        opener_registry = self.config.get_job_result_opener_registry()
-        return await open_job_result(ctx, *opener_registry.opener_types)
+        return await self._open_result_context(ctx)

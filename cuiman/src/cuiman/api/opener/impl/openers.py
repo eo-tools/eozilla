@@ -2,8 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from cuiman.api.opener import JobResultOpener
-
+from ..opener import JobResultOpener
 from .base import OptionalModuleOpener
 
 
@@ -52,17 +51,6 @@ class StacJobResultOpener(OptionalModuleOpener):
     required = ("pystac",)
 
     def _create_implementing_opener(self) -> JobResultOpener:
-        from ._stac import StacJobResultOpenerImpl
+        from ._stac.opener import StacJobResultOpenerImpl
 
         return StacJobResultOpenerImpl()
-
-    @classmethod
-    def _unavailable_error(cls, ctx):
-        from ..errors import StacJobResultOpenError
-        from ._stac_support import candidate_stac, strong_stac
-
-        if candidate_stac(ctx) and strong_stac(ctx):
-            return StacJobResultOpenError(
-                "STAC opening requires the optional cuiman[stac] dependency"
-            )
-        return None

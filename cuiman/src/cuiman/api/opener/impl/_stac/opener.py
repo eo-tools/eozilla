@@ -1,20 +1,18 @@
-"""Native STAC parsing and per-object bounded navigation policy."""
+"""Native STAC parsing using PySTAC's standard I/O and lazy navigation."""
 
-import json
-import os
+import asyncio
 from copy import deepcopy
-from pathlib import Path
 from typing import Any
-from urllib.parse import urljoin, urlsplit, urlunsplit
+from urllib.parse import urlsplit
 
 import pystac
-from pystac.utils import HREF
 
-from ..context import JobResultOpenContext
-from ..errors import StacJobResultOpenError
-from ..metadata import StacMetadataIO
-from ..opener import JobResultOpener
-from ._stac_support import (
+from ...context import JobResultOpenContext
+from ...errors import StacJobResultOpenError
+from ...opener import JobResultOpener
+from .._paths import _local_path
+from .locations import _absolute, _resolve_href
+from .support import (
     candidate_stac,
     selected_document,
     strong_stac,
@@ -25,6 +23,9 @@ from ._stac_support import (
 class StacJobResultOpenerImpl(JobResultOpener):
     """Parse only selected metadata, preserving native lazy navigation."""
 
+    def __init__(self) -> None:
+        self._stac_io: pystac.StacIO | None = None
+
     async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
         return candidate_stac(ctx)
 
@@ -32,17 +33,23 @@ class StacJobResultOpenerImpl(JobResultOpener):
         required = strong_stac(ctx)
         reading = False
         try:
-            if ctx._stac_metadata_io is None:
-                ctx._stac_metadata_io = ctx.config.create_stac_metadata_io()
-            reader = ctx._stac_metadata_io
+            factory = type(ctx.config).stac_io_factory
+            self._stac_io = factory(ctx.config) if factory else pystac.StacIO.default()
+            io = self._stac_io
             document = selected_document(ctx)
             base = ctx.document_href
             if ctx.location and not structural_stac(document):
                 reading = True
                 location = _resolve_href(ctx.location, base)
-                text, base = await reader.async_read_text_with_href(location)
+                source = (
+                    str(_local_path(location))
+                    if urlsplit(location).scheme == "file"
+                    else location
+                )
+                # PySTAC reads synchronously. Keep network/file I/O off the loop.
+                document = await asyncio.to_thread(io.read_json, source)
                 reading = False
-                document = json.loads(text)
+                base = _self_href(document, location) or location
             elif isinstance(document, dict):
                 base = _self_href(document, base) or base
             required = required or structural_stac(document)
@@ -50,7 +57,7 @@ class StacJobResultOpenerImpl(JobResultOpener):
                 raise StacJobResultOpenError(
                     "Document has no STAC structural evidence", required=False
                 )
-            result = _parse(document, base, reader)
+            result = _parse(document, base, io)
             if ctx.data_type is not None and not isinstance(result, ctx.data_type):
                 raise StacJobResultOpenError(
                     "STAC document does not match the requested native type"
@@ -63,53 +70,19 @@ class StacJobResultOpenerImpl(JobResultOpener):
         except Exception as error:
             raise StacJobResultOpenError(
                 f"STAC metadata parsing failed ({type(error).__name__})",
-                required=required,
-            ) from None
-
-
-class _BoundedStacIO(pystac.StacIO):
-    def __init__(self, reader: StacMetadataIO):
-        super().__init__()
-        self._reader = reader
-
-    def read_text(self, source: HREF, *args: Any, **kwargs: Any) -> str:
-        return self._reader.new_operation().read_text_with_href(os.fspath(source))[0]
-
-    def write_text(self, dest: HREF, txt: str, *args: Any, **kwargs: Any) -> None:
-        raise NotImplementedError("Cuiman STAC metadata policy is read-only")
-
-    def read_stac_object(
-        self,
-        source: HREF,
-        root: pystac.Catalog | None = None,
-        *args: Any,
-        **kwargs: Any,
-    ) -> pystac.STACObject:
-        reader = self._reader.new_operation()
-        text, base = reader.read_text_with_href(os.fspath(source))
-        try:
-            result = _parse(json.loads(text), base, reader, root)
-            if not isinstance(result, pystac.STACObject):
-                raise StacJobResultOpenError("Navigation requires a STAC object")
-            return result
-        except StacJobResultOpenError:
-            raise
-        except Exception as error:
-            raise StacJobResultOpenError(
-                f"STAC metadata parsing failed ({type(error).__name__})"
+                required=required or reading,
             ) from None
 
 
 def _parse(
     document: Any,
     base: str | None,
-    reader: StacMetadataIO,
+    io: pystac.StacIO,
     root: pystac.Catalog | None = None,
 ) -> Any:
     if not isinstance(document, dict):
         raise StacJobResultOpenError("STAC metadata must be an object")
     document = deepcopy(document)
-    io = _BoundedStacIO(reader)
     if document.get("type") == "FeatureCollection":
         features = document.get("features")
         if not isinstance(features, list) or any(
@@ -120,7 +93,7 @@ def _parse(
         ):
             raise StacJobResultOpenError("ItemCollection must contain STAC Items")
         _normalize_links(document, base)
-        items = [_parse(item, base, reader, root) for item in features]
+        items = [_parse(item, base, io, root) for item in features]
         # Avoid ItemCollection's default cloning, which would drop per-object I/O.
         return pystac.ItemCollection(
             items,
@@ -169,47 +142,3 @@ def _self_href(
             return None
         raise StacJobResultOpenError("Inline STAC self location must be absolute")
     return _resolve_href(href, None)
-
-
-def _absolute(href: str) -> bool:
-    parsed = urlsplit(href)
-    return Path(href).is_absolute() or bool(
-        parsed.scheme
-        and (parsed.netloc or parsed.scheme == "file" and parsed.path.startswith("/"))
-    )
-
-
-def _resolve_href(href: str, base: str | None) -> str:
-    if not isinstance(href, str) or not href:
-        raise StacJobResultOpenError("STAC location must be a non-empty string")
-    if Path(href).is_absolute() and (
-        base is None
-        or urlsplit(base).scheme == "file"
-        or "\\" in href
-        or (os.name == "nt" and len(urlsplit(href).scheme) == 1)
-    ):
-        return Path(href).as_uri()
-    if urlsplit(href).scheme:
-        return href
-    if base is None:
-        raise StacJobResultOpenError(
-            "Relative STAC location has no containing document base"
-        )
-    base = _resolve_href(base, None)
-    parsed = urlsplit(base)
-    if not parsed.scheme or not (parsed.netloc or parsed.scheme == "file"):
-        raise StacJobResultOpenError(
-            "STAC containing document base is not hierarchical"
-        )
-    # urljoin only supports its built-in schemes; storage URIs are hierarchical too.
-    joined = urlsplit(
-        urljoin(
-            urlunsplit(
-                ("https", parsed.netloc, parsed.path, parsed.query, parsed.fragment)
-            ),
-            href,
-        )
-    )
-    return urlunsplit(
-        (parsed.scheme, joined.netloc, joined.path, joined.query, joined.fragment)
-    )

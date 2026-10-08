@@ -3,7 +3,9 @@
 from typing import Any
 from urllib.parse import urlsplit
 
-from ..context import JobResultOpenContext
+from ...context import JobResultOpenContext
+from ...errors import StacJobResultOpenError
+from ..base import as_stac_asset
 
 
 def selected_document(ctx: JobResultOpenContext) -> Any:
@@ -56,6 +58,8 @@ def _schema_hint(value: Any) -> bool:
 
 
 def candidate_stac(ctx: JobResultOpenContext) -> bool:
+    if as_stac_asset(ctx.value) is not None:
+        return False
     if ctx.data_type is not None and not requested_stac(ctx):
         return False
     if strong_stac(ctx):
@@ -67,3 +71,12 @@ def candidate_stac(ctx: JobResultOpenContext) -> bool:
         not media_type
         and urlsplit(ctx.location).path.lower().endswith((".json", ".geojson"))
     )
+
+
+def unavailable_error(ctx: JobResultOpenContext) -> StacJobResultOpenError | None:
+    """Explain a missing optional dependency only for required STAC metadata."""
+    if candidate_stac(ctx) and strong_stac(ctx):
+        return StacJobResultOpenError(
+            "STAC opening requires the optional cuiman[stac] dependency"
+        )
+    return None

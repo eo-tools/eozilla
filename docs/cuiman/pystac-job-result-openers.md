@@ -93,8 +93,8 @@ Add equivalent typing overloads to `Client` and `AsyncClient`:
 | `str` | Identify a job, wait for success, retrieve results, select an original output, and dispatch an opener. | Existing job options plus `data_type`, `media_type`, and reader options. |
 | `pystac.Asset` | Open exactly the supplied Asset through the receiving client's configured readers. | `data_type`, `media_type`, and reader options. |
 
-Keep the first parameter's public name `job_id`, preserving positional calls and
-`open_job_result(job_id="123")`. Strings always identify jobs, even when they
+Name the first parameter `job_id_or_asset`, preserving positional calls and
+supporting `open_job_result(job_id_or_asset="123")`. Strings always identify jobs, even when they
 look like URLs. Other unsupported argument types raise `TypeError`; native
 Items/Collections are returned values, not additional opening overloads.
 
@@ -163,7 +163,7 @@ Schema evidence is a hint, not proof that the returned document matches it.
 
 Acceptance checks must respect `data_type` and perform no network, Asset access,
 credential acquisition, or transformation. A linked JSON/GeoJSON value may be a
-STAC candidate; bounded reading and definitive parsing happen during opening.
+STAC candidate; metadata reading and definitive parsing happen during opening.
 Ordinary JSON/GeoJSON must remain eligible for appropriate existing readers.
 If strong STAC evidence or an explicit PySTAC return type applies, malformed
 metadata must yield a clear STAC opening failure rather than silently return an
@@ -181,22 +181,20 @@ An explicit STAC request with PySTAC missing must explain the missing dependency
 
 Initial STAC opening reads only the selected document. It must not follow parent,
 root, Collection-member, child, or next-page links automatically, probe Asset
-existence, list storage keys, or download data/preview payloads. Read bounded
-metadata through application-configurable transport with scoped authentication.
-Prefer adapting PySTAC's [StacIO](https://pystac.readthedocs.io/en/stable/api/stac_io.html)
-where appropriate rather than introduce a
-public fetch/response/document model stack.
+existence, list storage keys, or download data/preview payloads. Use PySTAC's
+standard [StacIO](https://pystac.readthedocs.io/en/stable/api/stac_io.html) for
+metadata reads and native navigation. Applications may supply a native StacIO
+through a runtime client factory; custom metadata access policy belongs to that
+implementation. Do not introduce a separate Cuiman fetch/response/document stack.
+Acceptance must not introduce a duplicate fetch. Response-size, timeout, and
+request-count limits are an optional future extension described in section 9.1.
 
-Use a 2 MiB response limit, 10-second per-fetch timeout, and at most 16 metadata
-requests for one Cuiman opening operation by default. These are initial Cuiman
-policy defaults and must be configurable. Enforce byte/time bounds during reads,
-not only after buffering. Share reads within an operation; acceptance must not
-introduce a duplicate fetch. The initial opener performs no collection expansion,
-so item/page/depth discovery budgets and continuation tokens are unnecessary.
-Do not truncate a native ItemCollection silently: a size limit is an opening
-error, not a falsely complete partial object.
-
-Resolve references using the effective containing-document URI after redirects.
+Resolve linked references from the supplied document URI, preferring an
+unambiguous absolute self-document link when available. PySTAC's default I/O does
+not expose the effective response URI after redirects. Metadata whose relative
+references depend on a changed redirect location must advertise an absolute self
+link or use an application I/O implementation that supplies an appropriate base.
+Do not claim automatic effective-redirect tracking in the initial implementation.
 For inline Items, use an unambiguous absolute self link or an explicitly known
 containing result-document base. If the transport cannot supply that base,
 report the limitation instead of guessing after redirects. An embedded Item's
@@ -215,15 +213,17 @@ do not refresh them by retrieving or selecting a different Asset.
 Returned objects use normal PySTAC navigation. Remote navigation is an explicit
 user action and may perform synchronous I/O, including on objects returned by
 `AsyncClient`. Initial async opening must not block the event loop with synchronous
-network/file reads; cancellation propagates and owned I/O is bounded. Do not
+network/file reads: run synchronous PySTAC reads off the event loop. Cancellation
+of the awaiting task propagates; an already running worker read may continue
+until PySTAC completes it. Do not
 promise asynchronous PySTAC navigation or automatic STAC API pagination/search.
 Retain advertised next-page information without claiming all Items are loaded.
 
 A per-object/per-client I/O policy must be retained for subsequently resolved
 links when Cuiman supplies one. Avoid changing PySTAC's global default I/O to
 configure one client. Direct navigation outside a Cuiman operation has its own
-PySTAC/application policy; initial operation budgets do not constitute a global
-crawl guarantee. Transformations of subsequently fetched objects are discussed
+PySTAC/application policy; the initial implementation adds no metadata budgets.
+Transformations of subsequently fetched objects are discussed
 explicitly in section 6 rather than implied by initial opening.
 
 ## 6. Required STAC transformation
@@ -434,7 +434,26 @@ Use Asset keys within the selected owner rather than invent opaque resource IDs.
 Repeated `data` keys in different Items are naturally disambiguated by selecting
 the Item first. PySTAC's missing-key/navigation behavior should remain familiar.
 
-## 9. Future extension: uniform inspection and diagnostics
+## 9. Optional future extensions
+
+### 9.1. Bounded metadata I/O
+
+An optional future extension may address a **2 MiB response limit**, a
+**10-second per-fetch timeout**, and **at most 16 metadata requests per Cuiman
+opening operation**, including redirects. These are proposed configurable Cuiman
+policy defaults, not STAC requirements or mandatory initial behavior.
+
+If implemented, enforce byte/time bounds during reads rather than after buffering,
+share reads within one operation, and report exceeded limits as opening errors.
+Never silently truncate a native ItemCollection. Keep any bounded I/O policy
+compatible with native PySTAC StacIO, per-client customization, async cancellation,
+and existing parsing/navigation. Effective redirect tracking and explicit scoped
+redirect credentials can be addressed with that optional transport policy.
+Native navigation should have an explicit budget lifetime; an initial-opening
+budget must not be presented as a whole-catalog crawl guarantee. Metadata limits
+must not be confused with Asset payload reader limits.
+
+### 9.2. Uniform inspection and diagnostics
 
 Replacing the generic resource API loses one uniform listing and diagnostic
 presentation across STAC and arbitrary outputs. Retain that capability as an
@@ -490,9 +509,11 @@ resource/resolver architecture in the initial work.
 3. PySTAC is optional at import/runtime. Without it, ordinary readers still work;
    an explicit STAC request reports a missing dependency. Requested return types
    are respected, including the agreed Catalog/Collection subtype policy.
-4. STAC opening reads one bounded document and no Asset payload, preview, parent,
-   child, next page, or directory inventory. Effective redirect bases, inline
-   self links, and embedded Item bases resolve relative Assets correctly.
+4. STAC opening reads only the selected document through PySTAC I/O and no Asset
+   payload, preview, parent, child, next page, or directory inventory. Document
+   URLs, absolute self links, and embedded Item bases resolve relative Assets
+   correctly. Default-I/O redirect-base limitations are documented; metadata
+   byte/time/request limits are deferred to optional section 9.1.
 5. Both client variants retain job calls and polling/error behavior. Multi-output
    selection is explicit. Unsupported target types and explicitly supplied
    job-only arguments with Assets fail before I/O.
@@ -520,9 +541,10 @@ resource/resolver architecture in the initial work.
     credentials; parsing/transforming acquires no Asset credentials. Tokens,
     keys, and credential-bearing exception text do not enter returned metadata,
     warnings, logs, or reader summaries.
-13. Async metadata reads do not block the event loop; cancellation and bounded
-    read failures propagate. Native synchronous navigation is documented and
-    no global PySTAC I/O setting leaks between clients.
+13. Synchronous PySTAC metadata reads run off the async event loop; cancellation
+    of the await propagates, with the worker-read limitation documented. Native
+    synchronous navigation is documented. Cuiman does not change global PySTAC
+    I/O to configure a client.
 14. Executable testing-service examples and a notebook demonstrate inline and
     linked outputs, Item selection, Asset opening, transformation, and cleanup.
     The new branch must add its own representative test processes/fixtures if
@@ -536,7 +558,7 @@ tree changes, and stop after each step for review and comments.
 
 1. Add one or two representative testing processes/fixtures for inline Item and
    linked ItemCollection outputs with real small products and relative locations.
-2. Add optional PySTAC packaging and `StacJobResultOpener`, bounded metadata/base
+2. Add optional PySTAC packaging and `StacJobResultOpener`, standard PySTAC I/O/base
    handling, and sync/async job-output tests. Confirm conservative recognition
    and no payload/crawl behavior.
 3. Add the Asset overload, minimal shared-context adaptation, reader metadata/

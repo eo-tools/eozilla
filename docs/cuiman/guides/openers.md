@@ -19,6 +19,7 @@ Start the [local testing service](../../wraptile/usage.md#stac-testing-processes
 and run this from the Pixi environment:
 
 ```python
+import pandas as pd
 import pystac
 from cuiman import Client
 from gavicore.models import ProcessRequest
@@ -34,6 +35,9 @@ try:
     print([item.id for item in items])  # ['scene-1', 'scene-2']
     print(items[0].assets["data"].href)
     raw = client.get_job_results(job.jobID)  # original JSON and all output names
+    asset = items[0].assets["report"]
+    report = client.open_job_result(asset, data_type=pd.DataFrame)
+    print(report["mean_ndvi"].tolist())  # [1.5]
 finally:
     client.close()
 ```
@@ -54,51 +58,62 @@ required STAC output explains the optional dependency.
 
 Opening reads only the selected metadata document. It does not fetch parent,
 root, child, member, next-page, preview, or Asset payloads. Advertised next-page
-links remain available without automatic pagination. Asset reading through the
-client and transformation composition are introduced in subsequent implementation
-steps.
+links remain available without automatic pagination. Transformation composition
+is introduced in a subsequent implementation step.
 
-### Metadata limits and access
+### Open exactly one Asset
 
-ClientConfig settings `stac_metadata_max_bytes`, `stac_metadata_timeout`, and
-`stac_metadata_max_requests` default to 2 MiB of decoded bytes per document,
-10 seconds per fetch, and 16 requests per opening operation, including redirects.
-Limits are enforced during streamed reads; documents are never silently truncated.
-HTTP and local files (native Windows paths and file URIs with spaces) are
-supported metadata sources. Remote storage metadata requires an application I/O
-policy. Acceptance performs no reads or credential acquisition.
+Both Client and AsyncClient accept `pystac.Asset` as the first `job_id_or_asset` argument;
+AsyncClient uses `await client.open_job_result(asset, ...)`. Select an Asset from
+native metadata, or construct an independent Asset with an absolute href. The
+receiving client uses its own registered readers and configuration, including for
+Assets obtained through another client. No processing API calls, metadata
+rediscovery, sibling selection, or transformations occur during Asset opening.
+Strings always identify jobs, including strings that look like URLs. Other
+targets, including native Items and Catalogs, raise TypeError.
 
-Metadata access is separate from processing API authentication. To add scoped
-headers, declare a runtime factory on an application configuration subclass:
+Asset calls accept `data_type`, `media_type`, and reader options such as
+`engine="zarr"`. Omit `output_name`, `poll_interval`, and `timeout`: explicitly
+supplying any of them raises TypeError before resolution or dispatch, including
+None and the usual job defaults. Producer reader hints and scoped Asset-access
+configuration are introduced in the next implementation step; currently reader
+options come from the caller.
 
-```python
-from cuiman import ClientConfig
-from cuiman.api.opener import StacMetadataIO
+The exact Asset remains the selected context value. Its own media type takes
+precedence over its filename suffix; neither the owner's GeoJSON type nor sibling
+metadata determines its format. A caller override leaves the Asset unchanged.
+Media-type parameters and signed URL queries remain intact. Relative hrefs use
+the owner's absolute self-document location; missing or relative owner bases
+fail clearly. Native Windows paths and file URIs, including escaped spaces, work
+with built-in path readers. Suffix matching ignores URL queries and fragments.
+The selected data reader controls payload I/O.
 
-class AppConfig(ClientConfig):
-    @staticmethod
-    def stac_metadata_io_factory(config):
-        # Obtain this token from your application's credential provider at runtime.
-        return StacMetadataIO(
-            max_bytes=config.stac_metadata_max_bytes,
-            timeout=config.stac_metadata_timeout,
-            max_requests=config.stac_metadata_max_requests,
-            headers_by_origin={
-                "https://metadata.example.org": {"Authorization": "Bearer <token>"}
-            },
-        )
-```
+The testing processes also provide `assets["data"]` as Zarr. Read that Asset with
+`data_type=xr.Dataset, engine="zarr"` and close the returned dataset after use.
+Reading Zarr over HTTP additionally requires the reader's HTTP dependencies
+(`fsspec[http]`, including aiohttp), which the current Pixi environment does not
+include. The CSV example above runs with the existing development dependencies.
 
-Use `Client(config_type=AppConfig, ...)` or AsyncClient with that configuration.
-Headers apply only to explicitly listed scheme/host/port origins. Redirects
-recompute headers for their destination; API credentials, response cookies, and
-environment proxies are not inherited. List another origin explicitly to grant
-it metadata credentials. Factories may supply fresh `sync_transport_factory` and
-`async_transport_factory` transports. Runtime policy and secrets are excluded
-from persisted client settings and PySTAC JSON; Cuiman metadata errors omit URLs
-and underlying exception details.
+### Standard PySTAC metadata I/O
 
-Linked metadata uses its effective URI after redirects. Inline metadata prefers
+Metadata reads use `pystac.StacIO.default()` and return native PySTAC objects.
+Cuiman adds no metadata response-size limit, per-fetch timeout, request budget,
+or transport cache. The proposed 2 MiB, 10-second, and 16-request bounds are an
+optional future extension, not current behavior. HTTP and local metadata files,
+including Windows paths and file URIs with escaped spaces, are supported.
+Acceptance performs no reads or credential acquisition.
+
+Applications may set `ClientConfig.stac_io_factory` to a callable taking the
+receiving configuration and returning a native `pystac.StacIO`. The factory runs
+once per opening and is excluded from saved settings. Returned objects retain
+that I/O for ordinary navigation. Applications own any custom headers, storage
+support, timeout, or redirect policy; Cuiman does not copy processing API
+credentials into metadata requests or change PySTAC's global default.
+
+Linked metadata uses its supplied document URL or an unambiguous absolute self
+link. PySTAC's default I/O does not expose the final response URL after redirects.
+If relative references depend on a changed redirect location, provide an absolute
+self link or an appropriate application I/O implementation. Inline metadata prefers
 an unambiguous absolute self link, then the effective result-document URI retained
 by the client transport. Embedded Item references follow their ItemCollection's
 containing document even if an Item advertises an unrelated self link. Native
@@ -107,12 +122,13 @@ A relative reference without a known base fails instead of guessing the API URL.
 Custom transports can implement `get_response_href(value)` to supply source facts;
 its default returns None.
 
-Returned objects retain an individual read-only PySTAC StacIO policy. Explicit
-native navigation, such as `catalog.get_children()`, performs synchronous bounded
-reads, including for objects returned by AsyncClient. Each navigated document gets
-a fresh operation budget; the initial budget is not a whole-catalog crawl budget.
-Initial async opening uses async HTTP I/O and off-thread local-file reads, and
-propagates cancellation. This policy never changes PySTAC's global default.
+Explicit native navigation, such as `catalog.get_children()`, uses normal
+synchronous PySTAC I/O, including for objects returned by AsyncClient. Initial
+metadata reads run in a worker thread to keep the async event loop responsive.
+Cancellation of the awaiting task propagates, but an already running synchronous
+read may continue until PySTAC completes it. Cuiman's initial-opening errors omit
+URLs and underlying exception details; later native navigation uses PySTAC's own
+error behavior.
 
 The following example uses `simulate_scene` from the
 [local test service](api.md#start-the-local-service). Run the Python blocks in
@@ -178,9 +194,7 @@ job's output does not submit a new job. Always close datasets after use.
 
 A custom opener decides whether it can handle the requested output, then opens
 it. This example specializes in local Zarr links and converts file URIs to
-native paths, including on Windows. It also handles escaped spaces in paths,
-which the built-in reader's current file-URI handling may not resolve. Use
-paths without spaces for the built-in example, or this custom opener:
+native paths, including escaped spaces on Windows:
 
 ```python
 --8<-- "examples/guides/cuiman/openers.py:custom"
@@ -188,11 +202,18 @@ paths without spaces for the built-in example, or this custom opener:
 
 The client selects the output before invoking any opener. `ctx.value` (also
 available as `ctx.output_value`) is an independent copy of that selected job
-output. `ctx.output_name` contains its resolved name, including when a sole
+output. For an Asset call, `ctx.value` is the exact
+supplied native Asset, with optional job facts absent. `ctx.output_name` contains
+its resolved name for job calls, including when a sole
 output was selected automatically. `ctx.output_link` interprets the selected
 value as a Link when possible; it can be `None`. `ctx.location` holds the
 effective path or URL for path readers, and `ctx.output_media_type` retains the
 selected value's media type or the caller's override.
+
+The context carries shared opening facts; opener-specific runtime state belongs
+to the opener instance. STAC opening obtains a native I/O instance for every opening,
+including when an opener or context is reused. Returned native objects retain
+their own navigation policy without storing STAC-specific state on the context.
 
 The context can also be constructed with a direct `value` and optional `location`
 without producing-job information. `job_id`, `job_results`, and

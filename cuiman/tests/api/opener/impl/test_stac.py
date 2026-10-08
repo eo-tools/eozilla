@@ -2,17 +2,16 @@ import asyncio
 import subprocess
 import sys
 from copy import deepcopy
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
-import httpx2
 import pystac
 import pytest
 from tests.helpers import AllOpener
 
 from cuiman.api.config import ClientConfig
-from cuiman.api.opener import JobResultOpenContext, JobResultOpenError, StacMetadataIO
+from cuiman.api.opener import JobResultOpenContext, JobResultOpenError
 from cuiman.api.opener.impl import StacJobResultOpener
-from cuiman.api.opener.impl._stac import _BoundedStacIO, _resolve_href
+from cuiman.api.opener.impl._stac.locations import _resolve_href
 from cuiman.api.opener.opener import open_job_result
 from gavicore.models import (
     Link,
@@ -68,8 +67,8 @@ async def test_item_preserves_source_and_native_owner(wrapped):
         value = {"value": source, "mediaType": "application/geo+json"}
     ctx = context(value, data_type=pystac.Item)
     with patch.object(
-        StacMetadataIO,
-        "async_read_text_with_href",
+        pystac.stac_io.DefaultStacIO,
+        "read_json",
         side_effect=AssertionError("unexpected read"),
     ):
         result = await open_job_result(ctx, StacJobResultOpener)
@@ -196,8 +195,8 @@ async def test_catalog_and_collection_lazy_links(collection):
 async def test_acceptance_has_no_io(value, datatype, media, expected):
     ctx = context(value, data_type=datatype, _media_type=media)
     with patch.object(
-        ClientConfig,
-        "create_stac_metadata_io",
+        pystac.StacIO,
+        "default",
         side_effect=AssertionError("no access in acceptance"),
     ):
         assert await StacJobResultOpener().accept_job_result(ctx) is expected
@@ -269,22 +268,24 @@ async def test_strong_failures_do_not_fallback(value, base, datatype, message):
 
 
 @pytest.mark.asyncio
-async def test_linked_redirect_base_and_navigation_policy():
-    requests = []
-
-    def handle(request):
-        requests.append(str(request.url))
-        if request.url.path == "/old.json":
-            return httpx2.Response(302, headers={"location": "/results/item.json"})
-        return httpx2.Response(200, json=item())
+async def test_linked_absolute_self_base_and_native_navigation():
+    reads = []
 
     class Config(ClientConfig):
         @staticmethod
-        def stac_metadata_io_factory(config):
-            return StacMetadataIO(
-                async_transport_factory=lambda: httpx2.MockTransport(handle),
-                sync_transport_factory=lambda: httpx2.MockTransport(handle),
-            )
+        def stac_io_factory(config):
+            io = pystac.StacIO.default()
+
+            def read(href, *args, **kwargs):
+                reads.append(href)
+                document = item()
+                document["links"] = [
+                    {"rel": "self", "href": "https://data.test/results/item.json"}
+                ]
+                return document
+
+            io.read_json = Mock(side_effect=read)
+            return io
 
     ctx = JobResultOpenContext(
         config=Config(api_url="https://process.test"),
@@ -294,31 +295,63 @@ async def test_linked_redirect_base_and_navigation_policy():
     )
     default = pystac.StacIO._default_io
     result = await open_job_result(ctx, StacJobResultOpener)
-    assert requests == [
-        "https://data.test/old.json",
-        "https://data.test/results/item.json",
-    ]
+    assert reads == ["https://data.test/old.json"]
     assert result.assets["data"].href == "https://data.test/results/data.zarr"
     assert pystac.StacIO._default_io is default
-    navigated = result._stac_io.read_stac_object("https://data.test/old.json")
-    assert navigated.assets["data"].href == "https://data.test/results/data.zarr"
-    assert len(requests) == 4
+    navigated = result._stac_io.read_stac_object("https://data.test/results/next.json")
+    assert (
+        navigated.assets["data"].get_absolute_href()
+        == "https://data.test/results/data.zarr"
+    )
+    assert len(reads) == 2
 
 
 @pytest.mark.asyncio
 async def test_weak_json_failure_fallback_retains_error():
-    def handle(request):
-        return httpx2.Response(200, json={"type": "FeatureCollection", "features": []})
-
     ctx = context(Link(href="https://data.test/a.json"))
-    # An empty generic GeoJSON document is not proof of STAC, even after fetching.
-    ctx._stac_metadata_io = StacMetadataIO(
-        async_transport_factory=lambda: httpx2.MockTransport(handle)
+    io = pystac.StacIO.default()
+    io.read_json = Mock(return_value={"type": "FeatureCollection", "features": []})
+    with patch.object(pystac.StacIO, "default", return_value=io):
+        with pytest.raises(JobResultOpenError):
+            await open_job_result(ctx, StacJobResultOpener)
+        with patch.object(AllOpener, "open_job_result", return_value="fallback"):
+            assert (
+                await open_job_result(ctx, StacJobResultOpener, AllOpener) == "fallback"
+            )
+
+
+@pytest.mark.asyncio
+async def test_reused_opener_and_context_get_fresh_metadata():
+    reads = []
+    policies = []
+
+    class Config(ClientConfig):
+        @staticmethod
+        def stac_io_factory(config):
+            io = pystac.StacIO.default()
+
+            def read(href):
+                reads.append(href)
+                document = item()
+                document["id"] = f"read-{len(reads)}"
+                return document
+
+            io.read_json = Mock(side_effect=read)
+            policies.append(io)
+            return io
+
+    ctx = JobResultOpenContext(
+        config=Config(api_url="https://process.test"),
+        value=Link(href="https://data.test/item.json", type="application/json"),
     )
-    with pytest.raises(JobResultOpenError):
-        await open_job_result(ctx, StacJobResultOpener)
-    with patch.object(AllOpener, "open_job_result", return_value="fallback"):
-        assert await open_job_result(ctx, StacJobResultOpener, AllOpener) == "fallback"
+    original_context = vars(ctx).copy()
+    opener = StacJobResultOpener()
+    first = await opener.open_job_result(ctx)
+    second = await opener.open_job_result(ctx)
+    assert first.id == "read-1" and second.id == "read-2"
+    assert len(policies) == 2 and policies[0] is not policies[1]
+    assert vars(ctx) == original_context
+    assert first._stac_io is not second._stac_io
 
 
 def test_optional_import_and_missing_dependency():
@@ -370,8 +403,6 @@ def test_storage_uri_and_native_path_resolution(tmp_path):
     )
     with pytest.raises(JobResultOpenError, match="non-empty"):
         _resolve_href("", None)
-    with pytest.raises(NotImplementedError):
-        _BoundedStacIO(StacMetadataIO()).write_text("unused", "")
 
 
 @pytest.mark.asyncio
@@ -395,51 +426,6 @@ async def test_explicit_request_rejects_non_stac(source):
         await open_job_result(
             context(source, data_type=pystac.ItemCollection), StacJobResultOpener
         )
-
-
-def test_scoped_native_navigation_and_sanitized_failures():
-    def handle(request):
-        if request.url.path == "/child.json":
-            return httpx2.Response(302, headers={"location": "/effective/child.json"})
-        if request.url.path == "/effective/child.json":
-            return httpx2.Response(
-                200,
-                json={
-                    "type": "Catalog",
-                    "stac_version": "1.1.0",
-                    "id": "child",
-                    "description": "test",
-                    "links": [{"rel": "item", "href": "grandchild.json"}],
-                },
-            )
-        if request.url.path == "/items.json":
-            return httpx2.Response(
-                200, json={"type": "FeatureCollection", "features": []}
-            )
-        if request.url.path == "/plain.json":
-            return httpx2.Response(200, content="invalid-json secret=1")
-        return httpx2.Response(200, json=item("https://data.test/data.zarr"))
-
-    io = _BoundedStacIO(
-        StacMetadataIO(sync_transport_factory=lambda: httpx2.MockTransport(handle))
-    )
-    assert io.read_text("https://data.test/item.json").startswith("{")
-    catalog = io.read_stac_object("https://data.test/child.json")
-    assert (
-        catalog.get_single_link("item").target
-        == "https://data.test/effective/grandchild.json"
-    )
-    assert (
-        list(catalog.get_items())[0].assets["data"].href
-        == "https://data.test/data.zarr"
-    )
-    for href, message in [
-        ("items.json", "Navigation requires"),
-        ("plain.json", "parsing failed"),
-    ]:
-        with pytest.raises(JobResultOpenError, match=message) as failure:
-            io.read_stac_object("https://data.test/" + href)
-        assert "secret" not in str(failure.value)
 
 
 @pytest.mark.asyncio

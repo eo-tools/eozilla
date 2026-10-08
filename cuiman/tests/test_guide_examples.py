@@ -382,6 +382,7 @@ def test_rendered_python_walkthrough_runs_in_order(
     if guide == "openers":
         from datetime import datetime, timezone
 
+        import pandas as pd
         import pystac
 
         dataset = client.open_job_result.return_value
@@ -400,11 +401,21 @@ def test_rendered_python_walkthrough_runs_in_order(
                     "https://metadata.test/data.zarr", media_type="application/zarr"
                 ),
             )
+            member.add_asset(
+                "report",
+                pystac.Asset("https://metadata.test/report.csv", media_type="text/csv"),
+            )
             members.append(member)
         collection = pystac.ItemCollection(members)
-        client.open_job_result.side_effect = lambda *args, **kwargs: (
-            collection if kwargs.get("data_type") is pystac.ItemCollection else dataset
-        )
+
+        def open_result(*args, **kwargs):
+            if kwargs.get("data_type") is pystac.ItemCollection:
+                return collection
+            if kwargs.get("data_type") is pd.DataFrame:
+                return pd.DataFrame({"mean_ndvi": [1.5]})
+            return dataset
+
+        client.open_job_result.side_effect = open_result
     source = (root / "docs/cuiman/guides" / f"{guide}.md").read_text(encoding="utf-8")
     rendered = markdown(
         source,

@@ -4,7 +4,6 @@
 
 from .context import JobResultOpenContext
 from .errors import JobResultOpenError, JobResultStatusError, StacJobResultOpenError
-from .metadata import StacMetadataIO
 from .opener import JobResultOpener
 from .registry import JobResultOpenerRegistry
 
@@ -15,5 +14,4 @@ __all__ = [
     "JobResultOpenError",
     "JobResultStatusError",
     "StacJobResultOpenError",
-    "StacMetadataIO",
 ]

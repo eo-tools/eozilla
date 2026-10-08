@@ -1,7 +1,7 @@
 # PySTAC job-result openers: implementation plan
 
-Status: Step 1 approved and committed by the user. Step 2 implemented and verified;
-awaiting user review before Step 3.
+Status: Steps 1 and 2 approved. Step 3 implemented and verified;
+awaiting user review before Step 4.
 
 This plan implements [PySTAC Job Results and Asset Opening](pystac-job-result-openers.md).
 That document remains the behavioral specification, subject to the user-approved
@@ -98,7 +98,7 @@ selection rules, including the removal of the `return_value` preference.
   Pixi Python interpreter. Test temporary files, coverage output, and generated
   docs were isolated under `.pixi/step1/`.
 
-## Step 2: testing processes, native STAC opening, and bounded metadata transport
+## Step 2: testing processes, native STAC opening, and PySTAC metadata I/O
 
 ### Testing processes
 
@@ -172,28 +172,31 @@ Collection for a Catalog request. Strong STAC evidence, explicit STAC requests,
 and malformed metadata must not silently yield unrelated representations; retain
 parser failures in grouped errors where fallback is permitted.
 
-Provide configurable scoped metadata I/O, adapting per-object PySTAC StacIO where
-appropriate. Default bounds are 2 MiB per document, 10 seconds per fetch, and
-16 metadata requests per opening operation. Enforce bounds while reading and share
-reads within an operation. Read only the selected metadata document.
+Use standard PySTAC StacIO for metadata reads and native navigation, with an
+optional native-I/O factory on the receiving client configuration. Read only the
+selected metadata document. Cuiman byte/time/request bounds are deferred to the
+optional future extension in specification section 9.1, outside Steps 1–6.
 
-Retain effective redirect locations and establish correct containing-document
-bases for inline and embedded objects without changing source JSON. Make the
+Establish document-URL/self-link bases for inline, linked, and embedded objects
+without changing source JSON. Document that default PySTAC I/O does not expose
+effective redirected metadata URLs; absolute self links or application I/O are
+needed when relative references depend on a changed redirect base. Make the
 minimal transport/context adjustment needed to retain a result-document base;
 report unavailable or ambiguous bases instead of guessing. Keep process and
-metadata credentials separate and authorize redirect scopes explicitly.
+metadata credentials separate; an application's native I/O owns custom access.
 
 Initial async metadata I/O must not block the event loop, and cancellation must
-propagate. Retain per-object/client navigation policy without changing global
+propagate to the await; an already running synchronous worker read may continue.
+Retain per-object/client navigation policy without changing global
 PySTAC I/O. Later native navigation remains an explicit synchronous user action.
 
 **Validation:** all four native types, inline/qualified/linked and raw-dictionary
-forms, misleading/missing schema hints, missing PySTAC, requested types, bounded
-reads, redirect and embedded bases, cancellation, policy isolation, and proof of
+forms, misleading/missing schema hints, missing PySTAC, requested types, standard
+file/HTTP reads, self-link and embedded bases, cancellation, policy isolation, and proof of
 no Asset/preview reads or parent/child/member/next-page traversal.
 
 **Documentation:** describe optional installation, supported native types and
-PySTAC versions, metadata limits and access configuration, document-base failures,
+PySTAC versions, standard metadata I/O and customization, document-base failures,
 and synchronous native navigation from both clients. Include runnable testing
 process requests, the HTTP setup, and cleanup instructions.
 
@@ -201,6 +204,10 @@ process requests, the HTTP setup, and cleanup instructions.
 opening, dependency behavior, and transport policy together.
 
 ### Step 2 implementation record
+
+The original bounded-transport implementation below was superseded during Step 3
+review by the standard PySTAC I/O simplification recorded there. Its verification
+results describe that earlier implementation, not current metadata-limit behavior.
 
 - Added `create_inline_stac` and `create_linked_stac` to the existing testing
   registry. Both produce equivalent Item/ItemCollection metadata, real 2×2 Zarr
@@ -251,7 +258,7 @@ opening, dependency behavior, and transport policy together.
 ## Step 3: exact-Asset overload for both clients
 
 Add equivalent `str` and `pystac.Asset` overloads to Client and AsyncClient,
-preserving the public parameter name `job_id` and keyword job calls. Strings
+using the public parameter name `job_id_or_asset` for job and Asset calls. Strings
 always identify jobs. Reject unsupported target types.
 
 Use omitted-argument handling to reject explicitly supplied `output_name`,
@@ -273,6 +280,117 @@ both client variants, and the Step 2 metadata-to-Asset workflow.
 resolution, and a minimal runnable metadata-to-Asset example.
 
 **Pause:** review the public two-stage workflow and exact-target semantics.
+
+### Step 3 implementation record
+
+- Added equivalent job-ID and native Asset overloads to Client and AsyncClient,
+  keeping `job_id` keyword calls and existing job polling/selection behavior.
+  Omission sentinels reject explicit job-only arguments, including None and exact
+  defaults, before href resolution or reader dispatch. Unsupported targets fail
+  with TypeError, and ordinary Cuiman imports still do not load PySTAC.
+- Asset opening retains the exact native object, uses the receiving client's
+  registry/configuration, and dispatches without job/process/result API calls,
+  metadata rediscovery, or sibling selection. Closed-client and async event-loop
+  ownership checks apply to Asset calls too.
+- Shared location handling resolves relative hrefs from the owner's absolute
+  document base, including Collection Assets and storage URIs. Missing bases and
+  non-absolute URI forms fail clearly. Windows paths, PySTAC's normalized
+  `file:C:/...` forms, escaped spaces, and signed queries are covered. Built-in
+  path readers use Asset MIME essence for matching while retaining parameters in
+  the context, honor explicit format overrides without mutation, and ignore query
+  strings/fragments during suffix detection.
+- Baseline: 182 targeted tests passed with 100% opener-module coverage. Final:
+  865 Cuiman tests and 19 subtests passed with 100% statement coverage across
+  Cuiman and maintained guide examples. Ruff lint/format checks, Mypy over 53
+  Cuiman source files, the strict docs build, and `git diff --check` passed.
+- Both real testing processes were exercised through a separate temporary HTTP
+  server with both clients: native metadata opening, exact CSV Asset reading,
+  and preservation of raw outputs passed. Unit workflows also read real generated
+  Zarr products after selecting an Asset from either process's native metadata.
+  HTTP Zarr requires the reader's optional `fsspec[http]`/aiohttp dependencies,
+  absent from the current Pixi environment. The runnable guide uses CSV and
+  documents that requirement; the environment was not changed in this step.
+- Updated essential API docstrings, the two-stage guide/example, guide tests, and
+  CHANGES.md. Checks used the existing Pixi interpreter via `pixi run --as-is`,
+  with QA outputs isolated under `.pixi/step3/`. Step 4 reader hints and scoped
+  Asset access, Step 5 transformations, and the optional notebook remain pending.
+- Review adjustment: grouped the Asset/context helpers, href resolution, metadata
+  transport, recognition, and native parser under `opener.impl._stac`. The optional
+  `StacJobResultOpener` wrapper stays in `impl/openers.py` alongside the other
+  optional wrappers, as requested during review. Like those wrappers, it only
+  declares its required module and creates its concrete implementation. Shared
+  optional-opener handling delegates missing-PySTAC diagnostics to STAC support.
+  Public imports remain unchanged. Asset recognition stays in STAC helpers;
+  the shared context does not import STAC implementations. STAC's public error remains alongside
+  shared opener errors because it participates in common dispatch.
+  Reorganization verification: 259 targeted tests passed with 100% statement
+  coverage across the opener package; all 865 Cuiman tests and 19 subtests passed.
+  Ruff lint/format checks, Mypy over 55 source files, the strict docs build, and
+  `git diff --check` also passed.
+  Subsequent wrapper review: 259 targeted tests passed with 100% opener coverage;
+  lint, formatting, Mypy over 54 source files, and diff checks passed. This test
+  run supplied workspace source paths through a command-local PYTHONPATH because
+  the existing environment's editable imports were unavailable; it did not modify
+  the environment.
+- Context review: removed STAC metadata I/O and native Asset recognition from
+  `JobResultOpenContext`. Asset entry points normalize effective location/media
+  type into shared facts, preserving the exact selected value and format override
+  behavior. Metadata I/O belongs to the STAC opener instance. The original fresh
+  request budgets and caches were subsequently removed in the simplification
+  recorded below. Returned native objects retain their own navigation policy. No context
+  subclass or generic extension-state API was needed. Tests configure transport
+  through the existing client factory instead of adding private context fields.
+  Verification: 299 targeted opener/client/guide tests passed with 100% opener
+  statement coverage, including fresh metadata on repeated openings. Lint,
+  formatting, Mypy over 54 source files, strict documentation, and diff checks
+  passed. Documentation required permission to read existing Pixi registration
+  files; the environment was not modified.
+
+- Metadata I/O review: replaced Cuiman's bounded transport and PySTAC adapter with
+  standard native `StacIO`. Removed the custom transport export and limit settings;
+  applications can use a runtime-only `ClientConfig.stac_io_factory`. Every opening
+  obtains an I/O instance, which returned native objects retain for navigation.
+  Initial synchronous metadata reads run in a worker thread; cancellation ends the
+  await but may leave an already running read active. Default PySTAC I/O does not
+  expose a redirected response URL, so bases use the supplied URI or absolute self
+  link. These limitations are documented in the spec and guide.
+  Specification section 9.1 now defers a 2 MiB response limit, a 10-second per-fetch
+  timeout, and at most 16 metadata requests to an optional future extension outside
+  Steps 1–6. This review supersedes earlier bounded-transport behavior records.
+  Verification: 376 focused opener/client/configuration/guide tests and one subtest
+  passed, with 100% opener statement coverage. The package regression passed 848
+  tests and 19 subtests; its two failures passed subsequent checks after updating
+  the guide and granting read access to installed package metadata for the CLI
+  version check. Ruff lint/format checks, Mypy over 53 source files, strict docs,
+  and live HTTP workflows for both testing processes and both clients passed.
+
+- Path-helper review: moved generic file-URI/native-path conversion to
+  `opener.impl._paths`, shared by ordinary path readers and the STAC opener.
+  The helper raises generic `JobResultOpenError` and has no STAC dependency;
+  STAC-specific href/base resolution remains in `_stac.locations`.
+  Verification: 208 opener/Asset tests passed with 100% coverage of the changed
+  implementation modules. Ruff lint and formatting checks passed.
+
+- Parameter-name review: renamed the implementing methods' first parameter to
+  `job_id_or_asset` in both mixins, aligned the overloads and documentation, and
+  updated keyword-call tests. The job branch narrows this value to a local `job_id`.
+  This supersedes the earlier `job_id` keyword-call record. Verification: 117
+  client/Asset/STAC tests passed; Ruff lint and formatting checks passed.
+
+- Asset-helper review: moved native Asset recognition to `opener.impl.base` as
+  `as_stac_asset()`, with a docstring explaining its optional-import behavior.
+  Updated path-reader and STAC callers; the helper still checks only an already
+  loaded PySTAC module. Verification: 208 opener/Asset tests passed, including
+  optional-dependency import checks; Ruff lint and formatting passed.
+
+- Shared-mixin review: extracted `_new_job_result_context()` and async
+  `_open_result_context()` into `ClientMixinBase`. Both clients share context
+  construction, result-document URL retention, registry selection, and dispatch
+  for job outputs and exact Assets. The synchronous client uses `run_sync` and the
+  asynchronous client awaits dispatch. Polling, API calls, sleeps, and event-loop
+  binding remain in their respective mixins. Verification: 125 client/Asset/STAC/
+  metadata tests passed, covering all extracted helper statements; Ruff lint and
+  formatting checks passed.
 
 ## Step 4: validated reader options and scoped Asset access
 
@@ -396,7 +514,7 @@ execution evidence.
 | 1: preserve original outputs | 1, 2, 5 |
 | 2: native representations and conservative recognition | 2 |
 | 3: optional dependency and requested return types | 2 |
-| 4: bounded metadata opening and document bases | 2 |
+| 4: selected metadata opening and document bases | 2 |
 | 5: client job behavior and argument validation | 1, 3 |
 | 6: independent Assets and location handling | 3 |
 | 7: composed opener and predicate isolation | 5 |

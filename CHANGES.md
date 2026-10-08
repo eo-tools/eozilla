@@ -1,8 +1,16 @@
 ## Changes in version 0.3.2 (in development)
 
+- Cuiman's synchronous and asynchronous `open_job_result` also accept an exact
+  native PySTAC Asset, using the receiving client's readers without job lookups
+  or metadata rediscovery. Asset hrefs and formats remain authoritative; explicit
+  job-only arguments are rejected. Built-in path readers handle file URIs with
+  spaces, media-type parameters, and suffixes independent of signed URL queries.
+  Shared opening contexts retain neutral target facts; STAC metadata I/O belongs
+  to the opener using native PySTAC StacIO.
+
 - Cuiman's optional `stac` extra opens selected inline or linked STAC outputs as
   native PySTAC Items, ItemCollections, Collections, and Catalogs. Metadata reads
-  use configurable byte, time, and request bounds with separate scoped access;
+  use standard PySTAC I/O, with synchronous initial reads off the async event loop;
   initial opening retains lazy navigation without reading Asset payloads.
   Wraptile's local testing service adds `create_inline_stac` and
   `create_linked_stac`, generating small Zarr/CSV products served over HTTP.

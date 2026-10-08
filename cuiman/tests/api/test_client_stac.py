@@ -1,3 +1,4 @@
+from unittest.mock import Mock
 from urllib.parse import urlsplit
 
 import httpx2
@@ -5,7 +6,6 @@ import pystac
 import pytest
 
 from cuiman import AsyncClient, Client, ClientConfig
-from cuiman.api.opener import StacMetadataIO
 from cuiman.api.transport.httpx2 import Httpx2Transport
 from gavicore.models import ProcessRequest
 from procodile import Job
@@ -36,10 +36,14 @@ def test_demo_job_opening_with_both_clients(
 
     class Config(ClientConfig):
         @staticmethod
-        def stac_metadata_io_factory(config):
-            return StacMetadataIO(
-                async_transport_factory=lambda: httpx2.MockTransport(handle_metadata)
+        def stac_io_factory(config):
+            io = pystac.StacIO.default()
+            io.read_json = Mock(
+                side_effect=lambda href: handle_metadata(
+                    httpx2.Request("GET", href)
+                ).json()
             )
+            return io
 
     def handle_api(request):
         if request.url.path == "/jobs/demo":
