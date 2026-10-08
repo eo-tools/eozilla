@@ -1,7 +1,7 @@
 # PySTAC job-result openers: implementation plan
 
-Status: Steps 1 and 2 approved. Step 3 implemented and verified;
-awaiting user review before Step 4.
+Status: Steps 1–3 approved. Step 4 implemented and verified;
+awaiting user review before Step 5.
 
 This plan implements [PySTAC Job Results and Asset Opening](pystac-job-result-openers.md).
 That document remains the behavioral specification, subject to the user-approved
@@ -423,6 +423,64 @@ parsing/transformation never acquires Asset credentials.
 scoped access configuration, credential replacement, and relevant failure behavior.
 
 **Pause:** review reader configuration, supported metadata, and access behavior.
+
+### Step 4 implementation record
+
+- Added validated producer hints for built-in xarray, pandas, geopandas, and
+  image adapters, keeping the logic in `opener.impl._stac.reader`. Xarray-assets
+  1.0.0 is a compatibility input requiring its exact extension declaration.
+  Legacy `x-options` is filtered through reader schemas; pandas CSV hints apply
+  only to CSV targets. AWS S3 Storage 1.0.0 and 2.0.0 translate region and
+  requester-pays metadata. Version 2 requires one matching, supported scheme;
+  custom endpoints, alternate targets, arbitrary engines/code, remote credentials,
+  and unsupported/invalid hints are not translated. Native metadata is preserved,
+  with sanitized warnings for ignored hints. Supported fields and limits are
+  documented in the opener guide and linked from the specification.
+- Options resolve as reader defaults, producer hints, receiving-client overrides,
+  then caller options. Only declared mappings merge; scalar/list replacement and
+  None clearing are supported. Normalize xarray storage/consolidated aliases and
+  S3 credential aliases in each layer, including aliases within one call, before
+  precedence. Reader attempts copy option containers independently while retaining
+  opaque runtime sessions/callables by identity. Shared contexts expose generic
+  non-secret `resolved_options` and dotted-path `option_sources`; caller inputs,
+  source JSON, and native Asset ownership remain unchanged.
+- Added runtime-only `ClientConfig.asset_reader_options` and
+  `asset_access_provider` callbacks. Applications scope policy by the exact
+  receiving context's effective location and reader name. S3 access is acquired
+  only after acceptance, just before reading, with synchronous or async providers
+  and ambient fallback. Explicit credentials/access settings or storage clearing
+  skip the provider. Replacement credential sets discard previous keys and session
+  tokens atomically while retaining unrelated backend options. Process credentials
+  and native metadata I/O never supply Asset access; runtime secrets stay outside
+  STAC fields, profiles, reader summaries, warnings, and grouped Asset errors.
+- Verification: 422 focused opener/client/configuration/guide tests and one subtest
+  passed. All 896 Cuiman tests and 19 subtests passed. The new reader resolver has
+  99% statement coverage (one defensive validator fallback remains uncovered);
+  other touched opener modules and configuration have 100% in the package run.
+  Tests exercise both clients and synchronous/async access callbacks at the
+  authenticated S3 Zarr reader boundary without external S3 access, as well as
+  schema/version rejection, precedence, clearing, mapping and alias handling,
+  atomic credentials, candidate isolation, runtime sessions, safe summaries/errors,
+  cancellation, and no access acquisition during acceptance or metadata parsing.
+  Ruff lint/format checks, Mypy over 55 source files, strict documentation, and
+  diff checks passed. Checks use the existing Pixi interpreter and command-local
+  workspace source paths; QA outputs are isolated under `.pixi/step4/`. Package
+  checks and docs needed read access to existing Pixi registrations/metadata;
+  dependencies and the environment were not modified.
+- Updated the opener guide, configuration guide, specification support notes,
+  and CHANGES.md. Existing payload readers remain synchronous; async credential
+  providers may perform asynchronous acquisition. Supported producer adapters
+  cover a documented subset of extension fields, not every cloud platform.
+  Step 5 transformations and the optional notebook remain pending.
+
+- Naming review: renamed the path-reader policy identifier from `reader_adapter`
+  to `asset_reader_id` in the shared base and all four built-in readers, and
+  clarified its docstring. Verification: 114 implementation tests passed;
+  Ruff lint, formatting, and diff checks passed.
+
+- Argument-name review: use `asset_reader_id` consistently in reader-policy
+  function parameters, callback examples, configuration docstrings, and tests.
+  Verification: 46 Asset-reader tests passed; Ruff lint and formatting passed.
 
 ## Step 5: composed transformation and declared folder products
 

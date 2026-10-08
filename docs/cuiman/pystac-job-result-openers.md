@@ -361,6 +361,14 @@ for new producer descriptions. Eozilla `x-options` is also an optional validated
 compatibility input, not a requirement for STAC support. No new mandatory STAC
 extension is introduced.
 
+The initial built-in adapters support xarray-assets 1.0.0 as a compatibility
+input, validated legacy Asset `x-options`, and AWS S3 region/requester-pays hints
+from Storage 1.0.0 and 2.0.0. Versioned inputs require exact owner extension
+declarations. They do not choose alternate Assets, custom storage endpoints, or
+reader engines from producer hints. The supported per-reader fields, version
+boundaries, runtime configuration hooks, and limitations are documented in
+[Asset reader hints and access](guides/openers.md#asset-reader-hints-and-access).
+
 Effective non-secret options follow this precedence, lowest first:
 
 1. Reader defaults inferred from the selected target's supported format/metadata.

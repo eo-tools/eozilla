@@ -4,11 +4,13 @@
 
 import warnings
 from abc import ABC, abstractmethod
+from copy import deepcopy
+from dataclasses import replace
 from inspect import isclass
 from typing import Any
 
 from ..exceptions import ClientWarning
-from .context import JobResultOpenContext
+from .context import JobResultOpenContext, _copy_options
 from .errors import JobResultOpenError, StacJobResultOpenError
 
 
@@ -103,18 +105,24 @@ async def open_job_result(
     accepted_opener_count: int = 0
     for opener_type in opener_types:
         assert_opener_type_valid(opener_type)
+        candidate_ctx = replace(
+            ctx,
+            options=_copy_options(ctx.options),
+            resolved_options={},
+            option_sources={},
+        )
 
         opener: JobResultOpener | None = None
         try:
             if opener_type.is_usable():
                 opener = opener_type()
             else:
-                unavailable = opener_type._unavailable_error(ctx)
+                unavailable = opener_type._unavailable_error(candidate_ctx)
                 if unavailable is not None:
                     errors.append((opener_type, unavailable))
                     accepted_opener_count += 1
         except Exception as e:
-            _warn(opener_type, e)
+            _warn(opener_type, _safe_error(ctx, e))
 
         if (
             errors
@@ -126,16 +134,22 @@ async def open_job_result(
         if opener is not None:
             accepted: bool
             try:
-                accepted = await opener.accept_job_result(ctx)
+                accepted = await opener.accept_job_result(candidate_ctx)
                 accepted_opener_count += int(accepted)
             except Exception as e:
-                _warn(type(opener), e)
+                _warn(type(opener), _safe_error(ctx, e))
                 accepted = False
 
             if accepted:
                 try:
-                    return await opener.open_job_result(ctx)
+                    result = await opener.open_job_result(candidate_ctx)
+                    ctx.resolved_options = deepcopy(candidate_ctx.resolved_options)
+                    ctx.option_sources = dict(candidate_ctx.option_sources)
+                    return result
                 except Exception as e:
+                    ctx.resolved_options = deepcopy(candidate_ctx.resolved_options)
+                    ctx.option_sources = dict(candidate_ctx.option_sources)
+                    e = _safe_error(ctx, e)
                     errors.append((opener_type, e))
                     if isinstance(e, StacJobResultOpenError) and e.required:
                         break
@@ -163,6 +177,14 @@ def _warn(opener_type: type[JobResultOpener], error: Exception):
         category=ClientWarning,
         stacklevel=2,
     )
+
+
+def _safe_error(ctx: JobResultOpenContext, error: Exception) -> Exception:
+    from .impl.base import as_stac_asset
+
+    if as_stac_asset(ctx.value) is not None:
+        return JobResultOpenError(f"Asset opening failed ({type(error).__name__})")
+    return error
 
 
 def assert_opener_type_valid(opener_type: type[JobResultOpener]):

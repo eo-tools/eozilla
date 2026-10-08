@@ -13,6 +13,8 @@ from .base import PathOpener
 
 
 class ImageOpenerImpl(PathOpener):
+    asset_reader_id = "image"
+
     def accept_data_type(self, data_type: type) -> bool:
         return data_type is Image.Image
 
@@ -40,7 +42,7 @@ class ImageOpenerImpl(PathOpener):
         if path_like.startswith("s3://"):
             import s3fs  # type: ignore[import-not-found]
 
-            storage_options = ctx.options.get("storage_options", {})
+            storage_options = ctx.options.get("storage_options") or {}
             fs = s3fs.S3FileSystem(**storage_options)
             with fs.open(path_like, "rb") as f:
                 # .copy() forces load before the file handle closes (PIL is lazy)

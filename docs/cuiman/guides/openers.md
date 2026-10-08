@@ -75,9 +75,8 @@ targets, including native Items and Catalogs, raise TypeError.
 Asset calls accept `data_type`, `media_type`, and reader options such as
 `engine="zarr"`. Omit `output_name`, `poll_interval`, and `timeout`: explicitly
 supplying any of them raises TypeError before resolution or dispatch, including
-None and the usual job defaults. Producer reader hints and scoped Asset-access
-configuration are introduced in the next implementation step; currently reader
-options come from the caller.
+None and the usual job defaults. Built-in readers also apply validated producer
+hints and scoped receiving-client settings, as described below.
 
 The exact Asset remains the selected context value. Its own media type takes
 precedence over its filename suffix; neither the owner's GeoJSON type nor sibling
@@ -93,6 +92,102 @@ The testing processes also provide `assets["data"]` as Zarr. Read that Asset wit
 Reading Zarr over HTTP additionally requires the reader's HTTP dependencies
 (`fsspec[http]`, including aiohttp), which the current Pixi environment does not
 include. The CSV example above runs with the existing development dependencies.
+
+### Asset reader hints and access
+
+Asset options follow this order: reader defaults, validated producer hints,
+receiving-client overrides, then explicit caller options. For a Zarr Asset,
+xarray defaults to `engine="zarr"`; producer metadata cannot choose an engine.
+Only `chunks`, `backend_kwargs`, `storage_options`, `client_kwargs`, and
+`config_kwargs` merge by key. Scalars and lists replace earlier values; `None`
+clears inherited settings. Each reader attempt gets independent options.
+
+The supported producer inputs are deliberately limited:
+
+| Input | Accepted translation |
+| --- | --- |
+| [xarray-assets 1.0.0](https://github.com/stac-extensions/xarray-assets) | Asset `xarray:open_kwargs` and `xarray:storage_options`, only for xarray; this deprecated extension remains a compatibility input. |
+| Legacy Asset `x-options` | The same validated xarray hints, pandas CSV hints, geopandas `columns`, and safe storage hints. |
+| [Storage 1.0.0](https://github.com/stac-extensions/storage/tree/v1.0.0) | Selected S3 Assets with `storage:platform="AWS"`: Asset fields override Item properties; region maps to `client_kwargs.region_name` and requester-pays maps to `requester_pays`. |
+| [Storage 2.0.0](https://github.com/stac-extensions/storage) | Exactly one Asset `storage:refs` entry referring to an owning Item/Collection's AWS S3 scheme. Its bucket must match the selected href and its platform must be `https://{bucket}.s3.{region}.amazonaws.com`. Translate region and requester-pays only. |
+
+Versioned hints require the exact corresponding schema URI in the owner's
+`stac_extensions`. Versioned xarray hints override legacy hints; applicable
+Storage hints override compatibility storage hints. Cuiman does not traverse
+links to find metadata or select another Asset, storage scheme, or endpoint.
+Unknown extension versions and invalid hints remain in native metadata and
+produce sanitized `ClientWarning` messages when considered for opening.
+
+For xarray, accepted producer keys are `chunks` (`"auto"`, positive integers,
+`-1`, or a mapping of dimension names to those integers), `decode_cf`,
+`decode_times`, `mask_and_scale`, `cache`, `drop_variables`, and `consolidated`.
+The boolean options accept booleans or `None`; `drop_variables` accepts a string,
+list of strings, or `None`. `backend_kwargs` accepts only `consolidated` from
+producer metadata. Pandas CSV accepts string `sep`, `delimiter`, and `encoding`,
+integer/`"infer"` `header`, and string-list `usecols`, each also accepting `None`.
+Geopandas accepts string-list `columns`. Image has no producer image-decoding
+options. Compatibility storage hints accept boolean `requester_pays` and a
+non-empty `client_kwargs.region_name`; credentials and endpoints are ignored.
+These rules validate the supported reader subset, rather than every STAC field.
+
+Xarray's top-level `storage_options` alias is normalized to
+`backend_kwargs.storage_options` before each precedence layer is applied;
+`consolidated` similarly moves into `backend_kwargs`. Trusted S3 credentials
+`aws_access_key_id`, `aws_secret_access_key`, and `aws_session_token` normalize
+to fsspec's `key`, `secret`, and `token`, including aliases in `client_kwargs`.
+Top-level aliases override their nested equivalents within the same layer.
+
+Configure application-owned policy with runtime-only callbacks:
+
+```python
+import os
+
+from cuiman import ClientConfig
+
+
+def reader_options(ctx, asset_reader_id):
+    if asset_reader_id == "xarray" and (ctx.location or "").startswith("s3://my-products/"):
+        return {"chunks": "auto"}
+    return {}
+
+
+def asset_access(ctx, asset_reader_id):
+    if (ctx.location or "").startswith("s3://my-products/"):
+        return {
+            "key": os.environ["PRODUCT_ACCESS_KEY"],
+            "secret": os.environ["PRODUCT_SECRET_KEY"],
+        }
+    return None  # use the reader's ambient access mechanism
+
+
+class ProductConfig(ClientConfig):
+    asset_reader_options = staticmethod(reader_options)
+    asset_access_provider = staticmethod(asset_access)
+```
+
+Supply `ProductConfig()` to either client. The callbacks receive the exact Asset
+in `ctx.value`, its effective `ctx.location`, and the `asset_reader_id` (`xarray`,
+`pandas`, `geopandas`, or `image`). Their scope is determined by the receiving
+application, never by producer metadata or job association. Overrides are trusted
+reader options; the access callback returns S3 storage options or `None` and may
+be async. Sync callbacks and the existing payload readers execute synchronously;
+applications doing async credential I/O should provide an async access callback.
+
+Access is acquired only after reader acceptance, immediately before reading a
+selected S3 Asset. Acceptance and native STAC metadata opening never call these
+hooks. Explicit client/caller credentials, `anon`, `profile`, or `session` bypass
+the provider, as does explicit clearing of storage settings. A higher-precedence
+credential set replaces lower-precedence credentials atomically: new keys without
+a token discard an old session token. Non-secret region/backend settings survive.
+Processing API credentials and metadata I/O policy are never forwarded.
+
+`ctx.resolved_options` and `ctx.option_sources` expose non-secret effective
+settings and dotted-path source labels (`reader-default`, `producer`, `client`,
+`caller`, and `access-provider`). Runtime credentials stay outside native STAC
+objects and saved profiles. Asset opening errors and grouped reader failures
+report exception types without including credential-bearing exception text.
+Missing access leaves the Asset in its owner; the read fails normally. Reader
+dependencies such as S3/Zarr support must already be installed.
 
 ### Standard PySTAC metadata I/O
 

@@ -7,6 +7,12 @@ processing authentication. See
 Metadata response-size, timeout, and request limits are an optional future
 extension described in the STAC opener specification.
 
+For selected STAC Assets, runtime-only `asset_reader_options` and
+`asset_access_provider` callbacks supply scoped reader overrides and S3 access.
+They are excluded from saved profiles. See
+[Asset reader hints and access](guides/openers.md#asset-reader-hints-and-access)
+for supported producer hints, precedence, and credential replacement.
+
 The `cuiman` configuration settings may be passed in a couple of ways 
 to the Python API and CLI clients. The different ways also have different 
 precedence.

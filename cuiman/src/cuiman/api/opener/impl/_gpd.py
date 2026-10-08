@@ -12,6 +12,8 @@ from .base import PathOpener
 
 
 class GeopandasDataFrameOpenerImpl(PathOpener):
+    asset_reader_id = "geopandas"
+
     def accept_data_type(self, data_type: type) -> bool:
         return data_type is gpd.GeoDataFrame
 

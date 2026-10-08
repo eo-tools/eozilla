@@ -1,5 +1,12 @@
 ## Changes in version 0.3.2 (in development)
 
+- Cuiman's built-in Asset readers apply validated xarray-assets, legacy
+  `x-options`, and AWS S3 Storage hints. Runtime client hooks supply scoped reader
+  overrides and S3 access after acceptance. Caller options take precedence,
+  credential sets replace atomically, and contexts expose non-secret effective
+  options and sources. Reader attempts have independent options and Asset errors
+  omit credential-bearing exception text.
+
 - Cuiman's synchronous and asynchronous `open_job_result` also accept an exact
   native PySTAC Asset, using the receiving client's readers without job lookups
   or metadata rediscovery. Asset hrefs and formats remain authoritative; explicit

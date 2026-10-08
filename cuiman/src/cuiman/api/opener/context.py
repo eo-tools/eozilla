@@ -74,8 +74,14 @@ class JobResultOpenContext:
     the effective media type.  
     """
 
-    options: dict[str, Any] = field(default_factory=dict)
+    options: dict[str, Any] = field(default_factory=dict, repr=False)
     """Opener-specific options."""
+
+    resolved_options: dict[str, Any] = field(default_factory=dict, repr=False)
+    """Non-secret effective reader options from the latest opening attempt."""
+
+    option_sources: dict[str, str] = field(default_factory=dict, repr=False)
+    """Source labels for effective options, keyed by dotted option paths."""
 
     value: Any = field(default=_UNSELECTED, repr=False)
     """Authoritative selected value. Explicit None is a valid target."""
@@ -219,3 +225,14 @@ def _get_location(value: Any) -> str | None:
             if isinstance(location, (str, Path)):
                 return str(location)
     return None
+
+
+def _copy_options(value: Any) -> Any:
+    """Copy option containers while retaining opaque runtime sessions/callables."""
+    if isinstance(value, dict):
+        return {key: _copy_options(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_copy_options(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_copy_options(item) for item in value)
+    return value
