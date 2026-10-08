@@ -11,6 +11,9 @@
   - Split Wraptile routes into `wraptile.routes.core|dru`, with the 
     application-package response class alongside DRU routes.
 
+- **Procodile** no longer drops $ref schema references when building process 
+  descriptions. (#239)
+
 
 ## Changes in version 0.3.1
 
