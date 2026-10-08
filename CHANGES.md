@@ -1,5 +1,8 @@
 ## Changes in version 0.3.2 (in development)
 
+- **Procodile** no longer drops $ref schema references when building process 
+  descriptions. (#239)
+
 
 ## Changes in version 0.3.1
 
