@@ -123,7 +123,7 @@ class ProcessRegistry(Mapping[str, Process]):
                 be represented by a `pydantic.Field`, e.g., `additionalParameters` or `keywords`.
             outputs: Mapping from output names to
                 [`pydantic.Field`](https://docs.pydantic.dev/latest/concepts/fields/)
-                or [`OutputDescription`][gavicore.models.core.InputDescription] instances.
+                or [`OutputDescription`][gavicore.models.core.OutputDescription] instances.
                 Required, if you have multiple outputs returned as a
                 dictionary. In this case, the function must return a typed `tuple` and
                 output names refer to the items of the tuple in given order.
