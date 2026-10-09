@@ -144,11 +144,5 @@ def _item(scene_id: str, base: str) -> dict[str, Any]:
                 "title": "Scene summary",
                 "roles": ["metadata"],
             },
-            "products": {
-                "href": products,
-                "type": "inode/directory",
-                "title": "Declared products folder",
-                "roles": ["data"],
-            },
         },
     }

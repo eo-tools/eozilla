@@ -1,7 +1,7 @@
 # PySTAC job-result openers: implementation plan
 
-Status: Steps 1–3 approved. Step 4 implemented and verified;
-awaiting user review before Step 5.
+Status: Steps 1–4 approved. Step 5 implemented and verified;
+awaiting user review. Step 6 remains optional and unstarted.
 
 This plan implements [PySTAC Job Results and Asset Opening](pystac-job-result-openers.md).
 That document remains the behavioral specification, subject to the user-approved
@@ -119,8 +119,7 @@ Add two processes to `wraptile.services.local.testing`, with proposed IDs
 Use shared private builders so both processes describe equivalent small,
 deterministic products. Give Items stable IDs, geometry/bounds, temporal metadata,
 and native Asset metadata such as titles, roles, and individual media types.
-Include a small readable dataset and a simple report, plus a products-folder
-Asset for the later configured-expansion example. Repeated Asset keys across
+Include a small readable dataset and a simple report. Repeated Asset keys across
 Items should demonstrate that selection is scoped to an owner.
 
 Keep producer-side metadata generation independent of the future Cuiman opener.
@@ -211,7 +210,7 @@ results describe that earlier implementation, not current metadata-limit behavio
 
 - Added `create_inline_stac` and `create_linked_stac` to the existing testing
   registry. Both produce equivalent Item/ItemCollection metadata, real 2×2 Zarr
-  grids and CSV reports, a declared products-folder Asset, and ordinary Link,
+  grids and CSV reports, and ordinary Link,
   integer, and null outputs. Counts are bounded to 1–4 before generation; each run
   has a separate directory with stable Item IDs and Asset keys.
 - The testing service mounts its configured artifact directory at `/testing-stac`.
@@ -482,28 +481,19 @@ scoped access configuration, credential replacement, and relevant failure behavi
   function parameters, callback examples, configuration docstrings, and tests.
   Verification: 46 Asset-reader tests passed; Ruff lint and formatting passed.
 
-## Step 5: composed transformation and declared folder products
+## Step 5: composed STAC transformation
 
 Provide a small composition helper for registerable STAC opener classes with an
 optional source predicate and an ordered chain of async transformation callables.
 Reuse base acceptance/parsing once; require neither parser copying nor inheritance.
-Keep external product configuration owned by the composing application.
+Keep application configuration owned by the composing application.
 
 Transform independent native objects, including initially embedded Items. Preserve
 raw results, source JSON, cached parsed sources, previous returns, and loaded
 ownership/link relationships without resolving remote links while copying. Give
 each stage isolated input so a failed stage cannot leak partial mutations.
 
-Use the Step 2 folder Asset to demonstrate declared product expansion. Resolve
-the folder first, then join configured paths with location-aware behavior even
-without a trailing separator. Add correctly owned Assets with stable declared
-keys, individual titles/roles/formats/hints, and namespaced non-secret derivation
-metadata. Preserve the source folder Asset. Handle absolute entries without
-inheriting folder credentials or signed query parameters. Report key conflicts
-and ambiguous bases instead of overwriting or guessing.
-
-Recoverable entry failures retain unaffected Assets and successful siblings with
-sanitized ClientWarning messages. Invalid transformed types, broken ownership,
+Invalid transformed types, broken ownership,
 unusable structure, and whole-stage failures are opening errors that cannot
 silently bypass required transformation. Recompute on each job-output opening;
 opening a selected Asset never reruns transformations.
@@ -513,12 +503,11 @@ during later native remote navigation remain outside this implementation unless
 an application supplies an explicit composed I/O policy.
 
 **Validation:** composition/registration isolation, order and predicates, one parse,
-copy boundaries and ownership, no scans/probes/payload reads/credential acquisition,
-folder joining, conflicts, partial and stage failures, changed configuration,
-repeated use, and exact opening of derived Assets.
+copy boundaries and ownership, no unintended metadata or payload reads,
+stage failures, repeated use, and exact opening of selected Assets.
 
-**Documentation:** document the composition API, a minimal runnable declared-products
-example, transformation failure behavior, and the initial-document/navigation
+**Documentation:** document the composition API, a minimal native-object
+transformation example, transformation failure behavior, and the initial-document/navigation
 boundary. Keep uniform listing/diagnostics, previews, generic discovery, automatic
 pagination, and new browser action adapters explicitly deferred.
 
@@ -526,7 +515,7 @@ pagination, and new browser action adapters explicitly deferred.
 
 Before the Step 5 review, exercise the integrated workflow against both Step 2
 processes: execute a job, inspect raw outputs, open native STAC metadata, select and
-read an Asset, apply configured transformation, read a derived Asset, and clean up.
+read an Asset, apply a configured transformation, and clean up.
 Keep this workflow runnable and understandable without a demo notebook.
 
 Verify acceptance criteria 1-13 and the mandatory portion of criterion 14: runnable
@@ -541,9 +530,27 @@ Keep touched-code coverage close to 100%. Report baseline failures separately fr
 new regressions. Review the essential documentation and CHANGES.md updates made
 throughout Steps 1-5.
 
-**Pause:** review reusable composition, the declared-products example, integrated
+**Pause:** review reusable composition, the native-object example, integrated
 verification, essential documentation, and remaining limitations. The mandatory
 implementation ends here. Do not start optional Step 6 without user authorization.
+
+### Step 5 implementation record (awaiting review)
+
+- Added `compose_stac_opener()` for client-registered STAC opening with an optional
+  source predicate and ordered async transforms. It delegates acceptance and a
+  single parse to the base opener, copies each stage input, and treats invalid or
+  failed transformations as terminal opening errors with sanitized messages.
+- After review, removed the folder-product expansion helper, its dedicated
+  integration test and example, and the testing process's unused folder Asset.
+  The CSV and Zarr Assets remain directly addressable. Composition retains
+  native-type and ownership validation, with a concise configuration example.
+- Verification for the revised scope: 902 Cuiman tests and 129 Wraptile tests
+  passed; the nine focused composition tests give the retained implementation
+  99% statement coverage. `pixi run checks` and the strict docs build passed.
+  An earlier Cuiman run had two intermittent Windows Zarr writes fail; both
+  cases passed in isolation and the full suite passed on rerun with an isolated
+  workspace temp directory. The earlier aggregate coverage task likewise stopped
+  on unrelated Windows/Zarr filesystem failures.
 
 ## Step 6 (optional): expanded guides, examples, and demo notebook
 
@@ -576,7 +583,7 @@ execution evidence.
 | 5: client job behavior and argument validation | 1, 3 |
 | 6: independent Assets and location handling | 3 |
 | 7: composed opener and predicate isolation | 5 |
-| 8: declared owned folder products | 2, 5 |
+| 8: transformed native ownership and links | 5 |
 | 9: transformation copying, ownership, and failures | 5 |
 | 10: repeated opening and navigation boundary | 2, 5 |
 | 11: validated hints and option resolution | 4 |

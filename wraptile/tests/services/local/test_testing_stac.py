@@ -66,8 +66,7 @@ async def test_process_outputs_products_and_http(inline, artifacts):
         assert document["id"] == "scene-1"
         assert len(collection["features"]) == 2
         assert collection["testing:complete"] is True
-        assert set(document["assets"]) == {"data", "report", "products"}
-        assert not document["assets"]["products"]["href"].endswith("/")
+        assert set(document["assets"]) == {"data", "report"}
         assert all(
             member["assets"]["data"]["href"].startswith(member["id"] + "/")
             for member in collection["features"]

@@ -13,6 +13,7 @@ from .openers import (
     StacJobResultOpener,
     XarrayDatasetOpener,
 )
+from ._stac.composition import compose_stac_opener
 
 __all__ = [
     "PathOpener",
@@ -22,4 +23,5 @@ __all__ = [
     "PandasDataFrameOpener",
     "StacJobResultOpener",
     "XarrayDatasetOpener",
+    "compose_stac_opener",
 ]

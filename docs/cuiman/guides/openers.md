@@ -58,8 +58,41 @@ required STAC output explains the optional dependency.
 
 Opening reads only the selected metadata document. It does not fetch parent,
 root, child, member, next-page, preview, or Asset payloads. Advertised next-page
-links remain available without automatic pagination. Transformation composition
-is introduced in a subsequent implementation step.
+links remain available without automatic pagination.
+
+### Compose a STAC opener
+
+A branded client can register a composed STAC opener to reuse native parsing and
+apply application-owned transformations. The base opener parses selected metadata
+once; transforms receive independent native PySTAC objects in declared order.
+
+```python
+from cuiman import ClientConfig
+from cuiman.api.opener.impl import StacJobResultOpener, compose_stac_opener
+
+async def mark_reviewed(stac, ctx):
+    stac.extra_fields["project:reviewed"] = True
+    return stac
+
+def accepts_item(ctx):
+    return ctx.output_name == "item"
+
+class ProjectConfig(ClientConfig):
+    extra_job_result_openers = (
+        compose_stac_opener(
+            StacJobResultOpener,
+            transformers=(mark_reviewed,),
+            accepts=accepts_item,
+        ),
+    )
+```
+
+Pass `ProjectConfig` as `config_type` to Client or AsyncClient. The predicate
+scopes the rule to the selected output; unrelated STAC outputs use the ordinary
+built-in opener. A failed transform or invalid native result fails opening.
+Transforms run for each job-output opening, but opening a selected Asset does not
+rerun them. The hook covers the initial document and embedded Items. Following
+remote links later uses native PySTAC navigation without applying the transform.
 
 ### Open exactly one Asset
 

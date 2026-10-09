@@ -1,5 +1,10 @@
 ## Changes in version 0.3.2 (in development)
 
+- Cuiman applications can compose a native STAC opener with an optional source
+  predicate and ordered transformations. Each stage receives an independent
+  native object; invalid or failed transformations terminate opening with a
+  sanitized error.
+
 - Cuiman's built-in Asset readers apply validated xarray-assets, legacy
   `x-options`, and AWS S3 Storage hints. Runtime client hooks supply scoped reader
   overrides and S3 access after acceptance. Caller options take precedence,

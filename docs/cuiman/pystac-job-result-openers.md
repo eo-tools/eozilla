@@ -230,9 +230,8 @@ explicitly in section 6 rather than implied by initial opening.
 
 Applications must be able to reuse the built-in STAC opener and transform its
 parsed result before it is returned. Transformation is part of the initial
-design, not dependent on future uniform listings. Support enrichment, location or
-format rewriting, and expansion of configured products into additional native
-Assets or embedded Items. The result remains a native supported PySTAC object;
+design, not dependent on future uniform listings. Support application-specific
+enrichment of native metadata. The result remains a native supported PySTAC object;
 do not introduce transformed-resource wrappers.
 
 Provide an ordered chain of developer-supplied callables with the conceptual
@@ -249,64 +248,27 @@ A small helper that creates a registerable composed opener class is sufficient;
 can also be supported, using the same parsing and transformation path.
 
 ```python
-async def add_known_products(stac, ctx):
-    # Application logic uses native PySTAC operations on an independent copy.
-    # Configuration supplies paths, formats, roles, and product metadata.
-    return enrich_from_process_configuration(stac, ctx.process_description)
+async def mark_reviewed(stac, ctx):
+    stac.extra_fields["project:reviewed"] = True
+    return stac
 
 
-ProductStacOpener = compose_stac_opener(
+ProjectStacOpener = compose_stac_opener(
     StacJobResultOpener,
-    transformers=(add_known_products,),
-    accepts=matches_product_process,
+    transformers=(mark_reviewed,),
+    accepts=matches_project_process,
 )
 
 
-class ProductClientConfig(ClientConfig):
-    extra_job_result_openers = (ProductStacOpener,)
+class ProjectClientConfig(ClientConfig):
+    extra_job_result_openers = (ProjectStacOpener,)
 ```
 
 The predicate scopes application rules to relevant source facts; the ordinary
 built-in handles unrelated STAC outputs. Acceptance runs only the predicate and
-base acceptance, not transformation or configuration expansion. Reusing the base
+base acceptance, not transformation. Reusing the base
 must not parse/fetch metadata twice or apply the same chain recursively. Explicit
 caller options cannot load transformer code named by remote metadata.
-
-### Configured folder Assets
-
-For an Item whose `products` Asset points at a folder, external configuration may
-declare `rasters/ndvi.tif` and `reports/summary.csv`. Add independent native Assets
-to the returned Item while retaining its original folder Asset. For example:
-
-```text
-item.assets["products"]                  -> file:///C:/results/products
-item.assets["products/rasters/ndvi"]      -> file:///C:/results/products/rasters/ndvi.tif
-item.assets["products/reports/summary"]   -> file:///C:/results/products/reports/summary.csv
-```
-
-This is a flat native Asset mapping. The slash-separated keys are declared stable
-keys, not a new directory-tree API. Set each derived Asset's owner correctly.
-Each entry supplies its own title, roles, media type, and optional validated
-reader/storage metadata. Retain non-secret derivation metadata identifying the
-source Asset key, declared relative path, and configuration identity/revision
-when available. Application fields must be namespaced and must not overwrite
-standard STAC fields. Neither directory entries nor possible `item_assets`
-definitions are automatically readable data Assets.
-
-First resolve the folder Asset relative to the containing STAC document; then
-join configured paths using that explicit folder base, even without a trailing
-separator. Support native paths, file URIs, and hierarchical storage URIs through
-location-aware joining, not string concatenation. Absolute entries retain their
-explicit locations and do not inherit credentials or signed query parameters
-from the folder. Missing/ambiguous bases and conflicting declared keys must be
-reported instead of guessed or overwritten.
-
-Build from declared configuration without directory scans, existence checks,
-storage enumeration, Asset credential acquisition, or payload reads. The returned
-Assets describe configured products; they do not prove an exhaustive directory
-inventory or successful access. The original `JobResults` and source STAC JSON
-are unchanged, even though the returned native object intentionally has additional
-Assets.
 
 ### Ownership, failure, and repeated use
 
@@ -318,21 +280,17 @@ unsuitable if it fetches remote objects. The implementation must test these
 boundaries explicitly against the supported PySTAC version; see
 [STACObject copying](https://pystac.readthedocs.io/en/stable/api/stac_object.html#pystac.stac_object.STACObject.clone).
 
-Retain unaffected original Assets and successful configured siblings when one
-declared entry fails; report a sanitized `ClientWarning` for recoverable failures.
-A whole-stage failure must not leak partial mutations into its input. Invalid
+Retain unaffected original Assets. A whole-stage failure must not leak partial
+mutations into its input. Invalid
 return types, lost ownership, or unusable document structure are opening errors.
 Do not silently return a differently interpreted document after a required
 transformation fails. No generic structured diagnostic model is required yet;
 exceptions and warnings must still distinguish parsing, transformation, and data
 access failures and avoid credential-bearing exception text.
 
-Transformations are recomputed for each job-output opening. Stable declared keys
-and configuration revision prevent duplicates and stale derived products. Changes
-of effective URL or credentials must not change product selection. Cached sources,
-if used, are untransformed and access-scoped. Opening a selected Asset never
-reruns transformations; authorized location renewal must retain that exact target
-and its declared relative path.
+Transformations are recomputed for each job-output opening. Cached sources, if
+used, are untransformed and access-scoped. Opening a selected Asset never reruns
+transformations; authorized location renewal must retain that exact target.
 
 Initial transformations apply to the document and embedded Items loaded during
 the explicit output opening. Native PySTAC navigation does not automatically
@@ -432,7 +390,7 @@ STAC-specific implementation of each reader.
 | R3: inspect Assets, titles, roles, format, and reader availability | Native Asset mappings expose keys/titles/roles/media types now. Uniform tables and non-reading availability assessment are retained as a future extension, not properties injected into PySTAC. |
 | R4: target-specific hints/access/caller overrides | Required now, using validated STAC metadata and runtime reader/access configuration. |
 | R5: arbitrary values use unified discovery | Preserve raw values and custom opening now; generic discovery/listing is a future extension. Never manufacture STAC for ordinary values. |
-| R6: reuse parsing with transformation and configured folder products | Required now through composed STAC openers and native-object transformation. Generic non-STAC transformation is deferred. |
+| R6: reuse parsing with transformation | Required now through composed STAC openers and native-object transformation. Generic non-STAC transformation is deferred. |
 | P1: previews independently of opening | Future optional enhancement; never fetch preview payloads merely to inspect metadata. |
 | Python/CLI/App consistency | Preserve the raw OGC contract now. Uniform presentation/action adapters are future extensions with explicit runtime boundaries. |
 
@@ -531,16 +489,13 @@ resource/resolver architecture in the initial work.
 7. A process-scoped composed opener reuses base acceptance/parsing and an ordered
    callable chain. Application registration is isolated and unrelated STAC
    outputs use the ordinary built-in. Acceptance never runs transformations.
-8. Configured folder products become owned native Assets with stable distinct
-   keys, absolute locations, individual formats/roles/hints, and non-secret
-   derivation metadata. Folder bases without trailing slashes and absolute
-   configured entries work without scans or implicit credential inheritance.
+8. Transformed native objects retain valid Asset ownership and loaded link
+   relationships without resolving remote links during copying.
 9. Transformation preserves raw JSON, cached sources, and previously returned
    objects, including loaded owner/link relationships. Copying must not follow
-   remote links. Recoverable entry failures preserve source/sibling Assets and
-   warn; invalid transformed results fail rather than silently bypass rules.
-10. Reopening with changed configuration recomputes transformation without
-    duplicate Assets. Opening a selected derived Asset does not rerun it.
+   remote links. Invalid transformed results fail rather than silently bypass
+   rules.
+10. Reopening recomputes transformation. Opening a selected Asset does not rerun it.
     Subsequent native navigation has the explicitly documented hook/I/O behavior.
 11. Reader-option tests cover validated standardized/legacy hints, scoped client
     overrides, caller precedence, mapping merges, clearing, storage aliases,
@@ -571,7 +526,7 @@ tree changes, and stop after each step for review and comments.
    and no payload/crawl behavior.
 3. Add the Asset overload, minimal shared-context adaptation, reader metadata/
    option/access handling, and tests of exact-target and argument semantics.
-4. Add composed STAC transformation and declared-folder examples with isolation,
+4. Add composed STAC transformation examples with isolation,
    ownership, failure, repeated-opening, and no-I/O transformation tests.
 5. Update the opener guide, API/customization docs, maintained examples, a testing-
    service notebook, and `CHANGES.md` to describe the implemented scope. Keep
