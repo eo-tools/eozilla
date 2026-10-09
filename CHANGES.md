@@ -3,7 +3,8 @@
 - Cuiman applications can compose a native STAC opener with an optional source
   predicate and ordered transformations. Each stage receives an independent
   native object; invalid or failed transformations terminate opening with a
-  sanitized error.
+  sanitized error. A new guide, runnable example, and notebook demonstrate
+  inline and linked STAC jobs with a branded client and exact CSV Asset reading.
 
 - Cuiman's built-in Asset readers apply validated xarray-assets, legacy
   `x-options`, and AWS S3 Storage hints. Runtime client hooks supply scoped reader

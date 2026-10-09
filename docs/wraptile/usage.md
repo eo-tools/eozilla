@@ -93,9 +93,8 @@ schedule — the two tokens have unrelated lifetimes.
 The local testing service includes `create_inline_stac` and `create_linked_stac`.
 Both accept `item_count` (default 2, allowed 1–4) and generate equivalent STAC
 Items with stable IDs, geometry, temporal metadata, and Assets named `data`
-(2×2 Zarr NDVI grid), `report` (CSV), and `products` (folder). Every run has a
-separate generated directory. The folder deliberately has no trailing separator
-for later declared-product expansion examples.
+(2×2 Zarr NDVI grid) and `report` (CSV). Every run has a separate generated
+directory.
 
 Run from the repository root:
 

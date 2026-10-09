@@ -49,6 +49,10 @@ PySTAC types, and requesting Catalog accepts a Collection. A mismatched explicit
 native type fails. Unknown extension fields and concrete Collection Assets are
 retained; `item_assets` definitions remain separate from concrete Assets.
 
+The [STAC walkthrough](stac.md) runs both local processes and shows raw results,
+native Items, composition, exact Asset reading, and cleanup. It includes a
+runnable script and a notebook.
+
 The opener unwraps qualified values, recognizes STAC structure or schema hints,
 and considers linked JSON/GeoJSON as candidates. Ordinary inline GeoJSON,
 including empty FeatureCollections, is not assumed to be STAC. Weak linked

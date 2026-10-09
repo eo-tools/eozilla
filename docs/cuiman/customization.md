@@ -112,6 +112,11 @@ Lists, tuples, and generators are accepted and captured as a tuple at class
 creation. Subclasses can assign the attribute without repeating its annotation.
 It is excluded from settings and saved profiles.
 
+For native STAC results, `compose_stac_opener()` creates a registerable opener
+from the built-in `StacJobResultOpener`, an optional source predicate, and
+ordered async transformations. This reuses built-in parsing without subclassing
+it. The [STAC walkthrough](guides/stac.md) shows the configuration and execution.
+
 Each subclass receives a copy of its parent's `return_type_map` and, unless
 overridden, its `extra_job_result_openers` at class creation. Declaring a new
 iterable replaces the inherited extras; an empty iterable keeps only built-ins.

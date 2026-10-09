@@ -1,7 +1,7 @@
 # PySTAC job-result openers: implementation plan
 
-Status: Steps 1–4 approved. Step 5 implemented and verified;
-awaiting user review. Step 6 remains optional and unstarted.
+Status: Steps 1–5 approved. Step 6 implemented and verified;
+awaiting user review.
 
 This plan implements [PySTAC Job Results and Asset Opening](pystac-job-result-openers.md).
 That document remains the behavioral specification, subject to the user-approved
@@ -534,7 +534,7 @@ throughout Steps 1-5.
 verification, essential documentation, and remaining limitations. The mandatory
 implementation ends here. Do not start optional Step 6 without user authorization.
 
-### Step 5 implementation record (awaiting review)
+### Step 5 implementation record (approved)
 
 - Added `compose_stac_opener()` for client-registered STAC opening with an optional
   source predicate and ordered async transforms. It delegates acceptance and a
@@ -572,6 +572,20 @@ checks only where changes or unresolved concerns justify it.
 **Pause:** review the optional guides, expanded examples, notebook, and their
 execution evidence.
 
+### Step 6 implementation record (awaiting review)
+
+- Added a maintained branded-client STAC script and demo notebook. Both execute
+  inline and linked testing processes, inspect raw and native results, verify a
+  composed transformation, read an exact CSV Asset, and close the client.
+- Added a dedicated STAC walkthrough, links from the API, opener, and
+  customization guides, example usage notes, and manual eozilla-app testing and
+  service-artifact cleanup instructions. Removed a stale description of the
+  retired testing-process folder Asset.
+- Executed the script and all 12 notebook cells against the local testing
+  service using an isolated artifact directory, then stopped the service and
+  removed that directory. `pixi run checks`, 52 relevant tests, and
+  `pixi run build-docs` passed. The source notebook has no saved job output.
+
 ## Acceptance-criterion coverage
 
 | Specification criterion | Primary steps |
@@ -590,7 +604,7 @@ execution evidence.
 | 12: scoped S3 access and secret handling | 2, 4, 5 |
 | 13: async I/O, cancellation, and per-client policy | 2 |
 | 14: testing processes and minimal executable examples (required) | 2, 3, 5 |
-| 14: expanded examples and demo notebook (deferred) | 6 (optional) |
+| 14: expanded examples and demo notebook | 6 (completed) |
 
 All steps follow AGENTS.md, existing Pixi tooling, Black-style formatting,
 package-relative implementation imports, deferred optional imports, and public API
