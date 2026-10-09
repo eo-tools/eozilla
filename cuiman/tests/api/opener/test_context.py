@@ -7,7 +7,7 @@ from typing import Any
 
 from cuiman import ClientConfig
 from cuiman.api.opener import JobResultOpenContext
-from gavicore.models import (
+from gavicore.models.core import (
     JobResults,
     Link,
     OutputDescription,

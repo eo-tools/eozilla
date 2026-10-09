@@ -34,7 +34,7 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-from gavicore.models import InputDescription, ProcessDescription, ProcessSummary
+from gavicore.models.core import InputDescription, ProcessDescription, ProcessSummary
 
 from .auth import AuthConfig, AuthConfigBase, NoAuthConfig
 from .auth.config import has_credentials
@@ -84,7 +84,7 @@ class ClientConfig(BaseSettings):
     """
     A mapping from a hard-coded client return type to a 
     custom return type. The hard-coded return type is usually a 
-    model class from `gavicore.models`. The custom return type 
+    model class from `gavicore.models.core`. The custom return type
     typically extends the model class.  
     Designed to be configured by library clients.
     The default mapping is empty.

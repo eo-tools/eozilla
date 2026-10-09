@@ -17,7 +17,7 @@ from cuiman.app.app import (
     _normalize_process_request_dicts,
     _normalize_process_requests,
 )
-from gavicore.models import ProcessRequest, ResponseType
+from gavicore.models.core import ProcessRequest, ResponseType
 
 
 def test_create_remote_store_and_defaults():

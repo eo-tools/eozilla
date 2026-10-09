@@ -4,9 +4,10 @@
 
 import unittest
 
+from pydantic import Field
+
 from appligator.airflow.ir import workflow_to_ir
 from appligator.airflow.models import ConfigMapMount, PvcMount
-from gavicore.models import Field
 from procodile import ProcessRegistry, Workflow
 from procodile.workflow import FINAL_STEP_ID, FromMain, FromStep
 

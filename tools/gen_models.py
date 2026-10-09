@@ -6,11 +6,13 @@ import datamodel_code_generator as dcg
 
 from tools.common import EOZILLA_PATH, OPEN_API_PATH
 
-MODELS_PATH = EOZILLA_PATH / "gavicore/src/gavicore/models.py"
+MODELS_PATH = EOZILLA_PATH / "gavicore/src/gavicore/models/core.py"
 
 
 def main():
-    assert not bool(dcg), "NO ERROR: see gavicore.models.QualifiedValue, then uncomment"
+    assert not bool(dcg), (
+        "NO ERROR: see gavicore.models.core.QualifiedValue, then uncomment"
+    )
     dcg.generate(
         input_=OPEN_API_PATH,
         input_file_type=dcg.InputFileType.OpenAPI,

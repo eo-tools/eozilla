@@ -4,7 +4,7 @@
 
 from unittest import TestCase
 
-from gavicore.models import ApiError
+from gavicore.models.core import ApiError
 from wraptile.exceptions import ServiceConfigException, ServiceException
 
 

@@ -9,7 +9,7 @@ from unittest.mock import patch
 from IPython.core.interactiveshell import InteractiveShell
 
 from cuiman import ClientError
-from gavicore.models import ApiError
+from gavicore.models.core import ApiError
 
 
 class IShellTest(TestCase):

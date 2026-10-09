@@ -22,7 +22,7 @@ from cuiman.api.opener.impl import (
     XarrayDatasetOpener,
 )
 from cuiman.api.opener.opener import open_job_result
-from gavicore.models import JobResults, Link
+from gavicore.models.core import JobResults, Link
 
 
 class DummyOpener1(JobResultOpener):
