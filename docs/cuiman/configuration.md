@@ -5,7 +5,8 @@ their configuration class's runtime-only `stac_io_factory`, separately from
 processing authentication. See
 [standard PySTAC metadata I/O](guides/openers.md#standard-pystac-metadata-io).
 Metadata response-size, timeout, and request limits are an optional future
-extension described in the STAC opener specification.
+extension; the proposed bounds and current behavior are summarized in the
+[opener guide](guides/openers.md#standard-pystac-metadata-io).
 
 For selected STAC Assets, runtime-only `asset_reader_options` and
 `asset_access_provider` callbacks supply scoped reader overrides and S3 access.

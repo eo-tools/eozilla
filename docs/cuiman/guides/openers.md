@@ -64,6 +64,12 @@ Opening reads only the selected metadata document. It does not fetch parent,
 root, child, member, next-page, preview, or Asset payloads. Advertised next-page
 links remain available without automatic pagination.
 
+Cuiman exposes native PySTAC objects and the original job outputs. It does not
+currently provide a uniform cross-output inventory, reader-availability table,
+preview service, or STAC API search/pagination. Browser clients need their own
+presentation and actions; Python opener behavior is not automatically available
+in the browser.
+
 ### Compose a STAC opener
 
 A branded client can register a composed STAC opener to reuse native parsing and
@@ -144,14 +150,17 @@ The supported producer inputs are deliberately limited:
 | Input | Accepted translation |
 | --- | --- |
 | [xarray-assets 1.0.0](https://github.com/stac-extensions/xarray-assets) | Asset `xarray:open_kwargs` and `xarray:storage_options`, only for xarray; this deprecated extension remains a compatibility input. |
-| Legacy Asset `x-options` | The same validated xarray hints, pandas CSV hints, geopandas `columns`, and safe storage hints. |
+| Asset `x-options` | The same validated xarray hints, pandas CSV hints, geopandas `columns`, and safe storage hints. |
 | [Storage 1.0.0](https://github.com/stac-extensions/storage/tree/v1.0.0) | Selected S3 Assets with `storage:platform="AWS"`: Asset fields override Item properties; region maps to `client_kwargs.region_name` and requester-pays maps to `requester_pays`. |
 | [Storage 2.0.0](https://github.com/stac-extensions/storage) | Exactly one Asset `storage:refs` entry referring to an owning Item/Collection's AWS S3 scheme. Its bucket must match the selected href and its platform must be `https://{bucket}.s3.{region}.amazonaws.com`. Translate region and requester-pays only. |
 
-Versioned hints require the exact corresponding schema URI in the owner's
-`stac_extensions`. Versioned xarray hints override legacy hints; applicable
-Storage hints override compatibility storage hints. Cuiman does not traverse
-links to find metadata or select another Asset, storage scheme, or endpoint.
+The processing `Link` model exposes `x-options` through its `options` field.
+For a native STAC Asset, Cuiman reads `x-options` from that Asset's extra fields
+and validates the supported reader subset. Versioned hints require the exact
+corresponding schema URI in the owner's `stac_extensions`. Versioned xarray
+hints override equivalent `x-options`; applicable Storage hints override
+equivalent storage options. Cuiman does not traverse links to find metadata or
+select another Asset, storage scheme, or endpoint.
 Unknown extension versions and invalid hints remain in native metadata and
 produce sanitized `ClientWarning` messages when considered for opening.
 
@@ -163,7 +172,7 @@ list of strings, or `None`. `backend_kwargs` accepts only `consolidated` from
 producer metadata. Pandas CSV accepts string `sep`, `delimiter`, and `encoding`,
 integer/`"infer"` `header`, and string-list `usecols`, each also accepting `None`.
 Geopandas accepts string-list `columns`. Image has no producer image-decoding
-options. Compatibility storage hints accept boolean `requester_pays` and a
+options. `x-options` storage hints accept boolean `requester_pays` and a
 non-empty `client_kwargs.region_name`; credentials and endpoints are ignored.
 These rules validate the supported reader subset, rather than every STAC field.
 

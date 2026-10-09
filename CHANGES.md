@@ -1,38 +1,17 @@
 ## Changes in version 0.3.2 (in development)
 
-- Cuiman applications can compose a native STAC opener with an optional source
-  predicate and ordered transformations. Each stage receives an independent
-  native object; invalid or failed transformations terminate opening with a
-  sanitized error. A new guide, runnable example, and notebook demonstrate
-  inline and linked STAC jobs with a branded client and exact CSV Asset reading.
-
-- Cuiman's built-in Asset readers apply validated xarray-assets, legacy
-  `x-options`, and AWS S3 Storage hints. Runtime client hooks supply scoped reader
-  overrides and S3 access after acceptance. Caller options take precedence,
-  credential sets replace atomically, and contexts expose non-secret effective
-  options and sources. Reader attempts have independent options and Asset errors
-  omit credential-bearing exception text.
-
-- Cuiman's synchronous and asynchronous `open_job_result` also accept an exact
-  native PySTAC Asset, using the receiving client's readers without job lookups
-  or metadata rediscovery. Asset hrefs and formats remain authoritative; explicit
-  job-only arguments are rejected. Built-in path readers handle file URIs with
-  spaces, media-type parameters, and suffixes independent of signed URL queries.
-  Shared opening contexts retain neutral target facts; STAC metadata I/O belongs
-  to the opener using native PySTAC StacIO.
-
-- Cuiman's optional `stac` extra opens selected inline or linked STAC outputs as
-  native PySTAC Items, ItemCollections, Collections, and Catalogs. Metadata reads
-  use standard PySTAC I/O, with synchronous initial reads off the async event loop;
-  initial opening retains lazy navigation without reading Asset payloads.
-  Wraptile's local testing service adds `create_inline_stac` and
-  `create_linked_stac`, generating small Zarr/CSV products served over HTTP.
-
-- Cuiman job-result openers now receive one selected target with optional job
-  provenance and an effective location. Selected job values are copied to preserve
-  original results. Multiple outputs require an explicit `output_name`, including
-  when one is named `return_value`; missing and ambiguous selections fail before
-  reader dispatch, while explicit null outputs remain valid selections.
+- **Cuiman** opens selected inline or linked STAC results as native PySTAC Items,
+  ItemCollections, Collections, and Catalogs through the optional `stac` extra.
+  Job-result selection preserves raw outputs, requires `output_name` when results
+  are ambiguous, and retains valid null selections. Both clients also open an
+  exact PySTAC Asset through their configured readers without job lookup or
+  metadata rediscovery. Asset readers validate supported `x-options`, xarray-assets,
+  and AWS Storage hints; receiving-client hooks provide scoped reader options and
+  S3 access without exposing credentials in metadata or errors. Applications can
+  compose the built-in STAC opener with ordered, isolated transformations.
+  Wraptile's local testing service provides inline and linked STAC processes with
+  HTTP-served Zarr/CSV products, demonstrated by a guide, runnable example, and
+  notebook. Resolves #217.
 
 - **Procodile** no longer drops $ref schema references when building process 
   descriptions. (#239)
