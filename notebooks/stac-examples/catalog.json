@@ -1,0 +1,45 @@
+{
+  "stac_version": "1.0.0",
+  "type": "Catalog",
+  "id": "sen4x-examples",
+  "title": "Sen4X STAC Examples",
+  "description": "Selected Sen4X STAC items for notebook examples.",
+  "links": [
+    {
+      "rel": "item",
+      "href": "./stac/collections/S4C_TILLAGE/items/S2AGRI_S4C_TILL_PRD_S2_20261008T071443_V20190101T000000_20191231T000000.json",
+      "type": "application/geo+json",
+      "title": "S4C Tillage"
+    },
+    {
+      "rel": "item",
+      "href": "./stac/collections/S4C_L4C/items/S2AGRI_S4C_L4C_PRD_S2_20261008T081633_V20190101T000000_20191231T235959.json",
+      "type": "application/geo+json",
+      "title": "S4C L4C"
+    },
+    {
+      "rel": "item",
+      "href": "./stac/collections/S4C_L4B/items/S2AGRI_S4C_L4B_PRD_S2_20261007T070259_V20190301T000000_20191231T000000.json",
+      "type": "application/geo+json",
+      "title": "S4C L4B"
+    },
+    {
+      "rel": "item",
+      "href": "./stac/collections/S4C_L4A/items/S2AGRI_S4C_L4A_PRD_S2_20261007T060248_V20190101T000000_20191231T000000.json",
+      "type": "application/geo+json",
+      "title": "S4C L4A"
+    },
+    {
+      "rel": "item",
+      "href": "./stac/collections/S4C_HETEROGENEITY/items/S2AGRI_S4C_HETEROGENEITY_PRD_S2_20261008T105820_V20190101T000000_20191231T235959.json",
+      "type": "application/geo+json",
+      "title": "S4C Heterogeneity"
+    },
+    {
+      "rel": "item",
+      "href": "./stac/collections/S4C_BARE_SOIL/items/S2AGRI_S4C_BARESOIL_PRD_S2_20261008T071917_V20190101T000000_20191231T000000.json",
+      "type": "application/geo+json",
+      "title": "S4C Bare Soil"
+    }
+  ]
+}
