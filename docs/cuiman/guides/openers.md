@@ -130,6 +130,15 @@ fail clearly. Native Windows paths and file URIs, including escaped spaces, work
 with built-in path readers. Suffix matching ignores URL queries and fragments.
 The selected data reader controls payload I/O.
 
+Cuiman considers the primary `href` and every `alternate/*/href`, resolving
+relative URLs before ranking protocols: `file`, `s3`, HTTP(S), then other
+protocols. Native absolute filesystem paths resolve to file URIs. Ties prefer
+the primary location, then alternates in their original order. Malformed or
+unresolvable alternates are ignored; the primary href must remain valid.
+Selection does not probe availability or retry another location on read failure.
+The original Asset remains unchanged, and `ctx.asset_alternate` identifies the
+selected alternate (or is `None` for the primary location).
+
 The testing processes also provide `assets["data"]` as Zarr. Read that Asset with
 `data_type=xr.Dataset, engine="zarr"` and close the returned dataset after use.
 Reading Zarr over HTTP additionally requires the reader's HTTP dependencies
@@ -161,6 +170,13 @@ corresponding schema URI in the owner's `stac_extensions`. Versioned xarray
 hints override equivalent `x-options`; applicable Storage hints override
 equivalent storage options. Cuiman does not traverse links to find metadata or
 select another Asset, storage scheme, or endpoint.
+When an alternate is selected, producer hints come from that alternate object,
+including its `xarray:open_kwargs`, `xarray:storage_options`, `x-options`, and
+`storage:*` fields. Primary-location hints are not inherited. The owner's
+extension declarations and Storage definitions still apply. Client and caller
+overrides retain their usual precedence. This permits each protocol to carry
+its own access settings; xarray-assets nesting on alternates is a Cuiman
+compatibility convention rather than an explicitly specified inheritance rule.
 Unknown extension versions and invalid hints remain in native metadata and
 produce sanitized `ClientWarning` messages when considered for opening.
 

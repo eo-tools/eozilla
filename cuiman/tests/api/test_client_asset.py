@@ -236,6 +236,139 @@ def test_absolute_asset_does_not_consult_owner(client):
         assert call(asset, inspect_context=True).location == asset.href
 
 
+@pytest.mark.parametrize(
+    "primary,alternates,expected,key",
+    [
+        (
+            "https://data.test/data",
+            {"cloud": {"href": "s3://bucket/data"}},
+            "s3://bucket/data",
+            "cloud",
+        ),
+        (
+            "s3://bucket/data",
+            {"local": {"href": "file:///data.zarr"}},
+            "file:///data.zarr",
+            "local",
+        ),
+        (
+            "file:///main.zarr",
+            {"local": {"href": "file:///other.zarr"}},
+            "file:///main.zarr",
+            None,
+        ),
+        (
+            "https://data.test/main",
+            {"web": {"href": "http://other.test/data"}},
+            "https://data.test/main",
+            None,
+        ),
+        (
+            "ftp://data.test/main",
+            {"web": {"href": "https://other.test/data"}},
+            "https://other.test/data",
+            "web",
+        ),
+        (
+            "ftp://data.test/main",
+            {"other": {"href": "gs://bucket/data"}},
+            "ftp://data.test/main",
+            None,
+        ),
+        (
+            "https://data.test/main",
+            {
+                "first": {"href": "s3://bucket/one"},
+                "second": {"href": "s3://bucket/two"},
+            },
+            "s3://bucket/one",
+            "first",
+        ),
+        (
+            "https://data.test/main",
+            {"relative": {"href": "data.zarr"}},
+            "s3://bucket/items/data.zarr",
+            "relative",
+        ),
+    ],
+)
+def test_asset_location_protocol_priority(client, primary, alternates, expected, key):
+    _, call = client
+    asset = pystac.Asset(primary, extra_fields={"alternate": alternates})
+    owning = owner(asset, base="s3://bucket/items/item.json")
+    original = deepcopy(owning.to_dict())
+    ctx = call(asset, inspect_context=True)
+    assert ctx.location == expected
+    assert ctx.asset_alternate == key
+    assert ctx.value is asset
+    assert owning.to_dict() == original
+
+
+@pytest.mark.parametrize(
+    "alternates",
+    [
+        None,
+        [],
+        {"bad": None},
+        {"bad": {}},
+        {"bad": {"href": 17}},
+        {"bad": {"href": "file:relative.zarr"}},
+        {"bad": {"href": "https://[invalid"}},
+        {"bad": {"href": "relative.zarr"}},
+        {17: {"href": "s3://bucket/data"}},
+    ],
+)
+def test_invalid_alternates_do_not_hide_primary(client, alternates):
+    _, call = client
+    asset = pystac.Asset(
+        "https://data.test/data", extra_fields={"alternate": alternates}
+    )
+    ctx = call(asset, inspect_context=True)
+    assert ctx.location == asset.href
+    assert ctx.asset_alternate is None
+
+
+def test_alternate_url_and_options_reach_xarray(client):
+    instance, call = client
+    asset = pystac.Asset(
+        "https://data.test/data.zarr",
+        media_type="application/x-zarr",
+        extra_fields={
+            "xarray:storage_options": {"requester_pays": False},
+            "alternate": {
+                "cloud": {
+                    "href": "s3://bucket/data.zarr?versionId=123",
+                    "xarray:storage_options": {"requester_pays": True},
+                }
+            },
+        },
+    )
+    owning = owner(asset)
+    owning.stac_extensions = [
+        "https://stac-extensions.github.io/xarray-assets/v1.0.0/schema.json"
+    ]
+    original = deepcopy(owning.to_dict())
+    client_options = Mock(return_value={"chunks": {"x": 2}})
+    access = Mock(return_value={"anon": True})
+    with (
+        patch.object(type(instance.config), "asset_reader_options", client_options),
+        patch.object(type(instance.config), "asset_access_provider", access),
+        patch("xarray.open_dataset", return_value="opened") as read,
+    ):
+        assert call(asset, data_type=xr.Dataset, chunks="auto") == "opened"
+    read.assert_called_once_with(
+        "s3://bucket/data.zarr?versionId=123",
+        engine="zarr",
+        chunks="auto",
+        backend_kwargs={"storage_options": {"anon": True, "requester_pays": True}},
+    )
+    hook_ctx = access.call_args.args[0]
+    assert hook_ctx.value is asset
+    assert hook_ctx.asset_alternate == "cloud"
+    assert hook_ctx.location == read.call_args.args[0]
+    assert owning.to_dict() == original
+
+
 @pytest.mark.parametrize("href", ["file:relative.csv", "https:relative.csv"])
 def test_non_absolute_uri_does_not_guess_a_base(client, href):
     _, call = client
@@ -439,15 +572,18 @@ def test_demo_metadata_to_exact_asset(client, tmp_path, monkeypatch, process_id)
     parsed_original = deepcopy(items.to_dict())
 
     def read_data(href, **options):
-        assert href == selected.href
-        relative = href.removeprefix("https://metadata.test/testing-stac/")
-        return xr.open_zarr(str(directory / relative))
+        relative = selected.href.removeprefix("https://metadata.test/testing-stac/")
+        assert Path(href) == directory / relative
+        return xr.open_zarr(href)
 
     # Replace only the reader's HTTP boundary; consume the real generated Zarr.
     with patch("xarray.open_dataset", side_effect=read_data) as reader:
         with call(selected, data_type=xr.Dataset, engine="zarr") as dataset:
             assert dataset["ndvi"].values.tolist() == [[1, 2], [3, 4]]
-        reader.assert_called_once_with(selected.href, engine="zarr")
+        reader.assert_called_once_with(
+            str(directory / selected.href.removeprefix("https://metadata.test/testing-stac/")),
+            engine="zarr",
+        )
     assert items.to_dict() == parsed_original
     assert results.model_dump(mode="json") == original
 

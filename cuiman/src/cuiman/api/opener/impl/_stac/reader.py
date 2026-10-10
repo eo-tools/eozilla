@@ -71,7 +71,11 @@ async def prepare_asset_reader(
         (
             "producer",
             _producer_hints(
-                asset, asset_reader_id, ctx.location or "", ctx.output_media_type
+                asset,
+                asset_reader_id,
+                ctx.location or "",
+                ctx.output_media_type,
+                ctx.asset_alternate,
             ),
         ),
         ("client", client),
@@ -347,9 +351,15 @@ def _validated_storage(raw: Any) -> dict[str, Any]:
 
 
 def _producer_hints(
-    asset: Any, asset_reader_id: str, location: str, media_type: str | None
+    asset: Any,
+    asset_reader_id: str,
+    location: str,
+    media_type: str | None,
+    alternate: str | None = None,
 ) -> dict[str, Any]:
     fields = asset.extra_fields
+    if alternate is not None:
+        fields = fields["alternate"][alternate]
     hint_reader_id = asset_reader_id
     if asset_reader_id == "pandas" and not (
         (media_type or "").split(";", 1)[0] == "text/csv"
@@ -396,7 +406,7 @@ def _producer_hints(
         or _STORAGE_V1 in extensions
         or _STORAGE_V2 in extensions
     ):
-        storage = _storage_hints(asset, extensions, location)
+        storage = _storage_hints(asset, extensions, location, fields)
         result = _merge(
             result,
             _normalize({"storage_options": storage}, asset_reader_id),
@@ -406,10 +416,11 @@ def _producer_hints(
     return result
 
 
-def _storage_hints(asset: Any, extensions: list[str], location: str) -> dict[str, Any]:
+def _storage_hints(
+    asset: Any, extensions: list[str], location: str, fields: dict[str, Any]
+) -> dict[str, Any]:
     owner = asset.owner
     properties = getattr(owner, "properties", getattr(owner, "extra_fields", {}))
-    fields = asset.extra_fields
     if not location.startswith("s3://"):
         return {}
     if _STORAGE_V2 in extensions:

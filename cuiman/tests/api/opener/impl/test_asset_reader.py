@@ -18,12 +18,99 @@ from cuiman.api.opener.impl import (
     StacJobResultOpener,
     XarrayDatasetOpener,
 )
-from cuiman.api.opener.impl._stac.reader import prepare_asset_reader
+from cuiman.api.opener.impl._stac.asset import OMITTED, _asset_context
+from cuiman.api.opener.impl._stac.reader import _valid, prepare_asset_reader
 from cuiman.api.opener.opener import open_job_result
 
 XARRAY = "https://stac-extensions.github.io/xarray-assets/v1.0.0/schema.json"
 STORAGE1 = "https://stac-extensions.github.io/storage/v1.0.0/schema.json"
 STORAGE2 = "https://stac-extensions.github.io/storage/v2.0.0/schema.json"
+
+
+@pytest.mark.parametrize("reader", ["xarray", "pandas", "geopandas", "image"])
+def test_validator_rejects_unsupported_reader_option(reader):
+    assert not _valid("unsupported_option", True, reader)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("version", [XARRAY, STORAGE1, STORAGE2, None])
+async def test_alternate_hints_follow_selected_location(version):
+    alternate_fields = {
+        XARRAY: {"xarray:storage_options": {"requester_pays": True}},
+        STORAGE1: {"storage:platform": "AWS", "storage:region": "alternate"},
+        STORAGE2: {"storage:refs": ["alternate"]},
+        None: {"x-options": {"storage_options": {"requester_pays": True}}},
+    }[version]
+    source = context(
+        fields={
+            "xarray:storage_options": {"client_kwargs": {"region_name": "primary"}},
+            "storage:region": "primary",
+            "storage:refs": ["primary"],
+            "x-options": {
+                "storage_options": {"client_kwargs": {"region_name": "primary"}}
+            },
+            "alternate": {
+                "cloud": {"href": "s3://bucket/data.zarr", **alternate_fields}
+            },
+        },
+        extensions=[version] if version else [],
+        href="https://data.test/data.zarr",
+        properties={
+            "storage:schemes": {
+                "alternate": {
+                    "type": "aws-s3",
+                    "platform": "https://{bucket}.s3.{region}.amazonaws.com",
+                    "bucket": "bucket",
+                    "region": "alternate",
+                }
+            }
+        },
+    )
+    original = deepcopy(source.value.owner.to_dict())
+    ctx = _asset_context(
+        source.config,
+        source.value,
+        output_name=OMITTED,
+        poll_interval=OMITTED,
+        timeout=OMITTED,
+        data_type=xr.Dataset,
+        media_type=None,
+        options={},
+    )
+    prepared = await prepare_asset_reader(ctx, "xarray")
+    storage = prepared.options["backend_kwargs"]["storage_options"]
+    assert storage == (
+        {"client_kwargs": {"region_name": "alternate"}}
+        if version in (STORAGE1, STORAGE2)
+        else {"requester_pays": True}
+    )
+    assert prepared.location == "s3://bucket/data.zarr"
+    assert prepared.value is source.value
+    assert source.value.owner.to_dict() == original
+
+
+@pytest.mark.asyncio
+async def test_file_alternate_has_no_primary_storage_and_keeps_caller_options():
+    source = context(
+        fields={
+            "xarray:storage_options": {"requester_pays": True},
+            "alternate": {"local": {"href": "file:///data.zarr"}},
+        },
+        extensions=[XARRAY],
+    )
+    ctx = _asset_context(
+        source.config,
+        source.value,
+        output_name=OMITTED,
+        poll_interval=OMITTED,
+        timeout=OMITTED,
+        data_type=xr.Dataset,
+        media_type=None,
+        options={"chunks": "auto"},
+    )
+    prepared = await prepare_asset_reader(ctx, "xarray")
+    assert prepared.options == {"engine": "zarr", "chunks": "auto"}
+    assert prepared.location == "file:///data.zarr"
 
 
 def context(

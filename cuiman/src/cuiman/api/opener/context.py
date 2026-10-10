@@ -99,6 +99,13 @@ class JobResultOpenContext:
     Used only as source context for inline metadata; never guessed from api_url.
     """
 
+    asset_alternate: str | None = None
+    """Selected STAC alternate key, or None for the primary Asset location.
+
+    Access hints come from this location's metadata while value retains the
+    original Asset. Client and caller options still override producer hints.
+    """
+
     def __post_init__(self) -> None:
         """Select and copy a job output, then normalize its location without I/O."""
         if self.value is _UNSELECTED:

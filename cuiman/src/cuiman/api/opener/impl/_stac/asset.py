@@ -33,7 +33,6 @@ def _asset_context(
     options: dict[str, Any],
 ) -> "JobResultOpenContext":
     from cuiman.api.opener.context import JobResultOpenContext
-    from .locations import _absolute, _resolve_href
 
     asset = as_stac_asset(target)
     if asset is None:
@@ -51,7 +50,41 @@ def _asset_context(
         raise TypeError(
             "Asset opening does not accept job-only arguments: " + ", ".join(forbidden)
         )
-    href = asset.href
+    location = _asset_location(asset, asset.href)
+    alternate_key = None
+    alternates = asset.extra_fields.get("alternate")
+    if isinstance(alternates, dict):
+        for key, alternate in alternates.items():
+            if not isinstance(key, str) or not isinstance(alternate, dict):
+                continue
+            try:
+                candidate = _asset_location(asset, alternate.get("href"))
+            except (JobResultOpenError, ValueError):
+                # Malformed optional locations must not hide a valid Asset.
+                continue
+            if _protocol_priority(candidate) < _protocol_priority(location):
+                location, alternate_key = candidate, key
+    return JobResultOpenContext(
+        config=config,
+        value=asset,
+        location=location,
+        asset_alternate=alternate_key,
+        data_type=data_type,
+        _media_type=media_type if media_type is not None else asset.media_type,
+        options=options,
+    )
+
+
+def _protocol_priority(location: str) -> int:
+    return {"file": 0, "s3": 1, "http": 2, "https": 2}.get(
+        urlsplit(location).scheme.lower(), 3
+    )
+
+
+def _asset_location(asset: Any, href: Any) -> str:
+    """Resolve one location against the original Asset's owner without I/O."""
+    from .locations import _absolute, _resolve_href
+
     if not isinstance(href, str) or not href:
         raise JobResultOpenError("Asset href must be a non-empty string")
     if urlsplit(href).scheme and not _absolute(href):
@@ -68,11 +101,4 @@ def _asset_context(
             raise JobResultOpenError(
                 "Relative Asset href requires an owner with a document base"
             )
-    return JobResultOpenContext(
-        config=config,
-        value=asset,
-        location=_resolve_href(href, base),
-        data_type=data_type,
-        _media_type=media_type if media_type is not None else asset.media_type,
-        options=options,
-    )
+    return _resolve_href(href, base)
