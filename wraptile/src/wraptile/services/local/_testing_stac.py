@@ -50,6 +50,7 @@ def create_outputs(item_count: int, inline: bool) -> tuple[Any, Any, Link, int, 
     """Generate small owned products and equivalent inline/linked STAC outputs."""
     import numpy as np
     import xarray as xr
+    from PIL import Image
 
     directory, public_base = output_settings()
     run_id = uuid4().hex
@@ -59,6 +60,7 @@ def create_outputs(item_count: int, inline: bool) -> tuple[Any, Any, Link, int, 
     items = []
     for index in range(item_count):
         scene_id = f"scene-{index + 1}"
+        west, south = 10 + index * 1.25, 50
         products = run_dir / scene_id / "products"
         products.mkdir(parents=True)
         dataset = xr.Dataset(
@@ -68,7 +70,10 @@ def create_outputs(item_count: int, inline: bool) -> tuple[Any, Any, Link, int, 
                     np.arange(4, dtype="float32").reshape(2, 2) + index,
                 )
             },
-            coords={"lat": [50.25, 50.75], "lon": [10.25, 10.75]},
+            coords={
+                "lat": [south + 0.25, south + 0.75],
+                "lon": [west + 0.25, west + 0.75],
+            },
         )
         try:
             dataset.to_zarr(str(products / "data.zarr"), mode="w", zarr_format=2)
@@ -79,7 +84,16 @@ def create_outputs(item_count: int, inline: bool) -> tuple[Any, Any, Link, int, 
             encoding="utf-8",
             newline="\n",
         )
-        item = _item(scene_id, base)
+        # A synthetic four-colour preview, with north at the top like a map.
+        colours = np.array(
+            [[[240, 210, 100], [160, 195, 90]], [[80, 150, 75], [25, 100, 60]]],
+            dtype="uint8",
+        )
+        with Image.fromarray(np.roll(colours, index, axis=1)[::-1]) as image:
+            image.resize((160, 160), Image.Resampling.NEAREST).save(
+                products / "preview.png"
+            )
+        item = _item(scene_id, base, products, west, south)
         items.append(item)
         _write_json(run_dir / f"{scene_id}.json", item)
     collection = {
@@ -111,18 +125,30 @@ def _write_json(path: Path, document: dict[str, Any]) -> None:
     path.write_text(json.dumps(document, indent=2), encoding="utf-8")
 
 
-def _item(scene_id: str, base: str) -> dict[str, Any]:
+def _item(
+    scene_id: str, base: str, directory: Path, west: float, south: float
+) -> dict[str, Any]:
     products = f"{scene_id}/products"
     return {
         "type": "Feature",
         "stac_version": "1.1.0",
-        "stac_extensions": [],
+        "stac_extensions": [
+            "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+        ],
         "id": scene_id,
         "geometry": {
             "type": "Polygon",
-            "coordinates": [[[10, 50], [11, 50], [11, 51], [10, 51], [10, 50]]],
+            "coordinates": [
+                [
+                    [west, south],
+                    [west + 1, south],
+                    [west + 1, south + 1],
+                    [west, south + 1],
+                    [west, south],
+                ]
+            ],
         },
-        "bbox": [10, 50, 11, 51],
+        "bbox": [west, south, west + 1, south + 1],
         "properties": {"datetime": "2026-01-01T00:00:00Z", "testing:scene": scene_id},
         "links": [
             {
@@ -137,6 +163,14 @@ def _item(scene_id: str, base: str) -> dict[str, Any]:
                 "type": "application/zarr",
                 "title": "NDVI grid",
                 "roles": ["data"],
+                "alternate": {"local": {"href": (directory / "data.zarr").as_uri()}},
+            },
+            "preview": {
+                "href": f"{products}/preview.png",
+                "type": "image/png",
+                "title": "Synthetic scene preview",
+                "roles": ["thumbnail"],
+                "alternate": {"local": {"href": (directory / "preview.png").as_uri()}},
             },
             "report": {
                 "href": f"{products}/summary.csv",

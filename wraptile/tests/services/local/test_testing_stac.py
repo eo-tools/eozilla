@@ -1,4 +1,5 @@
 import json
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
 
@@ -7,6 +8,7 @@ import pytest
 import xarray as xr
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from PIL import Image
 from pydantic import ValidationError
 
 from gavicore.models import JobResults, Link, ProcessRequest
@@ -66,7 +68,10 @@ async def test_process_outputs_products_and_http(inline, artifacts):
         assert document["id"] == "scene-1"
         assert len(collection["features"]) == 2
         assert collection["testing:complete"] is True
-        assert set(document["assets"]) == {"data", "report"}
+        assert set(document["assets"]) == {"data", "report", "preview"}
+        assert document["geometry"]["type"] == "Polygon"
+        assert document["geometry"]["coordinates"][0][0] == [10, 50]
+        assert collection["features"][1]["bbox"] == [11.25, 50, 12.25, 51]
         assert all(
             member["assets"]["data"]["href"].startswith(member["id"] + "/")
             for member in collection["features"]
@@ -74,6 +79,18 @@ async def test_process_outputs_products_and_http(inline, artifacts):
         report = await client.get(outputs["report"]["href"])
         assert report.text == "scene,mean_ndvi\nscene-1,1.5\n"
         run_dir = next(artifacts.iterdir())
+        data_alternate = document["assets"]["data"]["alternate"]["local"]["href"]
+        assert data_alternate == (run_dir / "scene-1/products/data.zarr").as_uri()
+        preview = document["assets"]["preview"]
+        assert preview["roles"] == ["thumbnail"]
+        response = await client.get(
+            f"/testing-stac/{run_dir.name}/scene-1/products/preview.png"
+        )
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "image/png"
+        with Image.open(BytesIO(response.content)) as image:
+            assert image.size == (160, 160)
+            assert len(image.getcolors()) == 4
         assert (
             json.loads((run_dir / "scene-1.json").read_text(encoding="utf-8"))
             == document
@@ -85,6 +102,10 @@ async def test_process_outputs_products_and_http(inline, artifacts):
                 assert dataset["ndvi"].values.tolist() == [
                     [index, index + 1],
                     [index + 2, index + 3],
+                ]
+                assert dataset["lon"].values.tolist() == [
+                    10.25 + index * 1.25,
+                    10.75 + index * 1.25,
                 ]
         # No directory enumeration or traversal outside the declared test root.
         assert (await client.get("/testing-stac/")).status_code == 404

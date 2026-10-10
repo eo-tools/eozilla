@@ -45,8 +45,10 @@ notebook = "*"
 watchfiles = "*"
 # Use cases testing
 dask = "*"
+ipyleaflet = ">=0.20.0,<0.21"
 geopandas = "*"
 pandas = "*"
+pillow = ">=12.3.0,<13"
 pystac = ">=1.15.2,<1.16"
 xarray = ">=2026.7"
 # zarr 3.2.x can no longer work with Windows file URIs, like file:///C:/...

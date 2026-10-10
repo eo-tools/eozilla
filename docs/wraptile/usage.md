@@ -92,9 +92,11 @@ schedule — the two tokens have unrelated lifetimes.
 
 The local testing service includes `create_inline_stac` and `create_linked_stac`.
 Both accept `item_count` (default 2, allowed 1–4) and generate equivalent STAC
-Items with stable IDs, geometry, temporal metadata, and Assets named `data`
-(2×2 Zarr NDVI grid) and `report` (CSV). Every run has a separate generated
-directory.
+Items with stable IDs, geographic Polygon footprints in central Germany,
+temporal metadata, and Assets named `data` (2×2 Zarr grid), `report` (CSV), and
+`preview` (160×160 synthetic PNG with role `thumbnail`). Each scene has its own
+footprint and matching longitude coordinates. Every run has a separate generated
+directory. These are toy datasets and previews, not scientific NDVI products.
 
 Run from the repository root:
 
@@ -119,7 +121,7 @@ Defaults are `.pixi/testing-stac` beneath the server working directory and
 `http://localhost:8008/testing-stac`. The public URL must identify this server's
 mount from the client/browser's perspective; adjust it for another hostname,
 port, or reverse-proxy prefix. It cannot contain credentials, queries, or
-fragments. Generation uses the development environment's NumPy, xarray, and Zarr,
+fragments. Generation uses the development environment's NumPy, xarray, Zarr, and Pillow,
 without requiring PySTAC on the producer.
 
 Submit `POST /processes/create_inline_stac/execution` or
@@ -150,6 +152,12 @@ their containing ItemCollection base. Scene 1 contains `[[0, 1], [2, 3]]`; Scene
 contains `[[1, 2], [3, 4]]`. CSV means are 1.5 and 2.5. IDs and Asset keys remain
 stable across runs, while locations differ. The ordinary CSV Link, integer, and
 explicit null also exercise non-STAC output selection in eozilla-app.
+
+The `data` and `preview` Assets also advertise absolute file URLs under
+`alternate/local/href`, with the Alternate Assets extension declared on the
+Item. These refer to the same generated products as the HTTP locations and let
+a notebook on the service's machine read them without extra HTTP dependencies.
+Remote clients need access to that filesystem to use the file alternates.
 
 These processes supply raw API values and reachable products for app testing.
 They do not add new browser STAC presentation or Python Asset actions. See the

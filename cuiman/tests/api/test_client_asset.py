@@ -581,7 +581,10 @@ def test_demo_metadata_to_exact_asset(client, tmp_path, monkeypatch, process_id)
         with call(selected, data_type=xr.Dataset, engine="zarr") as dataset:
             assert dataset["ndvi"].values.tolist() == [[1, 2], [3, 4]]
         reader.assert_called_once_with(
-            str(directory / selected.href.removeprefix("https://metadata.test/testing-stac/")),
+            str(
+                directory
+                / selected.href.removeprefix("https://metadata.test/testing-stac/")
+            ),
             engine="zarr",
         )
     assert items.to_dict() == parsed_original

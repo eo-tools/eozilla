@@ -2,10 +2,10 @@
 
 Cuiman can open one selected job output as a native PySTAC `Item` or
 `ItemCollection`. This walkthrough uses the local testing service's inline and
-linked STAC processes. It also shows how a branded client can reuse the built-in
-opener with a small transformation. The maintained sources are the
-[runnable script](https://github.com/eo-tools/eozilla/blob/main/examples/guides/cuiman/stac.py)
-and [demo notebook](https://github.com/eo-tools/eozilla/blob/main/notebooks/cuiman-stac.ipynb).
+linked STAC processes. The [demo notebook](https://github.com/eo-tools/eozilla/blob/main/notebooks/cuiman-stac.ipynb)
+teaches the end-user workflow: submit a process, browse scenes and assets, then
+open a data Asset as an xarray Dataset. It uses an ordinary `Client` and the
+built-in STAC readers.
 
 ## Start the local service
 
@@ -34,7 +34,23 @@ environment and run its cells in order. Each execution creates two jobs and
 their output files. Avoid rerunning the submission cell unless you want more
 jobs.
 
-## What the example opens
+The notebook completes the inline process first: open its Item, call
+`client.show_assets(inline_item)` to see its footprint and synthetic preview,
+then open `inline_item.assets["data"]` with `data_type=xr.Dataset, engine="zarr"`.
+It next runs the linked process, displays its ItemCollection, and opens the
+second scene's data Asset. Both grids are inspected and closed after use.
+Each process has a separate submission cell; there are no loops over jobs,
+custom client classes, or example-module imports.
+
+Run the notebook and demo service on the same machine. Demo Assets include local
+file alternates, which Cuiman prefers for reading the Zarr grid and PNG preview.
+This avoids requiring HTTP Zarr dependencies for this local walkthrough. Maps
+use ipyleaflet and previews use Pillow, both included in the Pixi environment.
+
+## Companion script
+
+The separate [runnable script](https://github.com/eo-tools/eozilla/blob/main/examples/guides/cuiman/stac.py)
+also demonstrates client customization for developers.
 
 The script registers a composed opener through `DemoClientConfig` without
 changing Cuiman's global defaults. Its predicate selects the `item` and
@@ -50,9 +66,10 @@ document is fetched over HTTP only when opened. The example selects the Item's
 the CSV mean of `1.5`. Opening this Asset does not rerun the STAC transform or
 fetch sibling Assets.
 
-The `data` Asset is a small Zarr grid. Reading it over HTTP requires the
-reader's optional `fsspec[http]` dependencies, which are absent from the default
-Pixi environment. Metadata inspection and CSV reading work without them.
+The `data` Asset is a small Zarr grid. If you read it from a remote service
+using its HTTP location, install the reader's optional `fsspec[http]`
+dependencies. The local file alternate is accessible only on the service's
+machine or a shared filesystem.
 
 ## Display assets in a notebook
 
