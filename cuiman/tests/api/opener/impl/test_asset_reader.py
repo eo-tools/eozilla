@@ -12,7 +12,7 @@ import xarray as xr
 from cuiman import AsyncClient, Client
 from cuiman.api.config import ClientConfig
 from cuiman.api.exceptions import ClientWarning
-from cuiman.api.opener import JobResultOpenContext, JobResultOpenError, JobResultOpener
+from cuiman.api.opener import JobResultOpenContext, JobResultOpener, JobResultOpenError
 from cuiman.api.opener.impl import (
     PandasDataFrameOpener,
     StacJobResultOpener,

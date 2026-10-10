@@ -2,6 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from ._stac.composition import compose_stac_opener
 from .base import (
     OptionalModuleOpener,
     PathOpener,
@@ -13,7 +14,6 @@ from .openers import (
     StacJobResultOpener,
     XarrayDatasetOpener,
 )
-from ._stac.composition import compose_stac_opener
 
 __all__ = [
     "PathOpener",
