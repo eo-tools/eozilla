@@ -130,14 +130,21 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
         items: "Item | Sequence[Item] | ItemCollection",
         *,
         open_asset: "Callable[[Asset], Any]",
+        expression: str | None,
         roles: str | Iterable[str] | None = None,
         previews: bool = True,
     ) -> None:
         """Display assets using the concrete client's bound preview reader."""
-        from .assets import show_assets
+        from .assets import _display_assets
 
         self._require_open()
-        await show_assets(items, open_asset=open_asset, roles=roles, previews=previews)
+        await _display_assets(
+            items,
+            expression=expression,
+            open_asset=open_asset,
+            roles=roles,
+            previews=previews,
+        )
 
     def _credentials(self, *, interactive: bool, force: bool) -> AuthConfig:
         auth = self.config.auth

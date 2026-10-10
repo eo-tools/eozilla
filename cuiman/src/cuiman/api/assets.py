@@ -7,7 +7,8 @@
 import asyncio
 import sys
 from html import escape
-from inspect import iscoroutinefunction
+from inspect import currentframe, iscoroutinefunction
+from types import FrameType
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Sequence
 from urllib.parse import unquote, urlsplit
 
@@ -26,7 +27,7 @@ def as_stac_asset(value: Any) -> "Asset | None":
     return value if asset_type is not None and isinstance(value, asset_type) else None
 
 
-async def show_assets(
+async def display_assets(
     items: "Item | Sequence[Item] | ItemCollection",
     *,
     roles: str | Iterable[str] | None = None,
@@ -46,6 +47,24 @@ async def show_assets(
         open_asset: A synchronous or asynchronous asset opener. If omitted,
             asset previews are skipped; tables and geometry maps remain enabled.
     """
+    await _display_assets(
+        items,
+        expression=_get_items_expression("display_assets"),
+        roles=roles,
+        previews=previews,
+        open_asset=open_asset,
+    )
+
+
+async def _display_assets(
+    items: "Item | Sequence[Item] | ItemCollection",
+    *,
+    expression: str | None,
+    roles: str | Iterable[str] | None = None,
+    previews: bool = True,
+    open_asset: "Callable[[Asset], Any] | None" = None,
+) -> None:
+    """Display items with the expression captured before entering client bridges."""
 
     from IPython.display import display
     from pystac import Item, ItemCollection
@@ -58,12 +77,12 @@ async def show_assets(
         item_list = [items]
 
         def expression_prefix_for(i):
-            return ""
+            return f"{expression or 'item'}"
     elif isinstance(items, ItemCollection):
         item_list = list(items.items)
 
         def expression_prefix_for(i):
-            return f".items[{i}]"
+            return f"{expression or 'item_collection'}.items[{i}]"
     else:
         msg = (
             "items must be a pystac.Item or "
@@ -79,7 +98,7 @@ async def show_assets(
                 raise TypeError(msg)
 
         def expression_prefix_for(i):
-            return f"[{i}]"
+            return f"{expression or 'items'}[{i}]"
 
     for item_index, item in enumerate(item_list):
         previews_html = (
@@ -367,3 +386,99 @@ def _render_asset(
         "</td>"
         "</tr>"
     )
+
+
+def _get_items_expression(function_name: str = "show_assets") -> str | None:
+    """Capture the public caller's items expression without retaining its frame."""
+    frame = currentframe()
+    try:
+        caller = frame.f_back.f_back if frame and frame.f_back else None
+        expression = _get_call_argument_source(caller, function_name)
+    finally:
+        del frame
+    if expression is None:
+        return None
+
+    import ast
+
+    node = ast.parse(f"({expression})", mode="eval").body
+    # Attribute access binds correctly to these expressions without parentheses.
+    return (
+        expression
+        if isinstance(node, (ast.Name, ast.Attribute, ast.Subscript, ast.Call))
+        else f"({expression})"
+    )
+
+
+def _get_call_argument_source(
+    frame: FrameType | None, function_name: str
+) -> str | None:
+    """Recover the items argument from the caller's cached source, without eval.
+
+    Instruction positions distinguish calls on the same line and aliases.
+    When positions are unavailable, accept only one matching named call.
+    Missing source and ambiguous calls return None.
+    """
+    import ast
+    import dis
+    import linecache
+
+    if frame is None:
+        return None
+    source = "".join(linecache.getlines(frame.f_code.co_filename, frame.f_globals))
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return None
+
+    positions = next(
+        (
+            instruction.positions
+            for instruction in dis.get_instructions(frame.f_code, show_caches=True)
+            if instruction.offset == frame.f_lasti
+        ),
+        None,
+    )
+    position_span = (
+        tuple(positions)
+        if positions is not None and all(value is not None for value in positions)
+        else None
+    )
+    candidates = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Call, ast.Await)):
+            continue
+        call = node.value if isinstance(node, ast.Await) else node
+        if not isinstance(call, ast.Call):
+            continue
+        if position_span is not None:
+            span = (node.lineno, node.end_lineno, node.col_offset, node.end_col_offset)
+            if span != position_span:
+                continue
+        else:
+            if not isinstance(node, ast.Call):
+                continue
+            name = (
+                call.func.id
+                if isinstance(call.func, ast.Name)
+                else call.func.attr
+                if isinstance(call.func, ast.Attribute)
+                else None
+            )
+            if name != function_name or not (
+                node.lineno <= frame.f_lineno <= (node.end_lineno or node.lineno)
+            ):
+                continue
+        candidates.append(call)
+
+    if len(candidates) != 1:
+        return None
+    call = candidates[0]
+    argument = (
+        call.args[0]
+        if call.args
+        else next((kw.value for kw in call.keywords if kw.arg == "items"), None)
+    )
+    if argument is None or isinstance(argument, ast.Starred):
+        return None
+    return ast.get_source_segment(source, argument)

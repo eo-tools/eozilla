@@ -68,7 +68,12 @@ client.show_assets(items, previews=False)
 For an `AsyncClient`, await the method: `await client.show_assets(items)`.
 
 The table includes asset keys, file links, titles, roles, and buttons to copy
-asset access expressions. The `roles` filter matches any requested role;
+asset access expressions. Where caller source is available, the copied expression
+starts with the supplied argument: `client.show_assets(items[1])` produces
+`items[1].assets['asset-key']`. Sequences and ItemCollections add the appropriate
+item index before asset access. If the source cannot be recovered, the display
+uses `item`, `items`, or `item_collection` as a placeholder to adapt after copying.
+The `roles` filter matches any requested role;
 `None` shows all assets and an empty iterable matches none.
 
 Assets with `thumbnail`, `overview`, or `visual` roles are opened using the
@@ -86,9 +91,9 @@ preview reads while retaining geometry previews.
 For display without a client, use the async helper directly:
 
 ```python
-from cuiman.api.assets import show_assets
+from cuiman.api.assets import display_assets
 
-await show_assets(items, roles="metadata")
+await display_assets(items, roles="metadata")
 ```
 
 Without `open_asset`, the helper displays tables and geometry maps and skips

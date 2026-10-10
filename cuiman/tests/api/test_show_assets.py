@@ -17,7 +17,7 @@ from cuiman.api.opener import JobResultOpener
 from cuiman.api.assets import (
     as_stac_asset,
     _load_preview,
-    show_assets as display_assets,
+    display_assets,
     _render_asset,
     _render_geometry,
     _render_item,
@@ -189,7 +189,7 @@ def test_assets_module_import_does_not_require_notebook_display(monkeypatch):
     importlib.reload(assets)
 
     assert assets.as_stac_asset({}) is None
-    assert callable(assets.show_assets)
+    assert callable(assets.display_assets)
 
 
 @pytest.mark.parametrize("roles", [None, [], ["data"], ["data", "metadata"]])
@@ -222,13 +222,13 @@ def test_copy_expressions(displayed, kind):
     item.add_asset(key, Asset("missing.csv"))
     if kind == "item":
         items = item
-        prefix = ""
+        prefix = "items"
     elif kind == "sequence":
         items = [new_item(), item]
-        prefix = "[1]"
+        prefix = "items[1]"
     else:
         items = ItemCollection([new_item(), item])
-        prefix = ".items[1]"
+        prefix = "items.items[1]"
 
     show_assets(items)
 
