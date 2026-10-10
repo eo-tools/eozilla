@@ -29,22 +29,22 @@ def as_stac_asset(value: Any) -> "Asset | None":
 async def show_assets(
     items: "Item | Sequence[Item] | ItemCollection",
     *,
-    open_asset: "Callable[[Asset], Any]",
     roles: str | Iterable[str] | None = None,
     previews: bool = True,
+    open_asset: "Callable[[Asset], Any] | None" = None,
 ) -> None:
     """Render grouped STAC items and assets, with optional ipyleaflet previews.
 
     Args:
         items: The STAC item or items to display.
-        open_asset: The client's synchronous or asynchronous asset opener.
         roles: Show assets matching any of these roles. A string matches one
             role, None shows all assets, and an empty iterable matches none.
         previews: Open and display thumbnail, overview, and visual assets.
-            Set to False to prevent asset preview reads. Geometry previews
+            Set to ``False`` to prevent asset preview reads. Geometry previews
             remain enabled. Asset previews are independent of the table's
-            role filter; unreadable or
-            unsupported previews are skipped.
+            role filter; unreadable or unsupported previews are skipped.
+        open_asset: A synchronous or asynchronous asset opener. If omitted,
+            asset previews are skipped; tables and geometry maps remain enabled.
     """
 
     from IPython.display import display
@@ -82,24 +82,27 @@ async def show_assets(
             return f"[{i}]"
 
     for item_index, item in enumerate(item_list):
+        previews_html = (
+            await _load_previews(item, open_asset=open_asset)
+            if previews and open_asset is not None
+            else ""
+        )
         display(
-            await _render_item(
+            _render_item(
                 item,
-                open_asset=open_asset,
                 role_filter=role_filter,
                 expression_prefix=expression_prefix_for(item_index),
-                previews=previews,
+                previews_html=previews_html,
             )
         )
 
 
-async def _render_item(
+def _render_item(
     item: "Item",
     *,
-    open_asset: "Callable[[Asset], Any]",
     role_filter: set[str] | None = None,
     expression_prefix: str = "",
-    previews: bool = True,
+    previews_html: str = "",
 ):
     """Assemble the item table, geometry map, and optional asset previews."""
 
@@ -136,10 +139,6 @@ async def _render_item(
         f"<div><strong>{item_id}</strong></div>"
         f"<div style='opacity:0.75'>{collection} · {datetime}</div>"
         f"{assets_html}</section>"
-    )
-
-    previews_html = (
-        await _render_previews(item, open_asset=open_asset) if previews else ""
     )
 
     map_widget = _render_geometry(item)
@@ -248,15 +247,13 @@ def _render_geometry(item: "Item"):
     return map_widget
 
 
-async def _render_previews(
-    item: "Item", *, open_asset: "Callable[[Asset], Any]"
-) -> str:
-    """Build captioned previews for the item's viewable preview assets."""
+async def _load_previews(item: "Item", *, open_asset: "Callable[[Asset], Any]") -> str:
+    """Load captioned previews for the item's viewable preview assets."""
     previews = []
     for key, asset in item.assets.items():
         if not {"thumbnail", "overview", "visual"}.intersection(asset.roles or []):
             continue
-        preview = await _render_preview(asset, open_asset=open_asset)
+        preview = await _load_preview(asset, open_asset=open_asset)
         if preview is not None:
             caption = escape(str(asset.title or key))
             previews.append(
@@ -270,46 +267,51 @@ async def _render_previews(
     )
 
 
-async def _render_preview(
+async def _load_preview(
     asset: "Asset", *, open_asset: "Callable[[Asset], Any]"
 ) -> str | None:
-    """Open a preview asset and embed its HTML or image representation."""
-    from base64 import b64encode
-
-    from IPython.core.formatters import DisplayFormatter
-
+    """Open, render, and close one preview using the supplied reader."""
     try:
         if iscoroutinefunction(open_asset):
             value = await open_asset(asset)
         else:
             value = await asyncio.to_thread(open_asset, asset)
         try:
-            data, _ = DisplayFormatter().format(
-                value,
-                include=["text/html", "image/png", "image/jpeg", "image/svg+xml"],
-            )
+            return _render_preview(value)
         finally:
             close = getattr(value, "close", None)
             if callable(close):
                 close()
-        if data.get("text/html"):
-            return data["text/html"]
-        for media_type in ("image/png", "image/jpeg", "image/svg+xml"):
-            image = data.get(media_type)
-            if not image:
-                continue
-            if media_type == "image/svg+xml":
-                image = b64encode(image.encode("utf-8")).decode("ascii")
-            elif isinstance(image, bytes):
-                image = b64encode(image).decode("ascii")
-            return (
-                f"<img src='data:{media_type};base64,{escape(image, quote=True)}' "
-                "alt='Asset preview' style='max-width:360px;max-height:240px;"
-                "object-fit:contain'>"
-            )
     except Exception:
         # Previews are best-effort: a broken asset must not hide the item table.
         return None
+
+
+def _render_preview(value: Any) -> str | None:
+    """Embed an opened value's HTML or image representation without I/O."""
+    from base64 import b64encode
+
+    from IPython.core.formatters import DisplayFormatter
+
+    data, _ = DisplayFormatter().format(
+        value,
+        include=["text/html", "image/png", "image/jpeg", "image/svg+xml"],
+    )
+    if data.get("text/html"):
+        return data["text/html"]
+    for media_type in ("image/png", "image/jpeg", "image/svg+xml"):
+        image = data.get(media_type)
+        if not image:
+            continue
+        if media_type == "image/svg+xml":
+            image = b64encode(image.encode("utf-8")).decode("ascii")
+        elif isinstance(image, bytes):
+            image = b64encode(image).decode("ascii")
+        return (
+            f"<img src='data:{media_type};base64,{escape(image, quote=True)}' "
+            "alt='Asset preview' style='max-width:360px;max-height:240px;"
+            "object-fit:contain'>"
+        )
     return None
 
 

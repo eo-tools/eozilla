@@ -264,11 +264,8 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
                 geometry maps. Unreadable or unsupported previews are skipped.
                 Preview selection is independent of the table's role filter.
         """
-        from .assets import show_assets
-
         self._bind_loop()
-        self._require_open()
-        await show_assets(
+        await self._show_assets(
             items, open_asset=self.open_job_result, roles=roles, previews=previews
         )
 

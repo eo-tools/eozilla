@@ -16,6 +16,8 @@ from cuiman.api import AsyncClient, Client, ClientConfig
 from cuiman.api.opener import JobResultOpener
 from cuiman.api.assets import (
     as_stac_asset,
+    _load_preview,
+    show_assets as display_assets,
     _render_asset,
     _render_geometry,
     _render_item,
@@ -82,11 +84,64 @@ def test_render_item_builds_display_without_displaying(displayed):
     item = new_item()
     item.add_asset("result", Asset("result.csv", roles=["data"]))
 
-    rendered = run_sync(_render_item, item, open_asset=MagicMock())
+    rendered = _render_item(item)
 
     assert "<strong>example</strong>" in rendered.data
     assert "<td>result</td>" in rendered.data
     assert ".assets['result']" in unescape(rendered.data)
+    assert displayed == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("previews", [False, True])
+@pytest.mark.parametrize("with_map", [False, True])
+async def test_standalone_without_opener_keeps_table_and_geometry(
+    displayed, map_modules, monkeypatch, previews, with_map
+):
+    widgets, leaflet = map_modules
+    item = new_item()
+    if with_map:
+        item.bbox = [1, 2, 3, 4]
+    item.add_asset("preview", Asset("missing.png", roles=["thumbnail"]))
+    load_preview = AsyncMock()
+    monkeypatch.setattr("cuiman.api.assets._load_preview", load_preview)
+
+    assert await display_assets(item, previews=previews) is None
+
+    load_preview.assert_not_called()
+    assert leaflet.Map.called is with_map
+    widgets.HBox.assert_not_called()
+    html = widgets.HTML.call_args.kwargs["value"] if with_map else displayed[0].data
+    assert "<td>preview</td>" in html
+    assert "<figure " not in html
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("previews", [False, True])
+async def test_standalone_uses_optional_opener(displayed, asynchronous, previews):
+    from IPython.display import HTML
+
+    item = new_item()
+    asset = Asset("missing.png", roles=["thumbnail"])
+    item.add_asset("preview", asset)
+    mock_type = AsyncMock if asynchronous else MagicMock
+    open_asset = mock_type(return_value=HTML("<p>Supplied preview</p>"))
+
+    await display_assets(item, open_asset=open_asset, previews=previews)
+
+    assert open_asset.call_count == int(previews)
+    if previews:
+        open_asset.assert_called_once_with(asset)
+        if asynchronous:
+            open_asset.assert_awaited_once_with(asset)
+    assert ("<p>Supplied preview</p>" in displayed[0].data) is previews
+
+
+def test_render_item_accepts_loaded_previews(displayed):
+    rendered = _render_item(new_item(), previews_html="<p>Loaded preview</p>")
+
+    assert "<p>Loaded preview</p>" in rendered.data
     assert displayed == []
 
 
@@ -111,10 +166,10 @@ def test_import_without_optional_pystac():
             "import sys; sys.modules['pystac'] = None; "
             "from cuiman.api import AsyncClient, Client; "
             "from cuiman.api.assets import "
-            "as_stac_asset, _render_asset, _render_geometry, _render_item, _render_previews; "
+            "as_stac_asset, _render_asset, _render_geometry, _render_item, _load_previews; "
             "assert as_stac_asset({}) is None; "
             "assert all(map(callable, "
-            "(Client.show_assets, AsyncClient.show_assets, _render_item, _render_asset, _render_geometry, _render_previews)))",
+            "(Client.show_assets, AsyncClient.show_assets, _render_item, _render_asset, _render_geometry, _load_previews)))",
         ],
         capture_output=True,
         text=True,
@@ -388,7 +443,7 @@ def test_preview_next_to_geometry(displayed, map_modules, monkeypatch, role):
     item.bbox = [1, 2, 3, 4]
     item.add_asset("preview", Asset("preview.png", title="<Preview>", roles=[role]))
     render_preview = AsyncMock(return_value="<img src='preview'>")
-    monkeypatch.setattr("cuiman.api.assets._render_preview", render_preview)
+    monkeypatch.setattr("cuiman.api.assets._load_preview", render_preview)
 
     show_assets(item, roles="data")
 
@@ -412,7 +467,7 @@ def test_disabled_previews_prevent_asset_reads(
         item.bbox = [1, 2, 3, 4]
     item.add_asset("preview", Asset("preview.png", roles=["thumbnail"]))
     render_preview = AsyncMock()
-    monkeypatch.setattr("cuiman.api.assets._render_preview", render_preview)
+    monkeypatch.setattr("cuiman.api.assets._load_preview", render_preview)
 
     show_assets(item, previews=False)
 
@@ -427,7 +482,7 @@ def test_preview_without_map_and_failed_sibling(displayed, monkeypatch):
     item.add_asset("good", Asset("good.png", roles=["overview"]))
     item.add_asset("data", Asset("data.png", roles=["data"]))
     render_preview = AsyncMock(side_effect=[None, "<img src='good'>"])
-    monkeypatch.setattr("cuiman.api.assets._render_preview", render_preview)
+    monkeypatch.setattr("cuiman.api.assets._load_preview", render_preview)
 
     show_assets(item)
 
@@ -442,9 +497,7 @@ def test_preview_without_map_and_failed_sibling(displayed, monkeypatch):
 def test_failed_preview_keeps_table(displayed, monkeypatch):
     item = new_item()
     item.add_asset("preview", Asset("missing.png", roles=["thumbnail"]))
-    monkeypatch.setattr(
-        "cuiman.api.assets._render_preview", AsyncMock(return_value=None)
-    )
+    monkeypatch.setattr("cuiman.api.assets._load_preview", AsyncMock(return_value=None))
 
     show_assets(item)
 
@@ -462,17 +515,14 @@ def test_failed_preview_keeps_table(displayed, monkeypatch):
         ("text/plain", "not renderable", None),
     ],
 )
-def test_open_preview_representations(monkeypatch, tmp_path, mime, value, expected):
-    asset = Asset((tmp_path / "preview.png").as_uri(), media_type="image/png")
+def test_render_preview_representations(monkeypatch, mime, value, expected):
     opened = object()
-    open_result = MagicMock(return_value=opened)
     formatter = MagicMock()
     formatter.format.return_value = ({mime: value}, {})
     monkeypatch.setattr("IPython.core.formatters.DisplayFormatter", lambda: formatter)
 
-    html = run_sync(_render_preview, asset, open_asset=open_result)
+    html = _render_preview(opened)
 
-    open_result.assert_called_once_with(asset)
     assert formatter.format.call_args.args == (opened,)
     if expected is None:
         assert html is None
@@ -483,7 +533,27 @@ def test_open_preview_representations(monkeypatch, tmp_path, mime, value, expect
 def test_unreadable_preview(monkeypatch, tmp_path):
     asset = Asset((tmp_path / "missing.png").as_uri(), media_type="image/png")
     open_result = MagicMock(side_effect=OSError("missing"))
-    assert run_sync(_render_preview, asset, open_asset=open_result) is None
+    assert run_sync(_load_preview, asset, open_asset=open_result) is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("format_fails", [False, True])
+async def test_loaded_preview_is_closed(monkeypatch, format_fails):
+    opened = MagicMock()
+    formatter = MagicMock()
+    if format_fails:
+        formatter.format.side_effect = ValueError("cannot format")
+    else:
+        formatter.format.return_value = ({"text/html": "<p>Preview</p>"}, {})
+    monkeypatch.setattr("IPython.core.formatters.DisplayFormatter", lambda: formatter)
+    asset = Asset("preview.png")
+    open_asset = AsyncMock(return_value=opened)
+
+    html = await _load_preview(asset, open_asset=open_asset)
+
+    open_asset.assert_awaited_once_with(asset)
+    opened.close.assert_called_once_with()
+    assert html == (None if format_fails else "<p>Preview</p>")
 
 
 @pytest.mark.parametrize("relative", [False, True])

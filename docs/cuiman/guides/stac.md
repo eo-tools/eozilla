@@ -1,7 +1,7 @@
 # STAC results walkthrough
 
-Cuiman can open one selected job output as a native PySTAC Item or
-ItemCollection. This walkthrough uses the local testing service's inline and
+Cuiman can open one selected job output as a native PySTAC `Item` or
+`ItemCollection`. This walkthrough uses the local testing service's inline and
 linked STAC processes. It also shows how a branded client can reuse the built-in
 opener with a small transformation. The maintained sources are the
 [runnable script](https://github.com/eo-tools/eozilla/blob/main/examples/guides/cuiman/stac.py)
@@ -82,6 +82,18 @@ ipywidgets.
 
 The role filter only affects the table. Set `previews=False` to prevent asset
 preview reads while retaining geometry previews.
+
+For display without a client, use the async helper directly:
+
+```python
+from cuiman.api.assets import show_assets
+
+await show_assets(items, roles="metadata")
+```
+
+Without `open_asset`, the helper displays tables and geometry maps and skips
+asset previews. Supply a synchronous or asynchronous `open_asset` callable to
+enable asset previews, for example `open_asset=client.open_job_result`.
 
 ## Try the browser app
 

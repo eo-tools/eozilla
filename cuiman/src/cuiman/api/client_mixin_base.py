@@ -10,7 +10,18 @@ from contextlib import contextmanager
 from copy import deepcopy
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable, ClassVar, Generic, Iterator, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Generic,
+    Iterable,
+    Iterator,
+    Sequence,
+    TypeVar,
+    cast,
+)
 
 import httpx2
 from authlib.integrations.httpx_client import AsyncOAuth2Client, OAuth2Client
@@ -39,6 +50,9 @@ from .config import ClientConfig, _set_auth_secret_persistor
 from .opener import JobResultOpenContext
 from .opener.opener import open_job_result
 from .transport.httpx2 import Httpx2Transport
+
+if TYPE_CHECKING:
+    from pystac import Asset, Item, ItemCollection
 
 _HttpClient = TypeVar("_HttpClient", httpx2.Client, httpx2.AsyncClient)
 
@@ -110,6 +124,20 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
         """Open the selected target using this client's configured openers."""
         registry = self.config.get_job_result_opener_registry()
         return await open_job_result(ctx, *registry.opener_types)
+
+    async def _show_assets(
+        self,
+        items: "Item | Sequence[Item] | ItemCollection",
+        *,
+        open_asset: "Callable[[Asset], Any]",
+        roles: str | Iterable[str] | None = None,
+        previews: bool = True,
+    ) -> None:
+        """Display assets using the concrete client's bound preview reader."""
+        from .assets import show_assets
+
+        self._require_open()
+        await show_assets(items, open_asset=open_asset, roles=roles, previews=previews)
 
     def _credentials(self, *, interactive: bool, force: bool) -> AuthConfig:
         auth = self.config.auth

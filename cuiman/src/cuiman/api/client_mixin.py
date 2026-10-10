@@ -219,11 +219,8 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
                 geometry maps. Unreadable or unsupported previews are skipped.
                 Preview selection is independent of the table's role filter.
         """
-        from .assets import show_assets
-
-        self._require_open()
         run_sync(
-            show_assets,
+            self._show_assets,
             items,
             open_asset=self.open_job_result,
             roles=roles,
