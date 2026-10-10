@@ -20,7 +20,7 @@ from gavicore.models import (
 from .errors import JobResultOpenError
 
 if TYPE_CHECKING:
-    from ..config import ClientConfig
+    from cuiman.api.config import ClientConfig
 
 _UNSELECTED = object()
 

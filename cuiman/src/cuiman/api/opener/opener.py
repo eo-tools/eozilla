@@ -9,7 +9,7 @@ from dataclasses import replace
 from inspect import isclass
 from typing import Any
 
-from ..exceptions import ClientWarning
+from cuiman.api.exceptions import ClientWarning
 from .context import JobResultOpenContext, _copy_options
 from .errors import JobResultOpenError, StacJobResultOpenError
 
@@ -180,7 +180,7 @@ def _warn(opener_type: type[JobResultOpener], error: Exception):
 
 
 def _safe_error(ctx: JobResultOpenContext, error: Exception) -> Exception:
-    from .impl.base import as_stac_asset
+    from cuiman.api.assets import as_stac_asset
 
     if as_stac_asset(ctx.value) is not None:
         return JobResultOpenError(f"Asset opening failed ({type(error).__name__})")

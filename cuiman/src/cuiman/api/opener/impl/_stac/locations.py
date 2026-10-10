@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
-from ...errors import StacJobResultOpenError
+from cuiman.api.opener.errors import StacJobResultOpenError
 
 
 def _absolute(href: str) -> bool:

@@ -8,9 +8,9 @@ from copy import deepcopy
 from inspect import isawaitable
 from typing import Any, Awaitable, Callable
 
-from ...context import JobResultOpenContext
-from ...errors import StacJobResultOpenError
-from ...opener import JobResultOpener, assert_opener_type_valid
+from cuiman.api.opener.context import JobResultOpenContext
+from cuiman.api.opener.errors import StacJobResultOpenError
+from cuiman.api.opener.opener import JobResultOpener, assert_opener_type_valid
 
 StacTransform = Callable[[Any, JobResultOpenContext], Awaitable[Any]]
 """An asynchronous transformation of one independently copied STAC result."""

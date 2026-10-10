@@ -2,31 +2,17 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-import sys
 from abc import abstractmethod
 from functools import cached_property
 from importlib.util import find_spec
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import Any, ClassVar
 from urllib.parse import urlsplit
 
-from ..context import JobResultOpenContext
-from ..opener import JobResultOpener
+from cuiman.api.assets import as_stac_asset
+from cuiman.api.opener.context import JobResultOpenContext
+from cuiman.api.opener.opener import JobResultOpener
 from ._paths import _local_path
-
-if TYPE_CHECKING:
-    from pystac import Asset
-
-
-def as_stac_asset(value: Any) -> "Asset | None":
-    """Return the value if it is a native PySTAC Asset, otherwise return None.
-
-    Inspect only an already loaded PySTAC module so ordinary result opening
-    does not import this optional dependency.
-    """
-    module = sys.modules.get("pystac")
-    asset_type = getattr(module, "Asset", None)
-    return value if asset_type is not None and isinstance(value, asset_type) else None
 
 
 class OptionalModuleOpener(JobResultOpener):

@@ -54,6 +54,35 @@ The `data` Asset is a small Zarr grid. Reading it over HTTP requires the
 reader's optional `fsspec[http]` dependencies, which are absent from the default
 Pixi environment. Metadata inspection and CSV reading work without them.
 
+## Display assets in a notebook
+
+Use the client's `show_assets` method to display an Item, a sequence of Items,
+or an ItemCollection:
+
+```python
+client.show_assets(item)
+client.show_assets(items, roles=["data", "metadata"])
+client.show_assets(items, previews=False)
+```
+
+For an `AsyncClient`, await the method: `await client.show_assets(items)`.
+
+The table includes asset keys, file links, titles, roles, and buttons to copy
+asset access expressions. The `roles` filter matches any requested role;
+`None` shows all assets and an empty iterable matches none.
+
+Assets with `thumbnail`, `overview`, or `visual` roles are opened using the
+client's configured result readers and asset access settings. Results with an
+HTML or image representation appear
+beside the geometry map, or below the table when a map is unavailable. HTTP
+images, local files, and supported S3 images can be previewed. Broken links and
+unsupported results are skipped. Preview reads may require optional reader
+dependencies, such as Pillow for images. Geometry maps require ipyleaflet and
+ipywidgets.
+
+The role filter only affects the table. Set `previews=False` to prevent asset
+preview reads while retaining geometry previews.
+
 ## Try the browser app
 
 With the same testing service running, connect eozilla-app to its processing

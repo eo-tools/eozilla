@@ -6,7 +6,7 @@ import asyncio
 import threading
 import warnings
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, Iterable, Sequence, overload
 
 import httpx2
 from authlib.integrations.httpx_client import AsyncOAuth2Client
@@ -28,7 +28,7 @@ from .opener.impl._stac.asset import OMITTED, _asset_context, _Omitted
 from .transport import AsyncTransport
 
 if TYPE_CHECKING:
-    from pystac import Asset
+    from pystac import Asset, Item, ItemCollection
 
 # -----------------------------------------------------
 # IMPORTANT: Sync changes here with ClientMixin!
@@ -244,6 +244,32 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
         process_description = await self.get_process(process_id)
         return ExecutionRequest.from_process_description(
             process_description, dotpath=dotpath
+        )
+
+    async def show_assets(
+        self,
+        items: "Item | Sequence[Item] | ItemCollection",
+        *,
+        roles: str | Iterable[str] | None = None,
+        previews: bool = True,
+    ) -> None:
+        """Display STAC asset tables, geometry maps, and viewable preview assets.
+
+        Args:
+            items: An Item, a sequence of Items, or an ItemCollection.
+            roles: Show table assets matching any requested role. None shows
+                all assets; an empty iterable matches none.
+            previews: Open thumbnail, overview, and visual assets using this
+                client's readers. False prevents preview reads while retaining
+                geometry maps. Unreadable or unsupported previews are skipped.
+                Preview selection is independent of the table's role filter.
+        """
+        from .assets import show_assets
+
+        self._bind_loop()
+        self._require_open()
+        await show_assets(
+            items, open_asset=self.open_job_result, roles=roles, previews=previews
         )
 
     @overload

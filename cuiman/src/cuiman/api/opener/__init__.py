@@ -6,10 +6,8 @@ from .context import JobResultOpenContext
 from .errors import JobResultOpenError, JobResultStatusError, StacJobResultOpenError
 from .opener import JobResultOpener
 from .registry import JobResultOpenerRegistry
-from .stac import show_assets
 
 __all__ = [
-    "show_assets",
     "JobResultOpener",
     "JobResultOpenContext",
     "JobResultOpenerRegistry",

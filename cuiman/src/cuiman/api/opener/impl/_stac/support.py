@@ -3,9 +3,9 @@
 from typing import Any
 from urllib.parse import urlsplit
 
-from ...context import JobResultOpenContext
-from ...errors import StacJobResultOpenError
-from ..base import as_stac_asset
+from cuiman.api.assets import as_stac_asset
+from cuiman.api.opener.context import JobResultOpenContext
+from cuiman.api.opener.errors import StacJobResultOpenError
 
 
 def selected_document(ctx: JobResultOpenContext) -> Any:

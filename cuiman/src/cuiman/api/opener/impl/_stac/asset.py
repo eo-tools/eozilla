@@ -6,12 +6,12 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
-from ...errors import JobResultOpenError
-from ..base import as_stac_asset
+from cuiman.api.assets import as_stac_asset
+from cuiman.api.opener.errors import JobResultOpenError
 
 if TYPE_CHECKING:
-    from ....config import ClientConfig
-    from ...context import JobResultOpenContext
+    from cuiman.api.config import ClientConfig
+    from cuiman.api.opener.context import JobResultOpenContext
 
 
 class _Omitted(Enum):
@@ -32,7 +32,7 @@ def _asset_context(
     media_type: str | None,
     options: dict[str, Any],
 ) -> "JobResultOpenContext":
-    from ...context import JobResultOpenContext
+    from cuiman.api.opener.context import JobResultOpenContext
     from .locations import _absolute, _resolve_href
 
     asset = as_stac_asset(target)

@@ -11,10 +11,10 @@ from inspect import isawaitable
 from typing import Any
 from urllib.parse import urlsplit
 
-from ....exceptions import ClientWarning
-from ...context import JobResultOpenContext, _copy_options
-from ...errors import JobResultOpenError
-from ..base import as_stac_asset
+from cuiman.api.assets import as_stac_asset
+from cuiman.api.exceptions import ClientWarning
+from cuiman.api.opener.context import JobResultOpenContext, _copy_options
+from cuiman.api.opener.errors import JobResultOpenError
 
 _XARRAY = "https://stac-extensions.github.io/xarray-assets/v1.0.0/schema.json"
 _STORAGE_V1 = "https://stac-extensions.github.io/storage/v1.0.0/schema.json"

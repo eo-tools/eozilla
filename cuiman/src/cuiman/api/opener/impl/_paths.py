@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.request import url2pathname
 
-from ..errors import JobResultOpenError
+from cuiman.api.opener.errors import JobResultOpenError
 
 
 def _local_path(source: str) -> Path:

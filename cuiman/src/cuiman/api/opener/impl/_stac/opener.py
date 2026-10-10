@@ -7,10 +7,10 @@ from urllib.parse import urlsplit
 
 import pystac
 
-from ...context import JobResultOpenContext
-from ...errors import StacJobResultOpenError
-from ...opener import JobResultOpener
-from .._paths import _local_path
+from cuiman.api.opener.context import JobResultOpenContext
+from cuiman.api.opener.errors import StacJobResultOpenError
+from cuiman.api.opener.impl._paths import _local_path
+from cuiman.api.opener.opener import JobResultOpener
 from .locations import _absolute, _resolve_href
 from .support import (
     candidate_stac,

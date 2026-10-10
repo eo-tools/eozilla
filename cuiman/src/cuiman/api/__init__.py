@@ -7,10 +7,8 @@ from .client import Client
 from .config import ClientConfig
 from .exceptions import ClientError
 from .jobs import JobMonitor, JobOptions
-from .opener import show_assets
 
 __all__ = [
-    "show_assets",
     "AsyncClient",
     "Client",
     "ClientConfig",
