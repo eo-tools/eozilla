@@ -85,7 +85,11 @@ client.show_assets(items, previews=False)
 For an `AsyncClient`, await the method: `await client.show_assets(items)`.
 
 The table includes asset keys, file links, titles, roles, and buttons to copy
-asset access expressions. Where caller source is available, the copied expression
+asset access expressions. Each scene card shows additional item properties below
+its name and date, with a compact geometry map and previews at the upper right.
+The map fits the geometry when displayed and resized; panning preserves your
+chosen zoom. On narrow screens, the header wraps above the full-width asset table.
+Where caller source is available, the copied expression
 starts with the supplied argument: `client.show_assets(items[1])` produces
 `items[1].assets['asset-key']`. Sequences and ItemCollections add the appropriate
 item index before asset access. If the source cannot be recovered, the display
@@ -96,7 +100,7 @@ The `roles` filter matches any requested role;
 Assets with `thumbnail`, `overview`, or `visual` roles are opened using the
 client's configured result readers and asset access settings. Results with an
 HTML or image representation appear
-beside the geometry map, or below the table when a map is unavailable. HTTP
+beside the geometry map, or beside the item heading when a map is unavailable. HTTP
 images, local files, and supported S3 images can be previewed. Broken links and
 unsupported results are skipped. Preview reads may require optional reader
 dependencies, such as Pillow for images. Geometry maps require ipyleaflet and

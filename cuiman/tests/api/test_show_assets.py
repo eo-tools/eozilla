@@ -22,6 +22,7 @@ from cuiman.api.assets import (
     _render_geometry,
     _render_item,
     _render_preview,
+    _geometry_zoom,
 )
 from gavicore.util.runsync import run_sync
 
@@ -110,7 +111,7 @@ async def test_standalone_without_opener_keeps_table_and_geometry(
 
     load_preview.assert_not_called()
     assert leaflet.Map.called is with_map
-    widgets.HBox.assert_not_called()
+    assert widgets.HBox.called is with_map
     html = widgets.HTML.call_args.kwargs["value"] if with_map else displayed[0].data
     assert "<td>preview</td>" in html
     assert "<figure " not in html
@@ -143,6 +144,25 @@ def test_render_item_accepts_loaded_previews(displayed):
 
     assert "<p>Loaded preview</p>" in rendered.data
     assert displayed == []
+
+
+def test_item_properties_are_visible_and_escaped(displayed):
+    item = new_item()
+    item.properties.update(
+        {
+            "eo:cloud_cover": 0,
+            "approved": False,
+            "<sensor>": {"name": "<value>"},
+            "missing": None,
+        }
+    )
+    html = _render_item(item).data
+    assert "<dt>eo:cloud_cover</dt><dd>0</dd>" in html
+    assert "<dt>approved</dt><dd>False</dd>" in html
+    assert "<dt>&lt;sensor&gt;</dt>" in html
+    assert "&lt;value&gt;" in html
+    assert "<dt>missing</dt>" not in html
+    assert "<dt>datetime</dt>" not in html
 
 
 def test_render_asset_builds_row_without_displaying(displayed):
@@ -406,15 +426,56 @@ def test_render_geometry(displayed, map_modules, bbox, geometry, expected_bounds
         (south_west[0] + north_east[0]) / 2,
         (south_west[1] + north_east[1]) / 2,
     ]
-    leaflet.Map.return_value.fit_bounds.assert_called_once_with(expected_bounds)
+    assert leaflet.Map.call_args.kwargs["zoom"] == _geometry_zoom(
+        (south_west[1], south_west[0], north_east[1], north_east[0]), 180, 140
+    )
+    leaflet.Map.return_value.fit_bounds.assert_not_called()
     layer = leaflet.GeoJSON if geometry else leaflet.Rectangle
-    leaflet.Map.return_value.add_layer.assert_called_once_with(layer.return_value)
+    leaflet.Map.return_value.add.assert_called_once_with(layer.return_value)
     if geometry:
         assert layer.call_args.kwargs["data"]["geometry"] == geometry
     else:
         assert layer.call_args.kwargs["bounds"] == expected_bounds
     assert rendered is leaflet.Map.return_value
     assert displayed == []
+
+
+def test_geometry_viewport_fits_on_display_and_resize(map_modules):
+    _, leaflet = map_modules
+    item = new_item()
+    item.bbox = [10, 50, 11, 51]
+    widget = _render_geometry(item)
+    fit = widget.observe.call_args.args[0]
+    widget.observe.assert_called_once_with(fit, names="pixel_bounds")
+
+    fit({"new": ((0, 0), (0, 0))})  # Not yet displayed.
+    fit({"new": ((100, 200), (500, 480))})
+    assert widget.zoom == _geometry_zoom(item.bbox, 400, 280)
+    widget.zoom = 12
+    fit({"new": ((200, 300), (600, 580))})  # A pan keeps the user's zoom.
+    assert widget.zoom == 12
+    fit({"new": ((200, 300), (400, 460))})  # A smaller viewport refits.
+    assert widget.zoom == _geometry_zoom(item.bbox, 200, 160)
+
+
+def test_geometry_takes_precedence_over_broad_bbox(map_modules):
+    _, leaflet = map_modules
+    item = new_item()
+    item.bbox = [-180, -80, 180, 80]
+    item.geometry = {"type": "Polygon", "coordinates": [[[10, 50], [11, 51], [10, 50]]]}
+    _render_geometry(item)
+    assert leaflet.Map.call_args.kwargs["center"] == [50.5, 10.5]
+    assert leaflet.Map.call_args.kwargs["zoom"] == _geometry_zoom(
+        (10, 50, 11, 51), 180, 140
+    )
+
+
+@pytest.mark.parametrize(
+    "bounds, expected",
+    [((10, 50, 11, 51), 7), ((0, 0, 0, 0), 16), ((-180, -90, 180, 90), 0)],
+)
+def test_geometry_zoom_handles_scene_point_and_world(bounds, expected):
+    assert _geometry_zoom(bounds, 360, 280) == expected
 
 
 @pytest.mark.parametrize(
@@ -451,10 +512,12 @@ def test_preview_next_to_geometry(displayed, map_modules, monkeypatch, role):
     assert render_preview.call_args.args == (item.assets["preview"],)
     assert "&lt;Preview&gt;" in widgets.HTML.call_args_list[0].kwargs["value"]
     assert "<img src='preview'>" in widgets.HTML.call_args_list[0].kwargs["value"]
-    assert "No assets" in widgets.HTML.call_args_list[1].kwargs["value"]
-    widgets.HBox.assert_called_once()
-    assert widgets.HBox.call_args.args[0][0] is leaflet.Map.return_value
-    assert widgets.VBox.call_args.args[0][1] is widgets.HBox.return_value
+    assert "No assets" in widgets.HTML.call_args_list[-1].kwargs["value"]
+    assert widgets.HBox.call_count == 2
+    assert widgets.HBox.call_args_list[0].args[0][0] is leaflet.Map.return_value
+    assert widgets.HBox.call_args_list[1].args[0][1] is widgets.HBox.return_value
+    assert widgets.VBox.call_args.args[0][0] is widgets.HBox.return_value
+    assert widgets.VBox.call_args.args[0][1] is widgets.HTML.return_value
 
 
 @pytest.mark.parametrize("with_map", [False, True])
@@ -472,7 +535,7 @@ def test_disabled_previews_prevent_asset_reads(
     show_assets(item, previews=False)
 
     render_preview.assert_not_called()
-    widgets.HBox.assert_not_called()
+    assert widgets.HBox.called is with_map
     assert leaflet.Map.called is with_map
 
 
