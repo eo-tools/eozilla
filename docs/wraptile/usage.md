@@ -94,9 +94,12 @@ The local testing service includes `create_inline_stac` and `create_linked_stac`
 Both accept `item_count` (default 2, allowed 1–4) and generate equivalent STAC
 Items with stable IDs, geographic Polygon footprints in central Germany,
 temporal metadata, and Assets named `data` (2×2 Zarr grid), `report` (CSV), and
-`preview` (160×160 synthetic PNG with role `thumbnail`). Each scene has its own
-footprint and matching longitude coordinates. Every run has a separate generated
-directory. These are toy datasets and previews, not scientific NDVI products.
+`preview` (384×384 synthetic PNG with role `thumbnail`). Each scene has a clipped,
+irregular footprint and matching longitude coordinates. The deterministic,
+north-up previews illustrate fields, forest, rivers, and lakes, with transparent
+margins matching the footprint. They are independent of the 2×2 teaching grid.
+Every run has a separate generated directory. These are toy datasets and
+illustrations, not satellite imagery or scientific NDVI products.
 
 Run from the repository root:
 

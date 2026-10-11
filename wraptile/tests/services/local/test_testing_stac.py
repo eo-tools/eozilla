@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 from pydantic import ValidationError
+from shapely.geometry import shape
 
 from gavicore.models import JobResults, Link, ProcessRequest
 from procodile import Job
@@ -70,7 +71,12 @@ async def test_process_outputs_products_and_http(inline, artifacts):
         assert collection["testing:complete"] is True
         assert set(document["assets"]) == {"data", "report", "preview"}
         assert document["geometry"]["type"] == "Polygon"
-        assert document["geometry"]["coordinates"][0][0] == [10, 50]
+        polygon = shape(document["geometry"])
+        assert polygon.is_valid
+        assert polygon.bounds == (10, 50, 11, 51)
+        assert 0 < polygon.area < 1
+        assert len(polygon.exterior.coords) > 5
+        assert polygon.exterior.is_ccw
         assert collection["features"][1]["bbox"] == [11.25, 50, 12.25, 51]
         assert all(
             member["assets"]["data"]["href"].startswith(member["id"] + "/")
@@ -89,8 +95,15 @@ async def test_process_outputs_products_and_http(inline, artifacts):
         assert response.status_code == 200
         assert response.headers["content-type"] == "image/png"
         with Image.open(BytesIO(response.content)) as image:
-            assert image.size == (160, 160)
-            assert len(image.getcolors()) == 4
+            assert image.size == (384, 384)
+            assert image.mode == "RGBA"
+            assert image.getpixel((0, 0))[3] == 0
+            assert image.getpixel((192, 192))[3] == 255
+            assert len(image.getcolors(maxcolors=384 * 384)) > 1000
+        second_preview = await client.get(
+            f"/testing-stac/{run_dir.name}/scene-2/products/preview.png"
+        )
+        assert second_preview.content != response.content
         assert (
             json.loads((run_dir / "scene-1.json").read_text(encoding="utf-8"))
             == document
@@ -115,6 +128,10 @@ async def test_process_outputs_products_and_http(inline, artifacts):
     assert len(list(artifacts.iterdir())) == 2
     # Cleanup is explicit: every run is confined to the configured directory.
     assert all(directory.parent == artifacts for directory in artifacts.iterdir())
+    runs = list(artifacts.iterdir())
+    assert (runs[0] / "scene-1/products/preview.png").read_bytes() == (
+        runs[1] / "scene-1/products/preview.png"
+    ).read_bytes()
 
 
 def test_testing_configuration_mounts_only_testing_service(artifacts):
