@@ -13,7 +13,7 @@ import pystac
 from cuiman import Client, ClientConfig
 from cuiman.api.opener import JobResultOpenContext
 from cuiman.api.opener.impl import StacJobResultOpener, compose_stac_opener
-from gavicore.models import ProcessRequest
+from gavicore.models.core import ProcessRequest
 
 
 async def mark_reviewed(stac: object, ctx: JobResultOpenContext) -> object:

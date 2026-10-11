@@ -16,7 +16,7 @@ from cuiman.api.opener.impl._paths import _local_path
 from cuiman.api.opener.opener import open_job_result
 from cuiman.api.transport import TransportArgs
 from cuiman.api.transport.httpx2 import Httpx2Transport
-from gavicore.models import JobResults, Link
+from gavicore.models.core import JobResults, Link
 
 
 def document():
@@ -115,7 +115,7 @@ def test_transport_defaults_and_job_context_source_facts():
     from cuiman import Client
     from cuiman.api.jobs import JobOptions, _new_open_context
     from cuiman.api.transport import AsyncTransport, Transport
-    from gavicore.models import JobInfo, JobStatus
+    from gavicore.models.core import JobInfo, JobStatus
 
     transport = MockTransport()
     assert Transport.get_response_href(transport, None) is None

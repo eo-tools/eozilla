@@ -26,7 +26,7 @@ from cuiman.api.opener import (
 from cuiman.api.opener.impl import StacJobResultOpener
 from cuiman.api.opener.impl.base import PathOpener
 from cuiman.api.opener.opener import open_job_result
-from gavicore.models import JobInfo, JobResults, JobStatus, ProcessRequest
+from gavicore.models.core import JobInfo, JobResults, JobStatus, ProcessRequest
 from procodile import Job
 from wraptile.services.local.testing import service
 

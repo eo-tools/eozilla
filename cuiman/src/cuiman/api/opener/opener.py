@@ -10,6 +10,7 @@ from inspect import isclass
 from typing import Any
 
 from cuiman.api.exceptions import ClientWarning
+
 from .context import JobResultOpenContext, _copy_options
 from .errors import JobResultOpenError, StacJobResultOpenError
 

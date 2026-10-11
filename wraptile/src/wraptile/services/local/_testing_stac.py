@@ -12,7 +12,7 @@ from uuid import uuid4
 from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
 
-from gavicore.models import Link
+from gavicore.models.core import Link
 
 
 def output_settings() -> tuple[Path, str]:

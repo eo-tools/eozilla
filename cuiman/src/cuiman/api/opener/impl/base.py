@@ -12,6 +12,7 @@ from urllib.parse import urlsplit
 from cuiman.api.assets import as_stac_asset
 from cuiman.api.opener.context import JobResultOpenContext
 from cuiman.api.opener.opener import JobResultOpener
+
 from ._paths import _local_path
 
 

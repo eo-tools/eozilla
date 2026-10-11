@@ -13,8 +13,7 @@ from types import SimpleNamespace
 import pytest
 from pystac import Asset, Item, ItemCollection
 
-from cuiman.api import AsyncClient, Client
-from cuiman.api import assets
+from cuiman.api import AsyncClient, Client, assets
 
 
 @pytest.mark.asyncio

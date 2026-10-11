@@ -13,7 +13,7 @@ from cuiman.api.opener import JobResultOpenContext, JobResultOpenError
 from cuiman.api.opener.impl import StacJobResultOpener
 from cuiman.api.opener.impl._stac.locations import _resolve_href
 from cuiman.api.opener.opener import open_job_result
-from gavicore.models import (
+from gavicore.models.core import (
     Link,
     OutputDescription,
     ProcessDescription,

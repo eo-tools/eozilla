@@ -7,7 +7,7 @@ import pytest
 
 from cuiman import AsyncClient, Client, ClientConfig
 from cuiman.api.transport.httpx2 import Httpx2Transport
-from gavicore.models import ProcessRequest
+from gavicore.models.core import ProcessRequest
 from procodile import Job
 from wraptile.services.local.testing import service
 

@@ -26,7 +26,7 @@ from typing import (
 import httpx2
 from authlib.integrations.httpx_client import AsyncOAuth2Client, OAuth2Client
 
-from gavicore.models import JobResults
+from gavicore.models.core import JobResults
 
 from .auth.config import (
     AuthConfig,

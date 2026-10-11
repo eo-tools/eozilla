@@ -13,17 +13,17 @@ import pytest
 from pystac import Asset, Item, ItemCollection
 
 from cuiman.api import AsyncClient, Client, ClientConfig
-from cuiman.api.opener import JobResultOpener
 from cuiman.api.assets import (
-    as_stac_asset,
+    _geometry_zoom,
     _load_preview,
-    display_assets,
     _render_asset,
     _render_geometry,
     _render_item,
     _render_preview,
-    _geometry_zoom,
+    as_stac_asset,
+    display_assets,
 )
+from cuiman.api.opener import JobResultOpener
 from gavicore.util.runsync import run_sync
 
 

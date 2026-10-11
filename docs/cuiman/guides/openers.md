@@ -22,7 +22,7 @@ and run this from the Pixi environment:
 import pandas as pd
 import pystac
 from cuiman import Client
-from gavicore.models import ProcessRequest
+from gavicore.models.core import ProcessRequest
 
 client = Client(api_url="http://localhost:8008", auth={"auth_type": "none"})
 try:

@@ -12,7 +12,7 @@ from PIL import Image
 from pydantic import ValidationError
 from shapely.geometry import shape
 
-from gavicore.models import JobResults, Link, ProcessRequest
+from gavicore.models.core import JobResults, Link, ProcessRequest
 from procodile import Job
 from wraptile.services.local._testing_stac import mount_artifacts, output_settings
 from wraptile.services.local.testing import _TestingService, service
