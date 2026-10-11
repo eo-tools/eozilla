@@ -14,6 +14,7 @@ import pytest
 from pystac import Asset, Item, ItemCollection
 
 from cuiman.api import AsyncClient, Client, assets
+from cuiman.api.assets import common
 
 
 @pytest.mark.asyncio
@@ -90,7 +91,7 @@ item.add_asset("result", Asset("missing.csv"))
 shell.user_ns.update(display_assets=assets.display_assets, alias=assets.display_assets,
                      named=item, items=[item])
 outputs = []
-with patch("IPython.display.display", outputs.append), patch.object(assets, "_render_geometry", return_value=None):
+with patch("IPython.display.display", outputs.append), patch("cuiman.api.assets.stac._render_geometry", return_value=None):
     for cell in [
         "await display_assets(named); await display_assets(items)",
         "await alias(items=named)",
@@ -139,23 +140,23 @@ def test_source_fallback_without_instruction_positions(monkeypatch, source, expe
         (len(source), None, [source], "<asset-source>"),
     )
     monkeypatch.setattr("dis.get_instructions", lambda *args, **kwargs: [])
-    assert assets._get_call_argument_source(frame, "show_assets") == expected
+    assert common._get_call_argument_source(frame, "show_assets") == expected
 
 
 def test_missing_frame_and_missing_source():
-    assert assets._get_call_argument_source(None, "show_assets") is None
+    assert common._get_call_argument_source(None, "show_assets") is None
     frame = SimpleNamespace(
         f_code=compile("pass", "<missing-asset-source>", "exec"),
         f_globals={},
         f_lasti=0,
         f_lineno=1,
     )
-    assert assets._get_call_argument_source(frame, "show_assets") is None
+    assert common._get_call_argument_source(frame, "show_assets") is None
 
 
 def test_missing_current_frame(monkeypatch):
-    monkeypatch.setattr(assets, "currentframe", lambda: None)
-    assert assets._get_items_expression() is None
+    monkeypatch.setattr(common, "currentframe", lambda: None)
+    assert common._get_items_expression() is None
 
 
 @pytest.mark.asyncio

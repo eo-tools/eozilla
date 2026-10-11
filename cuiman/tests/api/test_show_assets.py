@@ -13,15 +13,14 @@ import pytest
 from pystac import Asset, Item, ItemCollection
 
 from cuiman.api import AsyncClient, Client, ClientConfig
-from cuiman.api.assets import (
+from cuiman.api.assets import as_stac_asset, display_assets
+from cuiman.api.assets.stac import (
     _geometry_zoom,
     _load_preview,
     _render_asset,
     _render_geometry,
     _render_item,
     _render_preview,
-    as_stac_asset,
-    display_assets,
 )
 from cuiman.api.opener import JobResultOpener
 from gavicore.util.runsync import run_sync
@@ -105,7 +104,7 @@ async def test_standalone_without_opener_keeps_table_and_geometry(
         item.bbox = [1, 2, 3, 4]
     item.add_asset("preview", Asset("missing.png", roles=["thumbnail"]))
     load_preview = AsyncMock()
-    monkeypatch.setattr("cuiman.api.assets._load_preview", load_preview)
+    monkeypatch.setattr("cuiman.api.assets.stac._load_preview", load_preview)
 
     assert await display_assets(item, previews=previews) is None
 
@@ -186,7 +185,8 @@ def test_import_without_optional_pystac():
             "import sys; sys.modules['pystac'] = None; "
             "from cuiman.api import AsyncClient, Client; "
             "from cuiman.api.assets import "
-            "as_stac_asset, _render_asset, _render_geometry, _render_item, _load_previews; "
+            "as_stac_asset; from cuiman.api.assets.stac import "
+            "_render_asset, _render_geometry, _render_item, _load_previews; "
             "assert as_stac_asset({}) is None; "
             "assert all(map(callable, "
             "(Client.show_assets, AsyncClient.show_assets, _render_item, _render_asset, _render_geometry, _load_previews)))",
@@ -504,7 +504,7 @@ def test_preview_next_to_geometry(displayed, map_modules, monkeypatch, role):
     item.bbox = [1, 2, 3, 4]
     item.add_asset("preview", Asset("preview.png", title="<Preview>", roles=[role]))
     render_preview = AsyncMock(return_value="<img src='preview'>")
-    monkeypatch.setattr("cuiman.api.assets._load_preview", render_preview)
+    monkeypatch.setattr("cuiman.api.assets.stac._load_preview", render_preview)
 
     show_assets(item, roles="data")
 
@@ -530,7 +530,7 @@ def test_disabled_previews_prevent_asset_reads(
         item.bbox = [1, 2, 3, 4]
     item.add_asset("preview", Asset("preview.png", roles=["thumbnail"]))
     render_preview = AsyncMock()
-    monkeypatch.setattr("cuiman.api.assets._load_preview", render_preview)
+    monkeypatch.setattr("cuiman.api.assets.stac._load_preview", render_preview)
 
     show_assets(item, previews=False)
 
@@ -545,7 +545,7 @@ def test_preview_without_map_and_failed_sibling(displayed, monkeypatch):
     item.add_asset("good", Asset("good.png", roles=["overview"]))
     item.add_asset("data", Asset("data.png", roles=["data"]))
     render_preview = AsyncMock(side_effect=[None, "<img src='good'>"])
-    monkeypatch.setattr("cuiman.api.assets._load_preview", render_preview)
+    monkeypatch.setattr("cuiman.api.assets.stac._load_preview", render_preview)
 
     show_assets(item)
 
@@ -560,7 +560,9 @@ def test_preview_without_map_and_failed_sibling(displayed, monkeypatch):
 def test_failed_preview_keeps_table(displayed, monkeypatch):
     item = new_item()
     item.add_asset("preview", Asset("missing.png", roles=["thumbnail"]))
-    monkeypatch.setattr("cuiman.api.assets._load_preview", AsyncMock(return_value=None))
+    monkeypatch.setattr(
+        "cuiman.api.assets.stac._load_preview", AsyncMock(return_value=None)
+    )
 
     show_assets(item)
 

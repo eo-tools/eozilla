@@ -203,23 +203,25 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
 
     def show_assets(
         self,
-        items: "Item | Sequence[Item] | ItemCollection",
+        items: "JobResults | Item | Sequence[Item] | ItemCollection",
         *,
         roles: str | Iterable[str] | None = None,
         previews: bool = True,
     ) -> None:
-        """Display STAC asset tables, geometry maps, and viewable preview assets.
+        """Display job results or STAC asset tables, maps, and previews.
 
         Args:
-            items: An Item, a sequence of Items, or an ItemCollection.
+            items: JobResults, an Item, a sequence of Items, or an ItemCollection.
             roles: Show table assets matching any requested role. None shows
-                all assets; an empty iterable matches none.
+                all assets; an empty iterable matches none. Job result rows
+                are not filtered by roles.
             previews: Open thumbnail, overview, and visual assets using this
                 client's readers. False prevents preview reads while retaining
                 geometry maps. Unreadable or unsupported previews are skipped.
                 Preview selection is independent of the table's role filter.
+                Job result tables display links without opening their targets.
         """
-        from .assets import _get_items_expression
+        from .assets.common import _get_items_expression
 
         run_sync(
             self._show_assets,

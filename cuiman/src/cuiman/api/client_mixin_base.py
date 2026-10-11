@@ -127,7 +127,7 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
 
     async def _show_assets(
         self,
-        items: "Item | Sequence[Item] | ItemCollection",
+        items: "JobResults | Item | Sequence[Item] | ItemCollection",
         *,
         open_asset: "Callable[[Asset], Any]",
         expression: str | None,

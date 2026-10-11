@@ -75,16 +75,29 @@ machine or a shared filesystem.
 
 ## Display assets in a notebook
 
-Use the client's `show_assets` method to display an Item, a sequence of Items,
-or an ItemCollection:
+Use the client's `show_assets` method to display raw JobResults, an Item,
+a sequence of Items, or an ItemCollection:
 
 ```python
 client.show_assets(item)
 client.show_assets(items, roles=["data", "metadata"])
 client.show_assets(items, previews=False)
+
+results = client.get_job_results(job_id)
+client.show_assets(results)
 ```
 
 For an `AsyncClient`, await the method: `await client.show_assets(items)`.
+
+For JobResults, the table shows one row per output with its name, inline/link
+kind, media type when supplied, and value or file link. Objects and arrays can
+be expanded as JSON; scalar values and `null` appear directly. Copy buttons
+produce expressions such as `results.root['report']`. Empty or null result
+documents display "No outputs". This display does not open linked outputs,
+requires no PySTAC dependency, and keeps all output rows regardless of `roles`.
+The `previews` option applies to STAC assets. To browse a STAC output's assets,
+open that output with `client.open_job_result(...)` and pass the returned STAC
+object to `show_assets`.
 
 The table includes asset keys, file links, titles, roles, and buttons to copy
 asset access expressions. Each scene card shows additional item properties below
