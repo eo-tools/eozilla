@@ -39,6 +39,17 @@ class InspectOpener(JobResultOpener):
         return ctx
 
 
+@pytest.mark.parametrize("media_type", [None, "application/zarr"])
+def test_client_infers_zarr_without_type_or_engine(client, tmp_path, media_type):
+    _, call = client
+    path = tmp_path / "data.zarr"
+    expected = xr.Dataset({"ndvi": ("x", [0.2, 0.8])})
+    expected.to_zarr(path, zarr_format=2)
+    asset = pystac.Asset(path.as_uri(), media_type=media_type)
+    with call(asset) as actual:
+        xr.testing.assert_equal(actual, expected)
+
+
 @pytest.fixture(params=[False, True], ids=["sync", "async"])
 def client(request, tmp_path):
     asynchronous = request.param

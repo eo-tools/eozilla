@@ -33,6 +33,48 @@ def test_validator_rejects_unsupported_reader_option(reader):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "media, href, expected_engine",
+    [
+        ("application/zarr", "s3://bucket/dataset", "zarr"),
+        (" Application/Zarr ; version=2", "s3://bucket/dataset", "zarr"),
+        ("application/x-zarr", "s3://bucket/dataset", "zarr"),
+        ("application/vnd+zarr", "s3://bucket/dataset", "zarr"),
+        ("application/octet-stream", "https://data.test/data.zarr/", None),
+        ("application/x-netcdf", "https://data.test/data.zarr", None),
+        (None, "file:///data.ZARR", "zarr"),
+        (None, "https://data.test/data.zarr/?token=test", "zarr"),
+    ],
+)
+async def test_zarr_engine_inferred_from_media_type_or_suffix(
+    media, href, expected_engine
+):
+    ctx = context(media=media, href=href)
+    prepared = await prepare_asset_reader(ctx, "xarray")
+    assert prepared.options == ({"engine": "zarr"} if expected_engine else {})
+    if expected_engine:
+        assert ctx.option_sources["engine"] == "reader-default"
+    ctx.options = {"engine": "custom"}
+    prepared = await prepare_asset_reader(ctx, "xarray")
+    assert prepared.options["engine"] == "custom"
+    assert ctx.option_sources["engine"] == "caller"
+
+
+@pytest.mark.asyncio
+async def test_real_zarr_asset_opens_without_type_or_engine(tmp_path):
+    path = tmp_path / "data.zarr"
+    expected = xr.Dataset({"ndvi": ("x", [0.2, 0.8])})
+    expected.to_zarr(path, zarr_format=2)
+    ctx = context(href=path.as_uri(), media="application/zarr")
+    assert ctx.data_type is None and not ctx.options
+    actual = await open_job_result(ctx, XarrayDatasetOpener)
+    try:
+        xr.testing.assert_equal(actual, expected)
+    finally:
+        actual.close()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("version", [XARRAY, STORAGE1, STORAGE2, None])
 async def test_alternate_hints_follow_selected_location(version):
     alternate_fields = {
@@ -255,8 +297,8 @@ async def test_storage_versions_owned_s3_hints(version, collection):
 async def test_provider_at_authenticated_zarr_reader_boundary(asynchronous):
     seen = []
 
-    def access(ctx, asset_reader_id):
-        seen.append((ctx.value, ctx.location, asset_reader_id, deepcopy(ctx.options)))
+    def access(ctx, opener_id):
+        seen.append((ctx.value, ctx.location, opener_id, deepcopy(ctx.options)))
         return {
             "key": "provider-key",
             "secret": "provider-secret",
@@ -501,7 +543,7 @@ def test_both_client_reader_hints_without_processing_calls(asynchronous):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "asset_reader_id,hints",
+    "opener_id,hints",
     [
         (
             "xarray",
@@ -524,9 +566,9 @@ def test_both_client_reader_hints_without_processing_calls(asynchronous):
         ("image", {"storage_options": {"requester_pays": True}}),
     ],
 )
-async def test_supported_reader_hint_schemas(asset_reader_id, hints):
+async def test_supported_reader_hint_schemas(opener_id, hints):
     ctx = context({"x-options": hints}, href="s3://bucket/data.csv", media="text/csv")
-    prepared = await prepare_asset_reader(ctx, asset_reader_id)
+    prepared = await prepare_asset_reader(ctx, opener_id)
     assert prepared.options and ctx.resolved_options
 
 
@@ -642,8 +684,8 @@ async def test_access_failure_and_cancellation():
 def test_s3_access_uses_receiving_client_for_foreign_asset(asynchronous):
     calls = []
 
-    def access(ctx, asset_reader_id):
-        assert ctx.location == "s3://bucket/data.zarr" and asset_reader_id == "xarray"
+    def access(ctx, opener_id):
+        assert ctx.location == "s3://bucket/data.zarr" and opener_id == "xarray"
         calls.append(ctx.config.api_url)
         return {"key": "receiving-key", "secret": "receiving-secret"}
 

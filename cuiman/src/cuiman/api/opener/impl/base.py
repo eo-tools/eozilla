@@ -72,8 +72,8 @@ class PathOpener(JobResultOpener):
     `gavicore.models.Link` values.
     """
 
-    asset_reader_id: ClassVar[str | None] = None
-    """Identifier for the Asset reader option policy, or None for a custom reader."""
+    opener_id: ClassVar[str | None] = None
+    """Opener family identifier used for reader options, or None for custom policies."""
 
     async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
         path_like = self.get_path_like(ctx)
@@ -111,10 +111,10 @@ class PathOpener(JobResultOpener):
         assert path_or_url  # from accept() we know we have path_or_url
         filename_ext = self.get_filename_ext(path_or_url)
         media_type = self.get_media_type(ctx)
-        if self.asset_reader_id and as_stac_asset(ctx.value) is not None:
+        if self.opener_id and as_stac_asset(ctx.value) is not None:
             from ._stac.reader import prepare_asset_reader
 
-            ctx = await prepare_asset_reader(ctx, self.asset_reader_id)
+            ctx = await prepare_asset_reader(ctx, self.opener_id)
         return await self.open_path_like(path_or_url, filename_ext, media_type, ctx)
 
     @abstractmethod

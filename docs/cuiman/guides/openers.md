@@ -140,7 +140,7 @@ The original Asset remains unchanged, and `ctx.asset_alternate` identifies the
 selected alternate (or is `None` for the primary location).
 
 The testing processes also provide `assets["data"]` as Zarr. Read that Asset with
-`data_type=xr.Dataset, engine="zarr"` and close the returned dataset after use.
+`client.open_job_result(item.assets["data"])` and close the returned dataset after use.
 Reading Zarr over HTTP additionally requires the reader's HTTP dependencies
 (`fsspec[http]`, including aiohttp), which the current Pixi environment does not
 include. The CSV example above runs with the existing development dependencies.
@@ -149,7 +149,11 @@ include. The CSV example above runs with the existing development dependencies.
 
 Asset options follow this order: reader defaults, validated producer hints,
 receiving-client overrides, then explicit caller options. For a Zarr Asset,
-xarray defaults to `engine="zarr"`; producer metadata cannot choose an engine.
+xarray defaults to `engine="zarr"` when the media type is `application/zarr`,
+`application/x-zarr`, or `application/vnd+zarr`. When no media type is supplied,
+the engine is inferred if the selected URL path ends in
+`.zarr` (case insensitive, ignoring trailing slashes and URL parameters).
+Explicit caller options can override the engine; producer metadata cannot choose it.
 Only `chunks`, `backend_kwargs`, `storage_options`, `client_kwargs`, and
 `config_kwargs` merge by key. Scalars and lists replace earlier values; `None`
 clears inherited settings. Each reader attempt gets independent options.
@@ -207,13 +211,13 @@ import os
 from cuiman import ClientConfig
 
 
-def reader_options(ctx, asset_reader_id):
-    if asset_reader_id == "xarray" and (ctx.location or "").startswith("s3://my-products/"):
+def reader_options(ctx, opener_id):
+    if opener_id == "xarray" and (ctx.location or "").startswith("s3://my-products/"):
         return {"chunks": "auto"}
     return {}
 
 
-def asset_access(ctx, asset_reader_id):
+def asset_access(ctx, opener_id):
     if (ctx.location or "").startswith("s3://my-products/"):
         return {
             "key": os.environ["PRODUCT_ACCESS_KEY"],
@@ -228,7 +232,7 @@ class ProductConfig(ClientConfig):
 ```
 
 Supply `ProductConfig()` to either client. The callbacks receive the exact Asset
-in `ctx.value`, its effective `ctx.location`, and the `asset_reader_id` (`xarray`,
+in `ctx.value`, its effective `ctx.location`, and the `opener_id` (`xarray`,
 `pandas`, `geopandas`, or `image`). Their scope is determined by the receiving
 application, never by producer metadata or job association. Overrides are trusted
 reader options; the access callback returns S3 storage options or `None` and may

@@ -119,7 +119,7 @@ class ClientConfig(BaseSettings):
     ] = None
     """Optional runtime callback for scoped, trusted Asset reader overrides.
 
-    Receives the selected context and asset_reader_id (xarray, pandas, geopandas,
+    Receives the selected context and opener_id (xarray, pandas, geopandas,
     or image). Check the effective location and reader ID before returning options.
     Runs only for an accepted Asset reader and is excluded from saved profiles.
     """

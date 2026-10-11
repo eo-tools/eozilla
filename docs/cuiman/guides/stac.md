@@ -36,7 +36,9 @@ jobs.
 
 The notebook completes the inline process first: open its Item, call
 `client.show_assets(inline_item)` to see its footprint and synthetic preview,
-then open `inline_item.assets["data"]` with `data_type=xr.Dataset, engine="zarr"`.
+then open the dataset with `client.open_job_result(inline_item.assets["data"])`.
+Cuiman infers the Zarr engine from the asset's media type, falling back to the
+`.zarr` URL suffix only when no media type is supplied.
 It next runs the linked process, displays its ItemCollection, and opens the
 second scene's data Asset. Both grids are inspected and closed after use.
 Each process has a separate submission cell; there are no loops over jobs,

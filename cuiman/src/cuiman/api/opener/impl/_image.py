@@ -16,7 +16,7 @@ from .base import PathOpener
 
 
 class ImageOpenerImpl(PathOpener):
-    asset_reader_id = "image"
+    opener_id = "image"
 
     def accept_data_type(self, data_type: type) -> bool:
         return data_type is Image.Image

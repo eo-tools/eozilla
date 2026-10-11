@@ -12,7 +12,7 @@ from .base import PathOpener
 
 
 class PandasDataFrameOpenerImpl(PathOpener):
-    asset_reader_id = "pandas"
+    opener_id = "pandas"
 
     def accept_data_type(self, data_type: type) -> bool:
         return data_type is pd.DataFrame
