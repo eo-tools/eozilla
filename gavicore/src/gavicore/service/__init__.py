@@ -2,10 +2,8 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from . import errors
-from .service import Service
+"""Core and DRU interfaces and shared API error helpers."""
 
-__all__ = [
-    "Service",
-    "errors",
-]
+from . import core, dru, errors
+
+__all__ = ["core", "dru", "errors"]

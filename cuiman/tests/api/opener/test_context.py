@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from cuiman import ClientConfig
 from cuiman.api.opener import JobResultOpenContext, JobResultOpenError
-from gavicore.models import (
+from gavicore.models.core import (
     JobResults,
     Link,
     OutputDescription,

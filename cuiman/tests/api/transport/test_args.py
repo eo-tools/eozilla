@@ -7,7 +7,7 @@ from unittest import TestCase
 from cuiman.api.exceptions import ClientError
 from cuiman.api.transport import TransportArgs
 from cuiman.api.transport.args import CLIENT_ERROR_URI
-from gavicore.models import ApiError
+from gavicore.models.core import ApiError
 
 
 class TransportArgsTest(TestCase):

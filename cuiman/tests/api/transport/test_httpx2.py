@@ -13,7 +13,7 @@ from cuiman.api.exceptions import ClientError
 from cuiman.api.transport import TransportArgs, TransportError
 from cuiman.api.transport.args import CLIENT_ERROR_URI
 from cuiman.api.transport.httpx2 import Httpx2Transport
-from gavicore.models import ApiError, ConformanceDeclaration
+from gavicore.models.core import ApiError, ConformanceDeclaration
 
 
 def make_mocked_transport(

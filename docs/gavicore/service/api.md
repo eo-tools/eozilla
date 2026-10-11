@@ -1,7 +1,7 @@
 # `gavicore.service` API Reference
 
-::: gavicore.service.Service
+::: gavicore.service.core.Service
 
-::: gavicore.dru_service.DruService
+::: gavicore.service.dru.DruService
 
 ::: gavicore.service.errors

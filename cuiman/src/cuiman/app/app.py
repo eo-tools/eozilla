@@ -8,7 +8,7 @@ from typing import Any
 
 import remotestate as rs
 
-from gavicore.models import ProcessRequest
+from gavicore.models.core import ProcessRequest
 from gavicore.util.ensure import ensure_type
 
 PROCESS_REQUESTS_KEY = "processRequests"

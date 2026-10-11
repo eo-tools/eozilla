@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 import fastapi
 import requests
 
-from gavicore.models import (
+from gavicore.models.core import (
     Capabilities,
     ConformanceDeclaration,
     DataType,

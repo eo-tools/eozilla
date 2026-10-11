@@ -4,7 +4,7 @@
 
 import logging
 
-from gavicore.service import Service
+from gavicore.service.core import Service
 
 from .services.base import ServiceBase
 

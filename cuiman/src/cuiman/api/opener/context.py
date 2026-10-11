@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import BaseModel
 
-from gavicore.models import (
+from gavicore.models.core import (
     JobResults,
     Link,
     OutputDescription,

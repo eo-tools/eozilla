@@ -7,7 +7,7 @@ from typing import Optional
 
 from fastapi import HTTPException
 
-from gavicore.models import ApiError
+from gavicore.models.core import ApiError
 from gavicore.service.errors import (
     ErrorTypeId,
     create_api_error,

@@ -13,7 +13,7 @@ import httpx2
 from authlib.integrations.base_client.errors import InvalidTokenError
 from authlib.integrations.httpx_client import OAuth2Client
 
-from gavicore.models import JobInfo, JobResults, JobStatus, ProcessDescription
+from gavicore.models.core import JobInfo, JobResults, JobStatus, ProcessDescription
 from gavicore.util.request import ExecutionRequest
 from gavicore.util.runsync import run_sync
 

@@ -5,7 +5,7 @@
 from unittest import TestCase
 
 from cuiman.cli.output import OutputFormat, OutputRenderer, get_renderer
-from gavicore.models import (
+from gavicore.models.core import (
     JobInfo,
     JobList,
     JobResults,

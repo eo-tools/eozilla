@@ -4,12 +4,12 @@
 
 from typing import Optional
 from unittest import TestCase
+from unittest.mock import patch
 
 import pytest
+from fastapi import FastAPI
 
-from gavicore.dru_models import OgcApplicationPackage
-from gavicore.dru_service import DruService
-from gavicore.models import (
+from gavicore.models.core import (
     JobInfo,
     JobList,
     JobResults,
@@ -18,6 +18,8 @@ from gavicore.models import (
     ProcessRequest,
     ProcessSummary,
 )
+from gavicore.models.dru import OgcApplicationPackage
+from gavicore.service.dru import DruService
 from gavicore.util.testing import set_env_cm
 from wraptile.constants import ENV_VAR_SERVICE
 from wraptile.exceptions import ServiceConfigException
@@ -123,11 +125,17 @@ dru_service = MyDruService()
 class ServiceBaseTest(TestCase):
     def test_load_without_options(self):
         service_spec = "tests.services.base.test_service_base:service"
-        with set_env_cm(**{ENV_VAR_SERVICE: service_spec}):
+        route_app = FastAPI()
+        original_routes = list(route_app.routes)
+        with (
+            set_env_cm(**{ENV_VAR_SERVICE: service_spec}),
+            patch("wraptile.app.app", route_app),
+        ):
             s = ServiceBase.load()
         self.assertIsInstance(s, MyService)
         self.assertEqual(None, s.threads)
         self.assertEqual(None, s.workers)
+        self.assertEqual(original_routes, route_app.routes)
 
     def test_load_with_options(self):
         service_spec = (
@@ -202,11 +210,28 @@ class ServiceBaseTest(TestCase):
 
     def test_load_injects_dru_routes(self):
         service_spec = "tests.services.base.test_service_base:dru_service"
-        with set_env_cm(**{ENV_VAR_SERVICE: service_spec}):
+        route_app = FastAPI()
+        with (
+            set_env_cm(**{ENV_VAR_SERVICE: service_spec}),
+            patch("wraptile.app.app", route_app),
+        ):
             s = ServiceBase.load()
         self.assertIsInstance(s, MyDruService)
         self.assertTrue(issubclass(s.__class__, ServiceBase))
         self.assertTrue(issubclass(s.__class__, DruService))
+        self.assertSetEqual(
+            {
+                ("/processes", "post"),
+                ("/processes/{processId}", "put"),
+                ("/processes/{processId}", "delete"),
+                ("/processes/{processId}/package", "get"),
+            },
+            {
+                (path, method)
+                for path, methods in route_app.openapi()["paths"].items()
+                for method in methods
+            },
+        )
 
     # noinspection PyMethodMayBeStatic
     def assert_fails_with_config_exception(self, value: str | None, match: str):

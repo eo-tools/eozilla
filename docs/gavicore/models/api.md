@@ -1,68 +1,68 @@
 # `gavicore.models` API Reference
 
 
-## `gavicore.models` - OGC Processes
+## `gavicore.models.core` - OGC Processes
 
-::: gavicore.models.ProcessList
+::: gavicore.models.core.ProcessList
 
-::: gavicore.models.ProcessSummary
+::: gavicore.models.core.ProcessSummary
 
-::: gavicore.models.ProcessDescription
+::: gavicore.models.core.ProcessDescription
 
-::: gavicore.models.InputDescription
+::: gavicore.models.core.InputDescription
 
-::: gavicore.models.OutputDescription
+::: gavicore.models.core.OutputDescription
 
-::: gavicore.models.ProcessRequest
+::: gavicore.models.core.ProcessRequest
 
-::: gavicore.models.Subscriber
+::: gavicore.models.core.Subscriber
 
-::: gavicore.models.Output
-
-
-## `gavicore.models` - OGC Process Jobs
-
-::: gavicore.models.JobList
-
-::: gavicore.models.JobInfo
-
-::: gavicore.models.JobStatus
-
-::: gavicore.models.JobResult
-
-::: gavicore.models.JobResults
-
-::: gavicore.models.ApiError
+::: gavicore.models.core.Output
 
 
-## `gavicore.models` - OGC Application Package and Workflow descriptions
+## `gavicore.models.core` - OGC Process Jobs
 
-::: gavicore.dru_models.OgcApplicationPackage
+::: gavicore.models.core.JobList
 
-::: gavicore.dru_models.OgcApplicationPackageProcessDescription
+::: gavicore.models.core.JobInfo
 
-::: gavicore.dru_models.CwlDescription
+::: gavicore.models.core.JobStatus
 
-::: gavicore.dru_models.ContainerImage
+::: gavicore.models.core.JobResult
 
-::: gavicore.dru_models.ExecutionUnitContainer
+::: gavicore.models.core.JobResults
 
-::: gavicore.dru_models.ContainerConfig
-
-::: gavicore.dru_models.ContainerBindings
-
-::: gavicore.dru_models.InputBinding
-
-::: gavicore.dru_models.OutputBinding
-
-::: gavicore.dru_models.GenericExecutionUnit
+::: gavicore.models.core.ApiError
 
 
-## `gavicore.models` - OpenAPI Schema
+## `gavicore.models.dru` - OGC Application Package and Workflow descriptions
 
-::: gavicore.models.DataType
+::: gavicore.models.dru.OgcApplicationPackage
 
-::: gavicore.models.Schema
+::: gavicore.models.dru.OgcApplicationPackageProcessDescription
 
-::: gavicore.models.Discriminator
+::: gavicore.models.dru.CwlDescription
+
+::: gavicore.models.dru.ContainerImage
+
+::: gavicore.models.dru.ExecutionUnitContainer
+
+::: gavicore.models.dru.ContainerConfig
+
+::: gavicore.models.dru.ContainerBindings
+
+::: gavicore.models.dru.InputBinding
+
+::: gavicore.models.dru.OutputBinding
+
+::: gavicore.models.dru.GenericExecutionUnit
+
+
+## `gavicore.models.core` - OpenAPI Schema
+
+::: gavicore.models.core.DataType
+
+::: gavicore.models.core.Schema
+
+::: gavicore.models.core.Discriminator
 

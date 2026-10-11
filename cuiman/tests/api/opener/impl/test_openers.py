@@ -18,7 +18,7 @@ from cuiman.api.opener.impl import (
     PandasDataFrameOpener,
     XarrayDatasetOpener,
 )
-from gavicore.models import JobResults, Link
+from gavicore.models.core import JobResults, Link
 
 from .test_base import create_ctx
 

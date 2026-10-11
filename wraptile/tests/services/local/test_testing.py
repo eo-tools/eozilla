@@ -7,7 +7,7 @@ from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import patch
 
 import wraptile.services.local.testing as testing_module
-from gavicore.models import (
+from gavicore.models.core import (
     InputDescription,
     JobResults,
     JobStatus,

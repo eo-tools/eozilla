@@ -17,7 +17,7 @@ from cuiman.api.opener import (
     JobResultOpenError,
     JobResultStatusError,
 )
-from gavicore.models import (
+from gavicore.models.core import (
     ApiError,
     JobInfo,
     JobResults,

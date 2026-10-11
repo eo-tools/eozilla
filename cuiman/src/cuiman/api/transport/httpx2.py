@@ -9,7 +9,7 @@ from typing import Any, Awaitable, Callable
 import httpx2
 
 from cuiman.api.exceptions import ClientError
-from gavicore.models import ApiError, JobResults
+from gavicore.models.core import ApiError, JobResults
 
 from .args import CLIENT_ERROR_URI, TransportArgs
 from .transport import AsyncTransport, Transport, TransportError

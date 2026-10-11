@@ -10,8 +10,7 @@ from typing import Annotated, Any
 import pydantic
 from pydantic import Field
 
-from gavicore.models import ProcessDescription, ProcessRequest
-
+from ..models.core import ProcessDescription, ProcessRequest
 from .obj import flatten_obj, nest_dict
 
 SUBSCRIBER_EVENTS = {
@@ -25,7 +24,7 @@ SUBSCRIBER_EVENTS = {
 class ExecutionRequest(ProcessRequest):
     """
     Process execution request.
-    Extends [ProcessRequest][gavicore.models.ProcessRequest]
+    Extends [ProcessRequest][gavicore.models.core.ProcessRequest]
 
     - to allow the process identifier being part of the request,
     - to allow creating nested object values for input names with dots.
@@ -38,10 +37,10 @@ class ExecutionRequest(ProcessRequest):
             Values may be of any JSON-serializable type accepted by
             the given process.
         outputs: Optional process outputs given as key-value mapping.
-            Values are of type [Output][gavicore.models.Output]
+            Values are of type [Output][gavicore.models.core.Output]
             supported by the given process.
         subscriber: Optional subscriber of type
-            [Subscriber][gavicore.models.Subscriber] comprising callback
+            [Subscriber][gavicore.models.core.Subscriber] comprising callback
             URLs that are informed about process status changes
             while the processing takes place.
     """

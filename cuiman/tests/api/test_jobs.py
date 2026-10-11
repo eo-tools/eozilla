@@ -15,7 +15,7 @@ from cuiman.api.jobs import (
     async_execute_and_open_result,
     execute_and_open_result,
 )
-from gavicore.models import (
+from gavicore.models.core import (
     JobInfo,
     JobResults,
     JobStatus,

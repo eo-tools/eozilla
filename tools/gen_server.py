@@ -18,8 +18,8 @@ from tools.openapi import OAMethod, OASchema, load_openapi_schema
 
 GENERATOR_NAME = str(Path(__file__).name)
 
-ROUTES_PATH = EOZILLA_PATH / "wraptile/src/wraptile/routes.py"
-SERVICE_PATH = EOZILLA_PATH / "gavicore/src/gavicore/service/service.py"
+ROUTES_PATH = EOZILLA_PATH / "wraptile/src/wraptile/routes/core.py"
+SERVICE_PATH = EOZILLA_PATH / "gavicore/src/gavicore/service/core.py"
 
 magic_param_list = [
     ("request", "fastapi.Request"),
@@ -38,12 +38,13 @@ def main():
         GENERATOR_NAME,
         ROUTES_PATH,
         [
+            '"""HTTP routes for OGC API - Processes Part 1: Core."""\n\n',
             "import fastapi\n",
             "\n",
-            f"from gavicore.models import {model_list}\n",
-            "from gavicore.service import Service\n",
-            "from .app import app\n",
-            "from .provider import get_service\n",
+            f"from gavicore.models.core import {model_list}\n",
+            "from gavicore.service.core import Service\n",
+            "from ..app import app\n",
+            "from ..provider import get_service\n",
             "\n",
             routes_code,
         ],
@@ -53,11 +54,13 @@ def main():
         GENERATOR_NAME,
         SERVICE_PATH,
         [
+            '"""Service interface for OGC API - Processes Part 1: Core."""\n\n',
             "from abc import ABC, abstractmethod\n",
             "\n",
-            f"from .models import {model_list}\n",
+            f"from ..models.core import {model_list}\n",
             "\n",
             "class Service(ABC):\n",
+            '    """OGC API - Processes Part 1: Core interface."""\n\n',
             service_code,
         ],
     )

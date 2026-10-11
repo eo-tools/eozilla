@@ -12,13 +12,13 @@ import fastapi
 import yaml
 from starlette.routing import Route
 
-from gavicore.dru_service import DruService
-from gavicore.models import (
+from gavicore.models.core import (
     Capabilities,
     ConformanceDeclaration,
     Link,
 )
-from gavicore.service import Service
+from gavicore.service.core import Service
+from gavicore.service.dru import DruService
 from gavicore.util.dynimp import import_value
 from wraptile.constants import ENV_VAR_SERVICE
 from wraptile.exceptions import ServiceConfigException
@@ -96,7 +96,7 @@ class ServiceBase(Service, ABC):
 
             if issubclass(service.__class__, DruService):
                 from wraptile.app import app as app_module
-                from wraptile.dru_routes import dru_router
+                from wraptile.routes.dru import dru_router
 
                 app_module.include_router(dru_router)
 

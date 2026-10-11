@@ -7,33 +7,27 @@ from importlib.metadata import version
 
 from pydantic import BaseModel
 
-from . import dru_models, dru_service, models, service
+from . import models, service
 
 __version__ = version("gavicore")
 
 __all__ = [
     "__version__",
-    "dru_models",
-    "dru_service",
     "models",
     "service",
 ]
 
 
 def _patch_models():
-    for name, obj in inspect.getmembers(models, inspect.isclass) + inspect.getmembers(
-        dru_models, inspect.isclass
-    ):
-        if (
-            not name.startswith("_")
-            and (
-                obj.__module__ == models.__name__
-                or obj.__module__ == dru_models.__name__
-            )
-            and issubclass(obj, BaseModel)
-        ):
-            # Make model object render nicely in Jupyter notebooks
-            obj._repr_json_ = _repr_base_model_as_json  # type: ignore[attr-defined]
+    for module in (models.core, models.dru):
+        for name, obj in inspect.getmembers(module, inspect.isclass):
+            if (
+                not name.startswith("_")
+                and obj.__module__ == module.__name__
+                and issubclass(obj, BaseModel)
+            ):
+                # Make model objects render nicely in Jupyter notebooks.
+                obj._repr_json_ = _repr_base_model_as_json  # type: ignore[attr-defined]
 
 
 def _repr_base_model_as_json(self: BaseModel):

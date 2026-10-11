@@ -11,7 +11,7 @@ from typing import Optional
 import fastapi
 from pydantic import ValidationError
 
-from gavicore.models import (
+from gavicore.models.core import (
     JobInfo,
     JobList,
     JobResults,

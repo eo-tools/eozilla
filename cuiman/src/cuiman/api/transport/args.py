@@ -12,7 +12,7 @@ import uri_template
 from pydantic import BaseModel
 
 from cuiman.api.exceptions import ClientError
-from gavicore.models import ApiError
+from gavicore.models.core import ApiError
 
 CLIENT_ERROR_URI: Final[str] = (
     "https://eo-tools.github.io/eozilla/cuiman/api/#cuiman.ClientError"

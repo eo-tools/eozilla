@@ -69,7 +69,7 @@ class PathOpener(JobResultOpener):
     Abstract base class for job results that use a path-like
     string (path or URL) to reference an output dataset.
     Job result output values are typically modeled as
-    `gavicore.models.Link` values.
+    `gavicore.models.core.Link` values.
     """
 
     opener_id: ClassVar[str | None] = None

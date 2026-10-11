@@ -9,7 +9,7 @@ from typing import Any, Callable, Literal
 import pydantic
 import typer
 
-from gavicore.models import (
+from gavicore.models.core import (
     JobInfo,
     JobList,
     JobResults,

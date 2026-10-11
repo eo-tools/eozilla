@@ -13,7 +13,7 @@ from typing import Any, Optional
 
 import pydantic
 
-from gavicore.models import (
+from gavicore.models.core import (
     JobInfo,
     JobResults,
     JobStatus,

@@ -10,7 +10,7 @@ import pytest
 from cuiman.api.config import ClientConfig
 from cuiman.api.opener import JobResultOpenContext, JobResultOpener
 from cuiman.api.opener.impl.base import OptionalModuleOpener, PathOpener
-from gavicore.models import (
+from gavicore.models.core import (
     InlineValue,
     JobResults,
     Link,

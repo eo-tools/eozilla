@@ -9,7 +9,7 @@ import pydantic
 import pytest
 from pydantic import BaseModel, Field
 
-from gavicore.models import (
+from gavicore.models.core import (
     DataType,
     InputDescription,
     OutputDescription,

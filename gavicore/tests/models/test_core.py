@@ -9,7 +9,7 @@ from unittest import TestCase
 
 from pydantic import BaseModel
 
-import gavicore.models as m
+import gavicore.models.core as m
 
 REQUIRED_ENUMS = {
     "CRS",

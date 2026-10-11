@@ -6,7 +6,12 @@ This submits one job and checks its status once. Importing does not connect.
 
 # --8<-- [start:imports]
 from cuiman import Client
-from gavicore.models import JobResults, JobStatus, ProcessDescription, ProcessRequest
+from gavicore.models.core import (
+    JobResults,
+    JobStatus,
+    ProcessDescription,
+    ProcessRequest,
+)
 
 # --8<-- [end:imports]
 
