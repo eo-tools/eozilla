@@ -14,18 +14,10 @@ from .test_context import new_ctx
 
 class MyGoodOpener(JobResultOpener):
     async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
-        return (
-            ctx.data_type is dict
-            and isinstance(ctx.job_results.root, dict)
-            and sorted(ctx.job_results.root.keys()) == ["a", "b", "c"]
-        )
+        return ctx.data_type is dict and isinstance(ctx.value, (str, float, bool))
 
     async def open_job_result(self, ctx: JobResultOpenContext) -> Any:
-        results_root = ctx.job_results.root
-        if ctx.output_name in ["a", "b", "c"]:
-            if results_root is not None:
-                return results_root.get(ctx.output_name)
-        return results_root
+        return ctx.value
 
 
 class MyOpensEverythingOpener(JobResultOpener):
@@ -93,7 +85,7 @@ class MyIsUsableRaisesOpener(MyUnusableOpener):
 @pytest.mark.asyncio
 async def test_open_job_result_ok():
     ctx = new_ctx(data_type=dict)
-    assert await open_job_result(ctx, MyGoodOpener) == ctx.job_results.root
+    assert await open_job_result(ctx, MyGoodOpener) == "out.nc"
 
     ctx = new_ctx(data_type=dict, output_name="b")
     assert await open_job_result(ctx, MyGoodOpener) == 2.5

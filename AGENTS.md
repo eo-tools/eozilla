@@ -40,11 +40,13 @@ target from `pyproject.toml`, for example:
 - Keep imports grouped in standard-library, third-party, then first-party order.
 - Prefer package-relative imports between implementation modules within the same
   package to make their locality explicit. Use absolute imports across package
-  boundaries and when consuming a package's public API.
+  boundaries and when consuming a package's public API. 
+  Avoid relative import levels >= 2.
 - Preserve deferred function-local imports when needed to avoid circular
   dependencies or import-time side effects. Do not rewrite import style as
   unrelated cleanup.
-- Use `typing.TYPE_CHECKING` when it helps avoid circular imports.
+- Use `typing.TYPE_CHECKING` for optional dependencies and when it helps avoid 
+  circular imports.
 - Add docstrings to public API classes, functions, constants, and type aliases.
 
 ## Testing Expectations

@@ -11,6 +11,19 @@
   - Split Wraptile routes into `wraptile.routes.core|dru`, with the 
     application-package response class alongside DRU routes.
 
+- **Cuiman** opens selected inline or linked STAC results as native PySTAC Items,
+  ItemCollections, Collections, and Catalogs through the optional `stac` extra.
+  Job-result selection preserves raw outputs, requires `output_name` when results
+  are ambiguous, and retains valid null selections. Both clients also open an
+  exact PySTAC Asset through their configured readers without job lookup or
+  metadata rediscovery. Asset readers validate supported `x-options`, xarray-assets,
+  and AWS Storage hints; receiving-client hooks provide scoped reader options and
+  S3 access without exposing credentials in metadata or errors. Applications can
+  compose the built-in STAC opener with ordered, isolated transformations.
+  Wraptile's local testing service provides inline and linked STAC processes with
+  HTTP-served Zarr/CSV products, demonstrated by a guide, runnable example, and
+  notebook. Resolves #217.
+
 - **Procodile** no longer drops $ref schema references when building process 
   descriptions. (#239)
 

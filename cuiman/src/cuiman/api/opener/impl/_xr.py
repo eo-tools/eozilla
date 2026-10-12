@@ -12,6 +12,8 @@ from .base import PathOpener
 
 
 class XarrayDatasetOpenerImpl(PathOpener):
+    opener_id = "xarray"
+
     def accept_data_type(self, data_type: type) -> bool:
         return data_type is xr.Dataset
 

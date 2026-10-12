@@ -193,6 +193,8 @@ class TestingServiceTest(IsolatedAsyncioTestCase):
         process_dict = {v.id: v for v in process_list.processes}
         self.assertEqual(
             {
+                "create_inline_stac",
+                "create_linked_stac",
                 "primes_between",
                 "return_base_model",
                 "simulate_scene",
