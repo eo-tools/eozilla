@@ -26,7 +26,7 @@ from typing import (
 import httpx2
 from authlib.integrations.httpx_client import AsyncOAuth2Client, OAuth2Client
 
-from gavicore.models.core import JobResults
+from gavicore.models.core import JobResults, QualifiedValue
 
 from .auth.config import (
     AuthConfig,
@@ -127,7 +127,7 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
 
     async def _show_assets(
         self,
-        items: "JobResults | Item | Sequence[Item] | ItemCollection",
+        items: "JobResults | QualifiedValue | dict[str, Any] | Item | Sequence[Item] | ItemCollection",
         *,
         open_asset: "Callable[[Asset], Any]",
         expression: str | None,

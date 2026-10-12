@@ -6,7 +6,7 @@
 
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Sequence
 
-from gavicore.models.core import JobResults
+from gavicore.models.core import JobResults, QualifiedValue
 
 from .common import _get_items_expression
 from .stac import as_stac_asset
@@ -18,7 +18,7 @@ __all__ = ["as_stac_asset", "display_assets"]
 
 
 async def display_assets(
-    items: "JobResults | Item | Sequence[Item] | ItemCollection",
+    items: "JobResults | QualifiedValue | dict[str, Any] | Item | Sequence[Item] | ItemCollection",
     *,
     roles: str | Iterable[str] | None = None,
     previews: bool = True,
@@ -27,7 +27,8 @@ async def display_assets(
     """Render job result tables or grouped STAC assets and optional previews.
 
     Args:
-        items: JobResults or the STAC item or items to display.
+        items: JobResults, STAC objects, or inline STAC JSON dictionaries
+            (optionally wrapped in QualifiedValue).
         roles: Show assets matching any of these roles. A string matches one
             role, None shows all assets, and an empty iterable matches none.
             Job result rows are not filtered by roles.
@@ -49,7 +50,7 @@ async def display_assets(
 
 
 async def _display_assets(
-    items: "JobResults | Item | Sequence[Item] | ItemCollection",
+    items: "JobResults | QualifiedValue | dict[str, Any] | Item | Sequence[Item] | ItemCollection",
     *,
     expression: str | None,
     roles: str | Iterable[str] | None = None,

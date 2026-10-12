@@ -34,9 +34,10 @@ environment and run its cells in order. Each execution creates two jobs and
 their output files. Avoid rerunning the submission cell unless you want more
 jobs.
 
-The notebook completes the inline process first: open its Item, call
+The notebook completes the inline process first: select its inline Item JSON, call
 `client.show_assets(inline_item)` to see its footprint and synthetic preview,
-then open the dataset with `client.open_job_result(inline_item.assets["data"])`.
+then convert it locally with `pystac.Item.from_dict(inline_item)` and open the
+dataset with `client.open_job_result(inline_stac_item.assets["data"])`.
 Cuiman infers the Zarr engine from the asset's media type, falling back to the
 `.zarr` URL suffix only when no media type is supplied.
 It next runs the linked process, displays its ItemCollection, and opens the
@@ -85,19 +86,27 @@ client.show_assets(items, previews=False)
 
 results = client.get_job_results(job_id)
 client.show_assets(results)
+client.show_assets(results.root["item"])
 ```
 
 For an `AsyncClient`, await the method: `await client.show_assets(items)`.
 
 For JobResults, the table shows one row per output with its name, inline/link
 kind, media type when supplied, and value or file link. Objects and arrays can
-be expanded as JSON; scalar values and `null` appear directly. Copy buttons
+be expanded as JSON; recognized inline STAC metadata is labeled **STAC Item**
+or **STAC ItemCollection**. Scalar values and `null` appear directly. Copy buttons
 produce expressions such as `results.root['report']`. Empty or null result
 documents display "No outputs". This display does not open linked outputs,
 requires no PySTAC dependency, and keeps all output rows regardless of `roles`.
-The `previews` option applies to STAC assets. To browse a STAC output's assets,
-open that output with `client.open_job_result(...)` and pass the returned STAC
-object to `show_assets`.
+The `previews` option applies to STAC assets. To browse an inline STAC output's
+assets, pass its JSON dictionary directly to `show_assets`, as above. A
+`QualifiedValue` containing STAC JSON is also accepted. Display converts the
+metadata locally using PySTAC and does not fetch the output again. JSON asset
+copy buttons select the original dictionaries, for example
+`results.root['item']['assets']['data']`; native PySTAC displays continue to
+copy `.assets[...]` expressions. To read assets as PySTAC objects, convert the
+inline dictionary explicitly with `pystac.Item.from_dict(...)`. For linked STAC
+outputs, use `client.open_job_result(...)` to fetch the metadata first.
 
 The table includes asset keys, file links, titles, roles, and buttons to copy
 asset access expressions. Each scene card shows additional item properties below

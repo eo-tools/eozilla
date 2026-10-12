@@ -11,7 +11,13 @@ from typing import TYPE_CHECKING, Any, Iterable, Sequence, overload
 import httpx2
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 
-from gavicore.models.core import JobInfo, JobResults, JobStatus, ProcessDescription
+from gavicore.models.core import (
+    JobInfo,
+    JobResults,
+    JobStatus,
+    ProcessDescription,
+    QualifiedValue,
+)
 from gavicore.util.request import ExecutionRequest
 
 from .auth.config import OidcAuthConfig
@@ -248,7 +254,7 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
 
     async def show_assets(
         self,
-        items: "JobResults | Item | Sequence[Item] | ItemCollection",
+        items: "JobResults | QualifiedValue | dict[str, Any] | Item | Sequence[Item] | ItemCollection",
         *,
         roles: str | Iterable[str] | None = None,
         previews: bool = True,
@@ -256,7 +262,8 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
         """Display job results or STAC asset tables, maps, and previews.
 
         Args:
-            items: JobResults, an Item, a sequence of Items, or an ItemCollection.
+            items: JobResults, STAC objects, or inline STAC JSON dictionaries
+                (optionally wrapped in QualifiedValue).
             roles: Show table assets matching any requested role. None shows
                 all assets; an empty iterable matches none. Job result rows
                 are not filtered by roles.

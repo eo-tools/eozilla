@@ -10,6 +10,27 @@ from types import FrameType
 from urllib.parse import unquote, urlsplit
 
 
+def _stac_label(value: object) -> str | None:
+    """Recognize inline STAC items and collections without optional imports."""
+    if not isinstance(value, dict):
+        return None
+    if (
+        value.get("type") == "Feature"
+        and isinstance(value.get("stac_version"), str)
+        and isinstance(value.get("assets"), dict)
+    ):
+        return "STAC Item"
+    features = value.get("features")
+    if (
+        value.get("type") == "FeatureCollection"
+        and isinstance(features, list)
+        and features
+        and all(_stac_label(feature) == "STAC Item" for feature in features)
+    ):
+        return "STAC ItemCollection"
+    return None
+
+
 def _styles() -> str:
     """Return the shared asset table and card styles."""
     return (

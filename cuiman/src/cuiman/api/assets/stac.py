@@ -12,7 +12,9 @@ from json import dumps
 from math import asinh, floor, log2, pi, radians, tan
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Sequence
 
-from .common import _copy_button, _render_link, _styles
+from gavicore.models.core import QualifiedValue
+
+from .common import _copy_button, _render_link, _stac_label, _styles
 
 if TYPE_CHECKING:
     from pystac import Asset, Item, ItemCollection
@@ -30,7 +32,7 @@ def as_stac_asset(value: Any) -> "Asset | None":
 
 
 async def _display_stac_assets(
-    items: "Item | Sequence[Item] | ItemCollection",
+    items: "QualifiedValue | dict[str, Any] | Item | Sequence[Item] | ItemCollection",
     *,
     expression: str | None,
     roles: str | Iterable[str] | None = None,
@@ -46,23 +48,42 @@ async def _display_stac_assets(
         None if roles is None else {roles} if isinstance(roles, str) else set(roles)
     )
 
-    if isinstance(items, Item):
-        item_list = [items]
+    value: Any = items
+    json_assets = False
+    if isinstance(value, QualifiedValue):
+        value = value.value
+        expression = f"{expression or 'result'}.value"
+    if isinstance(value, dict):
+        label = _stac_label(value)
+        if label is None:
+            raise TypeError("items must be a STAC Item or ItemCollection JSON document")
+        value = (
+            Item.from_dict(value)
+            if label == "STAC Item"
+            else ItemCollection.from_dict(value)
+        )
+        json_assets = True
+
+    if isinstance(value, Item):
+        item_list = [value]
 
         def expression_prefix_for(i):
             return f"{expression or 'item'}"
-    elif isinstance(items, ItemCollection):
-        item_list = list(items.items)
+    elif isinstance(value, ItemCollection):
+        item_list = list(value.items)
 
         def expression_prefix_for(i):
-            return f"{expression or 'item_collection'}.items[{i}]"
+            prefix = expression or "item_collection"
+            return (
+                f"{prefix}['features'][{i}]" if json_assets else f"{prefix}.items[{i}]"
+            )
     else:
         msg = (
             "items must be a pystac.Item or "
             "Sequence[pystac.Item] or pystac.ItemCollection"
         )
         try:
-            item_list = list(items)
+            item_list = list(value)
         except Exception as e:
             raise TypeError(msg) from e
 
@@ -85,6 +106,7 @@ async def _display_stac_assets(
                 role_filter=role_filter,
                 expression_prefix=expression_prefix_for(item_index),
                 previews_html=previews_html,
+                json_assets=json_assets,
             )
         )
 
@@ -95,6 +117,7 @@ def _render_item(
     role_filter: set[str] | None = None,
     expression_prefix: str = "",
     previews_html: str = "",
+    json_assets: bool = False,
 ):
     """Assemble the item table, geometry map, and optional asset previews."""
 
@@ -117,7 +140,9 @@ def _render_item(
         if role_filter is not None and not role_filter.intersection(asset.roles or []):
             continue
         asset_rows.append(
-            _render_asset(key, asset, expression_prefix=expression_prefix)
+            _render_asset(
+                key, asset, expression_prefix=expression_prefix, json_assets=json_assets
+            )
         )
 
     if asset_rows:
@@ -402,12 +427,17 @@ def _render_asset(
     asset: "Asset",
     *,
     expression_prefix: str = "",
+    json_assets: bool = False,
 ) -> str:
     """Render an escaped asset row with a file link, roles, and copy button."""
 
     file_html = _render_link(str(asset.href))
 
-    expression = f"{expression_prefix}.assets[{key!r}]"
+    expression = (
+        f"{expression_prefix}['assets'][{key!r}]"
+        if json_assets
+        else f"{expression_prefix}.assets[{key!r}]"
+    )
     title = escape(str(asset.title or ""))
     roles_html = escape(", ".join(asset.roles or []))
 

@@ -10,14 +10,14 @@ from typing import Any
 
 from gavicore.models.core import JobResults, Link, QualifiedValue
 
-from .common import _copy_button, _render_link, _styles
+from .common import _copy_button, _render_link, _stac_label, _styles
 
 
 def _render_value(value: Any) -> str:
     """Render JSON scalars directly and structured values as expandable JSON."""
     if isinstance(value, (dict, list)):
         return (
-            "<details><summary>JSON</summary>"
+            f"<details><summary>{_stac_label(value) or 'JSON'}</summary>"
             "<pre style='max-height:320px;overflow:auto;white-space:pre-wrap'>"
             f"{escape(dumps(value, ensure_ascii=False, indent=2))}</pre></details>"
         )
