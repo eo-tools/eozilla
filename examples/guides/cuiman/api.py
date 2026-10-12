@@ -59,7 +59,7 @@ def inspect_results(client: Client, job_id: str) -> JobResults | None:
     if job.status != JobStatus.successful:
         print("Job did not succeed. Inspect its status and message before retrying.")
         return None
-    results = client.get_job_results(job_id)
+    results = client.get_job_results(job_id, wait=False)
     print(results.model_dump_json(indent=2))
     return results
 

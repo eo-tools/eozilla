@@ -25,7 +25,7 @@ from .defaults import (
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
 )
 from .exceptions import ClientError
-from .opener import JobResultOpenContext
+from .opener import JobResultOpenContext, JobResultStatusError
 from .opener.opener import open_job_result
 
 JobUpdateHandler = Callable[[JobInfo], Awaitable[None] | None]
@@ -37,7 +37,8 @@ CLIENT_CLOSED_REQUEST_STATUS: Final[int] = 499
 class JobMonitor:
     """Monitor job status updates and request cancellation.
 
-    The generated asynchronous service clients accept a monitor through
+    ``Client.get_job_results()`` and ``AsyncClient.get_job_results()`` accept
+    a monitor directly. Generated service clients accept a monitor through
     [JobOptions][cuiman.api.jobs.JobOptions]. The monitor stores the latest
     observed job information, forwards updates to an optional handler, and lets
     callers request job cancellation.
@@ -98,22 +99,30 @@ class JobOptions:
     """Additional opener-specific options."""
 
 
-class _ClientLike(Protocol):
+class _JobClientLike(Protocol):
+    def get_job(self, job_id: str, **kwargs: Any) -> JobInfo: ...
+
+    def dismiss_job(self, job_id: str, **kwargs: Any) -> JobInfo: ...
+
+
+class _AsyncJobClientLike(Protocol):
+    async def get_job(self, job_id: str, **kwargs: Any) -> JobInfo: ...
+
+    async def dismiss_job(self, job_id: str, **kwargs: Any) -> JobInfo: ...
+
+
+class _ClientLike(_JobClientLike, Protocol):
     @property
     def config(self) -> ClientConfig: ...
 
     def execute_process(self, process_id: str, request: ProcessRequest) -> JobInfo: ...
 
-    def get_job(self, job_id: str) -> JobInfo: ...
-
-    def dismiss_job(self, job_id: str) -> JobInfo: ...
-
-    def get_job_results(self, job_id: str) -> JobResults: ...
+    def get_job_results(self, job_id: str, *, wait: bool = True) -> JobResults: ...
 
     def get_process(self, process_id: str) -> ProcessDescription: ...
 
 
-class _AsyncClientLike(Protocol):
+class _AsyncClientLike(_AsyncJobClientLike, Protocol):
     @property
     def config(self) -> ClientConfig: ...
 
@@ -121,11 +130,9 @@ class _AsyncClientLike(Protocol):
         self, process_id: str, request: ProcessRequest
     ) -> JobInfo: ...
 
-    async def get_job(self, job_id: str) -> JobInfo: ...
-
-    async def dismiss_job(self, job_id: str) -> JobInfo: ...
-
-    async def get_job_results(self, job_id: str) -> JobResults: ...
+    async def get_job_results(
+        self, job_id: str, *, wait: bool = True
+    ) -> JobResults: ...
 
     async def get_process(self, process_id: str) -> ProcessDescription: ...
 
@@ -140,7 +147,6 @@ def execute_and_open_result(
     """Execute a process, wait for completion, and open its result."""
     options = job_options or JobOptions()
     job_info = client.execute_process(process_id, request)
-    _monitor_update_sync(options.monitor, job_info)
     job_info = _wait_for_job(client, job_info, options)
     return _open_finished_job_result(client, job_info, options)
 
@@ -155,7 +161,6 @@ async def async_execute_and_open_result(
     """Execute a process asynchronously, wait for completion, and open its result."""
     options = job_options or JobOptions()
     job_info = await client.execute_process(process_id, request)
-    await _monitor_update_async(options.monitor, job_info)
     job_info = await _async_wait_for_job(client, job_info, options)
     return await _async_open_finished_job_result(client, job_info, options)
 
@@ -163,43 +168,88 @@ async def async_execute_and_open_result(
 def _wait_for_job(
     client: _ClientLike, job_info: JobInfo, options: JobOptions
 ) -> JobInfo:
-    deadline = time.monotonic() + options.timeout
-    while job_info.status in (JobStatus.accepted, JobStatus.running):
-        if options.monitor and options.monitor.cancellation_requested:
-            dismissed_job_info = client.dismiss_job(job_info.jobID)
-            _monitor_update_sync(options.monitor, dismissed_job_info)
-            raise _job_cancelled_error(dismissed_job_info)
-        if time.monotonic() >= deadline:
-            raise _job_timeout_error(job_info, options.timeout)
-        time.sleep(options.poll_interval)
-        job_info = client.get_job(job_info.jobID)
-        _monitor_update_sync(options.monitor, job_info)
-    _ensure_successful_job(job_info)
-    return job_info
+    try:
+        return wait_for_job(client, job_info, options)
+    except JobResultStatusError as error:
+        raise _job_status_error(error.job_info) from error
+    except _JobTimeoutError as error:
+        raise _job_timeout_error(error.job_info, options.timeout) from error
 
 
 async def _async_wait_for_job(
     client: _AsyncClientLike, job_info: JobInfo, options: JobOptions
 ) -> JobInfo:
-    deadline = asyncio.get_running_loop().time() + options.timeout
+    try:
+        return await async_wait_for_job(client, job_info, options)
+    except JobResultStatusError as error:
+        raise _job_status_error(error.job_info) from error
+    except _JobTimeoutError as error:
+        raise _job_timeout_error(error.job_info, options.timeout) from error
+
+
+def wait_for_job(
+    client: _JobClientLike,
+    job_info: JobInfo,
+    options: JobOptions,
+    **kwargs: Any,
+) -> JobInfo:
+    """Poll an existing job until successful, reporting updates to its monitor.
+
+    Raise JobResultStatusError for unsuccessful completion or TimeoutError when
+    the deadline expires. A timeout leaves the remote job running. Transport
+    keyword arguments are forwarded to status and explicit cancellation calls.
+    """
+    deadline = time.monotonic() + options.timeout
+    _monitor_update_sync(options.monitor, job_info)
     while job_info.status in (JobStatus.accepted, JobStatus.running):
         if options.monitor and options.monitor.cancellation_requested:
-            dismissed_job_info = await client.dismiss_job(job_info.jobID)
+            dismissed_job_info = client.dismiss_job(job_info.jobID, **kwargs)
+            _monitor_update_sync(options.monitor, dismissed_job_info)
+            raise _job_cancelled_error(dismissed_job_info)
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise _JobTimeoutError(job_info, options.timeout)
+        time.sleep(min(options.poll_interval, remaining))
+        if time.monotonic() >= deadline:
+            raise _JobTimeoutError(job_info, options.timeout)
+        job_info = client.get_job(job_info.jobID, **kwargs)
+        _monitor_update_sync(options.monitor, job_info)
+    if job_info.status != JobStatus.successful:
+        raise JobResultStatusError(job_info)
+    return job_info
+
+
+async def async_wait_for_job(
+    client: _AsyncJobClientLike,
+    job_info: JobInfo,
+    options: JobOptions,
+    **kwargs: Any,
+) -> JobInfo:
+    """Asynchronously poll a job with the same behavior as wait_for_job."""
+    deadline = asyncio.get_running_loop().time() + options.timeout
+    await _monitor_update_async(options.monitor, job_info)
+    while job_info.status in (JobStatus.accepted, JobStatus.running):
+        if options.monitor and options.monitor.cancellation_requested:
+            dismissed_job_info = await client.dismiss_job(job_info.jobID, **kwargs)
             await _monitor_update_async(options.monitor, dismissed_job_info)
             raise _job_cancelled_error(dismissed_job_info)
+        remaining = deadline - asyncio.get_running_loop().time()
+        if remaining <= 0:
+            raise _JobTimeoutError(job_info, options.timeout)
+        await asyncio.sleep(min(options.poll_interval, remaining))
         if asyncio.get_running_loop().time() >= deadline:
-            raise _job_timeout_error(job_info, options.timeout)
-        await asyncio.sleep(options.poll_interval)
-        job_info = await client.get_job(job_info.jobID)
+            raise _JobTimeoutError(job_info, options.timeout)
+        job_info = await client.get_job(job_info.jobID, **kwargs)
         await _monitor_update_async(options.monitor, job_info)
-    _ensure_successful_job(job_info)
+    if job_info.status != JobStatus.successful:
+        raise JobResultStatusError(job_info)
     return job_info
 
 
 def _open_finished_job_result(
     client: _ClientLike, job_info: JobInfo, options: JobOptions
 ) -> Any:
-    job_results = client.get_job_results(job_info.jobID)
+    job_results = client.get_job_results(job_info.jobID, wait=False)
     process_description = (
         client.get_process(job_info.processID) if job_info.processID else None
     )
@@ -211,7 +261,7 @@ def _open_finished_job_result(
 async def _async_open_finished_job_result(
     client: _AsyncClientLike, job_info: JobInfo, options: JobOptions
 ) -> Any:
-    job_results = await client.get_job_results(job_info.jobID)
+    job_results = await client.get_job_results(job_info.jobID, wait=False)
     process_description = (
         (await client.get_process(job_info.processID)) if job_info.processID else None
     )
@@ -249,10 +299,15 @@ async def _monitor_update_async(monitor: JobMonitor | None, job_info: JobInfo) -
         await monitor.update(job_info)
 
 
-def _ensure_successful_job(job_info: JobInfo) -> None:
-    if job_info.status == JobStatus.successful:
-        return
-    raise _job_status_error(job_info)
+class _JobTimeoutError(TimeoutError):
+    """Retain the latest job information for generated-client error details."""
+
+    def __init__(self, job_info: JobInfo, timeout: float):
+        super().__init__(
+            f"Cannot open result of job #{job_info.jobID}; "
+            f"it did not finish within {timeout} seconds"
+        )
+        self.job_info = job_info
 
 
 def _job_status_error(job_info: JobInfo) -> ClientError:

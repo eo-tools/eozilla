@@ -4,7 +4,6 @@
 
 import asyncio
 import threading
-import time
 import warnings
 from abc import abstractmethod
 from typing import Any
@@ -13,7 +12,7 @@ import httpx2
 from authlib.integrations.base_client.errors import InvalidTokenError
 from authlib.integrations.httpx_client import OAuth2Client
 
-from gavicore.models.core import JobInfo, JobResults, JobStatus, ProcessDescription
+from gavicore.models.core import JobInfo, JobResults, ProcessDescription
 from gavicore.util.request import ExecutionRequest
 from gavicore.util.runsync import run_sync
 
@@ -26,7 +25,8 @@ from .defaults import (
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
 )
 from .exceptions import ClientError, ClientWarning
-from .opener import JobResultOpenContext, JobResultStatusError
+from .jobs import JobOptions, wait_for_job
+from .opener import JobResultOpenContext
 from .opener.opener import open_job_result
 from .transport import Transport
 
@@ -169,6 +169,10 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
         """Will be overridden by the actual client class."""
 
     @abstractmethod
+    def dismiss_job(self, job_id: str, **kwargs: Any) -> JobInfo:
+        """Will be overridden by the actual client class."""
+
+    @abstractmethod
     def get_job_results(self, job_id: str, **kwargs: Any) -> JobResults:
         """Will be overridden by the actual client class."""
 
@@ -234,20 +238,12 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
             JobResultStatusError: if the job failed or was canceled
             TimeoutError: if the job does not finish within the timeout
         """
-        deadline = time.time() + timeout
-        while True:
-            job_info = self.get_job(job_id)
-            if job_info.status not in (JobStatus.accepted, JobStatus.running):
-                break
-            if time.time() >= deadline:
-                raise TimeoutError(
-                    f"Cannot open result of job #{job_id}; "
-                    f"it did not finish within {timeout} seconds"
-                )
-            time.sleep(poll_interval)
-        if job_info.status != JobStatus.successful:
-            raise JobResultStatusError(job_info)
-        job_results = self.get_job_results(job_id)
+        job_info = wait_for_job(
+            self,
+            self.get_job(job_id),
+            JobOptions(timeout=timeout, poll_interval=poll_interval),
+        )
+        job_results = self.get_job_results(job_id, wait=False)
         process_id = job_info.processID
         process_description: ProcessDescription | None = None
         if process_id:

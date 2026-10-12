@@ -3,6 +3,7 @@
 #  https://opensource.org/license/apache-2-0.
 
 from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest.mock import patch
 
 import pytest
 
@@ -52,20 +53,21 @@ class FakeClient:
         assert request.inputs == {"bbox": [1, 2, 3, 4]}
         return mk_job_info(JobStatus.accepted)
 
-    def get_job(self, job_id: str) -> JobInfo:
+    def get_job(self, job_id: str, **kwargs) -> JobInfo:
         assert job_id == "job_1"
         status = self._statuses.pop(0)
         if isinstance(status, tuple):
             return mk_job_info(status[0], status[1])
         return mk_job_info(status)
 
-    def dismiss_job(self, job_id: str) -> JobInfo:
+    def dismiss_job(self, job_id: str, **kwargs) -> JobInfo:
         assert job_id == "job_1"
         self.dismissed = True
         return mk_job_info(JobStatus.dismissed, "cancelled by user")
 
-    def get_job_results(self, job_id: str) -> JobResults:
+    def get_job_results(self, job_id: str, *, wait: bool = True) -> JobResults:
         assert job_id == "job_1"
+        assert not wait
         return mk_job_results()
 
     def get_process(self, process_id: str) -> ProcessDescription:
@@ -79,14 +81,14 @@ class AsyncFakeClient(FakeClient):
     ) -> JobInfo:
         return super().execute_process(process_id, request)
 
-    async def get_job(self, job_id: str) -> JobInfo:
+    async def get_job(self, job_id: str, **kwargs) -> JobInfo:
         return super().get_job(job_id)
 
-    async def dismiss_job(self, job_id: str) -> JobInfo:
+    async def dismiss_job(self, job_id: str, **kwargs) -> JobInfo:
         return super().dismiss_job(job_id)
 
-    async def get_job_results(self, job_id: str) -> JobResults:
-        return super().get_job_results(job_id)
+    async def get_job_results(self, job_id: str, *, wait: bool = True) -> JobResults:
+        return super().get_job_results(job_id, wait=wait)
 
     async def get_process(self, process_id: str) -> ProcessDescription:
         return super().get_process(process_id)
@@ -172,6 +174,22 @@ class ExecuteAndOpenResultTest(TestCase):
                 job_options=JobOptions(poll_interval=0, timeout=0),
             )
 
+    def test_timeout_preserves_latest_job_message(self):
+        client = FakeClient((JobStatus.running, "still processing"))
+        with (
+            patch("cuiman.api.jobs.time.monotonic", side_effect=[0, 0, 0, 1]),
+            patch("cuiman.api.jobs.time.sleep"),
+            pytest.raises(ClientError) as error,
+        ):
+            execute_and_open_result(
+                client,
+                "process_1",
+                ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
+                job_options=JobOptions(poll_interval=0, timeout=0.5),
+            )
+        self.assertEqual("still processing", error.value.api_error.detail)
+        self.assertFalse(client.dismissed)
+
     def test_successful_job_without_monitor(self):
         client = FakeClient(JobStatus.running, JobStatus.successful)
         result = execute_and_open_result(
@@ -184,6 +202,17 @@ class ExecuteAndOpenResultTest(TestCase):
 
 
 class AsyncExecuteAndOpenResultTest(IsolatedAsyncioTestCase):
+    async def test_failed_job_raises_client_error(self):
+        client = AsyncFakeClient(JobStatus.running, (JobStatus.failed, "out of memory"))
+        with pytest.raises(ClientError, match="job status is 'failed'") as error:
+            await async_execute_and_open_result(
+                client,
+                "process_1",
+                ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
+                job_options=JobOptions(poll_interval=0),
+            )
+        self.assertEqual("urn:eozilla:job-failed", error.value.api_error.type)
+
     async def test_monitor_receives_updates(self):
         updates: list[JobStatus] = []
 

@@ -17,7 +17,8 @@ the [Eozilla App](guides/app.md).
 The usual workflow is to list the service's processes with `get_processes()`,
 inspect one with `get_process(process_id)`, and run it with `execute_process()`.
 Use `get_job(job_id)` to check a job's status and `get_job_results(job_id)` to
-retrieve its results. The [Python API guide](guides/api.md)
+wait for completion and retrieve its results. Pass `wait=False` to request
+results immediately. The [Python API guide](guides/api.md)
 walks through this workflow.
 
 ## Create a Python client

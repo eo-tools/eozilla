@@ -34,7 +34,12 @@ from .async_client_mixin import AsyncClientMixin
 from .client_mixin import ClientMixin
 from .client_app_mixin import ClientAppMixin
 from .config import ClientConfig
+from .defaults import (
+    DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
+    DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
+)
 from .ishell import has_ishell as _  # noqa F401
+from .jobs import JobMonitor, JobOptions, async_wait_for_job, wait_for_job
 from .transport import {{ uc_async }}Transport, TransportArgs
 
 
@@ -193,7 +198,24 @@ def generate_function_code(
         else:
             param_kwargs.append(f"request: Optional[{request_type}] = None")
 
-    param_list = ", ".join([*param_args, *param_kwargs, "**kwargs: Any"])
+    is_job_results = camel_to_snake(method.operationId) == "get_job_results"
+    if is_job_results:
+        param_kwargs.extend(
+            [
+                "wait: bool = True",
+                "timeout: float = DEFAULT_OPEN_JOB_RESULT_TIMEOUT",
+                "poll_interval: float = DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL",
+                "monitor: JobMonitor | None = None",
+            ]
+        )
+    param_list = ", ".join(
+        [
+            *param_args,
+            *(["*"] if is_job_results else []),
+            *param_kwargs,
+            "**kwargs: Any",
+        ]
+    )
     path_param_dict = "{" + ", ".join(path_param_mappings) + "}"
     query_param_dict = "{" + ", ".join(query_param_mappings) + "}"
 
@@ -223,11 +245,24 @@ def generate_function_code(
     ]
     transport_args_list = ", ".join(a for a in transport_args if a is not None)
 
+    wait_code = ""
+    if is_job_results:
+        await_ = "await " if is_async else ""
+        wait_code = (
+            f"{2 * C_TAB}if wait:\n"
+            f"{3 * C_TAB}{await_}{'async_' if is_async else ''}wait_for_job(\n"
+            f"{4 * C_TAB}self, {await_}self.get_job(job_id, **kwargs),\n"
+            f"{4 * C_TAB}JobOptions(timeout=timeout, poll_interval=poll_interval, monitor=monitor),\n"
+            f"{4 * C_TAB}**kwargs,\n"
+            f"{3 * C_TAB})\n"
+        )
+
     return (
         f"{C_TAB}{'async ' if is_async else ''}"
         f"def {camel_to_snake(method.operationId)}({param_list})"
         f" -> {return_type_union}:\n"
         f"{function_doc}"
+        f"{wait_code}"
         f"{C_TAB}{C_TAB}transport = self._get_transport()\n"
         f"{C_TAB}{C_TAB}return "
         f"{'await ' if is_async else ''}"
@@ -239,6 +274,16 @@ def generate_function_code(
 
 def generate_function_doc(method: OAMethod) -> str:
     doc_lines = method.description.split("\n") if method.description else []
+    is_job_results = camel_to_snake(method.operationId) == "get_job_results"
+    if is_job_results:
+        doc_lines.extend(
+            [
+                "",
+                "Wait for successful completion by default, then retrieve JobResults.",
+                "Pass wait=False to request immediately (the previous behavior).",
+                "Retrieval neither opens outputs nor downloads linked data.",
+            ]
+        )
 
     if method.parameters:
         if doc_lines and doc_lines[-1] != "":
@@ -254,6 +299,18 @@ def generate_function_doc(method: OAMethod) -> str:
                 )
             else:
                 doc_lines.append(f"{D_TAB}{param_name}:")
+        if is_job_results:
+            doc_lines.extend(
+                [
+                    f"{D_TAB}wait: Poll accepted or running jobs until completion.",
+                    f"{D_TAB}timeout: Maximum wait in seconds; defaults to 1800 (30 minutes).",
+                    f"{D_TAB}{D_TAB}On timeout the remote job keeps running. Ignored if wait=False.",
+                    f"{D_TAB}poll_interval: Seconds between polls; defaults to 0.5.",
+                    f"{D_TAB}{D_TAB}Ignored if wait=False.",
+                    f"{D_TAB}monitor: Optional JobMonitor for status/progress updates and",
+                    f"{D_TAB}{D_TAB}explicit cancellation. Ignored if wait=False.",
+                ]
+            )
         doc_lines.append(f"{D_TAB}kwargs: Optional keyword arguments that may be")
         doc_lines.append(f"{D_TAB}{D_TAB}used by the underlying transport.")
 
@@ -305,6 +362,13 @@ def generate_function_doc(method: OAMethod) -> str:
         append_return_types(return_types, doc_lines)
 
     append_error_types(error_types, doc_lines)
+    if is_job_results:
+        doc_lines.extend(
+            [
+                f"{D_TAB}JobResultStatusError: If the job fails or is dismissed while waiting.",
+                f"{D_TAB}TimeoutError: If the job does not finish within the timeout.",
+            ]
+        )
 
     wrapped_doc_lines = []
     for line in doc_lines:

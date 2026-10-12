@@ -60,7 +60,7 @@ def test_api_session_uses_submitted_id_and_closes(monkeypatch, client, status):
     )
     client.get_job.assert_called_once_with("new-job-42")
     if status == api.JobStatus.successful:
-        client.get_job_results.assert_called_once_with("new-job-42")
+        client.get_job_results.assert_called_once_with("new-job-42", wait=False)
     else:
         client.get_job_results.assert_not_called()
     client.close.assert_called_once()
@@ -300,7 +300,9 @@ def test_openers_use_real_client_and_restore_registry(
     monkeypatch.setattr(
         client, "get_job", lambda _: JobInfo(jobID="existing-job", status="successful")
     )
-    monkeypatch.setattr(client, "get_job_results", lambda _: scene_context.job_results)
+    monkeypatch.setattr(
+        client, "get_job_results", lambda _, **kwargs: scene_context.job_results
+    )
     try:
         open_fn = openers.open_with_custom_opener if custom else openers.open_scene
         dataset = open_fn(client, "existing-job")

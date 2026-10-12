@@ -15,12 +15,7 @@ class JobResultOpenError(Exception):
 
 
 class JobResultStatusError(JobResultOpenError):
-    """A job result could not be opened.
-
-    This error is potentially raised by the
-    [JobResultOpenerRegistry.open_job_result()][JobResultOpenerRegistry.open_result]
-    method.
-    """
+    """A job failed or was dismissed before its results could be retrieved or opened."""
 
     def __init__(self, job_info: JobInfo):
         message = (

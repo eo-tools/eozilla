@@ -1,6 +1,8 @@
 # Job result openers
 
-`client.get_job_results(job_id)` retrieves result values and references.
+`client.get_job_results(job_id)` waits for successful completion and retrieves
+result values and references without opening outputs or downloading linked
+data. Pass `wait=False` to request immediately, as in earlier versions.
 `client.open_job_result(job_id)` waits for completion and opens a selected
 output using a registered opener. Cuiman includes Pillow, xarray, pandas, and
 GeoPandas openers; each requires its corresponding optional library. The Pillow
@@ -41,8 +43,8 @@ client process cannot read.
 --8<-- "examples/guides/cuiman/openers.py:submit-call"
 ```
 
-Retain the returned `job_id`. Once its status is `successful`,
-`client.get_job_results(job_id)` shows a link to the dataset with media type
+Retain the returned `job_id`. `client.get_job_results(job_id)` waits for success
+and shows a link to the dataset with media type
 `application/zarr`.
 
 ## Open with a built-in opener

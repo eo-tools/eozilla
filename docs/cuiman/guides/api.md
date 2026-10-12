@@ -63,6 +63,24 @@ The request is a `ProcessRequest`; a request dictionary is also accepted by
 
 ## Monitor and retrieve results
 
+For the usual submit-then-retrieve workflow, request results directly:
+
+```python
+results = client.get_job_results(job_id, timeout=60, poll_interval=0.5)
+print(results.model_dump_json(indent=2))
+```
+
+The call waits while the job is accepted or running and returns `JobResults`
+when it succeeds. It does not open outputs or download linked data. Failed or
+dismissed jobs raise `JobResultStatusError`; expiration raises `TimeoutError`
+and leaves the job running. `AsyncClient` supports the same options with
+`await client.get_job_results(...)`. An optional `monitor=JobMonitor(...)`
+receives status and progress updates; see the [API Reference](../api.md).
+
+For immediate retrieval, use `client.get_job_results(job_id, wait=False)`.
+This preserves the behavior of earlier versions. The inspection helper below
+checks once and uses `wait=False` after observing success:
+
 ```python
 --8<-- "examples/guides/cuiman/api.py:results"
 

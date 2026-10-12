@@ -199,7 +199,9 @@ class ClientTest(TestCase):
                 },
             ),
             (
-                lambda: self.client.get_job_results("job_12", timeout=50),
+                lambda: self.client.get_job_results(
+                    "job_12", wait=False, headers={"X-Test": "results"}
+                ),
                 JobResults,
                 {
                     "path": "/jobs/{jobId}/results",
@@ -207,7 +209,7 @@ class ClientTest(TestCase):
                     "path_params": {"jobId": "job_12"},
                     "return_types": {"200": JobResults},
                     "error_types": {"404": ApiError, "500": ApiError},
-                    "extra_kwargs": {"timeout": 50},
+                    "extra_kwargs": {"headers": {"X-Test": "results"}},
                 },
             ),
         ]
@@ -290,7 +292,7 @@ class ClientTest(TestCase):
         self.assertIsInstance(result, JobInfo)
 
     def test_get_job_results(self):
-        result = self.client.get_job_results("job_12")
+        result = self.client.get_job_results("job_12", wait=False)
         self.assertIsInstance(result, JobResults)
 
     def test_close(self):

@@ -551,7 +551,7 @@ def new_cli(
         from .output import get_renderer, output
 
         with use_client(ctx, config_file) as client:
-            job_results = client.get_job_results(job_id)
+            job_results = client.get_job_results(job_id, wait=False)
         output(get_renderer(output_format).render_job_results(job_results))
 
     @t.command()

@@ -11,7 +11,7 @@ from typing import Any
 import httpx2
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 
-from gavicore.models.core import JobInfo, JobResults, JobStatus, ProcessDescription
+from gavicore.models.core import JobInfo, JobResults, ProcessDescription
 from gavicore.util.request import ExecutionRequest
 
 from .auth.config import OidcAuthConfig
@@ -23,7 +23,8 @@ from .defaults import (
     DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
 )
 from .exceptions import ClientError, ClientWarning
-from .opener import JobResultOpenContext, JobResultStatusError
+from .jobs import JobOptions, async_wait_for_job
+from .opener import JobResultOpenContext
 from .opener.opener import open_job_result
 from .transport import AsyncTransport
 
@@ -214,6 +215,10 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
         """Will be overridden by the actual client class."""
 
     @abstractmethod
+    async def dismiss_job(self, job_id: str, **kwargs: Any) -> JobInfo:
+        """Will be overridden by the actual client class."""
+
+    @abstractmethod
     async def get_job_results(self, job_id: str, **kwargs: Any) -> JobResults:
         """Will be overridden by the actual client class."""
 
@@ -279,20 +284,12 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
             JobResultStatusError: if the job failed or was canceled
             TimeoutError: if the job does not finish within the timeout
         """
-        deadline = asyncio.get_running_loop().time() + timeout
-        while True:
-            job_info = await self.get_job(job_id)
-            if job_info.status not in (JobStatus.accepted, JobStatus.running):
-                break
-            if asyncio.get_running_loop().time() >= deadline:
-                raise TimeoutError(
-                    f"Cannot open result of job #{job_id}; "
-                    f"it did not finish within {timeout} seconds"
-                )
-            await asyncio.sleep(poll_interval)
-        if job_info.status != JobStatus.successful:
-            raise JobResultStatusError(job_info)
-        job_results = await self.get_job_results(job_id)
+        job_info = await async_wait_for_job(
+            self,
+            await self.get_job(job_id),
+            JobOptions(timeout=timeout, poll_interval=poll_interval),
+        )
+        job_results = await self.get_job_results(job_id, wait=False)
         process_id = job_info.processID
         process_description: ProcessDescription | None = None
         if process_id:
