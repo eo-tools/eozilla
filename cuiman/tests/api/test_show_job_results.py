@@ -3,6 +3,7 @@
 # https://opensource.org/license/apache-2-0.
 
 import re
+import subprocess
 import sys
 from copy import deepcopy
 from datetime import date, datetime, timezone
@@ -18,6 +19,47 @@ from cuiman.api.assets import display_assets
 from cuiman.api.assets.common import _stac_label
 from cuiman.api.assets.job_results import _render_job_results
 from gavicore.models.core import JobResults, Link, QualifiedValue
+
+
+def test_notebook_formatter_returns_html_and_json_without_displaying(monkeypatch):
+    from IPython.core.formatters import DisplayFormatter
+
+    display = MagicMock()
+    monkeypatch.setattr("IPython.display.display", display)
+    results = JobResults(root={"count": 2, "optional": None})
+    data, metadata = DisplayFormatter().format(results)
+    assert "<td>count</td>" in data["text/html"]
+    assert "<td>null</td>" in data["text/html"]
+    assert data["application/json"] == {"count": 2, "optional": None}
+    assert metadata["application/json"] == {"root": "JobResults object:"}
+    assert data["text/html"] == _render_job_results(results).data
+    display.assert_not_called()
+
+
+@pytest.mark.parametrize("root", [None, {}])
+def test_empty_results_have_html_representation(root):
+    results = JobResults(root=root)
+    assert "No outputs" in results._repr_html_()
+
+
+def test_html_representation_does_not_import_notebook_or_stac_dependencies():
+    completed = subprocess.run(  # noqa: S603
+        [
+            sys.executable,
+            "-c",
+            "import sys; from cuiman.api import Client; "
+            "sys.modules['IPython'] = None; sys.modules['IPython.display'] = None; "
+            "sys.modules['pystac'] = None; "
+            "from gavicore.models.core import JobResults; "
+            "result = JobResults(root={'value': 42}); "
+            "assert '<td>42</td>' in result._repr_html_(); "
+            "assert result._repr_json_()[0] == {'value': 42}",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
 
 
 @pytest.mark.parametrize("root", [None, {}])

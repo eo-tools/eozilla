@@ -91,6 +91,19 @@ client.show_assets(results.root["item"])
 
 For an `AsyncClient`, await the method: `await client.show_assets(items)`.
 
+After importing a Cuiman client, displaying a `JobResults` object as a notebook
+cell's last expression automatically renders the same output table:
+
+```python
+results = client.get_job_results(job_id)
+results
+```
+
+This HTML representation does not fetch data or open previews. The existing
+JSON representation remains available. Automatic display uses `results` as a
+placeholder in copied expressions; use `client.show_assets(results)` to capture
+the actual argument expression where caller source is available.
+
 For JobResults, the table shows one row per output with its name, inline/link
 kind, media type when supplied, and value or file link. Objects and arrays can
 be expanded as JSON; recognized inline STAC metadata is labeled **STAC Item**

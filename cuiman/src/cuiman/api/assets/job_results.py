@@ -28,6 +28,11 @@ def _render_job_results(results: JobResults, *, expression: str | None = None):
     """Build an output table with safe links and copyable root access expressions."""
     from IPython.display import HTML
 
+    return HTML(_job_results_html(results, expression=expression))
+
+
+def _job_results_html(results: JobResults, *, expression: str | None = None) -> str:
+    """Return the shared output table HTML without display or optional imports."""
     rows = []
     json_values = results.model_dump(mode="json", by_alias=True) or {}
     for name, result in (results.root or {}).items():
@@ -58,7 +63,7 @@ def _render_job_results(results: JobResults, *, expression: str | None = None):
         if rows
         else "<p class='cuiman-assets-empty'><em>No outputs</em></p>"
     )
-    return HTML(
+    return (
         _styles() + "<section class='cuiman-assets cuiman-assets-card' "
         "style='border:1px solid #8884;overflow:hidden;margin:12px 0 24px'>"
         "<header style='padding:16px 20px 8px'><strong>Job results</strong></header>"
