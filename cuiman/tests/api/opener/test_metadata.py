@@ -3,6 +3,8 @@ import gc
 import json
 import os
 import threading
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import httpx2
@@ -107,6 +109,13 @@ def test_native_io_factory_is_runtime_only():
         stac_io_factory = staticmethod(lambda config: pystac.StacIO.default())
 
     assert "stac_io_factory" not in Config().to_file_dict()
+
+
+def test_windows_remote_file_uri(monkeypatch):
+    monkeypatch.setattr("cuiman.api.opener.impl._paths.os", SimpleNamespace(name="nt"))
+    assert _local_path("file://server/share/item%20one.json") == Path(
+        "//server/share/item one.json"
+    )
 
 
 def test_transport_defaults_and_job_context_source_facts():

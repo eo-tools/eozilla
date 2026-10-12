@@ -135,6 +135,18 @@ def test_composition_rejects_invalid_registration():
 
 
 @pytest.mark.asyncio
+async def test_composed_opener_reports_missing_stac_dependency():
+    async def transform(stac, ctx):
+        return stac
+
+    Composed = compose_stac_opener(StacJobResultOpener, transformers=(transform,))
+    ctx = JobResultOpenContext(config=ClientConfig(), value=_document())
+    with patch("cuiman.api.opener.impl.base.find_spec", return_value=None):
+        with pytest.raises(JobResultOpenError, match=r"cuiman\[stac\]"):
+            await open_job_result(ctx, Composed)
+
+
+@pytest.mark.asyncio
 async def test_async_predicate_and_loaded_link_copy_without_fetching():
     async def accepts(ctx):
         return ctx.output_name == "item"
