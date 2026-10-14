@@ -15,6 +15,7 @@ The initial launch URL deliberately has only one Cuiman-specific value::
         -> POST ./_cuiman/launch
         -> HttpOnly session cookie
         -> index.html?cuiman=1
+        -> GET ./config.json (session-authenticated branding)
         -> requests to ./_cuiman/service/<processing-api-path>
 
 The code is short-lived and consumed once.  The cookie selects an in-memory
@@ -36,6 +37,9 @@ import remotestate as rs
 from fastapi import FastAPI, HTTPException, Request, Response, status
 
 from cuiman.api.config import ClientConfig
+
+CONFIG_ENDPOINT = "/config.json"
+"""Session-authenticated runtime configuration endpoint for the browser app."""
 
 LAUNCH_QUERY_PARAM = "launch"
 """Name of the one-shot launch-code query parameter."""
@@ -105,6 +109,11 @@ class LaunchedAppService(rs.Service[Any]):
         if not client_config.api_url:
             raise ValueError("Required setting 'api_url' not configured")
         self._client_config = client_config
+        self._app_config = {
+            "branding": client_config.branding.model_dump(
+                mode="json", exclude_none=True
+            )
+        }
         self._launch_codes: dict[str, _LaunchCode] = {}
         self._sessions: set[str] = set()
         self._prepare = prepare
@@ -136,6 +145,8 @@ class LaunchedAppService(rs.Service[Any]):
             """Prevent the launch code from being propagated as a referrer."""
             response = await call_next(request)
             response.headers["Referrer-Policy"] = "no-referrer"
+            if getattr(request.scope.get("route"), "path", None) == CONFIG_ENDPOINT:
+                response.headers["Cache-Control"] = "no-store"
             return response
 
         @app.post(LAUNCH_ENDPOINT, status_code=status.HTTP_204_NO_CONTENT)
@@ -164,6 +175,12 @@ class LaunchedAppService(rs.Service[Any]):
                 secure=_get_request_scheme(request) == "https",
                 path="/",
             )
+
+        @app.get(CONFIG_ENDPOINT)
+        async def get_app_config(request: Request) -> dict[str, Any]:
+            """Return branding for an established session, including after reload."""
+            self._require_session(request)
+            return self._app_config
 
         @app.api_route(
             f"{SERVICE_PROXY_ENDPOINT}/{{path:path}}",

@@ -39,6 +39,7 @@ from gavicore.models.core import InputDescription, ProcessDescription, ProcessSu
 from .auth import AuthConfig, AuthConfigBase, NoAuthConfig
 from .auth.config import has_credentials
 from .auth.secret_store import load_auth_secrets, save_auth_secrets
+from .branding import AppBranding
 from .defaults import DEFAULT_API_URL
 from .opener import JobResultOpener, JobResultOpenerRegistry
 
@@ -124,6 +125,14 @@ class ClientConfig(BaseSettings):
     containing ``auth_type`` replaces previous auth settings. A dictionary
     without ``auth_type`` merges into the selected configuration. Matching
     keyring credentials may fill missing secrets after resolution.
+    """
+
+    branding: AppBranding = Field(default_factory=AppBranding)
+    """Browser app branding served through session-authenticated ``config.json``.
+
+    Supports the same settings sources as other configuration fields. Omitted
+    branding fields use browser defaults. Use ``AppBranding.from_file(path)``
+    to load a separate JSON branding file explicitly; no file is read implicitly.
     """
 
     _source_path: Path | None = PrivateAttr(default=None)
@@ -406,7 +415,10 @@ class ClientConfig(BaseSettings):
             value = _input_values(type(default), value)
             default = default.model_dump(mode="python", round_trip=True)
         if isinstance(default, dict):
-            _update_if_not_none(default, value)
+            if info.field_name == "branding":
+                _update_branding(default, value)
+            else:
+                _update_if_not_none(default, value)
             return default
         return value
 
@@ -458,6 +470,8 @@ class ClientConfig(BaseSettings):
             exclude_none=True,
         )
         config_dict["auth"] = self.auth.to_public_dict()
+        if not config_dict.get("branding"):
+            config_dict.pop("branding", None)
         return config_dict
 
     # noinspection PyMethodParameters
@@ -576,6 +590,17 @@ def _update_config(target: dict[str, Any], updates: dict[str, Any]) -> None:
     if isinstance(auth_config, dict) and "auth_type" in auth_config:
         target["auth"] = deepcopy(auth_config)
         updates = {key: value for key, value in updates.items() if key != "auth"}
+    branding = updates.get("branding")
+    if isinstance(branding, dict) and isinstance(target.get("branding"), dict):
+        _update_branding(target["branding"], branding)
+        updates = {key: value for key, value in updates.items() if key != "branding"}
+    _update_if_not_none(target, updates)
+
+
+def _update_branding(target: dict[str, Any], updates: dict[str, Any]) -> None:
+    """Merge branding fields while replacing the emoji-or-image icon as a whole."""
+    if updates.get("icon") is not None:
+        target["icon"] = deepcopy(updates["icon"])
     _update_if_not_none(target, updates)
 
 

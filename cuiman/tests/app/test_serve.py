@@ -8,12 +8,14 @@ from dataclasses import dataclass
 from importlib.resources import files
 from unittest.mock import Mock
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.testclient import TestClient
 from IPython import display as ipython_display
 
 from cuiman.api.auth import TokenAuthConfig
 from cuiman.api.config import ClientConfig, _set_auth_secret_persistor
-from cuiman.app import App
-from cuiman.app.launch import LaunchedAppService
+from cuiman.app import App, AppBranding
+from cuiman.app.launch import CONFIG_ENDPOINT, LAUNCH_ENDPOINT, LaunchedAppService
 
 serve_module = importlib.import_module("cuiman.app.serve")
 
@@ -74,14 +76,35 @@ def test_serve_returns_server_without_display(monkeypatch):
         }
     ]
     assert isinstance(calls["app_service"], LaunchedAppService)
-    assert [route.path for route in calls["app"].routes][-3:] == [
+    assert [route.path for route in calls["app"].routes][-4:] == [
         "/_cuiman/launch",
+        "/config.json",
         "/_cuiman/service",
         "/_cuiman/service/{path:path}",
     ]
     assert calls["url"] == []
     assert calls["browser_open"] == []
     assert calls["display"] == []
+
+
+def test_serve_exposes_branding_before_the_static_app_mount(monkeypatch, tmp_path):
+    calls = install_serve_fakes(monkeypatch)
+    # A deployment file must not shadow the authenticated runtime endpoint.
+    (tmp_path / "config.json").write_text('{"branding":{"title":"Static"}}')
+    serve_module.serve(
+        ClientConfig(branding=AppBranding(title="Sen4CAP", favicon="./sen4cap.svg")),
+        App.create_remote_store(),
+        display="none",
+    )
+    app = calls["app"]
+    app.mount("/", StaticFiles(directory=tmp_path))
+    client = TestClient(app)
+    assert client.get(CONFIG_ENDPOINT).status_code == 401
+    code = calls["app_service"].create_launch_code()
+    assert client.post(LAUNCH_ENDPOINT, json={"launch": code}).status_code == 204
+    assert client.get(CONFIG_ENDPOINT).json() == {
+        "branding": {"title": "Sen4CAP", "favicon": "./sen4cap.svg"}
+    }
 
 
 def test_standalone_app_backend_preserves_application_snapshot(monkeypatch, tmp_path):

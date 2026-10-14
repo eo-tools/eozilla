@@ -14,13 +14,15 @@ from cuiman.api.auth import (
     TokenAuthConfig,
 )
 from cuiman.api.config import ClientConfig
-from cuiman.app import App
+from cuiman.app import App, AppBranding, AppEmojiIcon, AppImageIcon
 from cuiman.app.launch import (
+    CONFIG_ENDPOINT,
     INVALID_LAUNCH_DETAIL,
     INVALID_LAUNCH_STATUS,
     LAUNCH_CODE_TTL_SECONDS,
     LAUNCH_ENDPOINT,
     SERVICE_PROXY_ENDPOINT,
+    SESSION_COOKIE_NAME,
     LaunchedAppService,
 )
 
@@ -218,10 +220,12 @@ def create_test_client(
     *,
     raise_server_exceptions: bool = True,
     config_type: type[ClientConfig] = ClientConfig,
+    branding: AppBranding | None = None,
 ) -> tuple[LaunchedAppService, TestClient]:
     config = config_type(
         api_url="https://process.example.test/api",
         auth=auth or TokenAuthConfig(access_token="token"),
+        branding=branding or AppBranding(),
     )
     owner = Client(config=config)
     service = LaunchedAppService(
@@ -230,3 +234,93 @@ def create_test_client(
     app = FastAPI()
     service._init_app(app)
     return service, TestClient(app, raise_server_exceptions=raise_server_exceptions)
+
+
+@pytest.mark.parametrize(
+    "branding, expected",
+    [
+        (None, {}),
+        (AppBranding(), {}),
+        (AppBranding(title="Sen4CAP"), {"title": "Sen4CAP"}),
+        (
+            AppBranding(
+                title="Sen4CAP",
+                favicon="./favicon.svg",
+                icon=AppEmojiIcon(emoji="🌍"),
+            ),
+            {"title": "Sen4CAP", "favicon": "./favicon.svg", "icon": {"emoji": "🌍"}},
+        ),
+        (
+            AppBranding(icon=AppImageIcon(url="https://example.test/logo.png")),
+            {"icon": {"url": "https://example.test/logo.png"}},
+        ),
+        (
+            AppBranding(icon=AppImageIcon(url="./logo.svg")),
+            {"icon": {"url": "./logo.svg"}},
+        ),
+    ],
+)
+def test_config_requires_a_session_and_survives_reload(branding, expected):
+    service, client = create_test_client(branding=branding)
+    response = client.get(CONFIG_ENDPOINT)
+    assert response.status_code == 401
+    assert response.headers["cache-control"] == "no-store"
+    client.cookies.set(SESSION_COOKIE_NAME, "invalid")
+    assert client.get(CONFIG_ENDPOINT).status_code == 401
+    client.cookies.clear()
+    code = service.create_launch_code()
+    response = client.post(LAUNCH_ENDPOINT, json={"launch": code})
+    assert response.status_code == 204
+    assert response.content == b""
+    for _ in range(2):
+        response = client.get(CONFIG_ENDPOINT)
+        assert response.status_code == 200
+        assert response.json() == {"branding": expected}
+        assert response.headers["cache-control"] == "no-store"
+        assert response.headers["content-type"] == "application/json"
+    assert client.post(LAUNCH_ENDPOINT, json={"launch": code}).status_code == 410
+    assert client.get(CONFIG_ENDPOINT).json() == {"branding": expected}
+
+
+def test_branding_is_snapshotted_and_not_shared_between_app_servers():
+    branding = AppBranding(title="Original", icon=AppImageIcon(url="./original.svg"))
+    first, first_client = create_test_client(branding=branding)
+    second, second_client = create_test_client(branding=AppBranding(title="Second"))
+    branding.title = "Changed"
+    branding.icon.url = "./changed.svg"
+    for service, client in [(first, first_client), (second, second_client)]:
+        code = service.create_launch_code()
+        assert client.post(LAUNCH_ENDPOINT, json={"launch": code}).status_code == 204
+    assert first_client.get(CONFIG_ENDPOINT).json() == {
+        "branding": {"title": "Original", "icon": {"url": "./original.svg"}}
+    }
+    assert second_client.get(CONFIG_ENDPOINT).json() == {
+        "branding": {"title": "Second"}
+    }
+    # A cookie from another app server cannot authorize configuration access.
+    second_client.cookies.clear()
+    second_client.cookies.update(first_client.cookies)
+    assert second_client.get(CONFIG_ENDPOINT).status_code == 401
+
+
+def test_config_works_below_a_jupyter_proxy_prefix():
+    service, _ = create_test_client(
+        branding=AppBranding(
+            favicon="./favicon.svg", icon=AppImageIcon(url="./logo.svg")
+        )
+    )
+    app = FastAPI()
+    service._init_app(app)
+    prefix = "/user/norman/proxy/8765"
+    client = TestClient(app, root_path=prefix, base_url=f"http://testserver{prefix}/")
+    response = client.get("config.json")
+    assert response.status_code == 401
+    assert response.headers["cache-control"] == "no-store"
+    code = service.create_launch_code()
+    assert client.post("_cuiman/launch", json={"launch": code}).status_code == 204
+    response = client.get("config.json")
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    assert response.json() == {
+        "branding": {"favicon": "./favicon.svg", "icon": {"url": "./logo.svg"}}
+    }

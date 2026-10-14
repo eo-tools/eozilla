@@ -9,7 +9,7 @@ import cuiman.app as app_package
 import cuiman.app.app as app_module
 from cuiman.api.client_app_mixin import ClientAppMixin
 from cuiman.api.config import ClientConfig
-from cuiman.app import App
+from cuiman.app import App, AppBranding, AppEmojiIcon
 
 
 def test_show_app_uses_notebook_display_and_explicit_compact(monkeypatch):
@@ -25,13 +25,20 @@ def test_show_app_uses_notebook_display_and_explicit_compact(monkeypatch):
     )
 
     client = FakeAppClient()
+    branding = AppBranding(title="Sen4CAP", icon=AppEmojiIcon(emoji="🌍"))
+    client.config.branding = branding
 
     app = client.show_app(
-        compact=False, debug=True, scheme="dark", width="80%", height=400
+        compact=False,
+        debug=True,
+        scheme="dark",
+        width="80%",
+        height=400,
     )
 
     assert len(calls) == 1
     assert calls[0][0][0] == client.config
+    assert calls[0][0][0].branding == branding
     assert calls[0][1] == {
         "client": client,
         "compact": False,
