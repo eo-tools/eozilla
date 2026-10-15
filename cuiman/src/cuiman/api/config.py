@@ -462,12 +462,13 @@ class ClientConfig(BaseSettings):
         )
 
     def to_file_dict(self) -> dict[str, Any]:
-        """Return a configuration mapping that omits authentication secrets."""
+        """Omit class defaults and secrets, retaining public auth metadata."""
         config_dict = self.model_dump(
             mode="json",
             by_alias=True,
             exclude={"auth"},
             exclude_none=True,
+            exclude_defaults=True,
         )
         config_dict["auth"] = self.auth.to_public_dict()
         if not config_dict.get("branding"):

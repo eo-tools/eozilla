@@ -34,6 +34,40 @@ from cuiman.api.opener import JobResultOpenerRegistry
 from ..helpers import AllOpener
 
 
+@pytest.mark.parametrize("explicit_defaults", [False, True])
+def test_to_file_dict_omits_application_defaults_and_preserves_auth(explicit_defaults):
+    class ApplicationConfig(ClientConfig):
+        api_url: str | None = "https://default.example.test/processes/"
+        service_name: str = "branded"
+        auth: AuthConfig = TokenAuthConfig(access_token_header="X-Branded")
+
+    values = (
+        {
+            "api_url": "https://default.example.test/processes/",
+            "service_name": "branded",
+        }
+        if explicit_defaults
+        else {}
+    )
+    config = ApplicationConfig.new_instance(**values)
+    config.auth = TokenAuthConfig(
+        access_token_header="X-Branded", access_token="secret"
+    )
+    public_auth = {"auth_type": "token", "access_token_header": "X-Branded"}
+    assert config.to_file_dict() == {"auth": public_auth}
+    if explicit_defaults:
+        assert config.to_dict()["service_name"] == "branded"
+        assert config.to_dict()["api_url"] == config.api_url
+
+    config.api_url = "https://custom.example.test/processes/"
+    config.service_name = "custom"
+    assert config.to_file_dict() == {
+        "api_url": "https://custom.example.test/processes/",
+        "service_name": "custom",
+        "auth": public_auth,
+    }
+
+
 class ClientConfigTest(TestCase):
     def setUp(self):
         self.saved_environ = {

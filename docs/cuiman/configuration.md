@@ -105,9 +105,11 @@ replacement and merging.
 
 `ClientConfig.branding` follows the same settings precedence as other fields.
 Partial overrides preserve unspecified branding fields; selecting `favicon` or
-`icon` replaces that whole image/emoji value. Empty branding is omitted from
-saved profiles. Local images retain an explicit `path` field when saved, so they
-do not become browser URLs on reload.
+`icon` replaces that whole image/emoji value. Empty branding and branding equal
+to the selected configuration class's default are omitted from saved profiles.
+If branding differs, the whole configured branding value is written. Local
+images retain an explicit `path` field when saved, so they do not become browser
+URLs on reload.
 
 Use `AppBranding.from_file(path)` to load a separate branding JSON object
 explicitly. See the [Python customization example](customization.md#browser-branding-and-local-images)
@@ -162,8 +164,12 @@ auth:
 ```
 
 Cuiman writes only public connection and authentication metadata to configuration
-files; credentials are omitted. Existing files are loaded using the current
-configuration model, including a customized client's schema. A file is considered
+files; credentials are omitted. Settings equal to their configuration class's
+defaults are omitted, even when explicitly supplied. Public authentication
+metadata is always retained, including its authentication type. Omitted settings
+use the selected class's defaults when loaded again. Existing files are loaded
+using the current configuration model, including a customized client's schema.
+A file is considered
 deprecated or illegal if parsing or validation fails, rather than by checking
 for particular legacy field names. The error is:
 

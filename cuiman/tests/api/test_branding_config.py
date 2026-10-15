@@ -91,6 +91,35 @@ def test_branding_defaults_can_be_overridden_by_applications(tmp_path):
     assert original.branding.title == "Sen4CAP"
 
 
+@pytest.mark.parametrize("selection", ["implicit", "explicit", "changed"])
+def test_application_branding_defaults_are_omitted_from_profiles(tmp_path, selection):
+    class ApplicationConfig(ClientConfig):
+        branding: AppBranding = AppBranding(
+            title="Sen4CAP",
+            favicon=tmp_path / "favicon.ico",
+            icon=AppImageIcon(path=tmp_path / "icon.png"),
+        )
+
+    config = ApplicationConfig.new_instance()
+    if selection != "implicit":
+        config = ApplicationConfig.new_instance(branding=config.branding.model_copy())
+    if selection == "changed":
+        config.branding.title = "Custom title"
+
+    profile = config.write(tmp_path / "config")
+    saved = ApplicationConfig.read_file_data(profile)
+    assert saved is not None
+    if selection == "changed":
+        assert saved["branding"] == config.branding.model_dump(
+            mode="json", exclude_none=True
+        )
+    else:
+        assert "branding" not in saved
+    restored = ApplicationConfig.from_file(profile)
+    assert restored is not None
+    assert restored.branding == config.branding
+
+
 def test_client_accepts_branding_setting(tmp_path):
     path = tmp_path / "branding.json"
     path.write_text('{"title":"Sen4CAP"}', encoding="utf-8")
