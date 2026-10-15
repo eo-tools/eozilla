@@ -1,171 +1,241 @@
-# Runtime branding handover
+# Runtime branding and configuration handover
+
+Updated 2026-10-15. The latest decisions below supersede the earlier scope
+changes in this chat. The implementation does not yet match the final design.
 
 ## Resume here
 
-Work in `C:\Users\Norman\Projects\eozilla`. Read `AGENTS.md` and the two issues:
+Work in `C:\Users\norma\Projects\eozilla`. Read `AGENTS.md` and:
 
 - https://github.com/eo-tools/eozilla/issues/244
 - https://github.com/eo-tools/eozilla-app/issues/101
 
-The user requested at most four steps, with their review before continuing:
+The user is ending this session and will commit the intermediate work, knowing
+that it needs further changes. This request authorizes updating this handover
+only. Do not implement further changes or commit on the user's behalf now.
+On resumption, inspect both checkouts and their current commits before editing.
 
-1. Design (agreed, with the refinements below).
-2. Cuiman implementation (implemented and tested; awaiting final review).
-3. Browser implementation (not started).
-4. Documentation, bundled app rebuild, and integration verification (not started).
+The original sequence had at most four steps, with user review between them:
 
-Present the current step for review and wait for authorization before starting
-step 3. This handover request does not authorize proceeding to step 3.
+1. Design.
+2. Cuiman implementation.
+3. Browser implementation.
+4. Documentation, bundled app rebuild, and integration verification.
 
-## Agreed design
+Steps 2 and 3 have partial implementations and prior successful tests. The user
+returned to design discussion on 2026-10-15. The revised design now requires
+changes to both Python and the browser; do not treat the earlier steps as final
+or proceed directly to step 4. Continue from this agreed design when the user
+resumes implementation, retaining review checkpoints.
 
-The general browser configuration source is `./config.json`, resolved relative
-to the browser-visible app URL. This replaces the initial proposal to return
-branding in the launch exchange and add `/_cuiman/config`.
+## Latest agreed design
 
-- Standalone deployments may serve a static `config.json` beside the app.
-- Cuiman serves a dynamic, session-authenticated `GET /config.json`.
-- Cuiman first exchanges the one-shot launch code at `POST ./_cuiman/launch`,
-  retaining HTTP 204 and its existing HttpOnly cookie. The browser then loads
-  configuration. After reload, the `cuiman=1` marker and session cookie suffice.
-- Configuration is optional: the user explicitly emphasized that the endpoint
-  may not exist at all. Treat HTTP 404 as absent configuration and render using
-  built-in defaults plus query overrides. The last proposed behavior for other
-  HTTP failures and malformed configuration is a clear configuration error;
-  avoid silently treating an expired Cuiman session as an optional-file 404.
-- Precedence: query overrides > `config.json` > built-in defaults; merge branding
-  field by field. Proposed query names are `title`, `favicon`, `iconEmoji`, and
-  `iconUrl`, alongside existing presentation parameters. A JSON-valued
-  `branding` query parameter was not selected.
-- Built-in branding: title `Eozilla`, favicon `./eozilla-small.svg`, emoji `🦖`.
-- Standalone JSON may additionally contain public `defaultService` metadata.
-  Its exact field whitelist still needs to be made concrete in step 3. Credentials
-  must never be supplied via query parameters or public JSON. Cuiman mode retains
-  its dedicated existing service proxy and server-side credentials. Saved
-  standalone provider selections take precedence over deployment defaults.
-- Resolve relative assets against the app URL, preserving Jupyter proxy prefixes.
-  Absolute HTTP(S) URLs stay absolute; leading `/` has normal origin-relative
-  semantics. URLs do not publish files from the Python host's filesystem.
-- Resolve configuration before React renders and apply title, favicon, and header
-  icon consistently. Replace branding/service-default `.env` usage; app version
-  build metadata may remain.
+### One optional configuration URL
 
-Runtime JSON contract:
+- The browser loads `GET ./config.json`, relative to the browser-visible app URL,
+  before React renders. The same URL supports both Cuiman and standalone apps.
+- Cuiman first exchanges `?launch=<one-shot-code>` at `POST ./_cuiman/launch`.
+  Keep its existing HTTP 204 response and HttpOnly session cookie. Do not return
+  configuration from this POST; that alternative was discussed and rejected.
+- Cuiman serves dynamic, session-authenticated `GET /config.json`. After URL
+  cleanup, the `cuiman=1` marker and session cookie support reloads.
+- Standalone deployments serve a static `config.json` beside `index.html`.
+  Vite's `public/config.json` is a development/build convenience; a deployer
+  may also add or replace the file in the deployed app without rebuilding.
+- The endpoint/file is optional. HTTP 404 means absent configuration and uses
+  defaults. Other HTTP/network errors and malformed configuration should show
+  a clear startup error. A Cuiman authentication failure must not become an
+  optional-file fallback. Keep authenticated responses uncached.
+
+### Configuration shape and mode precedence
+
+The JSON may contain `branding` and `service`. For example, standalone JSON:
 
 ```json
 {
   "branding": {
     "title": "Sen4CAP",
-    "favicon": "./sen4cap.svg",
-    "icon": {"emoji": "🌍"}
+    "favicon": "./assets/favicon.svg",
+    "icon": {"url": "./assets/logo.svg"}
+  },
+  "service": {
+    "apiUrl": "https://api.example.org/",
+    "authType": "oauth2",
+    "oauth2Protocol": "oidc",
+    "authorizationServerUrl": "https://auth.example.org/",
+    "clientId": "sen4cap-browser"
   }
 }
 ```
 
-An image icon uses `{"url":"./logo.svg"}` instead. The icon has exactly one
-alternative. All branding fields are optional. Missing/null fields fall back.
+- The name is `service`, not the earlier experimental `defaultService`.
+- `service` contains public connection/authentication configuration only:
+  API URL, auth type, issuer, public client ID, scopes, and applicable public
+  endpoint/header settings. The user explicitly means non-credential settings.
+- In standalone mode, an existing `service` entry configures the intended
+  connection and takes precedence over a saved service selection. Without it,
+  preserve the existing saved-selection/service-dialog behavior. Keep existing
+  sign-in and credential handling rather than implementing a new auth flow.
+- In Cuiman mode, ignore a `service` entry. The Python client owns all service
+  configuration and credentials; the browser uses the existing Cuiman proxy.
+- In Cuiman mode, all effective configuration comes from Python. Do not let a
+  static deployment file or new branding query overrides supersede it.
+- Branding merges field by field with built-in defaults. Defaults are title
+  `Eozilla`, favicon `./eozilla-small.svg`, and header emoji `🦖`. Fields are
+  optional and missing/null fields fall back. An icon has exactly one of
+  `{"emoji":"🌍"}` or `{"url":"..."}`.
+- Branding and public service configuration should require no custom app build.
+  Replace frontend branding/service-default `.env` usage with runtime config
+  and built-in defaults. Build metadata such as version/build number may remain.
+- The user briefly proposed a separate standalone PR, then explicitly brought
+  standalone runtime configuration back into scope: the shared `config.json`
+  loader plus a standalone-only `service` entry provides it in one go.
+- Preserve existing presentation/launch parameters. The final standalone query
+  override contract has not been settled; do not assume the legacy `service`
+  query parameter should be restored or introduce many new API/auth parameters.
 
-## Current Cuiman implementation
+### Python-served branding assets
 
-The user corrected the original interface: branding belongs to `config.branding`,
-not a separate argument beside `config`. The current implementation reflects this:
+A relative URL alone does not make a Python-local file available to the browser.
+The user explicitly requires Cuiman callers to configure assets through Python,
+without copying files into the frontend `public/` directory.
 
-- `cuiman/src/cuiman/api/branding.py`: public Pydantic models `AppBranding`,
-  `AppEmojiIcon`, `AppImageIcon`; strict nonempty strings and forbidden extra
-  fields. Re-exported from `cuiman.app`.
-- `AppBranding.from_file(path)`: explicitly reads UTF-8 JSON, expands `~`,
-  propagates filesystem/validation errors. Its file contains branding fields
-  directly, e.g. `{"title":"Sen4CAP"}`, rather than the runtime JSON wrapper.
-  Relative asset URLs remain relative to the browser app, not the file.
-- `cuiman/src/cuiman/api/config.py`: `ClientConfig.branding` defaults to an
-  independent empty `AppBranding`. Uses existing profile, dotenv, environment,
-  explicit settings, subclass defaults, and snapshot resolution. Empty branding
-  is omitted from persisted profiles. Partial branding merges preserve other
-  fields; icon overrides replace the whole icon to support emoji/image switches.
-- `show_app()` and `serve()` read branding from the configuration; the separate
-  branding parameter has been removed.
-- `cuiman/src/cuiman/app/launch.py`: snapshots branding when constructing the
-  app server; `GET /config.json` requires a valid session, returns only
-  `{"branding": ...}`, and uses `Cache-Control: no-store` for success and
-  authentication failures, including behind a path prefix. Route precedes the
-  static app mount. Launch response remains 204.
+- Introduce `GET /_cuiman/assets/{asset_name}`.
+- Python registers explicitly supplied local branding files, initially favicon
+  and header image. The asset registry/endpoint can support other assets later.
+- Asset names map to registered files; do not expose arbitrary filesystem paths.
+- Use the existing Cuiman session authentication for asset requests.
+- Python-generated `config.json` references the registered assets using relative
+  browser URLs, for example:
 
-No file is loaded automatically from `~/.eozilla/app-config.json`. The user
-accepted explicit `AppBranding.from_file(path)` and requested `config.branding`.
-
-```python
-from cuiman import Client, ClientConfig
-from cuiman.app import AppBranding
-
-config = ClientConfig(
-    branding=AppBranding.from_file("~/.sen4cap/app-config.json"),
-)
-client = Client(config=config)
-app = client.show_app()
+```json
+{
+  "branding": {
+    "title": "Sen4CAP",
+    "favicon": "./_cuiman/assets/favicon",
+    "icon": {"url": "./_cuiman/assets/header-icon"}
+  }
+}
 ```
 
-## Verification completed
+- Resolve relative URLs against the browser-visible app URL, preserving Jupyter
+  proxy prefixes. Leading `/` remains origin-relative; external HTTP(S) URLs
+  remain supported.
+- The exact Python interface for distinguishing local asset files from URLs is
+  not decided yet. Design this explicitly; do not interpret an ordinary relative
+  URL as an arbitrary filesystem path. Content types, missing-file behavior, and
+  snapshot/lifetime details also need implementation decisions and tests.
+- For standalone apps, the developer must statically deploy the referenced files,
+  e.g. `index.html`, `config.json`, `assets/favicon.svg`, and `assets/logo.svg`.
+  App-relative paths in JSON then work without a custom build. External HTTP(S)
+  assets are also possible.
 
-Before implementation, existing app tests and client-app-mixin tests passed
-with 100% coverage. After the final configuration revision:
+## Current implementation: Python
+
+- `cuiman/src/cuiman/api/branding.py`: public Pydantic models `AppBranding`,
+  `AppEmojiIcon`, `AppImageIcon`; strict nonempty strings, forbidden extra fields.
+  Re-exported from `cuiman.app`.
+- Branding belongs to `ClientConfig.branding`, not a separate `show_app()` or
+  `serve()` argument. Profile/environment/settings precedence and snapshots
+  support it. Partial branding merges preserve fields; icon overrides replace
+  the whole icon. Empty branding is omitted from saved profiles.
+- `AppBranding.from_file(path)` explicitly loads UTF-8 JSON with branding fields
+  directly, e.g. `{"title":"Sen4CAP"}`, not the runtime JSON wrapper. It expands
+  `~` and propagates file/validation errors. No file is loaded implicitly.
+- `cuiman/src/cuiman/app/launch.py` snapshots branding and serves authenticated
+  `GET /config.json`, returning only `{"branding": ...}` with no-store headers.
+  The route precedes the static app mount. Launch response stays 204.
+- The new assets endpoint and Python asset registration are NOT implemented.
+  Existing asset strings still represent browser URLs.
+
+## Current implementation: browser
+
+The separate nested Git checkout is `eozilla-app/`.
+
+- `src/config/bootstrap.ts` now holds the branding type, optional config loading,
+  branding resolution, and document title/favicon application.
+- `src/main.tsx` keeps the existing launch exchange, then loads branding before
+  rendering. Branding passes through App to Header as an explicit prop.
+- `index.html` has built-in title/favicon values. Header supports emoji/image
+  objects. Branding `.env` values were removed; service-default `.env` values
+  and their existing provider logic remain.
+- The working tree supports branding query overrides `title`, `favicon`,
+  `iconEmoji`, and `iconUrl` in both modes. This needs reconciliation with the
+  latest Python-owned Cuiman configuration decision.
+- The browser does NOT consume a `service` entry yet. Providers, storage, and
+  their tests were restored after an overly broad first implementation.
+- The initial `runtime.ts`/`startup.ts` modules and their tests were removed from
+  the working tree. Do not restore that general framework automatically. The
+  user strongly prefers narrow changes and minimal changes to existing logic.
+- Browser docs/README currently describe branding only and need updating for the
+  final service/asset design. Full Cuiman docs and bundled rebuild remain pending.
+
+## Why the old service query parameter disappeared
+
+This was traced during this session; do not repeat the incorrect assumption that
+it is still supported:
+
+- App commit `8eb51b86e0df7dacf71ebf38d18eff222ced2a79` (2026-09-02), authored and
+  committed by Norman Fomferra: "Removed the legacy service query protocol completely".
+- It followed the secure Cuiman launch implementation (`840bda6`) and was merged
+  in https://github.com/eo-tools/eozilla-app/pull/82 (issue #80).
+- Companion changes were merged in https://github.com/eo-tools/eozilla/pull/201
+  (issue #198); root removal commit is `bc84b960`.
+- Previously `?service=...` carried base64url JSON with `id`, `meta`, and `options`,
+  potentially including upstream credentials. Secure Cuiman launch replaced it
+  with a one-shot launch exchange, HttpOnly cookie, and server-side proxy.
+- Although the issues were scoped to Cuiman, the parser was removed globally.
+  Standalone URL-based service configuration received no equivalent replacement.
+- Keep the secure Cuiman flow. The newly agreed static `config.json` service
+  entry addresses standalone deployment configuration without reviving generic
+  credential-bearing URL serialization.
+
+## Verification already completed
+
+Python, before the latest asset/service design changes:
 
 ```text
 pixi run test-cuiman --cov=cuiman.api.branding --cov=cuiman.api.config --cov=cuiman.app --cov=cuiman.api.client_app_mixin --cov-report=term-missing
 708 passed; all selected modules 100% coverage
-
 pixi run checks
 Passed, including mypy
 ```
 
-Changed tests also passed Ruff lint and scoped formatting. Tests cover profile
-round trips, source precedence, application defaults/prefixes, explicit file
-loading, invalid data, session/reload behavior, credential exclusion, snapshots,
-server isolation, static-route precedence, and Jupyter proxy prefixes.
+The narrowed browser implementation passed TypeScript and ESLint through
+`npm run checks`, and `npm run tests`: 200 tests in 45 files. The earlier,
+broader browser version had a successful standalone production build; the
+narrowed version was not rebuilt. No final design integration has been verified.
 
-Pixi needed sandbox escalation for its external package cache; sandboxed runs
-reported failure creating the uv cache directory. Approved escalated runs worked.
+The PowerShell `npm` launcher points to a missing roaming npm installation.
+Use the installed Node.js npm CLI to run the existing project scripts:
 
-## Browser work to inspect after approval
-
-The separate nested checkout `eozilla-app/` has no implementation changes from
-this session. Relevant files:
-
-- `src/main.tsx`: exchanges launch code, strips it, registers Cuiman-only provider,
-  and derives service/WebSocket URLs from the visible app URL.
-- `src/config/bootstrap.ts`: existing presentation/mode query parsing.
-- `src/config/cuimanLaunch.ts`: currently accepts successful launch responses
-  without a body; keep compatible with 204.
-- `src/components/Header.tsx`: title/icon currently read from Vite environment;
-  image detection currently checks only a leading slash.
-- `index.html`: build-time title/favicon placeholders.
-- `src/service/providers/url.ts`: build-time standalone service defaults.
-
-Concentrate loading, validation, precedence, and asset resolution in the runtime
-configuration module. Add tests for missing endpoint, partial config, malformed
-responses, query overrides, pre-render branding, reloads, and prefixed URLs.
-Use the frontend scripts in `package.json` for checks and tests.
-
-Step 4 must update relevant `docs/eozilla-app/` pages (required by `AGENTS.md`),
-the Cuiman app/configuration/customization guides, and any stale frontend setup
-instructions. Rebuild the bundled browser app in `cuiman/src/cuiman/app/dist`
-using the existing frontend build script and run relevant checks/docs build.
-
-## Git state at handover (2026-10-14)
-
-Root HEAD: `6d070e6c`, a user-created commit containing the current Cuiman work.
-Its commit message describes the earlier separate-argument design; use source
-code as the authority for the current interface. Frontend HEAD: `c195236`.
-
-Root status showed:
-
-```text
-AD cuiman/src/cuiman/app/branding.py
-?? docs/research/
-?? eozilla-app/
+```powershell
+& 'C:/Program Files/nodejs/node.exe' 'C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js' run checks
 ```
 
-The obsolete `app/branding.py` is staged as an addition but deleted in the working
-tree; its current implementation is under `api/branding.py`. The index was left
-untouched. Inspect this state with the user before preparing a commit so the old
-file is not accidentally restored. Preserve existing research files and the
-nested checkout. This session did not commit, push, open PRs, or modify issues.
+Tests/builds needed sandbox escalation because esbuild could not enumerate a
+parent directory. Pixi previously needed escalation for its external cache.
+
+Final verification should cover standalone service precedence, Cuiman isolation,
+asset registration/access/MIME handling, optional/malformed config, defaults,
+launch/reload behavior, and Jupyter prefixes. Update relevant docs (required by
+AGENTS.md), rebuild Cuiman's bundled browser with `npm run eozilla:build`, and
+run appropriate frontend/Python checks and the docs build after implementation.
+
+## Git state when this handover was updated
+
+Root HEAD: `09f68ead`. Frontend HEAD: `c195236`. The user plans to commit the
+intermediate state; these hashes/statuses may therefore change before resumption.
+
+Root working changes: this handover and `docs/eozilla-app/index.md`; the nested
+`eozilla-app/` remains untracked from the root repository's perspective.
+
+IMPORTANT: frontend index and working tree differ. The earlier added files
+`src/config/runtime.ts`, `runtime.test.ts`, `startup.ts`, and `startup.test.ts`
+are still staged as additions but deleted in the working tree (`AD`).
+`src/components/Header.test.tsx` is staged and subsequently modified (`AM`).
+Other branding/bootstrap changes are unstaged. Ensure the intended deletions
+and updated files are included when committing so the superseded implementation
+is not accidentally committed. This session has not changed the index.
+
+No commits, pushes, PR creation, or issue edits were performed in this session.
