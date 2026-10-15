@@ -101,6 +101,19 @@ matching profile/API URL/auth-type keyring entry can fill missing secrets.
 Explicitly supplied credentials take precedence. This applies after both
 replacement and merging.
 
+### Browser branding
+
+`ClientConfig.branding` follows the same settings precedence as other fields.
+Partial overrides preserve unspecified branding fields; selecting `favicon` or
+`icon` replaces that whole image/emoji value. Empty branding is omitted from
+saved profiles. Local images retain an explicit `path` field when saved, so they
+do not become browser URLs on reload.
+
+Use `AppBranding.from_file(path)` to load a separate branding JSON object
+explicitly. See the [Python customization example](customization.md#browser-branding-and-local-images)
+and [browser runtime reference](../eozilla-app/runtime-configuration.md) for
+usage and deployment details.
+
 ### URL paths and trailing slashes
 
 Cuiman distinguishes a processing-service **base URL** from an exact

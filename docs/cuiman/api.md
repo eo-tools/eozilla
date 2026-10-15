@@ -53,6 +53,17 @@ for the login flow and credential lifecycle.
 
 ::: cuiman.app.App
 
+### Branding models
+
+See [Browser branding and local images](customization.md#browser-branding-and-local-images)
+for a complete Python example.
+
+::: cuiman.app.AppBranding
+
+::: cuiman.app.AppEmojiIcon
+
+::: cuiman.app.AppImageIcon
+
 
 ## CLI API
 

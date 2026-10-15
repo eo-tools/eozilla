@@ -158,13 +158,6 @@ its bytes for that server's lifetime. Restart the server to pick up file changes
 Missing files produce a Python warning and leave the corresponding browser
 default in place; other file-read errors propagate.
 
-Cuiman serves these snapshots at `/_cuiman/assets/favicon` and
-`/_cuiman/assets/icon`, using the existing launch-session authentication.
-The browser configuration contains relative endpoint URLs, never local paths,
-so Jupyter proxy prefixes are preserved. Configuration and asset responses use
-`Cache-Control: no-store`. MIME types come from the filename extension, with
-`application/octet-stream` as the fallback for unknown extensions.
-
 Use `AppImageIcon(url="https://example.org/logo.svg")` for a remote image or
 `AppImageIcon(url="./logo.svg")` for a file already deployed alongside the app.
 Cuiman passes URLs through for the browser to load; it does not read them as
@@ -175,7 +168,9 @@ Profiles and explicit branding JSON files preserve the distinction with
 `{"path": "images/logo.svg"}` versus `{"url": "./logo.svg"}`. Load a branding
 JSON object with `AppBranding.from_file(path)`; its fields are `title`, `favicon`,
 and `icon` directly. Paths inside it still resolve against Python's working
-directory, rather than the JSON file's directory.
+directory, rather than the JSON file's directory. See the
+[runtime configuration reference](../eozilla-app/runtime-configuration.md)
+for browser defaults, deployment modes, and asset-serving details.
 
 ## CLI customisation
 

@@ -35,63 +35,17 @@ client.show_app()
 Applications can set `ClientConfig.display_name` to brand notebook launch links,
 browser debug messages, and server-reported launch errors. The browser app uses
 the neutral label “Processing Service” for the service configured by the Python
-client, and neutral fallback errors when branding is unavailable during startup.
-See [Cuiman customization](../cuiman/customization.md) for configuration examples.
-
-Python callers can set `ClientConfig.branding` to supply a title, favicon, and
-header emoji or image. Explicit local images are served through Cuiman's
-authenticated favicon and icon endpoints, so they need not be copied into the
-browser build. Missing local images leave the app defaults in place. See
-[browser branding and local images](../cuiman/customization.md#browser-branding-and-local-images).
+client. For browser branding, set `ClientConfig.branding`; the
+[Cuiman customization guide](../cuiman/customization.md#browser-branding-and-local-images)
+shows how to supply a title, emoji, or local image files.
 
 ## Runtime configuration
 
-The browser loads optional `./config.json` before rendering. A standalone
-deployment can add or replace this file beside `index.html` without rebuilding
-the app. For Vite development, put it in `public/config.json`; Vite copies it
-into the production build. The file may contain `branding`, `service`, or both:
-
-```json
-{
-  "branding": {
-    "title": "Sen4CAP",
-    "favicon": "./assets/favicon.svg",
-    "icon": {"url": "./assets/logo.svg"}
-  },
-  "service": {
-    "apiUrl": "https://api.example.org/",
-    "authType": "oauth2",
-    "oauth2Protocol": "oidc",
-    "authorizationServerUrl": "https://auth.example.org/",
-    "clientId": "sen4cap-browser"
-  }
-}
-```
-
-Deploy referenced image files as well. Relative image URLs resolve against the
-browser-visible app URL, including any Jupyter proxy prefix. Leading `/` URLs
-are origin-relative; external URLs also work. The header icon accepts exactly
-one of `{"emoji":"🌍"}` or `{"url":"..."}`. Missing or null branding fields
-fall back individually to title `Eozilla`, favicon `./eozilla-small.svg`, and
-header emoji `🦖`.
-
-HTTP 404 means the optional file is absent. Other HTTP failures, network errors,
-invalid JSON, and invalid settings produce a startup error. Configure static
-hosting to return a real 404 for a missing JSON file rather than its SPA HTML.
-The loader requests configuration with `cache: "no-store"`.
-
-In Cuiman mode, the launch exchange completes first, then the browser reads
-Python's session-authenticated configuration. Python supplies all effective
-branding and service settings; a `service` entry in the JSON is ignored. The
-browser continues to use Cuiman's service proxy and session cookie. Branding
-query parameters do not override runtime settings.
-
-Branding and service-default `VITE_*` environment variables are no longer used.
-Version/build metadata remains build-time configuration. Existing presentation
-and launch parameters (`compact`, `debug`, `scheme`, `launch`, `cuiman`, `ws`,
-and `proxy`) retain their behavior. See
-[standalone service configuration](service-provider.md#standalone-runtime-service-configuration)
-for connection precedence and authentication.
+Standalone deployments can supply `config.json` beside `index.html` to set
+branding and the intended service without rebuilding. Cuiman supplies its own
+authenticated configuration from Python. See
+[Runtime Configuration](runtime-configuration.md) for setup examples, supported
+fields, defaults, and startup behavior.
 
 ## Further Reading
 
