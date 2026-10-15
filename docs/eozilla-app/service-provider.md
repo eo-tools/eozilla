@@ -91,6 +91,35 @@ refreshes the access token before it expires. This only authenticates requests
 to the configured API; the API must accept the token or provide its own token
 exchange mechanism.
 
+## Standalone Runtime Service Configuration
+
+A static deployment can configure its intended service in the optional
+`config.json` beside `index.html`. See the [runtime configuration example](index.md#runtime-configuration).
+When present, `service` selects a Configured Service provider before a saved
+selection and supplies defaults to its existing connection/authentication form.
+Without `service`, the app retains its saved selection or opens the usual
+service dialog. The deployment selection uses a session-only record; it does
+not replace a saved selection merely by starting the app.
+
+The allowed public fields are `apiUrl`, `authType`, `loginUrl`, `clientId`,
+`useBearer`, `accessTokenHeader`, `apiKeyHeader`, `authorizationServerUrl`,
+`oauth2Protocol`, `authorizationEndpoint`, `tokenEndpoint`, and `oauth2Scopes`.
+`apiUrl` is required; omitted `authType` defaults to `none`. URLs must be absolute
+HTTP(S) URLs without embedded credentials. OAuth2 requires a public client ID
+and either an OIDC issuer or explicit OAuth2 authorization/token endpoints.
+Login requires its login URL. Unknown fields and credential fields are rejected.
+
+The JSON must not contain passwords, tokens, API keys, or client secrets.
+Users sign in through the existing service dialog. OAuth2/OIDC retains the
+existing browser redirect flow; token, login, basic, and API-key authentication
+retain their existing credential handling. Saved session credentials are reused
+only when the saved provider and public connection settings match the runtime
+selection. Changing the configured connection does not carry its old secrets
+into the new connection.
+
+Cuiman mode ignores the JSON `service` entry entirely and uses Python's proxy.
+The old credential-bearing `service` query parameter is not restored.
+
 ## Cuiman-Launched Mode
 
 When Cuiman launches the app, the regular service/provider architecture remains
@@ -109,7 +138,9 @@ stand-alone Custom Service flow described above.
    An expired, consumed, or unknown code receives `410 Gone` with the server's
    launch-specific error detail. Other exchange failures retain their own
    status and reason so the app does not misreport them as an expired launch.
-3. The app derives both its RemoteState WebSocket URL and its
+3. The app loads session-authenticated `./config.json` for Python-owned branding,
+   including relative URLs for local favicon/header-image snapshots. A failed
+   authentication response is a startup error. It then derives both its RemoteState WebSocket URL and its
    `CustomServiceProvider` API URL from the browser-visible location. The API
    URL is the relative `./_cuiman/service/` proxy and uses authentication type
    `none`; the service and provider interfaces therefore remain unchanged for

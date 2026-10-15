@@ -14,9 +14,30 @@ and no-store headers, and referenced by app-relative URLs in `config.json`.
 Missing files warn and omit the corresponding branding override; other read
 errors propagate. MIME types use filename extensions with an octet-stream
 fallback. Saved profiles retain explicit `path` objects. Cuiman customization
-documentation now describes this interface. Browser changes, service runtime
-configuration, and bundled rebuild remain separate review checkpoints.
+documentation now describes this interface. At that checkpoint, browser runtime
+configuration and the bundled rebuild remained separate review steps.
 The historical session and Git-state notes below describe the previous handover.
+
+Browser follow-up on 2026-10-15: after the user approved the Python checkpoint,
+they authorized the browser implementation. Root HEAD was `f95d650e`; frontend
+HEAD was `0613907`. That frontend checkout had none of the older branding code,
+so branding was implemented against its current secure-launch entry point.
+The browser now loads optional `config.json`, applies branding before React,
+and supports standalone public `service` settings using the existing custom
+provider and authentication form. Cuiman ignores `service` and uses Python's
+branding with the existing proxy. No branding query overrides were introduced.
+Runtime selections take precedence without replacing saved choices at startup;
+matching saved credentials remain in the existing separate session store.
+Vite/build-time branding and service-default environment settings were removed.
+The standalone production build and strict documentation build passed.
+The standard Node suite passed 245 tests (46 browser-only/existing skips),
+and focused Chromium loader/header checks passed 41 tests. TypeScript and ESLint
+passed. The full Chromium run exposes existing test-harness incompatibilities:
+tests that replace native `window`, browser imports of Node's server renderer,
+and a code-theme timing assertion. The new startup integration tests run in Node
+with browser globals/wrappers stubbed; rendered header/DOM checks run in Chromium.
+Bundled Cuiman rebuild and final Python/browser integration remain the next
+review checkpoint; no commits or pushes were made in this browser follow-up.
 
 Follow-up validation: `pixi run test-cuiman` passed 719 tests with 100% coverage
 for `cuiman.api.branding`, `cuiman.api.config`, and `cuiman.app.launch`.
@@ -170,23 +191,26 @@ without copying files into the frontend `public/` directory.
 
 The separate nested Git checkout is `eozilla-app/`.
 
-- `src/config/bootstrap.ts` now holds the branding type, optional config loading,
-  branding resolution, and document title/favicon application.
+- `src/config/bootstrap.ts` holds branding defaults, optional config loading,
+  public service validation, and document title/favicon application. It requests
+  JSON explicitly (avoiding Vite's HTML fallback), uses no-store, and treats only
+  404 as absent. Invalid configuration and authentication failures show a startup
+  error. Relative images resolve against the browser-visible app URL.
 - `src/main.tsx` keeps the existing launch exchange, then loads branding before
   rendering. Branding passes through App to Header as an explicit prop.
 - `index.html` has built-in title/favicon values. Header supports emoji/image
-  objects. Branding `.env` values were removed; service-default `.env` values
-  and their existing provider logic remain.
-- The working tree supports branding query overrides `title`, `favicon`,
-  `iconEmoji`, and `iconUrl` in both modes. This needs reconciliation with the
-  latest Python-owned Cuiman configuration decision.
-- The browser does NOT consume a `service` entry yet. Providers, storage, and
-  their tests were restored after an overly broad first implementation.
+  objects. Branding and service-default `.env` values were removed; version/build
+  metadata remains build-time configuration. No branding query overrides exist.
+- Standalone `service` settings select a `configured` CustomServiceProvider and
+  prefill its schema defaults. The existing sign-in flow remains unchanged.
+  The existing transient-selection mechanism now supports runtime deployments,
+  matching saved credentials, sign-in/sign-out, and clearing stale Cuiman state
+  on standalone startup. Configuration JSON never accepts credential fields.
 - The initial `runtime.ts`/`startup.ts` modules and their tests were removed from
   the working tree. Do not restore that general framework automatically. The
   user strongly prefers narrow changes and minimal changes to existing logic.
-- Browser docs/README currently describe branding only and need updating for the
-  final service/asset design. Full Cuiman docs and bundled rebuild remain pending.
+- Browser README and workspace app/provider docs describe the runtime contract.
+  The bundled rebuild and final integration remain pending.
 
 ## Why the old service query parameter disappeared
 
