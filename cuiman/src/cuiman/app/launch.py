@@ -26,9 +26,12 @@ contains no upstream credentials; every request uses the owning Python client.
 
 from __future__ import annotations
 
+import mimetypes
 import secrets
 import time
+import warnings
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Awaitable, Callable
 from urllib.parse import quote, urlsplit, urlunsplit
 
@@ -36,10 +39,17 @@ import httpx2
 import remotestate as rs
 from fastapi import FastAPI, HTTPException, Request, Response, status
 
+from cuiman.api.branding import AppBranding, AppImageIcon
 from cuiman.api.config import ClientConfig
 
 CONFIG_ENDPOINT = "/config.json"
 """Session-authenticated runtime configuration endpoint for the browser app."""
+
+FAVICON_ENDPOINT = "/_cuiman/assets/favicon"
+"""Session-authenticated endpoint for the configured local favicon."""
+
+ICON_ENDPOINT = "/_cuiman/assets/icon"
+"""Session-authenticated endpoint for the configured local header image."""
 
 LAUNCH_QUERY_PARAM = "launch"
 """Name of the one-shot launch-code query parameter."""
@@ -109,11 +119,9 @@ class LaunchedAppService(rs.Service[Any]):
         if not client_config.api_url:
             raise ValueError("Required setting 'api_url' not configured")
         self._client_config = client_config
-        self._app_config = {
-            "branding": client_config.branding.model_dump(
-                mode="json", exclude_none=True
-            )
-        }
+        self._app_config, self._favicon, self._icon = _snapshot_branding(
+            client_config.branding
+        )
         self._launch_codes: dict[str, _LaunchCode] = {}
         self._sessions: set[str] = set()
         self._prepare = prepare
@@ -145,7 +153,11 @@ class LaunchedAppService(rs.Service[Any]):
             """Prevent the launch code from being propagated as a referrer."""
             response = await call_next(request)
             response.headers["Referrer-Policy"] = "no-referrer"
-            if getattr(request.scope.get("route"), "path", None) == CONFIG_ENDPOINT:
+            if getattr(request.scope.get("route"), "path", None) in {
+                CONFIG_ENDPOINT,
+                FAVICON_ENDPOINT,
+                ICON_ENDPOINT,
+            }:
                 response.headers["Cache-Control"] = "no-store"
             return response
 
@@ -181,6 +193,22 @@ class LaunchedAppService(rs.Service[Any]):
             """Return branding for an established session, including after reload."""
             self._require_session(request)
             return self._app_config
+
+        @app.get(FAVICON_ENDPOINT)
+        async def get_favicon(request: Request) -> Response:
+            """Serve only the favicon selected by the owning Python client."""
+            self._require_session(request)
+            if self._favicon is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+            return self._favicon
+
+        @app.get(ICON_ENDPOINT)
+        async def get_icon(request: Request) -> Response:
+            """Serve only the header image selected by the owning Python client."""
+            self._require_session(request)
+            if self._icon is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+            return self._icon
 
         @app.api_route(
             f"{SERVICE_PROXY_ENDPOINT}/{{path:path}}",
@@ -277,6 +305,50 @@ class LaunchedAppService(rs.Service[Any]):
             headers=headers,
             follow_redirects=False,
         )
+
+
+def _snapshot_branding(
+    branding: AppBranding,
+) -> tuple[dict[str, Any], Response | None, Response | None]:
+    """Separate public browser configuration from local image snapshots."""
+    public = branding.model_dump(mode="json", exclude_none=True)
+    favicon = branding.favicon
+    if isinstance(favicon, Path):
+        favicon = AppImageIcon(path=favicon)
+    favicon_asset = None
+    if isinstance(favicon, AppImageIcon):
+        favicon_asset = _snapshot_image(favicon)
+        public.pop("favicon", None)
+        if favicon_asset is not None:
+            public["favicon"] = f".{FAVICON_ENDPOINT}"
+        elif favicon.url is not None:
+            public["favicon"] = favicon.url
+    icon_asset = None
+    if isinstance(branding.icon, AppImageIcon):
+        icon_asset = _snapshot_image(branding.icon)
+        public.pop("icon", None)
+        if icon_asset is not None:
+            public["icon"] = {"url": f".{ICON_ENDPOINT}"}
+        elif branding.icon.url is not None:
+            public["icon"] = {"url": branding.icon.url}
+    return {"branding": public}, favicon_asset, icon_asset
+
+
+def _snapshot_image(image: AppImageIcon) -> Response | None:
+    """Read a local image once; missing files leave browser defaults in place."""
+    if image.path is None:
+        return None
+    path = image.path.expanduser()
+    try:
+        content = path.read_bytes()
+    except FileNotFoundError:
+        warnings.warn(
+            f"Branding image file not found: {path}. Using the app default.",
+            stacklevel=3,
+        )
+        return None
+    media_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+    return Response(content=content, media_type=media_type)
 
 
 def _get_launch_code(value: object) -> str:

@@ -38,6 +38,26 @@ def test_branding_profile_round_trip(tmp_path):
     }
 
 
+def test_local_branding_profile_round_trip_and_source_override(tmp_path):
+    profile = tmp_path / "config"
+    branding = AppBranding(
+        favicon=tmp_path / "favicon.svg",
+        icon=AppImageIcon(path=tmp_path / "logo.svg"),
+    )
+    ClientConfig(branding=branding).write(profile)
+    assert ClientConfig.from_file(profile).branding == branding
+    overridden = ClientConfig.create(
+        config_path=profile,
+        branding={
+            "favicon": {"url": "./favicon.svg"},
+            "icon": {"url": "./logo.svg"},
+        },
+    )
+    assert overridden.branding == AppBranding(
+        favicon=AppImageIcon(url="./favicon.svg"), icon=AppImageIcon(url="./logo.svg")
+    )
+
+
 def test_branding_merges_profile_environment_and_keywords(tmp_path, monkeypatch):
     path = tmp_path / "config"
     ClientConfig(

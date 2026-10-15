@@ -80,3 +80,25 @@ def test_branding_omits_unspecified_and_null_fields():
         )
         == {}
     )
+
+
+@pytest.mark.parametrize("value", [{}, {"path": "logo.svg", "url": "./logo.svg"}])
+def test_image_requires_exactly_one_source(value):
+    with pytest.raises(ValidationError, match="exactly one"):
+        AppImageIcon.model_validate(value)
+
+
+def test_local_images_round_trip_without_becoming_browser_urls():
+    branding = AppBranding(
+        favicon=Path("favicon.svg"), icon=AppImageIcon(path="logo.svg")
+    )
+    assert branding.model_dump(mode="json", exclude_none=True) == {
+        "favicon": {"path": "favicon.svg"},
+        "icon": {"path": "logo.svg"},
+    }
+    assert AppBranding.model_validate_json(branding.model_dump_json()) == branding
+
+
+def test_favicon_supports_explicit_browser_url():
+    branding = AppBranding(favicon=AppImageIcon(url="https://example.test/icon.svg"))
+    assert branding.favicon.url == "https://example.test/icon.svg"

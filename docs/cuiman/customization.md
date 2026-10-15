@@ -125,6 +125,58 @@ built-ins. For later changes, use `MyConfig.register_job_result_opener(...)` and
 its returned unregister callback. These runtime registrations affect only that
 class and are not inherited by subclasses.
 
+## Browser branding and local images
+
+Set `ClientConfig.branding` to customize the browser title, favicon, and header
+icon without rebuilding the browser app:
+
+```python
+from pathlib import Path
+
+from cuiman import Client, ClientConfig
+from cuiman.app import AppBranding, AppImageIcon
+
+client = Client(config=ClientConfig(
+    api_url="https://anolis.api.org/process-api/v1",
+    branding=AppBranding(
+        title="Anolis",
+        favicon=Path("images/favicon.svg"),
+        icon=AppImageIcon(path=Path("images/logo.svg")),
+    ),
+))
+client.show_app()
+```
+
+`AppImageIcon` requires exactly one of `path` or `url` and can be used for both
+the favicon and header image. `favicon` also accepts a `Path` as shorthand for
+a local file, or a string as shorthand for a browser URL. For an emoji header,
+use `AppEmojiIcon(emoji="🌍")` instead.
+
+Local paths resolve against Python's working directory, with `~` expanded.
+When the app server starts, Cuiman reads each configured file once and keeps
+its bytes for that server's lifetime. Restart the server to pick up file changes.
+Missing files produce a Python warning and leave the corresponding browser
+default in place; other file-read errors propagate.
+
+Cuiman serves these snapshots at `/_cuiman/assets/favicon` and
+`/_cuiman/assets/icon`, using the existing launch-session authentication.
+The browser configuration contains relative endpoint URLs, never local paths,
+so Jupyter proxy prefixes are preserved. Configuration and asset responses use
+`Cache-Control: no-store`. MIME types come from the filename extension, with
+`application/octet-stream` as the fallback for unknown extensions.
+
+Use `AppImageIcon(url="https://example.org/logo.svg")` for a remote image or
+`AppImageIcon(url="./logo.svg")` for a file already deployed alongside the app.
+Cuiman passes URLs through for the browser to load; it does not read them as
+local files. Leading `/` remains origin-relative. Omitted branding fields use
+the browser defaults.
+
+Profiles and explicit branding JSON files preserve the distinction with
+`{"path": "images/logo.svg"}` versus `{"url": "./logo.svg"}`. Load a branding
+JSON object with `AppBranding.from_file(path)`; its fields are `title`, `favicon`,
+and `icon` directly. Paths inside it still resolve against Python's working
+directory, rather than the JSON file's directory.
+
 ## CLI customisation
 
 In a module `src/anolis_client/cli.py`:

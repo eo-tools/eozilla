@@ -38,6 +38,12 @@ the neutral label “Processing Service” for the service configured by the Pyt
 client, and neutral fallback errors when branding is unavailable during startup.
 See [Cuiman customization](../cuiman/customization.md) for configuration examples.
 
+Python callers can set `ClientConfig.branding` to supply a title, favicon, and
+header emoji or image. Explicit local images are served through Cuiman's
+authenticated favicon and icon endpoints, so they need not be copied into the
+browser build. Missing local images leave the app defaults in place. See
+[browser branding and local images](../cuiman/customization.md#browser-branding-and-local-images).
+
 ## Further Reading
 
 - [Cuiman App guide](../cuiman/guides/app.md) walks through launching the App,

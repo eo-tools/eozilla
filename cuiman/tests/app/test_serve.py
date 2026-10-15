@@ -76,9 +76,11 @@ def test_serve_returns_server_without_display(monkeypatch):
         }
     ]
     assert isinstance(calls["app_service"], LaunchedAppService)
-    assert [route.path for route in calls["app"].routes][-4:] == [
+    assert [route.path for route in calls["app"].routes][-6:] == [
         "/_cuiman/launch",
         "/config.json",
+        "/_cuiman/assets/favicon",
+        "/_cuiman/assets/icon",
         "/_cuiman/service",
         "/_cuiman/service/{path:path}",
     ]

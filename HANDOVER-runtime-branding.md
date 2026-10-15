@@ -5,14 +5,33 @@ changes in this chat. The implementation does not yet match the final design.
 
 ## Resume here
 
+Follow-up implementation on 2026-10-15: the user approved explicit local paths
+and two dedicated asset endpoints (favicon and icon), replacing the generic
+registry proposal below. Python now supports `AppImageIcon(path=...)` versus
+`AppImageIcon(url=...)` for both images, plus `Path(...)` favicon shorthand.
+Local bytes are snapshotted at server creation, served with session authentication
+and no-store headers, and referenced by app-relative URLs in `config.json`.
+Missing files warn and omit the corresponding branding override; other read
+errors propagate. MIME types use filename extensions with an octet-stream
+fallback. Saved profiles retain explicit `path` objects. Cuiman customization
+documentation now describes this interface. Browser changes, service runtime
+configuration, and bundled rebuild remain separate review checkpoints.
+The historical session and Git-state notes below describe the previous handover.
+
+Follow-up validation: `pixi run test-cuiman` passed 719 tests with 100% coverage
+for `cuiman.api.branding`, `cuiman.api.config`, and `cuiman.app.launch`.
+`pixi run checks` and `pixi run build-docs` passed. The docs build copies
+`docs/hooks/download_fonts.py` into `site/hooks/`; remove that generated copy
+before running checks to avoid mypy reporting a duplicate module.
+No browser changes, bundled rebuild, commits, or pushes were made in this follow-up.
+
 Work in `C:\Users\norma\Projects\eozilla`. Read `AGENTS.md` and:
 
 - https://github.com/eo-tools/eozilla/issues/244
 - https://github.com/eo-tools/eozilla-app/issues/101
 
-The user is ending this session and will commit the intermediate work, knowing
-that it needs further changes. This request authorizes updating this handover
-only. Do not implement further changes or commit on the user's behalf now.
+The previous session ended with intermediate work for the user to commit.
+The follow-up session explicitly authorized the Python asset implementation.
 On resumption, inspect both checkouts and their current commits before editing.
 
 The original sequence had at most four steps, with user review between them:
@@ -100,10 +119,9 @@ A relative URL alone does not make a Python-local file available to the browser.
 The user explicitly requires Cuiman callers to configure assets through Python,
 without copying files into the frontend `public/` directory.
 
-- Introduce `GET /_cuiman/assets/{asset_name}`.
-- Python registers explicitly supplied local branding files, initially favicon
-  and header image. The asset registry/endpoint can support other assets later.
-- Asset names map to registered files; do not expose arbitrary filesystem paths.
+- Use only `GET /_cuiman/assets/favicon` and `GET /_cuiman/assets/icon`.
+- Python snapshots explicitly supplied local favicon and header-image files.
+- No generic asset-name registry or arbitrary filesystem-path endpoint is exposed.
 - Use the existing Cuiman session authentication for asset requests.
 - Python-generated `config.json` references the registered assets using relative
   browser URLs, for example:
@@ -113,7 +131,7 @@ without copying files into the frontend `public/` directory.
   "branding": {
     "title": "Sen4CAP",
     "favicon": "./_cuiman/assets/favicon",
-    "icon": {"url": "./_cuiman/assets/header-icon"}
+    "icon": {"url": "./_cuiman/assets/icon"}
   }
 }
 ```
@@ -121,10 +139,10 @@ without copying files into the frontend `public/` directory.
 - Resolve relative URLs against the browser-visible app URL, preserving Jupyter
   proxy prefixes. Leading `/` remains origin-relative; external HTTP(S) URLs
   remain supported.
-- The exact Python interface for distinguishing local asset files from URLs is
-  not decided yet. Design this explicitly; do not interpret an ordinary relative
-  URL as an arbitrary filesystem path. Content types, missing-file behavior, and
-  snapshot/lifetime details also need implementation decisions and tests.
+- Use `AppImageIcon(path=...)` for local files and `AppImageIcon(url=...)`
+  for browser URLs. Favicon also accepts `Path(...)` or a URL string.
+  Exactly one image source is required. See the follow-up note above for
+  missing-file behavior, MIME types, and snapshot lifetime.
 - For standalone apps, the developer must statically deploy the referenced files,
   e.g. `index.html`, `config.json`, `assets/favicon.svg`, and `assets/logo.svg`.
   App-relative paths in JSON then work without a custom build. External HTTP(S)
@@ -145,7 +163,7 @@ without copying files into the frontend `public/` directory.
 - `cuiman/src/cuiman/app/launch.py` snapshots branding and serves authenticated
   `GET /config.json`, returning only `{"branding": ...}` with no-store headers.
   The route precedes the static app mount. Launch response stays 204.
-- The new assets endpoint and Python asset registration are NOT implemented.
+- Dedicated favicon/icon endpoints and local file snapshots are implemented.
   Existing asset strings still represent browser URLs.
 
 ## Current implementation: browser

@@ -598,9 +598,10 @@ def _update_config(target: dict[str, Any], updates: dict[str, Any]) -> None:
 
 
 def _update_branding(target: dict[str, Any], updates: dict[str, Any]) -> None:
-    """Merge branding fields while replacing the emoji-or-image icon as a whole."""
-    if updates.get("icon") is not None:
-        target["icon"] = deepcopy(updates["icon"])
+    """Merge branding fields while replacing each image or emoji as a whole."""
+    for field in ("favicon", "icon"):
+        if updates.get(field) is not None:
+            target[field] = deepcopy(updates[field])
     _update_if_not_none(target, updates)
 
 
