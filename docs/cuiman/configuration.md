@@ -24,6 +24,9 @@ also validated independently so invalid profiles always produce the documented
 
 After resolution, matching operating-system keyring entries can fill missing
 credentials. They never replace credentials supplied by any configuration source.
+Keyring lookup normally requires an existing profile. Applications with
+`require_config_file = False` also load credentials without a file, using their
+default profile path to identify the keyring entry.
 
 Applications using `cuiman` can select their own `ClientConfig` subclass for
 each sync client, async client, and CLI. That class is an isolated settings
@@ -135,6 +138,14 @@ this does not make non-empty paths interchangeable. The OIDC issuer explicitly
 preserves an empty path.
 
 ### Configuration Files
+
+CLI commands require an existing, nonempty configuration file by default.
+Applications with complete public defaults can set
+`ClientConfig.require_config_file = False` in their own subclass. Users can then
+run `login` directly; login saves credentials in the keyring without writing a
+configuration file. Existing files are still loaded and validated, and an
+explicit CLI `--config` path must exist. Python API calls continue to allow
+missing files. See [Cuiman Customization](customization.md) for an example.
 
 ```python
 from cuiman import Client

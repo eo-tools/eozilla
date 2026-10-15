@@ -67,6 +67,21 @@ class ClientConfig(BaseSettings):
     Designed to be overridden by library clients.
     """
 
+    require_config_file: ClassVar[bool] = True
+    """Whether the application's CLI requires an existing, nonempty config file.
+
+    CLI commands share settings through the application defaults, environment,
+    and profile; they do not accept general configuration keyword arguments.
+    Applications with complete defaults can set this to ``False`` so users can
+    run ``login`` directly instead of first running ``configure``. Credentials
+    are stored in the keyring under the default profile path even without a file.
+
+    Python API clients can supply complete settings through ``config`` or keyword
+    arguments such as ``api_url`` and ``auth``, so this class policy does not make
+    a file mandatory for them. This attribute is class metadata, excluded from
+    environment settings and saved profiles.
+    """
+
     display_name: ClassVar[str | None] = None
     """Application name for notebook labels and app-launch errors.
 
@@ -163,7 +178,7 @@ class ClientConfig(BaseSettings):
         config_type: type["ClientConfig"] | None = None,
         config_path: Optional[Path | str] = None,
         resolve_secrets: bool = True,
-        require_file: bool = False,
+        require_config_file: bool = False,
         **config_kwargs,
     ) -> "ClientConfig":
         """Resolve client settings, optionally skipping stored keyring secrets.
@@ -174,8 +189,9 @@ class ClientConfig(BaseSettings):
         merges into the selected authentication configuration, including nested
         mappings; ``None`` values in partial overrides are ignored.
 
-        If a public configuration file exists and the resolved authentication
-        lacks usable credentials, matching keyring secrets fill missing values.
+        If a public configuration file exists or the application sets its
+        ``require_config_file`` class attribute to ``False``, matching keyring
+        secrets fill missing credentials in the resolved authentication.
         Explicitly supplied credentials take precedence, including after an
         auth replacement. Resolution does not rewrite the configuration file.
 
@@ -188,8 +204,10 @@ class ClientConfig(BaseSettings):
         it, including with overrides, does not reread these external sources.
         An explicitly different ``config_path`` selects a fresh profile instead.
         Secret lookup is independent and can be requested after initially
-        resolving with ``resolve_secrets=False``. ``require_file=True`` requires
-        an existing, nonempty profile, as the CLI does.
+        resolving with ``resolve_secrets=False``. The ``require_config_file``
+        argument requires an existing, nonempty profile when ``True``; Python
+        API calls default to ``False``. The CLI passes the selected application's
+        class policy, and always requires an explicitly selected profile to exist.
         """
         # 1. Select the application namespace and profile before reading sources.
         #    The chosen class owns the schema, defaults, and settings metadata.
@@ -234,7 +252,7 @@ class ClientConfig(BaseSettings):
                 )
                 _update_config(values, supplied)
 
-        if require_file and not has_profile:
+        if require_config_file and not has_profile:
             if config_path is None:
                 raise ValueError(
                     "The client tool has not yet been configured; "
@@ -277,7 +295,11 @@ class ClientConfig(BaseSettings):
             and resolved.auth.model_dump() == config.auth.model_dump()
         ):
             resolved.auth = config.auth.model_copy(deep=True)
-        if resolve_secrets and has_profile and not has_credentials(resolved.auth):
+        if (
+            resolve_secrets
+            and (has_profile or not config_cls.require_config_file)
+            and not has_credentials(resolved.auth)
+        ):
             _resolve_auth_secrets(resolved, source_path)
         return resolved
 

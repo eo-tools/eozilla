@@ -46,6 +46,7 @@ class AnolisClientConfig(ClientConfig):
     )
 
     default_path: ClassVar[Path] = Path.home() / ".anolis-client"
+    require_config_file = False
     display_name: ClassVar[str | None] = "Anolis"
     cli_name: ClassVar[str | None] = "anolis-client"
     api_url: str | None = "https://anolis.api.org/process-api/v1"
@@ -75,6 +76,15 @@ CLI recovery messages always use the name passed to `new_cli()`, even when it
 differs from `config_type.cli_name`. Creating a CLI does not modify the config
 class or other clients. With a custom version, `--version` prints
 `anolis-client <application-version> (cuiman <library-version>)`.
+
+`require_config_file` controls whether the CLI requires an existing, nonempty
+configuration file. It defaults to `True`. Set it to `False` when the application's
+defaults provide complete public settings: users can run `login` directly, and
+Cuiman reuses credentials from the keyring without creating a configuration file.
+The default profile path still identifies the keyring entry. The flag is class
+metadata, excluded from environment settings and saved profiles. Python API calls
+continue to allow missing files. An explicitly supplied CLI `--config` path must
+exist regardless of this flag.
 
 `config_type` selects the schema, field defaults, dotenv and environment
 settings, profile path, and result-opening extensions for a client or CLI.

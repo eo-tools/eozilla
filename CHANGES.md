@@ -14,6 +14,21 @@
 - **Procodile** no longer drops $ref schema references when building process 
   descriptions. (#239)
 
+- **Cuiman and Eozilla App** now support runtime branding and configuration. (#244)
+  Customize the title, favicon, and header icon through `ClientConfig.branding`
+  using `AppBranding`, `AppEmojiIcon`, and `AppImageIcon`; local images are served
+  through authenticated endpoints. Runtime `config.json` replaces branding and
+  service-default `VITE_*` settings and lets standalone deployments configure
+  public service defaults without rebuilding. See the
+  [runtime configuration guide](docs/eozilla-app/runtime-configuration.md).
+- Profiles saved **Cuiman CLI's** `configure` command now omit settings equal 
+  to class defaults while retaining public authentication metadata. 
+- **Cuiman Applications** with complete defaults can now set
+  `require_config_file = False` to log in without first running `configure` or
+  creating a profile file; keyring credentials are reused across commands.
+  Python API calls still allow missing files. The `ClientConfig.create()`
+  argument `require_file` is renamed to `require_config_file`.
+
 
 ## Changes in version 0.3.1
 

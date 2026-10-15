@@ -1,13 +1,107 @@
 """CLI sign-in uses the same live client and explicit durable-save operation."""
 
 import json
+from typing import ClassVar
 from unittest.mock import Mock
 
 import pytest
 
 from cuiman import ClientConfig
+from cuiman.api.auth import AuthConfig
 from cuiman.api.auth.secret_store import SecretStoreError
 from cuiman.cli.config import login_client_with_prompt, logout_client
+
+
+@pytest.mark.parametrize(
+    "auth,answers",
+    [
+        ({"auth_type": "token"}, ["token"]),
+        (
+            {
+                "auth_type": "oauth2",
+                "token_url": "https://identity.test/token",
+                "client_id": "client",
+            },
+            ["user", "pass"],
+        ),
+        (
+            {
+                "auth_type": "oidc",
+                "issuer_url": "https://identity.test/realm",
+                "client_id": "client",
+            },
+            [],
+        ),
+    ],
+)
+def test_cli_login_reuses_and_removes_keyring_credentials_without_a_config_file(
+    auth, answers, auth_provider, monkeypatch, tmp_path
+):
+    from typer.testing import CliRunner
+
+    from cuiman.cli.cli import new_cli
+    from cuiman.cli.config import get_config
+    from gavicore.models.core import ProcessList
+
+    default_auth = ClientConfig.new_instance(auth=auth).auth
+
+    class ApplicationConfig(ClientConfig):
+        require_config_file: ClassVar[bool] = False
+        default_path = tmp_path / "optional-config"
+        api_url: str | None = "https://processing.test/"
+        auth: AuthConfig = default_auth
+
+    records = {}
+    monkeypatch.setattr(
+        "keyring.get_password", lambda service, account: records.get((service, account))
+    )
+    monkeypatch.setattr(
+        "keyring.set_password",
+        lambda service, account, value: records.__setitem__((service, account), value),
+    )
+    monkeypatch.setattr(
+        "keyring.delete_password",
+        lambda service, account: records.pop((service, account)),
+    )
+    prompt = Mock(side_effect=answers)
+    monkeypatch.setattr("typer.prompt", prompt)
+    app = new_cli(name="default-client", config_type=ApplicationConfig)
+    runner = CliRunner()
+
+    result = runner.invoke(app, ["login", "--no-browser"])
+    assert result.exit_code == 0, result.output
+    assert "Login completed" in result.output
+    assert records
+    assert prompt.call_count == len(answers)
+    assert not ApplicationConfig.default_path.exists()
+
+    resolved = get_config(None, config_type=ApplicationConfig)
+    assert resolved._source_path == ApplicationConfig.default_path
+    assert not resolved._has_profile
+    assert "require_config_file" not in resolved.to_file_dict()
+    if auth["auth_type"] == "token":
+        assert resolved.auth.access_token == "token"  # noqa: S105
+    else:
+        assert resolved.auth.oauth_token["access_token"] == "access-1"  # noqa: S105
+
+    prompt.side_effect = AssertionError("saved credentials should prevent prompts")
+    grant_count = len(auth_provider.grants)
+    monkeypatch.setattr(
+        "cuiman.api.client.Client.get_processes",
+        lambda self: ProcessList(processes=[], links=[]),
+    )
+    result = runner.invoke(app, ["list-processes"])
+    assert result.exit_code == 0, result.output
+    result = runner.invoke(app, ["login", "--no-input"])
+    assert result.exit_code == 0, result.output
+    assert len(auth_provider.grants) == grant_count
+
+    result = runner.invoke(app, ["logout"])
+    assert result.exit_code == 0, result.output
+    assert not records
+    assert not ApplicationConfig.default_path.exists()
+    with pytest.raises(ValueError, match="login"):
+        get_config(None, config_type=ApplicationConfig)
 
 
 @pytest.mark.parametrize("command", ["login", "list-processes"])
