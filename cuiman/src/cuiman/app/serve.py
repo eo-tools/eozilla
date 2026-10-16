@@ -47,7 +47,11 @@ def serve(
     JupyterLab and JupyterHub deployments without exposing the server port.
 
     Args:
-        config: Processing-service configuration.
+        config: Processing-service configuration and browser branding. Its
+            ``branding`` setting is served through session-authenticated
+            ``config.json``. Relative asset URLs are preserved for the browser
+            to resolve against its app URL. Explicit local branding files are
+            snapshotted and served through dedicated authenticated endpoints.
         client: Optional owning Python client whose live session the app borrows.
         store: Remote state store shared by the Python client and web app.
         compact: Whether the app uses its compact layout.

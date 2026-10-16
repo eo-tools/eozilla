@@ -35,8 +35,17 @@ client.show_app()
 Applications can set `ClientConfig.display_name` to brand notebook launch links,
 browser debug messages, and server-reported launch errors. The browser app uses
 the neutral label “Processing Service” for the service configured by the Python
-client, and neutral fallback errors when branding is unavailable during startup.
-See [Cuiman customization](../cuiman/customization.md) for configuration examples.
+client. For browser branding, set `ClientConfig.branding`; the
+[Cuiman customization guide](../cuiman/customization.md#browser-branding-and-local-images)
+shows how to supply a title, emoji, or local image files.
+
+## Runtime configuration
+
+Standalone deployments can supply `config.json` beside `index.html` to set
+branding and the intended service without rebuilding. Cuiman supplies its own
+authenticated configuration from Python. See
+[Runtime Configuration](runtime-configuration.md) for setup examples, supported
+fields, defaults, and startup behavior.
 
 ## Further Reading
 
