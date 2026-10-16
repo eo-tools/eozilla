@@ -21,8 +21,10 @@
   service-default `VITE_*` settings and lets standalone deployments configure
   public service defaults without rebuilding. See the
   [runtime configuration guide](docs/eozilla-app/runtime-configuration.md).
+
 - Profiles saved **Cuiman CLI's** `configure` command now omit settings equal 
   to class defaults while retaining public authentication metadata. 
+
 - **Cuiman Applications** with complete defaults can now set
   `require_config_file = False` to log in without first running `configure` or
   creating a profile file; keyring credentials are reused across commands.

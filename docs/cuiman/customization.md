@@ -137,8 +137,9 @@ class and are not inherited by subclasses.
 
 ## Browser branding and local images
 
-Set `ClientConfig.branding` to customize the browser title, favicon, and header
-icon without rebuilding the browser app:
+Set `ClientConfig.branding` to customize the browser-tab and header title,
+favicon, and header icon without rebuilding the browser app. This is separate
+from `display_name`, which controls notebook launch links and client messages:
 
 ```python
 from pathlib import Path
