@@ -20,7 +20,7 @@
   endpoints. 
   See the [runtime configuration guide](docs/eozilla-app/runtime-configuration.md).
 
-- Profiles saved **Cuiman CLI's** `configure` command now omit settings equal 
+- Profiles saved by **Cuiman CLI's** `configure` command now omit settings equal 
   to class defaults while retaining public authentication metadata. 
 
 - **Cuiman Applications** with complete defaults can now set
