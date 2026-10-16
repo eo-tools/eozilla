@@ -16,6 +16,7 @@ Deploy `config.json` beside `index.html`, along with any referenced images:
 {
   "branding": {
     "title": "Sen4CAP",
+    "iconPosition": "before",
     "favicon": "./assets/favicon.svg",
     "icon": {"url": "./assets/logo.svg"}
   },
@@ -42,6 +43,10 @@ Missing or null fields fall back individually:
 | `title` | Nonempty browser-tab and header title | `Eozilla` |
 | `favicon` | Image URL | `./eozilla-small.svg` |
 | `icon` | Exactly one of `{"emoji":"🌍"}` or `{"url":"./assets/logo.svg"}` | `{"emoji":"🦖"}` |
+| `iconPosition` | `"before"` or `"after"` the header title in reading order | `"after"` |
+
+Icon position applies to both emoji and images. It does not change the
+browser-tab title or favicon. Invalid positions produce a configuration error.
 
 Relative image URLs resolve against the browser-visible app URL, preserving
 hosting and Jupyter proxy prefixes. Leading `/` is origin-relative; external

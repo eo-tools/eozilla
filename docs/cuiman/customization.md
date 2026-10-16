@@ -151,6 +151,7 @@ client = Client(config=ClientConfig(
     api_url="https://anolis.api.org/process-api/v1",
     branding=AppBranding(
         title="Anolis",
+        icon_position="before",
         favicon=Path("images/favicon.svg"),
         icon=AppImageIcon(path=Path("images/logo.svg")),
     ),
@@ -162,6 +163,11 @@ client.show_app()
 the favicon and header image. `favicon` also accepts a `Path` as shorthand for
 a local file, or a string as shorthand for a browser URL. For an emoji header,
 use `AppEmojiIcon(emoji="🌍")` instead.
+
+Set `icon_position="before"` to display the icon before the header title, or
+`"after"` to display it after the title in reading order. Omitted or `None`
+uses `"after"`. This applies to both emoji and images and does not change the
+browser-tab title or favicon.
 
 Local paths resolve against Python's working directory, with `~` expanded.
 When the app server starts, Cuiman reads each configured file once and keeps
@@ -178,8 +184,8 @@ the browser defaults.
 Profiles and explicit branding JSON files preserve the distinction with
 `{"path": "images/logo.svg"}` versus `{"url": "./logo.svg"}`. Load a branding
 JSON object with `AppBranding.from_file(path)`; its fields are `title`, `favicon`,
-and `icon` directly. Paths inside it still resolve against Python's working
-directory, rather than the JSON file's directory. See the
+`icon`, and `icon_position` directly. Paths inside it still resolve against
+Python's working directory, rather than the JSON file's directory. See the
 [runtime configuration reference](../eozilla-app/runtime-configuration.md)
 for browser defaults, deployment modes, and asset-serving details.
 

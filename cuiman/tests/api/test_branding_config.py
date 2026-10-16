@@ -25,17 +25,23 @@ def test_branding_defaults_are_independent_and_not_persisted_when_empty():
     assert second.branding.title is None
 
 
-def test_branding_profile_round_trip(tmp_path):
+@pytest.mark.parametrize("position", ["before", "after", None])
+def test_branding_profile_round_trip(tmp_path, position):
     path = tmp_path / "config"
-    branding = AppBranding(title="Sen4CAP", icon=AppImageIcon(url="./logo.svg"))
+    branding = AppBranding(
+        title="Sen4CAP", icon=AppImageIcon(url="./logo.svg"), icon_position=position
+    )
     config = ClientConfig(branding=branding)
     config.write(path)
     restored = ClientConfig.from_file(path)
     assert restored.branding == branding
-    assert restored.to_file_dict()["branding"] == {
+    expected = {
         "title": "Sen4CAP",
         "icon": {"url": "./logo.svg"},
     }
+    if position is not None:
+        expected["icon_position"] = position
+    assert restored.to_file_dict()["branding"] == expected
 
 
 def test_local_branding_profile_round_trip_and_source_override(tmp_path):
@@ -67,9 +73,13 @@ def test_branding_merges_profile_environment_and_keywords(tmp_path, monkeypatch)
     ).write(path)
     monkeypatch.setenv("EOZILLA_BRANDING__TITLE", "Environment")
     monkeypatch.setenv("EOZILLA_BRANDING__ICON__URL", "./logo.svg")
+    monkeypatch.setenv("EOZILLA_BRANDING__ICON_POSITION", "before")
     config = ClientConfig.create(config_path=path, branding={"title": "Explicit"})
     assert config.branding == AppBranding(
-        title="Explicit", favicon="./favicon.svg", icon=AppImageIcon(url="./logo.svg")
+        title="Explicit",
+        favicon="./favicon.svg",
+        icon=AppImageIcon(url="./logo.svg"),
+        icon_position="before",
     )
 
 

@@ -244,6 +244,8 @@ def create_test_client(
         (None, {}),
         (AppBranding(), {}),
         (AppBranding(title="Sen4CAP"), {"title": "Sen4CAP"}),
+        (AppBranding(icon_position="before"), {"iconPosition": "before"}),
+        (AppBranding(icon_position="after"), {"iconPosition": "after"}),
         (
             AppBranding(
                 title="Sen4CAP",

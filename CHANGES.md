@@ -15,12 +15,10 @@
   descriptions. (#239)
 
 - **Cuiman and Eozilla App** now support runtime branding and configuration. (#244)
-  Customize the title, favicon, and header icon through `ClientConfig.branding`
-  using `AppBranding`, `AppEmojiIcon`, and `AppImageIcon`; local images are served
-  through authenticated endpoints. Runtime `config.json` replaces branding and
-  service-default `VITE_*` settings and lets standalone deployments configure
-  public service defaults without rebuilding. See the
-  [runtime configuration guide](docs/eozilla-app/runtime-configuration.md).
+  Customize the `title`, `favicon`, header `icon`, and `icon_position` 
+  through `ClientConfig.branding`; local images are served through authenticated 
+  endpoints. 
+  See the [runtime configuration guide](docs/eozilla-app/runtime-configuration.md).
 
 - Profiles saved **Cuiman CLI's** `configure` command now omit settings equal 
   to class defaults while retaining public authentication metadata. 

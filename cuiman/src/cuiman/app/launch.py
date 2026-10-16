@@ -312,6 +312,8 @@ def _snapshot_branding(
 ) -> tuple[dict[str, Any], Response | None, Response | None]:
     """Separate public browser configuration from local image snapshots."""
     public = branding.model_dump(mode="json", exclude_none=True)
+    if "icon_position" in public:
+        public["iconPosition"] = public.pop("icon_position")
     favicon = branding.favicon
     if isinstance(favicon, Path):
         favicon = AppImageIcon(path=favicon)

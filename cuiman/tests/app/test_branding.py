@@ -22,6 +22,9 @@ def test_branding_accepts_json_icon_alternatives(value):
     [
         {"title": ""},
         {"title": 42},
+        {"icon_position": "left"},
+        {"icon_position": ""},
+        {"icon_position": False},
         {"favicon": ""},
         {"favicon": False},
         {"icon": {}},
@@ -45,11 +48,15 @@ def test_branding_from_file_loads_utf8_and_preserves_relative_assets(
 ):
     path = tmp_path / "branding.json"
     path.write_text(
-        '{"title":"Sen4CAP","favicon":"./favicon.svg","icon":{"emoji":"🌍"}}',
+        '{"title":"Sen4CAP","favicon":"./favicon.svg",'
+        '"icon":{"emoji":"🌍"},"icon_position":"before"}',
         encoding="utf-8",
     )
     assert AppBranding.from_file(str(path) if as_string else path) == AppBranding(
-        title="Sen4CAP", favicon="./favicon.svg", icon=AppEmojiIcon(emoji="🌍")
+        title="Sen4CAP",
+        favicon="./favicon.svg",
+        icon=AppEmojiIcon(emoji="🌍"),
+        icon_position="before",
     )
 
 
@@ -75,7 +82,7 @@ def test_branding_from_file_propagates_missing_file(tmp_path):
 
 def test_branding_omits_unspecified_and_null_fields():
     assert (
-        AppBranding(title=None, favicon=None, icon=None).model_dump(
+        AppBranding(title=None, favicon=None, icon=None, icon_position=None).model_dump(
             mode="json", exclude_none=True
         )
         == {}

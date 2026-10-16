@@ -5,6 +5,7 @@
 """Public branding settings for a Cuiman-launched browser app."""
 
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -56,6 +57,9 @@ class AppBranding(BaseModel):
     icon: AppEmojiIcon | AppImageIcon | None = None
     """Header icon with exactly one of ``emoji``, ``url``, or ``path``."""
 
+    icon_position: Literal["before", "after"] | None = None
+    """Header icon position relative to the title; omitted or None uses 'after'."""
+
     @field_validator("favicon", mode="before")
     @classmethod
     def validate_favicon(cls, value: object) -> object:
@@ -70,7 +74,8 @@ class AppBranding(BaseModel):
     def from_file(cls, path: str | Path) -> "AppBranding":
         """Load a JSON branding object from an explicitly selected UTF-8 file.
 
-        The object contains ``title``, ``favicon``, and/or ``icon`` directly.
+        The object contains ``title``, ``favicon``, ``icon``, and/or
+        ``icon_position`` directly.
         Relative asset URLs remain relative to the browser app, not this file.
         ``~`` is expanded. Filesystem errors and validation errors propagate.
         """
