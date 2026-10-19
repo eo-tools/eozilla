@@ -65,7 +65,7 @@ async def prepare_asset_reader(
     # Media type is authoritative; inspect the URL suffix only when it is absent.
     if opener_id == "xarray" and (
         (ctx.output_media_type or "").split(";", 1)[0].strip().lower()
-        in {"application/zarr", "application/x-zarr", "application/vnd+zarr"}
+        in {"application/zarr", "application/x-zarr", "application/vnd+zarr", "application/vnd.zarr"}
         or not ctx.output_media_type
         and urlsplit(ctx.location or "").path.rstrip("/").lower().endswith(".zarr")
     ):

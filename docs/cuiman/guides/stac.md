@@ -11,7 +11,6 @@ built-in STAC readers.
 
 From the repository root, start the service in a separate terminal:
 
-```powershell
 pixi run serve
 ```
 
@@ -25,7 +24,6 @@ for both settings and the raw output shapes.
 
 In a second terminal, enter `pixi shell` from the repository root, then run:
 
-```powershell
 python -m examples.guides.cuiman.stac
 ```
 

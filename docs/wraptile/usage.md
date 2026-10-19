@@ -103,7 +103,6 @@ illustrations, not satellite imagery or scientific NDVI products.
 
 Run from the repository root:
 
-```powershell
 pixi run serve
 ```
 
@@ -114,7 +113,6 @@ are retained for inspection; the directory has no browser listing.
 
 Optional environment settings, configured **before** starting the server:
 
-```powershell
 $env:EOZILLA_TESTING_STAC_DIR = "C:/path/to/testing-artifacts"
 $env:EOZILLA_TESTING_STAC_URL = "http://localhost:8008/testing-stac"
 pixi run serve
