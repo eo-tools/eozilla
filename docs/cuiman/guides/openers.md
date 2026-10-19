@@ -150,9 +150,9 @@ include. The CSV example above runs with the existing development dependencies.
 Asset options follow this order: reader defaults, validated producer hints,
 receiving-client overrides, then explicit caller options. For a Zarr Asset,
 xarray defaults to `engine="zarr"` when the media type is `application/zarr`,
-`application/x-zarr`, or `application/vnd+zarr`. When no media type is supplied,
-the engine is inferred if the selected URL path ends in
-`.zarr` (case insensitive, ignoring trailing slashes and URL parameters).
+`application/x-zarr`, `application/vnd+zarr`, or `application/vnd.zarr`. 
+When no media type is supplied, the engine is inferred if the selected URL path ends 
+in `.zarr` (case insensitive, ignoring trailing slashes and URL parameters).
 Explicit caller options can override the engine; producer metadata cannot choose it.
 Only `chunks`, `backend_kwargs`, `storage_options`, `client_kwargs`, and
 `config_kwargs` merge by key. Scalars and lists replace earlier values; `None`

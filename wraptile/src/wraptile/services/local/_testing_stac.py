@@ -131,8 +131,9 @@ def _footprint(west: float, south: float, index: int) -> list[list[float]]:
 def _write_preview(path: Path, ring: list[list[float]], index: int) -> None:
     """Draw deterministic, north-up illustrative vegetation and water scenery.
 
-    This is independent of the tiny teaching grid, not satellite imagery or a
-    scientific NDVI rendering. Transparent margins match the STAC footprint.
+    This is independent of the tiny 2x2 example array, not satellite imagery
+    or a scientific NDVI rendering. Transparent margins match the STAC
+    footprint.
     """
     import numpy as np
     from PIL import Image, ImageDraw
