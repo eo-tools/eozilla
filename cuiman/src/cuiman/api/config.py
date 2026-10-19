@@ -41,6 +41,7 @@ from gavicore.models.core import InputDescription, ProcessDescription, ProcessSu
 from .auth import AuthConfig, AuthConfigBase, NoAuthConfig
 from .auth.config import has_credentials
 from .auth.secret_store import load_auth_secrets, save_auth_secrets
+from .branding import AppBranding
 from .defaults import DEFAULT_API_URL
 from .opener import JobResultOpenContext, JobResultOpener, JobResultOpenerRegistry
 
@@ -69,6 +70,21 @@ class ClientConfig(BaseSettings):
     Name of the configuration's local default path. 
     Used for configuration persistence in `~/.<config_name>/`.
     Designed to be overridden by library clients.
+    """
+
+    require_config_file: ClassVar[bool] = True
+    """Whether the application's CLI requires an existing, nonempty config file.
+
+    CLI commands share settings through the application defaults, environment,
+    and profile; they do not accept general configuration keyword arguments.
+    Applications with complete defaults can set this to ``False`` so users can
+    run ``login`` directly instead of first running ``configure``. Credentials
+    are stored in the keyring under the default profile path even without a file.
+
+    Python API clients can supply complete settings through ``config`` or keyword
+    arguments such as ``api_url`` and ``auth``, so this class policy does not make
+    a file mandatory for them. This attribute is class metadata, excluded from
+    environment settings and saved profiles.
     """
 
     display_name: ClassVar[str | None] = None
@@ -164,6 +180,14 @@ class ClientConfig(BaseSettings):
     keyring credentials may fill missing secrets after resolution.
     """
 
+    branding: AppBranding = Field(default_factory=AppBranding)
+    """Browser app branding served through session-authenticated ``config.json``.
+
+    Supports the same settings sources as other configuration fields. Omitted
+    branding fields use browser defaults. Use ``AppBranding.from_file(path)``
+    to load a separate JSON branding file explicitly; no file is read implicitly.
+    """
+
     _source_path: Path | None = PrivateAttr(default=None)
     _is_resolved: bool = PrivateAttr(default=False)
     _has_profile: bool = PrivateAttr(default=False)
@@ -192,7 +216,7 @@ class ClientConfig(BaseSettings):
         config_type: type["ClientConfig"] | None = None,
         config_path: Optional[Path | str] = None,
         resolve_secrets: bool = True,
-        require_file: bool = False,
+        require_config_file: bool = False,
         **config_kwargs,
     ) -> "ClientConfig":
         """Resolve client settings, optionally skipping stored keyring secrets.
@@ -203,8 +227,9 @@ class ClientConfig(BaseSettings):
         merges into the selected authentication configuration, including nested
         mappings; ``None`` values in partial overrides are ignored.
 
-        If a public configuration file exists and the resolved authentication
-        lacks usable credentials, matching keyring secrets fill missing values.
+        If a public configuration file exists or the application sets its
+        ``require_config_file`` class attribute to ``False``, matching keyring
+        secrets fill missing credentials in the resolved authentication.
         Explicitly supplied credentials take precedence, including after an
         auth replacement. Resolution does not rewrite the configuration file.
 
@@ -217,8 +242,10 @@ class ClientConfig(BaseSettings):
         it, including with overrides, does not reread these external sources.
         An explicitly different ``config_path`` selects a fresh profile instead.
         Secret lookup is independent and can be requested after initially
-        resolving with ``resolve_secrets=False``. ``require_file=True`` requires
-        an existing, nonempty profile, as the CLI does.
+        resolving with ``resolve_secrets=False``. The ``require_config_file``
+        argument requires an existing, nonempty profile when ``True``; Python
+        API calls default to ``False``. The CLI passes the selected application's
+        class policy, and always requires an explicitly selected profile to exist.
         """
         # 1. Select the application namespace and profile before reading sources.
         #    The chosen class owns the schema, defaults, and settings metadata.
@@ -263,7 +290,7 @@ class ClientConfig(BaseSettings):
                 )
                 _update_config(values, supplied)
 
-        if require_file and not has_profile:
+        if require_config_file and not has_profile:
             if config_path is None:
                 raise ValueError(
                     "The client tool has not yet been configured; "
@@ -306,7 +333,11 @@ class ClientConfig(BaseSettings):
             and resolved.auth.model_dump() == config.auth.model_dump()
         ):
             resolved.auth = config.auth.model_copy(deep=True)
-        if resolve_secrets and has_profile and not has_credentials(resolved.auth):
+        if (
+            resolve_secrets
+            and (has_profile or not config_cls.require_config_file)
+            and not has_credentials(resolved.auth)
+        ):
             _resolve_auth_secrets(resolved, source_path)
         return resolved
 
@@ -444,7 +475,10 @@ class ClientConfig(BaseSettings):
             value = _input_values(type(default), value)
             default = default.model_dump(mode="python", round_trip=True)
         if isinstance(default, dict):
-            _update_if_not_none(default, value)
+            if info.field_name == "branding":
+                _update_branding(default, value)
+            else:
+                _update_if_not_none(default, value)
             return default
         return value
 
@@ -488,14 +522,17 @@ class ClientConfig(BaseSettings):
         )
 
     def to_file_dict(self) -> dict[str, Any]:
-        """Return a configuration mapping that omits authentication secrets."""
+        """Omit class defaults and secrets, retaining public auth metadata."""
         config_dict = self.model_dump(
             mode="json",
             by_alias=True,
             exclude={"auth"},
             exclude_none=True,
+            exclude_defaults=True,
         )
         config_dict["auth"] = self.auth.to_public_dict()
+        if not config_dict.get("branding"):
+            config_dict.pop("branding", None)
         return config_dict
 
     # noinspection PyMethodParameters
@@ -614,6 +651,18 @@ def _update_config(target: dict[str, Any], updates: dict[str, Any]) -> None:
     if isinstance(auth_config, dict) and "auth_type" in auth_config:
         target["auth"] = deepcopy(auth_config)
         updates = {key: value for key, value in updates.items() if key != "auth"}
+    branding = updates.get("branding")
+    if isinstance(branding, dict) and isinstance(target.get("branding"), dict):
+        _update_branding(target["branding"], branding)
+        updates = {key: value for key, value in updates.items() if key != "branding"}
+    _update_if_not_none(target, updates)
+
+
+def _update_branding(target: dict[str, Any], updates: dict[str, Any]) -> None:
+    """Merge branding fields while replacing each image or emoji as a whole."""
+    for field in ("favicon", "icon"):
+        if updates.get(field) is not None:
+            target[field] = deepcopy(updates[field])
     _update_if_not_none(target, updates)
 
 

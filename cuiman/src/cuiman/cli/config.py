@@ -33,9 +33,15 @@ def get_config(
     resolve_secrets: bool = True,
     cli_name: str | None = None,
 ) -> ClientConfig:
-    """Load one application's profile, optionally allowing missing credentials."""
+    """Resolve settings under the application's CLI configuration-file policy.
+
+    An explicitly selected profile must exist even when the default profile is
+    optional. Login and logout may allow missing credentials.
+    """
     config = config_type.create(
-        config_path=config_path, resolve_secrets=resolve_secrets, require_file=True
+        config_path=config_path,
+        resolve_secrets=resolve_secrets,
+        require_config_file=config_type.require_config_file or config_path is not None,
     )
     if require_credentials and not has_credentials(config.auth):
         command = cli_name or config_type.cli_name

@@ -14,13 +14,17 @@ from cuiman.api.auth import (
     TokenAuthConfig,
 )
 from cuiman.api.config import ClientConfig
-from cuiman.app import App
+from cuiman.app import App, AppBranding, AppEmojiIcon, AppImageIcon
 from cuiman.app.launch import (
+    CONFIG_ENDPOINT,
+    FAVICON_ENDPOINT,
+    ICON_ENDPOINT,
     INVALID_LAUNCH_DETAIL,
     INVALID_LAUNCH_STATUS,
     LAUNCH_CODE_TTL_SECONDS,
     LAUNCH_ENDPOINT,
     SERVICE_PROXY_ENDPOINT,
+    SESSION_COOKIE_NAME,
     LaunchedAppService,
 )
 
@@ -218,10 +222,12 @@ def create_test_client(
     *,
     raise_server_exceptions: bool = True,
     config_type: type[ClientConfig] = ClientConfig,
+    branding: AppBranding | None = None,
 ) -> tuple[LaunchedAppService, TestClient]:
     config = config_type(
         api_url="https://process.example.test/api",
         auth=auth or TokenAuthConfig(access_token="token"),
+        branding=branding or AppBranding(),
     )
     owner = Client(config=config)
     service = LaunchedAppService(
@@ -230,3 +236,199 @@ def create_test_client(
     app = FastAPI()
     service._init_app(app)
     return service, TestClient(app, raise_server_exceptions=raise_server_exceptions)
+
+
+@pytest.mark.parametrize(
+    "branding, expected",
+    [
+        (None, {}),
+        (AppBranding(), {}),
+        (AppBranding(title="Sen4CAP"), {"title": "Sen4CAP"}),
+        (AppBranding(icon_position="before"), {"iconPosition": "before"}),
+        (AppBranding(icon_position="after"), {"iconPosition": "after"}),
+        (
+            AppBranding(
+                title="Sen4CAP",
+                favicon="./favicon.svg",
+                icon=AppEmojiIcon(emoji="🌍"),
+            ),
+            {"title": "Sen4CAP", "favicon": "./favicon.svg", "icon": {"emoji": "🌍"}},
+        ),
+        (
+            AppBranding(icon=AppImageIcon(url="https://example.test/logo.png")),
+            {"icon": {"url": "https://example.test/logo.png"}},
+        ),
+        (
+            AppBranding(icon=AppImageIcon(url="./logo.svg")),
+            {"icon": {"url": "./logo.svg"}},
+        ),
+    ],
+)
+def test_config_requires_a_session_and_survives_reload(branding, expected):
+    service, client = create_test_client(branding=branding)
+    response = client.get(CONFIG_ENDPOINT)
+    assert response.status_code == 401
+    assert response.headers["cache-control"] == "no-store"
+    client.cookies.set(SESSION_COOKIE_NAME, "invalid")
+    assert client.get(CONFIG_ENDPOINT).status_code == 401
+    client.cookies.clear()
+    code = service.create_launch_code()
+    response = client.post(LAUNCH_ENDPOINT, json={"launch": code})
+    assert response.status_code == 204
+    assert response.content == b""
+    for _ in range(2):
+        response = client.get(CONFIG_ENDPOINT)
+        assert response.status_code == 200
+        assert response.json() == {"branding": expected}
+        assert response.headers["cache-control"] == "no-store"
+        assert response.headers["content-type"] == "application/json"
+    assert client.post(LAUNCH_ENDPOINT, json={"launch": code}).status_code == 410
+    assert client.get(CONFIG_ENDPOINT).json() == {"branding": expected}
+
+
+def test_branding_is_snapshotted_and_not_shared_between_app_servers():
+    branding = AppBranding(title="Original", icon=AppImageIcon(url="./original.svg"))
+    first, first_client = create_test_client(branding=branding)
+    second, second_client = create_test_client(branding=AppBranding(title="Second"))
+    branding.title = "Changed"
+    branding.icon.url = "./changed.svg"
+    for service, client in [(first, first_client), (second, second_client)]:
+        code = service.create_launch_code()
+        assert client.post(LAUNCH_ENDPOINT, json={"launch": code}).status_code == 204
+    assert first_client.get(CONFIG_ENDPOINT).json() == {
+        "branding": {"title": "Original", "icon": {"url": "./original.svg"}}
+    }
+    assert second_client.get(CONFIG_ENDPOINT).json() == {
+        "branding": {"title": "Second"}
+    }
+    # A cookie from another app server cannot authorize configuration access.
+    second_client.cookies.clear()
+    second_client.cookies.update(first_client.cookies)
+    assert second_client.get(CONFIG_ENDPOINT).status_code == 401
+
+
+def test_config_works_below_a_jupyter_proxy_prefix():
+    service, _ = create_test_client(
+        branding=AppBranding(
+            favicon="./favicon.svg", icon=AppImageIcon(url="./logo.svg")
+        )
+    )
+    app = FastAPI()
+    service._init_app(app)
+    prefix = "/user/norman/proxy/8765"
+    client = TestClient(app, root_path=prefix, base_url=f"http://testserver{prefix}/")
+    response = client.get("config.json")
+    assert response.status_code == 401
+    assert response.headers["cache-control"] == "no-store"
+    code = service.create_launch_code()
+    assert client.post("_cuiman/launch", json={"launch": code}).status_code == 204
+    response = client.get("config.json")
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    assert response.json() == {
+        "branding": {"favicon": "./favicon.svg", "icon": {"url": "./logo.svg"}}
+    }
+
+
+@pytest.mark.parametrize(
+    "filename, media_type",
+    [
+        ("image.svg", "image/svg+xml"),
+        ("image.png", "image/png"),
+        ("image.unknown-branding-type", "application/octet-stream"),
+    ],
+)
+def test_local_assets_are_authenticated_snapshots_below_a_proxy_prefix(
+    tmp_path, filename, media_type
+):
+    image = tmp_path / filename
+    image.write_bytes(b"original image")
+    branding = AppBranding(icon=AppImageIcon(path=image))
+    # Path shorthand also works when assigned after construction.
+    branding.favicon = image
+    service, _ = create_test_client(branding=branding)
+    app = FastAPI()
+    service._init_app(app)
+    prefix = "/user/norman/proxy/8765"
+    client = TestClient(app, root_path=prefix, base_url=f"http://testserver{prefix}/")
+    for endpoint in (FAVICON_ENDPOINT, ICON_ENDPOINT):
+        response = client.get(f".{endpoint}")
+        assert response.status_code == 401
+        assert response.headers["cache-control"] == "no-store"
+    code = service.create_launch_code()
+    assert client.post("_cuiman/launch", json={"launch": code}).status_code == 204
+    assert client.get("config.json").json() == {
+        "branding": {
+            "favicon": f".{FAVICON_ENDPOINT}",
+            "icon": {"url": f".{ICON_ENDPOINT}"},
+        }
+    }
+    image.unlink()
+    for endpoint in (FAVICON_ENDPOINT, ICON_ENDPOINT):
+        response = client.get(f".{endpoint}")
+        assert response.status_code == 200
+        assert response.content == b"original image"
+        assert response.headers["content-type"] == media_type
+        assert response.headers["cache-control"] == "no-store"
+    assert client.get("_cuiman/assets/other").status_code == 404
+    assert client.get("_cuiman/assets/%2E%2E/private").status_code == 404
+    # A different server cannot use this server's image snapshot or session.
+    _, other = create_test_client()
+    other.cookies.update(client.cookies)
+    assert other.get(ICON_ENDPOINT).status_code == 401
+
+
+def test_missing_local_assets_warn_and_use_defaults(tmp_path):
+    image = tmp_path / "missing.svg"
+    with pytest.warns(UserWarning, match="Branding image file not found") as warnings:
+        service, client = create_test_client(
+            branding=AppBranding(
+                title="Custom", favicon=image, icon=AppImageIcon(path=image)
+            )
+        )
+    assert len(warnings) == 2
+    code = service.create_launch_code()
+    assert client.post(LAUNCH_ENDPOINT, json={"launch": code}).status_code == 204
+    assert client.get(CONFIG_ENDPOINT).json() == {"branding": {"title": "Custom"}}
+    for endpoint in (FAVICON_ENDPOINT, ICON_ENDPOINT):
+        response = client.get(endpoint)
+        assert response.status_code == 404
+        assert response.headers["cache-control"] == "no-store"
+
+
+def test_browser_urls_are_passed_through_without_local_asset_endpoints():
+    service, client = create_test_client(
+        branding=AppBranding(
+            favicon=AppImageIcon(url="https://example.test/favicon.ico"),
+            icon=AppImageIcon(url="./logo.svg"),
+        )
+    )
+    code = service.create_launch_code()
+    assert client.post(LAUNCH_ENDPOINT, json={"launch": code}).status_code == 204
+    assert client.get(CONFIG_ENDPOINT).json() == {
+        "branding": {
+            "favicon": "https://example.test/favicon.ico",
+            "icon": {"url": "./logo.svg"},
+        }
+    }
+    assert client.get(FAVICON_ENDPOINT).status_code == 404
+    assert client.get(ICON_ENDPOINT).status_code == 404
+
+
+def test_local_assets_expand_home_and_propagate_read_errors(tmp_path, monkeypatch):
+    image = tmp_path / "logo.svg"
+    image.write_bytes(b"home image")
+    monkeypatch.setattr("pathlib.Path.expanduser", lambda self: image)
+    service, client = create_test_client(
+        branding=AppBranding(favicon=AppImageIcon(path="~/logo.svg"))
+    )
+    code = service.create_launch_code()
+    client.post(LAUNCH_ENDPOINT, json={"launch": code})
+    assert client.get(FAVICON_ENDPOINT).content == b"home image"
+
+    def denied(self):
+        raise PermissionError("Cannot read image")
+
+    monkeypatch.setattr("pathlib.Path.read_bytes", denied)
+    with pytest.raises(PermissionError, match="Cannot read image"):
+        create_test_client(branding=AppBranding(favicon=image))

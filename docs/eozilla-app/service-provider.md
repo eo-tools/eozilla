@@ -61,82 +61,6 @@ configuration required by a provider. Fields can use `x-ui-visible` to be
 shown only when they apply to the selected authentication method, and
 `x-ui-required` to reject an incomplete configuration before sign-in starts.
 
-## Custom Service Authentication
-
-The built-in Custom Service provider connects to an arbitrary API URL. Its
-configuration offers four authentication choices:
-
-- **None** sends no authentication header.
-- **Token** sends the supplied access token as a Bearer token by default, or in
-  a user-defined header.
-- **Login** posts the supplied username and password to a proprietary login
-  endpoint, then sends the returned access token with API requests. The
-  endpoint must allow the app's browser origin (CORS).
-- **OAuth2** starts browser-based authentication using the OAuth 2.0
-  Authorization Code flow with PKCE; choose **OIDC** when the
-  authorization server provides OpenID Connect discovery, or **OAuth2** when
-  its authorization and token endpoints are configured explicitly.
-
-OAuth2 browser authentication requires a client ID. OIDC additionally requires
-the authorization-server URL. Plain OAuth2 requires both the authorization and
-token endpoint URLs. The authorization server must be configured to redirect
-back to this application and allow the application's browser origin where its
-token endpoint is called from the browser.
-
-For OIDC, leaving scopes empty requests `openid profile email`.
-
-The provider sends the obtained access token as a Bearer token with API
-requests. If the authorization server supplies a refresh token, the provider
-refreshes the access token before it expires. This only authenticates requests
-to the configured API; the API must accept the token or provide its own token
-exchange mechanism.
-
-## Cuiman-Launched Mode
-
-When Cuiman launches the app, the regular service/provider architecture remains
-in use, but the provider represents a same-origin Cuiman proxy rather than the
-processing API directly. This mode is intentionally separate from the
-stand-alone Custom Service flow described above.
-
-1. Cuiman puts only a short-lived, single-use opaque `launch` code in the app
-   URL. It never includes an API URL, headers, tokens, or other service
-   configuration in the query string.
-2. At startup, the app posts that code to the relative `./_cuiman/launch`
-   endpoint. The Cuiman app server consumes the code and creates an HttpOnly
-   browser session cookie; the app replaces `launch` in the displayed URL with
-   the non-sensitive `cuiman=1` mode marker. This lets a reload retain the
-   Cuiman-only provider without retaining a usable launch capability.
-   An expired, consumed, or unknown code receives `410 Gone` with the server's
-   launch-specific error detail. Other exchange failures retain their own
-   status and reason so the app does not misreport them as an expired launch.
-3. The app derives both its RemoteState WebSocket URL and its
-   `CustomServiceProvider` API URL from the browser-visible location. The API
-   URL is the relative `./_cuiman/service/` proxy and uses authentication type
-   `none`; the service and provider interfaces therefore remain unchanged for
-   UI code.
-4. The proxy selects the processing API URL and adds the server-owned
-   authentication headers for every request. The browser only sees the
-   same-origin proxy URL and cannot read the session cookie or upstream
-   credentials.
-
-The app does not offer a sign-out action in Cuiman-launched mode. The Cuiman
-client owns the launched session and is responsible for ending it.
-
-The relative paths are essential for remote JupyterLab and JupyterHub
-deployments, where Cuiman is reached through `jupyter-server-proxy` under a
-path prefix. The derived WebSocket URL retains that same prefix. The provider
-selection is kept only for the current browser session, so a previous
-stand-alone selection is not overwritten.
-
-For local JupyterLab without a server proxy, Cuiman uses the notebook's local
-hostname for the embedded app (`localhost` or `127.0.0.1`). Mixing these two
-hostnames makes the iframe cross-site and blocks its `SameSite=Lax` session
-cookie, causing a successful launch exchange to be followed by HTTP 401.
-
-This mode requires the Cuiman app server. A permanently deployed stand-alone
-SPA continues to use its normal Custom Service configuration and browser-based
-authentication flow.
-
 ### `signIn(options)`
 
 Called from a user-triggered action after a provider has been selected and its
@@ -144,8 +68,7 @@ options have been submitted.
 
 This method is allowed to:
 
-- do nothing and resolve immediately, as the current test/dev/custom providers
-  do;
+- resolve immediately when no interactive authentication is needed;
 - open a popup;
 - redirect the current page to an external sign-in page;
 - store provider-specific temporary auth state before redirecting.
@@ -172,6 +95,97 @@ provider-owned state, callback parameters, session storage, cookies, or tokens
 created by the external sign-in flow. The generic app code only stores the
 provider selection and options; provider-specific sign-in information belongs in
 the provider implementation.
+
+## Custom Service Authentication
+
+The built-in Custom Service provider connects to an arbitrary API URL. Its
+configuration offers these authentication choices:
+
+- **None** sends no authentication header.
+- **Basic** sends the supplied username/password using HTTP Basic authentication.
+- **API key** sends the supplied key in the configured API-key header.
+- **Token** sends the supplied access token as a Bearer token by default, or in
+  a user-defined header.
+- **Login** posts the supplied username and password to a proprietary login
+  endpoint, then sends the returned access token with API requests. The
+  endpoint must allow the app's browser origin (CORS).
+- **OAuth2** starts browser-based authentication using the OAuth 2.0
+  Authorization Code flow with PKCE; choose **OIDC** when the
+  authorization server provides OpenID Connect discovery, or **OAuth2** when
+  its authorization and token endpoints are configured explicitly.
+
+OAuth2 browser authentication requires a client ID. OIDC additionally requires
+the authorization-server URL. Plain OAuth2 requires both the authorization and
+token endpoint URLs. The authorization server must be configured to redirect
+back to this application and allow the application's browser origin where its
+token endpoint is called from the browser.
+
+For OIDC, leaving scopes empty requests `openid profile email`.
+
+The provider sends the obtained access token as a Bearer token with API
+requests. If the authorization server supplies a refresh token, the provider
+refreshes the access token before it expires. This only authenticates requests
+to the configured API; the API must accept the token or provide its own token
+exchange mechanism.
+
+## Standalone Runtime Service Configuration
+
+The optional runtime `service` entry selects a **Configured Service** instance
+of `CustomServiceProvider` and supplies defaults to its options schema. It uses
+the same sign-in and service-creation lifecycle as a manually selected provider.
+The existing transient-selection record gives deployment settings precedence
+without replacing the saved provider at startup. See the
+[runtime reference](runtime-configuration.md#standalone-service-settings) for
+the public fields, selection precedence, and credential-matching rules.
+
+## Cuiman-Launched Mode
+
+When Cuiman launches the app, the regular service/provider architecture remains
+in use, but the provider represents a same-origin Cuiman proxy rather than the
+processing API directly. This mode is intentionally separate from the
+stand-alone Custom Service flow described above.
+
+1. Cuiman puts only a short-lived, single-use opaque `launch` code in the app
+   URL. It never includes an API URL, headers, tokens, or other service
+   configuration in the query string.
+2. At startup, the app posts that code to the relative `./_cuiman/launch`
+   endpoint. The Cuiman app server consumes the code and creates an HttpOnly
+   browser session cookie; the app replaces `launch` in the displayed URL with
+   the non-sensitive `cuiman=1` mode marker. This lets a reload retain the
+   Cuiman-only provider without retaining a usable launch capability.
+   An expired, consumed, or unknown code receives `410 Gone` with the server's
+   launch-specific error detail. Other exchange failures retain their own
+   status and reason so the app does not misreport them as an expired launch.
+3. The app loads session-authenticated `./config.json` for Python-owned branding,
+   including relative URLs for local favicon/header-image snapshots. A failed
+   authentication response is a startup error. It then derives both its
+   RemoteState WebSocket URL and its
+   `CustomServiceProvider` API URL from the browser-visible location. The API
+   URL is the relative `./_cuiman/service/` proxy and uses authentication type
+   `none`; the service and provider interfaces therefore remain unchanged for
+   UI code.
+4. The proxy selects the processing API URL and adds the server-owned
+   authentication headers for every request. The browser only sees the
+   same-origin proxy URL and cannot read the session cookie or upstream
+   credentials.
+
+The app does not offer a sign-out action in Cuiman-launched mode. The Cuiman
+client owns the launched session and is responsible for ending it.
+
+The relative paths are essential for remote JupyterLab and JupyterHub
+deployments, where Cuiman is reached through `jupyter-server-proxy` under a
+path prefix. The derived WebSocket URL retains that same prefix. The provider
+selection is kept only for the current browser session, so a previous
+stand-alone selection is not overwritten.
+
+For local JupyterLab without a server proxy, Cuiman uses the notebook's local
+hostname for the embedded app (`localhost` or `127.0.0.1`). Mixing these two
+hostnames makes the iframe cross-site and blocks its `SameSite=Lax` session
+cookie, causing a successful launch exchange to be followed by HTTP 401.
+
+This mode requires the Cuiman app server. A permanently deployed stand-alone
+SPA continues to use its normal Custom Service configuration and browser-based
+authentication flow.
 
 ## Service
 
@@ -294,8 +308,9 @@ sequenceDiagram
    - sets `serviceProviderId` only if control returns to the app.
 5. If `provider.signIn()` redirects to another website, app execution can stop
    immediately after the provider call. This is expected behavior.
-6. After the external sign-in redirects back to Eozilla, app startup restores
-   the provider id from `eozilla.serviceProviderSelection`.
+6. After an external sign-in redirects back to Eozilla, startup selects the
+   active provider: runtime deployment settings take precedence over the saved
+   selection in `eozilla.serviceProviderSelection`.
 7. `useLoadService()` sees the restored `serviceProviderId`, reads the stored
    options, and calls `provider.createService(options)`.
 8. `createService()` resolves the provider-specific sign-in result and user
@@ -322,15 +337,15 @@ When adding a new provider:
 ## Current Built-In Providers
 
 - `CustomServiceProvider` uses the URL service options and creates a
-  `UrlService`. Its current `signIn()` is a no-op; token headers can be supplied
-  through options.
+  `UrlService`. It handles proprietary login and OAuth2/OIDC sign-in, and uses
+  supplied credentials for basic, token, and API-key authentication. Configured
+  deployments and Cuiman use instances of this provider with their own IDs.
 - `DevServiceProvider` connects to `http://localhost:8008` with an anonymous
   user. Its `signIn()` and `signOut()` are no-ops.
 - `TestingServiceProvider` creates an in-memory test service for local development
   and tests.
 
-These providers demonstrate the minimum contract. A real redirect-based
-provider should use the same interface but move the auth-specific work into
+Additional providers use the same contract, keeping authentication work in
 `signIn()`, `signOut()`, and `createService()`.
 
 ## Responsibility Boundary

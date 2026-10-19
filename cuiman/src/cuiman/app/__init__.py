@@ -2,10 +2,15 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
+from cuiman.api.branding import AppBranding, AppEmojiIcon, AppImageIcon
+
 from .app import App
 from .serve import serve
 
 __all__ = [
     "App",
+    "AppBranding",
+    "AppEmojiIcon",
+    "AppImageIcon",
     "serve",
 ]

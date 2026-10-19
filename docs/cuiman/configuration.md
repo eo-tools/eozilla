@@ -43,6 +43,9 @@ also validated independently so invalid profiles always produce the documented
 
 After resolution, matching operating-system keyring entries can fill missing
 credentials. They never replace credentials supplied by any configuration source.
+Keyring lookup normally requires an existing profile. Applications with
+`require_config_file = False` also load credentials without a file, using their
+default profile path to identify the keyring entry.
 
 Applications using `cuiman` can select their own `ClientConfig` subclass for
 each sync client, async client, and CLI. That class is an isolated settings
@@ -120,6 +123,21 @@ matching profile/API URL/auth-type keyring entry can fill missing secrets.
 Explicitly supplied credentials take precedence. This applies after both
 replacement and merging.
 
+### Browser branding
+
+`ClientConfig.branding` follows the same settings precedence as other fields.
+Partial overrides preserve unspecified branding fields; selecting `favicon` or
+`icon` replaces that whole image/emoji value. Empty branding and branding equal
+to the selected configuration class's default are omitted from saved profiles.
+If branding differs, the whole configured branding value is written. Local
+images retain an explicit `path` field when saved, so they do not become browser
+URLs on reload.
+
+Use `AppBranding.from_file(path)` to load a separate branding JSON object
+explicitly. See the [Python customization example](customization.md#browser-branding-and-local-images)
+and [browser runtime reference](../eozilla-app/runtime-configuration.md) for
+usage and deployment details.
+
 ### URL paths and trailing slashes
 
 Cuiman distinguishes a processing-service **base URL** from an exact
@@ -139,6 +157,14 @@ this does not make non-empty paths interchangeable. The OIDC issuer explicitly
 preserves an empty path.
 
 ### Configuration Files
+
+CLI commands require an existing, nonempty configuration file by default.
+Applications with complete public defaults can set
+`ClientConfig.require_config_file = False` in their own subclass. Users can then
+run `login` directly; login saves credentials in the keyring without writing a
+configuration file. Existing files are still loaded and validated, and an
+explicit CLI `--config` path must exist. Python API calls continue to allow
+missing files. See [Cuiman Customization](customization.md) for an example.
 
 ```python
 from cuiman import Client
@@ -168,8 +194,12 @@ auth:
 ```
 
 Cuiman writes only public connection and authentication metadata to configuration
-files; credentials are omitted. Existing files are loaded using the current
-configuration model, including a customized client's schema. A file is considered
+files; credentials are omitted. Settings equal to their configuration class's
+defaults are omitted, even when explicitly supplied. Public authentication
+metadata is always retained, including its authentication type. Omitted settings
+use the selected class's defaults when loaded again. Existing files are loaded
+using the current configuration model, including a customized client's schema.
+A file is considered
 deprecated or illegal if parsing or validation fails, rather than by checking
 for particular legacy field names. The error is:
 

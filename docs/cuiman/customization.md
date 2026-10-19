@@ -46,6 +46,7 @@ class AnolisClientConfig(ClientConfig):
     )
 
     default_path: ClassVar[Path] = Path.home() / ".anolis-client"
+    require_config_file = False
     display_name: ClassVar[str | None] = "Anolis"
     cli_name: ClassVar[str | None] = "anolis-client"
     api_url: str | None = "https://anolis.api.org/process-api/v1"
@@ -75,6 +76,15 @@ CLI recovery messages always use the name passed to `new_cli()`, even when it
 differs from `config_type.cli_name`. Creating a CLI does not modify the config
 class or other clients. With a custom version, `--version` prints
 `anolis-client <application-version> (cuiman <library-version>)`.
+
+`require_config_file` controls whether the CLI requires an existing, nonempty
+configuration file. It defaults to `True`. Set it to `False` when the application's
+defaults provide complete public settings: users can run `login` directly, and
+Cuiman reuses credentials from the keyring without creating a configuration file.
+The default profile path still identifies the keyring entry. The flag is class
+metadata, excluded from environment settings and saved profiles. Python API calls
+continue to allow missing files. An explicitly supplied CLI `--config` path must
+exist regardless of this flag.
 
 `config_type` selects the schema, field defaults, dotenv and environment
 settings, profile path, and result-opening extensions for a client or CLI.
@@ -138,6 +148,60 @@ output from `ctx.job_results`. The client automatically selects a sole output;
 multiple outputs require `output_name`, including when one is named
 `return_value`. See the [opener guide](guides/openers.md) for selection and context
 details.
+
+## Browser branding and local images
+
+Set `ClientConfig.branding` to customize the browser-tab and header title,
+favicon, and header icon without rebuilding the browser app. This is separate
+from `display_name`, which controls notebook launch links and client messages:
+
+```python
+from pathlib import Path
+
+from cuiman import Client, ClientConfig
+from cuiman.app import AppBranding, AppImageIcon
+
+client = Client(config=ClientConfig(
+    api_url="https://anolis.api.org/process-api/v1",
+    branding=AppBranding(
+        title="Anolis",
+        icon_position="before",
+        favicon=Path("images/favicon.svg"),
+        icon=AppImageIcon(path=Path("images/logo.svg")),
+    ),
+))
+client.show_app()
+```
+
+`AppImageIcon` requires exactly one of `path` or `url` and can be used for both
+the favicon and header image. `favicon` also accepts a `Path` as shorthand for
+a local file, or a string as shorthand for a browser URL. For an emoji header,
+use `AppEmojiIcon(emoji="🌍")` instead.
+
+Set `icon_position="before"` to display the icon before the header title, or
+`"after"` to display it after the title in reading order. Omitted or `None`
+uses `"after"`. This applies to both emoji and images and does not change the
+browser-tab title or favicon.
+
+Local paths resolve against Python's working directory, with `~` expanded.
+When the app server starts, Cuiman reads each configured file once and keeps
+its bytes for that server's lifetime. Restart the server to pick up file changes.
+Missing files produce a Python warning and leave the corresponding browser
+default in place; other file-read errors propagate.
+
+Use `AppImageIcon(url="https://example.org/logo.svg")` for a remote image or
+`AppImageIcon(url="./logo.svg")` for a file already deployed alongside the app.
+Cuiman passes URLs through for the browser to load; it does not read them as
+local files. Leading `/` remains origin-relative. Omitted branding fields use
+the browser defaults.
+
+Profiles and explicit branding JSON files preserve the distinction with
+`{"path": "images/logo.svg"}` versus `{"url": "./logo.svg"}`. Load a branding
+JSON object with `AppBranding.from_file(path)`; its fields are `title`, `favicon`,
+`icon`, and `icon_position` directly. Paths inside it still resolve against
+Python's working directory, rather than the JSON file's directory. See the
+[runtime configuration reference](../eozilla-app/runtime-configuration.md)
+for browser defaults, deployment modes, and asset-serving details.
 
 ## CLI customisation
 

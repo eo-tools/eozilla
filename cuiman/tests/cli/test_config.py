@@ -9,8 +9,8 @@ import pytest
 import yaml
 from typer.testing import CliRunner
 
-from cuiman import ClientConfig
-from cuiman.api.auth import TokenAuthConfig
+from cuiman import AsyncClient, Client, ClientConfig
+from cuiman.api.auth import AuthConfig, TokenAuthConfig
 from cuiman.cli.cli import new_cli
 from cuiman.cli.config import configure_client_with_prompt, get_config
 
@@ -27,6 +27,93 @@ def test_missing_profiles_have_actionable_errors(tmp_path):
         get_config(None)
     with pytest.raises(ValueError, match="not found or empty"):
         get_config(tmp_path / "missing")
+
+
+@pytest.mark.parametrize("client_type", [Client, AsyncClient])
+@pytest.mark.parametrize("required", [False, True])
+def test_python_clients_do_not_require_a_config_file(client_type, required):
+    class ApplicationConfig(ClientConfig):
+        require_config_file = required
+
+    config = ApplicationConfig.create()
+    assert not config._has_profile
+    assert not client_type(config_type=ApplicationConfig).config._has_profile
+
+
+@pytest.mark.parametrize("contents", [None, ""])
+def test_optional_default_profile_uses_validated_sources(
+    contents, monkeypatch, tmp_path
+):
+    class ApplicationConfig(ClientConfig):
+        require_config_file = False
+        default_path = tmp_path / "optional-config"
+        api_url: str | None = "https://default.test/"
+        project: str
+
+    if contents is not None:
+        ApplicationConfig.default_path.write_text(contents)
+    with pytest.raises(ValueError, match="project"):
+        get_config(None, config_type=ApplicationConfig)
+
+    monkeypatch.setenv("EOZILLA_PROJECT", "environment-project")
+    monkeypatch.setenv("EOZILLA_API_URL", "https://environment.test/")
+    config = get_config(None, config_type=ApplicationConfig)
+    assert config.project == "environment-project"
+    assert config.api_url == "https://environment.test/"
+    assert not config._has_profile
+    assert "require_config_file" not in config.to_file_dict()
+    assert "require_config_file" not in ApplicationConfig.model_fields
+    assert ClientConfig.require_config_file is True
+
+
+@pytest.mark.parametrize("contents", [None, ""])
+def test_optional_default_does_not_allow_missing_explicit_profiles(contents, tmp_path):
+    class ApplicationConfig(ClientConfig):
+        require_config_file = False
+
+    path = tmp_path / "selected"
+    if contents is not None:
+        path.write_text(contents)
+    with pytest.raises(ValueError, match="not found or empty"):
+        get_config(path, config_type=ApplicationConfig)
+
+
+def test_optional_profile_still_loads_and_validates_existing_files(tmp_path):
+    class ApplicationConfig(ClientConfig):
+        require_config_file = False
+        default_path = tmp_path / "optional-config"
+        api_url: str | None = "https://default.test/"
+
+    ApplicationConfig.default_path.write_text("api_url: https://saved.test/\n")
+    config = get_config(None, config_type=ApplicationConfig)
+    assert config.api_url == "https://saved.test/"
+    assert config._has_profile
+
+    ApplicationConfig.default_path.write_text("invalid: [")
+    with pytest.raises(ValueError, match="Deprecated or illegal"):
+        get_config(None, config_type=ApplicationConfig)
+
+
+def test_optional_profile_still_requires_login_and_can_skip_keyring(monkeypatch):
+    class ApplicationConfig(ClientConfig):
+        require_config_file = False
+        auth: AuthConfig = TokenAuthConfig()
+
+    load = Mock(return_value={})
+    monkeypatch.setattr("cuiman.api.config.load_auth_secrets", load)
+    with pytest.raises(ValueError, match="'default-client login'"):
+        get_config(None, config_type=ApplicationConfig, cli_name="default-client")
+    load.assert_called_once()
+
+    load.reset_mock()
+    config = get_config(
+        None,
+        config_type=ApplicationConfig,
+        require_credentials=False,
+        resolve_secrets=False,
+    )
+    assert config.auth.access_token is None
+    load.assert_not_called()
 
 
 @pytest.mark.parametrize(
