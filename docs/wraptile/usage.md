@@ -169,5 +169,6 @@ these outputs as native PySTAC objects.
 
 When finished, stop the server and remove the generated run directories from
 the configured artifact directory. For the default directory, from the repository
-root, use `Remove-Item -LiteralPath .pixi/testing-stac -Recurse`. Keep any products
+root, use `Remove-Item -LiteralPath .pixi/testing-stac -Recurse` (on PowerShell)
+or `rm -r .pixi/testing-stac` (on POSIX systems). Keep any products
 you want to retain before cleaning up.
