@@ -73,7 +73,7 @@ class CliTest(TestCase):
                 content,
             )
             self.assertIn(
-                'k8s.V1VolumeMount(name="my-vol", mount_path="/mnt/data")', content
+                "k8s.V1VolumeMount(name='my-vol', mount_path='/mnt/data')", content
             )
 
     def test_config_map_mount_appears_in_generated_dag(self):
@@ -92,10 +92,10 @@ class CliTest(TestCase):
             dag_files = list(Path(tmpdir).glob("*.py"))
             content = dag_files[0].read_text(encoding="utf-8")
             self.assertIn(
-                'config_map=k8s.V1ConfigMapVolumeSource(name="app-config")', content
+                "config_map=k8s.V1ConfigMapVolumeSource(name='app-config')", content
             )
             self.assertIn(
-                'k8s.V1VolumeMount(name="my-cm", mount_path="/etc/config")', content
+                "k8s.V1VolumeMount(name='my-cm', mount_path='/etc/config')", content
             )
             self.assertNotIn("sub_path", content)
 
@@ -114,7 +114,7 @@ class CliTest(TestCase):
             self.assertEqual(0, result.exit_code, msg=result.output)
             dag_files = list(Path(tmpdir).glob("*.py"))
             content = dag_files[0].read_text(encoding="utf-8")
-            self.assertIn('sub_path="settings.yaml"', content)
+            self.assertIn("sub_path='settings.yaml'", content)
 
     def test_invalid_pvc_mount_format_exits_with_error(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -237,7 +237,7 @@ class CliTest(TestCase):
             self.assertEqual(0, result.exit_code, msg=result.output)
             content = list(Path(tmpdir).glob("*.py"))[0].read_text(encoding="utf-8")
             self.assertIn(
-                'config_map=k8s.V1ConfigMapVolumeSource(name="file-config")', content
+                "config_map=k8s.V1ConfigMapVolumeSource(name='file-config')", content
             )
 
     def test_cli_flag_overrides_config_file(self):
@@ -276,7 +276,7 @@ class CliTest(TestCase):
             )
             self.assertEqual(0, result.exit_code, msg=result.output)
             content = list(Path(tmpdir).glob("*.py"))[0].read_text(encoding="utf-8")
-            self.assertIn('_node_selector = {"pool": "airflow-workers-big"}', content)
+            self.assertIn("_node_selector = {'pool': 'airflow-workers-big'}", content)
             self.assertIn("node_selector=_node_selector", content)
 
     def test_invalid_node_selector_format_exits_with_error(self):
@@ -309,7 +309,7 @@ class CliTest(TestCase):
             self.assertEqual(0, result.exit_code, msg=result.output)
             content = list(Path(tmpdir).glob("*.py"))[0].read_text(encoding="utf-8")
             self.assertIn("_tolerations = [", content)
-            self.assertIn('key="airflow/component"', content)
+            self.assertIn("key='airflow/component'", content)
             self.assertIn("tolerations=_tolerations", content)
 
     def test_invalid_toleration_format_exits_with_error(self):
