@@ -211,7 +211,7 @@ class CliTest(TestCase):
             dag_files = list(Path(tmpdir).glob("*.py"))
             content = dag_files[0].read_text(encoding="utf-8")
             self.assertIn("from-file-secret", content)
-            self.assertIn('claim_name="file-pvc"', content)
+            self.assertIn("claim_name='file-pvc'", content)
 
     def test_config_map_mount_from_config_file(self):
         """Exercises the cfg.config_map_mounts fallback in effective_config_map_mounts."""
