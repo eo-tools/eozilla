@@ -9,11 +9,12 @@ import pytest
 from pydantic import Field
 
 from appligator.airflow.gen_workflow_dag import (
+    _format_dag_code,
     gen_workflow_dag,
 )
 from appligator.airflow.models import ConfigMapMount, PvcMount
 from procodile import ProcessRegistry
-from procodile.workflow import FromMain, FromStep, Workflow
+from procodile.workflow import FromMain, FromStep
 
 registry = ProcessRegistry()
 
@@ -53,7 +54,7 @@ def test_generate_airflow_dag_from_workflow():
         image="example:latest",
     )
     start_date = (datetime.now() - timedelta(days=1)).date().isoformat()
-    assert dag_code == (
+    assert dag_code == _format_dag_code(
         "import json\n"
         "from datetime import datetime\n"
         "\n"
@@ -189,11 +190,11 @@ def test_pvc_mount_rendered_in_dag():
     )
     assert "from kubernetes.client import models as k8s" in dag_code
     assert (
-        "volumes=[k8s.V1Volume(name='my-output', "
-        "persistent_volume_claim=k8s.V1PersistentVolumeClaimVolumeSource(claim_name='my-pvc'))]"
-    ) in dag_code
+        "persistent_volume_claim=k8s.V1PersistentVolumeClaimVolumeSource(" in dag_code
+    )
+    assert 'claim_name="my-pvc"' in dag_code
     assert (
-        "volume_mounts=[k8s.V1VolumeMount(name='my-output', mount_path='/mnt/output')]"
+        'volume_mounts=[k8s.V1VolumeMount(name="my-output", mount_path="/mnt/output")]'
         in dag_code
     )
 
@@ -210,11 +211,9 @@ def test_config_map_mount_without_sub_path_rendered_in_dag():
         ],
     )
     assert "from kubernetes.client import models as k8s" in dag_code
+    assert ('config_map=k8s.V1ConfigMapVolumeSource(name="my-config")') in dag_code
     assert (
-        "volumes=[k8s.V1Volume(name='my-cm', config_map=k8s.V1ConfigMapVolumeSource(name='my-config'))]"
-    ) in dag_code
-    assert (
-        "volume_mounts=[k8s.V1VolumeMount(name='my-cm', mount_path='/etc/config')]"
+        'volume_mounts=[k8s.V1VolumeMount(name="my-cm", mount_path="/etc/config")]'
         in dag_code
     )
     assert "sub_path" not in dag_code
@@ -234,9 +233,9 @@ def test_config_map_mount_with_sub_path_rendered_in_dag():
             )
         ],
     )
-    assert (
-        "k8s.V1VolumeMount(name='settings', mount_path='/app/settings.yaml', sub_path='settings.yaml')"
-    ) in dag_code
+    assert 'name="settings"' in dag_code
+    assert 'mount_path="/app/settings.yaml"' in dag_code
+    assert 'sub_path="settings.yaml"' in dag_code
 
 
 def test_node_selector_rendered_in_dag():
@@ -247,7 +246,7 @@ def test_node_selector_rendered_in_dag():
         node_selector={"pool": "airflow-workers-big"},
     )
     assert "from kubernetes.client import models as k8s" in dag_code
-    assert "_node_selector = {'pool': 'airflow-workers-big'}" in dag_code
+    assert '_node_selector = {"pool": "airflow-workers-big"}' in dag_code
     assert "node_selector=_node_selector" in dag_code
     assert "_tolerations" not in dag_code
 
@@ -271,10 +270,10 @@ def test_tolerations_rendered_in_dag():
     assert "from kubernetes.client import models as k8s" in dag_code
     assert "_tolerations = [" in dag_code
     assert "k8s.V1Toleration(" in dag_code
-    assert "key='airflow/component'" in dag_code
-    assert "operator='Equal'" in dag_code
-    assert "value='worker'" in dag_code
-    assert "effect='NoSchedule'" in dag_code
+    assert 'key="airflow/component"' in dag_code
+    assert 'operator="Equal"' in dag_code
+    assert 'value="worker"' in dag_code
+    assert 'effect="NoSchedule"' in dag_code
     assert "tolerations=_tolerations" in dag_code
     assert "_node_selector" not in dag_code
 
@@ -293,7 +292,7 @@ def test_node_selector_and_tolerations_combined():
             )
         ],
     )
-    assert "_node_selector = {'pool': 'workers'}" in dag_code
+    assert '_node_selector = {"pool": "workers"}' in dag_code
     assert "_tolerations = [" in dag_code
     assert "node_selector=_node_selector" in dag_code
     assert "tolerations=_tolerations" in dag_code
@@ -311,10 +310,11 @@ def test_pvc_and_config_map_mounts_combined():
             ConfigMapMount(name="cfg", config_map_name="my-cfg", mount_path="/etc/cfg")
         ],
     )
-    assert "k8s.V1PersistentVolumeClaimVolumeSource(claim_name='data-pvc')" in dag_code
-    assert "k8s.V1ConfigMapVolumeSource(name='my-cfg')" in dag_code
-    assert "k8s.V1VolumeMount(name='data', mount_path='/mnt/data')" in dag_code
-    assert "k8s.V1VolumeMount(name='cfg', mount_path='/etc/cfg')" in dag_code
+    assert "k8s.V1PersistentVolumeClaimVolumeSource(" in dag_code
+    assert 'claim_name="data-pvc"' in dag_code
+    assert 'k8s.V1ConfigMapVolumeSource(name="my-cfg")' in dag_code
+    assert 'k8s.V1VolumeMount(name="data", mount_path="/mnt/data")' in dag_code
+    assert 'k8s.V1VolumeMount(name="cfg", mount_path="/etc/cfg")' in dag_code
 
 
 def test_toleration_seconds_rendered_in_dag():
