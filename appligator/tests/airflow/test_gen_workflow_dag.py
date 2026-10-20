@@ -4,6 +4,7 @@
 
 from datetime import datetime, timedelta
 from typing import Annotated
+from unittest.mock import patch
 
 import pytest
 from pydantic import Field
@@ -139,6 +140,13 @@ def test_generate_airflow_dag_from_workflow():
         '    tasks["third_step"] >> tasks["__procodile_final_step__"]\n'
         "\n"
     )
+
+
+def test_format_dag_code_returns_original_when_ruff_is_unavailable():
+    dag_code = "value = {'name': 'example'}\n"
+
+    with patch("appligator.airflow.gen_workflow_dag.shutil.which", return_value=None):
+        assert _format_dag_code(dag_code) == dag_code
 
 
 @registry.main(id="main")
