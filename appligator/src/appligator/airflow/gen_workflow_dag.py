@@ -59,7 +59,7 @@ def _format_dag_code(dag_code: str) -> str:
     if ruff is None:
         return dag_code
 
-    result = subprocess.run(  # noqa: S603
+    result = subprocess.run(
         [ruff, "format", "--stdin-filename", "generated_dag.py", "-"],
         input=dag_code,
         capture_output=True,
