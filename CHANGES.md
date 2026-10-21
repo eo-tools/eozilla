@@ -1,7 +1,7 @@
 ## Changes in version 0.4.0 (in development)
 
-- **Appligator** now formats generated Airflow DAG source with Ruff, including
-  DAGs produced through the direct `gen_workflow_dag()` Python API.
+- **Appligator** now formats generated Airflow DAG source through the `pyruff`
+  Python API, including DAGs produced through the direct `gen_workflow_dag()` API.
 
 - Restructured **Gavicore** and **Wraptile** around 
   OGC API – Processes Part 1: Core and Part 2: Deploy, Replace, 

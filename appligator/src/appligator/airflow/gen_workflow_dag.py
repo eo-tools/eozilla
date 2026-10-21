@@ -2,8 +2,9 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-import shutil
-import subprocess
+import logging
+
+import pyruff
 
 from appligator.airflow.ir import workflow_to_ir
 from appligator.airflow.models import (
@@ -14,6 +15,8 @@ from appligator.airflow.models import (
 )
 from appligator.airflow.renderer import AirflowRenderer
 from procodile.workflow import WorkflowStepRegistry
+
+logger = logging.getLogger(__name__)
 
 
 def gen_workflow_dag(
@@ -54,16 +57,11 @@ def gen_workflow_dag(
 
 
 def _format_dag_code(dag_code: str) -> str:
-    """Format generated DAG source with Ruff when it is installed."""
-    ruff = shutil.which("ruff")
-    if ruff is None:
+    """Format generated DAG source with Ruff's Python API."""
+    try:
+        return pyruff.format_string(dag_code)
+    except pyruff.exceptions.ParseError as exc:
+        logger.warning(
+            "Could not format generated Airflow DAG; returning source: %s", exc
+        )
         return dag_code
-
-    result = subprocess.run(  # noqa: S603
-        [ruff, "format", "--stdin-filename", "generated_dag.py", "-"],
-        input=dag_code,
-        capture_output=True,
-        check=False,
-        text=True,
-    )
-    return result.stdout if result.returncode == 0 else dag_code

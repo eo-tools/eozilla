@@ -7,6 +7,7 @@ from typing import Annotated
 from unittest.mock import patch
 
 import pytest
+import pyruff
 from pydantic import Field
 
 from appligator.airflow.gen_workflow_dag import (
@@ -142,11 +143,29 @@ def test_generate_airflow_dag_from_workflow():
     )
 
 
-def test_format_dag_code_returns_original_when_ruff_is_unavailable():
+def test_format_dag_code_uses_pyruff_api():
     dag_code = "value = {'name': 'example'}\n"
+    formatted_code = 'value = {"name": "example"}\n'
 
-    with patch("appligator.airflow.gen_workflow_dag.shutil.which", return_value=None):
+    with patch(
+        "appligator.airflow.gen_workflow_dag.pyruff.format_string",
+        return_value=formatted_code,
+    ) as format_string:
+        assert _format_dag_code(dag_code) == formatted_code
+
+    format_string.assert_called_once_with(dag_code)
+
+
+def test_format_dag_code_returns_source_when_pyruff_cannot_parse(caplog):
+    dag_code = "Param(x-ui-widget='map')\n"
+
+    with patch(
+        "appligator.airflow.gen_workflow_dag.pyruff.format_string",
+        side_effect=pyruff.exceptions.ParseError("parse error"),
+    ):
         assert _format_dag_code(dag_code) == dag_code
+
+    assert "Could not format generated Airflow DAG" in caplog.text
 
 
 @registry.main(id="main")
