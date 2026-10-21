@@ -16411,7 +16411,7 @@ packages:
   - tomli-w
   - tomli ; python_full_version < '3.11'
   - typer>=0.26.0,<1
-  - pyruff>=0.15.1rc5,<0.16
+  - pyruff
   - gavicore>=0.4.0.dev0
   - procodile>=0.4.0.dev0
   requires_python: '>=3.11'
