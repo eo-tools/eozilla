@@ -46,6 +46,7 @@ dependencies = [
   "tomli-w",
   "tomli; python_version < '3.11'",
   "typer >=0.26.0,<1",
+  "pyruff",
   # local dependency
   "gavicore >=0.4.0.dev0",
   "procodile >=0.4.0.dev0",

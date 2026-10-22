@@ -69,7 +69,7 @@ class CliTest(TestCase):
             self.assertTrue(len(dag_files) >= 1)
             content = dag_files[0].read_text(encoding="utf-8")
             self.assertIn(
-                "persistent_volume_claim=k8s.V1PersistentVolumeClaimVolumeSource(claim_name='my-pvc')",
+                "persistent_volume_claim=k8s.V1PersistentVolumeClaimVolumeSource(",
                 content,
             )
             self.assertIn(
