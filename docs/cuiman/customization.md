@@ -122,6 +122,11 @@ Lists, tuples, and generators are accepted and captured as a tuple at class
 creation. Subclasses can assign the attribute without repeating its annotation.
 It is excluded from settings and saved profiles.
 
+For native STAC results, `compose_stac_opener()` creates a registerable opener
+from the built-in `StacJobResultOpener`, an optional source predicate, and
+ordered async transformations. This reuses built-in parsing without subclassing
+it. The [STAC walkthrough](guides/stac.md) shows the configuration and execution.
+
 Each subclass receives a copy of its parent's `return_type_map` and, unless
 overridden, its `extra_job_result_openers` at class creation. Declaring a new
 iterable replaces the inherited extras; an empty iterable keeps only built-ins.
@@ -134,6 +139,15 @@ last registered opener is tried first, so custom openers take priority over
 built-ins. For later changes, use `MyConfig.register_job_result_opener(...)` and
 its returned unregister callback. These runtime registrations affect only that
 class and are not inherited by subclasses.
+
+Each opener receives a `JobResultOpenContext` describing one selected target.
+Use `ctx.value` (or `ctx.output_value`), `ctx.location`, and
+`ctx.output_media_type` to open that target, and respect `ctx.data_type`.
+Producing-job information is optional source context; do not select another
+output from `ctx.job_results`. The client automatically selects a sole output;
+multiple outputs require `output_name`, including when one is named
+`return_value`. See the [opener guide](guides/openers.md) for selection and context
+details.
 
 ## Browser branding and local images
 

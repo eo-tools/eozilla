@@ -3,8 +3,11 @@
 #  https://opensource.org/license/apache-2-0.
 
 from importlib.util import find_spec
+from io import BytesIO
 from typing import Any
+from urllib.parse import urlsplit
 
+import httpx2
 from PIL import Image
 
 from cuiman.api.opener import JobResultOpenContext
@@ -13,6 +16,8 @@ from .base import PathOpener
 
 
 class ImageOpenerImpl(PathOpener):
+    opener_id = "image"
+
     def accept_data_type(self, data_type: type) -> bool:
         return data_type is Image.Image
 
@@ -37,10 +42,18 @@ class ImageOpenerImpl(PathOpener):
         media_type: str | None,
         ctx: JobResultOpenContext,
     ) -> Any:
+        if urlsplit(path_like).scheme in ("http", "https"):
+            async with httpx2.AsyncClient() as client:
+                response = await client.get(
+                    path_like, follow_redirects=True, timeout=10.0
+                )
+                response.raise_for_status()
+            with Image.open(BytesIO(response.content)) as image:
+                return image.copy()
         if path_like.startswith("s3://"):
             import s3fs  # type: ignore[import-not-found]
 
-            storage_options = ctx.options.get("storage_options", {})
+            storage_options = ctx.options.get("storage_options") or {}
             fs = s3fs.S3FileSystem(**storage_options)
             with fs.open(path_like, "rb") as f:
                 # .copy() forces load before the file handle closes (PIL is lazy)

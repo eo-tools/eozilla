@@ -31,3 +31,16 @@ class JobResultStatusError(JobResultOpenError):
             message += f": {job_info.message}"
         super().__init__(message)
         self.job_info = job_info
+
+
+class StacJobResultOpenError(JobResultOpenError):
+    """Sanitized STAC parsing or metadata-access failure.
+
+    Required STAC failures stop dispatch instead of returning an unrelated
+    representation. Weak JSON/GeoJSON candidates may allow another reader.
+    """
+
+    def __init__(self, message: str, *, required: bool = True):
+        super().__init__(message)
+        self.required = required
+        """Whether this failure forbids fallback to unrelated readers."""

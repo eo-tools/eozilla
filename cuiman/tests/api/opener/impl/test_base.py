@@ -194,6 +194,20 @@ class PathOpenerTest(IsolatedAsyncioTestCase):
         ctx = create_ctx({"path": "./dataset.zarr"})
         self.assertEqual("./dataset.zarr", PathOpener.get_path_like(ctx))
 
+    async def test_open_selected_location_without_job(self):
+        ctx = JobResultOpenContext(
+            config=ClientConfig(api_url="https://example.com/"),
+            value=nc_link,
+            location="https://other.example.com/selected.nc?token=example",
+        )
+        opener = PathTestOpener()
+        self.assertEqual(137, await opener.open_job_result(ctx))
+        self.assertEqual(ctx.location, opener.path_or_url)
+        self.assertEqual(".nc", opener.filename_ext)
+        self.assertEqual("application/x-netcdf", opener.media_type)
+        self.assertEqual("https://example.com/cube.nc?off=0x64ea", nc_link.href)
+        self.assertIsNone(ctx.job_results)
+
     def test_get_filename_ext(self):
         self.assertEqual(
             ".nc", PathOpener.get_filename_ext("https://example.com/cube.nc?off=0x64ea")

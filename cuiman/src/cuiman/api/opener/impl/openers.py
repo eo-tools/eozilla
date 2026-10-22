@@ -2,7 +2,7 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-from cuiman.api.opener import JobResultOpener
+from cuiman.api.opener.opener import JobResultOpener
 
 from .base import OptionalModuleOpener
 
@@ -44,3 +44,14 @@ class ImageOpener(OptionalModuleOpener):
 
         Image.init()
         return ImageOpenerImpl()
+
+
+class StacJobResultOpener(OptionalModuleOpener):
+    """Open native STAC metadata when the optional ``cuiman[stac]`` extra is installed."""
+
+    required = ("pystac",)
+
+    def _create_implementing_opener(self) -> JobResultOpener:
+        from ._stac.opener import StacJobResultOpenerImpl
+
+        return StacJobResultOpenerImpl()
