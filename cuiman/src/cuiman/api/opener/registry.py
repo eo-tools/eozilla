@@ -22,6 +22,7 @@ class JobResultOpenerRegistry:
             GeopandasDataFrameOpener,
             ImageOpener,
             PandasDataFrameOpener,
+            StacJobResultOpener,
             XarrayDatasetOpener,
         )
 
@@ -31,6 +32,7 @@ class JobResultOpenerRegistry:
         registry.register(XarrayDatasetOpener)
         # Prefer Pillow for images before the generic dataset opener.
         registry.register(ImageOpener)
+        registry.register(StacJobResultOpener)
         return registry
 
     @property

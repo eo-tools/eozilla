@@ -11,6 +11,14 @@ from .args import TransportArgs
 class Transport(ABC):
     """Abstraction of the transport that calls a web API in synchronous mode."""
 
+    def get_response_href(self, value: Any) -> str | None:
+        """Return the effective response URI for a returned value, if retained.
+
+        Custom transports may supply this source fact for relative inline STAC
+        references. Returning None makes an unavailable base explicit.
+        """
+        return None
+
     @abstractmethod
     def call(self, args: TransportArgs) -> Any:
         """
@@ -36,6 +44,10 @@ class Transport(ABC):
 
 class AsyncTransport(ABC):
     """Abstraction of the transport that calls a web API in asynchronous mode."""
+
+    def get_response_href(self, value: Any) -> str | None:
+        """Return a retained effective response URI without performing I/O."""
+        return None
 
     @abstractmethod
     async def async_call(self, args: TransportArgs) -> Any:

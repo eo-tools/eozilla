@@ -15,6 +15,9 @@ terminal, and use `pixi shell` in another:
 - `python -m examples.guides.cuiman.openers`: submit a small simulated scene and
   open its Zarr output with the built-in reader. The custom opener is an optional
   alternative demonstrated separately in the guide.
+- `python -m examples.guides.cuiman.stac`: submit inline and linked STAC jobs,
+  inspect raw and native results, apply a branded-client transform, and read a
+  CSV Asset. The companion notebook is `notebooks/cuiman-stac.ipynb`.
 - `cli.sh`: individual command recipes for Bash or PowerShell. Running the file
   exits without executing them. Configure updates the saved profile, submit
   creates a job, and dismiss cancels or deletes the selected job.

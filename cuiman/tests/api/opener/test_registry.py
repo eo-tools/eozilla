@@ -19,6 +19,7 @@ from cuiman.api.opener.impl import (
     GeopandasDataFrameOpener,
     ImageOpener,
     PandasDataFrameOpener,
+    StacJobResultOpener,
     XarrayDatasetOpener,
 )
 from cuiman.api.opener.opener import open_job_result
@@ -49,6 +50,7 @@ def test_initially_empty():
 def test_default():
     registry = JobResultOpenerRegistry.create_default()
     assert registry.opener_types == (
+        StacJobResultOpener,
         ImageOpener,
         XarrayDatasetOpener,
         PandasDataFrameOpener,

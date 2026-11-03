@@ -31,6 +31,7 @@ nav:
       - App: cuiman/guides/app.md
       - Command Line: cuiman/guides/cli.md
       - Result Openers: cuiman/guides/openers.md
+      - STAC Results: cuiman/guides/stac.md
     - CLI Reference: cuiman/cli.md
     - API Reference: cuiman/api.md
   - Gavicore:

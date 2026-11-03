@@ -6,8 +6,10 @@ from copy import deepcopy
 from functools import cache
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Annotated,
     Any,
+    Awaitable,
     Callable,
     ClassVar,
     Iterable,
@@ -41,7 +43,10 @@ from .auth.config import has_credentials
 from .auth.secret_store import load_auth_secrets, save_auth_secrets
 from .branding import AppBranding
 from .defaults import DEFAULT_API_URL
-from .opener import JobResultOpener, JobResultOpenerRegistry
+from .opener import JobResultOpenContext, JobResultOpener, JobResultOpenerRegistry
+
+if TYPE_CHECKING:
+    from pystac import StacIO
 
 
 class ClientConfig(BaseSettings):
@@ -115,6 +120,39 @@ class ClientConfig(BaseSettings):
     Each class's registry is initialized on first use; later changes should use
     ``register_job_result_opener()``.
     This class attribute is excluded from configuration settings and persistence.
+    """
+
+    stac_io_factory: ClassVar[Callable[["ClientConfig"], "StacIO"] | None] = None
+    """Optional application factory for native PySTAC I/O per opening.
+
+    Defaults to PySTAC's standard I/O. Application factories own any custom
+    metadata access policy, separately from processing API authentication.
+    The factory runs during opening, never acceptance, and is not persisted.
+    """
+
+    asset_reader_options: ClassVar[
+        Callable[[JobResultOpenContext, str], dict[str, Any]] | None
+    ] = None
+    """Optional runtime callback for scoped, trusted Asset reader overrides.
+
+    Receives the selected context and opener_id (xarray, pandas, geopandas,
+    or image). Check the effective location and reader ID before returning options.
+    Runs only for an accepted Asset reader and is excluded from saved profiles.
+    """
+
+    asset_access_provider: ClassVar[
+        Callable[
+            [JobResultOpenContext, str],
+            dict[str, Any] | None | Awaitable[dict[str, Any] | None],
+        ]
+        | None
+    ] = None
+    """Optional runtime callback supplying scoped S3 Asset storage options.
+
+    May be synchronous or async. Runs immediately before an accepted reader,
+    unless credentials or explicit storage clearing already control access.
+    Applications authorize the selected location; process and metadata credentials
+    are never copied. Return None to use ambient access. Not persisted.
     """
 
     api_url: Annotated[Optional[str], Field(title="Process API URL")] = DEFAULT_API_URL

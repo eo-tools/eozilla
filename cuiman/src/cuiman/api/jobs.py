@@ -77,7 +77,10 @@ class JobOptions:
     """Options for generated service-client job execution."""
 
     output_name: str | None = None
-    """Name of the output to open. If omitted, the opener chooses."""
+    """Name of the output to open; required when a job has multiple outputs.
+
+    A sole output is selected automatically before opener dispatch.
+    """
 
     data_type: type | None = None
     """Expected or desired data type of the opened result."""
@@ -227,7 +230,7 @@ def _new_open_context(
     options: JobOptions,
     process_description: ProcessDescription | None,
 ) -> JobResultOpenContext:
-    return JobResultOpenContext(
+    ctx = JobResultOpenContext(
         config=client.config,
         job_id=job_info.jobID,
         job_results=job_results,
@@ -237,6 +240,10 @@ def _new_open_context(
         _media_type=options.media_type,
         options=options.opener_options,
     )
+    transport = getattr(client, "_transport", None)
+    if transport is not None:
+        ctx.document_href = transport.get_response_href(job_results)
+    return ctx
 
 
 def _monitor_update_sync(monitor: JobMonitor | None, job_info: JobInfo) -> None:

@@ -88,6 +88,8 @@ the failure. To cancel a running job or delete a finished one, call
 
 For file or dataset outputs, [Result openers](openers.md) explains the
 difference between retrieving result references and opening their data.
+For inline and linked STAC outputs, the [STAC walkthrough](stac.md) shows native
+PySTAC inspection and exact Asset reading with a branded client.
 
 ## Close the client
 

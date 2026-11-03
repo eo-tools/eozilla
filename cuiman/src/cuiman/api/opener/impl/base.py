@@ -6,14 +6,14 @@ from abc import abstractmethod
 from functools import cached_property
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
+from urllib.parse import urlsplit
 
-import pydantic
+from cuiman.api.assets import as_stac_asset
+from cuiman.api.opener.context import JobResultOpenContext
+from cuiman.api.opener.opener import JobResultOpener
 
-from cuiman.api.opener import JobResultOpenContext, JobResultOpener
-
-_PATH_LIKE_KEYS = ("href", "url", "path")
-_PATH_LIKE_TYPES = (str, Path)
+from ._paths import _local_path
 
 
 class OptionalModuleOpener(JobResultOpener):
@@ -38,6 +38,14 @@ class OptionalModuleOpener(JobResultOpener):
         [required][required] are available.
         """
         return all(find_spec(m) for m in cls.required)
+
+    @classmethod
+    def _unavailable_error(cls, ctx: JobResultOpenContext) -> Exception | None:
+        if "pystac" in cls.required:
+            from ._stac.support import unavailable_error
+
+            return unavailable_error(ctx)
+        return None
 
     @cached_property
     def implementing_opener(self):
@@ -65,6 +73,9 @@ class PathOpener(JobResultOpener):
     `gavicore.models.core.Link` values.
     """
 
+    opener_id: ClassVar[str | None] = None
+    """Opener family identifier used for reader options, or None for custom policies."""
+
     async def accept_job_result(self, ctx: JobResultOpenContext) -> bool:
         path_like = self.get_path_like(ctx)
         if not path_like:
@@ -72,11 +83,15 @@ class PathOpener(JobResultOpener):
         data_type = ctx.data_type
         if isinstance(data_type, type) and not self.accept_data_type(data_type):
             return False
-        media_type = ctx.output_media_type
+        media_type = self.get_media_type(ctx)
         if media_type and not self.accept_media_type(media_type):
             return False
         filename_ext = self.get_filename_ext(path_like)
-        if filename_ext and not self.accept_filename_ext(filename_ext):
+        if (
+            filename_ext
+            and (not media_type or as_stac_asset(ctx.value) is None)
+            and not self.accept_filename_ext(filename_ext)
+        ):
             return False
         return True
 
@@ -96,7 +111,11 @@ class PathOpener(JobResultOpener):
         path_or_url = self.get_path_like(ctx)
         assert path_or_url  # from accept() we know we have path_or_url
         filename_ext = self.get_filename_ext(path_or_url)
-        media_type = ctx.output_media_type
+        media_type = self.get_media_type(ctx)
+        if self.opener_id and as_stac_asset(ctx.value) is not None:
+            from ._stac.reader import prepare_asset_reader
+
+            ctx = await prepare_asset_reader(ctx, self.opener_id)
         return await self.open_path_like(path_or_url, filename_ext, media_type, ctx)
 
     @abstractmethod
@@ -111,29 +130,19 @@ class PathOpener(JobResultOpener):
 
     @classmethod
     def get_path_like(cls, ctx: JobResultOpenContext) -> str | None:
-        output_link = ctx.output_link
-        if output_link:
-            return output_link.href
-        output_value = ctx.output_value
-        value = (
-            output_value.model_dump()
-            if isinstance(output_value, pydantic.BaseModel)
-            else output_value
-        )
-        if isinstance(value, _PATH_LIKE_TYPES):
-            return str(value)
-        elif isinstance(value, dict):
-            for k in _PATH_LIKE_KEYS:
-                v = value.get(k)
-                if v is not None and isinstance(v, _PATH_LIKE_TYPES):
-                    return str(v)
-        return None
+        """Return the effective location of the context's selected target."""
+        if ctx.location and urlsplit(ctx.location).scheme == "file":
+            return str(_local_path(ctx.location))
+        return ctx.location
+
+    @classmethod
+    def get_media_type(cls, ctx: JobResultOpenContext) -> str | None:
+        """Return the MIME essence for matching; retain parameters in the context."""
+        value = ctx.output_media_type
+        return value.split(";", 1)[0].strip().lower() if value else value
 
     @classmethod
     def get_filename_ext(cls, path_like: str):
-        if "://" in path_like:
-            path = path_like.rsplit("?", maxsplit=1)[0]
-        else:
-            path = path_like
-        index = path.rindex(".")
-        return path[index:] if index > 0 else ""
+        """Return a path suffix, excluding a URL's query, fragment, and hostname."""
+        path = urlsplit(path_like).path if "://" in path_like else path_like
+        return Path(path).suffix
