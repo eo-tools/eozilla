@@ -45,6 +45,8 @@
   Python API calls still allow missing files. The `ClientConfig.create()`
   argument `require_file` is renamed to `require_config_file`.
 
+- Updated **Cuiman** with the [app v0.3.0](https://github.com/eo-tools/eozilla-app/releases/tag/v0.3.0),
+  including multiple improvements.
 
 ## Changes in version 0.3.1
 
