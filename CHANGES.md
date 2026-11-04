@@ -1,4 +1,4 @@
-## Changes in version 0.4.0 (in development)
+## Changes in version 0.4.0
 
 - **Appligator** now formats generated Airflow DAG source through the `pyruff`
   Python API, including DAGs produced through the direct `gen_workflow_dag()` API.
@@ -45,8 +45,6 @@
   Python API calls still allow missing files. The `ClientConfig.create()`
   argument `require_file` is renamed to `require_config_file`.
 
-- **Appligator** unit tests have been updated to match the new generated code
-  style. (#249)
 
 ## Changes in version 0.3.1
 
