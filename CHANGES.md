@@ -45,6 +45,8 @@
   Python API calls still allow missing files. The `ClientConfig.create()`
   argument `require_file` is renamed to `require_config_file`.
 
+- **Appligator** unit tests have been updated to match the new generated code
+  style. (#249)
 
 ## Changes in version 0.3.1
 
