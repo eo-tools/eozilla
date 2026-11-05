@@ -1,0 +1,471 @@
+#  Copyright (c) 2025-2026 by the Eozilla team and contributors
+#  Permissions are hereby granted under the terms of the Apache 2.0 License:
+#  https://opensource.org/license/apache-2-0.
+
+from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+from cuiman.api.async_client import AsyncClient
+from cuiman.api.client import Client
+from cuiman.api.config import ClientConfig
+from cuiman.api.exceptions import ClientError, ClientWarning
+from cuiman.api.reader import (
+    JobResultReadContext,
+    JobResultReadError,
+    JobResultReader,
+    JobResultStatusError,
+)
+from gavicore.models.core import (
+    ApiError,
+    JobInfo,
+    JobResults,
+    JobStatus,
+    Link,
+    ProcessDescription,
+    QualifiedValue,
+)
+
+from ..helpers import AllReader
+
+
+def mk_job_info(status: JobStatus, message: str | None = None):
+    return JobInfo(
+        jobID="job_12",
+        processID="test",
+        status=status,
+        message=message,
+    )
+
+
+def mk_job_infos(*statuses: JobStatus):
+    return [
+        mk_job_info(status[0], status[1])
+        if isinstance(status, tuple)
+        else mk_job_info(status)
+        for status in statuses
+    ]
+
+
+def mk_job_results():
+    return JobResults(
+        root={"dataset": Link(href="s3://cubes/cube.zarr", type="application/zarr")}
+    )
+
+
+def mk_process_description():
+    return ProcessDescription(id="test", version="0.0.0")
+
+
+def mk_client_error():
+    return ClientError("boom", ApiError(type="server"))
+
+
+successful_run = [JobStatus.accepted, JobStatus.running, JobStatus.successful]
+failed_run = [
+    JobStatus.accepted,
+    JobStatus.running,
+    (JobStatus.failed, "out of memory"),
+]
+endless_run = [JobStatus.accepted] + 100 * [JobStatus.running]
+
+
+class ClientReadJobResultTest(TestCase):
+    @patch.object(Client, "get_job", side_effect=mk_job_infos(*successful_run))
+    @patch.object(Client, "get_job_results", return_value=mk_job_results())
+    @patch.object(Client, "get_process", return_value=mk_process_description)
+    def test_successful_run(
+        self,
+        _get_job: MagicMock,
+        _get_job_results: MagicMock,
+        _get_process: MagicMock,
+    ):
+        class ApplicationConfig(ClientConfig):
+            extra_job_result_readers = [AllReader]
+
+        client = Client(
+            config_type=ApplicationConfig, api_url="https://acme.ogc.org/api"
+        )
+        result = client.read_job_result("job_12", timeout=30, poll_interval=0.01)
+        self.assertIsInstance(result, JobResults)
+
+    @patch.object(Client, "get_job", side_effect=mk_job_infos(*failed_run))
+    @patch.object(Client, "get_job_results", return_value=mk_job_results())
+    @patch.object(Client, "get_process", return_value=mk_process_description)
+    def test_failed_run(
+        self,
+        _get_job: MagicMock,
+        _get_job_results: MagicMock,
+        _get_process: MagicMock,
+    ):
+        client = Client(api_url="https://acme.ogc.org/api")
+        self.addCleanup(client.config.register_job_result_reader(AllReader))
+        with pytest.raises(
+            JobResultStatusError,
+            match=(
+                r"Cannot read results of job \#job_12 "
+                r"because the job status is 'failed': out of memory"
+            ),
+        ):
+            client.read_job_result("job_12", timeout=30, poll_interval=0.01)
+
+    @patch.object(Client, "get_job", side_effect=mk_job_infos(*endless_run))
+    @patch.object(Client, "get_job_results", return_value=mk_job_results())
+    @patch.object(Client, "get_process", return_value=mk_process_description)
+    def test_endless_run(
+        self,
+        _get_job: MagicMock,
+        _get_job_results: MagicMock,
+        _get_process: MagicMock,
+    ):
+        timeout = 0.1  # 100 milliseconds
+        poll_interval = timeout / (len(endless_run) // 2)
+
+        client = Client(api_url="https://acme.ogc.org/api")
+        self.addCleanup(client.config.register_job_result_reader(AllReader))
+        with pytest.raises(
+            TimeoutError,
+            match=(
+                r"Cannot read result of job #job_12; "
+                r"it did not finish within 0.1 seconds"
+            ),
+        ):
+            client.read_job_result(
+                "job_12", timeout=timeout, poll_interval=poll_interval
+            )
+
+    @patch.object(Client, "get_job", return_value=mk_job_info(JobStatus.successful))
+    @patch.object(Client, "get_job_results", return_value=mk_job_results())
+    @patch.object(Client, "get_process", side_effect=mk_client_error())
+    def test_process_description_error_warns(
+        self,
+        _get_job: MagicMock,
+        _get_job_results: MagicMock,
+        _get_process: MagicMock,
+    ):
+        client = Client(api_url="https://acme.ogc.org/api")
+        self.addCleanup(client.config.register_job_result_reader(AllReader))
+
+        with pytest.warns(
+            ClientWarning,
+            match=(
+                "An error occurred while getting process "
+                "description for process ID 'test'"
+            ),
+        ):
+            result = client.read_job_result("job_12", timeout=30, poll_interval=0.01)
+
+        self.assertIsInstance(result, JobResults)
+
+
+class AsyncClientReadJobResultTest(IsolatedAsyncioTestCase):
+    @patch.object(
+        AsyncClient,
+        "get_job",
+        side_effect=mk_job_infos(*successful_run),
+        new_callable=AsyncMock,
+    )
+    @patch.object(
+        AsyncClient,
+        "get_job_results",
+        return_value=mk_job_results(),
+        new_callable=AsyncMock,
+    )
+    @patch.object(
+        AsyncClient,
+        "get_process",
+        return_value=mk_process_description,
+        new_callable=AsyncMock,
+    )
+    async def test_successful_run(
+        self,
+        _get_job: MagicMock,
+        _get_job_results: MagicMock,
+        _get_process: MagicMock,
+    ):
+        class ApplicationConfig(ClientConfig):
+            extra_job_result_readers = [AllReader]
+
+        client = AsyncClient(
+            config=ApplicationConfig.new_instance(api_url="https://acme.ogc.org/api")
+        )
+        result = await client.read_job_result("job_12", timeout=30, poll_interval=0.01)
+        self.assertIsInstance(result, JobResults)
+
+    @patch.object(
+        AsyncClient,
+        "get_job",
+        side_effect=mk_job_infos(*failed_run),
+        new_callable=AsyncMock,
+    )
+    @patch.object(
+        AsyncClient,
+        "get_job_results",
+        return_value=mk_job_results(),
+        new_callable=AsyncMock,
+    )
+    @patch.object(
+        AsyncClient,
+        "get_process",
+        return_value=mk_process_description,
+        new_callable=AsyncMock,
+    )
+    async def test_failed_run(
+        self,
+        _get_job: MagicMock,
+        _get_job_results: MagicMock,
+        _get_process: MagicMock,
+    ):
+        client = AsyncClient(api_url="https://acme.ogc.org/api")
+        self.addCleanup(client.config.register_job_result_reader(AllReader))
+        with pytest.raises(
+            JobResultStatusError,
+            match=(
+                r"Cannot read results of job \#job_12 "
+                r"because the job status is 'failed': out of memory"
+            ),
+        ):
+            await client.read_job_result("job_12", timeout=30, poll_interval=0.01)
+
+    @patch.object(
+        AsyncClient,
+        "get_job",
+        side_effect=mk_job_infos(*endless_run),
+        new_callable=AsyncMock,
+    )
+    @patch.object(
+        AsyncClient,
+        "get_job_results",
+        return_value=mk_job_results(),
+        new_callable=AsyncMock,
+    )
+    @patch.object(
+        AsyncClient,
+        "get_process",
+        return_value=mk_process_description,
+        new_callable=AsyncMock,
+    )
+    async def test_endless_run(
+        self,
+        _get_job: MagicMock,
+        _get_job_results: MagicMock,
+        _get_process: MagicMock,
+    ):
+        timeout = 0.1  # 100 milliseconds
+        poll_interval = timeout / (len(endless_run) // 2)
+
+        client = AsyncClient(api_url="https://acme.ogc.org/api")
+        self.addCleanup(client.config.register_job_result_reader(AllReader))
+        with pytest.raises(
+            TimeoutError,
+            match=(
+                r"Cannot read result of job #job_12; "
+                r"it did not finish within 0.1 seconds"
+            ),
+        ):
+            await client.read_job_result(
+                "job_12", timeout=timeout, poll_interval=poll_interval
+            )
+
+    @patch.object(
+        AsyncClient,
+        "get_job",
+        return_value=mk_job_info(JobStatus.successful),
+        new_callable=AsyncMock,
+    )
+    @patch.object(
+        AsyncClient,
+        "get_job_results",
+        return_value=mk_job_results(),
+        new_callable=AsyncMock,
+    )
+    @patch.object(
+        AsyncClient,
+        "get_process",
+        side_effect=mk_client_error(),
+        new_callable=AsyncMock,
+    )
+    async def test_process_description_error_warns(
+        self,
+        _get_job: MagicMock,
+        _get_job_results: MagicMock,
+        _get_process: MagicMock,
+    ):
+        client = AsyncClient(api_url="https://acme.ogc.org/api")
+        self.addCleanup(client.config.register_job_result_reader(AllReader))
+
+        with pytest.warns(
+            ClientWarning,
+            match=(
+                "An error occurred while getting process "
+                "description for process ID 'test'"
+            ),
+        ):
+            result = await client.read_job_result(
+                "job_12", timeout=30, poll_interval=0.01
+            )
+
+        self.assertIsInstance(result, JobResults)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("client_type", [Client, AsyncClient])
+@pytest.mark.parametrize(
+    "outputs,output_name,selected_name",
+    [
+        ({"result": None}, None, "result"),
+        ({"result": False}, None, "result"),
+        ({"result": [1, None]}, None, "result"),
+        ({"": 0, "other": 1}, "", ""),
+        (
+            {
+                "return_value": Link(href="out.nc", type="application/netcdf"),
+                "result": {"nested": [1]},
+                "qualified": QualifiedValue(mediaType="application/json", value=[2]),
+                "null": None,
+            },
+            "result",
+            "result",
+        ),
+        ({"return_value": 1, "null": None}, "null", "null"),
+    ],
+)
+async def test_clients_dispatch_one_independent_selected_output(
+    client_type, outputs, output_name, selected_name
+):
+    contexts: list[JobResultReadContext] = []
+
+    class SelectedReader(JobResultReader):
+        reader_id = "SelectedReader"
+
+        async def accept_job_result(self, ctx):
+            contexts.append(ctx)
+            return True
+
+        async def read_job_result(self, ctx):
+            return ctx.value
+
+    class ApplicationConfig(ClientConfig):
+        extra_job_result_readers = (SelectedReader,)
+
+    client = client_type(
+        config_type=ApplicationConfig, api_url="https://acme.ogc.org/api"
+    )
+    results = JobResults(root=outputs)
+    original = results.model_dump(mode="json")
+    mock_type = AsyncMock if client_type is AsyncClient else MagicMock
+    with (
+        patch.object(
+            client,
+            "get_job",
+            new=mock_type(return_value=mk_job_info(JobStatus.successful)),
+        ),
+        patch.object(client, "get_job_results", new=mock_type(return_value=results)),
+        patch.object(
+            client, "get_process", new=mock_type(return_value=mk_process_description())
+        ),
+    ):
+        result = client.read_job_result(
+            job_id_or_asset="job_12", output_name=output_name, chunks="auto"
+        )
+        if client_type is AsyncClient:
+            result = await result
+
+    assert len(contexts) == 1
+    ctx = contexts[0]
+    assert ctx.output_name == selected_name
+    assert result == results.root[selected_name]
+    assert ctx.output_value is result
+    assert ctx.config is client.config
+    assert ctx.job_results is results
+    assert ctx.process_description == mk_process_description()
+    assert ctx.options == {"chunks": "auto"}
+    if isinstance(result, dict):
+        result["nested"].append(3)
+    elif isinstance(result, list):
+        result.append(3)
+    assert results.model_dump(mode="json") == original
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("client_type", [Client, AsyncClient])
+@pytest.mark.parametrize(
+    "outputs,output_name,message",
+    [
+        (None, None, "Job results contain no outputs"),
+        ({}, None, "Job results contain no outputs"),
+        ({"result": None}, "missing", "Job output 'missing' does not exist"),
+        ({"a": 1, "b": 2}, None, "Multiple job outputs"),
+        ({"return_value": 1, "b": 2}, None, "Multiple job outputs"),
+    ],
+)
+async def test_clients_reject_selection_before_schema_lookup_or_dispatch(
+    client_type, outputs, output_name, message
+):
+    client = client_type(api_url="https://acme.ogc.org/api")
+    mock_type = AsyncMock if client_type is AsyncClient else MagicMock
+    with (
+        patch.object(
+            client,
+            "get_job",
+            new=mock_type(return_value=mk_job_info(JobStatus.successful)),
+        ),
+        patch.object(
+            client,
+            "get_job_results",
+            new=mock_type(return_value=JobResults(root=outputs)),
+        ),
+        patch.object(client, "get_process", new=mock_type()) as get_process,
+        patch.object(
+            type(client.config), "get_job_result_reader_registry"
+        ) as get_registry,
+    ):
+        with pytest.raises(JobResultReadError, match=message):
+            result = client.read_job_result("job_12", output_name=output_name)
+            if client_type is AsyncClient:
+                await result
+    get_process.assert_not_called()
+    get_registry.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("client_type", [Client, AsyncClient])
+async def test_clients_preserve_dismissed_job_errors(client_type):
+    client = client_type(api_url="https://acme.ogc.org/api")
+    mock_type = AsyncMock if client_type is AsyncClient else MagicMock
+    with (
+        patch.object(
+            client,
+            "get_job",
+            new=mock_type(return_value=mk_job_info(JobStatus.dismissed)),
+        ),
+        patch.object(client, "get_job_results", new=mock_type()) as get_results,
+    ):
+        with pytest.raises(JobResultStatusError, match="job status is 'dismissed'"):
+            result = client.read_job_result("job_12")
+            if client_type is AsyncClient:
+                await result
+    get_results.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("client_type", [Client, AsyncClient])
+@pytest.mark.parametrize("failing_call", ["get_job", "get_job_results"])
+async def test_clients_preserve_processing_api_errors(client_type, failing_call):
+    client = client_type(api_url="https://acme.ogc.org/api")
+    mock_type = AsyncMock if client_type is AsyncClient else MagicMock
+    error = mk_client_error()
+    with (
+        patch.object(
+            client,
+            "get_job",
+            new=mock_type(return_value=mk_job_info(JobStatus.successful)),
+        ),
+        patch.object(client, failing_call, new=mock_type(side_effect=error)),
+    ):
+        with pytest.raises(ClientError) as exc_info:
+            result = client.read_job_result("job_12")
+            if client_type is AsyncClient:
+                await result
+    assert exc_info.value is error

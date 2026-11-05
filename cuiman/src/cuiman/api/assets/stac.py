@@ -37,7 +37,7 @@ async def _display_stac_assets(
     expression: str | None,
     roles: str | Iterable[str] | None = None,
     previews: bool = True,
-    open_asset: "Callable[[Asset], Any] | None" = None,
+    read_asset: "Callable[[Asset], Any] | None" = None,
 ) -> None:
     """Display items with the expression captured before entering client bridges."""
 
@@ -96,8 +96,8 @@ async def _display_stac_assets(
 
     for item_index, item in enumerate(item_list):
         previews_html = (
-            await _load_previews(item, open_asset=open_asset)
-            if previews and open_asset is not None
+            await _load_previews(item, read_asset=read_asset)
+            if previews and read_asset is not None
             else ""
         )
         display(
@@ -354,13 +354,13 @@ def _geometry_zoom(bounds, width, height):
     return max(0, min(16, floor(log2(scale))))
 
 
-async def _load_previews(item: "Item", *, open_asset: "Callable[[Asset], Any]") -> str:
+async def _load_previews(item: "Item", *, read_asset: "Callable[[Asset], Any]") -> str:
     """Load captioned previews for the item's viewable preview assets."""
     previews = []
     for key, asset in item.assets.items():
         if not {"thumbnail", "overview", "visual"}.intersection(asset.roles or []):
             continue
-        preview = await _load_preview(asset, open_asset=open_asset)
+        preview = await _load_preview(asset, read_asset=read_asset)
         if preview is not None:
             caption = escape(str(asset.title or key))
             previews.append(
@@ -375,14 +375,14 @@ async def _load_previews(item: "Item", *, open_asset: "Callable[[Asset], Any]") 
 
 
 async def _load_preview(
-    asset: "Asset", *, open_asset: "Callable[[Asset], Any]"
+    asset: "Asset", *, read_asset: "Callable[[Asset], Any]"
 ) -> str | None:
     """Open, render, and close one preview using the supplied reader."""
     try:
-        if iscoroutinefunction(open_asset):
-            value = await open_asset(asset)
+        if iscoroutinefunction(read_asset):
+            value = await read_asset(asset)
         else:
-            value = await asyncio.to_thread(open_asset, asset)
+            value = await asyncio.to_thread(read_asset, asset)
         try:
             return _render_preview(value)
         finally:

@@ -22,7 +22,7 @@ async def display_assets(
     *,
     roles: str | Iterable[str] | None = None,
     previews: bool = True,
-    open_asset: "Callable[[Asset], Any] | None" = None,
+    read_asset: "Callable[[Asset], Any] | None" = None,
 ) -> None:
     """Render job result tables or grouped STAC assets and optional previews.
 
@@ -36,7 +36,7 @@ async def display_assets(
             Set to ``False`` to prevent asset preview reads. Geometry previews
             remain enabled. Asset previews are independent of the table's
             role filter; unreadable or unsupported previews are skipped.
-        open_asset: A synchronous or asynchronous asset opener. If omitted,
+        read_asset: A synchronous or asynchronous asset reader. If omitted,
             asset previews are skipped; tables and geometry maps remain enabled.
             Job result tables never open linked outputs.
     """
@@ -45,7 +45,7 @@ async def display_assets(
         expression=_get_items_expression("display_assets"),
         roles=roles,
         previews=previews,
-        open_asset=open_asset,
+        read_asset=read_asset,
     )
 
 
@@ -55,7 +55,7 @@ async def _display_assets(
     expression: str | None,
     roles: str | Iterable[str] | None = None,
     previews: bool = True,
-    open_asset: "Callable[[Asset], Any] | None" = None,
+    read_asset: "Callable[[Asset], Any] | None" = None,
 ) -> None:
     """Dispatch notebook display without importing optional STAC dependencies."""
     if isinstance(items, JobResults):
@@ -72,5 +72,5 @@ async def _display_assets(
             expression=expression,
             roles=roles,
             previews=previews,
-            open_asset=open_asset,
+            read_asset=read_asset,
         )

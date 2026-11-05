@@ -41,13 +41,13 @@ for the login flow and credential lifecycle.
 ::: cuiman.api.auth
 
 
-## Job Result Opener API
+## Job Result Reader API
 
-::: cuiman.api.opener.JobResultOpener
+::: cuiman.api.reader.JobResultReader
 
-::: cuiman.api.opener.JobResultOpenContext
+::: cuiman.api.reader.JobResultReadContext
 
-::: cuiman.api.opener.JobResultOpenerRegistry
+::: cuiman.api.reader.JobResultReaderRegistry
 
 ## App API
 

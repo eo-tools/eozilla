@@ -29,9 +29,9 @@ from cuiman.api.config import (
     _update_if_not_none,
 )
 from cuiman.api.defaults import DEFAULT_API_URL
-from cuiman.api.opener import JobResultOpenerRegistry
+from cuiman.api.reader import JobResultReaderRegistry
 
-from ..helpers import AllOpener
+from ..helpers import AllReader
 
 
 @pytest.mark.parametrize("explicit_defaults", [False, True])
@@ -545,7 +545,7 @@ def test_config_type_is_inferred_from_instances_and_requires_exact_match():
         ClientConfig.create(config=child, config_type=ParentConfig)
 
 
-def test_application_extension_mappings_and_opener_registries_are_isolated():
+def test_application_extension_mappings_and_reader_registries_are_isolated():
     class FirstConfig(ClientConfig):
         pass
 
@@ -555,102 +555,106 @@ def test_application_extension_mappings_and_opener_registries_are_isolated():
     assert FirstConfig.return_type_map is not ClientConfig.return_type_map
     assert SecondConfig.return_type_map is not ClientConfig.return_type_map
     assert FirstConfig.return_type_map is not SecondConfig.return_type_map
-    assert FirstConfig.get_job_result_opener_registry() is not (
-        SecondConfig.get_job_result_opener_registry()
+    assert FirstConfig.get_job_result_reader_registry() is not (
+        SecondConfig.get_job_result_reader_registry()
     )
 
 
 @pytest.mark.parametrize("iterable_type", [list, tuple, iter])
-def test_declared_job_result_openers_are_registered_once(iterable_type):
-    class LastOpener(AllOpener):
+def test_declared_job_result_readers_are_registered_once(iterable_type):
+    class LastReader(AllReader):
+        reader_id = "LastReader"
+
         pass
 
     class ApplicationConfig(ClientConfig):
-        extra_job_result_openers = iterable_type([AllOpener, LastOpener])
+        extra_job_result_readers = iterable_type([AllReader, LastReader])
 
-    registry = ApplicationConfig.get_job_result_opener_registry()
-    defaults = JobResultOpenerRegistry.create_default().opener_types
-    assert registry.opener_types == (LastOpener, AllOpener, *defaults)
-    assert ApplicationConfig.get_job_result_opener_registry() is registry
+    registry = ApplicationConfig.get_job_result_reader_registry()
+    defaults = JobResultReaderRegistry.create_default().reader_types
+    assert registry.reader_types == (LastReader, AllReader, *defaults)
+    assert ApplicationConfig.get_job_result_reader_registry() is registry
 
-    unregister = ApplicationConfig.register_job_result_opener(AllOpener)
-    assert registry.opener_types == (AllOpener, LastOpener, *defaults)
+    unregister = ApplicationConfig.register_job_result_reader(AllReader)
+    assert registry.reader_types == (AllReader, LastReader, *defaults)
     unregister()
-    assert ApplicationConfig.get_job_result_opener_registry().opener_types == (
-        LastOpener,
+    assert ApplicationConfig.get_job_result_reader_registry().reader_types == (
+        LastReader,
         *defaults,
     )
 
 
 @pytest.mark.parametrize("iterable_type", [list, tuple, iter])
-def test_declared_job_result_openers_are_inherited_and_isolated(iterable_type):
-    class OtherOpener(AllOpener):
+def test_declared_job_result_readers_are_inherited_and_isolated(iterable_type):
+    class OtherReader(AllReader):
+        reader_id = "OtherReader"
+
         pass
 
-    declared_openers = [AllOpener]
+    declared_readers = [AllReader]
 
     class ParentConfig(ClientConfig):
-        extra_job_result_openers = iterable_type(declared_openers)
+        extra_job_result_readers = iterable_type(declared_readers)
 
     class ChildConfig(ParentConfig):
         pass
 
     class OverrideConfig(ParentConfig):
-        extra_job_result_openers = [OtherOpener]
+        extra_job_result_readers = [OtherReader]
 
     class EmptyConfig(ParentConfig):
-        extra_job_result_openers = ()
+        extra_job_result_readers = ()
 
     class UnrelatedConfig(ClientConfig):
         pass
 
-    base_openers = ClientConfig.get_job_result_opener_registry().opener_types
-    defaults = JobResultOpenerRegistry.create_default().opener_types
-    declared_openers.append(OtherOpener)
-    parent_registry = ParentConfig.get_job_result_opener_registry()
-    assert parent_registry.opener_types == (AllOpener, *defaults)
-    ParentConfig.register_job_result_opener(OtherOpener)
-    assert parent_registry.opener_types == (OtherOpener, AllOpener, *defaults)
+    base_readers = ClientConfig.get_job_result_reader_registry().reader_types
+    defaults = JobResultReaderRegistry.create_default().reader_types
+    declared_readers.append(OtherReader)
+    parent_registry = ParentConfig.get_job_result_reader_registry()
+    assert parent_registry.reader_types == (AllReader, *defaults)
+    ParentConfig.register_job_result_reader(OtherReader)
+    assert parent_registry.reader_types == (OtherReader, AllReader, *defaults)
     parent_registry.clear()
-    assert ChildConfig.get_job_result_opener_registry().opener_types == (
-        AllOpener,
+    assert ChildConfig.get_job_result_reader_registry().reader_types == (
+        AllReader,
         *defaults,
     )
-    assert OverrideConfig.get_job_result_opener_registry().opener_types == (
-        OtherOpener,
+    assert OverrideConfig.get_job_result_reader_registry().reader_types == (
+        OtherReader,
         *defaults,
     )
-    assert EmptyConfig.get_job_result_opener_registry().opener_types == defaults
-    assert UnrelatedConfig.get_job_result_opener_registry().opener_types == defaults
-    assert ClientConfig.get_job_result_opener_registry().opener_types == base_openers
-    assert ClientConfig.extra_job_result_openers == ()
+    assert EmptyConfig.get_job_result_reader_registry().reader_types == defaults
+    assert UnrelatedConfig.get_job_result_reader_registry().reader_types == defaults
+    assert ClientConfig.get_job_result_reader_registry().reader_types == base_readers
+    assert ClientConfig.extra_job_result_readers == ()
 
 
-def test_declared_job_result_openers_are_not_settings(tmp_path):
+def test_declared_job_result_readers_are_not_settings(tmp_path):
     class ApplicationConfig(ClientConfig):
-        extra_job_result_openers = [AllOpener]
+        extra_job_result_readers = [AllReader]
 
     config = ApplicationConfig.create()
-    assert "extra_job_result_openers" not in ApplicationConfig.model_fields
+    assert "extra_job_result_readers" not in ApplicationConfig.model_fields
     assert (
-        "extra_job_result_openers"
+        "extra_job_result_readers"
         not in ApplicationConfig.model_json_schema()["properties"]
     )
-    assert "extra_job_result_openers" not in config.model_dump()
+    assert "extra_job_result_readers" not in config.model_dump()
     path = config.write(tmp_path / "config.yaml")
-    assert "extra_job_result_openers" not in path.read_text()
+    assert "extra_job_result_readers" not in path.read_text()
     restored = ApplicationConfig.from_file(path)
-    assert restored.extra_job_result_openers == (AllOpener,)
+    assert restored.extra_job_result_readers == (AllReader,)
 
 
-def test_declared_job_result_openers_are_validated():
+def test_declared_job_result_readers_are_validated():
     class ApplicationConfig(ClientConfig):
-        extra_job_result_openers = [int]
+        extra_job_result_readers = [int]
 
     with pytest.raises(
-        TypeError, match="Type compatible with JobResultOpener expected"
+        TypeError, match="Type compatible with JobResultReader expected"
     ):
-        ApplicationConfig.get_job_result_opener_registry()
+        ApplicationConfig.get_job_result_reader_registry()
 
 
 @pytest.fixture

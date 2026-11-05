@@ -60,7 +60,7 @@ wraptile dev -- wraptile.services.local.testing:service
 ```
 
 Follow the [Python API](cuiman/guides/api.md), [App](cuiman/guides/app.md),
-[command-line](cuiman/guides/cli.md), and [result opener](cuiman/guides/openers.md)
+[command-line](cuiman/guides/cli.md), and [result reader](cuiman/guides/readers.md)
 guides for runnable examples against this local service.
 
 ### Formatting & code checking

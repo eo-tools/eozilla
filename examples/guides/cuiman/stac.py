@@ -11,12 +11,12 @@ import pandas as pd
 import pystac
 
 from cuiman import Client, ClientConfig
-from cuiman.api.opener import JobResultOpenContext
-from cuiman.api.opener.impl import StacJobResultOpener, compose_stac_opener
+from cuiman.api.reader import JobResultReadContext
+from cuiman.api.reader.impl import StacJobResultReader, compose_stac_reader
 from gavicore.models.core import ProcessRequest
 
 
-async def mark_reviewed(stac: object, ctx: JobResultOpenContext) -> object:
+async def mark_reviewed(stac: object, ctx: JobResultReadContext) -> object:
     """Mark loaded Items while leaving the source result untouched."""
     items = stac.items if isinstance(stac, pystac.ItemCollection) else (stac,)
     for item in items:
@@ -25,7 +25,7 @@ async def mark_reviewed(stac: object, ctx: JobResultOpenContext) -> object:
     return stac
 
 
-def accepts_testing_stac(ctx: JobResultOpenContext) -> bool:
+def accepts_testing_stac(ctx: JobResultReadContext) -> bool:
     """Scope the demo transform to the testing service's native STAC outputs."""
     process = ctx.process_description
     return (
@@ -36,12 +36,12 @@ def accepts_testing_stac(ctx: JobResultOpenContext) -> bool:
 
 
 class DemoClientConfig(ClientConfig):
-    """Register a composed STAC opener without changing global Cuiman defaults."""
+    """Register a composed STAC reader without changing global Cuiman defaults."""
 
     default_path = Path(".pixi/cuiman-stac-example-config")
-    extra_job_result_openers = (
-        compose_stac_opener(
-            StacJobResultOpener,
+    extra_job_result_readers = (
+        compose_stac_reader(
+            StacJobResultReader,
             transformers=(mark_reviewed,),
             accepts=accepts_testing_stac,
         ),
@@ -53,14 +53,14 @@ def run_one(client: Client, process_id: str) -> str:
     job = client.execute_process(
         process_id, request=ProcessRequest(inputs={"item_count": 2})
     )
-    item = client.open_job_result(job.jobID, output_name="item", data_type=pystac.Item)
-    collection = client.open_job_result(
+    item = client.read_job_result(job.jobID, output_name="item", data_type=pystac.Item)
+    collection = client.read_job_result(
         job.jobID, output_name="item_collection", data_type=pystac.ItemCollection
     )
     raw = client.get_job_results(job.jobID)
     assert raw.root is not None
     report_asset = item.assets["report"]
-    report = client.open_job_result(report_asset, data_type=pd.DataFrame)
+    report = client.read_job_result(report_asset, data_type=pd.DataFrame)
     assert item.properties["demo:reviewed"] is True
     assert all(member.properties["demo:reviewed"] for member in collection)
     print(process_id, job.jobID, sorted(raw.root))

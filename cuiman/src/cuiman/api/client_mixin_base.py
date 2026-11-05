@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the Apache 2.0 License:
 # https://opensource.org/license/apache-2-0.
 
-"""Shared client configuration, authentication, and result-opening helpers."""
+"""Shared client configuration, authentication, and result-reading helpers."""
 
 import secrets
 from abc import ABC, abstractmethod
@@ -47,8 +47,8 @@ from .auth.oidc import (
 )
 from .auth.secret_store import delete_auth_secrets
 from .config import ClientConfig, _set_auth_secret_persistor
-from .opener import JobResultOpenContext
-from .opener.opener import open_job_result
+from .reader import JobResultReadContext
+from .reader.reader import read_job_result
 from .transport.httpx2 import Httpx2Transport
 
 if TYPE_CHECKING:
@@ -58,7 +58,7 @@ _HttpClient = TypeVar("_HttpClient", httpx2.Client, httpx2.AsyncClient)
 
 
 class ClientMixinBase(ABC, Generic[_HttpClient]):
-    """Share local auth policy and result-opening logic between client modes."""
+    """Share local auth policy and result-reading logic between client modes."""
 
     _async_mode: ClassVar[bool] = False
     _transport: Any
@@ -105,14 +105,16 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
         data_type: type | None,
         media_type: str | None,
         options: dict[str, Any],
-    ) -> JobResultOpenContext:
+        reader_id: str | None = None,
+    ) -> JobResultReadContext:
         """Build a job-output context, retaining its result-document location."""
-        ctx = JobResultOpenContext(
+        ctx = JobResultReadContext(
             config=self.config,
             job_id=job_id,
             job_results=job_results,
             output_name=output_name,
             data_type=data_type,
+            reader_id=reader_id,
             _media_type=media_type,
             options=options,
         )
@@ -120,16 +122,16 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
             ctx.document_href = self._transport.get_response_href(job_results)
         return ctx
 
-    async def _open_result_context(self, ctx: JobResultOpenContext) -> Any:
-        """Open the selected target using this client's configured openers."""
-        registry = self.config.get_job_result_opener_registry()
-        return await open_job_result(ctx, *registry.opener_types)
+    async def _read_result_context(self, ctx: JobResultReadContext) -> Any:
+        """Read the selected target using this client's configured readers."""
+        registry = self.config.get_job_result_reader_registry()
+        return await read_job_result(ctx, *registry.reader_types)
 
     async def _show_assets(
         self,
         items: "JobResults | QualifiedValue | dict[str, Any] | Item | Sequence[Item] | ItemCollection",
         *,
-        open_asset: "Callable[[Asset], Any]",
+        read_asset: "Callable[[Asset], Any]",
         expression: str | None,
         roles: str | Iterable[str] | None = None,
         previews: bool = True,
@@ -141,7 +143,7 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
         await _display_assets(
             items,
             expression=expression,
-            open_asset=open_asset,
+            read_asset=read_asset,
             roles=roles,
             previews=previews,
         )

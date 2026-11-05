@@ -92,7 +92,7 @@ explain why successful results are unavailable.
 
 ## Use a JSON request for a dataset
 
-The [result opener guide](openers.md) provides a small scene request. It writes
+The [result reader guide](readers.md) provides a small scene request. It writes
 `guide-scene.zarr` relative to the server's working directory, replacing any
 existing dataset at that path. Choose an unused `output_path` before submitting.
 Validate and then submit it:
@@ -104,7 +104,7 @@ Validate and then submit it:
 ```
 
 Retain this job's returned ID. Its result links to the dataset; use the
-[Python opener example](openers.md#open-with-a-built-in-opener) to read it.
+[Python reader example](readers.md#read-with-a-built-in-reader) to read it.
 
 ## Cancel or delete a selected job
 
