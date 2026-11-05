@@ -24,7 +24,7 @@ typer = ">=0.26.0"
 uri-template = "*"
 uvicorn = "*"
 # IDE integration
-pixi-pycharm = ">=0.0.11"
+pixi-pycharm = ">=0.0.12"
 # Development & build tools
 pip = "*"
 hatch = "*"
