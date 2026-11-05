@@ -16,7 +16,7 @@ class MyGoodReader(JobResultReader):
     reader_id = "MyGoodReader"
 
     async def accept_job_result(self, ctx: JobResultReadContext) -> bool:
-        return ctx.data_type is dict and isinstance(ctx.value, (str, float, bool))
+        return ctx.data_type in (str, float, bool) and isinstance(ctx.value, ctx.data_type)
 
     async def read_job_result(self, ctx: JobResultReadContext) -> Any:
         return ctx.value
@@ -104,16 +104,16 @@ class MyIsUsableRaisesReader(MyUnusableReader):
 
 @pytest.mark.asyncio
 async def test_read_job_result_ok():
-    ctx = new_ctx(data_type=dict)
+    ctx = new_ctx(data_type=str)
     assert await read_job_result(ctx, MyGoodReader) == "out.nc"
 
-    ctx = new_ctx(data_type=dict, output_name="b")
+    ctx = new_ctx(data_type=float, output_name="b")
     assert await read_job_result(ctx, MyGoodReader) == 2.5
 
 
 @pytest.mark.asyncio
 async def test_read_job_result_ok_others_failing():
-    ctx = new_ctx(data_type=dict, output_name="b")
+    ctx = new_ctx(data_type=float, output_name="b")
     assert (
         await read_job_result(
             ctx, MyAcceptRaisesReader, MyIsUsableRaisesReader, MyGoodReader
@@ -121,6 +121,7 @@ async def test_read_job_result_ok_others_failing():
         == 2.5
     )
 
+    ctx.data_type = int
     assert (
         await read_job_result(
             ctx,

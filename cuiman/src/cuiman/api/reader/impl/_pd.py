@@ -32,7 +32,7 @@ class PandasDataFrameReaderImpl(PathReader):
         ctx: JobResultReadContext,
     ) -> Any:
         read_x = self.media_type_readers.get(media_type) if media_type else None
-        if read_x is None:
+        if not media_type:
             read_x = self.filename_ext_readers.get(filename_ext)
         if read_x is not None:
             return read_x(path_like, **ctx.options)

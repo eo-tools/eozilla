@@ -18,15 +18,18 @@ from .errors import JobResultReadError, StacJobResultReadError
 class JobResultReader(ABC):
     """Abstract base class for pluggable job result readers.
 
-    An reader handles the authoritative selected value and effective location
+    A reader handles the authoritative selected value and effective location
     in the [context object][cuiman.api.reader.JobResultReadContext] `ctx` passed to
     [accept_job_result()][cuiman.api.reader.JobResultReader.accept_job_result]
     and [read_job_result()][cuiman.api.reader.JobResultReader.read_job_result].
     Original job results and process metadata are optional source facts; they
-    must not be used to select a sibling output. If `data_type` is provided, an
+    must not be used to select a sibling output. If `data_type` is provided, a
     reader MUST be able to return that type,
     otherwise [accept_job_result()][cuiman.api.reader.JobResultReader.accept_job_result]
     should return `False`.
+
+    Dispatch also validates the returned value with ``isinstance``. An
+    incompatible result is closed when possible and treated as a reader failure.
 
     Output selection is validated before dispatch, so acceptance does not need
     to resolve output names or distinguish missing outputs from selected nulls.
@@ -107,6 +110,8 @@ async def read_job_result(
         JobResultReadError: If no reader was found or all suitable
             readers raised while reading.
     """
+    if ctx.data_type is not None and not isinstance(ctx.data_type, type):
+        raise JobResultReadError("data_type must be a Python type")
     if ctx.reader_id is not None:
         reader_types = tuple(t for t in reader_types if t.reader_id == ctx.reader_id)
         if not reader_types:
@@ -167,6 +172,18 @@ async def read_job_result(
                             option_policy=reader.option_policy,
                         )
                     result = await reader.read_job_result(candidate_ctx)
+                    if ctx.data_type is not None and not isinstance(
+                        result, ctx.data_type
+                    ):
+                        try:
+                            close = getattr(result, "close", None)
+                            if callable(close):
+                                close()
+                        finally:
+                            raise JobResultReadError(
+                                f"Reader returned {type(result).__name__}; "
+                                f"expected {ctx.data_type.__name__}"
+                            )
                     ctx.resolved_options = deepcopy(candidate_ctx.resolved_options)
                     ctx.option_sources = dict(candidate_ctx.option_sources)
                     return result

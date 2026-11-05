@@ -15,6 +15,7 @@ from cuiman.api.assets import as_stac_asset
 from cuiman.api.exceptions import ClientWarning
 from cuiman.api.reader.context import JobResultReadContext, _copy_options
 from cuiman.api.reader.errors import JobResultReadError
+from cuiman.api.reader.impl._formats import is_zarr
 
 _XARRAY = "https://stac-extensions.github.io/xarray-assets/v1.0.0/schema.json"
 _STORAGE_V1 = "https://stac-extensions.github.io/storage/v1.0.0/schema.json"
@@ -63,17 +64,7 @@ async def prepare_asset_reader(
     assert asset is not None
     defaults: dict[str, Any] = {}
     # Media type is authoritative; inspect the URL suffix only when it is absent.
-    if option_policy == "xarray" and (
-        (ctx.output_media_type or "").split(";", 1)[0].strip().lower()
-        in {
-            "application/zarr",
-            "application/x-zarr",
-            "application/vnd+zarr",
-            "application/vnd.zarr",
-        }
-        or not ctx.output_media_type
-        and urlsplit(ctx.location or "").path.rstrip("/").lower().endswith(".zarr")
-    ):
+    if option_policy == "xarray" and is_zarr(ctx.output_media_type, ctx.location or ""):
         defaults = {"engine": "zarr"}
     # Give application callbacks their own options so edits cannot affect callers.
     callback_ctx = replace(ctx, options=_copy_options(ctx.options))

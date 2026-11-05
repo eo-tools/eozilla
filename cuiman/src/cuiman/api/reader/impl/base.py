@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-from cuiman.api.assets import as_stac_asset
 from cuiman.api.reader.context import JobResultReadContext
 from cuiman.api.reader.reader import JobResultReader
 
@@ -86,7 +85,7 @@ class PathReader(JobResultReader):
         filename_ext = self.get_filename_ext(path_like)
         if (
             filename_ext
-            and (not media_type or as_stac_asset(ctx.value) is None)
+            and not media_type
             and not self.accept_filename_ext(filename_ext)
         ):
             return False

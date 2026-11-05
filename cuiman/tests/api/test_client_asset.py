@@ -183,7 +183,7 @@ def test_exact_context_format_owner_and_receiving_client(client):
         ctx = call(
             job_id_or_asset=asset,
             inspect_context=True,
-            data_type=pd.DataFrame,
+            data_type=JobResultReadContext,
             delimiter=";",
         )
         assert ctx.value is asset
@@ -363,12 +363,13 @@ def test_alternate_url_and_options_reach_xarray(client):
     original = deepcopy(owning.to_dict())
     client_options = Mock(return_value={"chunks": {"x": 2}})
     access = Mock(return_value={"anon": True})
+    expected = xr.Dataset()
     with (
         patch.object(type(instance.config), "asset_reader_options", client_options),
         patch.object(type(instance.config), "asset_access_provider", access),
-        patch("xarray.open_dataset", return_value="read") as read,
+        patch("xarray.open_dataset", return_value=expected) as read,
     ):
-        assert call(asset, data_type=xr.Dataset, chunks="auto") == "read"
+        assert call(asset, data_type=xr.Dataset, chunks="auto") is expected
     read.assert_called_once_with(
         "s3://bucket/data.zarr?versionId=123",
         engine="zarr",

@@ -36,6 +36,11 @@ class StacJobResultReaderImpl(JobResultReader):
         required = strong_stac(ctx)
         reading = False
         try:
+            if ctx.options.get("engine") is not None:
+                raise StacJobResultReadError(
+                    "Native STAC reading does not support engine overrides",
+                    required=required,
+                )
             factory = type(ctx.config).stac_io_factory
             self._stac_io = factory(ctx.config) if factory else pystac.StacIO.default()
             io = self._stac_io

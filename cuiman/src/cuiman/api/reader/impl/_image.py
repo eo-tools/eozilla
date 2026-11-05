@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 import httpx2
 from PIL import Image
 
-from cuiman.api.reader import JobResultReadContext
+from cuiman.api.reader import JobResultReadContext, JobResultReadError
 
 from .base import PathReader
 
@@ -29,6 +29,8 @@ class ImageReaderImpl(PathReader):
         return filename_ext.lower() in Image.registered_extensions()
 
     async def accept_job_result(self, ctx: JobResultReadContext) -> bool:
+        if ctx.options.get("engine") is not None:
+            return False
         if not await super().accept_job_result(ctx):
             return False
         path_like = self.get_path_like(ctx)
@@ -43,6 +45,8 @@ class ImageReaderImpl(PathReader):
         media_type: str | None,
         ctx: JobResultReadContext,
     ) -> Any:
+        if ctx.options.get("engine") is not None:
+            raise JobResultReadError("Pillow does not support engine overrides")
         if urlsplit(path_like).scheme in ("http", "https"):
             async with httpx2.AsyncClient() as client:
                 response = await client.get(

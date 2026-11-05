@@ -6,7 +6,7 @@ import asyncio
 import threading
 import warnings
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Iterable, Sequence, overload
+from typing import TYPE_CHECKING, Any, Iterable, Sequence, TypeVar, overload
 
 import httpx2
 from authlib.integrations.httpx_client import AsyncOAuth2Client
@@ -32,6 +32,8 @@ from .exceptions import ClientError, ClientWarning
 from .reader import JobResultStatusError
 from .reader.impl._stac.asset import OMITTED, _asset_context, _Omitted
 from .transport import AsyncTransport
+
+_T = TypeVar("_T")
 
 if TYPE_CHECKING:
     from pystac import Asset, Item, ItemCollection
@@ -288,6 +290,45 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
     async def read_job_result(
         self,
         job_id_or_asset: str,
+        output_name: str | None,
+        data_type: type[_T],
+        media_type: str | None = None,
+        poll_interval: float = DEFAULT_READ_JOB_POLL_INTERVAL,
+        timeout: float = DEFAULT_READ_JOB_RESULT_TIMEOUT,
+        *,
+        reader_id: str | None = None,
+        **options: Any,
+    ) -> _T: ...
+
+    @overload
+    async def read_job_result(
+        self,
+        job_id_or_asset: str,
+        output_name: str | None = None,
+        *,
+        data_type: type[_T],
+        media_type: str | None = None,
+        poll_interval: float = DEFAULT_READ_JOB_POLL_INTERVAL,
+        timeout: float = DEFAULT_READ_JOB_RESULT_TIMEOUT,
+        reader_id: str | None = None,
+        **options: Any,
+    ) -> _T: ...
+
+    @overload
+    async def read_job_result(
+        self,
+        job_id_or_asset: "Asset",
+        *,
+        data_type: type[_T],
+        media_type: str | None = None,
+        reader_id: str | None = None,
+        **options: Any,
+    ) -> _T: ...
+
+    @overload
+    async def read_job_result(
+        self,
+        job_id_or_asset: str,
         output_name: str | None = None,
         data_type: type | None = None,
         media_type: str | None = None,
@@ -334,7 +375,7 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
             output_name: the name of the output to be read. Required when the
                 job has multiple outputs; a sole output is selected automatically.
             data_type: the expected/desired data type to be returned.
-                If provided, the return value will be of that type.
+                If provided, return a compatible value or raise JobResultReadError.
                 If not provided, the return value will be the type
                 decided by the reader.
             media_type: the media type of the output produced.

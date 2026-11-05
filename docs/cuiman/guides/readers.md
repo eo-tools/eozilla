@@ -13,6 +13,27 @@ The framework lives in `cuiman.api.reader`. Configuration uses
 `get_job_result_reader_registry()`. Readers implement `accept_job_result()` and
 `read_job_result()` using a `JobResultReadContext`.
 
+Storage format, reading backend, and representation are separate choices:
+
+- The media type determines the format. The filename suffix is used only when
+  the media type is absent, for both job outputs and STAC Assets.
+- `engine` selects the backend and overrides inferred backend defaults. For
+  example, xarray uses the Zarr engine for Zarr resources unless overridden.
+- `data_type` selects a reader capable of producing the required representation.
+  A call with `data_type=SomeType` has inferred return type `SomeType`; a call
+  without it retains `Any`.
+
+The framework checks the returned value with `isinstance`, including values from
+custom readers. Both clients return a compatible value or raise
+`JobResultReadError`. Unsupported format, engine, and representation combinations
+raise. A rejected result with a `close()` method is closed before another reader
+is tried.
+
+Dataset reads remain lazy where supported by the backend; close returned
+datasets when finished. Representation conversions are not implemented yet:
+reading Zarr with `data_type=pandas.DataFrame` raises instead of returning an
+xarray Dataset. Conversion support will be added separately.
+
 Every registered concrete reader must declare a non-empty, stable `reader_id`
 in its own class body. The registry rejects the same ID on different classes;
 registering the same class again moves it to the front. Built-in IDs are

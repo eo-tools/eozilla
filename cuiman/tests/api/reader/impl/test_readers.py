@@ -56,7 +56,6 @@ class GeopandasDataFrameReaderTest(IsolatedAsyncioTestCase):
         ctx = create_ctx(
             Link(
                 href="s3://regions/region-data.feather",
-                type="application/octet-stream",
             )
         )
         result = await reader.read_job_result(ctx)
@@ -117,7 +116,6 @@ class PandasDataFrameReaderTest(IsolatedAsyncioTestCase):
         ctx = create_ctx(
             Link(
                 href="s3://regions/region-data.csv",
-                type="text/plain",
             )
         )
         result = await reader.read_job_result(ctx)
@@ -165,6 +163,7 @@ class XarrayDatasetReaderTest(IsolatedAsyncioTestCase):
             "https://example.com/cube.zarr?off=0x64ea",
             chunks={"x": 2},
             decode_times=False,
+            engine="zarr",
         )
 
 

@@ -142,7 +142,7 @@ class PathReaderTest(IsolatedAsyncioTestCase):
             accepts_filename_ext=False,
             accepts_media_type=True,
             accepts_data_type=True,
-            expected_result=False,
+            expected_result=True,
         )
         await self._assert_accept_job_result(
             zarr_link,
