@@ -1,3 +1,29 @@
+## Changes in version 0.5.0
+
+- **Cuiman** now uses reader terminology throughout its job-result API (#243).
+  This is a breaking change without compatibility aliases: `Client` and
+  `AsyncClient` expose `read_job_result()` instead of `open_job_result()`, and
+  framework imports move from `cuiman.api.opener` to `cuiman.api.reader`.
+  Extension APIs now use `JobResultReader`, `JobResultReadContext`,
+  `JobResultReaderRegistry`, `JobResultReadError`, and `StacJobResultReadError`.
+  Configuration uses `extra_job_result_readers` and
+  `register_job_result_reader()`. Job execution helpers are renamed to
+  `execute_and_read_result()` and `async_execute_and_read_result()`, with
+  `JobOptions.reader_options` replacing `opener_options`.
+
+- **Cuiman** readers declare explicit, stable `reader_id` values. Registries
+  reject duplicate IDs for different classes, and callers can select a reader
+  through `reader_id`. Backend option policies are inherited independently of
+  reader identity, including for STAC Asset hints and receiving-client hooks.
+
+- **Cuiman** now guarantees a compatible return value when `data_type` is
+  supplied, or raises `JobResultReadError`, including for custom readers.
+  Generic overloads infer the requested return type for both clients; calls
+  without `data_type` retain `Any`. Media types take precedence over filename
+  suffixes, explicit engines override inferred defaults, and Zarr dataset reads
+  infer the xarray Zarr engine while preserving lazy loading. Rejected results
+  are closed when possible. Representation conversions remain deferred.
+
 ## Changes in version 0.4.0
 
 - **Appligator** now formats generated Airflow DAG source through the `pyruff`
