@@ -7,7 +7,7 @@ import threading
 import time
 import warnings
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Iterable, Sequence, overload
+from typing import TYPE_CHECKING, Any, Iterable, Sequence, TypeVar, overload
 
 import httpx2
 from authlib.integrations.base_client.errors import InvalidTokenError
@@ -28,13 +28,15 @@ from .auth.interactive import authorize
 from .auth.oidc import LoopbackCallbackServer
 from .client_mixin_base import ClientMixinBase
 from .defaults import (
-    DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
-    DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
+    DEFAULT_READ_JOB_POLL_INTERVAL,
+    DEFAULT_READ_JOB_RESULT_TIMEOUT,
 )
 from .exceptions import ClientError, ClientWarning
-from .opener import JobResultStatusError
-from .opener.impl._stac.asset import OMITTED, _asset_context, _Omitted
+from .reader import JobResultStatusError
+from .reader.impl._stac.asset import OMITTED, _asset_context, _Omitted
 from .transport import Transport
+
+_T = TypeVar("_T")
 
 if TYPE_CHECKING:
     from pystac import Asset, Item, ItemCollection
@@ -222,11 +224,11 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
             roles: Show table assets matching any requested role. None shows
                 all assets; an empty iterable matches none. Job result rows
                 are not filtered by roles.
-            previews: Open thumbnail, overview, and visual assets using this
+            previews: Read thumbnail, overview, and visual assets using this
                 client's readers. False prevents preview reads while retaining
                 geometry maps. Unreadable or unsupported previews are skipped.
                 Preview selection is independent of the table's role filter.
-                Job result tables display links without opening their targets.
+                Job result tables display links without reading their targets.
         """
         from .assets.common import _get_items_expression
 
@@ -234,66 +236,119 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
             self._show_assets,
             items,
             expression=_get_items_expression(),
-            open_asset=self.open_job_result,
+            read_asset=self.read_job_result,
             roles=roles,
             previews=previews,
         )
 
     @overload
-    def open_job_result(
+    def read_job_result(
         self,
-        job_id_or_asset: str,
+        job_id_or_asset: str | JobResults,
+        output_name: str | None,
+        data_type: type[_T],
+        media_type: str | None = None,
+        poll_interval: float = DEFAULT_READ_JOB_POLL_INTERVAL,
+        timeout: float = DEFAULT_READ_JOB_RESULT_TIMEOUT,
+        *,
+        reader_id: str | None = None,
+        **options: Any,
+    ) -> _T: ...
+
+    @overload
+    def read_job_result(
+        self,
+        job_id_or_asset: str | JobResults,
+        output_name: str | None = None,
+        *,
+        data_type: type[_T],
+        media_type: str | None = None,
+        poll_interval: float = DEFAULT_READ_JOB_POLL_INTERVAL,
+        timeout: float = DEFAULT_READ_JOB_RESULT_TIMEOUT,
+        reader_id: str | None = None,
+        **options: Any,
+    ) -> _T: ...
+
+    @overload
+    def read_job_result(
+        self,
+        job_id_or_asset: "Asset",
+        *,
+        data_type: type[_T],
+        media_type: str | None = None,
+        reader_id: str | None = None,
+        **options: Any,
+    ) -> _T: ...
+
+    @overload
+    def read_job_result(
+        self,
+        job_id_or_asset: str | JobResults,
         output_name: str | None = None,
         data_type: type | None = None,
         media_type: str | None = None,
-        poll_interval: float = DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
-        timeout: float = DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
+        poll_interval: float = DEFAULT_READ_JOB_POLL_INTERVAL,
+        timeout: float = DEFAULT_READ_JOB_RESULT_TIMEOUT,
+        *,
+        reader_id: str | None = None,
         **options: Any,
     ) -> Any: ...
 
     @overload
-    def open_job_result(
+    def read_job_result(
         self,
         job_id_or_asset: "Asset",
         *,
         data_type: type | None = None,
         media_type: str | None = None,
+        reader_id: str | None = None,
         **options: Any,
     ) -> Any: ...
 
-    def open_job_result(
+    def read_job_result(
         self,
-        job_id_or_asset: "str | Asset",
+        job_id_or_asset: "str | JobResults | Asset",
         output_name: str | None | _Omitted = OMITTED,
         data_type: type | None = None,
         media_type: str | None = None,
         poll_interval: float | _Omitted = OMITTED,
         timeout: float | _Omitted = OMITTED,
+        *,
+        reader_id: str | None = None,
         **options: Any,
     ) -> Any:
-        """Open an original job output or exactly the supplied native Asset.
+        """Read a job output, supplied results, or an exact native Asset.
 
-        Strings always identify jobs. An Asset uses this client's readers and
+        Strings always identify jobs. Supplied JobResults select and copy an
+        output without polling, process lookup, or refetching the results. Only
+        a selected linked payload may be fetched. Retained response URLs provide
+        the base for relative STAC references, including across clients; a base
+        is never guessed from api_url. Polling arguments apply only to job IDs.
+
+        An Asset uses this client's readers and
         its own href, media type, and owner base, with no processing API calls,
         metadata rediscovery, sibling selection, or transformation. Job-only
         arguments must be omitted for Assets, even when their values are None
         or equal to the job defaults.
 
         Args:
-            job_id_or_asset: the job ID string or exact `pystac.Asset` to read.
-            output_name: the name of the output to be opened. Required when the
+            job_id_or_asset: a job ID string, already retrieved `JobResults`,
+                or the exact `pystac.Asset` to read.
+            output_name: the name of the output to be read. Required when the
                 job has multiple outputs; a sole output is selected automatically.
             data_type: the expected/desired data type to be returned.
-                If provided, the return value will be of that type.
+                If provided, return a compatible value or raise JobResultReadError.
                 If not provided, the return value will be the type
-                decided by the opener.
+                decided by the reader.
             media_type: the media type of the output produced.
                 Only needed, if the output does not provide its
                 media type or if its media type should be overridden.
             poll_interval: interval in seconds between job status polls.
                 Applies while job status is still "accepted" or "running".
             timeout: maximum time in seconds to wait for job completion.
-            options: additional opener-specific options.
+                Applies only when a job ID is supplied.
+            reader_id: explicit registered reader ID; omitted for automatic selection.
+            options: additional reader-specific options.
 
         Returns:
             The job result value.
@@ -302,33 +357,47 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
             TypeError: if the target type is unsupported or an Asset receives
                 explicit output_name, poll_interval, or timeout.
             ClientError: if an API error occurs
-            JobResultOpenError: if output selection is missing or ambiguous,
-                or an opener error occurs
+            JobResultReadError: if output selection is missing or ambiguous,
+                or a reader error occurs
             JobResultStatusError: if the job failed or was canceled
             TimeoutError: if the job does not finish within the timeout
         """
         if not isinstance(job_id_or_asset, str):
-            ctx = _asset_context(
-                self.config,
-                job_id_or_asset,
-                output_name=output_name,
-                poll_interval=poll_interval,
-                timeout=timeout,
-                data_type=data_type,
-                media_type=media_type,
-                options=options,
-            )
+            if isinstance(job_id_or_asset, JobResults):
+                ctx = self._new_job_result_context(
+                    job_id=None,
+                    job_results=job_id_or_asset,
+                    output_name=None
+                    if isinstance(output_name, _Omitted)
+                    else output_name,
+                    data_type=data_type,
+                    media_type=media_type,
+                    options=options,
+                    reader_id=reader_id,
+                )
+            else:
+                ctx = _asset_context(
+                    self.config,
+                    job_id_or_asset,
+                    output_name=output_name,
+                    poll_interval=poll_interval,
+                    timeout=timeout,
+                    data_type=data_type,
+                    media_type=media_type,
+                    options=options,
+                    reader_id=reader_id,
+                )
             self._require_open()
-            return run_sync(self._open_result_context, ctx)
+            return run_sync(self._read_result_context, ctx)
         job_id = job_id_or_asset
         output_name = None if isinstance(output_name, _Omitted) else output_name
         poll_interval = (
-            DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL
+            DEFAULT_READ_JOB_POLL_INTERVAL
             if isinstance(poll_interval, _Omitted)
             else poll_interval
         )
         timeout = (
-            DEFAULT_OPEN_JOB_RESULT_TIMEOUT
+            DEFAULT_READ_JOB_RESULT_TIMEOUT
             if isinstance(timeout, _Omitted)
             else timeout
         )
@@ -339,7 +408,7 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
                 break
             if time.time() >= deadline:
                 raise TimeoutError(
-                    f"Cannot open result of job #{job_id}; "
+                    f"Cannot read result of job #{job_id}; "
                     f"it did not finish within {timeout} seconds"
                 )
             time.sleep(poll_interval)
@@ -353,6 +422,7 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
             data_type=data_type,
             media_type=media_type,
             options=options,
+            reader_id=reader_id,
         )
         process_id = job_info.processID
         process_description: ProcessDescription | None = None
@@ -367,4 +437,4 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
                     stacklevel=2,
                 )
         ctx.process_description = process_description
-        return run_sync(self._open_result_context, ctx)
+        return run_sync(self._read_result_context, ctx)

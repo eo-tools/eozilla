@@ -35,7 +35,7 @@ jobs.
 The notebook completes the inline process first: select its inline Item JSON, call
 `client.show_assets(inline_item)` to see its footprint and synthetic preview,
 then convert it locally with `pystac.Item.from_dict(inline_item)` and open the
-dataset with `client.open_job_result(inline_stac_item.assets["data"])`.
+dataset with `client.read_job_result(inline_stac_item.assets["data"])`.
 Cuiman infers the Zarr engine from the asset's media type, falling back to the
 `.zarr` URL suffix only when no media type is supplied.
 It next runs the linked process, displays its ItemCollection, and opens the
@@ -53,18 +53,18 @@ use ipyleaflet and previews use Pillow, both included in the Pixi environment.
 The separate [runnable script](https://github.com/eo-tools/eozilla/blob/main/examples/guides/cuiman/stac.py)
 also demonstrates client customization for developers.
 
-The script registers a composed opener through `DemoClientConfig` without
+The script registers a composed reader through `DemoClientConfig` without
 changing Cuiman's global defaults. Its predicate selects the `item` and
 `item_collection` outputs of the two testing processes; its async transform
-marks loaded Items with `demo:reviewed`. The built-in opener still handles
+marks loaded Items with `demo:reviewed`. The built-in reader still handles
 native parsing. Each returned Item is independent of the original job result.
 
 For each job, the example opens the Item and ItemCollection, then calls
 `get_job_results(job_id)` to inspect the original five output values. Inline
 `item` is JSON in those results; linked `item` is an ordinary Link whose metadata
-document is fetched over HTTP only when opened. The example selects the Item's
+document is fetched over HTTP only when read. The example selects the Item's
 `report` Asset and passes that exact Asset to Cuiman's pandas reader. It prints
-the CSV mean of `1.5`. Opening this Asset does not rerun the STAC transform or
+the CSV mean of `1.5`. Reading this Asset does not rerun the STAC transform or
 fetch sibling Assets.
 
 The `data` Asset is a small Zarr grid. If you read it from a remote service
@@ -117,7 +117,7 @@ copy buttons select the original dictionaries, for example
 `results.root['item']['assets']['data']`; native PySTAC displays continue to
 copy `.assets[...]` expressions. To read assets as PySTAC objects, convert the
 inline dictionary explicitly with `pystac.Item.from_dict(...)`. For linked STAC
-outputs, use `client.open_job_result(...)` to fetch the metadata first.
+outputs, use `client.read_job_result(...)` to fetch the metadata first.
 
 The table includes asset keys, file links, titles, roles, and buttons to copy
 asset access expressions. Each scene card shows additional item properties below
@@ -132,7 +132,7 @@ uses `item`, `items`, or `item_collection` as a placeholder to adapt after copyi
 The `roles` filter matches any requested role;
 `None` shows all assets and an empty iterable matches none.
 
-Assets with `thumbnail`, `overview`, or `visual` roles are opened using the
+Assets with `thumbnail`, `overview`, or `visual` roles are read using the
 client's configured result readers and asset access settings. Results with an
 HTML or image representation appear
 beside the geometry map, or beside the item heading when a map is unavailable. HTTP
@@ -152,9 +152,9 @@ from cuiman.api.assets import display_assets
 await display_assets(items, roles="metadata")
 ```
 
-Without `open_asset`, the helper displays tables and geometry maps and skips
-asset previews. Supply a synchronous or asynchronous `open_asset` callable to
-enable asset previews, for example `open_asset=client.open_job_result`.
+Without `read_asset`, the helper displays tables and geometry maps and skips
+asset previews. Supply a synchronous or asynchronous `read_asset` callable to
+enable asset previews, for example `read_asset=client.read_job_result`.
 
 ## Try the browser app
 
@@ -174,6 +174,6 @@ service when finished, then remove only the generated run directories you no
 longer need from its configured artifact directory. The service does not delete
 them when a client closes. Native PySTAC navigation to subsequently fetched
 documents remains lazy and does not invoke the composition transform. Cuiman's
-initial opener reads only the selected metadata document, and neither it nor
+initial reader reads only the selected metadata document, and neither it nor
 the transform scans for other products. For more on requested types, Asset
-options, and access policy, see [Result openers](openers.md).
+options, and access policy, see [Result readers](readers.md).

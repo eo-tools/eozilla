@@ -105,10 +105,10 @@ def test_demo_job_opening_with_both_clients(
                 _transport=transport,
             )
             try:
-                item = await client.open_job_result(
+                item = await client.read_job_result(
                     "demo", output_name="item", data_type=pystac.Item
                 )
-                collection = await client.open_job_result(
+                collection = await client.read_job_result(
                     "demo", output_name="item_collection"
                 )
                 raw = await client.get_job_results("demo")
@@ -127,10 +127,10 @@ def test_demo_job_opening_with_both_clients(
             _transport=transport,
         )
         try:
-            item = client.open_job_result(
+            item = client.read_job_result(
                 "demo", output_name="item", data_type=pystac.Item
             )
-            collection = client.open_job_result("demo", output_name="item_collection")
+            collection = client.read_job_result("demo", output_name="item_collection")
             raw = client.get_job_results("demo")
             validate(item, collection, raw)
         finally:

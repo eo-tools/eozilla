@@ -119,15 +119,16 @@ _SYNC_CLIENT = _ClientTypeSpec(
     class_suffix="Client",
     base_module="cuiman.api.client",
     base_class_name="Client",
-    helper_name="execute_and_open_result",
+    helper_name="execute_and_read_result",
     is_async=False,
 )
+
 _ASYNC_CLIENT = _ClientTypeSpec(
     module_suffix="async",
     class_suffix="AsyncClient",
     base_module="cuiman.api.async_client",
     base_class_name="AsyncClient",
-    helper_name="async_execute_and_open_result",
+    helper_name="async_execute_and_read_result",
     is_async=True,
 )
 
@@ -216,7 +217,7 @@ def _render_input_assignments(inputs: list[_InputSpec]) -> list[str]:
 
 
 def _render_method_docstring(spec: _MethodSpec) -> list[str]:
-    lines = [f"Execute process ``{spec.process_id}`` and return its opened result."]
+    lines = [f"Execute process ``{spec.process_id}`` and return its read result."]
     if spec.title:
         lines.append("")
         lines.extend(_clean_doc_line(line) for line in spec.title.split("\n"))
@@ -228,12 +229,12 @@ def _render_method_docstring(spec: _MethodSpec) -> list[str]:
         desc = input_spec.description or input_spec.title or "Process input."
         lines.append(f"{TAB}{input_spec.param_name}: {_clean_doc_line(desc)}")
     lines.append(
-        f"{TAB}job_options: Optional job execution and result-opening options."
+        f"{TAB}job_options: Optional job execution and result-reading options."
     )
     lines.append("")
     lines.append("Raises:")
     lines.append(
-        f"{TAB}ClientError: If the API call, job execution, or result opening fails."
+        f"{TAB}ClientError: If the API call, job execution, or result reading fails."
     )
     escaped_lines = [line.replace('"""', r"\"\"\"") for line in lines]
     return [f'"""{escaped_lines[0]}', *escaped_lines[1:], '"""']

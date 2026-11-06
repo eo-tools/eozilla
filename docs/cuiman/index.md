@@ -9,6 +9,6 @@ It comprises the following interfaces:
 - [Eozilla App](guides/app.md), launched by Cuiman in a browser or notebook
 - [Command line](guides/cli.md)
 
-The [result opener guide](guides/openers.md) explains how to open datasets and
+The [result reader guide](guides/readers.md) explains how to open datasets and
 add custom readers. Start with [Getting Started](getting-started.md) for client
 concepts, configuration, and authentication.

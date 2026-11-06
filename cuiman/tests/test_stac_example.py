@@ -9,7 +9,7 @@ import pystac
 import pytest
 
 from cuiman import Client, ClientConfig
-from cuiman.api.opener import JobResultOpenContext
+from cuiman.api.reader import JobResultReadContext
 from examples.guides.cuiman import stac
 from gavicore.models.core import JobInfo, JobResults, ProcessDescription, ProcessRequest
 
@@ -25,7 +25,7 @@ def item():
 @pytest.mark.parametrize("collection", [False, True])
 async def test_mark_reviewed_returns_native_object(item, collection):
     value = pystac.ItemCollection([item]) if collection else item
-    ctx = JobResultOpenContext(config=ClientConfig(), value=value)
+    ctx = JobResultReadContext(config=ClientConfig(), value=value)
     assert await stac.mark_reviewed(value, ctx) is value
     member = value[0] if collection else value
     assert member.properties["demo:reviewed"] is True
@@ -44,7 +44,7 @@ async def test_mark_reviewed_returns_native_object(item, collection):
     ],
 )
 def test_predicate_limits_demo_transformation(process_id, output_name, accepted):
-    ctx = JobResultOpenContext(
+    ctx = JobResultReadContext(
         config=ClientConfig(),
         value=None,
         process_description=(
@@ -60,7 +60,7 @@ def test_run_one_selects_outputs_and_reads_exact_report(item, process_id, capsys
     item.properties["demo:reviewed"] = True
     client = Mock(spec=Client)
     client.execute_process.return_value = JobInfo(jobID="demo-job", status="successful")
-    client.open_job_result.side_effect = [
+    client.read_job_result.side_effect = [
         item,
         pystac.ItemCollection([item]),
         pd.DataFrame({"mean_ndvi": [1.5]}),
@@ -72,17 +72,17 @@ def test_run_one_selects_outputs_and_reads_exact_report(item, process_id, capsys
     client.execute_process.assert_called_once_with(
         process_id, request=ProcessRequest(inputs={"item_count": 2})
     )
-    assert client.open_job_result.call_args_list[0].args == ("demo-job",)
-    assert client.open_job_result.call_args_list[0].kwargs == {
+    assert client.read_job_result.call_args_list[0].args == ("demo-job",)
+    assert client.read_job_result.call_args_list[0].kwargs == {
         "output_name": "item",
         "data_type": pystac.Item,
     }
-    assert client.open_job_result.call_args_list[1].kwargs == {
+    assert client.read_job_result.call_args_list[1].kwargs == {
         "output_name": "item_collection",
         "data_type": pystac.ItemCollection,
     }
-    assert client.open_job_result.call_args.args == (item.assets["report"],)
-    assert client.open_job_result.call_args.kwargs == {"data_type": pd.DataFrame}
+    assert client.read_job_result.call_args.args == (item.assets["report"],)
+    assert client.read_job_result.call_args.kwargs == {"data_type": pd.DataFrame}
     client.get_job_results.assert_called_once_with("demo-job")
     assert "report.csv [1.5]" in capsys.readouterr().out
 

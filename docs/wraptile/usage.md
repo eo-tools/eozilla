@@ -162,7 +162,7 @@ Remote clients need access to that filesystem to use the file alternates.
 
 These processes supply raw API values and reachable products for app testing.
 They do not add new browser STAC presentation or Python Asset actions. See the
-[Cuiman opener guide](../cuiman/guides/openers.md#native-stac-outputs) for opening
+[Cuiman reader guide](../cuiman/guides/readers.md#native-stac-outputs) for opening
 these outputs as native PySTAC objects.
 
 When finished, stop the server and remove the generated run directories from

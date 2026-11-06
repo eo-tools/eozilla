@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 from typing import Annotated
 from unittest.mock import patch
 
-import pytest
 import pyruff
+import pytest
 from pydantic import Field
 
 from appligator.airflow.gen_workflow_dag import (

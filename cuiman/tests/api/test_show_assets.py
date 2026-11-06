@@ -22,7 +22,7 @@ from cuiman.api.assets.stac import (
     _render_item,
     _render_preview,
 )
-from cuiman.api.opener import JobResultOpener
+from cuiman.api.reader import JobResultReader
 from gavicore.util.runsync import run_sync
 
 
@@ -95,7 +95,7 @@ def test_render_item_builds_display_without_displaying(displayed):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("previews", [False, True])
 @pytest.mark.parametrize("with_map", [False, True])
-async def test_standalone_without_opener_keeps_table_and_geometry(
+async def test_standalone_without_reader_keeps_table_and_geometry(
     displayed, map_modules, monkeypatch, previews, with_map
 ):
     widgets, leaflet = map_modules
@@ -119,22 +119,22 @@ async def test_standalone_without_opener_keeps_table_and_geometry(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("asynchronous", [False, True])
 @pytest.mark.parametrize("previews", [False, True])
-async def test_standalone_uses_optional_opener(displayed, asynchronous, previews):
+async def test_standalone_uses_optional_reader(displayed, asynchronous, previews):
     from IPython.display import HTML
 
     item = new_item()
     asset = Asset("missing.png", roles=["thumbnail"])
     item.add_asset("preview", asset)
     mock_type = AsyncMock if asynchronous else MagicMock
-    open_asset = mock_type(return_value=HTML("<p>Supplied preview</p>"))
+    read_asset = mock_type(return_value=HTML("<p>Supplied preview</p>"))
 
-    await display_assets(item, open_asset=open_asset, previews=previews)
+    await display_assets(item, read_asset=read_asset, previews=previews)
 
-    assert open_asset.call_count == int(previews)
+    assert read_asset.call_count == int(previews)
     if previews:
-        open_asset.assert_called_once_with(asset)
+        read_asset.assert_called_once_with(asset)
         if asynchronous:
-            open_asset.assert_awaited_once_with(asset)
+            read_asset.assert_awaited_once_with(asset)
     assert ("<p>Supplied preview</p>" in displayed[0].data) is previews
 
 
@@ -598,7 +598,7 @@ def test_render_preview_representations(monkeypatch, mime, value, expected):
 def test_unreadable_preview(monkeypatch, tmp_path):
     asset = Asset((tmp_path / "missing.png").as_uri(), media_type="image/png")
     open_result = MagicMock(side_effect=OSError("missing"))
-    assert run_sync(_load_preview, asset, open_asset=open_result) is None
+    assert run_sync(_load_preview, asset, read_asset=open_result) is None
 
 
 @pytest.mark.asyncio
@@ -612,11 +612,11 @@ async def test_loaded_preview_is_closed(monkeypatch, format_fails):
         formatter.format.return_value = ({"text/html": "<p>Preview</p>"}, {})
     monkeypatch.setattr("IPython.core.formatters.DisplayFormatter", lambda: formatter)
     asset = Asset("preview.png")
-    open_asset = AsyncMock(return_value=opened)
+    read_asset = AsyncMock(return_value=opened)
 
-    html = await _load_preview(asset, open_asset=open_asset)
+    html = await _load_preview(asset, read_asset=read_asset)
 
-    open_asset.assert_awaited_once_with(asset)
+    read_asset.assert_awaited_once_with(asset)
     opened.close.assert_called_once_with()
     assert html == (None if format_fails else "<p>Preview</p>")
 
@@ -702,11 +702,13 @@ async def test_client_preview_uses_configured_reader_on_owning_loop(
 
     opened = []
 
-    class PreviewOpener(JobResultOpener):
+    class PreviewReader(JobResultReader):
+        reader_id = "PreviewReader"
+
         async def accept_job_result(self, ctx):
             return isinstance(ctx.value, Asset)
 
-        async def open_job_result(self, ctx):
+        async def read_job_result(self, ctx):
             opened.append((ctx, asyncio.get_running_loop()))
             return HTML("<p>Configured preview</p>")
 
@@ -715,7 +717,7 @@ async def test_client_preview_uses_configured_reader_on_owning_loop(
 
     config = Config(api_url="https://process.test", auth={"auth_type": "none"})
     client = AsyncClient(config=config) if asynchronous else Client(config=config)
-    unregister = client.config.register_job_result_opener(PreviewOpener)
+    unregister = client.config.register_job_result_reader(PreviewReader)
     item = new_item()
     item.set_self_href("https://example.invalid/item.json")
     item.add_asset(
