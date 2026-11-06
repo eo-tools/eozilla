@@ -172,6 +172,7 @@ exclude = [
     "procodile-example/tests",
     "tools",
     "_pkg_reservations",
+    '(^|[/\\])site[/\\]',
 ]
 
 ########################## Tasks ###############################
@@ -202,7 +203,7 @@ check-procodile = "ruff check procodile/src"
 check-wraptile = "ruff check wraptile/src"
 check-examples = "ruff check examples/guides"
 check-example-format = "ruff format --check examples/guides"
-typecheck = "mypy ."
+typecheck = "mypy . cuiman/tests/typing/read_job_result.py"
 gen-server = "python -m tools.gen_server"
 gen-client = "python -m tools.gen_client"
 gen-cli-docs = "python -m tools.gen_cli_docs"

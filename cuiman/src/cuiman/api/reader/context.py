@@ -100,8 +100,9 @@ class JobResultReadContext:
     Deserialized results do not themselves retain their HTTP response URL. This
     source context lets STAC readers resolve linked metadata and relative links
     or Asset hrefs inside inline documents, including after HTTP redirects.
-    It may be unavailable for manually constructed results or results retrieved
-    by another transport. Never guessed from api_url.
+    Registered source URLs are shared across transports for the exact result
+    object, but are unavailable for copies or manually constructed results.
+    Never guessed from api_url.
     """
 
     asset_alternate: str | None = None

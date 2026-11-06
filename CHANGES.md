@@ -1,5 +1,11 @@
 ## Changes in version 0.5.0
 
+- **Cuiman** retains effective job-result response URLs in a shared in-memory
+  registry, allowing other client transports to recover the base for relative
+  STAC references. Associations survive transport closure while the exact result
+  objects remain alive; copies and manually constructed results have no source
+  association.
+
 - **Cuiman** now uses reader terminology throughout its job-result API (#243).
   This is a breaking change without compatibility aliases: `Client` and
   `AsyncClient` expose `read_job_result()` instead of `open_job_result()`, and

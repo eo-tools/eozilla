@@ -51,9 +51,10 @@ overrides. Tests, maintained examples, guides, and notebooks use reader names.
    the supplied results unchanged.
 3. Retain available result-document URL context for relative links. The current
    transport stores effective response URLs against exact result-object identity
-   using weak references; `get_response_href(results)` exposes that information.
-   Determine how much context is available when results come from another client
-   or are manually constructed; preserve available context without guessing a
+   in a process-wide, thread-safe weak-reference registry;
+   `get_response_href(results)` exposes that information across clients, including
+   after the originating transport closes. Copied and manually constructed
+   results have no registered URL. Preserve available context without guessing a
    document URL from `api_url`.
 4. Complete sync/async tests for selection, non-mutation, linked data, relative
    links, and absence of result-document refetches. Extend the static typing
@@ -73,10 +74,13 @@ both clients satisfy every criterion above; conversions remain deferred.
 - `cuiman/src/cuiman/api/reader/context.py`: existing selection, copying, and
   location normalization; `job_id` and process metadata are optional.
 - `cuiman/src/cuiman/api/transport/httpx2.py`: response URL retention.
+- `cuiman/src/cuiman/api/transport/_result_sources.py`: shared, volatile source
+  registry; entries are removed when their exact result objects are collected.
 - `cuiman/tests/api/test_client_reader.py`, `test_client_asset.py`,
   `test_reader_contract.py`, and `test_reader_identity.py`: client behavior.
-- `cuiman/tests/typing/read_job_result.py`: static assertions, executed by
-  `cuiman/tests/api/test_reader_typing.py` in the regular suite.
+- `cuiman/tests/typing/read_job_result.py`: static assertions, checked explicitly
+  by `pixi run typecheck` (also included in `pixi run checks`). They share mypy's
+  persistent cache with the source checks rather than running in pytest.
 - `docs/cuiman/guides/readers.md`: maintained guide.
 
 ## Validation and environment

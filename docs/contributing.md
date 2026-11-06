@@ -70,6 +70,10 @@ pixi run format
 pixi run checks
 ```
 
+`checks` includes `pixi run typecheck`, which checks source code and the Cuiman
+reader return-type assertions in `cuiman/tests/typing/read_job_result.py` using
+mypy's persistent cache. These static assertions run here rather than in pytest.
+
 ### Testing & Coverage
 
 ```commandline

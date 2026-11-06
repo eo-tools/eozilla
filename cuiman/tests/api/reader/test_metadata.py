@@ -168,5 +168,66 @@ def test_transport_retains_effective_uri_per_result_and_releases_sources():
     assert transport.get_response_href(JobResults(root={"item": 1})) is None
     del first
     gc.collect()
-    assert len(transport._result_sources) == 1
+    assert transport.get_response_href(second) == "https://api.test/second"
     transport.sync_httpx2.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("asynchronous", [False, True])
+async def test_result_source_is_shared_after_redirect_and_origin_close(asynchronous):
+    from cuiman import AsyncClient, Client
+    from cuiman.api.transport import AsyncTransport, Transport
+
+    requests = []
+
+    def handle(request):
+        requests.append(str(request.url))
+        if request.url.path == "/results":
+            return httpx2.Response(302, headers={"Location": "/effective/results.json"})
+        return httpx2.Response(200, json={"item": document()})
+
+    kwargs = dict(transport=httpx2.MockTransport(handle), follow_redirects=True)
+    origin = Httpx2Transport(api_url="https://api.test")
+    args = TransportArgs(path="/results", return_types={"200": JobResults})
+    if asynchronous:
+        async with httpx2.AsyncClient(**kwargs) as http:
+            origin.async_httpx2 = http
+            results = await origin.async_call(args)
+            await origin.async_close()
+    else:
+        with httpx2.Client(**kwargs) as http:
+            origin.sync_httpx2 = http
+            results = origin.call(args)
+            origin.close()
+    del origin
+    gc.collect()
+
+    expected = "https://api.test/effective/results.json"
+    receiver = Httpx2Transport(api_url="https://other.test")
+    assert receiver.get_response_href(results) == expected
+    assert Transport.get_response_href(receiver, results) == expected
+    assert AsyncTransport.get_response_href(receiver, results) == expected
+    assert receiver.get_response_href(results.model_copy(deep=True)) is None
+    assert receiver.get_response_href(JobResults(root=results.root)) is None
+    assert results.model_dump(mode="json") == {"item": document()}
+    assert requests == ["https://api.test/results", expected]
+
+    for client_type in (Client, AsyncClient):
+        client = client_type(
+            api_url="https://other.test",
+            auth={"auth_type": "none"},
+            _transport=receiver,
+        )
+        ctx = client._new_job_result_context(
+            job_id="job",
+            job_results=results,
+            output_name=None,
+            data_type=None,
+            media_type=None,
+            options={},
+        )
+        assert ctx.document_href == expected
+        if client_type is AsyncClient:
+            await client.close()
+        else:
+            client.close()

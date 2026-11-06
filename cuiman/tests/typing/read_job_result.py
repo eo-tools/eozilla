@@ -1,4 +1,4 @@
-"""Static assertions for generic client return types; checked directly by mypy."""
+"""Static client return-type assertions checked by ``pixi run typecheck``."""
 
 from typing import Any, assert_type
 
