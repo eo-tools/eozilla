@@ -91,8 +91,8 @@ class MockTransport(AsyncTransport, Transport):  # pragma: no cover
 
 class AllReader(JobResultReader):
     """An reader that can open everything."""
-    reader_id = "AllReader"
 
+    reader_id = "AllReader"
 
     async def accept_job_result(self, ctx: JobResultReadContext) -> bool:
         return True

@@ -13,8 +13,8 @@ from cuiman.api.config import ClientConfig
 from cuiman.api.exceptions import ClientError, ClientWarning
 from cuiman.api.reader import (
     JobResultReadContext,
-    JobResultReadError,
     JobResultReader,
+    JobResultReadError,
     JobResultStatusError,
 )
 from gavicore.models.core import (

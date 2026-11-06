@@ -10,7 +10,7 @@ import pytest
 import pytest_asyncio
 
 from cuiman import AsyncClient, Client, ClientConfig
-from cuiman.api.reader import JobResultReadError, JobResultReader
+from cuiman.api.reader import JobResultReader, JobResultReadError
 from cuiman.api.transport.httpx2 import Httpx2Transport
 from gavicore.models.core import JobResults, Link, QualifiedValue
 

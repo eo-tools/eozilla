@@ -16,7 +16,9 @@ class MyGoodReader(JobResultReader):
     reader_id = "MyGoodReader"
 
     async def accept_job_result(self, ctx: JobResultReadContext) -> bool:
-        return ctx.data_type in (str, float, bool) and isinstance(ctx.value, ctx.data_type)
+        return ctx.data_type in (str, float, bool) and isinstance(
+            ctx.value, ctx.data_type
+        )
 
     async def read_job_result(self, ctx: JobResultReadContext) -> Any:
         return ctx.value

@@ -20,8 +20,8 @@ from cuiman.api.defaults import (
 )
 from cuiman.api.reader import (
     JobResultReadContext,
-    JobResultReadError,
     JobResultReader,
+    JobResultReadError,
 )
 from cuiman.api.reader.impl import StacJobResultReader
 from cuiman.api.reader.impl.base import PathReader
