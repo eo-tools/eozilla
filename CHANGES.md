@@ -1,35 +1,38 @@
-## Changes in version 0.5.0
-
-- **Cuiman breaking API change (#243):** `Client` and `AsyncClient` replace
-  `open_job_result()` with `read_job_result()`. Imports move from
-  `cuiman.api.opener` to `cuiman.api.reader`, with reader class and error names.
-  Configuration uses `extra_job_result_readers`, `register_job_result_reader()`,
-  and `get_job_result_reader_registry()`. Execution helpers become
-  `execute_and_read_result()` and `async_execute_and_read_result()`;
-  `JobOptions.opener_options` becomes `reader_options`. No compatibility aliases
-  are provided. See the [reader guide](docs/cuiman/guides/readers.md).
-
-- **Custom Cuiman readers** implement `accept_job_result()` and
-  `read_job_result()`; path readers implement `read_path_like()`. Each concrete
-  reader, including subclasses, must declare a unique `reader_id`. Callers can
-  select a reader with `reader_id`; inherited `option_policy` continues to govern
-  backend options independently of reader identity.
-
-- **Cuiman** clients accept already retrieved `JobResults`, selecting an output
-  without polling, process lookup, refetching the result document, or modifying
-  the supplied results. Reusing the original result object preserves available
-  URL context for relative STAC links, including across clients. A sole output
-  is selected automatically; multiple outputs require `output_name`.
-
-- **Cuiman** infers the return type from `data_type` and returns a compatible
-  value or raises `JobResultReadError`, including for custom readers.
-  Unsupported representation conversions, such as Zarr to pandas, raise.
-
-- **Cuiman** uses media types ahead of filename suffixes when choosing readers.
-  Explicit `engine` options override inferred defaults; unsupported overrides
-  raise. Zarr dataset reads infer the xarray Zarr engine and preserve lazy loading.
-
 ## Changes in version 0.5.0 (in development)
+
+### Enhancements
+
+- The **Cuiman** client's opener API has been revised. (#243)
+  The changes are  
+
+  - Breaking API changes: `Client` and `AsyncClient` replace
+    `open_job_result()` with `read_job_result()`. Imports move from
+    `cuiman.api.opener` to `cuiman.api.reader`, with reader class and error names.
+    Configuration uses `extra_job_result_readers`, `register_job_result_reader()`,
+    and `get_job_result_reader_registry()`. `JobOptions.opener_options` becomes 
+    `reader_options`. No compatibility aliases are provided. 
+    See the [reader guide](docs/cuiman/guides/readers.md).
+
+  - Custom readers implement `accept_job_result()` and `read_job_result()`; 
+    path readers implement `read_path_like()`. Each concrete
+    reader, including subclasses, must declare a unique `reader_id`. Callers can
+    select a reader with `reader_id`; inherited `option_policy` continues to govern
+    backend options independently of reader identity.
+
+  - `Client` and `AsyncClient` accept already retrieved `JobResults`, selecting 
+    an output without polling, process lookup, refetching the result document, 
+    or modifying the supplied results. Reusing the original result object preserves 
+    available URL context for relative STAC links, including across clients. 
+    A sole output is selected automatically; multiple outputs require `output_name`.
+
+  - When `read_job_result()` is called with a `data_type` it either returns a 
+    compatible value or raises `JobResultReadError`.
+    Unsupported representation conversions, such as Zarr to 
+    `data_type=pandas.DataFrame`, will raise.
+
+  - `read_job_result()` uses media types ahead of filename suffixes when choosing readers.
+    Explicit `engine` options override inferred defaults; unsupported overrides
+    raise. Zarr dataset reads infer the xarray `"zarr"` engine and preserve lazy loading.
 
 ### Other Changes
 
