@@ -1,7 +1,9 @@
+# For documentation refer to
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
 *              @forman @pont-us
 
 /appligator/   @forman @TejasMorbagal
 /cuiman/       @forman @freds-dev
 /docs/         @forman @clarasb
 /wraptile/     @forman @TejasMorbagal
-
