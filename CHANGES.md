@@ -1,3 +1,9 @@
+## Changes in version 0.4.1 (in development)
+
+- Updated dependency `pixi-pycharm = ">=0.0.12"` to fix Pixi's PyCharm 
+  integration for Windows OS.
+
+
 ## Changes in version 0.4.0
 
 - **Appligator** now formats generated Airflow DAG source through the `pyruff`
