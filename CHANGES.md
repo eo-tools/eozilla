@@ -1,40 +1,33 @@
 ## Changes in version 0.5.0
 
-- **Cuiman** `Client.read_job_result()` and `AsyncClient.read_job_result()` now
-  accept already retrieved `JobResults`, reading a selected output without job
-  polling, process lookup, or result-document refetching. Typed returns, reader
-  options, output copying, and retained STAC source URL context also apply to
-  supplied results, including results retrieved by another client.
+- **Cuiman breaking API change (#243):** `Client` and `AsyncClient` replace
+  `open_job_result()` with `read_job_result()`. Imports move from
+  `cuiman.api.opener` to `cuiman.api.reader`, with reader class and error names.
+  Configuration uses `extra_job_result_readers`, `register_job_result_reader()`,
+  and `get_job_result_reader_registry()`. Execution helpers become
+  `execute_and_read_result()` and `async_execute_and_read_result()`;
+  `JobOptions.opener_options` becomes `reader_options`. No compatibility aliases
+  are provided. See the [reader guide](docs/cuiman/guides/readers.md).
 
-- **Cuiman** retains effective job-result response URLs in a shared in-memory
-  registry, allowing other client transports to recover the base for relative
-  STAC references. Associations survive transport closure while the exact result
-  objects remain alive; copies and manually constructed results have no source
-  association.
+- **Custom Cuiman readers** implement `accept_job_result()` and
+  `read_job_result()`; path readers implement `read_path_like()`. Each concrete
+  reader, including subclasses, must declare a unique `reader_id`. Callers can
+  select a reader with `reader_id`; inherited `option_policy` continues to govern
+  backend options independently of reader identity.
 
-- **Cuiman** now uses reader terminology throughout its job-result API (#243).
-  This is a breaking change without compatibility aliases: `Client` and
-  `AsyncClient` expose `read_job_result()` instead of `open_job_result()`, and
-  framework imports move from `cuiman.api.opener` to `cuiman.api.reader`.
-  Extension APIs now use `JobResultReader`, `JobResultReadContext`,
-  `JobResultReaderRegistry`, `JobResultReadError`, and `StacJobResultReadError`.
-  Configuration uses `extra_job_result_readers` and
-  `register_job_result_reader()`. Job execution helpers are renamed to
-  `execute_and_read_result()` and `async_execute_and_read_result()`, with
-  `JobOptions.reader_options` replacing `opener_options`.
+- **Cuiman** clients accept already retrieved `JobResults`, selecting an output
+  without polling, process lookup, refetching the result document, or modifying
+  the supplied results. Reusing the original result object preserves available
+  URL context for relative STAC links, including across clients. A sole output
+  is selected automatically; multiple outputs require `output_name`.
 
-- **Cuiman** readers declare explicit, stable `reader_id` values. Registries
-  reject duplicate IDs for different classes, and callers can select a reader
-  through `reader_id`. Backend option policies are inherited independently of
-  reader identity, including for STAC Asset hints and receiving-client hooks.
+- **Cuiman** infers the return type from `data_type` and returns a compatible
+  value or raises `JobResultReadError`, including for custom readers.
+  Unsupported representation conversions, such as Zarr to pandas, raise.
 
-- **Cuiman** now guarantees a compatible return value when `data_type` is
-  supplied, or raises `JobResultReadError`, including for custom readers.
-  Generic overloads infer the requested return type for both clients; calls
-  without `data_type` retain `Any`. Media types take precedence over filename
-  suffixes, explicit engines override inferred defaults, and Zarr dataset reads
-  infer the xarray Zarr engine while preserving lazy loading. Rejected results
-  are closed when possible. Representation conversions remain deferred.
+- **Cuiman** uses media types ahead of filename suffixes when choosing readers.
+  Explicit `engine` options override inferred defaults; unsupported overrides
+  raise. Zarr dataset reads infer the xarray Zarr engine and preserve lazy loading.
 
 ## Changes in version 0.4.0
 
