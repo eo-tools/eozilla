@@ -97,7 +97,11 @@ class JobResultReadContext:
     document_href: str | None = None
     """Effective containing result-document URI supplied by the transport.
 
-    Used only as source context for inline metadata; never guessed from api_url.
+    Deserialized results do not themselves retain their HTTP response URL. This
+    source context lets STAC readers resolve linked metadata and relative links
+    or Asset hrefs inside inline documents, including after HTTP redirects.
+    It may be unavailable for manually constructed results or results retrieved
+    by another transport. Never guessed from api_url.
     """
 
     asset_alternate: str | None = None

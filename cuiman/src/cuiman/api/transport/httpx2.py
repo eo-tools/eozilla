@@ -16,7 +16,18 @@ from .transport import AsyncTransport, Transport, TransportError
 
 
 class Httpx2Transport(Transport, AsyncTransport):
-    """A concrete web API transport based on the httpx2 package."""
+    """A concrete web API transport based on the httpx2 package.
+
+    Deserialized JobResults contain the response body but not its source URL.
+    Retain the effective response URL separately so readers can resolve relative
+    links, including linked STAC metadata and links or Asset hrefs inside inline
+    STAC documents. Using the response URL also accounts for HTTP redirects.
+
+    The per-instance ``_result_sources`` mapping associates URLs with exact
+    result-object identities without modifying the models. Weak references
+    remove entries when results are collected. Another transport instance, or a
+    copied or manually constructed result, has no retained source association.
+    """
 
     def __init__(
         self,
@@ -134,7 +145,13 @@ class Httpx2Transport(Transport, AsyncTransport):
             ) from e
 
     def get_response_href(self, value: Any) -> str | None:
-        """Return the effective URI of these exact results, without mutating them."""
+        """Return the effective response URL retained for these exact results.
+
+        Readers use this URL as a base for relative references after response
+        deserialization. Lookup performs no I/O and does not modify the results.
+        Return None for objects not retained by this transport instance,
+        including results retrieved by another transport or constructed manually.
+        """
         source = self._result_sources.get(id(value))
         return source[1] if source is not None and source[0]() is value else None
 
