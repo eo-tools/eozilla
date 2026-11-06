@@ -289,7 +289,7 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
     @overload
     async def read_job_result(
         self,
-        job_id_or_asset: str,
+        job_id_or_asset: str | JobResults,
         output_name: str | None,
         data_type: type[_T],
         media_type: str | None = None,
@@ -303,7 +303,7 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
     @overload
     async def read_job_result(
         self,
-        job_id_or_asset: str,
+        job_id_or_asset: str | JobResults,
         output_name: str | None = None,
         *,
         data_type: type[_T],
@@ -328,7 +328,7 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
     @overload
     async def read_job_result(
         self,
-        job_id_or_asset: str,
+        job_id_or_asset: str | JobResults,
         output_name: str | None = None,
         data_type: type | None = None,
         media_type: str | None = None,
@@ -352,7 +352,7 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
 
     async def read_job_result(
         self,
-        job_id_or_asset: "str | Asset",
+        job_id_or_asset: "str | JobResults | Asset",
         output_name: str | None | _Omitted = OMITTED,
         data_type: type | None = None,
         media_type: str | None = None,
@@ -362,16 +362,23 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
         reader_id: str | None = None,
         **options: Any,
     ) -> Any:
-        """Read an original job output or exactly the supplied native Asset.
+        """Read a job output, supplied results, or an exact native Asset.
 
-        Strings always identify jobs. An Asset uses this client's readers and
+        Strings always identify jobs. Supplied JobResults select and copy an
+        output without polling, process lookup, or refetching the results. Only
+        a selected linked payload may be fetched. Retained response URLs provide
+        the base for relative STAC references, including across clients; a base
+        is never guessed from api_url. Polling arguments apply only to job IDs.
+
+        An Asset uses this client's readers and
         its own href, media type, and owner base, with no processing API calls,
         metadata rediscovery, sibling selection, or transformation. Job-only
         arguments must be omitted for Assets, even when their values are None
         or equal to the job defaults.
 
         Args:
-            job_id_or_asset: the job ID string or exact `pystac.Asset` to read.
+            job_id_or_asset: a job ID string, already retrieved `JobResults`,
+                or the exact `pystac.Asset` to read.
             output_name: the name of the output to be read. Required when the
                 job has multiple outputs; a sole output is selected automatically.
             data_type: the expected/desired data type to be returned.
@@ -384,6 +391,7 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
             poll_interval: interval in seconds between job status polls.
                 Applies while job status is still "accepted" or "running".
             timeout: maximum time in seconds to wait for job completion.
+                Applies only when a job ID is supplied.
             reader_id: explicit registered reader ID; omitted for automatic selection.
             options: additional reader-specific options.
 
@@ -400,17 +408,30 @@ class AsyncClientMixin(ClientMixinBase[httpx2.AsyncClient]):
             TimeoutError: if the job does not finish within the timeout
         """
         if not isinstance(job_id_or_asset, str):
-            ctx = _asset_context(
-                self.config,
-                job_id_or_asset,
-                output_name=output_name,
-                poll_interval=poll_interval,
-                timeout=timeout,
-                data_type=data_type,
-                media_type=media_type,
-                options=options,
-                reader_id=reader_id,
-            )
+            if isinstance(job_id_or_asset, JobResults):
+                ctx = self._new_job_result_context(
+                    job_id=None,
+                    job_results=job_id_or_asset,
+                    output_name=None
+                    if isinstance(output_name, _Omitted)
+                    else output_name,
+                    data_type=data_type,
+                    media_type=media_type,
+                    options=options,
+                    reader_id=reader_id,
+                )
+            else:
+                ctx = _asset_context(
+                    self.config,
+                    job_id_or_asset,
+                    output_name=output_name,
+                    poll_interval=poll_interval,
+                    timeout=timeout,
+                    data_type=data_type,
+                    media_type=media_type,
+                    options=options,
+                    reader_id=reader_id,
+                )
             self._require_open()
             self._bind_loop()
             return await self._read_result_context(ctx)

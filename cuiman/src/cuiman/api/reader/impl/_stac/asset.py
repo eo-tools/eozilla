@@ -37,7 +37,7 @@ def _asset_context(
 
     asset = as_stac_asset(target)
     if asset is None:
-        raise TypeError("job_id must be a job ID string or a pystac.Asset")
+        raise TypeError("Target must be a job ID string, JobResults, or a pystac.Asset")
     forbidden = [
         name
         for name, value in (

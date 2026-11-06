@@ -52,6 +52,63 @@ reader implementations. Composed STAC readers accept `reader_id` too; use
 distinct IDs when registering multiple compositions (the default is
 `composed-stac`).
 
+## Already retrieved results
+
+Both clients accept `gavicore.models.core.JobResults` directly. For a completed
+job with a `dataset` output, retrieve the results once, then read the selected
+output through the receiving client's readers:
+
+```python
+import xarray as xr
+from cuiman import Client
+
+client = Client(api_url="http://localhost:8008", auth={"auth_type": "none"})
+try:
+    results = client.get_job_results("your-completed-job-id")
+    dataset = client.read_job_result(
+        results, output_name="dataset", data_type=xr.Dataset
+    )
+    try:
+        print(dataset.sizes)
+    finally:
+        dataset.close()
+finally:
+    client.close()
+```
+
+With `AsyncClient`, await both calls. The returned dataset remains open for the
+caller to use and close:
+
+```python
+from cuiman import AsyncClient
+
+
+async def read_dataset(client: AsyncClient, job_id: str) -> xr.Dataset:
+    results = await client.get_job_results(job_id)
+    return await client.read_job_result(
+        results, output_name="dataset", data_type=xr.Dataset
+    )
+```
+
+Reading supplied results does not poll the job, look up its process, or fetch
+the result document again. A reader may fetch the selected linked payload.
+The output is copied before dispatch, leaving the supplied results unchanged.
+A sole output is selected automatically; multiple outputs require `output_name`.
+Empty results and unknown names raise `JobResultReadError`. An explicitly null
+output is a valid selection, subject to the selected reader's capabilities.
+`data_type`, `media_type`, `reader_id`, and reader options work as they do for a
+job ID, including positional output and representation arguments. `poll_interval`
+and `timeout` apply only to job IDs and are ignored for supplied results.
+
+Cuiman retains the effective HTTP response URL for each exact retrieved result
+object, including after redirects. STAC readers use it to resolve relative
+metadata links and Asset hrefs. This context is shared across clients in the
+same process and survives closing the originating client while the result object
+remains alive. Copies and manually constructed `JobResults` have no registered
+response URL. They can still use absolute links or an absolute STAC self link;
+relative STAC references without a containing base raise `JobResultReadError`.
+Cuiman never guesses that base from the receiving client's `api_url`.
+
 ## Native STAC outputs
 
 Install `cuiman[stac]` for STAC reading. The supported and verified PySTAC range

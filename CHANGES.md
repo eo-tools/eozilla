@@ -1,5 +1,11 @@
 ## Changes in version 0.5.0
 
+- **Cuiman** `Client.read_job_result()` and `AsyncClient.read_job_result()` now
+  accept already retrieved `JobResults`, reading a selected output without job
+  polling, process lookup, or result-document refetching. Typed returns, reader
+  options, output copying, and retained STAC source URL context also apply to
+  supplied results, including results retrieved by another client.
+
 - **Cuiman** retains effective job-result response URLs in a shared in-memory
   registry, allowing other client transports to recover the base for relative
   STAC references. Associations survive transport closure while the exact result

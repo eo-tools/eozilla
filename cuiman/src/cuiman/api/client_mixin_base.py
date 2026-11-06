@@ -50,6 +50,7 @@ from .config import ClientConfig, _set_auth_secret_persistor
 from .reader import JobResultReadContext
 from .reader.reader import read_job_result
 from .transport.httpx2 import Httpx2Transport
+from .transport.transport import ResponseUriProvider
 
 if TYPE_CHECKING:
     from pystac import Asset, Item, ItemCollection
@@ -98,7 +99,7 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
 
     def _new_job_result_context(
         self,
-        job_id: str,
+        job_id: str | None,
         job_results: JobResults,
         *,
         output_name: str | None,
@@ -107,7 +108,7 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
         options: dict[str, Any],
         reader_id: str | None = None,
     ) -> JobResultReadContext:
-        """Build a job-output context, retaining its result-document location."""
+        """Select a copied output with optional job ID and retained source URL."""
         ctx = JobResultReadContext(
             config=self.config,
             job_id=job_id,
@@ -118,8 +119,11 @@ class ClientMixinBase(ABC, Generic[_HttpClient]):
             _media_type=media_type,
             options=options,
         )
-        if self._transport is not None:
-            ctx.document_href = self._transport.get_response_href(job_results)
+        # Supplied results can be read before this client creates a transport.
+        provider = (
+            self._transport if self._transport is not None else ResponseUriProvider()
+        )
+        ctx.document_href = provider.get_response_href(job_results)
         return ctx
 
     async def _read_result_context(self, ctx: JobResultReadContext) -> Any:

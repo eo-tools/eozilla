@@ -154,7 +154,9 @@ def test_unsupported_target_rejected(client, target):
         "accept_job_result",
         side_effect=AssertionError("dispatch forbidden"),
     ):
-        with pytest.raises(TypeError, match="job ID string or a pystac.Asset"):
+        with pytest.raises(
+            TypeError, match="job ID string, JobResults, or a pystac.Asset"
+        ):
             call(target)
 
 
