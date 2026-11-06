@@ -4,7 +4,7 @@
 
 [project]
 name = "appligator"
-version = "0.4.0"
+version = "0.5.0.dev0"
 description = "An application package bundler"
 readme = "README.md"
 authors = [
@@ -48,8 +48,8 @@ dependencies = [
   "typer >=0.26.0,<1",
   "pyruff",
   # local dependency
-  "gavicore >=0.4.0",
-  "procodile >=0.4.0",
+  "gavicore >=0.5.0.dev0",
+  "procodile >=0.5.0.dev0",
 ]
 
 [project.urls]
