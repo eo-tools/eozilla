@@ -1,5 +1,15 @@
 ## Changes in version 0.5.0 (in development)
 
+### Fixes
+
+- **Cuiman** now checks keyring backend availability before storing
+  credentials. If no usable backend is available, it uses an in-memory store
+  and warns when saving credentials so login can proceed on headless
+  systems. Credential reads and logout do not emit this warning.
+  Credentials are lost when the process exits and cannot be reused
+  by separate CLI invocations. The CLI displays a clean warning on stderr;
+  Python callers receive a filterable `SecretStoreFallbackWarning`. (#257)
+
 ### Other Changes
 
 - Updated dependency `pixi-pycharm = ">=0.0.12"` to fix Pixi's PyCharm 

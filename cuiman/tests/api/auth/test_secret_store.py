@@ -3,20 +3,24 @@
 #  https://opensource.org/license/apache-2-0.
 
 import json
+import warnings
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
+from keyring.backends import fail, null
 from keyring.errors import KeyringError, PasswordDeleteError
 
 from cuiman.api.auth.secret_store import (
     KEYRING_SERVICE_NAME,
     SecretStoreError,
+    _get_secret_store,
     delete_auth_secrets,
     get_keyring_account,
     load_auth_secrets,
     save_auth_secrets,
 )
+from cuiman.warnings import SecretStoreFallbackWarning
 
 
 class NativeCredentialError(Exception):
@@ -55,6 +59,70 @@ def test_keyring_account_is_scoped_by_config_path_and_api_url(tmp_path: Path):
     assert account != get_keyring_account(
         tmp_path / "other.yaml", "https://api.example.test/"
     )
+
+
+@pytest.mark.parametrize("backend", [fail.Keyring(), null.Keyring()])
+def test_unavailable_backend_uses_process_memory(tmp_path, monkeypatch, backend):
+    monkeypatch.setattr("keyring.get_keyring", lambda: backend)
+    path, url = tmp_path / "config", "https://api.example.test/"
+    with warnings.catch_warnings(record=True) as before_save:
+        warnings.simplefilter("always")
+        assert load_auth_secrets(path, url, "oidc") == {}
+        delete_auth_secrets(path, url)
+    assert not before_save
+    secrets = {"access_token": "a" * 6000}
+    with pytest.warns(SecretStoreFallbackWarning, match="only in memory"):
+        save_auth_secrets(path, url, "oidc", secrets)
+    with warnings.catch_warnings(record=True) as subsequent:
+        warnings.simplefilter("default", SecretStoreFallbackWarning)
+        save_auth_secrets(path, url, "oidc", secrets)
+        assert load_auth_secrets(path, url, "oidc") == secrets
+        assert load_auth_secrets(path, url, "token") == {}
+        assert load_auth_secrets(path, "https://other.test/", "oidc") == {}
+        assert load_auth_secrets(tmp_path / "other", url, "oidc") == {}
+        save_auth_secrets(path, url, "oidc", {"access_token": "rotated"})
+        assert load_auth_secrets(path, url, "oidc") == {"access_token": "rotated"}
+        delete_auth_secrets(path, url)
+        delete_auth_secrets(path, url)
+        assert load_auth_secrets(path, url, "oidc") == {}
+    assert len(subsequent) == 1
+
+
+@pytest.mark.parametrize("action,count", [("default", 1), ("always", 2), ("ignore", 0)])
+def test_fallback_warning_respects_filters(monkeypatch, tmp_path, action, count):
+    monkeypatch.setattr("keyring.get_keyring", lambda: fail.Keyring())
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter(action, SecretStoreFallbackWarning)
+        for _ in range(2):
+            save_auth_secrets(tmp_path / "config", "https://api.test/", "token", {})
+    assert len(caught) == count
+
+
+@pytest.mark.parametrize("failure", ["discovery", "priority"])
+def test_backend_initialization_failure_uses_memory(monkeypatch, failure):
+    backend = Mock()
+    discover = Mock(return_value=backend)
+    error = NativeCredentialError("sensitive backend detail")
+    if failure == "discovery":
+        discover.side_effect = error
+    else:
+        type(backend).priority = PropertyMock(side_effect=error)
+    monkeypatch.setattr("keyring.get_keyring", discover)
+    with warnings.catch_warnings(record=True) as before_save:
+        warnings.simplefilter("always")
+        store = _get_secret_store()
+    assert not before_save
+    assert _get_secret_store() is store
+    discover.assert_called_once_with()
+    with pytest.warns(SecretStoreFallbackWarning, match="only in memory") as caught:
+        store.set_password("service", "account", "value")
+    assert "sensitive" not in str(caught[0].message)
+    assert store.get_password("service", "account") == "value"
+    _get_secret_store.cache_clear()
+    with warnings.catch_warnings(record=True) as after_reset:
+        warnings.simplefilter("always")
+        assert _get_secret_store().get_password("service", "account") is None
+    assert not after_reset
 
 
 @patch("cuiman.api.auth.secret_store.keyring.get_password")

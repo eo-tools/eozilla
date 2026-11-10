@@ -1,6 +1,7 @@
 """CLI sign-in uses the same live client and explicit durable-save operation."""
 
 import json
+import warnings
 from typing import ClassVar
 from unittest.mock import Mock
 
@@ -10,6 +11,7 @@ from cuiman import ClientConfig
 from cuiman.api.auth import AuthConfig
 from cuiman.api.auth.secret_store import SecretStoreError
 from cuiman.cli.config import login_client_with_prompt, logout_client
+from cuiman.warnings import SecretStoreFallbackWarning
 
 
 @pytest.mark.parametrize(
@@ -102,6 +104,102 @@ def test_cli_login_reuses_and_removes_keyring_credentials_without_a_config_file(
     assert not ApplicationConfig.default_path.exists()
     with pytest.raises(ValueError, match="login"):
         get_config(None, config_type=ApplicationConfig)
+
+
+@pytest.mark.parametrize("warning_filter", ["default", "ignore"])
+def test_cli_login_without_system_keyring_prompts_and_saves_in_memory(
+    auth_provider, monkeypatch, tmp_path, warning_filter
+):
+    from keyring.backends.fail import Keyring
+    from typer.testing import CliRunner
+
+    from cuiman.api.auth.secret_store import load_auth_secrets
+    from cuiman.cli.cli import cli
+
+    path = tmp_path / "config"
+    url = "https://processing.test/"
+    ClientConfig(
+        api_url=url,
+        auth={"auth_type": "login", "login_url": "https://identity.test/login"},
+    ).write(path)
+    public_config = path.read_text()
+    monkeypatch.setattr("keyring.get_keyring", lambda: Keyring())
+    prompt = Mock(side_effect=["user", "pass"])
+    monkeypatch.setattr("typer.prompt", prompt)
+    original_showwarning = warnings.showwarning
+    with warnings.catch_warnings():
+        warnings.simplefilter(warning_filter, SecretStoreFallbackWarning)
+        result = CliRunner().invoke(cli, ["login", "--config", str(path)])
+        assert warnings.showwarning is original_showwarning
+    assert result.exit_code == 0, result.output
+    if warning_filter == "ignore":
+        assert result.stderr == ""
+    else:
+        assert result.stderr.startswith("Warning: Operating-system secret store")
+        assert "only in memory" in result.stderr
+        assert result.stderr.count("Warning:") == 1
+    assert "Warning:" not in result.stdout
+    assert "secret_store.py" not in result.stderr
+    assert "RuntimeWarning" not in result.stderr
+    assert "SecretStoreFallbackWarning" not in result.stderr
+    assert "Traceback" not in result.stderr
+    assert warnings.showwarning is original_showwarning
+    assert "Login completed" in result.output
+    assert prompt.call_count == 2
+    assert load_auth_secrets(path, url, "login")["access_token"] == "proprietary"  # noqa: S105
+    assert path.read_text() == public_config
+
+
+@pytest.mark.parametrize("fail", [False, True])
+def test_cli_warning_formatter_preserves_unrelated_warnings_and_restores_handler(
+    monkeypatch, fail
+):
+    from cuiman.cli.cli import _format_secret_store_warnings
+
+    previous = Mock()
+    monkeypatch.setattr(warnings, "showwarning", previous)
+
+    def run_command():
+        with _format_secret_store_warnings():
+            warnings.warn("unrelated warning", UserWarning, stacklevel=1)
+            previous.assert_called_once()
+            assert str(previous.call_args.args[0]) == "unrelated warning"
+            assert previous.call_args.args[1] is UserWarning
+            if fail:
+                raise ValueError("command failed")
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("always")
+        if fail:
+            with pytest.raises(ValueError, match="command failed"):
+                run_command()
+        else:
+            run_command()
+    assert warnings.showwarning is previous
+
+
+@pytest.mark.parametrize(
+    "command", [["logout"], ["login", "--no-input"], ["list-processes"]]
+)
+def test_cli_without_saving_credentials_does_not_warn_about_keyring(
+    monkeypatch, tmp_path, command
+):
+    from keyring.backends.fail import Keyring
+    from typer.testing import CliRunner
+
+    from cuiman.cli.cli import cli
+
+    path = tmp_path / "config"
+    ClientConfig(api_url="https://processing.test/", auth={"auth_type": "token"}).write(
+        path
+    )
+    monkeypatch.setattr("keyring.get_keyring", lambda: Keyring())
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", SecretStoreFallbackWarning)
+        result = CliRunner().invoke(cli, [*command, "--config", str(path)])
+    assert result.exit_code == (0 if command == ["logout"] else 1), result.output
+    assert "Warning:" not in result.stderr
+    assert not caught
 
 
 @pytest.mark.parametrize("command", ["login", "list-processes"])

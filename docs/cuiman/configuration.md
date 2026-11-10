@@ -252,6 +252,13 @@ secrets, and API keys in the operating-system keyring. The keyring entry is
 scoped to the canonical configuration-file path and the API URL, so profiles
 for different services or files do not share credentials.
 
+When no usable keyring backend is available, Cuiman stores credentials only in
+memory for the current process and warns when saving credentials. Reading credentials
+or logging out does not emit this warning. Credentials are lost on exit;
+separate CLI invocations cannot reuse credentials from `cuiman login`. Configure
+a working keyring or supply credentials through environment variables or Python
+configuration for those invocations.
+
 Large token bundles are split across OS-keyring entries to respect Windows
 Credential Manager's per-entry size limit. Cuiman reassembles them when loading
 credentials and removes their parts on logout. Tokens remain in the OS keyring;
