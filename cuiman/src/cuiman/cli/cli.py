@@ -3,10 +3,13 @@
 #  https://opensource.org/license/apache-2-0.
 
 import sys
-from typing import TYPE_CHECKING, Annotated, Final, Optional
+import warnings
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Annotated, Final, Iterator, Optional, TextIO
 
 import typer.core
 
+from cuiman.warnings import SecretStoreFallbackWarning
 from gavicore.util.cli.group import AliasedGroup
 from gavicore.util.cli.parameters import (
     DOT_PATH_OPTION,
@@ -146,6 +149,8 @@ def new_cli(
             else:
                 typer.echo(default_version)
             return
+
+        ctx.with_resource(_format_secret_store_warnings())
 
         def get_client(config_path: str | None):
             # defer importing
@@ -568,6 +573,31 @@ def new_cli(
             _wait_until_interrupted()
 
     return t
+
+
+@contextmanager
+def _format_secret_store_warnings() -> Iterator[None]:
+    """Format fallback warnings during a command without triggering storage."""
+    previous = warnings.showwarning
+
+    def showwarning(
+        message: Warning | str,
+        category: type[Warning],
+        filename: str,
+        lineno: int,
+        file: TextIO | None = None,
+        line: str | None = None,
+    ) -> None:
+        if issubclass(category, SecretStoreFallbackWarning):
+            typer.echo(f"Warning: {message}", err=True)
+        else:
+            previous(message, category, filename, lineno, file, line)
+
+    warnings.showwarning = showwarning
+    try:
+        yield
+    finally:
+        warnings.showwarning = previous
 
 
 def _get_config_type(config_type: type["ClientConfig"] | None) -> type["ClientConfig"]:

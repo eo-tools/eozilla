@@ -2,15 +2,20 @@
 #  Permissions are hereby granted under the terms of the Apache 2.0 License:
 #  https://opensource.org/license/apache-2-0.
 
-"""OS-backed storage for Cuiman authentication secrets."""
+"""OS-backed storage with a process-local fallback for authentication secrets."""
 
 import hashlib
 import json
+import warnings
+from functools import cache
 from pathlib import Path
+from typing import Protocol
 from uuid import uuid4
 
 import keyring
 from keyring.errors import PasswordDeleteError
+
+from cuiman.warnings import SecretStoreFallbackWarning
 
 KEYRING_SERVICE_NAME = "eozilla.cuiman"
 """Service name used for Cuiman entries in the operating-system keyring."""
@@ -26,6 +31,49 @@ class SecretStoreError(RuntimeError):
     """Raised when Cuiman cannot safely use the operating-system keyring."""
 
 
+class _SecretStore(Protocol):
+    def get_password(self, service: str, account: str, /) -> str | None: ...
+
+    def set_password(self, service: str, account: str, value: str, /) -> None: ...
+
+    def delete_password(self, service: str, account: str, /) -> None: ...
+
+
+class _MemorySecretStore:
+    def __init__(self) -> None:
+        self._records: dict[tuple[str, str], str] = {}
+
+    def get_password(self, service: str, account: str) -> str | None:
+        return self._records.get((service, account))
+
+    def set_password(self, service: str, account: str, value: str) -> None:
+        warnings.warn(
+            "Operating-system secret store is unavailable. Credentials will be kept "
+            "only in memory for this process and lost when it exits. Separate CLI "
+            "commands cannot reuse them; configure a working keyring or supply "
+            "credentials through environment variables or Python configuration.",
+            SecretStoreFallbackWarning,
+            stacklevel=2,
+        )
+        self._records[service, account] = value
+
+    def delete_password(self, service: str, account: str) -> None:
+        self._records.pop((service, account), None)
+
+
+@cache
+def _get_secret_store() -> _SecretStore:
+    # Backend priority checks viability in this environment, including D-Bus
+    # availability on Linux. Fail and null backends have non-positive priority.
+    try:
+        available = keyring.get_keyring().priority > 0
+    except Exception:
+        available = False
+    if available:
+        return keyring
+    return _MemorySecretStore()
+
+
 def get_keyring_account(config_path: Path | str, api_url: str) -> str:
     """Return a stable keyring account for a configuration file and API URL."""
     canonical_path = Path(config_path).expanduser().resolve(strict=False)
@@ -36,7 +84,7 @@ def get_keyring_account(config_path: Path | str, api_url: str) -> str:
 def load_auth_secrets(
     config_path: Path | str, api_url: str, auth_type: str
 ) -> dict[str, str]:
-    """Load credentials for an authentication configuration from the keyring."""
+    """Load credentials from the keyring or process-local fallback."""
     account = get_keyring_account(config_path, api_url)
     stored_value = _get_password(KEYRING_SERVICE_NAME, account)
     if stored_value is None:
@@ -76,7 +124,7 @@ def save_auth_secrets(
     auth_type: str,
     secrets: dict[str, str],
 ) -> None:
-    """Persist credentials for an authentication configuration in the keyring."""
+    """Save credentials in the keyring or process-local fallback."""
     if not all(
         isinstance(name, str) and isinstance(value, str)
         for name, value in secrets.items()
@@ -125,7 +173,7 @@ def save_auth_secrets(
 
 
 def delete_auth_secrets(config_path: Path | str, api_url: str) -> None:
-    """Remove credentials for a configuration file and API URL from the keyring."""
+    """Remove credentials for a configuration file and API URL from the store."""
     account = get_keyring_account(config_path, api_url)
     chunk_info = _chunk_info(_get_password(KEYRING_SERVICE_NAME, account))
     if chunk_info is not None:
@@ -163,7 +211,7 @@ def _chunk_services(account: str, info: tuple[str, int]) -> list[str]:
 
 def _get_password(service: str, account: str) -> str | None:
     try:
-        return keyring.get_password(service, account)
+        return _get_secret_store().get_password(service, account)
     except Exception as exc:
         # Some native backends (notably pywin32-ctypes) do not use KeyringError.
         raise SecretStoreError("Operating-system secret store is unavailable.") from exc
@@ -171,14 +219,14 @@ def _get_password(service: str, account: str) -> str | None:
 
 def _set_password(service: str, account: str, value: str) -> None:
     try:
-        keyring.set_password(service, account, value)
+        _get_secret_store().set_password(service, account, value)
     except Exception as exc:
         raise SecretStoreError("Operating-system secret store is unavailable.") from exc
 
 
 def _delete_password(service: str, account: str) -> None:
     try:
-        keyring.delete_password(service, account)
+        _get_secret_store().delete_password(service, account)
     except PasswordDeleteError:
         return
     except Exception as exc:

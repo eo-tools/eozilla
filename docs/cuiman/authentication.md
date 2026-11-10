@@ -82,6 +82,17 @@ API URL. A configuration loaded from a named file retains that profile when
 passed to `Client(config=config)` or `AsyncClient(config=config)`, including for
 explicit saving and logout. There is no plaintext-file fallback.
 
+If no usable keyring backend is available, Cuiman uses an in-memory store for
+the current process and warns when saving credentials. Reading credentials
+or logging out does not emit this warning. Credentials are lost on exit, so
+separate CLI commands cannot reuse a previous `login`. On headless servers,
+configure a working keyring or supply credentials through environment variables
+or Python configuration.
+
+The CLI displays this warning as a plain `Warning: ...` message on stderr.
+Python callers receive `cuiman.warnings.SecretStoreFallbackWarning`, a
+`RuntimeWarning` subclass that can be controlled with standard warning filters.
+
 Sharing a configuration profile does not share a running client or coordinate
 refresh-token rotation between independent clients or processes. Use the same
 client for related Python and app requests that need one live session.
