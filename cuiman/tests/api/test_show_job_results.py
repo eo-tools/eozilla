@@ -111,13 +111,13 @@ async def test_job_results_display_without_pystac_or_output_reads(
     monkeypatch.setitem(sys.modules, "pystac", None)
     results = JobResults(root={"report": Link(href="https://example.test/report")})
     mock_type = MagicMock if entry == "sync" else AsyncMock
-    opener = mock_type()
+    reader = mock_type()
     if entry == "standalone":
-        await display_assets(results, open_asset=opener, previews=previews, roles=[])
+        await display_assets(results, read_asset=reader, previews=previews, roles=[])
     else:
         client_type = Client if entry == "sync" else AsyncClient
         client = client_type(api_url="https://example.test", auth={"auth_type": "none"})
-        monkeypatch.setattr(client, "open_job_result", opener)
+        monkeypatch.setattr(client, "read_job_result", reader)
         try:
             if entry == "sync":
                 client.show_assets(results, previews=previews, roles=[])
@@ -128,7 +128,7 @@ async def test_job_results_display_without_pystac_or_output_reads(
                 client.close()
             else:
                 await client.close()
-    opener.assert_not_called()
+    reader.assert_not_called()
     assert len(outputs) == 1
     html = outputs[0].data
     assert "<td>report</td>" in html

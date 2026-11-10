@@ -60,7 +60,7 @@ wraptile dev -- wraptile.services.local.testing:service
 ```
 
 Follow the [Python API](cuiman/guides/api.md), [App](cuiman/guides/app.md),
-[command-line](cuiman/guides/cli.md), and [result opener](cuiman/guides/openers.md)
+[command-line](cuiman/guides/cli.md), and [result reader](cuiman/guides/readers.md)
 guides for runnable examples against this local service.
 
 ### Formatting & code checking
@@ -69,6 +69,10 @@ guides for runnable examples against this local service.
 pixi run format 
 pixi run checks
 ```
+
+`checks` includes `pixi run typecheck`, which checks source code and the Cuiman
+reader return-type assertions in `cuiman/tests/typing/read_job_result.py` using
+mypy's persistent cache. These static assertions run here rather than in pytest.
 
 ### Testing & Coverage
 

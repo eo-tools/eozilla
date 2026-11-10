@@ -5,19 +5,29 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
+from ._result_sources import get_response_href
 from .args import TransportArgs
 
 
-class Transport(ABC):
-    """Abstraction of the transport that calls a web API in synchronous mode."""
+class ResponseUriProvider:
+    """Provide the response URI for a given source value."""
 
     def get_response_href(self, value: Any) -> str | None:
         """Return the effective response URI for a returned value, if retained.
 
-        Custom transports may supply this source fact for relative inline STAC
-        references. Returning None makes an unavailable base explicit.
+        Deserialized results contain the response body but may lack its source
+        URL. Readers need that URL as a base for relative references, including
+        linked STAC metadata and links or Asset hrefs inside inline STAC documents.
+        Custom transports may retain the effective URL after redirects without
+        modifying the results by using the shared source registry. Associations
+        registered by other transports are available here too. Returning None
+        makes an unavailable base explicit; this lookup must not perform I/O.
         """
-        return None
+        return get_response_href(value)
+
+
+class Transport(ResponseUriProvider, ABC):
+    """Abstraction of the transport that calls a web API in synchronous mode."""
 
     @abstractmethod
     def call(self, args: TransportArgs) -> Any:
@@ -42,12 +52,8 @@ class Transport(ABC):
         """Closes this transport."""
 
 
-class AsyncTransport(ABC):
+class AsyncTransport(ResponseUriProvider, ABC):
     """Abstraction of the transport that calls a web API in asynchronous mode."""
-
-    def get_response_href(self, value: Any) -> str | None:
-        """Return a retained effective response URI without performing I/O."""
-        return None
 
     @abstractmethod
     async def async_call(self, args: TransportArgs) -> Any:

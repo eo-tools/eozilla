@@ -30,7 +30,7 @@ nav:
       - Python API: cuiman/guides/api.md
       - App: cuiman/guides/app.md
       - Command Line: cuiman/guides/cli.md
-      - Result Openers: cuiman/guides/openers.md
+      - Result Readers: cuiman/guides/readers.md
       - STAC Results: cuiman/guides/stac.md
     - CLI Reference: cuiman/cli.md
     - API Reference: cuiman/api.md

@@ -43,7 +43,7 @@ from .auth.config import has_credentials
 from .auth.secret_store import load_auth_secrets, save_auth_secrets
 from .branding import AppBranding
 from .defaults import DEFAULT_API_URL
-from .opener import JobResultOpenContext, JobResultOpener, JobResultOpenerRegistry
+from .reader import JobResultReadContext, JobResultReader, JobResultReaderRegistry
 
 if TYPE_CHECKING:
     from pystac import StacIO
@@ -111,38 +111,38 @@ class ClientConfig(BaseSettings):
     The default mapping is empty.
     """
 
-    extra_job_result_openers: ClassVar[Iterable[type[JobResultOpener]]] = ()
-    """Additional job result opener classes for this application.
+    extra_job_result_readers: ClassVar[Iterable[type[JobResultReader]]] = ()
+    """Additional job result reader classes for this application.
 
     Declare an iterable in a subclass. It is captured as a tuple at class creation
-    so generators can be inherited safely. Openers are registered after the
+    so generators can be inherited safely. Readers are registered after the
     built-ins, in iteration order, so the last entry is tried first.
     Each class's registry is initialized on first use; later changes should use
-    ``register_job_result_opener()``.
+    ``register_job_result_reader()``.
     This class attribute is excluded from configuration settings and persistence.
     """
 
     stac_io_factory: ClassVar[Callable[["ClientConfig"], "StacIO"] | None] = None
-    """Optional application factory for native PySTAC I/O per opening.
+    """Optional application factory for native PySTAC I/O per reading.
 
     Defaults to PySTAC's standard I/O. Application factories own any custom
     metadata access policy, separately from processing API authentication.
-    The factory runs during opening, never acceptance, and is not persisted.
+    The factory runs during reading, never acceptance, and is not persisted.
     """
 
     asset_reader_options: ClassVar[
-        Callable[[JobResultOpenContext, str], dict[str, Any]] | None
+        Callable[[JobResultReadContext, str], dict[str, Any]] | None
     ] = None
     """Optional runtime callback for scoped, trusted Asset reader overrides.
 
-    Receives the selected context and opener_id (xarray, pandas, geopandas,
+    Receives the selected context and reader_id (xarray, pandas, geopandas,
     or image). Check the effective location and reader ID before returning options.
     Runs only for an accepted Asset reader and is excluded from saved profiles.
     """
 
     asset_access_provider: ClassVar[
         Callable[
-            [JobResultOpenContext, str],
+            [JobResultReadContext, str],
             dict[str, Any] | None | Awaitable[dict[str, Any] | None],
         ]
         | None
@@ -203,7 +203,7 @@ class ClientConfig(BaseSettings):
         super().__init_subclass__(**kwargs)
         if "return_type_map" not in cls.__dict__:
             cls.return_type_map = dict(cls.return_type_map)
-        cls.extra_job_result_openers = tuple(cls.extra_job_result_openers)
+        cls.extra_job_result_readers = tuple(cls.extra_job_result_readers)
 
     def _repr_json_(self):
         return self.to_file_dict(), dict(root="Client configuration:")
@@ -546,33 +546,33 @@ class ClientConfig(BaseSettings):
         return None if v is None or v == "" else str(HttpUrl(v))
 
     @classmethod
-    def register_job_result_opener(
-        cls, opener_type: type[JobResultOpener]
+    def register_job_result_reader(
+        cls, reader_type: type[JobResultReader]
     ) -> Callable[[], None]:
-        """Register a job result opener.
+        """Register a job result reader.
 
         Args:
-            opener_type: The type of the opener to be registered.
+            reader_type: The type of the reader to be registered.
 
         Returns:
-            A function that can be called to unregister the opener.
+            A function that can be called to unregister the reader.
         """
-        return cls.get_job_result_opener_registry().register(opener_type)
+        return cls.get_job_result_reader_registry().register(reader_type)
 
     @classmethod
     @cache
-    def get_job_result_opener_registry(cls) -> JobResultOpenerRegistry:
+    def get_job_result_reader_registry(cls) -> JobResultReaderRegistry:
         """
-        Get the registry for openers that are used to open job results.
+        Get the registry for readers that are used to read job results.
 
-        Each class starts with the built-ins and its ``extra_job_result_openers``.
-        Use it to register further custom openers for special job results.
+        Each class starts with the built-ins and its ``extra_job_result_readers``.
+        Use it to register further custom readers for special job results.
 
         Note that the registry contains types/classes, not instances.
         """
-        registry = JobResultOpenerRegistry.create_default()
-        for opener_type in cls.extra_job_result_openers:
-            registry.register(opener_type)
+        registry = JobResultReaderRegistry.create_default()
+        for reader_type in cls.extra_job_result_readers:
+            registry.register(reader_type)
         return registry
 
 

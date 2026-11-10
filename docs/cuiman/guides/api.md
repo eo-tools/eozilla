@@ -86,8 +86,8 @@ After roughly two seconds, use `inspect_results(client, failed_job_id)` to see
 the failure. To cancel a running job or delete a finished one, call
 `client.dismiss_job(job_id)` with the specific job you intend to dismiss.
 
-For file or dataset outputs, [Result openers](openers.md) explains the
-difference between retrieving result references and opening their data.
+For file or dataset outputs, [Result readers](readers.md) explains the
+difference between retrieving result references and reading their data.
 For inline and linked STAC outputs, the [STAC walkthrough](stac.md) shows native
 PySTAC inspection and exact Asset reading with a branded client.
 
