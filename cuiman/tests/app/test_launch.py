@@ -217,6 +217,58 @@ def test_proxy_forwards_only_safe_browser_headers_to_the_fixed_upstream(monkeypa
     }
 
 
+@pytest.mark.parametrize("status_code", [301, 302, 303, 307, 308])
+@pytest.mark.parametrize(
+    "location",
+    [
+        "https://process.example.test/api/processes/?token=secret",
+        "/api/processes/",
+        "processes/",
+    ],
+)
+def test_proxy_reports_upstream_redirects_without_sending_them_to_browser(
+    monkeypatch, status_code, location
+):
+    service, client = create_test_client()
+    code = service.create_launch_code()
+    assert client.post(LAUNCH_ENDPOINT, json={"launch": code}).status_code == 204
+
+    async def send_upstream(request, path):
+        return httpx2.Response(status_code, headers={"Location": location})
+
+    monkeypatch.setattr(service, "_send_upstream", send_upstream)
+    response = client.get(f"{SERVICE_PROXY_ENDPOINT}/processes")
+
+    assert response.status_code == 502
+    assert "location" not in response.headers
+    detail = response.json()["detail"]
+    assert f"HTTP {status_code} redirect" in detail
+    assert "Process API URL" in detail
+    assert "trailing-slash" in detail
+    assert location not in detail
+    assert "secret" not in detail
+
+
+@pytest.mark.parametrize("status_code", [200, 201, 304, 307])
+def test_proxy_preserves_responses_without_an_actionable_redirect(
+    monkeypatch, status_code
+):
+    service, client = create_test_client()
+    code = service.create_launch_code()
+    client.post(LAUNCH_ENDPOINT, json={"launch": code})
+
+    async def send_upstream(request, path):
+        headers = {"Location": "/api/jobs/new-job"} if status_code == 201 else {}
+        return httpx2.Response(status_code, headers=headers)
+
+    monkeypatch.setattr(service, "_send_upstream", send_upstream)
+    response = client.get(f"{SERVICE_PROXY_ENDPOINT}/processes")
+
+    assert response.status_code == status_code
+    if status_code == 201:
+        assert response.headers["location"] == "/api/jobs/new-job"
+
+
 def create_test_client(
     auth=None,
     *,

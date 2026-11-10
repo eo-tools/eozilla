@@ -271,6 +271,23 @@ class LaunchedAppService(rs.Service[Any]):
                 status_code=502,
                 detail="Unable to reach or authenticate with the processing service.",
             ) from error
+        if upstream_response.status_code in {301, 302, 303, 307, 308} and (
+            "location" in upstream_response.headers
+        ):
+            # Even a relative redirect may resolve outside SERVICE_PROXY_ENDPOINT.
+            # Letting the browser follow it can bypass Python authentication and
+            # turn an upstream routing problem into an opaque browser CORS error.
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    "The processing service returned an HTTP "
+                    f"{upstream_response.status_code} redirect. Cuiman blocked it "
+                    "to keep browser requests inside its authenticated API proxy. "
+                    "Check the configured Process API URL and the service's "
+                    "reverse-proxy routing, including trailing-slash and "
+                    "HTTP-to-HTTPS redirects."
+                ),
+            )
         return Response(
             content=upstream_response.content,
             status_code=upstream_response.status_code,

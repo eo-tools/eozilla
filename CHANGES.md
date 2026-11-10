@@ -1,5 +1,13 @@
 ## Changes in version 0.5.0 (in development)
 
+### Fixes
+
+- **Cuiman and Eozilla App** now report actionable errors when upstream API
+  redirects or changes to the app's connection settings would bypass Cuiman's
+  authenticated API proxy. Redirects are blocked before the browser can encounter
+  misleading CORS errors, and connection recovery preserves the proxy URL and
+  Python-managed authentication. Related to #258.
+
 ### Other Changes
 
 - Updated dependency `pixi-pycharm = ">=0.0.12"` to fix Pixi's PyCharm 
