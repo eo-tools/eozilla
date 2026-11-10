@@ -5,13 +5,16 @@
 - The **Cuiman** client's opener API has been revised. (#243)
   The changes are  
 
-  - Breaking API changes: `Client` and `AsyncClient` replace
-    `open_job_result()` with `read_job_result()`. Imports move from
+  - `Client` and `AsyncClient` now use `read_job_result()`.
+    Their `open_job_result()` methods remain temporarily as deprecated helpers
+    that forward calls and emit `DeprecationWarning`.
+
+  - Breaking API changes: imports move from
     `cuiman.api.opener` to `cuiman.api.reader`, with reader class and error 
     names. Configuration uses `extra_job_result_readers`, 
     `register_job_result_reader()`, and `get_job_result_reader_registry()`. 
     `JobOptions.opener_options` becomes `reader_options`. 
-    No compatibility aliases are provided. 
+    No other compatibility aliases are provided.
     See the [reader guide](docs/cuiman/guides/readers.md).
 
   - Custom readers implement `accept_job_result()` and `read_job_result()`; 

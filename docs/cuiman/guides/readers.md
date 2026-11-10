@@ -8,6 +8,12 @@ image reader takes precedence over the dataset readers for supported images,
 including PNG and JPEG, and returns a `PIL.Image.Image`. Custom readers extend
 or specialize this behavior.
 
+`Client.open_job_result()` and `AsyncClient.open_job_result()` remain temporarily
+available as deprecated compatibility helpers. They forward all arguments to
+`Client.read_job_result()` and `AsyncClient.read_job_result()`, respectively,
+and emit `DeprecationWarning`. Update calls to use `read_job_result()`;
+other opener imports, extension APIs, and configuration names remain removed.
+
 The framework lives in `cuiman.api.reader`. Configuration uses
 `extra_job_result_readers`, `register_job_result_reader()`, and
 `get_job_result_reader_registry()`. Readers implement `accept_job_result()` and

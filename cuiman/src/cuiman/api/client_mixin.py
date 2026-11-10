@@ -241,6 +241,21 @@ class ClientMixin(ClientMixinBase[httpx2.Client]):
             previews=previews,
         )
 
+    def open_job_result(self, *args: Any, **kwargs: Any) -> Any:
+        """Deprecated compatibility helper for reading a job result.
+
+        Use `Client.read_job_result()` instead. Arguments and the returned value
+        are forwarded unchanged. Emits `DeprecationWarning`; this helper will
+        be removed in a future release.
+        """
+        warnings.warn(
+            "Client.open_job_result() is deprecated since version 0.5.0; "
+            "use Client.read_job_result() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.read_job_result(*args, **kwargs)
+
     @overload
     def read_job_result(
         self,
