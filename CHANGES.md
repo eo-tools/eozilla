@@ -2,6 +2,10 @@
 
 ### Fixes
 
+- **Cuiman** allows its app to connect when a service's landing page returns
+  HTTP 404 but authenticated process discovery works. A warning identifies the
+  missing required landing page without claiming service conformance.
+
 - **Cuiman and Eozilla App** now report actionable errors when upstream API
   redirects or changes to the app's connection settings would bypass Cuiman's
   authenticated API proxy. Redirects are blocked before the browser can encounter

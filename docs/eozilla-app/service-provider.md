@@ -38,6 +38,16 @@ authentication error. Check the configured Process API URL and upstream routing,
 especially trailing-slash and HTTP-to-HTTPS redirects. Redirect targets are not
 included in the error because they may contain credentials or sensitive queries.
 
+If the landing page returns HTTP 404, the Cuiman app proxy checks `/processes`
+using Python-managed authentication. A valid process list allows the app to
+continue with minimal service metadata. Cuiman emits a warning, also included
+in the service description, explaining that the required landing page is missing
+and service conformance is unknown. If process discovery fails, its error is
+reported; an invalid process-list response leaves the original HTTP 404 intact.
+Other API operations and explicit Python `get_capabilities()` calls retain their
+normal behavior. The app does not currently request `/conformance`, and Cuiman
+does not synthesize conformance declarations.
+
 ## ServiceProvider
 
 `ServiceProvider<TOptions>` is the app-facing contract for a backend that can

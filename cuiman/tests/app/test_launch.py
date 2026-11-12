@@ -269,6 +269,103 @@ def test_proxy_preserves_responses_without_an_actionable_redirect(
         assert response.headers["location"] == "/api/jobs/new-job"
 
 
+@pytest.mark.parametrize(
+    "endpoint", [SERVICE_PROXY_ENDPOINT, f"{SERVICE_PROXY_ENDPOINT}/"]
+)
+def test_proxy_recovers_missing_landing_page_when_process_discovery_works(
+    monkeypatch, endpoint
+):
+    service, client = create_test_client()
+    code = service.create_launch_code()
+    client.post(LAUNCH_ENDPOINT, json={"launch": code})
+    calls = []
+
+    async def request(method, url, **kwargs):
+        calls.append((method, url, kwargs["follow_redirects"]))
+        if url.endswith("/processes"):
+            return httpx2.Response(200, json={"processes": [], "links": []})
+        return httpx2.Response(404, text="No landing page")
+
+    monkeypatch.setattr(service, "_request", request)
+    with pytest.warns(UserWarning, match="landing page.*404"):
+        response = client.get(endpoint)
+
+    assert response.status_code == 200
+    assert "OGC API" in response.json()["description"]
+    assert "conformance" not in response.json()
+    assert "capabilities" not in response.json()
+    assert calls == [
+        ("GET", "https://process.example.test/api/", False),
+        ("GET", "https://process.example.test/api/processes", False),
+    ]
+
+
+@pytest.mark.parametrize("body", [b"not json", b"{}", b'{"processes":[{}],"links":[]}'])
+def test_proxy_keeps_landing_page_error_when_process_list_is_invalid(monkeypatch, body):
+    service, client = create_test_client()
+    client.post(LAUNCH_ENDPOINT, json={"launch": service.create_launch_code()})
+
+    async def request(method, url, **kwargs):
+        if url.endswith("/processes"):
+            return httpx2.Response(200, content=body)
+        return httpx2.Response(404, text="No landing page")
+
+    monkeypatch.setattr(service, "_request", request)
+    response = client.get(f"{SERVICE_PROXY_ENDPOINT}/")
+
+    assert response.status_code == 404
+    assert response.text == "No landing page"
+
+
+@pytest.mark.parametrize("status_code", [401, 403, 404, 500])
+def test_proxy_preserves_process_discovery_errors_during_landing_page_recovery(
+    monkeypatch, status_code
+):
+    service, client = create_test_client()
+    client.post(LAUNCH_ENDPOINT, json={"launch": service.create_launch_code()})
+
+    async def request(method, url, **kwargs):
+        if url.endswith("/processes"):
+            return httpx2.Response(status_code, text="Process discovery failed")
+        return httpx2.Response(404)
+
+    monkeypatch.setattr(service, "_request", request)
+    response = client.get(f"{SERVICE_PROXY_ENDPOINT}/")
+
+    assert response.status_code == status_code
+    assert response.text == "Process discovery failed"
+
+
+@pytest.mark.parametrize(
+    "method, path, status_code",
+    [
+        ("GET", "", 200),
+        ("GET", "", 401),
+        ("GET", "conformance", 404),
+        ("POST", "", 404),
+    ],
+)
+def test_proxy_only_recovers_get_root_not_found(monkeypatch, method, path, status_code):
+    service, client = create_test_client()
+    client.post(LAUNCH_ENDPOINT, json={"launch": service.create_launch_code()})
+    calls = []
+
+    async def request(method, url, **kwargs):
+        calls.append(url)
+        return httpx2.Response(status_code, text="Original response")
+
+    monkeypatch.setattr(service, "_request", request)
+    response = client.request(
+        method,
+        f"{SERVICE_PROXY_ENDPOINT}/{path}",
+        headers={"Origin": "http://testserver"},
+    )
+
+    assert response.status_code == status_code
+    assert response.text == "Original response"
+    assert len(calls) == 1
+
+
 def create_test_client(
     auth=None,
     *,
