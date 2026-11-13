@@ -492,9 +492,10 @@ Process descriptions are converted into one root object field by
 The conversion rules from process input metadata are worth documenting because
 they affect generated UI shape:
 
-- `minOccurs === 1` marks the input as required
-- `maxOccurs >= 1` turns the input into an array with `minItems`/`maxItems`
-- `maxOccurs === "unbounded"` also becomes an array
+- `minOccurs >= 1` marks the input as required
+- `maxOccurs > 1` turns the input into an array with `minItems`/`maxItems`
+- `minOccurs > 1` or `maxOccurs === "unbounded"` turn the input
+  into an array with `minItems`
 - root process inputs always become `type: object` with
   `additionalProperties: false`
 
