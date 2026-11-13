@@ -489,12 +489,14 @@ Keep this path intact when extending the generator.
 Process descriptions are converted into one root object field by
 `getFieldFromProcessDescriptionInputs()`.
 
-The conversion rules from process input metadata are worth documenting because
-they affect generated UI shape:
+The conversion rules from process input metadata follow the OGC's description of argument
+conversion ([see requirement 19 of the OGC API - Processes - Part 1 specification](https://docs.ogc.org/is/18-062r2/18-062r2.html#req_core_process-execute-input-array)).
+These rules are worth documenting because they affect generated UI shape:
 
-- `minOccurs === 1` marks the input as required
-- `maxOccurs >= 1` turns the input into an array with `minItems`/`maxItems`
-- `maxOccurs === "unbounded"` also becomes an array
+- `minOccurs >= 1` marks the input as required
+- `maxOccurs > 1` turns the input into an array with `minItems`/`maxItems`
+- `minOccurs > 1` or `maxOccurs === "unbounded"` turn the input
+  into an array with `minItems`
 - root process inputs always become `type: object` with
   `additionalProperties: false`
 
