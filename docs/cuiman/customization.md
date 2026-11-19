@@ -17,7 +17,7 @@ The `cuiman` API allows for the following customizations:
    `pydantic_settings.SettingsConfigDict` instance.
 2. Ordinary Pydantic field defaults and a `default_path` class attribute define
    application defaults and profile persistence.
-3. Applications can customize the way how job results are opened.
+3. Applications can customize the way how job results are read.
 4. Applications can create their own CLI instance with custom settings.
 5. Applications can customize the way the process input GUIs are generated.
 
@@ -35,7 +35,7 @@ from cuiman.api import AsyncClient, Client, ClientConfig
 from cuiman.api.auth import AuthConfig, NoAuthConfig
 from cuiman.cli import new_cli
 
-from .opener import AnolisJobResultsOpener
+from .reader import AnolisJobResultsReader
 
 # Custom configuration class
 class AnolisClientConfig(ClientConfig):
@@ -51,7 +51,7 @@ class AnolisClientConfig(ClientConfig):
     cli_name: ClassVar[str | None] = "anolis-client"
     api_url: str | None = "https://anolis.api.org/process-api/v1"
     auth: AuthConfig = NoAuthConfig()
-    extra_job_result_openers = [AnolisJobResultsOpener]
+    extra_job_result_readers = [AnolisJobResultsReader]
 
 
 def create_client(**config: Any) -> Client:
@@ -87,7 +87,7 @@ continue to allow missing files. An explicitly supplied CLI `--config` path must
 exist regardless of this flag.
 
 `config_type` selects the schema, field defaults, dotenv and environment
-settings, profile path, and result-opening extensions for a client or CLI.
+settings, profile path, and result-reading extensions for a client or CLI.
 When a `config` instance is supplied without `config_type`, its concrete type
 is inferred. Supplying both requires the exact same type, which prevents one
 application from silently reading another's profile or environment namespace.
@@ -115,38 +115,38 @@ for proprietary login or `auth.token_url` for OAuth 2.0. Credentials can be supp
 later through partial overrides or login. Reusing `client.config` keeps a resolved
 snapshot; see [configuration reuse](configuration.md#reusing-resolved-configuration).
 
-Define custom `JobResultOpener` subclasses in the application's `opener` module
-and list them in `extra_job_result_openers`. This attribute has type
-`ClassVar[Iterable[type[JobResultOpener]]]`: its entries are opener classes.
+Define custom `JobResultReader` subclasses in the application's `reader` module
+and list them in `extra_job_result_readers`. This attribute has type
+`ClassVar[Iterable[type[JobResultReader]]]`: its entries are reader classes.
 Lists, tuples, and generators are accepted and captured as a tuple at class
 creation. Subclasses can assign the attribute without repeating its annotation.
 It is excluded from settings and saved profiles.
 
-For native STAC results, `compose_stac_opener()` creates a registerable opener
-from the built-in `StacJobResultOpener`, an optional source predicate, and
+For native STAC results, `compose_stac_reader()` creates a registerable reader
+from the built-in `StacJobResultReader`, an optional source predicate, and
 ordered async transformations. This reuses built-in parsing without subclassing
 it. The [STAC walkthrough](guides/stac.md) shows the configuration and execution.
 
 Each subclass receives a copy of its parent's `return_type_map` and, unless
-overridden, its `extra_job_result_openers` at class creation. Declaring a new
+overridden, its `extra_job_result_readers` at class creation. Declaring a new
 iterable replaces the inherited extras; an empty iterable keeps only built-ins.
 To extend the parent's declaration, use
-`extra_job_result_openers = [*ParentConfig.extra_job_result_openers, MyOpener]`.
+`extra_job_result_readers = [*ParentConfig.extra_job_result_readers, MyReader]`.
 
-Job-result opener registries are cached per concrete class. On first use, they
+Job-result reader registries are cached per concrete class. On first use, they
 register the built-ins followed by the declared extras in iteration order. The
-last registered opener is tried first, so custom openers take priority over
-built-ins. For later changes, use `MyConfig.register_job_result_opener(...)` and
+last registered reader is tried first, so custom readers take priority over
+built-ins. For later changes, use `MyConfig.register_job_result_reader(...)` and
 its returned unregister callback. These runtime registrations affect only that
 class and are not inherited by subclasses.
 
-Each opener receives a `JobResultOpenContext` describing one selected target.
+Each reader receives a `JobResultReadContext` describing one selected target.
 Use `ctx.value` (or `ctx.output_value`), `ctx.location`, and
 `ctx.output_media_type` to open that target, and respect `ctx.data_type`.
 Producing-job information is optional source context; do not select another
 output from `ctx.job_results`. The client automatically selects a sole output;
 multiple outputs require `output_name`, including when one is named
-`return_value`. See the [opener guide](guides/openers.md) for selection and context
+`return_value`. See the [reader guide](guides/readers.md) for selection and context
 details.
 
 ## Browser branding and local images

@@ -100,7 +100,7 @@ $ cuiman login [OPTIONS]
 **Options**:
 
 * `-c, --config PATH`: Client configuration file.
-* `--no-browser`: Print the OIDC authorization URL instead of opening a browser.
+* `--no-browser`: Print the OIDC authorization URL instead of reading a browser.
 * `--force`: Sign in again, allowing credential prompts.
 * `--no-input`: Never prompt or open a browser; use supplied credentials.
 * `--help`: Show this message and exit.

@@ -27,7 +27,7 @@ want to explore error details.
 ![Sleep Processor inputs in the Eozilla App connected to the local test service](../../assets/guides/cuiman/process-inputs.png)
 
 For a dataset example, choose **Generate scene for testing** (`simulate_scene`).
-Use the small inputs from the [result opener guide](openers.md#prepare-a-small-scene).
+Use the small inputs from the [result reader guide](readers.md#prepare-a-small-scene).
 The result is a reference to a Zarr dataset; that guide explains how to open it
 from Python. Available processes and fields depend on your service.
 
@@ -73,7 +73,7 @@ For remote Jupyter deployments, see
 
 ## Update inputs from Python
 
-After opening Sleep Processor in the App, update the same form from Python:
+After reading Sleep Processor in the App, update the same form from Python:
 
 ```python
 --8<-- "examples/guides/cuiman/app.py:request"

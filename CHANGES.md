@@ -1,5 +1,45 @@
 ## Changes in version 0.5.0 (in development)
 
+### Enhancements
+
+- The **Cuiman** client's opener API has been revised. (#243)
+  The changes are  
+
+  - `Client` and `AsyncClient` now use `read_job_result()`.
+    Their `open_job_result()` methods remain temporarily as deprecated helpers
+    that forward calls and emit `DeprecationWarning`.
+
+  - Breaking API changes: imports move from
+    `cuiman.api.opener` to `cuiman.api.reader`, with reader class and error 
+    names. Configuration uses `extra_job_result_readers`, 
+    `register_job_result_reader()`, and `get_job_result_reader_registry()`. 
+    `JobOptions.opener_options` becomes `reader_options`. 
+    No other compatibility aliases are provided.
+    See the [reader guide](docs/cuiman/guides/readers.md).
+
+  - Custom readers implement `accept_job_result()` and `read_job_result()`; 
+    path readers implement `read_path_like()`. Each concrete
+    reader, including subclasses, must declare a unique `reader_id`. Callers 
+    can select a reader with `reader_id`; inherited `option_policy` continues 
+    to govern backend options independently of reader identity.
+
+  - `Client` and `AsyncClient` accept already retrieved `JobResults`, 
+    selecting an output without polling, process lookup, refetching the result
+    document, or modifying the supplied results. Reusing the original result 
+    object preserves available URL context for relative STAC links, including 
+    across clients. A sole output is selected automatically; multiple outputs 
+    require `output_name`.
+
+  - When `read_job_result()` is called with a `data_type` it either returns a 
+    compatible value or raises `JobResultReadError`.
+    Unsupported representation conversions, such as a Zarr dataset result to 
+    `data_type=pandas.DataFrame`, will raise.
+
+  - `read_job_result()` uses media types ahead of filename suffixes when 
+    choosing readers. Explicit `engine` options override inferred defaults; 
+    unsupported overrides raise. Zarr dataset reads infer the xarray `"zarr"` 
+    engine and preserve lazy loading.
+
 ### Other Changes
 
 - Updated dependency `pixi-pycharm = ">=0.0.12"` to fix Pixi's PyCharm 

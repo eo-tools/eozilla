@@ -12,8 +12,8 @@ from cuiman.api.jobs import (
     CLIENT_CLOSED_REQUEST_STATUS,
     JobMonitor,
     JobOptions,
-    async_execute_and_open_result,
-    execute_and_open_result,
+    async_execute_and_read_result,
+    execute_and_read_result,
 )
 from gavicore.models.core import (
     JobInfo,
@@ -24,7 +24,7 @@ from gavicore.models.core import (
     ProcessRequest,
 )
 
-from ..helpers import AllOpener
+from ..helpers import AllReader
 
 
 def mk_job_info(status: JobStatus, message: str | None = None) -> JobInfo:
@@ -43,7 +43,7 @@ def mk_job_results() -> JobResults:
 class FakeClient:
     def __init__(self, *statuses: JobStatus | tuple[JobStatus, str]):
         self.config = ClientConfig(api_url="https://acme.ogc.org/api")
-        self.config.register_job_result_opener(AllOpener)
+        self.config.register_job_result_reader(AllReader)
         self._statuses = list(statuses)
         self.dismissed = False
 
@@ -92,10 +92,10 @@ class AsyncFakeClient(FakeClient):
         return super().get_process(process_id)
 
 
-class ExecuteAndOpenResultTest(TestCase):
-    def test_successful_job_returns_opened_result(self):
+class ExecuteAndReadResultTest(TestCase):
+    def test_successful_job_returns_read_result(self):
         client = FakeClient(JobStatus.running, JobStatus.successful)
-        result = execute_and_open_result(
+        result = execute_and_read_result(
             client,
             "process_1",
             ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
@@ -106,7 +106,7 @@ class ExecuteAndOpenResultTest(TestCase):
     def test_failed_job_raises_client_error(self):
         client = FakeClient(JobStatus.running, (JobStatus.failed, "out of memory"))
         with pytest.raises(ClientError, match="job status is 'failed'") as e:
-            execute_and_open_result(
+            execute_and_read_result(
                 client,
                 "process_1",
                 ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
@@ -117,7 +117,7 @@ class ExecuteAndOpenResultTest(TestCase):
     def test_dismissed_job_uses_client_closed_request_status(self):
         client = FakeClient(JobStatus.dismissed)
         with pytest.raises(ClientError, match="job status is 'dismissed'") as e:
-            execute_and_open_result(
+            execute_and_read_result(
                 client,
                 "process_1",
                 ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
@@ -134,7 +134,7 @@ class ExecuteAndOpenResultTest(TestCase):
 
         client = FakeClient(JobStatus.running, JobStatus.successful)
         monitor = JobMonitor(on_update)
-        result = execute_and_open_result(
+        result = execute_and_read_result(
             client,
             "process_1",
             ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
@@ -152,7 +152,7 @@ class ExecuteAndOpenResultTest(TestCase):
         monitor = JobMonitor()
         monitor.cancel()
         with pytest.raises(ClientError, match="was cancelled") as e:
-            execute_and_open_result(
+            execute_and_read_result(
                 client,
                 "process_1",
                 ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
@@ -165,7 +165,7 @@ class ExecuteAndOpenResultTest(TestCase):
     def test_monitor_times_out(self):
         client = FakeClient(JobStatus.running)
         with pytest.raises(ClientError, match="did not finish within 0 seconds"):
-            execute_and_open_result(
+            execute_and_read_result(
                 client,
                 "process_1",
                 ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
@@ -174,7 +174,7 @@ class ExecuteAndOpenResultTest(TestCase):
 
     def test_successful_job_without_monitor(self):
         client = FakeClient(JobStatus.running, JobStatus.successful)
-        result = execute_and_open_result(
+        result = execute_and_read_result(
             client,
             "process_1",
             ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
@@ -183,7 +183,7 @@ class ExecuteAndOpenResultTest(TestCase):
         self.assertEqual(mk_job_results(), result)
 
 
-class AsyncExecuteAndOpenResultTest(IsolatedAsyncioTestCase):
+class AsyncExecuteAndReadResultTest(IsolatedAsyncioTestCase):
     async def test_monitor_receives_updates(self):
         updates: list[JobStatus] = []
 
@@ -192,7 +192,7 @@ class AsyncExecuteAndOpenResultTest(IsolatedAsyncioTestCase):
 
         client = AsyncFakeClient(JobStatus.running, JobStatus.successful)
         monitor = JobMonitor(on_update)
-        result = await async_execute_and_open_result(
+        result = await async_execute_and_read_result(
             client,
             "process_1",
             ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
@@ -231,7 +231,7 @@ class AsyncExecuteAndOpenResultTest(IsolatedAsyncioTestCase):
         monitor = JobMonitor()
         monitor.cancel()
         with pytest.raises(ClientError, match="was cancelled") as e:
-            await async_execute_and_open_result(
+            await async_execute_and_read_result(
                 client,
                 "process_1",
                 ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
@@ -244,7 +244,7 @@ class AsyncExecuteAndOpenResultTest(IsolatedAsyncioTestCase):
     async def test_monitor_times_out(self):
         client = AsyncFakeClient(JobStatus.running)
         with pytest.raises(ClientError, match="did not finish within 0 seconds"):
-            await async_execute_and_open_result(
+            await async_execute_and_read_result(
                 client,
                 "process_1",
                 ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),
@@ -253,7 +253,7 @@ class AsyncExecuteAndOpenResultTest(IsolatedAsyncioTestCase):
 
     async def test_successful_job_without_monitor(self):
         client = AsyncFakeClient(JobStatus.running, JobStatus.successful)
-        result = await async_execute_and_open_result(
+        result = await async_execute_and_read_result(
             client,
             "process_1",
             ProcessRequest(inputs={"bbox": [1, 2, 3, 4]}),

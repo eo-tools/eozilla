@@ -3,20 +3,20 @@
 STAC metadata uses standard PySTAC I/O. Applications can supply native I/O through
 their configuration class's runtime-only `stac_io_factory`, separately from
 processing authentication. See
-[standard PySTAC metadata I/O](guides/openers.md#standard-pystac-metadata-io).
+[standard PySTAC metadata I/O](guides/readers.md#standard-pystac-metadata-io).
 Metadata response-size, timeout, and request limits are an optional future
 extension; the proposed bounds and current behavior are summarized in the
-[opener guide](guides/openers.md#standard-pystac-metadata-io).
+[reader guide](guides/readers.md#standard-pystac-metadata-io).
 
 For selected STAC Assets, runtime-only `asset_reader_options` and
 `asset_access_provider` callbacks supply scoped reader overrides and S3 access.
 They are excluded from saved profiles. See
-[Asset reader hints and access](guides/openers.md#asset-reader-hints-and-access)
+[Asset reader hints and access](guides/readers.md#asset-reader-hints-and-access)
 for supported producer hints, precedence, and credential replacement.
 
-Application-owned `extra_job_result_openers` can register a composed STAC opener
+Application-owned `extra_job_result_readers` can register a composed STAC reader
 with ordered native-object transformations. See
-[compose a STAC opener](guides/openers.md#compose-a-stac-opener) for the
+[compose a STAC reader](guides/readers.md#compose-a-stac-reader) for the
 configuration pattern.
 
 The `cuiman` configuration settings may be passed in a couple of ways 
@@ -580,7 +580,7 @@ address restricts the callback to the local computer, and the port is chosen
 for each login so concurrent or stale login attempts do not claim a fixed
 port.
 
-If Cuiman cannot open a browser, or the browser must be opened manually, use:
+If Cuiman cannot open a browser, or the browser must be read manually, use:
 
 ```console
 $ cuiman login --no-browser

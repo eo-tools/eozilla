@@ -15,27 +15,29 @@ from PIL import Image
 
 from cuiman import AsyncClient, Client, ClientConfig
 from cuiman.api.defaults import (
-    DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
-    DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
+    DEFAULT_READ_JOB_POLL_INTERVAL,
+    DEFAULT_READ_JOB_RESULT_TIMEOUT,
 )
-from cuiman.api.opener import (
-    JobResultOpenContext,
-    JobResultOpener,
-    JobResultOpenError,
+from cuiman.api.reader import (
+    JobResultReadContext,
+    JobResultReader,
+    JobResultReadError,
 )
-from cuiman.api.opener.impl import StacJobResultOpener
-from cuiman.api.opener.impl.base import PathOpener
-from cuiman.api.opener.opener import open_job_result
+from cuiman.api.reader.impl import StacJobResultReader
+from cuiman.api.reader.impl.base import PathReader
+from cuiman.api.reader.reader import read_job_result
 from gavicore.models.core import JobInfo, JobResults, JobStatus, ProcessRequest
 from procodile import Job
 from wraptile.services.local.testing import service
 
 
-class InspectOpener(JobResultOpener):
+class InspectReader(JobResultReader):
+    reader_id = "InspectReader"
+
     async def accept_job_result(self, ctx):
         return ctx.options.get("inspect_context", False)
 
-    async def open_job_result(self, ctx):
+    async def read_job_result(self, ctx):
         return ctx
 
 
@@ -56,7 +58,7 @@ def client(request, tmp_path):
     runner = asyncio.Runner()
 
     class Config(ClientConfig):
-        extra_job_result_openers = (InspectOpener,)
+        extra_job_result_readers = (InspectReader,)
 
     instance = (AsyncClient if asynchronous else Client)(
         api_url="https://receiving.test",
@@ -89,7 +91,7 @@ def client(request, tmp_path):
     ):
 
         def call(*args, **kwargs):
-            result = instance.open_job_result(*args, **kwargs)
+            result = instance.read_job_result(*args, **kwargs)
             return runner.run(result) if asynchronous else result
 
         yield instance, call
@@ -119,9 +121,9 @@ def owner(asset, base="https://data.test/items/item.json"):
         ("output_name", None),
         ("output_name", "data"),
         ("poll_interval", None),
-        ("poll_interval", DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL),
+        ("poll_interval", DEFAULT_READ_JOB_POLL_INTERVAL),
         ("timeout", None),
-        ("timeout", DEFAULT_OPEN_JOB_RESULT_TIMEOUT),
+        ("timeout", DEFAULT_READ_JOB_RESULT_TIMEOUT),
     ],
 )
 def test_job_only_arguments_rejected_before_dispatch(client, option, value):
@@ -133,7 +135,7 @@ def test_job_only_arguments_rejected_before_dispatch(client, option, value):
             owning, "get_self_href", side_effect=AssertionError("resolution forbidden")
         ),
         patch.object(
-            InspectOpener,
+            InspectReader,
             "accept_job_result",
             side_effect=AssertionError("dispatch forbidden"),
         ),
@@ -148,15 +150,17 @@ def test_job_only_arguments_rejected_before_dispatch(client, option, value):
 def test_unsupported_target_rejected(client, target):
     _, call = client
     with patch.object(
-        InspectOpener,
+        InspectReader,
         "accept_job_result",
         side_effect=AssertionError("dispatch forbidden"),
     ):
-        with pytest.raises(TypeError, match="job ID string or a pystac.Asset"):
+        with pytest.raises(
+            TypeError, match="job ID string, JobResults, or a pystac.Asset"
+        ):
             call(target)
 
 
-def test_native_item_is_not_an_opening_target(client):
+def test_native_item_is_not_an_reading_target(client):
     _, call = client
     with pytest.raises(TypeError):
         call(owner(pystac.Asset("data.csv")))
@@ -181,7 +185,7 @@ def test_exact_context_format_owner_and_receiving_client(client):
         ctx = call(
             job_id_or_asset=asset,
             inspect_context=True,
-            data_type=pd.DataFrame,
+            data_type=JobResultReadContext,
             delimiter=";",
         )
         assert ctx.value is asset
@@ -213,7 +217,7 @@ def test_missing_absolute_owner_base_fails(client, base):
     if base is not None:
         owning = owner(asset)
         owning.get_self_href = Mock(return_value=base)
-    with pytest.raises(JobResultOpenError, match="owner.*base"):
+    with pytest.raises(JobResultReadError, match="owner.*base"):
         call(asset)
 
 
@@ -222,7 +226,7 @@ def test_owner_without_self_link_fails(client):
     asset = pystac.Asset("data.csv")
     owning = owner(asset)
     owning.remove_links("self")
-    with pytest.raises(JobResultOpenError, match="owner.*base"):
+    with pytest.raises(JobResultReadError, match="owner.*base"):
         call(asset)
 
 
@@ -231,7 +235,7 @@ def test_invalid_href_fails(client, href):
     _, call = client
     asset = pystac.Asset("placeholder")
     asset.href = href
-    with pytest.raises(JobResultOpenError, match="non-empty"):
+    with pytest.raises(JobResultReadError, match="non-empty"):
         call(asset)
 
 
@@ -361,12 +365,13 @@ def test_alternate_url_and_options_reach_xarray(client):
     original = deepcopy(owning.to_dict())
     client_options = Mock(return_value={"chunks": {"x": 2}})
     access = Mock(return_value={"anon": True})
+    expected = xr.Dataset()
     with (
         patch.object(type(instance.config), "asset_reader_options", client_options),
         patch.object(type(instance.config), "asset_access_provider", access),
-        patch("xarray.open_dataset", return_value="opened") as read,
+        patch("xarray.open_dataset", return_value=expected) as read,
     ):
-        assert call(asset, data_type=xr.Dataset, chunks="auto") == "opened"
+        assert call(asset, data_type=xr.Dataset, chunks="auto") is expected
     read.assert_called_once_with(
         "s3://bucket/data.zarr?versionId=123",
         engine="zarr",
@@ -386,7 +391,7 @@ def test_non_absolute_uri_does_not_guess_a_base(client, href):
     asset = pystac.Asset("placeholder")
     asset.href = href
     owner(asset)
-    with pytest.raises(JobResultOpenError, match="URI scheme must be absolute"):
+    with pytest.raises(JobResultReadError, match="URI scheme must be absolute"):
         call(asset)
 
 
@@ -395,7 +400,7 @@ def test_closed_client_rejects_asset_before_dispatch(client):
     with (
         patch.object(instance, "_closed", True),
         patch.object(
-            InspectOpener,
+            InspectReader,
             "accept_job_result",
             side_effect=AssertionError("dispatch forbidden"),
         ),
@@ -410,7 +415,7 @@ def test_async_asset_respects_owner_loop(client):
     call(asset, inspect_context=True)
     if isinstance(instance, AsyncClient):
         with pytest.raises(RuntimeError, match="owning event loop"):
-            asyncio.run(instance.open_job_result(asset, inspect_context=True))
+            asyncio.run(instance.read_job_result(asset, inspect_context=True))
 
 
 def test_independent_asset_without_media_type_uses_own_suffix(client, tmp_path):
@@ -503,8 +508,8 @@ def test_json_asset_is_data_without_metadata_rediscovery(client):
     expected = pd.DataFrame({"value": [42]})
     with (
         patch.object(
-            StacJobResultOpener,
-            "open_job_result",
+            StacJobResultReader,
+            "read_job_result",
             side_effect=AssertionError("STAC rediscovery forbidden"),
         ),
         patch("pandas.read_json", return_value=expected) as reader,
@@ -573,12 +578,12 @@ def test_demo_metadata_to_exact_asset(client, tmp_path, monkeypatch, process_id)
             )
             return io
 
-    ctx = JobResultOpenContext(
+    ctx = JobResultReadContext(
         config=ProducerConfig(api_url="https://producing.test"),
         job_results=results,
         output_name="item_collection",
     )
-    items = asyncio.run(open_job_result(ctx, StacJobResultOpener))
+    items = asyncio.run(read_job_result(ctx, StacJobResultReader))
     selected = items[1].assets["data"]
     parsed_original = deepcopy(items.to_dict())
 
@@ -613,4 +618,4 @@ def test_demo_metadata_to_exact_asset(client, tmp_path, monkeypatch, process_id)
     ],
 )
 def test_suffix_detection(href, expected):
-    assert PathOpener.get_filename_ext(href) == expected
+    assert PathReader.get_filename_ext(href) == expected
