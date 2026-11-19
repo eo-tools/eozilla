@@ -17,6 +17,10 @@
 - Updated dependency `pixi-pycharm = ">=0.0.12"` to fix Pixi's PyCharm 
   integration for Windows OS.
 - Added `./.github/CODEOWNERS` file.
+- Updated dependency `authlib >=1.9.1,<2` (was `>=1.8,<1.9`) to pick up
+  security fixes, including CVE-2026-96760.
+- Re-aligned description of schema from generation with the
+  implementation in [`eozilla-app`](https://github.com/eo-tools/eozilla-app). (#262)
 
 
 ## Changes in version 0.4.0
