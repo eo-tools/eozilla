@@ -1,5 +1,11 @@
 ## Changes in version 0.5.0 (in development)
 
+### Fixes
+
+- Re-aligned description of schema from generation with the
+  implementation in [`eozilla-app`](https://github.com/eo-tools/eozilla-app). (#262)
+
+
 ### Other Changes
 
 - Updated dependency `pixi-pycharm = ">=0.0.12"` to fix Pixi's PyCharm 
