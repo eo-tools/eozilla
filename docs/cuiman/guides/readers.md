@@ -14,6 +14,22 @@ available as deprecated compatibility helpers. They forward all arguments to
 and emit `DeprecationWarning`. Update calls to use `read_job_result()`;
 other opener imports, extension APIs, and configuration names remain removed.
 
+This precedence also applies to GeoTIFF/COG outputs with media type
+`image/tiff; application=geotiff`: the default Pillow reader returns an image
+without interpreting its geospatial metadata. For a georeferenced xarray Dataset,
+pass `reader_id="xarray"` or `data_type=xr.Dataset` (with `import xarray as xr`).
+Install a compatible raster backend, such as `rioxarray`, which uses `rasterio`
+and provides xarray's `engine="rasterio"` backend. For example:
+
+```python
+dataset = client.read_job_result(
+    job_id, reader_id="xarray", engine="rasterio"
+)
+```
+
+Selecting the xarray reader does not install a backend. Without a compatible
+raster backend, reading a GeoTIFF as a Dataset raises `JobResultReadError`.
+
 The framework lives in `cuiman.api.reader`. Configuration uses
 `extra_job_result_readers`, `register_job_result_reader()`, and
 `get_job_result_reader_registry()`. Readers implement `accept_job_result()` and

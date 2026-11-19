@@ -46,7 +46,7 @@ class JobResultReadContext:
     """Optional ID of the producing job."""
 
     job_results: JobResults | None = None
-    """Original results, retained as source facts rather tha reader targets."""
+    """Original results, retained as source facts rather than reader targets."""
 
     process_description: ProcessDescription | None = None
     """Description of the process that produced the results."""
