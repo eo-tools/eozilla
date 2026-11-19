@@ -48,7 +48,7 @@ dependencies = [
   "typer >=0.26.0,<1",
   "uri-template",
   "httpx2",
-  "authlib >=1.8,<1.9",
+  "authlib >=1.9.1,<2",
   "joserfc >=1.6,<2",
   "keyring",
   # local dependency

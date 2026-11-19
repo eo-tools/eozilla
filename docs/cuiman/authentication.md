@@ -211,7 +211,7 @@ and manage locking, cancellation, closure, and app dispatch. The processing
 transport converts requests and responses; it does not manage OAuth recovery.
 There are no Cuiman OAuth subclasses or separate live token managers.
 
-The following integration details were verified against Authlib 1.8.0 and should
+The following integration details were verified against Authlib 1.9.9 and should
 be retained when updating the dependency:
 
 - Set `grant_type` and `token_endpoint` metadata on the persistent client, using
@@ -230,8 +230,8 @@ be retained when updating the dependency:
   Add provider-specific adaptations only for a demonstrated requirement.
 
 These details follow the pinned
-[OAuth token lifecycle](https://github.com/authlib/authlib/blob/v1.8.0/authlib/oauth2/client.py)
-and [HTTPX integration](https://github.com/authlib/authlib/blob/v1.8.0/authlib/integrations/httpx_client/oauth2_client.py).
+[OAuth token lifecycle](https://github.com/authlib/authlib/blob/v1.9.9/authlib/oauth2/client.py)
+and [HTTPX integration](https://github.com/authlib/authlib/blob/v1.9.9/authlib/integrations/httpx_client/oauth2_client.py).
 Regression tests exercise actual Authlib clients with mock HTTP responses and
 fake keyring backends, including rotation, ownership, cancellation, and profile
 isolation. They do not establish live-provider or OS-keyring interoperability.
