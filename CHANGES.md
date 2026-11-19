@@ -2,6 +2,14 @@
 
 ### Fixes
 
+- **Cuiman** now checks keyring backend availability before storing
+  credentials. If no usable backend is available, it uses an in-memory store
+  and warns when saving credentials so login can proceed on headless
+  systems. Credential reads and logout do not emit this warning.
+  Credentials are lost when the process exits and cannot be reused
+  by separate CLI invocations. The CLI displays a clean warning on stderr;
+  Python callers receive a filterable `SecretStoreFallbackWarning`. (#257)
+
 - **Cuiman** allows its app to connect when a service's landing page returns
   HTTP 404 but authenticated process discovery works. A warning identifies the
   missing required landing page without claiming service conformance.
