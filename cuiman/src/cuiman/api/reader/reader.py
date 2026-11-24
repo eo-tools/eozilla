@@ -61,8 +61,8 @@ class JobResultReader(ABC):
         from the list of potential readers for the given job results.
 
         For performance reasons, an implementation should focus on
-        determining the unability to read the job results and early
-        return `False` in this case.
+        determining the inability to read the job results and
+        return `False` early in this case.
 
         The method is not expected to raise any errors.
 

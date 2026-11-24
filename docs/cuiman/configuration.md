@@ -580,7 +580,7 @@ address restricts the callback to the local computer, and the port is chosen
 for each login so concurrent or stale login attempts do not claim a fixed
 port.
 
-If Cuiman cannot open a browser, or the browser must be read manually, use:
+If Cuiman cannot open a browser, or the browser must be opened manually, use:
 
 ```console
 $ cuiman login --no-browser
