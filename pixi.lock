@@ -272,7 +272,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/asttokens-3.0.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/async-lru-2.3.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/attrs-26.1.0-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/authlib-1.8.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/authlib-1.9.9-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/babel-2.18.0-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/backports-1.0-pyhd8ed1ab_5.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/backports.asyncio.runner-1.2.0-pyh5ded981_2.conda
@@ -563,7 +563,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/asttokens-3.0.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/async-lru-2.3.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/attrs-26.1.0-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/authlib-1.8.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/authlib-1.9.9-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/babel-2.18.0-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/backports-1.0-pyhd8ed1ab_5.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/backports.asyncio.runner-1.2.0-pyh5ded981_2.conda
@@ -1050,7 +1050,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/asttokens-3.0.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/async-lru-2.3.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/attrs-26.1.0-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/authlib-1.8.0-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/authlib-1.9.9-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/babel-2.18.0-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/backports-1.0-pyhd8ed1ab_5.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/backports.asyncio.runner-1.2.0-pyh5ded981_2.conda
@@ -5847,21 +5847,20 @@ packages:
   run_exports: {}
   size: 64927
   timestamp: 1773935801332
-- conda: https://conda.anaconda.org/conda-forge/noarch/authlib-1.8.0-pyhcf101f3_0.conda
-  sha256: 12c0193f3c0a0476b930d58ff07863b89154ce07fa415b697d8c6e43f1f8cfd5
-  md5: ec2e6c37c548473f97a4b8efd4661766
+- conda: https://conda.anaconda.org/conda-forge/noarch/authlib-1.9.9-pyh5ded981_0.conda
+  sha256: f28ae184432a8e012a5e1910c160ce21a90fc74e75a1e4682437185429f26060
+  md5: 51d51af7c647cce0d855e6e0d10568ed
   depends:
-  - python >=3.10
+  - python >=3.11
   - cryptography >=45.0.1
-  - joserfc >=1.6.1
+  - joserfc >=1.6.8
   - python
   license: BSD-3-Clause
-  license_family: BSD
   purls:
   - pkg:pypi/authlib?source=hash-mapping
   run_exports: {}
-  size: 239445
-  timestamp: 1788116873589
+  size: 254486
+  timestamp: 1794996534430
 - conda: https://conda.anaconda.org/conda-forge/noarch/babel-2.18.0-pyhcf101f3_1.conda
   sha256: a14a9ad02101aab25570543a59c5193043b73dc311a25650134ed9e6cb691770
   md5: f1976ce927373500cc19d3c0b2c85177
@@ -8593,7 +8592,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-classification?source=compressed-mapping
+  - pkg:pypi/pystac-ext-classification?source=hash-mapping
   run_exports: {}
   size: 15356
   timestamp: 1786442459841
@@ -8607,7 +8606,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-datacube?source=compressed-mapping
+  - pkg:pypi/pystac-ext-datacube?source=hash-mapping
   run_exports: {}
   size: 15135
   timestamp: 1786443156017
@@ -8623,7 +8622,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-eo?source=compressed-mapping
+  - pkg:pypi/pystac-ext-eo?source=hash-mapping
   run_exports: {}
   size: 15803
   timestamp: 1786443173854
@@ -8637,7 +8636,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-file?source=compressed-mapping
+  - pkg:pypi/pystac-ext-file?source=hash-mapping
   run_exports: {}
   size: 13956
   timestamp: 1786443154082
@@ -8665,7 +8664,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-item-assets?source=compressed-mapping
+  - pkg:pypi/pystac-ext-item-assets?source=hash-mapping
   run_exports: {}
   size: 11949
   timestamp: 1786442905517
@@ -8679,7 +8678,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-label?source=compressed-mapping
+  - pkg:pypi/pystac-ext-label?source=hash-mapping
   run_exports: {}
   size: 16126
   timestamp: 1786389238851
@@ -8693,7 +8692,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-mgrs?source=compressed-mapping
+  - pkg:pypi/pystac-ext-mgrs?source=hash-mapping
   run_exports: {}
   size: 12316
   timestamp: 1786387300909
@@ -8709,7 +8708,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-mlm?source=compressed-mapping
+  - pkg:pypi/pystac-ext-mlm?source=hash-mapping
   run_exports: {}
   size: 21237
   timestamp: 1786442462729
@@ -8723,7 +8722,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-pointcloud?source=compressed-mapping
+  - pkg:pypi/pystac-ext-pointcloud?source=hash-mapping
   run_exports: {}
   size: 14508
   timestamp: 1786391772575
@@ -8737,7 +8736,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-projection?source=compressed-mapping
+  - pkg:pypi/pystac-ext-projection?source=hash-mapping
   run_exports: {}
   size: 15411
   timestamp: 1786442864330
@@ -8779,7 +8778,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-sar?source=compressed-mapping
+  - pkg:pypi/pystac-ext-sar?source=hash-mapping
   run_exports: {}
   size: 14659
   timestamp: 1786443146885
@@ -8793,7 +8792,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-sat?source=compressed-mapping
+  - pkg:pypi/pystac-ext-sat?source=hash-mapping
   run_exports: {}
   size: 13070
   timestamp: 1786443087822
@@ -8807,7 +8806,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-scientific?source=compressed-mapping
+  - pkg:pypi/pystac-ext-scientific?source=hash-mapping
   run_exports: {}
   size: 13623
   timestamp: 1786442867266
@@ -8821,7 +8820,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-storage?source=compressed-mapping
+  - pkg:pypi/pystac-ext-storage?source=hash-mapping
   run_exports: {}
   size: 15695
   timestamp: 1786442546297
@@ -8835,7 +8834,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-table?source=compressed-mapping
+  - pkg:pypi/pystac-ext-table?source=hash-mapping
   run_exports: {}
   size: 12916
   timestamp: 1786442861020
@@ -8849,7 +8848,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-timestamps?source=compressed-mapping
+  - pkg:pypi/pystac-ext-timestamps?source=hash-mapping
   run_exports: {}
   size: 12748
   timestamp: 1786443708446
@@ -8863,7 +8862,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-version?source=compressed-mapping
+  - pkg:pypi/pystac-ext-version?source=hash-mapping
   run_exports: {}
   size: 13926
   timestamp: 1786391923285
@@ -8877,7 +8876,7 @@ packages:
   license: Apache-2.0
   license_family: APACHE
   purls:
-  - pkg:pypi/pystac-ext-view?source=compressed-mapping
+  - pkg:pypi/pystac-ext-view?source=hash-mapping
   run_exports: {}
   size: 12978
   timestamp: 1786442636227
@@ -16914,7 +16913,7 @@ packages:
   - typer>=0.26.0,<1
   - uri-template
   - httpx2
-  - authlib>=1.8,<1.9
+  - authlib>=1.9.1,<2
   - joserfc>=1.6,<2
   - keyring
   - gavicore>=0.5.0.dev0

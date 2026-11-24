@@ -22,6 +22,32 @@ The relevant interfaces live in:
 Provider implementations are registered through `src/service/registry.ts`.
 The app registers the built-in providers during startup in `src/main.tsx`.
 
+## Cuiman proxy diagnostics
+
+Apps launched with `Client.show_app()` or `cuiman show-app` use the
+app-relative `./_cuiman/service/` API proxy. Python owns the upstream service
+connection and authentication. The Cuiman provider rejects changes to the proxy
+URL or browser authentication, including changes submitted through the service
+dialog after a connection error. The error explains how to restore the connection:
+reload the tab, or reconfigure the Python client and launch the app again.
+
+The proxy reports HTTP 502 with an explanatory message if the upstream service
+returns a redirect with a `Location` header. Redirects are blocked before the
+browser can follow them outside the proxy and produce a misleading CORS or
+authentication error. Check the configured Process API URL and upstream routing,
+especially trailing-slash and HTTP-to-HTTPS redirects. Redirect targets are not
+included in the error because they may contain credentials or sensitive queries.
+
+If the landing page returns HTTP 404, the Cuiman app proxy checks `/processes`
+using Python-managed authentication. A valid process list allows the app to
+continue with minimal service metadata. Cuiman emits a warning, also included
+in the service description, explaining that the required landing page is missing
+and service conformance is unknown. If process discovery fails, its error is
+reported; an invalid process-list response leaves the original HTTP 404 intact.
+Other API operations and explicit Python `get_capabilities()` calls retain their
+normal behavior. The app does not currently request `/conformance`, and Cuiman
+does not synthesize conformance declarations.
+
 ## ServiceProvider
 
 `ServiceProvider<TOptions>` is the app-facing contract for a backend that can

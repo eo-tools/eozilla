@@ -40,11 +40,27 @@
     unsupported overrides raise. Zarr dataset reads infer the xarray `"zarr"` 
     engine and preserve lazy loading.
 
+### Fixes
+
+- **Cuiman** allows its app to connect when a service's landing page returns
+  HTTP 404 but authenticated process discovery works. A warning identifies the
+  missing required landing page without claiming service conformance.
+
+- **Cuiman and Eozilla App** now report actionable errors when upstream API
+  redirects or changes to the app's connection settings would bypass Cuiman's
+  authenticated API proxy. Redirects are blocked before the browser can encounter
+  misleading CORS errors, and connection recovery preserves the proxy URL and
+  Python-managed authentication. Related to #258.
+
 ### Other Changes
 
 - Updated dependency `pixi-pycharm = ">=0.0.12"` to fix Pixi's PyCharm 
   integration for Windows OS.
 - Added `./.github/CODEOWNERS` file.
+- Updated dependency `authlib >=1.9.1,<2` (was `>=1.8,<1.9`) to pick up
+  security fixes, including CVE-2026-96760.
+- Re-aligned description of schema from generation with the
+  implementation in [`eozilla-app`](https://github.com/eo-tools/eozilla-app). (#262)
 
 
 ## Changes in version 0.4.0
