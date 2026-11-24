@@ -342,7 +342,8 @@ Supported modes:
 
 - separator-based text input for primitive non-enum item arrays
 - explicit array editor for `widget: editor`
-- bbox map editor for 4-number arrays with `widget: map`
+- bbox map editor for arrays of exactly four numbers with `widget: map` or
+  `format: bbox`. An explicit widget hint takes precedence over the format.
 
 Input mode behavior:
 
@@ -446,7 +447,7 @@ Map editing is now a first-class specialized field.
 Supported variants:
 
 - string `widget: map`: WKT polygon editor
-- 4-number array `widget: map`: bbox editor
+- 4-number array with `widget: map` or `format: bbox`: bbox editor
 
 Current WKT behavior:
 

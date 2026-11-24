@@ -50,7 +50,12 @@
   redirects or changes to the app's connection settings would bypass Cuiman's
   authenticated API proxy. Redirects are blocked before the browser can encounter
   misleading CORS errors, and connection recovery preserves the proxy URL and
-  Python-managed authentication. Related to #258.
+  Python-managed authentication. (#258)
+
+- **Cuiman's Eozilla App** now opens the bounding-box map for process inputs
+  declared as four-number arrays with `format: bbox` and no explicit widget.
+  The GUI generation guide documents both ways to select the map editor.
+  (#265, [eozilla-app #114](https://github.com/eo-tools/eozilla-app/issues/114))
 
 ### Other Changes
 
