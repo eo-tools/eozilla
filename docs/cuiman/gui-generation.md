@@ -214,9 +214,9 @@ which specifies the items' schema.
 A few tuple types are supported that generates a special widget instead of
 the default array editor:
 
-- **geographic bounding boxes**: item type `number` with `minItems: 4`, `maxItems: 4`,
-  and `x-ui-widget: map` (or `format: bbox`) creates a special editor to enter the
-  bounding box using a map.
+- **geographic bounding boxes** use a map editor when the item type is `number`
+  and both `minItems` and `maxItems` are set to `4`. Set `x-ui-widget: map` or
+  use `format: bbox` if you leave the widget hint unspecified.
   It lets users draw a geometry whose bounding box will become the effective field
   value.
 
