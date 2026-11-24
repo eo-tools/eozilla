@@ -147,7 +147,7 @@ class GenerateServiceClientModulesTest(TestCase):
         self.assertEqual(
             inspect.cleandoc(
                 '''
-                Execute process ``say-"""-hello`` and return its opened result.
+                Execute process ``say-"""-hello`` and return its read result.
 
                 A """quoted""" title
                 on two lines
@@ -158,10 +158,10 @@ class GenerateServiceClientModulesTest(TestCase):
                 Args:
                     message: Say """hello""" over two lines
                     fallback: Process input.
-                    job_options: Optional job execution and result-opening options.
+                    job_options: Optional job execution and result-reading options.
 
                 Raises:
-                    ClientError: If the API call, job execution, or result opening fails.
+                    ClientError: If the API call, job execution, or result reading fails.
                 '''
             ),
             inspect.getdoc(method),
@@ -186,7 +186,7 @@ class GenerateServiceClientModulesTest(TestCase):
             calls.append((self, process_id, request, job_options))
             return "opened"
 
-        namespace["execute_and_open_result"] = fake_helper
+        namespace["execute_and_read_result"] = fake_helper
         client_cls = namespace["S2gosClient"]
         client = client_cls(api_url="https://acme.ogc.org/api")
         options = JobOptions(timeout=1)
@@ -307,7 +307,7 @@ class GenerateAsyncServiceClientModulesTest(IsolatedAsyncioTestCase):
             calls.append((self, process_id, request, job_options))
             return "opened"
 
-        namespace["async_execute_and_open_result"] = fake_helper
+        namespace["async_execute_and_read_result"] = fake_helper
         client_cls = namespace["S2gosAsyncClient"]
         client = client_cls(api_url="https://acme.ogc.org/api")
         result = await client.simulate_scene(

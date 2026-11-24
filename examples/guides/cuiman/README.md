@@ -12,8 +12,8 @@ terminal, and use `pixi shell` in another:
 - `python -m examples.guides.cuiman.app`: open the browser App and keep its server
   alive until Ctrl+C. In a notebook, import `open_app`, `set_duration`, and
   `close_app`; call `open_app(display="notebook")` and retain its two handles.
-- `python -m examples.guides.cuiman.openers`: submit a small simulated scene and
-  open its Zarr output with the built-in reader. The custom opener is an optional
+- `python -m examples.guides.cuiman.readers`: submit a small simulated scene and
+  open its Zarr output with the built-in reader. The custom reader is an optional
   alternative demonstrated separately in the guide.
 - `python -m examples.guides.cuiman.stac`: submit inline and linked STAC jobs,
   inspect raw and native results, apply a branded-client transform, and read a
@@ -35,7 +35,7 @@ use the cleanup calls shown in the guides.
 Run `pixi run format`, `pixi run checks`, `pixi run test-cuiman`, and
 `pixi run build-docs`. Tests run offline using mocks, real App state, and small
 temporary Zarr datasets produced by the local process implementation. They check
-job-ID reuse, successful-result gating, request validity, cleanup, and opener
+job-ID reuse, successful-result gating, request validity, cleanup, and reader
 registration. Example source is included in Cuiman coverage.
 
 Keep snippet names stable. Documentation builds validate includes but never

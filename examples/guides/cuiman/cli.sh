@@ -65,6 +65,6 @@ python -m examples.guides.cuiman.api
 python -m examples.guides.cuiman.app
 # --8<-- [end:python-app]
 
-# --8<-- [start:python-openers]
-python -m examples.guides.cuiman.openers
-# --8<-- [end:python-openers]
+# --8<-- [start:python-readers]
+python -m examples.guides.cuiman.readers
+# --8<-- [end:python-readers]

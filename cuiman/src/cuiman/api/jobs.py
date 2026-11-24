@@ -21,12 +21,12 @@ from gavicore.util.runsync import run_sync
 
 from .config import ClientConfig
 from .defaults import (
-    DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL,
-    DEFAULT_OPEN_JOB_RESULT_TIMEOUT,
+    DEFAULT_READ_JOB_POLL_INTERVAL,
+    DEFAULT_READ_JOB_RESULT_TIMEOUT,
 )
 from .exceptions import ClientError
-from .opener import JobResultOpenContext
-from .opener.opener import open_job_result
+from .reader.context import JobResultReadContext
+from .reader.reader import read_job_result
 
 JobUpdateHandler = Callable[[JobInfo], Awaitable[None] | None]
 
@@ -77,28 +77,28 @@ class JobOptions:
     """Options for generated service-client job execution."""
 
     output_name: str | None = None
-    """Name of the output to open; required when a job has multiple outputs.
+    """Name of the output to read; required when a job has multiple outputs.
 
-    A sole output is selected automatically before opener dispatch.
+    A sole output is selected automatically before reader dispatch.
     """
 
     data_type: type | None = None
-    """Expected or desired data type of the opened result."""
+    """Expected or desired data type of the read result."""
 
     media_type: str | None = None
-    """Media type override used when opening the job result."""
+    """Media type override used when reading the job result."""
 
-    poll_interval: float = DEFAULT_OPEN_JOB_JOB_POLL_INTERVAL
+    poll_interval: float = DEFAULT_READ_JOB_POLL_INTERVAL
     """Interval in seconds between status polls."""
 
-    timeout: float = DEFAULT_OPEN_JOB_RESULT_TIMEOUT
+    timeout: float = DEFAULT_READ_JOB_RESULT_TIMEOUT
     """Maximum time in seconds to wait for job completion."""
 
     monitor: JobMonitor | None = None
     """Optional monitor for updates and cancellation requests."""
 
-    opener_options: dict[str, Any] = field(default_factory=dict)
-    """Additional opener-specific options."""
+    reader_options: dict[str, Any] = field(default_factory=dict)
+    """Additional reader-specific options."""
 
 
 class _ClientLike(Protocol):
@@ -133,34 +133,34 @@ class _AsyncClientLike(Protocol):
     async def get_process(self, process_id: str) -> ProcessDescription: ...
 
 
-def execute_and_open_result(
+def execute_and_read_result(
     client: _ClientLike,
     process_id: str,
     request: ProcessRequest,
     *,
     job_options: JobOptions | None = None,
 ) -> Any:
-    """Execute a process, wait for completion, and open its result."""
+    """Execute a process, wait for completion, and read its result."""
     options = job_options or JobOptions()
     job_info = client.execute_process(process_id, request)
     _monitor_update_sync(options.monitor, job_info)
     job_info = _wait_for_job(client, job_info, options)
-    return _open_finished_job_result(client, job_info, options)
+    return _read_finished_job_result(client, job_info, options)
 
 
-async def async_execute_and_open_result(
+async def async_execute_and_read_result(
     client: _AsyncClientLike,
     process_id: str,
     request: ProcessRequest,
     *,
     job_options: JobOptions | None = None,
 ) -> Any:
-    """Execute a process asynchronously, wait for completion, and open its result."""
+    """Execute a process asynchronously, wait for completion, and read its result."""
     options = job_options or JobOptions()
     job_info = await client.execute_process(process_id, request)
     await _monitor_update_async(options.monitor, job_info)
     job_info = await _async_wait_for_job(client, job_info, options)
-    return await _async_open_finished_job_result(client, job_info, options)
+    return await _async_read_finished_job_result(client, job_info, options)
 
 
 def _wait_for_job(
@@ -199,38 +199,38 @@ async def _async_wait_for_job(
     return job_info
 
 
-def _open_finished_job_result(
+def _read_finished_job_result(
     client: _ClientLike, job_info: JobInfo, options: JobOptions
 ) -> Any:
     job_results = client.get_job_results(job_info.jobID)
     process_description = (
         client.get_process(job_info.processID) if job_info.processID else None
     )
-    ctx = _new_open_context(client, job_info, job_results, options, process_description)
-    opener_registry = client.config.get_job_result_opener_registry()
-    return run_sync(open_job_result, ctx, *opener_registry.opener_types)
+    ctx = _new_read_context(client, job_info, job_results, options, process_description)
+    reader_registry = client.config.get_job_result_reader_registry()
+    return run_sync(read_job_result, ctx, *reader_registry.reader_types)
 
 
-async def _async_open_finished_job_result(
+async def _async_read_finished_job_result(
     client: _AsyncClientLike, job_info: JobInfo, options: JobOptions
 ) -> Any:
     job_results = await client.get_job_results(job_info.jobID)
     process_description = (
         (await client.get_process(job_info.processID)) if job_info.processID else None
     )
-    ctx = _new_open_context(client, job_info, job_results, options, process_description)
-    opener_registry = client.config.get_job_result_opener_registry()
-    return await open_job_result(ctx, *opener_registry.opener_types)
+    ctx = _new_read_context(client, job_info, job_results, options, process_description)
+    reader_registry = client.config.get_job_result_reader_registry()
+    return await read_job_result(ctx, *reader_registry.reader_types)
 
 
-def _new_open_context(
+def _new_read_context(
     client: _ClientLike | _AsyncClientLike,
     job_info: JobInfo,
     job_results: JobResults,
     options: JobOptions,
     process_description: ProcessDescription | None,
-) -> JobResultOpenContext:
-    ctx = JobResultOpenContext(
+) -> JobResultReadContext:
+    ctx = JobResultReadContext(
         config=client.config,
         job_id=job_info.jobID,
         job_results=job_results,
@@ -238,7 +238,7 @@ def _new_open_context(
         output_name=options.output_name,
         data_type=options.data_type,
         _media_type=options.media_type,
-        options=options.opener_options,
+        options=options.reader_options,
     )
     transport = getattr(client, "_transport", None)
     if transport is not None:
@@ -267,7 +267,7 @@ def _job_status_error(job_info: JobInfo) -> ClientError:
         CLIENT_CLOSED_REQUEST_STATUS if job_info.status == JobStatus.dismissed else 500
     )
     return _new_client_error(
-        f"Cannot open results of job #{job_info.jobID} "
+        f"Cannot read results of job #{job_info.jobID} "
         f"because the job status is '{job_info.status.value}'",
         type_=f"urn:eozilla:job-{job_info.status.value}",
         title="Job did not complete successfully",
@@ -278,7 +278,7 @@ def _job_status_error(job_info: JobInfo) -> ClientError:
 
 def _job_timeout_error(job_info: JobInfo, timeout: float) -> ClientError:
     return _new_client_error(
-        f"Cannot open result of job #{job_info.jobID}; "
+        f"Cannot read result of job #{job_info.jobID}; "
         f"it did not finish within {timeout} seconds",
         type_="urn:eozilla:job-timeout",
         title="Job timed out",

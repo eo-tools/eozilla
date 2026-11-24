@@ -11,6 +11,11 @@ used classes and functions are also made available directly through the
 same interface with asynchronous server calls. Server calls may raise
 `ClientError` if they fail.
 
+The temporary compatibility methods `Client.open_job_result()` and
+`AsyncClient.open_job_result()` are deprecated and emit `DeprecationWarning`.
+Use `Client.read_job_result()` and `AsyncClient.read_job_result()` instead;
+see the [reader guide](guides/readers.md).
+
 For concepts and first requests, see [Getting Started](getting-started.md).
 See [Configuration](configuration.md) for settings and
 [Authentication](authentication.md) for login, token storage, and client lifecycle.
@@ -41,13 +46,13 @@ for the login flow and credential lifecycle.
 ::: cuiman.api.auth
 
 
-## Job Result Opener API
+## Job Result Reader API
 
-::: cuiman.api.opener.JobResultOpener
+::: cuiman.api.reader.JobResultReader
 
-::: cuiman.api.opener.JobResultOpenContext
+::: cuiman.api.reader.JobResultReadContext
 
-::: cuiman.api.opener.JobResultOpenerRegistry
+::: cuiman.api.reader.JobResultReaderRegistry
 
 ## App API
 

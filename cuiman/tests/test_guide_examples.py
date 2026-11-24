@@ -13,10 +13,10 @@ from remotestate import ServeResult
 from typer.testing import CliRunner
 
 from cuiman import Client, ClientConfig
-from cuiman.api.opener import JobResultOpenContext, JobResultOpenerRegistry
+from cuiman.api.reader import JobResultReadContext, JobResultReaderRegistry
 from cuiman.app import App
 from cuiman.cli import cli
-from examples.guides.cuiman import api, app, openers
+from examples.guides.cuiman import api, app, readers
 from gavicore.models.core import JobInfo, JobResults, Link, ProcessRequest
 from procodile import Job
 from wraptile.services.local.testing import service
@@ -28,12 +28,12 @@ REQUEST_PATH = (
 
 
 @pytest.fixture
-def opener_registry(monkeypatch):
+def reader_registry(monkeypatch):
     """Keep example registrations independent of other client tests."""
-    registry = JobResultOpenerRegistry.create_default()
+    registry = JobResultReaderRegistry.create_default()
     monkeypatch.setattr(
         ClientConfig,
-        "get_job_result_opener_registry",
+        "get_job_result_reader_registry",
         classmethod(lambda cls: registry),
     )
     return registry
@@ -43,7 +43,7 @@ def opener_registry(monkeypatch):
 def client():
     result = Mock(spec=Client)
     result.execute_process.return_value = JobInfo(jobID="new-job-42", status="accepted")
-    result.open_job_result.return_value.sizes = {"time": 2, "lat": 4, "lon": 4}
+    result.read_job_result.return_value.sizes = {"time": 2, "lat": 4, "lon": 4}
     return result
 
 
@@ -193,7 +193,7 @@ def test_cli_scene_request_validates_offline():
 
 
 def test_submit_scene_validates_before_connecting(client, tmp_path):
-    assert openers.submit_scene(client, REQUEST_PATH) == "new-job-42"
+    assert readers.submit_scene(client, REQUEST_PATH) == "new-job-42"
     process_id = client.execute_process.call_args.args[0]
     request = client.execute_process.call_args.kwargs["request"]
     assert process_id == "simulate_scene"
@@ -202,7 +202,7 @@ def test_submit_scene_validates_before_connecting(client, tmp_path):
     invalid_path.write_text('{"inputs": []}', encoding="utf-8")
     client.reset_mock()
     with pytest.raises(ValueError):
-        openers.submit_scene(client, invalid_path)
+        readers.submit_scene(client, invalid_path)
     client.execute_process.assert_not_called()
 
 
@@ -216,7 +216,7 @@ def scene_context(tmp_path, request):
     job = Job.create(service.process_registry.get("simulate_scene"), scene_request)
     results = job.run()
     assert job.job_info.status == api.JobStatus.successful
-    return JobResultOpenContext(
+    return JobResultReadContext(
         config=ClientConfig(auth={"auth_type": "none"}),
         job_id=job.job_info.jobID,
         job_results=results,
@@ -227,10 +227,10 @@ def scene_context(tmp_path, request):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("scene_context", ["scene with spaces.zarr"], indirect=True)
-async def test_custom_opener_reads_actual_local_scene(scene_context):
-    opener = openers.LocalZarrOpener()
-    assert await opener.accept_job_result(scene_context)
-    dataset = await opener.open_job_result(scene_context)
+async def test_custom_reader_reads_actual_local_scene(scene_context):
+    reader = readers.LocalZarrReader()
+    assert await reader.accept_job_result(scene_context)
+    dataset = await reader.read_job_result(scene_context)
     try:
         assert dict(dataset.sizes) == {"time": 2, "lat": 4, "lon": 4}
         assert set(dataset.data_vars) == {"a", "b"}
@@ -270,10 +270,10 @@ async def test_custom_opener_reads_actual_local_scene(scene_context):
         ),
     ],
 )
-async def test_custom_opener_rejects_incompatible_output(
+async def test_custom_reader_rejects_incompatible_output(
     value, output_name, data_type, media_type
 ):
-    ctx = JobResultOpenContext(
+    ctx = JobResultReadContext(
         config=ClientConfig(auth={"auth_type": "none"}),
         job_id="existing-job",
         job_results=JobResults(root={"return_value": value}),
@@ -281,69 +281,69 @@ async def test_custom_opener_rejects_incompatible_output(
         data_type=data_type,
         _media_type=media_type,
     )
-    assert not await openers.LocalZarrOpener().accept_job_result(ctx)
+    assert not await readers.LocalZarrReader().accept_job_result(ctx)
 
 
 @pytest.mark.parametrize("custom", [False, True])
-def test_openers_use_real_client_and_restore_registry(
-    monkeypatch, scene_context, custom, opener_registry
+def test_readers_use_real_client_and_restore_registry(
+    monkeypatch, scene_context, custom, reader_registry
 ):
     client = api.create_client()
-    registry = client.config.get_job_result_opener_registry()
-    original = registry.opener_types
+    registry = client.config.get_job_result_reader_registry()
+    original = registry.reader_types
     monkeypatch.setattr(
         client, "get_job", lambda _: JobInfo(jobID="existing-job", status="successful")
     )
     monkeypatch.setattr(client, "get_job_results", lambda _: scene_context.job_results)
     try:
-        open_fn = openers.open_with_custom_opener if custom else openers.open_scene
+        open_fn = readers.read_with_custom_reader if custom else readers.read_scene
         dataset = open_fn(client, "existing-job")
         try:
             assert dict(dataset.sizes) == {"time": 2, "lat": 4, "lon": 4}
         finally:
             dataset.close()
-        assert registry.opener_types == original
+        assert registry.reader_types == original
     finally:
         client.close()
 
 
-def test_custom_registration_restored_on_failure(monkeypatch, opener_registry):
+def test_custom_registration_restored_on_failure(monkeypatch, reader_registry):
     client = api.create_client()
-    registry = client.config.get_job_result_opener_registry()
-    original = registry.opener_types
+    registry = client.config.get_job_result_reader_registry()
+    original = registry.reader_types
     monkeypatch.setattr(
-        client, "open_job_result", Mock(side_effect=RuntimeError("unreadable"))
+        client, "read_job_result", Mock(side_effect=RuntimeError("unreadable"))
     )
     try:
         with pytest.raises(RuntimeError, match="unreadable"):
-            openers.open_with_custom_opener(client, "existing-job")
-        assert registry.opener_types == original
+            readers.read_with_custom_reader(client, "existing-job")
+        assert registry.reader_types == original
     finally:
         client.close()
 
 
 @pytest.mark.parametrize("error", [None, RuntimeError("unreadable")])
-def test_opener_session_closes_resources(monkeypatch, client, error):
-    monkeypatch.setattr(openers, "Client", Mock(return_value=client))
+def test_reader_session_closes_resources(monkeypatch, client, error):
+    monkeypatch.setattr(readers, "Client", Mock(return_value=client))
     monkeypatch.chdir(REQUEST_PATH.parents[3])
-    client.open_job_result.side_effect = error
+    client.read_job_result.side_effect = error
     if error:
         with pytest.raises(RuntimeError, match="unreadable"):
-            openers.example_session()
+            readers.example_session()
     else:
-        assert openers.example_session() == "new-job-42"
-        client.open_job_result.return_value.close.assert_called_once()
-    assert client.open_job_result.call_args.args == ("new-job-42",)
+        assert readers.example_session() == "new-job-42"
+        client.read_job_result.return_value.close.assert_called_once()
+    assert client.read_job_result.call_args.args == ("new-job-42",)
     client.execute_process.assert_called_once()
     client.close.assert_called_once()
 
 
-def test_opener_script_runs_and_closes(monkeypatch, client):
+def test_reader_script_runs_and_closes(monkeypatch, client):
     monkeypatch.setattr("cuiman.Client", Mock(return_value=client))
     monkeypatch.chdir(REQUEST_PATH.parents[3])
-    runpy.run_path(openers.__file__, run_name="__main__")
+    runpy.run_path(readers.__file__, run_name="__main__")
     client.execute_process.assert_called_once()
-    client.open_job_result.return_value.close.assert_called_once()
+    client.read_job_result.return_value.close.assert_called_once()
     client.close.assert_called_once()
 
 
@@ -354,7 +354,7 @@ def test_update_app_initializes_empty_inputs():
     assert client_app.get_process_request("sleep_a_while").inputs == {"duration": 2}
 
 
-@pytest.mark.parametrize("module", [api, app, openers])
+@pytest.mark.parametrize("module", [api, app, readers])
 def test_importing_examples_does_not_create_clients(monkeypatch, module):
     constructor = Mock(side_effect=AssertionError("unexpected client"))
     monkeypatch.setattr("cuiman.Client", constructor)
@@ -363,7 +363,7 @@ def test_importing_examples_does_not_create_clients(monkeypatch, module):
 
 
 @pytest.mark.parametrize(
-    "guide,start_block", [("api", 0), ("app", 0), ("app", 1), ("openers", 0)]
+    "guide,start_block", [("api", 0), ("app", 0), ("app", 1), ("readers", 0)]
 )
 def test_rendered_python_walkthrough_runs_in_order(
     monkeypatch, client, guide, start_block
@@ -379,13 +379,13 @@ def test_rendered_python_walkthrough_runs_in_order(
     )
     client.show_app.return_value = client_app
     client.get_job.return_value = JobInfo(jobID="new-job-42", status="successful")
-    if guide == "openers":
+    if guide == "readers":
         from datetime import datetime, timezone
 
         import pandas as pd
         import pystac
 
-        dataset = client.open_job_result.return_value
+        dataset = client.read_job_result.return_value
         members = []
         for index in range(2):
             member = pystac.Item(
@@ -415,7 +415,7 @@ def test_rendered_python_walkthrough_runs_in_order(
                 return pd.DataFrame({"mean_ndvi": [1.5]})
             return dataset
 
-        client.open_job_result.side_effect = open_result
+        client.read_job_result.side_effect = open_result
     source = (root / "docs/cuiman/guides" / f"{guide}.md").read_text(encoding="utf-8")
     rendered = markdown(
         source,
