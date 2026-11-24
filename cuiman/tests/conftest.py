@@ -13,6 +13,7 @@ from authlib.oauth2.rfc6749 import wrappers
 from joserfc import jwt
 from joserfc.jwk import RSAKey
 
+from cuiman.api.auth.secret_store import _get_secret_store
 from cuiman.api.config import ClientConfig
 
 
@@ -27,6 +28,15 @@ def block_system_keyring(monkeypatch: pytest.MonkeyPatch) -> None:
 
     for operation in ("get_password", "set_password", "delete_password"):
         monkeypatch.setattr(f"keyring.{operation}", unexpected_access)
+
+
+@pytest.fixture(autouse=True)
+def isolate_secret_store(monkeypatch: pytest.MonkeyPatch):
+    """Keep backend selection deterministic and process-local records isolated."""
+    monkeypatch.setattr("keyring.get_keyring", lambda: SimpleNamespace(priority=1))
+    _get_secret_store.cache_clear()
+    yield
+    _get_secret_store.cache_clear()
 
 
 @pytest.fixture(autouse=True)
