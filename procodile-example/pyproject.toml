@@ -43,7 +43,7 @@ requires-python = ">=3.11"
 [project.scripts]
 procodile-example = "procodile_example.cli:cli"
 
-[tool.pixi.project]
+[tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["linux-64", "win-64"]
 

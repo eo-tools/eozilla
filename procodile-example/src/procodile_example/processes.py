@@ -157,8 +157,6 @@ def store_data(
     return id, second_input
 
 
-print(process_pipeline(id="eozilla"))
-#
 # # This visualizes the `process_pipeline`
 # from graphviz import Source
 #
