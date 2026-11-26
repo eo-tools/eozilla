@@ -18,9 +18,10 @@ from wraptile.logging import LogMessageFilter
 
 DEFAULT_NAME = "wraptile"
 
-DEFAULT_SUMMARY = """`{name}` is a web server made for wrapping workflow 
-orchestration systems providing an API compliant with the OGC API - Processes,
-Part 1: Core Standard (https://ogcapi.ogc.org/processes/).
+DEFAULT_SUMMARY = """`{name}` is a web server that provides a process API
+for a given workflow orchestration system.
+The provided process API is compliant with the
+OGC API - Processes Part 1: Core Standard (https://ogcapi.ogc.org/processes/).
 """
 
 DEFAULT_HELP = """{summary}
@@ -101,6 +102,7 @@ def new_cli(
         ),
         rich_markup_mode="rich",
         invoke_without_command=True,
+        subcommand_metavar=f"COMMAND [OPTIONS] [{CLI_SERVICE_ARG.metavar}]",
     )
 
     @t.callback()

@@ -2,6 +2,9 @@
 
 ### Fixes
 
+- **Wraptile** now shows the service argument metavar and service-specific
+  options in the top-level CLI help usage.
+
 - **Cuiman** allows its app to connect when a service's landing page returns
   HTTP 404 but authenticated process discovery works. A warning identifies the
   missing required landing page without claiming service conformance.

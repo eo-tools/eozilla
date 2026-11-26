@@ -21,9 +21,25 @@ class CliTest(TestCase):
         result = runner.invoke(cli, ["--help"])
         self.assertEqual(0, result.exit_code)
         self.assertIn(
-            "`wraptile` is a web server made for wrapping workflow",
+            "`wraptile` is a web server that provides a process API",
             result.output,
         )
+        self.assertIn(
+            "Usage: wraptile [OPTIONS] COMMAND [OPTIONS] "
+            "[SERVICE [-- SERVICE-OPTIONS]]",
+            " ".join(result.output.split()),
+        )
+
+    def test_command_help(self):
+        for command in ("run", "dev"):
+            with self.subTest(command=command):
+                result = runner.invoke(cli, [command, "--help"])
+                self.assertEqual(0, result.exit_code)
+                self.assertIn(
+                    f"Usage: wraptile {command} [OPTIONS] "
+                    "[SERVICE [-- SERVICE-OPTIONS]]",
+                    " ".join(result.output.split()),
+                )
 
     def test_version(self):
         result = runner.invoke(cli, ["--version"])

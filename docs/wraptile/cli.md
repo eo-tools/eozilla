@@ -1,8 +1,9 @@
 # Wraptile CLI
 
-`wraptile` is a web server made for wrapping workflow 
-orchestration systems providing an API compliant with the OGC API - Processes,
-Part 1: Core Standard (https://ogcapi.ogc.org/processes/).
+`wraptile` is a web server that provides a process API
+for a given workflow orchestration system.
+The provided process API is compliant with the
+OGC API - Processes Part 1: Core Standard (https://ogcapi.ogc.org/processes/).
 
 
 The SERVICE argument may be followed by a `--` to pass one or more 
@@ -14,7 +15,7 @@ environment variable `EOZILLA_SERVICE`.
 **Usage**:
 
 ```console
-$ wraptile [OPTIONS] COMMAND [ARGS]...
+$ wraptile [OPTIONS] COMMAND [OPTIONS] [SERVICE [-- SERVICE-OPTIONS]]
 ```
 
 **Options**:
